@@ -169,6 +169,13 @@ func (l *Conf) Merge(in *Conf) error {
 	return l.k.Merge(in.k)
 }
 
+// MergeAppend merges the input given configuration into the existing config.
+// Note that the given map may be modified.
+// Note: MergeAppend merges the lists in a name-aware fashion.
+func (l *Conf) MergeAppend(in *Conf, paths []string) error {
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeComponentsAppend(paths)))
+}
+
 // Sub returns new Conf instance representing a sub-config of this instance.
 // It returns an error is the sub-config is not a map[string]any (use Get()), and an empty Map if none exists.
 func (l *Conf) Sub(key string) (*Conf, error) {
