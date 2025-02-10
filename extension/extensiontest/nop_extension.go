@@ -13,12 +13,19 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
-var nopType = component.MustNewType("nop")
+// NopType is the type of the nop extension.
+var NopType = component.MustNewType("nop")
 
 // NewNopSettings returns a new nop settings for extension.Factory Create* functions.
+// Deprecated: [v0.120.0] Use NewNopSettingsWithType(NopType) instead.
 func NewNopSettings() extension.Settings {
+	return NewNopSettingsWithType(NopType)
+}
+
+// NewNopSettings returns a new nop settings for extension.Factory Create* functions with the given type.
+func NewNopSettingsWithType(ty component.Type) extension.Settings {
 	return extension.Settings{
-		ID:                component.NewIDWithName(nopType, uuid.NewString()),
+		ID:                component.NewIDWithName(ty, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -27,7 +34,7 @@ func NewNopSettings() extension.Settings {
 // NewNopFactory returns an extension.Factory that constructs nop extensions.
 func NewNopFactory() extension.Factory {
 	return extension.NewFactory(
-		nopType,
+		NopType,
 		func() component.Config {
 			return &nopConfig{}
 		},

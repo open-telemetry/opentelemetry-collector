@@ -21,7 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol/internal/grpclog"
 	"go.opentelemetry.io/collector/service"
 )
@@ -157,6 +157,14 @@ func (col *Collector) Shutdown() {
 	}
 }
 
+func buildModuleInfo(m map[component.Type]string) map[component.Type]service.ModuleInfo {
+	moduleInfo := make(map[component.Type]service.ModuleInfo)
+	for k, v := range m {
+		moduleInfo[k] = service.ModuleInfo{BuilderRef: v}
+	}
+	return moduleInfo
+}
+
 // setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
 func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
@@ -171,7 +179,7 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = cfg.Validate(); err != nil {
+	if err = xconfmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
 
@@ -198,12 +206,12 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		ExtensionsConfigs:   cfg.Extensions,
 		ExtensionsFactories: factories.Extensions,
 
-		ModuleInfo: extension.ModuleInfo{
-			Receiver:  factories.ReceiverModules,
-			Processor: factories.ProcessorModules,
-			Exporter:  factories.ExporterModules,
-			Extension: factories.ExtensionModules,
-			Connector: factories.ConnectorModules,
+		ModuleInfos: service.ModuleInfos{
+			Receiver:  buildModuleInfo(factories.ReceiverModules),
+			Processor: buildModuleInfo(factories.ProcessorModules),
+			Exporter:  buildModuleInfo(factories.ExporterModules),
+			Extension: buildModuleInfo(factories.ExtensionModules),
+			Connector: buildModuleInfo(factories.ConnectorModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
@@ -261,7 +269,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return cfg.Validate()
+	return xconfmap.Validate(cfg)
 }
 
 func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {

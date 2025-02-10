@@ -4,7 +4,6 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
-	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -26,55 +25,19 @@ const (
 )
 
 type TestTelemetry struct {
-	Telemetry
+	*Telemetry
 	id component.ID
 }
 
-// CheckExporterTraces checks that for the current exported values for trace exporter metrics match given values.
-func (tts *TestTelemetry) CheckExporterTraces(sentSpans, sendFailedSpans int64) error {
-	return checkExporterTraces(tts.Reader, tts.id, sentSpans, sendFailedSpans)
-}
-
-// CheckExporterMetrics checks that for the current exported values for metrics exporter metrics match given values.
-func (tts *TestTelemetry) CheckExporterMetrics(sentMetricsPoints, sendFailedMetricsPoints int64) error {
-	return checkExporterMetrics(tts.Reader, tts.id, sentMetricsPoints, sendFailedMetricsPoints)
-}
-
-func (tts *TestTelemetry) CheckExporterEnqueueFailedMetrics(enqueueFailed int64) error {
-	return checkExporterEnqueueFailed(tts.Reader, tts.id, "metric_points", enqueueFailed)
-}
-
-func (tts *TestTelemetry) CheckExporterEnqueueFailedTraces(enqueueFailed int64) error {
-	return checkExporterEnqueueFailed(tts.Reader, tts.id, "spans", enqueueFailed)
-}
-
-func (tts *TestTelemetry) CheckExporterEnqueueFailedLogs(enqueueFailed int64) error {
-	return checkExporterEnqueueFailed(tts.Reader, tts.id, "log_records", enqueueFailed)
-}
-
-// CheckExporterLogs checks that for the current exported values for logs exporter metrics match given values.
-func (tts *TestTelemetry) CheckExporterLogs(sentLogRecords, sendFailedLogRecords int64) error {
-	return checkExporterLogs(tts.Reader, tts.id, sentLogRecords, sendFailedLogRecords)
-}
-
-func (tts *TestTelemetry) CheckExporterMetricGauge(metric string, val int64, extraAttrs ...attribute.KeyValue) error {
-	attrs := attributesForExporterMetrics(tts.id, extraAttrs...)
-	return checkIntGauge(tts.Reader, metric, val, attrs)
-}
-
+// Deprecated: [v0.120.0] use the metadatatest.AssertEqualMetric series of functions instead.
 // CheckReceiverTraces checks that for the current exported values for trace receiver metrics match given values.
 func (tts *TestTelemetry) CheckReceiverTraces(protocol string, acceptedSpans, droppedSpans int64) error {
-	return checkReceiverTraces(tts.Reader, tts.id, protocol, acceptedSpans, droppedSpans)
-}
-
-// CheckReceiverLogs checks that for the current exported values for logs receiver metrics match given values.
-func (tts *TestTelemetry) CheckReceiverLogs(protocol string, acceptedLogRecords, droppedLogRecords int64) error {
-	return checkReceiverLogs(tts.Reader, tts.id, protocol, acceptedLogRecords, droppedLogRecords)
+	return checkReceiver(tts.Telemetry, tts.id, "spans", protocol, acceptedSpans, droppedSpans)
 }
 
 // CheckReceiverMetrics checks that for the current exported values for metrics receiver metrics match given values.
 func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPoints, droppedMetricPoints int64) error {
-	return checkReceiverMetrics(tts.Reader, tts.id, protocol, acceptedMetricPoints, droppedMetricPoints)
+	return checkReceiver(tts.Telemetry, tts.id, "metric_points", protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
 // TelemetrySettings returns the TestTelemetry's TelemetrySettings

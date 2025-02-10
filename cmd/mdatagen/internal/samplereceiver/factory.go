@@ -6,6 +6,8 @@ package samplereceiver // import "go.opentelemetry.io/collector/cmd/mdatagen/int
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/metric"
+
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -27,10 +29,18 @@ func createTraces(context.Context, receiver.Settings, component.Config, consumer
 }
 
 func createMetrics(ctx context.Context, set receiver.Settings, _ component.Config, _ consumer.Metrics) (receiver.Metrics, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithProcessRuntimeTotalAllocBytesCallback(func() int64 { return 2 }))
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
+	err = telemetryBuilder.RegisterProcessRuntimeTotalAllocBytesCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(2)
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	telemetryBuilder.BatchSizeTriggerSend.Add(ctx, 1)
 	return nopReceiver{telemetryBuilder: telemetryBuilder}, nil
 }
@@ -43,10 +53,20 @@ var nopInstance = &nopReceiver{}
 
 type nopReceiver struct {
 	component.StartFunc
-	component.ShutdownFunc
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (r nopReceiver) initOptionalMetric() {
-	_, _ = r.telemetryBuilder.InitQueueLength(func() int64 { return 1 })
+	_ = r.telemetryBuilder.RegisterQueueLengthCallback(func(_ context.Context, observer metric.Int64Observer) error {
+		observer.Observe(3)
+		return nil
+	})
+}
+
+// Shutdown shuts down the component.
+func (r nopReceiver) Shutdown(context.Context) error {
+	if r.telemetryBuilder != nil {
+		r.telemetryBuilder.Shutdown()
+	}
+	return nil
 }
