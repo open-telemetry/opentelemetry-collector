@@ -187,6 +187,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 			return nil, err
 		}
 		if len(mr.mergePaths) > 0 && EnableMergeAppendOption.IsEnabled() {
+			// only use MergeAppend when user has specified more mergePaths AND EnableMergeAppendOption featuregate is enabled.
 			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
 		} else {
 			err = retMap.Merge(retCfgMap)
