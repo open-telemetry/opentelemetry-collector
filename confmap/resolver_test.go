@@ -5,6 +5,7 @@ package confmap
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -444,21 +446,65 @@ type mergeTest struct {
 }
 
 func TestMergeFunctionality(t *testing.T) {
-	yamlFile, err := os.ReadFile("testdata/merge-append-scenarious.yaml")
+	tests := []struct {
+		name         string
+		scenarioFile string
+		flagEnabled  bool
+	}{
+		{
+			name:         "feature-flag-enabled",
+			scenarioFile: "testdata/merge-append-scenarios.yaml",
+			flagEnabled:  true,
+		},
+		{
+			name:         "feature-flag-disabled",
+			scenarioFile: "testdata/merge-append-scenarios-featuregate-disabled.yaml",
+			flagEnabled:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.flagEnabled {
+				featuregate.GlobalRegistry().Set(EnableMergeAppendOption.ID(), true)
+				defer featuregate.GlobalRegistry().Set(EnableMergeAppendOption.ID(), false)
+			}
+			runScenario(t, tt.scenarioFile)
+		})
+	}
+
+}
+
+func runScenario(t *testing.T, path string) {
+	yamlFile, err := os.ReadFile(path)
 	require.NoError(t, err)
 	var testcases []*mergeTest
 	err = yaml.Unmarshal(yamlFile, &testcases)
 	require.NoError(t, err)
 	for _, tt := range testcases {
 		t.Run(tt.Name, func(t *testing.T) {
-			conf := New()
+			configFiles := make([]string, 0)
 			for _, c := range tt.Configs {
-				if len(tt.AppendPaths) == 0 {
-					require.NoError(t, conf.Merge(NewFromStringMap(c)))
-				} else {
-					require.NoError(t, conf.MergeAppend(NewFromStringMap(c), tt.AppendPaths))
-				}
+				// store configs into a temp file. This makes it easier for us to test feature gate functionality
+				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
+				require.NoError(t, err)
+				b, err := json.Marshal(c)
+				require.NoError(t, err)
+				n, err := file.Write(b)
+				require.NoError(t, err)
+				require.Greater(t, n, 0)
+				configFiles = append(configFiles, file.Name())
+				file.Close()
 			}
+
+			resolver, err := NewResolver(ResolverSettings{
+				URIs:              configFiles,
+				MergePaths:        tt.AppendPaths,
+				ProviderFactories: []ProviderFactory{newFileProvider(t)},
+				DefaultScheme:     "file",
+			})
+			require.NoError(t, err)
+			conf, err := resolver.Resolve(context.Background())
+			require.NoError(t, err)
 			mergedConf := conf.ToStringMap()
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
 		})

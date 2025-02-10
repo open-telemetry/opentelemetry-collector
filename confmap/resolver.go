@@ -10,8 +10,17 @@ import (
 	"regexp"
 	"strings"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+)
+
+var EnableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
+	"exporter.enableMergeAppendOption",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.120.0"),
+	featuregate.WithRegisterDescription("if set to true, enables --merge-paths-append command line option"),
 )
 
 // follows drive-letter specification:
@@ -177,10 +186,10 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(mr.mergePaths) == 0 {
-			err = retMap.Merge(retCfgMap)
-		} else {
+		if len(mr.mergePaths) > 0 && EnableMergeAppendOption.IsEnabled() {
 			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
+		} else {
+			err = retMap.Merge(retCfgMap)
 		}
 		if err != nil {
 			return nil, err
