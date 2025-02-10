@@ -14,9 +14,10 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
@@ -471,7 +472,6 @@ func TestMergeFunctionality(t *testing.T) {
 			runScenario(t, tt.scenarioFile)
 		})
 	}
-
 }
 
 func runScenario(t *testing.T, path string) {
