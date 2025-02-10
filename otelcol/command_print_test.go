@@ -91,6 +91,20 @@ func TestPrintCommand(t *testing.T) {
 	}
 }
 
+func TestPrintCommandFeaturegateDisabled(t *testing.T) {
+	cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
+			DefaultScheme: "foo",
+			ProviderFactories: []confmap.ProviderFactory{
+				yamlprovider.NewFactory(),
+			},
+		},
+	}}, flags(featuregate.GlobalRegistry()))
+	err := cmd.Execute()
+	require.ErrorContains(t, err, "print-initial-config is currently experimental, use otelcol.printInitialConfig feature gate to enable this command")
+}
+
 func TestConfig(t *testing.T) {
 	tests := []struct {
 		name        string
