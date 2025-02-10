@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 

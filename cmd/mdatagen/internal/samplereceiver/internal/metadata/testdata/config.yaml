@@ -7,6 +7,9 @@ all_set:
       enabled: true
     metric.input_type:
       enabled: true
+    metric.with_interval:
+      enabled: true
+      interval: 15
     optional.metric:
       enabled: true
     optional.metric.empty_unit:
@@ -35,6 +38,8 @@ none_set:
     default.metric.to_be_removed:
       enabled: false
     metric.input_type:
+      enabled: false
+    metric.with_interval:
       enabled: false
     optional.metric:
       enabled: false

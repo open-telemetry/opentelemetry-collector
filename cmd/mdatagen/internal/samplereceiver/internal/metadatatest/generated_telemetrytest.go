@@ -3,23 +3,52 @@
 package metadatatest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
+
+// Deprecated: [v0.119.0] Use componenttest.Telemetry
+type Telemetry struct {
+	*componenttest.Telemetry
+}
+
+// Deprecated: [v0.119.0] Use componenttest.NewTelemetry
+func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
+	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
+}
+
+// Deprecated: [v0.119.0] Use metadatatest.NewSettings
+func (tt *Telemetry) NewSettings() receiver.Settings {
+	return NewSettings(tt.Telemetry)
+}
 
 func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 	set := receivertest.NewNopSettings()
 	set.ID = component.NewID(component.MustNewType("sample"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
+}
+
+// Deprecated: [v0.119.0] Use metadatatest.AssertEqual*
+func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
+	// ensure all required metrics are present
+	for _, want := range expected {
+		got := getMetricFromResource(want.Name, md)
+		metricdatatest.AssertEqual(t, want, got, opts...)
+	}
+
+	// ensure no additional metrics are emitted
+	require.Equal(t, len(expected), lenMetrics(md))
 }
 
 func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
