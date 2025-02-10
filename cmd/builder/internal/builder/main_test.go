@@ -87,6 +87,7 @@ var replaceModules = []string{
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
+	"/internal/telemetry",
 	"/otelcol",
 	"/pdata",
 	"/pdata/testdata",
