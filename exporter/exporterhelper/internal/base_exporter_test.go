@@ -53,15 +53,11 @@ func newNoopExportSender() Sender[internal.Request] {
 	}}
 }
 
-func newNoopObsrepSender(_ *ObsReport, next Sender[internal.Request]) Sender[internal.Request] {
-	return &noopSender{SendFunc: next.Send}
-}
-
 func TestBaseExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender)
+			be, err := NewBaseExporter(defaultSettings, defaultSignal)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, be.Shutdown(context.Background()))
@@ -77,7 +73,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			want := errors.New("my error")
 			be, err := NewBaseExporter(
-				defaultSettings, defaultSignal, newNoopObsrepSender,
+				defaultSettings, defaultSignal,
 				WithStart(func(context.Context, component.Host) error { return want }),
 				WithShutdown(func(context.Context) error { return want }),
 				WithTimeout(NewDefaultTimeoutConfig()),
@@ -95,16 +91,16 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
+			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
 			require.Nil(t, bs.Marshaler)
 			require.Nil(t, bs.Unmarshaler)
-			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
+			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
 				WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 			require.Error(t, err)
 
-			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
+			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
 				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
 				WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
@@ -126,7 +122,7 @@ func TestBaseExporterLogging(t *testing.T) {
 			rCfg.Enabled = false
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.Enabled = false
-			bs, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender,
+			bs, err := NewBaseExporter(set, defaultSignal,
 				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()),
 				WithBatcher(exporterbatcher.NewDefaultConfig()),
 				WithRetry(rCfg))
@@ -197,20 +193,16 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
-			be, err := NewBaseExporter(set, pipeline.SignalLogs, newObservabilityConsumerSender, tt.queueOptions...)
+			be, err := NewBaseExporter(set, pipeline.SignalLogs, tt.queueOptions...)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			ocs := be.ObsrepSender.(*observabilityConsumerSender)
-			mockR := &requesttest.FakeRequest{Items: 2, ExportErr: errors.New("some error")}
-			ocs.run(func() {
-				require.Error(t, be.Send(context.Background(), mockR))
-			})
+			sink := requesttest.NewSink()
+			mockR := &requesttest.FakeRequest{Items: 2, Sink: sink, ExportErr: errors.New("some error")}
+			require.Error(t, be.Send(context.Background(), mockR))
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
-			ocs.awaitAsyncProcessing()
-			ocs.checkSendItemsCount(t, 0)
-			ocs.checkDroppedItemsCount(t, 2)
 			require.NoError(t, be.Shutdown(context.Background()))
+			assert.Empty(t, 0, sink.RequestsCount())
 		})
 	}
 	for _, tt := range tests {
