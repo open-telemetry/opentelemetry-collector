@@ -176,56 +176,6 @@ func newErrorRequest(err error) internal.Request {
 	return &mockErrorRequest{err: err}
 }
 
-type mockRequest struct {
-	cnt          int
-	mu           sync.Mutex
-	consumeError error
-	requestCount *atomic.Int64
-}
-
-func (m *mockRequest) Export(ctx context.Context) error {
-	m.requestCount.Add(int64(1))
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	err := m.consumeError
-	m.consumeError = nil
-	if err != nil {
-		return err
-	}
-	// Respond like gRPC/HTTP, if context is cancelled, return error
-	return ctx.Err()
-}
-
-func (m *mockRequest) OnError(error) internal.Request {
-	return &mockRequest{
-		cnt:          1,
-		consumeError: nil,
-		requestCount: m.requestCount,
-	}
-}
-
-func (m *mockRequest) checkOneRequests(t *testing.T) {
-	assert.Eventually(t, func() bool {
-		return int64(1) == m.requestCount.Load()
-	}, time.Second, 1*time.Millisecond)
-}
-
-func (m *mockRequest) ItemsCount() int {
-	return m.cnt
-}
-
-func (m *mockRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
-	return nil, nil
-}
-
-func newMockRequest(cnt int, consumeError error) *mockRequest {
-	return &mockRequest{
-		cnt:          cnt,
-		consumeError: consumeError,
-		requestCount: &atomic.Int64{},
-	}
-}
-
 type observabilityConsumerSender struct {
 	component.StartFunc
 	component.ShutdownFunc
