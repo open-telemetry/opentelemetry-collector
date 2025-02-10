@@ -32,17 +32,13 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
 	ExporterQueueCapacity             metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeExporterQueueCapacity func(context.Context, metric.Observer) error
-	ExporterQueueSize            metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeExporterQueueSize       func(context.Context, metric.Observer) error
-	ExporterSendFailedLogRecords   metric.Int64Counter
-	ExporterSendFailedMetricPoints metric.Int64Counter
-	ExporterSendFailedSpans        metric.Int64Counter
-	ExporterSentLogRecords         metric.Int64Counter
-	ExporterSentMetricPoints       metric.Int64Counter
-	ExporterSentSpans              metric.Int64Counter
+	ExporterQueueSize                 metric.Int64ObservableGauge
+	ExporterSendFailedLogRecords      metric.Int64Counter
+	ExporterSendFailedMetricPoints    metric.Int64Counter
+	ExporterSendFailedSpans           metric.Int64Counter
+	ExporterSentLogRecords            metric.Int64Counter
+	ExporterSentMetricPoints          metric.Int64Counter
+	ExporterSentSpans                 metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -138,26 +134,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeExporterQueueCapacity != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeExporterQueueCapacity, builder.ExporterQueueCapacity)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_size",
 		metric.WithDescription("Current size of the retry queue (in batches) [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeExporterQueueSize != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeExporterQueueSize, builder.ExporterQueueSize)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_send_failed_log_records",
 		metric.WithDescription("Number of log records in failed attempts to send to destination. [alpha]"),
