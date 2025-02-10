@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/internal/memorylimiter v0.119.0
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
 	go.opentelemetry.io/collector/processor v0.119.0
@@ -99,6 +100,8 @@ replace go.opentelemetry.io/collector/processor/xprocessor => ../xprocessor
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
