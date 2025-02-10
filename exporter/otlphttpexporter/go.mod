@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.25.0
 	go.opentelemetry.io/collector/config/configtls v1.25.0
 	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250205001856-68ff067415c1
 	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/exporter v0.119.0
@@ -25,7 +26,7 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 )
 
 require (
@@ -55,7 +56,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0 // indirect
@@ -95,11 +95,11 @@ replace go.opentelemetry.io/collector/config/confighttp => ../../config/confight
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
-replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
-
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/exporter => ../
 

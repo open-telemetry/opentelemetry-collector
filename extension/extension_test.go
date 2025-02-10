@@ -35,9 +35,12 @@ func TestNewFactory(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.Stability())
-	ext, err := factory.Create(context.Background(), Settings{}, &defaultCfg)
+	ext, err := factory.Create(context.Background(), Settings{ID: component.NewID(testType)}, &defaultCfg)
 	require.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
+
+	_, err = factory.Create(context.Background(), Settings{ID: component.NewID(component.MustNewType("mismatch"))}, &defaultCfg)
+	require.Error(t, err)
 }
 
 func TestMakeFactoryMap(t *testing.T) {

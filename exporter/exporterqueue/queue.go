@@ -81,12 +81,15 @@ type Factory[T any] func(context.Context, Settings, Config, ConsumeFunc[T]) Queu
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMemoryQueueFactory[T any]() Factory[T] {
 	return func(_ context.Context, _ Settings, cfg Config, consume ConsumeFunc[T]) Queue[T] {
-		q := newBoundedMemoryQueue[T](memoryQueueSettings[T]{
+		if !cfg.Enabled {
+			return newDisabledQueue(consume)
+		}
+		q := newMemoryQueue[T](memoryQueueSettings[T]{
 			sizer:    &requestSizer[T]{},
 			capacity: int64(cfg.QueueSize),
 			blocking: cfg.Blocking,
 		})
-		return newConsumerQueue(q, cfg.NumConsumers, consume)
+		return newAsyncQueue(q, cfg.NumConsumers, consume)
 	}
 }
 
@@ -109,6 +112,9 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 		return NewMemoryQueueFactory[T]()
 	}
 	return func(_ context.Context, set Settings, cfg Config, consume ConsumeFunc[T]) Queue[T] {
+		if !cfg.Enabled {
+			return newDisabledQueue(consume)
+		}
 		q := newPersistentQueue[T](persistentQueueSettings[T]{
 			sizer:       &requestSizer[T]{},
 			capacity:    int64(cfg.QueueSize),
@@ -119,6 +125,6 @@ func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings P
 			unmarshaler: factorySettings.Unmarshaler,
 			set:         set.ExporterSettings,
 		})
-		return newConsumerQueue(q, cfg.NumConsumers, consume)
+		return newAsyncQueue(q, cfg.NumConsumers, consume)
 	}
 }

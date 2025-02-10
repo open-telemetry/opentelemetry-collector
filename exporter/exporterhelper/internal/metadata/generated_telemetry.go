@@ -56,16 +56,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// Deprecated: [v0.119.0] use RegisterExporterQueueCapacityCallback.
-func WithExporterQueueCapacityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeExporterQueueCapacity = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ExporterQueueCapacity, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
 func (builder *TelemetryBuilder) RegisterExporterQueueCapacityCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -79,16 +69,6 @@ func (builder *TelemetryBuilder) RegisterExporterQueueCapacityCallback(cb metric
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
-}
-
-// Deprecated: [v0.119.0] use RegisterExporterQueueSizeCallback.
-func WithExporterQueueSizeCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeExporterQueueSize = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ExporterQueueSize, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterExporterQueueSizeCallback sets callback for observable ExporterQueueSize metric.
