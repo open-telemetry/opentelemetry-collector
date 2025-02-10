@@ -114,16 +114,16 @@ func Test{{ .structName }}EnsureCapacity(t *testing.T) {
 
 {{- if ne .itemType "string" }}
 
-func Test{{ .structName }}IncrementFrom(t *testing.T) {
+func Test{{ .structName }}TryIncrementFrom(t *testing.T) {
 	ms := New{{ .structName }}()
 	ms.FromRaw([]{{ .itemType }}{10, 9})
 
 	ms2 := New{{ .structName }}()
 	ms2.FromRaw([]{{ .itemType }}{1, 10})
 
-	assert.False(t, ms.IncrementFrom(ms2, 1))
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
 	ms.EnsureCapacity(4)
-	assert.True(t, ms.IncrementFrom(ms2, 1))
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
 	{{- if eq .itemType "float64" }}
 	assert.InDelta(t, {{ .itemType }}(10), ms.At(0), 0.01)
 	assert.InDelta(t, {{ .itemType }}(10), ms.At(1), 0.01)

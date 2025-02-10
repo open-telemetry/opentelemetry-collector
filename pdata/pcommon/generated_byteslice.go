@@ -109,8 +109,10 @@ func copyByteSlice(dst, src []byte) []byte {
 	return append(dst, src...)
 }
 
-// IncrementFrom increments all elements by the elements from another slice.
-func (ms ByteSlice) IncrementFrom(other ByteSlice, offset int) bool {
+// TryIncrementFrom increments all elements from the current slice by the elements from another slice
+// if it has enough capacity for the other slice's length plus the offset.
+// If there isn't enough capacity, this method returns false and the slice is not mutated.
+func (ms ByteSlice) TryIncrementFrom(other ByteSlice, offset int) bool {
 	if offset < 0 {
 		return false
 	}

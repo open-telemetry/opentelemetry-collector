@@ -82,16 +82,16 @@ func TestInt32SliceEnsureCapacity(t *testing.T) {
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
 
-func TestInt32SliceIncrementFrom(t *testing.T) {
+func TestInt32SliceTryIncrementFrom(t *testing.T) {
 	ms := NewInt32Slice()
 	ms.FromRaw([]int32{10, 9})
 
 	ms2 := NewInt32Slice()
 	ms2.FromRaw([]int32{1, 10})
 
-	assert.False(t, ms.IncrementFrom(ms2, 1))
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
 	ms.EnsureCapacity(4)
-	assert.True(t, ms.IncrementFrom(ms2, 1))
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
 	assert.Equal(t, int32(10), ms.At(0))
 	assert.Equal(t, int32(10), ms.At(1))
 	assert.Equal(t, int32(10), ms.At(2))

@@ -82,16 +82,16 @@ func TestFloat64SliceEnsureCapacity(t *testing.T) {
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
 
-func TestFloat64SliceIncrementFrom(t *testing.T) {
+func TestFloat64SliceTryIncrementFrom(t *testing.T) {
 	ms := NewFloat64Slice()
 	ms.FromRaw([]float64{10, 9})
 
 	ms2 := NewFloat64Slice()
 	ms2.FromRaw([]float64{1, 10})
 
-	assert.False(t, ms.IncrementFrom(ms2, 1))
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
 	ms.EnsureCapacity(4)
-	assert.True(t, ms.IncrementFrom(ms2, 1))
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
 	assert.InDelta(t, float64(10), ms.At(0), 0.01)
 	assert.InDelta(t, float64(10), ms.At(1), 0.01)
 	assert.InDelta(t, float64(10), ms.At(2), 0.01)
