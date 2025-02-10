@@ -212,10 +212,10 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
-			assert.EqualValues(t, 100, transport.MaxIdleConns)
+			assert.EqualValues(t, 0, transport.MaxIdleConns)
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
-			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.EqualValues(t, 0, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
 		})
 	}
