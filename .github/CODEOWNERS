@@ -11,6 +11,11 @@
 
 * @open-telemetry/collector-approvers
 
+# Files owned by collector-releases-approvers
+.github/workflows/prepare-release.yml    @open-telemetry/collector-releases-approvers
+.github/workflows/sourcecode-release.yml @open-telemetry/collector-releases-approvers
+.github/workflows/scripts/release-*.sh   @open-telemetry/collector-releases-approvers
+
 # Start components list
 
 cmd/mdatagen/                            @open-telemetry/collector-approvers @dmitryax
