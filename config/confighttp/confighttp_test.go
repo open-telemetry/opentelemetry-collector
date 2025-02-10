@@ -1027,6 +1027,41 @@ func TestHttpClientHostHeader(t *testing.T) {
 	})
 }
 
+func TestHttpTransportOptions(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	// Disable OTel instrumentation so the *http.Transport object is directly accessible
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+
+	clientConfig := NewDefaultClientConfig()
+	clientConfig.MaxIdleConns = 100
+	clientConfig.IdleConnTimeout = time.Duration(100)
+	clientConfig.MaxConnsPerHost = 100
+	clientConfig.MaxIdleConnsPerHost = 100
+	client, err := clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	require.NoError(t, err)
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Equal(t, 100, transport.MaxIdleConns)
+	require.Equal(t, time.Duration(100), transport.IdleConnTimeout)
+	require.Equal(t, 100, transport.MaxConnsPerHost)
+	require.Equal(t, 100, transport.MaxIdleConnsPerHost)
+
+	clientConfig = NewDefaultClientConfig()
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxConnsPerHost = 0
+	clientConfig.IdleConnTimeout = time.Duration(0)
+	client, err = clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	require.NoError(t, err)
+	transport, ok = client.Transport.(*http.Transport)
+	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Equal(t, 0, transport.MaxIdleConns)
+	require.Equal(t, time.Duration(0), transport.IdleConnTimeout)
+	require.Equal(t, 0, transport.MaxConnsPerHost)
+	require.Equal(t, 0, transport.MaxIdleConnsPerHost)
+}
+
 func TestContextWithClient(t *testing.T) {
 	testCases := []struct {
 		name       string

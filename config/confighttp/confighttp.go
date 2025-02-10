@@ -160,21 +160,10 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	if hcs.MaxIdleConns != 0 {
-		transport.MaxIdleConns = hcs.MaxIdleConns
-	}
-
-	if hcs.MaxIdleConnsPerHost != 0 {
-		transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
-	}
-
-	if hcs.MaxConnsPerHost != 0 {
-		transport.MaxConnsPerHost = hcs.MaxConnsPerHost
-	}
-
-	if hcs.IdleConnTimeout != 0 {
-		transport.IdleConnTimeout = hcs.IdleConnTimeout
-	}
+	transport.MaxIdleConns = hcs.MaxIdleConns
+	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
+	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
+	transport.IdleConnTimeout = hcs.IdleConnTimeout
 
 	// Setting the Proxy URL
 	if hcs.ProxyURL != "" {
