@@ -19,15 +19,23 @@ if [[ ${COMMENT:0:6} != "/label" ]]; then
     exit 0
 fi
 
+# key: label in comment
+# value: actual label
 declare -A COMMON_LABELS
 COMMON_LABELS["arm64"]="arm64"
 COMMON_LABELS["good-first-issue"]="good first issue"
 COMMON_LABELS["help-wanted"]="help wanted"
-COMMON_LABELS["needs-discussion"]="needs discussion"
-COMMON_LABELS["needs-triage"]="needs triage"
+COMMON_LABELS["discussion-needed"]="discussion-needed"
 COMMON_LABELS["os:macos"]="os:macos"
 COMMON_LABELS["os:windows"]="os:windows"
-COMMON_LABELS["waiting-for-author"]="waiting for author"
+COMMON_LABELS["waiting-for-author"]="waiting-for-author"
+COMMON_LABELS["waiting-for-codeowners"]="waiting-for-codeowners"
+COMMON_LABELS["bug"]="bug"
+COMMON_LABELS["priority:p0"]="priority:p0"
+COMMON_LABELS["priority:p1"]="priority:p1"
+COMMON_LABELS["priority:p2"]="priority:p2"
+COMMON_LABELS["priority:p3"]="priority:p3"
+COMMON_LABELS["stale"]="Stale"
 
 LABELS=$(echo "${COMMENT}" | sed -E 's%^/label%%')
 
