@@ -382,12 +382,12 @@ func TestMarshaler(t *testing.T) {
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t testing.TB, fileName string) map[string]any {
+func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	content, err := os.ReadFile(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
 
 	var data map[string]any
-	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
 }

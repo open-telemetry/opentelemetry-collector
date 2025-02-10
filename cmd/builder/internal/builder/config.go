@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	defaultBetaOtelColVersion   = "v0.116.0"
-	defaultStableOtelColVersion = "v1.22.0"
+	defaultBetaOtelColVersion   = "v0.119.0"
+	defaultStableOtelColVersion = "v1.25.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
@@ -35,6 +35,9 @@ type Config struct {
 	SkipGetModules       bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
+	LDSet                bool   `mapstructure:"-"` // only used to override LDFlags
+	GCFlags              string `mapstructure:"-"`
+	GCSet                bool   `mapstructure:"-"` // only used to override GCFlags
 	Verbose              bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
@@ -151,8 +154,8 @@ func (c *Config) Validate() error {
 // SetGoPath sets go path
 func (c *Config) SetGoPath() error {
 	if !c.SkipCompilation || !c.SkipGetModules {
-		// #nosec G204
-		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil { // nolint G204
+		//nolint:gosec // #nosec G204
+		if _, err := exec.Command(c.Distribution.Go, "env").CombinedOutput(); err != nil {
 			path, err := exec.LookPath("go")
 			if err != nil {
 				return ErrGoNotFound

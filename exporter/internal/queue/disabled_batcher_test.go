@@ -14,7 +14,11 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/internal/requesttest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestDisabledBatcher_Basic(t *testing.T) {
@@ -22,10 +26,6 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 		name       string
 		maxWorkers int
 	}{
-		{
-			name:       "infinate_workers",
-			maxWorkers: 0,
-		},
 		{
 			name:       "one_worker",
 			maxWorkers: 1,
@@ -40,16 +40,19 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = false
 
-			q := NewBoundedMemoryQueue[internal.Request](
-				MemoryQueueSettings[internal.Request]{
-					Sizer:    &RequestSizer[internal.Request]{},
-					Capacity: 10,
-				})
-
-			ba, err := NewBatcher(cfg, q,
+			ba, err := NewBatcher(cfg,
 				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
+
+			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+				context.Background(),
+				exporterqueue.Settings{
+					Signal:           pipeline.SignalTraces,
+					ExporterSettings: exportertest.NewNopSettings(),
+				},
+				exporterqueue.NewDefaultConfig(),
+				ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -58,16 +61,16 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := newFakeRequestSink()
+			sink := requesttest.NewSink()
 
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 8, exportErr: errors.New("transient error"), sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 17, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 13, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 35, sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &fakeRequest{items: 2, sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
-				return sink.requestsCount.Load() == 5 && sink.itemsCount.Load() == 75
+				return sink.RequestsCount() == 5 && sink.ItemsCount() == 75
 			}, 30*time.Millisecond, 10*time.Millisecond)
 		})
 	}

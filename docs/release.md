@@ -25,7 +25,7 @@ Before the release, make sure there are no open release blockers in [core](https
 
 ## Releasing opentelemetry-collector
 
-1. Update Contrib to use the latest in development version of Core by running `make update-otel` in Contrib root directory. This is to ensure that the latest core does not break contrib in any way. If it results in any changes, submit a PR to Contrib. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
+1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
@@ -40,7 +40,7 @@ Before the release, make sure there are no open release blockers in [core](https
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
    - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
    - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
-   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as a PR with the `release:merge-freeze` label is open.
+   - **While this PR is open all merging in Core should be halted**. This should be enforced automatically: the `Merge freeze / Check` CI check will fail and the merge queue will reject PRs as long as there is an open PR with `[chore] Prepare release` in its title.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
@@ -51,7 +51,7 @@ Before the release, make sure there are no open release blockers in [core](https
    `open-telemetry/opentelemetry-collector`. Assuming your upstream remote is
    named `upstream`, you can try the following commands:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>`
+   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
    - `git push -u upstream release/<release series>`
 
 5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
@@ -90,7 +90,7 @@ Before the release, make sure there are no open release blockers in [core](https
    new branch to `open-telemetry/opentelemetry-collector-contrib`. Assuming your
    upstream remote is named `upstream`, you can try the following commands:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>`
+   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
    - `git push -u upstream release/<release series>`
 
 4. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
@@ -107,30 +107,32 @@ Before the release, make sure there are no open release blockers in [core](https
 
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
-1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
+1. As of https://github.com/open-telemetry/opentelemetry-collector-releases/pull/684, sub-steps 1-4 below are now automated. Manually run GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option to commit the changes and allow GitHub bot to create a draft PR with changes from sub-steps 1-3 included. Alternatively, you can run the ['bump-versions.sh' script locally in the opentelemetry-collector-releases repo](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/.github/workflows/scripts/bump-versions.sh) with optional arguments for next version number(s) and whether to commit changes and create PR with GitHub CLI.
 
-2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
+   1. Update the `./distributions/**/manifest.yaml` files to include the new release version.
 
-3. Run `make chlog-update VERSION="${RELEASE_VERSION}"` with the version of the artifacts.
+   2. Update the builder version in `OTELCOL_BUILDER_VERSION` to the new release in the `Makefile`. While this might not be strictly necessary for every release, this is a good practice.
 
-4. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
+   3. Run `make chlog-update VERSION="${RELEASE_VERSION}"` with the version of the artifacts.
+
+   4. Create a pull request with the change and ensure the build completes successfully. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/pull/71).
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-5. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Prepare release" commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
    - `git checkout main && git fetch upstream && git rebase upstream/main`
 
-6. Create a tag for the new release version by running:
+3. Create a tag for the new release version by running:
    
-   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
+   ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-releases.git` in each command. ⚠️
    
    - `make push-tags TAG=v0.85.0`
 
-7. Wait for the new tag build to pass successfully.
+4. Wait for the new tag build to pass successfully.
 
-8. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
+5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
 
     1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
 
@@ -140,7 +142,7 @@ The last step of the release process creates artifacts for the new version of th
 
     4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
 
-9. Update the release notes with the CHANGELOG.md updates.
+6. Update the release notes with the CHANGELOG.md updates.
 
 ## Post-release steps
 
@@ -234,13 +236,12 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2024-12-02 | v0.115.0 | [@atoulme](https://github.com/atoulme)            |
-| 2024-12-16 | v0.116.0 | [@songy23](https://github.com/songy23)            |
-| 2025-01-06 | v0.117.0 | [@dmitryax](https://github.com/dmitryax)          |
-| 2025-01-20 | v0.118.0 | [@codeboten](https://github.com/codeboten)        |
 | 2025-02-03 | v0.119.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2025-02-17 | v0.120.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |
 | 2025-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |
-| 2025-03-31 | v0.123.0 | [@djaglowski](https://github.com/djaglowski)      |
-| 2025-04-14 | v0.124.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
+| 2025-03-31 | v0.123.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
+| 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)            |
+| 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)            |
+| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)          |
+| 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)        |

@@ -19,7 +19,7 @@ be automatically captured for each kind of pipeline component.
 
 ## Goals
 
-1. Define attributes that are (A) specific enough to describe individual component[_instances_](https://github.com/open-telemetry/opentelemetry-collector/issues/10534)
+1. Define attributes that are (A) specific enough to describe individual component [_instances_](https://github.com/open-telemetry/opentelemetry-collector/issues/10534)
    and (B) consistent enough for correlation across signals.
 2. Articulate a mechanism which enables us to _automatically_ capture telemetry from _all pipeline components_.
 3. Define specific metrics for each kind of pipeline component.
@@ -46,14 +46,14 @@ All signals should use the following attributes:
 
 - `otelcol.component.kind`: `exporter`
 - `otelcol.component.id`: The component ID
-- `otelcol.signal`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.signal`: `logs`, `metrics`, `traces`, `profiles`
 
 ### Connectors
 
 - `otelcol.component.kind`: `connector`
 - `otelcol.component.id`: The component ID
 - `otelcol.signal`: `logs`, `metrics` `traces`
-- `otelcol.signal.output`: `logs`, `metrics` `traces`, `profiles`
+- `otelcol.signal.output`: `logs`, `metrics`, `traces`, `profiles`
 
 Note: The `otelcol.signal`, `otelcol.signal.output`, or `otelcol.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
@@ -90,11 +90,20 @@ The location of these measurements can be described in terms of whether the data
 component to which the telemetry is attributed. Metrics which contain the term "produced" describe data which is emitted from the component,
 while metrics which contain the term "consumed" describe data which is received by the component.
 
-For both metrics, an `outcome` attribute with possible values `success` and `failure` should be automatically recorded, corresponding to
-whether or not the corresponding function call returned an error. Specifically, consumed measurements will be recorded with `outcome` as
-`failure` when a call from the previous component the `ConsumeX` function returns an error, and `success` otherwise. Likewise, produced
-measurements will be recorded with `outcome` as `failure` when a call to the next consumer's `ConsumeX` function returns an error, and
-`success` otherwise.
+For both metrics, an `outcome` attribute with possible values `success`, `failure`, and `refused` should be automatically recorded,
+based on whether the corresponding function call returned successfully, returned an internal error, or propagated an error from a
+component further downstream.
+
+Specifically, a call to `ConsumeX` is recorded with:
+- `outcome = success` if the call returns `nil`;
+- `outcome = failure` if the call returns a regular error;
+- `outcome = refused` if the call returns an error tagged as coming from downstream.
+After inspecting the error, the instrumentation layer should tag it as coming from downstream before returning it to the parent component.
+
+The upstream component which called `ConsumeX` will have this `outcome` attribute applied to its produced measurements, and the downstream
+component that `ConsumeX` was called on will have the attribute applied to its consumed measurements.
+
+Errors should be "tagged as coming from downstream" the same way permanent errors are currently handled: they can be wrapped in a `type downstreamError struct { err error }` wrapper error type, then checked with `errors.As`. Note that care may need to be taken when dealing with the `multiError`s returned by the `fanoutconsumer`. If PR #11085 introducing a single generic `Error` type is merged, an additional `downstream bool` field can be added to it to serve the same purpose instead.
 
 ```yaml
     otelcol.receiver.produced.items:
@@ -140,7 +149,7 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
         value_type: int
         monotonic: true
 
-   otelcol.receiver.produced.size:
+    otelcol.receiver.produced.size:
       enabled: false
       description: Size of items emitted from the receiver.
       unit: "By"
@@ -187,7 +196,7 @@ measurements will be recorded with `outcome` as `failure` when a call to the nex
 ### Auto-Instrumented Logs
 
 Metrics provide most of the observability we need but there are some gaps which logs can fill. Although metrics would describe the overall
-item counts, it is helpful in some cases to record more granular events. e.g. If a produced batch of 10,000 spans results in an error, but
+item counts, it is helpful in some cases to record more granular events. For example, if a produced batch of 10,000 spans results in an error, but
 100 batches of 100 spans succeed, this may be a matter of batch size that can be detected by analyzing logs, while the corresponding metric
 reports only that a 50% success rate is observed.
 

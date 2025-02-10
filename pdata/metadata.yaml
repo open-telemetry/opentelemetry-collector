@@ -1,0 +1,8 @@
+type: pdata
+
+status:
+  class: pkg
+  codeowners:
+    active:
+      - BogdanDrutu
+      - dmitryax

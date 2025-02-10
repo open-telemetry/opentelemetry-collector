@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -30,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
@@ -50,7 +48,7 @@ var (
 	dummyID       = component.MustNewID("dummy")
 	nonExistingID = component.MustNewID("nonexisting")
 	// Omit TracerProvider and MeterProvider in TelemetrySettings as otelhttp.Transport cannot be introspected
-	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop(), MetricsLevel: configtelemetry.LevelNone}
+	nilProvidersSettings = component.TelemetrySettings{Logger: zap.NewNop()}
 )
 
 func TestAllHTTPClientSettings(t *testing.T) {
@@ -516,45 +514,6 @@ func TestHTTPServerSettingsError(t *testing.T) {
 	}
 }
 
-func TestHTTPServerWarning(t *testing.T) {
-	tests := []struct {
-		name     string
-		settings ServerConfig
-		len      int
-	}{
-		{
-			settings: ServerConfig{
-				Endpoint: "0.0.0.0:0",
-			},
-			len: 1,
-		},
-		{
-			settings: ServerConfig{
-				Endpoint: "127.0.0.1:0",
-			},
-			len: 0,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			set := componenttest.NewNopTelemetrySettings()
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
-
-			_, err := tt.settings.ToServer(
-				context.Background(),
-				componenttest.NewNopHost(),
-				set,
-				http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					_, errWrite := fmt.Fprint(w, "tt")
-					assert.NoError(t, errWrite)
-				}))
-			require.NoError(t, err)
-			require.Len(t, observed.FilterLevelExact(zap.WarnLevel).All(), tt.len)
-		})
-	}
-}
-
 func TestHttpReception(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -954,12 +913,9 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing OPTIONS response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending OPTIONS to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing OPTIONS response body")
 
 	assert.Equal(t, wantStatus, resp.StatusCode)
 
@@ -983,15 +939,12 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 
 func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoError(t, err, "Error creating request")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending request to http server: %v", err)
-
-	err = resp.Body.Close()
-	if err != nil {
-		t.Errorf("Error closing response body, %v", err)
-	}
+	require.NoError(t, err, "Error sending request to http server")
+	require.NotNil(t, resp.Body)
+	require.NoError(t, resp.Body.Close(), "Error closing response body")
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 

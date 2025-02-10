@@ -190,10 +190,18 @@ telemetry:
         monotonic: true
     queue_length:
       enabled: true
+      stability:
+        level: alpha
       description: This metric is optional and therefore not initialized in NewTelemetryBuilder.
       extended_documentation: For example this metric only exists if feature A is enabled.
       unit: "{items}"
       optional: true
       gauge:
         async: true
+        value_type: int
+    queue_capacity:
+      enabled: true
+      description: Queue capacity - sync gauge example.
+      unit: "{items}"
+      gauge:
         value_type: int

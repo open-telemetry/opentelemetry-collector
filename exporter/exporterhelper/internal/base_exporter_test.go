@@ -33,14 +33,26 @@ var (
 	}()
 )
 
-func newNoopObsrepSender(*ObsReport) RequestSender {
-	return &BaseRequestSender{}
+type noopSender struct {
+	component.StartFunc
+	component.ShutdownFunc
+	SendFunc[internal.Request]
+}
+
+func newNoopExportSender() Sender[internal.Request] {
+	return &noopSender{SendFunc: func(ctx context.Context, req internal.Request) error {
+		return req.Export(ctx)
+	}}
+}
+
+func newNoopObsrepSender(_ *ObsReport, next Sender[internal.Request]) Sender[internal.Request] {
+	return &noopSender{SendFunc: next.Send}
 }
 
 func TestBaseExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -54,7 +66,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			want := errors.New("my error")
 			be, err := NewBaseExporter(
 				defaultSettings, defaultSignal, newNoopObsrepSender,
@@ -74,7 +86,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal, newNoopObsrepSender,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
@@ -98,7 +110,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 func TestBaseExporterLogging(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
@@ -106,7 +118,7 @@ func TestBaseExporterLogging(t *testing.T) {
 			rCfg.Enabled = false
 			bs, err := NewBaseExporter(set, defaultSignal, newNoopObsrepSender, WithRetry(rCfg))
 			require.NoError(t, err)
-			sendErr := bs.Send(context.Background(), newErrorRequest())
+			sendErr := bs.Send(context.Background(), newErrorRequest(errors.New("my error")))
 			require.Error(t, sendErr)
 
 			require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 1)

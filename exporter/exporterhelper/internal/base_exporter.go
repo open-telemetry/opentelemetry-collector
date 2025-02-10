@@ -21,18 +21,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
-	"exporter.UsePullingBasedExporterQueueBatcher",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.115.0"),
-	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
-)
-
-type ObsrepSenderFactory = func(obsrep *ObsReport) RequestSender
+type ObsrepSenderFactory = func(obsrep *ObsReport, next Sender[internal.Request]) Sender[internal.Request]
 
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
@@ -41,13 +33,10 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Signal pipeline.Signal
-
 	Marshaler   exporterqueue.Marshaler[internal.Request]
 	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
 
-	Set    exporter.Settings
-	Obsrep *ObsReport
+	Set exporter.Settings
 
 	// Message for the user to be added with an export failure message.
 	ExportFailureMessage string
@@ -55,99 +44,80 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	BatchSender   RequestSender
-	QueueSender   RequestSender
-	ObsrepSender  RequestSender
-	RetrySender   RequestSender
-	TimeoutSender *TimeoutSender // TimeoutSender is always initialized.
+	QueueSender  Sender[internal.Request]
+	ObsrepSender Sender[internal.Request]
+	RetrySender  Sender[internal.Request]
+
+	firstSender Sender[internal.Request]
 
 	ConsumerOptions []consumer.Option
 
-	queueCfg     exporterqueue.Config
+	timeoutCfg   TimeoutConfig
+	retryCfg     configretry.BackOffConfig
 	queueFactory exporterqueue.Factory[internal.Request]
-	BatcherCfg   exporterbatcher.Config
+	queueCfg     exporterqueue.Config
+	batcherCfg   exporterbatcher.Config
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewExporter(ObsReportSettings{ExporterID: set.ID, ExporterCreateSettings: set, Signal: signal})
+	obsReport, err := NewObsReport(ObsReportSettings{ExporterSettings: set, Signal: signal})
 	if err != nil {
 		return nil, err
 	}
 
 	be := &BaseExporter{
-		Signal: signal,
-
-		BatchSender:   &BaseRequestSender{},
-		QueueSender:   &BaseRequestSender{},
-		ObsrepSender:  osf(obsReport),
-		RetrySender:   &BaseRequestSender{},
-		TimeoutSender: &TimeoutSender{cfg: NewDefaultTimeoutConfig()},
-
-		Set:    set,
-		Obsrep: obsReport,
+		Set:          set,
+		timeoutCfg:   NewDefaultTimeoutConfig(),
+		queueFactory: exporterqueue.NewMemoryQueueFactory[internal.Request](),
 	}
 
 	for _, op := range options {
-		err = multierr.Append(err, op(be))
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	if be.queueCfg.Enabled {
-		q := be.queueFactory(
-			context.Background(),
-			exporterqueue.Settings{
-				Signal:           be.Signal,
-				ExporterSettings: be.Set,
-			},
-			be.queueCfg)
-		be.QueueSender = NewQueueSender(q, be.Set, be.queueCfg.NumConsumers, be.ExportFailureMessage, be.Obsrep, be.BatcherCfg)
-		for _, op := range options {
-			err = multierr.Append(err, op(be))
+		if err = op(be); err != nil {
+			return nil, err
 		}
 	}
 
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled ||
-		usePullingBasedExporterQueueBatcher.IsEnabled() && be.BatcherCfg.Enabled && !be.queueCfg.Enabled {
-		bs := NewBatchSender(be.BatcherCfg, be.Set)
-		be.BatchSender = bs
+	// TimeoutSender is always initialized.
+	be.firstSender = &TimeoutSender{cfg: be.timeoutCfg}
+	if be.retryCfg.Enabled {
+		be.RetrySender = newRetrySender(be.retryCfg, set, be.firstSender)
+		be.firstSender = be.RetrySender
 	}
 
-	if err != nil {
-		return nil, err
-	}
+	be.ObsrepSender = osf(obsReport, be.firstSender)
+	be.firstSender = be.ObsrepSender
 
-	be.connectSenders()
-
-	if bs, ok := be.BatchSender.(*BatchSender); ok {
-		// If queue sender is enabled assign to the batch sender the same number of workers.
-		if qs, ok := be.QueueSender.(*QueueSender); ok {
-			bs.concurrencyLimit = int64(qs.numConsumers)
-		}
-		// Batcher sender mutates the data.
+	if be.batcherCfg.Enabled {
+		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	}
+
+	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
+		qSet := exporterqueue.Settings{
+			Signal:           signal,
+			ExporterSettings: set,
+		}
+		be.QueueSender, err = NewQueueSender(be.queueFactory, qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
+		if err != nil {
+			return nil, err
+		}
+		be.firstSender = be.QueueSender
 	}
 
 	return be, nil
 }
 
-// send sends the request using the first sender in the chain.
+// Send sends the request using the first sender in the chain.
 func (be *BaseExporter) Send(ctx context.Context, req internal.Request) error {
-	err := be.QueueSender.Send(ctx, req)
+	// Have to read the number of items before sending the request since the request can
+	// be modified by the downstream components like the batcher.
+	itemsCount := req.ItemsCount()
+	err := be.firstSender.Send(ctx, req)
 	if err != nil {
 		be.Set.Logger.Error("Exporting failed. Rejecting data."+be.ExportFailureMessage,
-			zap.Error(err), zap.Int("rejected_items", req.ItemsCount()))
+			zap.Error(err), zap.Int("rejected_items", itemsCount))
 	}
 	return err
-}
-
-// connectSenders connects the senders in the predefined order.
-func (be *BaseExporter) connectSenders() {
-	be.QueueSender.SetNextSender(be.BatchSender)
-	be.BatchSender.SetNextSender(be.ObsrepSender)
-	be.ObsrepSender.SetNextSender(be.RetrySender)
-	be.RetrySender.SetNextSender(be.TimeoutSender)
 }
 
 func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
@@ -156,25 +126,29 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	// If no error then start the BatchSender.
-	if err := be.BatchSender.Start(ctx, host); err != nil {
-		return err
+	// Last start the queueSender.
+	if be.QueueSender != nil {
+		return be.QueueSender.Start(ctx, host)
 	}
 
-	// Last start the queueSender.
-	return be.QueueSender.Start(ctx, host)
+	return nil
 }
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
-	return multierr.Combine(
-		// First shutdown the retry sender, so the queue sender can flush the queue without retries.
-		be.RetrySender.Shutdown(ctx),
-		// Then shutdown the batch sender
-		be.BatchSender.Shutdown(ctx),
-		// Then shutdown the queue sender.
-		be.QueueSender.Shutdown(ctx),
-		// Last shutdown the wrapped exporter itself.
-		be.ShutdownFunc.Shutdown(ctx))
+	var err error
+
+	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
+	if be.RetrySender != nil {
+		err = multierr.Append(err, be.RetrySender.Shutdown(ctx))
+	}
+
+	// Then shutdown the queue sender.
+	if be.QueueSender != nil {
+		err = multierr.Append(err, be.QueueSender.Shutdown(ctx))
+	}
+
+	// Last shutdown the wrapped exporter itself.
+	return multierr.Append(err, be.ShutdownFunc.Shutdown(ctx))
 }
 
 // WithStart overrides the default Start function for an exporter.
@@ -199,7 +173,7 @@ func WithShutdown(shutdown component.ShutdownFunc) Option {
 // The default TimeoutConfig is 5 seconds.
 func WithTimeout(timeoutConfig TimeoutConfig) Option {
 	return func(o *BaseExporter) error {
-		o.TimeoutSender.cfg = timeoutConfig
+		o.timeoutCfg = timeoutConfig
 		return nil
 	}
 }
@@ -212,7 +186,7 @@ func WithRetry(config configretry.BackOffConfig) Option {
 			o.ExportFailureMessage += " Try enabling retry_on_failure config option to retry on retryable errors."
 			return nil
 		}
-		o.RetrySender = newRetrySender(config, o.Set)
+		o.retryCfg = config
 		return nil
 	}
 }
@@ -233,6 +207,7 @@ func WithQueue(config QueueConfig) Option {
 			Enabled:      config.Enabled,
 			NumConsumers: config.NumConsumers,
 			QueueSize:    config.QueueSize,
+			Blocking:     config.Blocking,
 		}
 		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
 			Marshaler:   o.Marshaler,
@@ -278,7 +253,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func WithBatcher(cfg exporterbatcher.Config) Option {
 	return func(o *BaseExporter) error {
-		o.BatcherCfg = cfg
+		o.batcherCfg = cfg
 		return nil
 	}
 }
@@ -292,7 +267,7 @@ func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
 	}
 }
 
-// withUnmarshaler is used to set the request unmarshaler for the new exporter helper.
+// WithUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
 func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
 	return func(o *BaseExporter) error {

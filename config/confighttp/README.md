@@ -26,6 +26,28 @@ README](../configtls/README.md).
 - `compression`: Compression type to use among `gzip`, `zstd`, `snappy`, `zlib`, `deflate`, and `lz4`.
   - look at the documentation for the server-side of the communication.
   - `none` will be treated as uncompressed, and any other inputs will cause an error.
+- `compression_params` : Configure advanced compression options
+  - `level`: Configure compression level for `compression` type
+  - The following are valid combinations of `compression` and `level`
+    - `gzip`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `zlib`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `deflate`
+      - BestSpeed: `1`
+      - BestCompression: `9`
+      - DefaultCompression: `-1`
+    - `zstd`
+      - SpeedFastest: `1`
+      - SpeedDefault: `3`
+      - SpeedBetterCompression: `6`
+      - SpeedBestCompression: `11`
+    - `snappy`
+      No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
@@ -52,7 +74,9 @@ exporter:
     headers:
       test1: "value1"
       "test 2": "value 2"
-    compression: zstd
+    compression: gzip
+    compression_params:
+      level: 1
     cookies:
       enabled: true
 ```

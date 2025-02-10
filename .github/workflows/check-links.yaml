@@ -10,8 +10,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
+permissions: read-all
+
+env:
+  # renovate: datasource=github-releases depName=tcort/markdown-link-check
+  MD_LINK_CHECK_VERSION: "3.12.2"
 
 jobs:
   changedfiles:
@@ -29,13 +32,13 @@ jobs:
       - name: Get changed files
         id: changes
         run: |
-            files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
-            
-            if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
-              files="**/*.md"
-            fi
+          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .md$ | xargs)
 
-            echo "files=$files" >> $GITHUB_OUTPUT
+          if [ -z "$files" ] && git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -q "package.json"; then
+            files="**/*.md"
+          fi
+
+          echo "files=$files" >> $GITHUB_OUTPUT
   check-links:
     runs-on: ubuntu-latest
     needs: changedfiles
@@ -46,13 +49,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install markdown-link-check
-        run: npm install
-
-      - name: Run markdown-link-check
-        run: |
-          npx --no -- markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            ${{needs.changedfiles.outputs.files}} \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        with:
+          args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"
+          failIfEmpty: false

@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -23,14 +22,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			qCfg := NewDefaultQueueConfig()
 			qCfg.NumConsumers = 1
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -41,7 +40,7 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 			ocs := be.ObsrepSender.(*observabilityConsumerSender)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-			firstMockR := newErrorRequest()
+			firstMockR := newErrorRequest(errors.New("transient error"))
 			ocs.run(func() {
 				// This is asynchronous so it should just enqueue, no errors expected.
 				require.NoError(t, be.Send(context.Background(), firstMockR))
@@ -54,11 +53,11 @@ func TestQueuedRetry_StopWhileWaiting(t *testing.T) {
 				require.NoError(t, be.Send(context.Background(), secondMockR))
 			})
 
-			require.LessOrEqual(t, 1, be.QueueSender.(*QueueSender).queue.Size())
+			require.LessOrEqual(t, int64(1), be.QueueSender.(*QueueSender).queue.Size())
 
 			require.NoError(t, be.Shutdown(context.Background()))
 
-			secondMockR.checkNumRequests(t, 1)
+			secondMockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 3)
 			ocs.checkDroppedItemsCount(t, 7)
 			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
@@ -95,7 +94,7 @@ func TestQueuedRetry_DoNotPreserveCancellation(t *testing.T) {
 			})
 			ocs.awaitAsyncProcessing()
 
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 2)
 			ocs.checkDroppedItemsCount(t, 0)
 			require.Zero(t, be.QueueSender.(*QueueSender).queue.Size())
@@ -229,7 +228,7 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 
 			require.Len(t, reqs, wantRequests)
 			for _, req := range reqs {
-				req.checkNumRequests(t, 1)
+				req.checkOneRequests(t)
 			}
 
 			ocs.checkSendItemsCount(t, 2*wantRequests)
@@ -242,49 +241,10 @@ func TestQueuedRetryHappyPath(t *testing.T) {
 	}
 }
 
-func TestQueuedRetry_QueueMetricsReported(t *testing.T) {
-	runTest := func(testName string, enableQueueBatcher bool) {
-		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			dataTypes := []pipeline.Signal{pipeline.SignalLogs, pipeline.SignalTraces, pipeline.SignalMetrics}
-			for _, dataType := range dataTypes {
-				tt, err := componenttest.SetupTelemetry(defaultID)
-				require.NoError(t, err)
-
-				qCfg := NewDefaultQueueConfig()
-				qCfg.NumConsumers = -1 // to make QueueMetricsReportedvery request go straight to the queue
-				rCfg := configretry.NewDefaultBackOffConfig()
-				set := exporter.Settings{ID: defaultID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}
-				be, err := NewBaseExporter(set, dataType, newObservabilityConsumerSender,
-					WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&mockRequest{})),
-					WithRetry(rCfg), WithQueue(qCfg))
-				require.NoError(t, err)
-				require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
-				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
-
-				for i := 0; i < 7; i++ {
-					require.NoError(t, be.Send(context.Background(), newErrorRequest()))
-				}
-				require.NoError(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
-					attribute.String(DataTypeKey, dataType.String())))
-
-				assert.NoError(t, be.Shutdown(context.Background()))
-				// metrics should be unregistered at shutdown to prevent memory leak
-				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_capacity", int64(defaultQueueSize)))
-				require.Error(t, tt.CheckExporterMetricGauge("otelcol_exporter_queue_size", int64(7),
-					attribute.String(DataTypeKey, dataType.String())))
-			}
-		})
-	}
-	runTest("enable_queue_batcher", true)
-	runTest("disable_queue_batcher", false)
-}
-
 func TestNoCancellationContext(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			deadline := time.Now().Add(1 * time.Second)
 			ctx, cancelFunc := context.WithDeadline(context.Background(), deadline)
 			cancelFunc()
@@ -308,17 +268,17 @@ func TestNoCancellationContext(t *testing.T) {
 func TestQueueConfig_Validate(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			qCfg := NewDefaultQueueConfig()
 			require.NoError(t, qCfg.Validate())
 
 			qCfg.QueueSize = 0
-			require.EqualError(t, qCfg.Validate(), "queue size must be positive")
+			require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
 
 			qCfg = NewDefaultQueueConfig()
 			qCfg.NumConsumers = 0
 
-			require.EqualError(t, qCfg.Validate(), "number of queue consumers must be positive")
+			require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
 
 			// Confirm Validate doesn't return error with invalid config when feature is disabled
 			qCfg.Enabled = false
@@ -365,7 +325,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
@@ -380,7 +340,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
 			ocs.awaitAsyncProcessing()
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			ocs.checkSendItemsCount(t, 0)
 			ocs.checkDroppedItemsCount(t, 2)
 			require.NoError(t, be.Shutdown(context.Background()))
@@ -395,7 +355,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 func TestQueueFailedRequestDropped(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
@@ -406,7 +366,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 			mockR := newMockRequest(2, errors.New("some error"))
 			require.NoError(t, be.Send(context.Background(), mockR))
 			require.NoError(t, be.Shutdown(context.Background()))
-			mockR.checkNumRequests(t, 1)
+			mockR.checkOneRequests(t)
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
 		})
@@ -419,7 +379,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			tt, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
 			t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
@@ -435,7 +395,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(nil),
+				storageID: storagetest.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -452,7 +412,7 @@ func TestQueuedRetryPersistenceEnabled(t *testing.T) {
 func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			storageError := errors.New("could not get storage client")
 			tt, err := componenttest.SetupTelemetry(defaultID)
 			require.NoError(t, err)
@@ -468,7 +428,7 @@ func TestQueuedRetryPersistenceEnabledStorageError(t *testing.T) {
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(storageError),
+				storageID: storagetest.NewMockStorageExtension(storageError),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -494,13 +454,13 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			rCfg.InitialInterval = time.Millisecond
 			rCfg.MaxElapsedTime = 0 // retry infinitely so shutdown can be triggered
 
-			mockReq := newErrorRequest()
+			mockReq := newErrorRequest(errors.New("transient error"))
 			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithMarshaler(mockRequestMarshaler),
 				WithUnmarshaler(mockRequestUnmarshaler(mockReq)), WithRetry(rCfg), WithQueue(qCfg))
 			require.NoError(t, err)
 
 			extensions := map[component.ID]component.Component{
-				storageID: queue.NewMockStorageExtension(nil),
+				storageID: storagetest.NewMockStorageExtension(nil),
 			}
 			host := &MockHost{Ext: extensions}
 
@@ -529,7 +489,7 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			})
 
 			// wait for the item to be consumed from the queue
-			replacedReq.checkNumRequests(t, 1)
+			replacedReq.checkOneRequests(t)
 		})
 	}
 	runTest("enable_queue_batcher", true)
@@ -539,15 +499,15 @@ func TestQueuedRetryPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueSenderNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			queue := queue.NewBoundedMemoryQueue[internal.Request](queue.MemoryQueueSettings[internal.Request]{})
+			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
 			set := exportertest.NewNopSettings()
-			obsrep, err := NewExporter(ObsReportSettings{
-				ExporterID:             exporterID,
-				ExporterCreateSettings: exportertest.NewNopSettings(),
-			})
+			set.ID = exporterID
+			qSet := exporterqueue.Settings{
+				Signal:           pipeline.SignalTraces,
+				ExporterSettings: set,
+			}
+			qs, err := NewQueueSender(exporterqueue.NewMemoryQueueFactory[internal.Request](), qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", noopSender{})
 			require.NoError(t, err)
-			qs := NewQueueSender(queue, set, 1, "", obsrep, exporterbatcher.NewDefaultConfig())
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
 	}

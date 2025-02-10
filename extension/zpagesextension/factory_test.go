@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -35,7 +36,9 @@ func TestFactoryCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	ext, err := create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	set := extensiontest.NewNopSettings()
+	set.ID = component.NewID(NewFactory().Type())
+	ext, err := create(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

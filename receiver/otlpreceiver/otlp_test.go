@@ -21,6 +21,9 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -592,7 +595,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
-	require.NoError(t, tt.CheckReceiverTraces("grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
+	assertReceiverTraces(t, tt, otlpReceiverID, "grpc", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
 }
 
 // TestOTLPReceiverHTTPTracesIngestTest checks that the HTTP trace receiver
@@ -674,14 +677,13 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 			errStatus := &spb.Status{}
 			require.NoError(t, proto.Unmarshal(respBytes, errStatus))
 			assert.Equal(t, ingestionState.expectedStatusCode, resp.StatusCode)
-			// nolint:gosec
-			assert.Equal(t, ingestionState.expectedCode, codes.Code(errStatus.Code))
+			assert.EqualValues(t, ingestionState.expectedCode, errStatus.Code)
 		}
 	}
 
 	require.Len(t, sink.AllTraces(), expectedReceivedBatches)
 
-	require.NoError(t, tt.CheckReceiverTraces("http", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs)))
+	assertReceiverTraces(t, tt, otlpReceiverID, "http", int64(expectedReceivedBatches), int64(expectedIngestionBlockedRPCs))
 }
 
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
@@ -1231,4 +1233,48 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 			require.Equal(t, allProfiles[0], data)
 		}
 	}
+}
+
+func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_spans",
+			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: accepted,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_spans",
+			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: refused,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }

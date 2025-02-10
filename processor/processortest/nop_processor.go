@@ -6,8 +6,6 @@ package processortest // import "go.opentelemetry.io/collector/processor/process
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,7 +20,7 @@ var nopType = component.MustNewType("nop")
 // NewNopSettings returns a new nop settings for Create* functions.
 func NewNopSettings() processor.Settings {
 	return processor.Settings{
-		ID:                component.NewIDWithName(nopType, uuid.NewString()),
+		ID:                component.NewID(nopType),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -24,11 +24,20 @@ type TelemetrySettings struct {
 	// MeterProvider that the factory can pass to other instrumented third-party libraries.
 	MeterProvider metric.MeterProvider
 
-	// MetricsLevel represents the configuration value set when the collector
-	// is configured. Components may use this level to decide whether it is
-	// appropriate to avoid computationally expensive calculations.
-	MetricsLevel configtelemetry.Level
-
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
+}
+
+func (ts *TelemetrySettings) LoggerWithout(fields ...string) *zap.Logger {
+	type coreWithout interface {
+		Without(fields ...string) zapcore.Core
+	}
+	if _, ok := ts.Logger.Core().(coreWithout); !ok {
+		return ts.Logger
+	}
+	return ts.Logger.WithOptions(
+		zap.WrapCore(func(from zapcore.Core) zapcore.Core {
+			return from.(coreWithout).Without(fields...)
+		}),
+	)
 }

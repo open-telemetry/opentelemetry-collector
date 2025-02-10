@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/httpprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/otelcol"
 )
 
@@ -25,6 +26,7 @@ func LoadConfig(fileName string, factories otelcol.Factories) (*otelcol.Config, 
 				yamlprovider.NewFactory(),
 				httpprovider.NewFactory(),
 			},
+			DefaultScheme: "env",
 		},
 	})
 	if err != nil {
@@ -39,5 +41,5 @@ func LoadConfigAndValidate(fileName string, factories otelcol.Factories) (*otelc
 	if err != nil {
 		return nil, err
 	}
-	return cfg, cfg.Validate()
+	return cfg, xconfmap.Validate(cfg)
 }

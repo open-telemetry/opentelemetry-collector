@@ -16,8 +16,6 @@ import (
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/balancer"
 	"google.golang.org/grpc/codes"
@@ -35,9 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/config/internal"
 	"go.opentelemetry.io/collector/extension/auth"
 )
 
@@ -49,7 +45,7 @@ var errMetadataNotFound = errors.New("no request metadata found")
 type KeepaliveClientConfig struct {
 	Time                time.Duration `mapstructure:"time"`
 	Timeout             time.Duration `mapstructure:"timeout"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
 // NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
@@ -70,32 +66,32 @@ type ClientConfig struct {
 	// The target to which the exporter is going to send traces or metrics,
 	// using the gRPC protocol. The valid syntax is described at
 	// https://github.com/grpc/grpc/blob/master/doc/naming.md.
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.Type `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// The keepalive parameters for gRPC client. See grpc.WithKeepaliveParams.
 	// (https://godoc.org/google.golang.org/grpc#WithKeepaliveParams).
-	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive"`
+	Keepalive *KeepaliveClientConfig `mapstructure:"keepalive,omitempty"`
 
 	// ReadBufferSize for gRPC client. See grpc.WithReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithReadBufferSize).
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
+	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
 
 	// WriteBufferSize for gRPC gRPC. See grpc.WithWriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WithWriteBufferSize).
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
+	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
 
 	// WaitForReady parameter configures client to wait for ready state before sending data.
 	// (https://github.com/grpc/grpc/blob/master/doc/wait-for-ready.md)
-	WaitForReady bool `mapstructure:"wait_for_ready"`
+	WaitForReady bool `mapstructure:"wait_for_ready,omitempty"`
 
 	// The headers associated with gRPC requests.
-	Headers map[string]configopaque.String `mapstructure:"headers"`
+	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Sets the balancer in grpclb_policy to discover the servers. Default is pick_first.
 	// https://github.com/grpc/grpc-go/blob/master/examples/features/load_balancing/README.md
@@ -103,10 +99,10 @@ type ClientConfig struct {
 
 	// WithAuthority parameter configures client to rewrite ":authority" header
 	// (godoc.org/google.golang.org/grpc#WithAuthority)
-	Authority string `mapstructure:"authority"`
+	Authority string `mapstructure:"authority,omitempty"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -114,15 +110,14 @@ func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		TLSSetting:   configtls.NewDefaultClientConfig(),
 		Keepalive:    NewDefaultKeepaliveClientConfig(),
-		Auth:         configauth.NewDefaultAuthentication(),
 		BalancerName: BalancerName(),
 	}
 }
 
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
-	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters"`
-	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy"`
+	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
+	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
 }
 
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
@@ -137,11 +132,11 @@ func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
 // The same default values as keepalive.ServerParameters are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#ServerParameters for details.
 type KeepaliveServerParameters struct {
-	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle"`
-	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age"`
-	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace"`
-	Time                  time.Duration `mapstructure:"time"`
-	Timeout               time.Duration `mapstructure:"timeout"`
+	MaxConnectionIdle     time.Duration `mapstructure:"max_connection_idle,omitempty"`
+	MaxConnectionAge      time.Duration `mapstructure:"max_connection_age,omitempty"`
+	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
+	Time                  time.Duration `mapstructure:"time,omitempty"`
+	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
 }
 
 // NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
@@ -153,8 +148,8 @@ func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
 // The same default values as keepalive.EnforcementPolicy are applicable and get applied by the server.
 // See https://godoc.org/google.golang.org/grpc/keepalive#EnforcementPolicy for details.
 type KeepaliveEnforcementPolicy struct {
-	MinTime             time.Duration `mapstructure:"min_time"`
-	PermitWithoutStream bool          `mapstructure:"permit_without_stream"`
+	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
+	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
 }
 
 // NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
@@ -169,38 +164,37 @@ type ServerConfig struct {
 
 	// Configures the protocol to use TLS.
 	// The default value is nil, which will cause the protocol to not use TLS.
-	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
+	TLSSetting *configtls.ServerConfig `mapstructure:"tls,omitempty"`
 
 	// MaxRecvMsgSizeMiB sets the maximum size (in MiB) of messages accepted by the server.
-	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib"`
+	MaxRecvMsgSizeMiB int `mapstructure:"max_recv_msg_size_mib,omitempty"`
 
 	// MaxConcurrentStreams sets the limit on the number of concurrent streams to each ServerTransport.
 	// It has effect only for streaming RPCs.
-	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams"`
+	MaxConcurrentStreams uint32 `mapstructure:"max_concurrent_streams,omitempty,omitempty"`
 
 	// ReadBufferSize for gRPC server. See grpc.ReadBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#ReadBufferSize).
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
+	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
 
 	// WriteBufferSize for gRPC server. See grpc.WriteBufferSize.
 	// (https://godoc.org/google.golang.org/grpc#WriteBufferSize).
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
+	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
 
 	// Keepalive anchor for all the settings related to keepalive.
-	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive"`
+	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
 
 	// Auth for this receiver
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
-	IncludeMetadata bool `mapstructure:"include_metadata"`
+	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 }
 
 // NewDefaultServerConfig returns a new instance of ServerConfig with default values.
 func NewDefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		Keepalive: NewDefaultKeepaliveServerConfig(),
-		Auth:      configauth.NewDefaultAuthentication(),
 	}
 }
 
@@ -339,7 +333,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -404,11 +398,6 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
 ) ([]grpc.ServerOption, error) {
-	switch gss.NetAddr.Transport {
-	case confignet.TransportTypeTCP, confignet.TransportTypeTCP4, confignet.TransportTypeTCP6, confignet.TransportTypeUDP, confignet.TransportTypeUDP4, confignet.TransportTypeUDP6:
-		internal.WarnOnUnspecifiedHost(settings.Logger, gss.NetAddr.Endpoint)
-	}
-
 	var opts []grpc.ServerOption
 
 	if gss.TLSSetting != nil {
@@ -483,7 +472,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
-		otelgrpc.WithMeterProvider(getLeveledMeterProvider(settings)),
+		otelgrpc.WithMeterProvider(settings.MeterProvider),
 	}
 
 	// Enable OpenTelemetry observability plugin.
@@ -576,11 +565,4 @@ func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.Stre
 	}
 
 	return handler(srv, wrapServerStream(ctx, stream))
-}
-
-func getLeveledMeterProvider(settings component.TelemetrySettings) metric.MeterProvider {
-	if configtelemetry.LevelDetailed <= settings.MetricsLevel {
-		return settings.MeterProvider
-	}
-	return noop.MeterProvider{}
 }
