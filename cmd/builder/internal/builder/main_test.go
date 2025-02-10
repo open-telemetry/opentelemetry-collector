@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"golang.org/x/mod/modfile"
 )
 
@@ -271,17 +270,6 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
 				cfg.Distribution.BuildTags = "customTag"
-				return cfg
-			},
-		},
-		{
-			name: "Debug Compilation",
-			cfgBuilder: func(t *testing.T) *Config {
-				cfg := newTestConfig(t)
-				cfg.Distribution.OutputPath = t.TempDir()
-				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.Logger = zap.NewNop()
-				cfg.Distribution.DebugCompilation = true
 				return cfg
 			},
 		},
