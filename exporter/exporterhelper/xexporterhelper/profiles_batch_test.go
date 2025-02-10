@@ -145,3 +145,4 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	}
 	assert.Len(t, merged, 2)
 }
+
