@@ -4,13 +4,15 @@ package metadatatest
 
 import (
 	"context"
-	"go.opentelemetry.io/otel/metric"
 	"testing"
 
+	"go.opentelemetry.io/otel/metric"
+
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver/internal/metadata"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 )
