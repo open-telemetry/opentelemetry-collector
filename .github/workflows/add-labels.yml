@@ -7,7 +7,7 @@ jobs:
   add-labels:
     if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

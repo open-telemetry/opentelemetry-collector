@@ -5,7 +5,7 @@ on:
 
 jobs:
   ping-owners-on-new-issue:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
       - uses: actions/checkout@v4
