@@ -70,8 +70,17 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 		}
 	}
 
-	// TimeoutSender is always initialized.
-	be.firstSender = &TimeoutSender{cfg: be.timeoutCfg}
+	// Consumer Sender is always initialized.
+	be.firstSender = newSender(func(ctx context.Context, req request.Request) error {
+		return req.Export(ctx)
+	})
+
+	// Next setup the timeout Sender since we want the timeout to control only the export functionality.
+	// Only initialize if not explicitly disabled.
+	if be.timeoutCfg.Timeout != 0 {
+		be.firstSender = newTimeoutSender(be.timeoutCfg, be.firstSender)
+	}
+
 	if be.retryCfg.Enabled {
 		be.RetrySender = newRetrySender(be.retryCfg, set, be.firstSender)
 		be.firstSender = be.RetrySender
