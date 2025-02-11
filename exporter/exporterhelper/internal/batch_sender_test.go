@@ -16,8 +16,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 )
 
 func TestBatchSender_Merge(t *testing.T) {

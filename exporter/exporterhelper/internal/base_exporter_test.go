@@ -18,10 +18,10 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -39,11 +39,11 @@ var (
 type noopSender struct {
 	component.StartFunc
 	component.ShutdownFunc
-	SendFunc[internal.Request]
+	SendFunc[request.Request]
 }
 
-func newNoopExportSender() Sender[internal.Request] {
-	return &noopSender{SendFunc: func(ctx context.Context, req internal.Request) error {
+func newNoopExportSender() Sender[request.Request] {
+	return &noopSender{SendFunc: func(ctx context.Context, req request.Request) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err() // Returns the cancellation error
@@ -103,7 +103,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
 				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
-				WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
+				WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[request.Request]()))
 			require.Error(t, err)
 		})
 	}
@@ -123,7 +123,7 @@ func TestBaseExporterLogging(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.Enabled = false
 			bs, err := NewBaseExporter(set, defaultSignal,
-				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()),
+				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[request.Request]()),
 				WithBatcher(exporterbatcher.NewDefaultConfig()),
 				WithRetry(rCfg))
 			require.NoError(t, err)
@@ -172,7 +172,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
-					return WithRequestQueue(qs, exporterqueue.NewMemoryQueueFactory[internal.Request]())
+					return WithRequestQueue(qs, exporterqueue.NewMemoryQueueFactory[request.Request]())
 				}(),
 				func() Option {
 					bs := exporterbatcher.NewDefaultConfig()
