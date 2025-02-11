@@ -36,21 +36,15 @@ var (
 	}()
 )
 
-type noopSender struct {
-	component.StartFunc
-	component.ShutdownFunc
-	SendFunc[request.Request]
-}
-
 func newNoopExportSender() Sender[request.Request] {
-	return &noopSender{SendFunc: func(ctx context.Context, req request.Request) error {
+	return newSender(func(ctx context.Context, req request.Request) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err() // Returns the cancellation error
 		default:
 			return req.Export(ctx)
 		}
-	}}
+	})
 }
 
 func TestBaseExporter(t *testing.T) {
