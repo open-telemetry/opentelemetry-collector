@@ -126,7 +126,7 @@ func NewLogsRequest(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, internal.NewObsReportSender, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, options...)
 	if err != nil {
 		return nil, err
 	}

@@ -126,7 +126,7 @@ func NewMetricsRequest(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, internal.NewObsReportSender, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, options...)
 	if err != nil {
 		return nil, err
 	}

@@ -364,6 +364,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	// Configure all components that we want to use elsewhere in these tests.
 	// This ensures the resulting go.mod file has maximum coverage of modules
 	// that exist in the Core repository.
+	usedNames := make(map[string]int)
 	cfg.Exporters, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/debugexporter v1.9999.9999",
@@ -377,7 +378,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Receivers, err = parseModules([]Module{
 		{
@@ -386,13 +387,13 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Extensions, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/extension/zpagesextension v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Processors, err = parseModules([]Module{
 		{
@@ -401,7 +402,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/processor/memorylimiterprocessor v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 
 	require.NoError(t, cfg.Validate())
