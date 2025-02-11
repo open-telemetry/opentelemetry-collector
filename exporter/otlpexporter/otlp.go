@@ -91,7 +91,7 @@ func (e *baseExporter) shutdown(context.Context) error {
 
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
-	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.traceExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.metricExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
-	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.logExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -139,7 +139,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 
 func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
 	req := pprofileotlp.NewExportRequestFromProfiles(td)
-	resp, respErr := e.profileExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.profileExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
@@ -151,13 +151,6 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 		)
 	}
 	return nil
-}
-
-func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
-	}
-	return ctx
 }
 
 func processError(err error) error {

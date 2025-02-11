@@ -30,11 +30,9 @@ type TelemetryBuilder struct {
 	registrations                 []metric.Registration
 	BatchSizeTriggerSend          metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes metric.Int64ObservableCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
-	QueueCapacity                        metric.Int64Gauge
-	QueueLength                          metric.Int64ObservableGauge
-	RequestDuration                      metric.Float64Histogram
+	QueueCapacity                 metric.Int64Gauge
+	QueueLength                   metric.Int64ObservableGauge
+	RequestDuration               metric.Float64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -118,13 +116,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessRuntimeTotalAllocBytes != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
 		"otelcol_queue_capacity",
 		metric.WithDescription("Queue capacity - sync gauge example."),

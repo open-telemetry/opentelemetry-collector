@@ -32,9 +32,7 @@ type TelemetryBuilder struct {
 	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
 	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
 	ProcessorBatchMetadataCardinality  metric.Int64ObservableUpDownCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessorBatchMetadataCardinality func(context.Context, metric.Observer) error
-	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
+	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -117,13 +115,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{combinations}"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessorBatchMetadataCardinality != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessorBatchMetadataCardinality, builder.ProcessorBatchMetadataCardinality)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_processor_batch_timeout_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
