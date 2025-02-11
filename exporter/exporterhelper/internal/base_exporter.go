@@ -19,8 +19,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
-	"go.opentelemetry.io/collector/exporter/internal"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -31,8 +31,8 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Marshaler   exporterqueue.Marshaler[internal.Request]
-	Unmarshaler exporterqueue.Unmarshaler[internal.Request]
+	Marshaler   exporterqueue.Marshaler[request.Request]
+	Unmarshaler exporterqueue.Unmarshaler[request.Request]
 
 	Set exporter.Settings
 
@@ -42,17 +42,17 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	QueueSender  Sender[internal.Request]
-	ObsrepSender Sender[internal.Request]
-	RetrySender  Sender[internal.Request]
+	QueueSender  Sender[request.Request]
+	ObsrepSender Sender[request.Request]
+	RetrySender  Sender[request.Request]
 
-	firstSender Sender[internal.Request]
+	firstSender Sender[request.Request]
 
 	ConsumerOptions []consumer.Option
 
 	timeoutCfg   TimeoutConfig
 	retryCfg     configretry.BackOffConfig
-	queueFactory exporterqueue.Factory[internal.Request]
+	queueFactory exporterqueue.Factory[request.Request]
 	queueCfg     exporterqueue.Config
 	batcherCfg   exporterbatcher.Config
 }
@@ -61,7 +61,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	be := &BaseExporter{
 		Set:          set,
 		timeoutCfg:   NewDefaultTimeoutConfig(),
-		queueFactory: exporterqueue.NewMemoryQueueFactory[internal.Request](),
+		queueFactory: exporterqueue.NewMemoryQueueFactory[request.Request](),
 	}
 
 	for _, op := range options {
@@ -105,7 +105,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 }
 
 // Send sends the request using the first sender in the chain.
-func (be *BaseExporter) Send(ctx context.Context, req internal.Request) error {
+func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
 	itemsCount := req.ItemsCount()
@@ -206,7 +206,7 @@ func WithQueue(config QueueConfig) Option {
 			QueueSize:    config.QueueSize,
 			Blocking:     config.Blocking,
 		}
-		o.queueFactory = exporterqueue.NewPersistentQueueFactory[internal.Request](config.StorageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+		o.queueFactory = exporterqueue.NewPersistentQueueFactory[request.Request](config.StorageID, exporterqueue.PersistentQueueSettings[request.Request]{
 			Marshaler:   o.Marshaler,
 			Unmarshaler: o.Unmarshaler,
 		})
@@ -218,7 +218,7 @@ func WithQueue(config QueueConfig) Option {
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[internal.Request]) Option {
+func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		if o.Marshaler != nil || o.Unmarshaler != nil {
 			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
@@ -257,7 +257,7 @@ func WithBatcher(cfg exporterbatcher.Config) Option {
 
 // WithMarshaler is used to set the request marshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
-func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
+func WithMarshaler(marshaler exporterqueue.Marshaler[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		o.Marshaler = marshaler
 		return nil
@@ -266,7 +266,7 @@ func WithMarshaler(marshaler exporterqueue.Marshaler[internal.Request]) Option {
 
 // WithUnmarshaler is used to set the request unmarshaler for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
-func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[internal.Request]) Option {
+func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
 		return nil

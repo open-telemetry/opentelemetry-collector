@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 // TimeoutConfig for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -41,7 +41,7 @@ type TimeoutSender struct {
 	cfg TimeoutConfig
 }
 
-func (ts *TimeoutSender) Send(ctx context.Context, req internal.Request) error {
+func (ts *TimeoutSender) Send(ctx context.Context, req request.Request) error {
 	// TODO: Remove this by avoiding to create the timeout sender if timeout is 0.
 	if ts.cfg.Timeout == 0 {
 		return req.Export(ctx)

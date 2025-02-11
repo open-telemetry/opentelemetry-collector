@@ -18,10 +18,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -89,7 +89,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 	tests := []struct {
 		name string
 		qCfg exporterqueue.Config
-		qf   exporterqueue.Factory[internal.Request]
+		qf   exporterqueue.Factory[request.Request]
 	}{
 		{
 			name: "WithRequestQueue/MemoryQueueFactory",
@@ -98,7 +98,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 				QueueSize:    10,
 				NumConsumers: 1,
 			},
-			qf: exporterqueue.NewMemoryQueueFactory[internal.Request](),
+			qf: exporterqueue.NewMemoryQueueFactory[request.Request](),
 		},
 		{
 			name: "WithRequestQueue/PersistentQueueFactory",
@@ -107,14 +107,14 @@ func TestQueueBatchHappyPath(t *testing.T) {
 				QueueSize:    10,
 				NumConsumers: 1,
 			},
-			qf: exporterqueue.NewPersistentQueueFactory[internal.Request](nil, exporterqueue.PersistentQueueSettings[internal.Request]{}),
+			qf: exporterqueue.NewPersistentQueueFactory[request.Request](nil, exporterqueue.PersistentQueueSettings[request.Request]{}),
 		},
 	}
 
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name string
 		qCfg exporterqueue.Config
-		qf   exporterqueue.Factory[internal.Request]
+		qf   exporterqueue.Factory[request.Request]
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
@@ -183,7 +183,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 			logger, observed := observer.New(zap.ErrorLevel)
 			qSet.ExporterSettings.Logger = zap.New(logger)
 			be, err := NewQueueSender(
-				exporterqueue.NewMemoryQueueFactory[internal.Request](),
+				exporterqueue.NewMemoryQueueFactory[request.Request](),
 				qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", newNoopExportSender())
 
 			require.NoError(t, err)
@@ -209,7 +209,7 @@ func TestQueueBatchPersistenceEnabled(t *testing.T) {
 			}
 			storageID := component.MustNewIDWithName("file_storage", "storage")
 			be, err := NewQueueSender(
-				exporterqueue.NewPersistentQueueFactory[internal.Request](&storageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+				exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
 					Marshaler:   mockRequestMarshaler,
 					Unmarshaler: mockRequestUnmarshaler(&requesttest.FakeRequest{}),
 				}),
@@ -243,7 +243,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 			}
 			storageID := component.MustNewIDWithName("file_storage", "storage")
 			be, err := NewQueueSender(
-				exporterqueue.NewPersistentQueueFactory[internal.Request](&storageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+				exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
 					Marshaler:   mockRequestMarshaler,
 					Unmarshaler: mockRequestUnmarshaler(&requesttest.FakeRequest{}),
 				}),
@@ -284,7 +284,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			storageID := component.MustNewIDWithName("file_storage", "storage")
 			mockReq := newErrorRequest(errors.New("transient error"))
 			be, err := NewQueueSender(
-				exporterqueue.NewPersistentQueueFactory[internal.Request](&storageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+				exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
 					Marshaler:   mockRequestMarshaler,
 					Unmarshaler: mockRequestUnmarshaler(mockReq),
 				}),
@@ -314,7 +314,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 			sink := requesttest.NewSink()
 			replacedReq := &requesttest.FakeRequest{Items: 7, Sink: sink}
 			be, err = NewQueueSender(
-				exporterqueue.NewPersistentQueueFactory[internal.Request](&storageID, exporterqueue.PersistentQueueSettings[internal.Request]{
+				exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
 					Marshaler:   mockRequestMarshaler,
 					Unmarshaler: mockRequestUnmarshaler(replacedReq),
 				}),
@@ -346,7 +346,7 @@ func TestQueueBatchNoStartShutdown(t *testing.T) {
 				Signal:           pipeline.SignalTraces,
 				ExporterSettings: set,
 			}
-			qs, err := NewQueueSender(exporterqueue.NewMemoryQueueFactory[internal.Request](), qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
+			qs, err := NewQueueSender(exporterqueue.NewMemoryQueueFactory[request.Request](), qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
 			require.NoError(t, err)
 			assert.NoError(t, qs.Shutdown(context.Background()))
 		})
@@ -360,5 +360,5 @@ func newQueueBatchExporter(qCfg exporterqueue.Config, bCfg exporterbatcher.Confi
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 	}
-	return NewQueueSender(exporterqueue.NewMemoryQueueFactory[internal.Request](), qSet, qCfg, bCfg, "", newNoopExportSender())
+	return NewQueueSender(exporterqueue.NewMemoryQueueFactory[request.Request](), qSet, qCfg, bCfg, "", newNoopExportSender())
 }
