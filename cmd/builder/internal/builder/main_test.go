@@ -40,7 +40,6 @@ require (
 var replaceModules = []string{
 	"",
 	"/component",
-	"/internal/telemetry/componentattribute",
 	"/component/componentstatus",
 	"/component/componenttest",
 	"/client",
