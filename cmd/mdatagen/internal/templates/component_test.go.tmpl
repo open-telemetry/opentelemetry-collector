@@ -16,9 +16,7 @@ import (
 	{{- end }}
 
 	"github.com/stretchr/testify/require"
-	{{- if and (not (and .Tests.SkipLifecycle .Tests.SkipShutdown)) (not isExtension) }}
 	"go.opentelemetry.io/collector/component"
-	{{- end }}
 	"go.opentelemetry.io/collector/component/componenttest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -133,7 +131,7 @@ func TestComponentLifecycle(t *testing.T) {
 				switch tt.name {
 				case "logs":
 					e, ok := c.(exporter.Logs)
-					require.True(t, ok)				
+					require.True(t, ok)
 					logs := generateLifecycleTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
