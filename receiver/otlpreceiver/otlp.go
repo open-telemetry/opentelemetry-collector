@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -30,7 +32,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
@@ -168,7 +169,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 
 	opts := []confighttp.ToServerOption{
 		confighttp.WithErrorHandler(errorHandler),
-		xconfighttp.WithOtelHTTPOptions(otelhttp.WithSpanNameFormatter(func(operation string, req *http.Request) string {
+		xconfighttp.WithOtelHTTPOptions(otelhttp.WithSpanNameFormatter(func(_ string, req *http.Request) string {
 			return r.settings.ID.String() + ":" + req.URL.Path
 		})),
 	}
