@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +15,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -174,50 +171,4 @@ func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSize
 
 func newErrorRequest(err error) internal.Request {
 	return &mockErrorRequest{err: err}
-}
-
-type observabilityConsumerSender struct {
-	component.StartFunc
-	component.ShutdownFunc
-	waitGroup         *sync.WaitGroup
-	sentItemsCount    *atomic.Int64
-	droppedItemsCount *atomic.Int64
-	next              Sender[internal.Request]
-}
-
-func newObservabilityConsumerSender(_ *ObsReport, next Sender[internal.Request]) Sender[internal.Request] {
-	return &observabilityConsumerSender{
-		waitGroup:         new(sync.WaitGroup),
-		droppedItemsCount: &atomic.Int64{},
-		sentItemsCount:    &atomic.Int64{},
-		next:              next,
-	}
-}
-
-func (ocs *observabilityConsumerSender) Send(ctx context.Context, req internal.Request) error {
-	err := ocs.next.Send(ctx, req)
-	if err != nil {
-		ocs.droppedItemsCount.Add(int64(req.ItemsCount()))
-	} else {
-		ocs.sentItemsCount.Add(int64(req.ItemsCount()))
-	}
-	ocs.waitGroup.Done()
-	return err
-}
-
-func (ocs *observabilityConsumerSender) run(fn func()) {
-	ocs.waitGroup.Add(1)
-	fn()
-}
-
-func (ocs *observabilityConsumerSender) awaitAsyncProcessing() {
-	ocs.waitGroup.Wait()
-}
-
-func (ocs *observabilityConsumerSender) checkSendItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, ocs.sentItemsCount.Load())
-}
-
-func (ocs *observabilityConsumerSender) checkDroppedItemsCount(t *testing.T, want int) {
-	assert.EqualValues(t, want, ocs.droppedItemsCount.Load())
 }

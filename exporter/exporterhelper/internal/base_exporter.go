@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-type ObsrepSenderFactory = func(obsrep *ObsReport, next Sender[internal.Request]) Sender[internal.Request]
-
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
 
@@ -59,12 +57,7 @@ type BaseExporter struct {
 	batcherCfg   exporterbatcher.Config
 }
 
-func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSenderFactory, options ...Option) (*BaseExporter, error) {
-	obsReport, err := NewObsReport(ObsReportSettings{ExporterSettings: set, Signal: signal})
-	if err != nil {
-		return nil, err
-	}
-
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...Option) (*BaseExporter, error) {
 	be := &BaseExporter{
 		Set:          set,
 		timeoutCfg:   NewDefaultTimeoutConfig(),
@@ -72,7 +65,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 	}
 
 	for _, op := range options {
-		if err = op(be); err != nil {
+		if err := op(be); err != nil {
 			return nil, err
 		}
 	}
@@ -84,7 +77,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, osf ObsrepSe
 		be.firstSender = be.RetrySender
 	}
 
-	be.ObsrepSender = osf(obsReport, be.firstSender)
+	var err error
+	be.ObsrepSender, err = newObsReportSender(set, signal, be.firstSender)
+	if err != nil {
+		return nil, err
+	}
 	be.firstSender = be.ObsrepSender
 
 	if be.batcherCfg.Enabled {
