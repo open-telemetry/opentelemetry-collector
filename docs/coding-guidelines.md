@@ -100,8 +100,8 @@ To keep naming patterns consistent across the project, enumeration patterns are 
 When representing optional fields in the configuration, we distinguish two cases:
 1. For scalars (e.g. `int`, `string`, `bool`, `time.Duration`...), the zero value of the base type
    is used to represent the absence of the field. The default value for this field may be different
-   from the zero value, so, when using the Go API you MUST follow the guidance on the [Default
-   Configuration] section.
+   from the zero value, so, when using the Go API you MUST follow the guidance on the "Default
+   Configuration" section below.
 2. For struct fields, you may use a pointer to struct to represent an optional sections.
 
 ## Recommended Libraries / Defaults
