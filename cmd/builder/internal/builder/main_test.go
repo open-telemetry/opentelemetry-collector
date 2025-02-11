@@ -48,6 +48,7 @@ var replaceModules = []string{
 	"/config/configcompression",
 	"/config/configgrpc",
 	"/config/confighttp",
+	"/config/confighttp/xconfighttp",
 	"/config/confignet",
 	"/config/configopaque",
 	"/config/configretry",

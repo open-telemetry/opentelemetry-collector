@@ -47,6 +47,7 @@ replaces:
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
   - go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
   - go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+  - go.opentelemetry.io/collector/config/confighttp/xconfighttp => ../../config/confighttp/xconfighttp
   - go.opentelemetry.io/collector/config/confignet => ../../config/confignet
   - go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
   - go.opentelemetry.io/collector/config/configretry => ../../config/configretry
