@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/confighttp/xconfighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -29,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/profiles"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/trace"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // otlpReceiver is the type that exposes Trace and Metrics reception.
@@ -164,8 +166,15 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		})
 	}
 
+	opts := []confighttp.ToServerOption{
+		confighttp.WithErrorHandler(errorHandler),
+		xconfighttp.WithOtelHTTPOptions(otelhttp.WithSpanNameFormatter(func(operation string, req *http.Request) string {
+			return r.settings.ID.String() + ":" + req.URL.Path
+		})),
+	}
+
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, opts...); err != nil {
 		return err
 	}
 

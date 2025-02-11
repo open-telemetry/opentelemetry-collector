@@ -83,6 +83,7 @@ require (
 	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
+	go.opentelemetry.io/collector/config/confighttp/xconfighttp v0.119.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.119.0 // indirect
@@ -147,6 +148,8 @@ replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgr
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/confighttp/xconfighttp => ../../config/confighttp/xconfighttp
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 

@@ -14,6 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.119.0
 	go.opentelemetry.io/collector/config/configgrpc v0.119.0
 	go.opentelemetry.io/collector/config/confighttp v0.119.0
+	go.opentelemetry.io/collector/config/confighttp/xconfighttp v0.119.0
 	go.opentelemetry.io/collector/config/confignet v1.25.0
 	go.opentelemetry.io/collector/config/configtls v1.25.0
 	go.opentelemetry.io/collector/confmap v1.25.0
@@ -29,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.119.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.119.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.119.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.uber.org/goleak v1.3.0
@@ -67,7 +69,6 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
@@ -89,6 +90,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../../config/configau
 replace go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/confighttp/xconfighttp => ../../config/confighttp/xconfighttp
 
 replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
 
