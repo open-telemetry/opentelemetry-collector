@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-func setFeatureGateForTest(tb testing.TB, gate *featuregate.Gate, enabled bool) func() {
+func setFeatureGateForTest(tb testing.TB, gate *featuregate.Gate, enabled bool) {
 	originalValue := gate.IsEnabled()
 	require.NoError(tb, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
-	return func() {
+	tb.Cleanup(func() {
 		require.NoError(tb, featuregate.GlobalRegistry().Set(gate.ID(), originalValue))
-	}
+	})
 }
