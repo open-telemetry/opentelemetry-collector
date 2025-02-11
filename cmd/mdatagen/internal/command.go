@@ -185,9 +185,6 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return false
 				},
-				"getModule": func() string {
-					return md.ScopeName
-				},
 				"stringsJoin":  strings.Join,
 				"stringsSplit": strings.Split,
 				"userLinks": func(elems []string) []string {
