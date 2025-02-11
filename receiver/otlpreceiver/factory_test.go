@@ -9,7 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -35,7 +40,13 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
+	core, observer := observer.New(zapcore.DebugLevel)
+	attrs := attribute.NewSet(
+		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
+		attribute.String(componentattribute.ComponentIDKey, "otlp"),
+	)
 	creationSet := receivertest.NewNopSettings()
+	creationSet.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -55,6 +66,17 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, mReceiver)
 	assert.Same(t, tReceiver, lReceiver)
 	assert.Same(t, tReceiver, pReceiver)
+
+	var createLoggerCount int
+	for _, log := range observer.All() {
+		if log.Message == "created signal-agnostic logger" {
+			createLoggerCount++
+			require.Len(t, log.Context, 1)
+			assert.Equal(t, componentattribute.ComponentIDKey, log.Context[0].Key)
+			assert.Equal(t, "otlp", log.Context[0].String)
+		}
+	}
+	assert.Equal(t, 1, createLoggerCount)
 }
 
 func TestCreateTraces(t *testing.T) {

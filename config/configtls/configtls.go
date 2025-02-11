@@ -33,48 +33,48 @@ type Config struct {
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
-	CAFile string `mapstructure:"ca_file"`
+	CAFile string `mapstructure:"ca_file,omitempty"`
 
 	// In memory PEM encoded cert. (optional)
-	CAPem configopaque.String `mapstructure:"ca_pem"`
+	CAPem configopaque.String `mapstructure:"ca_pem,omitempty"`
 
 	// If true, load system CA certificates pool in addition to the certificates
 	// configured in this struct.
-	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool,omitempty"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
-	CertFile string `mapstructure:"cert_file"`
+	CertFile string `mapstructure:"cert_file,omitempty"`
 
 	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
-	CertPem configopaque.String `mapstructure:"cert_pem"`
+	CertPem configopaque.String `mapstructure:"cert_pem,omitempty"`
 
 	// Path to the TLS key to use for TLS required connections. (optional)
-	KeyFile string `mapstructure:"key_file"`
+	KeyFile string `mapstructure:"key_file,omitempty"`
 
 	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
-	KeyPem configopaque.String `mapstructure:"key_pem"`
+	KeyPem configopaque.String `mapstructure:"key_pem,omitempty"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
 	// If not set, TLS 1.2 will be used. (optional)
-	MinVersion string `mapstructure:"min_version"`
+	MinVersion string `mapstructure:"min_version,omitempty"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
 	// If not set, refer to crypto/tls for defaults. (optional)
-	MaxVersion string `mapstructure:"max_version"`
+	MaxVersion string `mapstructure:"max_version,omitempty"`
 
 	// CipherSuites is a list of TLS cipher suites that the TLS transport can use.
 	// If left blank, a safe default list is used.
 	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
-	CipherSuites []string `mapstructure:"cipher_suites"`
+	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
-	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
 
 	// contains the elliptic curves that will be used in
 	// an ECDHE handshake, in preference order
 	// Defaults to empty list and "crypto/tls" defaults are used, internally.
-	CurvePreferences []string `mapstructure:"curve_preferences"`
+	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -95,13 +95,13 @@ type ClientConfig struct {
 	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information.
 	// (optional, default false)
-	Insecure bool `mapstructure:"insecure"`
+	Insecure bool `mapstructure:"insecure,omitempty"`
 	// InsecureSkipVerify will enable TLS but not verify the certificate.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
 	// ServerName requested by client for virtual hosting.
 	// This sets the ServerName in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
-	ServerName string `mapstructure:"server_name_override"`
+	ServerName string `mapstructure:"server_name_override,omitempty"`
 }
 
 // NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
@@ -123,11 +123,11 @@ type ServerConfig struct {
 	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
 	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
-	ClientCAFile string `mapstructure:"client_ca_file"`
+	ClientCAFile string `mapstructure:"client_ca_file,omitempty"`
 
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
-	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
 }
 
 // NewDefaultServerConfig creates a new TLSServerSetting with any default values set.

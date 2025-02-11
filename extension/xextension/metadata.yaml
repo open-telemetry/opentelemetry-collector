@@ -1,0 +1,9 @@
+type: xextension
+
+status:
+  class: extension
+  codeowners:
+    active:
+      - swiatekm
+  stability:
+    development: [profiles]

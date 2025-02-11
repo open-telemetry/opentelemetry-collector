@@ -40,8 +40,6 @@ type TelemetryBuilder struct {
 	{{- range $name, $metric := .Telemetry.Metrics }}
 	{{ $name.Render }} metric.{{ $metric.Data.Instrument }}
     {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-    // TODO: Remove in v0.119.0 when remove deprecated funcs.
-    observe{{ $name.Render }} func(context.Context, metric.Observer) error
     {{- end }}
 	{{- end }}
 }
@@ -58,29 +56,6 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 }
 
 {{- range $name, $metric := .Telemetry.Metrics }}
-    {{- if $metric.Optional }}
-// Deprecated: [v0.119.0] use Register{{ $name.Render }}Callback.
-func (builder *TelemetryBuilder) Init{{ $name.Render }}({{ if $metric.Data.Async -}}cb func() {{ $metric.Data.BasicType }}, {{- end }}opts ...metric.ObserveOption) (metric.Registration, error) {
-    reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-        o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
-        return nil
-    }, builder.{{ $name.Render }})
-    return reg, err
-}
-    {{- else }}
-        {{ if $metric.Data.Async -}}
-// Deprecated: [v0.119.0] use Register{{ $name.Render }}Callback.
-func With{{ $name.Render }}Callback(cb func() {{ $metric.Data.BasicType }}, opts ...metric.ObserveOption) TelemetryBuilderOption {
-    return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-        builder.observe{{ $name.Render }} = func(_ context.Context, o metric.Observer) error {
-            o.Observe{{ casesTitle $metric.Data.BasicType }}(builder.{{ $name.Render }}, cb(), opts...)
-            return nil
-        }
-    })
-}
-        {{- end }}
-    {{- end }}
-
     {{ if $metric.Data.Async -}}
 // Register{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
 func (builder *TelemetryBuilder) Register{{ $name.Render }}Callback(cb metric.{{ casesTitle $metric.Data.BasicType }}Callback) error {
@@ -163,15 +138,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
         {{- end }}
     )
     errs = errors.Join(errs, err)
-    {{- if and ($metric.Data.Async) (not $metric.Optional) }}
-	if builder.observe{{ $name.Render }} != nil {
-        reg, err := builder.meter.RegisterCallback(builder.observe{{ $name.Render }}, builder.{{ $name.Render }})
-        errs = errors.Join(errs, err)
-		if err == nil {
-            builder.registrations = append(builder.registrations, reg)
-        }
-	}
-    {{- end }}
     {{- end }}
     return &builder, errs
 }

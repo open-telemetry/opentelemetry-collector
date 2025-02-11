@@ -32,9 +32,7 @@ type TelemetryBuilder struct {
 	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
 	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
 	ProcessorBatchMetadataCardinality  metric.Int64ObservableUpDownCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessorBatchMetadataCardinality func(context.Context, metric.Observer) error
-	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
+	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -46,16 +44,6 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
-}
-
-// Deprecated: [v0.119.0] use RegisterProcessorBatchMetadataCardinalityCallback.
-func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
@@ -127,13 +115,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{combinations}"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessorBatchMetadataCardinality != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessorBatchMetadataCardinality, builder.ProcessorBatchMetadataCardinality)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_processor_batch_timeout_trigger_send",
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),
