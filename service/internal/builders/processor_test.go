@@ -186,7 +186,7 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 
 	factory := processortest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(factory.Type())
 	set.ID = component.NewID(nopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())

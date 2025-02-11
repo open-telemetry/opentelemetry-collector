@@ -155,7 +155,7 @@ func TestNewNopExporterConfigsAndFactories(t *testing.T) {
 
 	factory := exportertest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettingsWithType(nopType)
 	set.ID = component.NewID(nopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg)

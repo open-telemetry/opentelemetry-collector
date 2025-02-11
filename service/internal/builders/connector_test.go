@@ -376,7 +376,7 @@ func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
 
 	factory := connectortest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := connectortest.NewNopSettings()
+	set := connectortest.NewNopSettingsWithType(nopType)
 	set.ID = component.NewIDWithName(nopType, "conn")
 
 	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), set, cfg, consumertest.NewNop())
