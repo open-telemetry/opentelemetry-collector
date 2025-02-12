@@ -22,11 +22,20 @@ require (
 )
 
 replace (
+	go.opentelemetry.io/collector => ../..
+	go.opentelemetry.io/collector/client => ../../client
 	go.opentelemetry.io/collector/component => ../../component
 	go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 	go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
+	go.opentelemetry.io/collector/config/configauth => ../../config/configauth
+	go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
+	go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+	go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+	go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 	go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+	go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 	go.opentelemetry.io/collector/confmap => ../../confmap
+	go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 	go.opentelemetry.io/collector/connector => ../../connector
 	go.opentelemetry.io/collector/connector/connectortest => ../../connector/connectortest
 	go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
@@ -38,8 +47,12 @@ replace (
 	go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
 	go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
 	go.opentelemetry.io/collector/extension => ../../extension
+	go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+	go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
 	go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 	go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
+	go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+	go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 	go.opentelemetry.io/collector/featuregate => ../../featuregate
 	go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 	go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
@@ -54,19 +67,6 @@ replace (
 	go.opentelemetry.io/collector/receiver => ../../receiver
 	go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 	go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
-	go.opentelemetry.io/collector/service => ..
-	go.opentelemetry.io/collector/config/configtls => ../../config/configtls
-	go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
-	go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
-	go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 	go.opentelemetry.io/collector/semconv => ../../semconv
-	go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
-	go.opentelemetry.io/collector => ../..
-	go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-	go.opentelemetry.io/collector/config/configretry => ../../config/configretry
-	go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
-	go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
-	go.opentelemetry.io/collector/client => ../../client
-	go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
-	go.opentelemetry.io/collector/config/configauth => ../../config/configauth
+	go.opentelemetry.io/collector/service => ..
 )
