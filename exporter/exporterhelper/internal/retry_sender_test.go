@@ -19,19 +19,19 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 )
 
-func mockRequestUnmarshaler(mr internal.Request) exporterqueue.Unmarshaler[internal.Request] {
-	return func([]byte) (internal.Request, error) {
+func mockRequestUnmarshaler(mr request.Request) exporterqueue.Unmarshaler[request.Request] {
+	return func([]byte) (request.Request, error) {
 		return mr, nil
 	}
 }
 
-func mockRequestMarshaler(internal.Request) ([]byte, error) {
+func mockRequestMarshaler(request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
@@ -157,7 +157,7 @@ func (mer *mockErrorRequest) Export(context.Context) error {
 	return mer.err
 }
 
-func (mer *mockErrorRequest) OnError(error) internal.Request {
+func (mer *mockErrorRequest) OnError(error) request.Request {
 	return mer
 }
 
@@ -165,10 +165,10 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, internal.Request) ([]internal.Request, error) {
+func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, request.Request) ([]request.Request, error) {
 	return nil, nil
 }
 
-func newErrorRequest(err error) internal.Request {
+func newErrorRequest(err error) request.Request {
 	return &mockErrorRequest{err: err}
 }

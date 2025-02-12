@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
-	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -34,7 +34,7 @@ const (
 	ItemsFailed = "items.failed"
 )
 
-type obsReportSender[K internal.Request] struct {
+type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
@@ -47,7 +47,7 @@ type obsReportSender[K internal.Request] struct {
 	next            Sender[K]
 }
 
-func newObsReportSender[K internal.Request](set exporter.Settings, signal pipeline.Signal, next Sender[K]) (Sender[K], error) {
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next Sender[K]) (Sender[K], error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
