@@ -30,6 +30,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.119.0
 	go.opentelemetry.io/collector/featuregate v1.25.0
+	go.opentelemetry.io/collector/featuregate/featuregatetest v0.119.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0
 	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.25.0
@@ -219,3 +220,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
+
+replace go.opentelemetry.io/collector/featuregate/featuregatetest => ../featuregate/featuregatetest

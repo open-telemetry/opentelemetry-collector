@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.23.0
 
-toolchain go1.23.6
+toolchain go1.23.5
 
 require (
 	go.opentelemetry.io/collector/component v0.119.0
@@ -255,6 +255,8 @@ replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xe
 replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/featuregate/featuregatetest => ../../featuregate/featuregatetest
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 

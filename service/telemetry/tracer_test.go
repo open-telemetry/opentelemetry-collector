@@ -11,7 +11,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 )
 
 func TestNewTracerProvider(t *testing.T) {
@@ -43,12 +43,7 @@ func TestNewTracerProvider(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			previousValue := noopTracerProvider.IsEnabled()
-			// expect error due to deprecated flag
-			require.NoError(t, featuregate.GlobalRegistry().Set(noopTracerProvider.ID(), tt.noopTracerGate))
-			defer func() {
-				require.NoError(t, featuregate.GlobalRegistry().Set(noopTracerProvider.ID(), previousValue))
-			}()
+			featuregatetest.SetGate(t, noopTracerProvider, tt.noopTracerGate)
 			sdk, err := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{TracerProvider: &config.TracerProvider{
 				Processors: tt.cfg.Traces.Processors,
 			}}))

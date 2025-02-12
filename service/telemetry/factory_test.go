@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -36,12 +36,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run("UseLocalHostAsDefaultMetricsAddress/"+strconv.FormatBool(tt.gate), func(t *testing.T) {
-			prev := useLocalHostAsDefaultMetricsAddressFeatureGate.IsEnabled()
-			require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), tt.gate))
-			defer func() {
-				// Restore previous value.
-				require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), prev))
-			}()
+			featuregatetest.SetGate(t, useLocalHostAsDefaultMetricsAddressFeatureGate, tt.gate)
 			cfg := NewFactory().CreateDefaultConfig()
 			require.Len(t, cfg.(*Config).Metrics.Readers, 1)
 			assert.Equal(t, tt.expected, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)

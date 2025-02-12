@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.0
 	go.opentelemetry.io/collector/extension/xextension v0.119.0
 	go.opentelemetry.io/collector/featuregate v1.25.0
+	go.opentelemetry.io/collector/featuregate/featuregatetest v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
@@ -97,3 +98,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
+
+replace go.opentelemetry.io/collector/featuregate/featuregatetest => ../featuregate/featuregatetest
