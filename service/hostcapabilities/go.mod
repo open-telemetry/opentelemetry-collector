@@ -55,4 +55,18 @@ replace (
 	go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 	go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
 	go.opentelemetry.io/collector/service => ..
+	go.opentelemetry.io/collector/config/configtls => ../../config/configtls
+	go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
+	go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+	go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
+	go.opentelemetry.io/collector/semconv => ../../semconv
+	go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+	go.opentelemetry.io/collector => ../..
+	go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+	go.opentelemetry.io/collector/config/configretry => ../../config/configretry
+	go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+	go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
+	go.opentelemetry.io/collector/client => ../../client
+	go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+	go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 )
