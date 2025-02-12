@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue
+package batcher
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
 func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
@@ -44,7 +44,7 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -94,7 +94,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -159,7 +159,7 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -219,7 +219,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -268,7 +268,7 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	batchCfg.FlushTimeout = 100 * time.Second
 
 	ba, err := NewBatcher(batchCfg,
-		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+		func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 		2)
 	require.NoError(t, err)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -297,7 +297,7 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	batchCfg.MaxSizeItems = 7
 
 	ba, err := NewBatcher(batchCfg,
-		func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+		func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 		2)
 	require.NoError(t, err)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))

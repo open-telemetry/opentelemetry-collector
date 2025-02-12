@@ -11,9 +11,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -73,18 +73,18 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	queue   exporterqueue.Queue[internal.Request]
+	queue   exporterqueue.Queue[request.Request]
 	batcher component.Component
 	bs      *BatchSender
 }
 
 func NewQueueSender(
-	qf exporterqueue.Factory[internal.Request],
+	qf exporterqueue.Factory[request.Request],
 	qSet exporterqueue.Settings,
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	next Sender[internal.Request],
+	next Sender[request.Request],
 ) (*QueueSender, error) {
 	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
 		concurrencyLimit := int64(0)
@@ -98,7 +98,7 @@ func NewQueueSender(
 			next = bs
 		}
 
-		exportFunc := func(ctx context.Context, req internal.Request) error {
+		exportFunc := func(ctx context.Context, req request.Request) error {
 			// Have to read the number of items before sending the request since the request can
 			// be modified by the downstream components like the batcher.
 			itemsCount := req.ItemsCount()
@@ -110,7 +110,7 @@ func NewQueueSender(
 			return err
 		}
 
-		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.Done) {
+		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req request.Request, done exporterqueue.Done) {
 			done.OnDone(exportFunc(ctx, req))
 		}))
 		if err != nil {
@@ -119,7 +119,7 @@ func NewQueueSender(
 		return &QueueSender{queue: q, bs: bs}, nil
 	}
 
-	exportFunc := func(ctx context.Context, req internal.Request) error {
+	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
@@ -131,7 +131,7 @@ func NewQueueSender(
 		return err
 	}
 
-	b, err := queue.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+	b, err := batcher.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +185,7 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 }
 
 // Send implements the requestSender interface. It puts the request in the queue.
-func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
+func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
 }
 

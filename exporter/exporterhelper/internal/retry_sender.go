@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 )
 
@@ -49,10 +49,10 @@ type retrySender struct {
 	cfg    configretry.BackOffConfig
 	stopCh chan struct{}
 	logger *zap.Logger
-	next   Sender[internal.Request]
+	next   Sender[request.Request]
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next Sender[internal.Request]) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next Sender[request.Request]) *retrySender {
 	return &retrySender{
 		cfg:    config,
 		stopCh: make(chan struct{}),
@@ -67,7 +67,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 }
 
 // Send implements the requestSender interface
-func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
+func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -97,7 +97,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		if errReq, ok := req.(internal.RequestErrorHandler); ok {
+		if errReq, ok := req.(request.RequestErrorHandler); ok {
 			req = errReq.OnError(err)
 		}
 
