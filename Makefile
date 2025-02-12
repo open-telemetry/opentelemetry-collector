@@ -444,6 +444,7 @@ builder-integration-test: $(ENVSUBST)
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: generate-gh-issue-templates

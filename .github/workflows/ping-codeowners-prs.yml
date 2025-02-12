@@ -1,0 +1,20 @@
+name: 'Ping code owners on PRs'
+on:
+  pull_request_target:
+    types: [labeled]
+
+jobs:
+  ping-owners:
+    runs-on: ubuntu-24.04
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && github.repository_owner == 'open-telemetry' }}
+    steps:
+      - uses: actions/checkout@v4
+    
+      - name: Run ping-codeowners-prs.sh
+        run: ./.github/workflows/scripts/ping-codeowners-prs.sh
+        env:
+          REPO: ${{ github.repository }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.number }}
+          COMPONENT: ${{ github.event.label.name }}

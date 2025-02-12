@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/extension/xextension
 
-go 1.22.0
+go 1.23.0
 
 require (
 	go.opentelemetry.io/collector/component v0.119.0

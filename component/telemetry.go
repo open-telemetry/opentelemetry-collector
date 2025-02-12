@@ -7,7 +7,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -26,18 +25,4 @@ type TelemetrySettings struct {
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
-}
-
-func (ts *TelemetrySettings) LoggerWithout(fields ...string) *zap.Logger {
-	type coreWithout interface {
-		Without(fields ...string) zapcore.Core
-	}
-	if _, ok := ts.Logger.Core().(coreWithout); !ok {
-		return ts.Logger
-	}
-	return ts.Logger.WithOptions(
-		zap.WrapCore(func(from zapcore.Core) zapcore.Core {
-			return from.(coreWithout).Without(fields...)
-		}),
-	)
 }

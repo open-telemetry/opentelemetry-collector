@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"

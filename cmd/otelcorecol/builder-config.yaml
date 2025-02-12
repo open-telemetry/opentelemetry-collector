@@ -41,7 +41,6 @@ replaces:
   - go.opentelemetry.io/collector/client => ../../client
   - go.opentelemetry.io/collector/component => ../../component
   - go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
-  - go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
   - go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
   - go.opentelemetry.io/collector/config/configauth => ../../config/configauth
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
@@ -87,6 +86,7 @@ replaces:
   - go.opentelemetry.io/collector/featuregate => ../../featuregate
   - go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
   - go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+  - go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
   - go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
   - go.opentelemetry.io/collector/otelcol => ../../otelcol
   - go.opentelemetry.io/collector/pdata => ../../pdata

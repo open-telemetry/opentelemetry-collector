@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -36,18 +35,21 @@ func createDefaultConfig() component.Config {
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.Enabled = false
 
+	clientCfg := *configgrpc.NewDefaultClientConfig()
+	// Default to gzip compression
+	clientCfg.Compression = configcompression.TypeGzip
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientCfg.WriteBufferSize = 512 * 1024
+	// For backward compatibility:
+	clientCfg.Keepalive = nil
+	clientCfg.BalancerName = ""
+
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
 		BatcherConfig: batcherCfg,
-		ClientConfig: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-			// Default to gzip compression
-			Compression: configcompression.TypeGzip,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
+		ClientConfig:  clientCfg,
 	}
 }
 

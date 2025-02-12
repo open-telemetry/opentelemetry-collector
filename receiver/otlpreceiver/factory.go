@@ -39,20 +39,26 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
+	grpcCfg := configgrpc.NewDefaultServerConfig()
+	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
+	grpcCfg.NetAddr.Endpoint = "localhost:4317"
+	grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
+	// We almost write 0 bytes, so no need to tune WriteBufferSize.
+	grpcCfg.ReadBufferSize = 512 * 1024
+
+	httpCfg := confighttp.NewDefaultServerConfig()
+	httpCfg.Endpoint = "localhost:4318"
+	// For backward compatibility:
+	httpCfg.TLSSetting = nil
+	httpCfg.WriteTimeout = 0
+	httpCfg.ReadHeaderTimeout = 0
+	httpCfg.IdleTimeout = 0
+
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.ServerConfig{
-				NetAddr: confignet.AddrConfig{
-					Endpoint:  "localhost:4317",
-					Transport: confignet.TransportTypeTCP,
-				},
-				// We almost write 0 bytes, so no need to tune WriteBufferSize.
-				ReadBufferSize: 512 * 1024,
-			},
+			GRPC: grpcCfg,
 			HTTP: &HTTPConfig{
-				ServerConfig: &confighttp.ServerConfig{
-					Endpoint: "localhost:4318",
-				},
+				ServerConfig:   &httpCfg,
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,

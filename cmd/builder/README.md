@@ -96,7 +96,7 @@ go install go.opentelemetry.io/collector/cmd/builder@latest
 
 If installing through this method the binary will be called `builder`.
 
-Please note that the `go.mod` file generated uses `go 1.22` as the version. Versions 1.22.3, 1.21.10, and prior of Go [do not recognize this as a valid go version](https://github.com/golang/go/commit/27ed85d4d1702e868730ab6ea2ad6326988c615c). In order to successfully generate and build a collector using ocb, you must use Go version 1.22.4+, or any version of Go 1.23 and beyond.
+In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
 
 ## Running
 

@@ -16,9 +16,8 @@ The following configuration options can be modified:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`
-  - `blocking` (default = false): If true blocks until queue has space for the request otherwise returns immediately; ignored if `enabled` is `false`
-  User should calculate this as `num_seconds * requests_per_second / requests_per_batch` where:
+  - `blocking` (default = false): If true, blocks the request until the queue has space otherwise returns immediately; ignored if `enabled` is `false`
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`. User should calculate this as `num_seconds * requests_per_second / requests_per_batch` where:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds
     - `requests_per_batch` is the average number of requests per batch (if 

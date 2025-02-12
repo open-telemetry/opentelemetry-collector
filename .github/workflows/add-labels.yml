@@ -1,0 +1,20 @@
+name: 'Add Labels'
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  add-labels:
+    if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/label') && github.repository_owner == 'open-telemetry' }}
+
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run add-labels.sh
+        run: ./.github/workflows/scripts/add-labels.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          COMMENT: ${{ github.event.comment.body }}
+          SENDER: ${{ github.event.sender.login }}

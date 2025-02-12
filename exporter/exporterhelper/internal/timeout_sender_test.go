@@ -4,11 +4,14 @@
 package internal
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestNewDefaultTimeoutConfig(t *testing.T) {
@@ -22,4 +25,20 @@ func TestInvalidTimeout(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 	cfg.Timeout = -1
 	assert.Error(t, cfg.Validate())
+}
+
+func TestNewTimeoutSender(t *testing.T) {
+	cfg := TimeoutConfig{Timeout: 5 * time.Second}
+	ts := newTimeoutSender(cfg, newSender(func(ctx context.Context, data int64) error {
+		deadline, ok := ctx.Deadline()
+		assert.True(t, ok)
+		timeout := time.Since(deadline)
+		assert.LessOrEqual(t, timeout, 5*time.Second)
+		assert.GreaterOrEqual(t, 4*time.Second, timeout)
+		assert.Equal(t, int64(7), data)
+		return nil
+	}))
+	require.NoError(t, ts.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, ts.Send(context.Background(), 7))
+	require.NoError(t, ts.Shutdown(context.Background()))
 }

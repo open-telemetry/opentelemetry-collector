@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/otelcol/otelcoltest
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -66,7 +66,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.0 // indirect
@@ -79,6 +78,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.119.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.25.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
@@ -224,4 +224,4 @@ replace go.opentelemetry.io/collector/processor/processortest => ../../processor
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
-replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
