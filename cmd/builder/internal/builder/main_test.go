@@ -40,7 +40,6 @@ require (
 var replaceModules = []string{
 	"",
 	"/component",
-	"/component/componentattribute",
 	"/component/componentstatus",
 	"/component/componenttest",
 	"/client",
@@ -87,6 +86,7 @@ var replaceModules = []string{
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
+	"/internal/telemetry",
 	"/otelcol",
 	"/pdata",
 	"/pdata/testdata",
