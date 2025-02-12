@@ -122,7 +122,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// Logic on how to deal with the current batch:
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
-	qb.currentBatch.ctx = qb.currentBatch.ctx.Merge(qb.currentBatch.ctx)
+	qb.currentBatch.ctx = qb.currentBatch.ctx.Merge(ctx)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
