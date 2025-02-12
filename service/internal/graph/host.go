@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -32,9 +33,10 @@ type getModuleInfos interface {
 }
 
 var (
-	_ getExporters   = (*Host)(nil)
-	_ component.Host = (*Host)(nil)
-	_ getModuleInfos = (*Host)(nil)
+	_ getExporters                = (*Host)(nil)
+	_ component.Host              = (*Host)(nil)
+	_ getModuleInfos              = (*Host)(nil)
+	_ hostcapabilities.ModuleInfo = (*Host)(nil)
 )
 
 type Host struct {
