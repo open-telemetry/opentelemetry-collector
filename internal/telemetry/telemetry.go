@@ -1,9 +1,13 @@
-package telemetry
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
 
 import (
-	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/component"
 )
 
 func LoggerWithout(ts component.TelemetrySettings, fields ...string) *zap.Logger {
