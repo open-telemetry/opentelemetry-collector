@@ -17,6 +17,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   This does not have an impact on the level of information emitted, but on the structure of the Span.
 - `cmd/mdatagen`: Remove `level` field from metrics definition (#12145)
   This mechanism will be added back once a new views mechanism is implemented.
+- `service`: Value for telemetry exporter `otlp.protocol` updated from `grpc/protobuf` to `grpc`. (#12337)
 
 ### 💡 Enhancements 💡
 

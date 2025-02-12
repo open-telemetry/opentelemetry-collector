@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package requesttest // import "go.opentelemetry.io/collector/exporter/internal/requesttest"
+package requesttest // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -86,7 +86,7 @@ func (r *FakeRequest) Export(ctx context.Context) error {
 	return nil
 }
 
-func (r *FakeRequest) OnError(err error) internal.Request {
+func (r *FakeRequest) OnError(err error) request.Request {
 	var pErr errorPartial
 	if errors.As(err, &pErr) {
 		return pErr.fr
@@ -98,7 +98,7 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 internal.Request) ([]internal.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}
@@ -112,7 +112,7 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 			}
 			fr2.mergeTo(r)
 		}
-		return []internal.Request{r}, nil
+		return []request.Request{r}, nil
 	}
 
 	var fr2 *FakeRequest
@@ -125,11 +125,11 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeC
 		fr2 = r2.(*FakeRequest)
 	}
 
-	var res []internal.Request
+	var res []request.Request
 	// No split, then just simple merge
 	if r.Items+fr2.Items <= maxItems {
 		fr2.mergeTo(r)
-		return []internal.Request{r}, nil
+		return []request.Request{r}, nil
 	}
 
 	// if split is needed, we don't propagate ExportErr from fr2 to fr1 to test more cases
@@ -156,20 +156,20 @@ func (r *FakeRequest) mergeTo(dst *FakeRequest) {
 	dst.Delay += r.Delay
 }
 
-func RequestFromMetricsFunc(reqErr error) func(context.Context, pmetric.Metrics) (internal.Request, error) {
-	return func(_ context.Context, md pmetric.Metrics) (internal.Request, error) {
+func RequestFromMetricsFunc(reqErr error) func(context.Context, pmetric.Metrics) (request.Request, error) {
+	return func(_ context.Context, md pmetric.Metrics) (request.Request, error) {
 		return &FakeRequest{Items: md.DataPointCount(), ExportErr: reqErr}, nil
 	}
 }
 
-func RequestFromTracesFunc(reqErr error) func(context.Context, ptrace.Traces) (internal.Request, error) {
-	return func(_ context.Context, td ptrace.Traces) (internal.Request, error) {
+func RequestFromTracesFunc(reqErr error) func(context.Context, ptrace.Traces) (request.Request, error) {
+	return func(_ context.Context, td ptrace.Traces) (request.Request, error) {
 		return &FakeRequest{Items: td.SpanCount(), ExportErr: reqErr}, nil
 	}
 }
 
-func RequestFromLogsFunc(reqErr error) func(context.Context, plog.Logs) (internal.Request, error) {
-	return func(_ context.Context, ld plog.Logs) (internal.Request, error) {
+func RequestFromLogsFunc(reqErr error) func(context.Context, plog.Logs) (request.Request, error) {
+	return func(_ context.Context, ld plog.Logs) (request.Request, error) {
 		return &FakeRequest{Items: ld.LogRecordCount(), ExportErr: reqErr}, nil
 	}
 }
