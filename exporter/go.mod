@@ -105,3 +105,5 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
+
+replace go.opentelemetry.io/collector/confmap => ../confmap
