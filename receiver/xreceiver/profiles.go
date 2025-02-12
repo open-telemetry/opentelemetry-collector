@@ -41,6 +41,7 @@ type Factory interface {
 type CreateProfilesFunc func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
 // CreateProfiles implements Factory.CreateProfiles.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -63,12 +64,19 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 
 type factory struct {
 	receiver.Factory
-	CreateProfilesFunc
+	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
+	if f.createProfilesFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createProfilesFunc(ctx, set, cfg, next)
 }
 
 type factoryOpts struct {
@@ -101,7 +109,7 @@ func WithLogs(createLogs receiver.CreateLogsFunc, sl component.StabilityLevel) F
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
-		o.CreateProfilesFunc = createProfiles
+		o.createProfilesFunc = createProfiles
 	})
 }
 

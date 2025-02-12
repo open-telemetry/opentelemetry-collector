@@ -52,6 +52,7 @@ type factoryOpts struct {
 type CreateProfilesFunc func(context.Context, exporter.Settings, component.Config) (Profiles, error)
 
 // CreateProfiles implements Factory.CreateProfiles.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -84,18 +85,26 @@ func WithLogs(createLogs exporter.CreateLogsFunc, sl component.StabilityLevel) F
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
-		o.CreateProfilesFunc = createProfiles
+		o.createProfilesFunc = createProfiles
 	})
 }
 
 type factory struct {
 	exporter.Factory
-	CreateProfilesFunc
+	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f *factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f *factory) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
+	if f.createProfilesFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+
+	return f.createProfilesFunc(ctx, set, cfg)
 }
 
 // NewFactory returns a Factory.

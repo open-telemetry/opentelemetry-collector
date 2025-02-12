@@ -3,7 +3,9 @@
 
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
-import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+import (
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+)
 
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
 type QueueConfig = internal.QueueConfig

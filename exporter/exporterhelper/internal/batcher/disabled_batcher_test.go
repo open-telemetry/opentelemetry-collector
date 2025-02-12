@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue
+package batcher
 
 import (
 	"context"
@@ -14,10 +14,10 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -41,11 +41,11 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			cfg.Enabled = false
 
 			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req internal.Request) error { return req.Export(ctx) },
+				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
 				tt.maxWorkers)
 			require.NoError(t, err)
 
-			q := exporterqueue.NewMemoryQueueFactory[internal.Request]()(
+			q := exporterqueue.NewMemoryQueueFactory[request.Request]()(
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
