@@ -270,6 +270,8 @@ check-contrib:
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
+	@$(MAKE) generate-contrib
+
 	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 
@@ -281,7 +283,7 @@ check-contrib:
 generate-contrib:
 	@echo -e "\nGenerating files in contrib"
 	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
-	$(MAKE) -C $(CONTRIB_PATH) generate GROUP=all
+	$(MAKE) -C $(CONTRIB_PATH) generate
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
