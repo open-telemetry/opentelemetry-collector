@@ -26,7 +26,6 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
-// TODO: expose GetModuleInfo as part of a service/hostcapabilities package.
 type getModuleInfos interface {
 	// GetModuleInfo returns the module information for the host.
 	GetModuleInfos() moduleinfo.ModuleInfos
