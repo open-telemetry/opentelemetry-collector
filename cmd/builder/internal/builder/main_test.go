@@ -105,6 +105,7 @@ var replaceModules = []string{
 	"/receiver/xreceiver",
 	"/semconv",
 	"/service",
+	"/service/hostcapabilities",
 }
 
 func newTestConfig(tb testing.TB) *Config {
