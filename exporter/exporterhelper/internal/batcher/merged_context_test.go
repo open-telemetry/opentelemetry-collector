@@ -9,17 +9,20 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestMergedContextDeadline(t *testing.T) {
 	now := time.Now()
 	ctx1 := context.Background()
-	mergedContext := NewMergedContext(ctx1)
+	mergedContext := newMergedContext(ctx1)
 
+	var ok bool
 	deadline, ok := mergedContext.Deadline()
+	require.Equal(t, time.Time{}, deadline)
 	require.False(t, ok)
 
 	ctx2, cancel2 := context.WithDeadline(context.Background(), now.Add(200))
@@ -40,17 +43,20 @@ func TestMergedContextDeadline(t *testing.T) {
 	deadline, ok = mergedContext.Deadline()
 	require.True(t, ok)
 	require.Equal(t, now.Add(300), deadline)
+
+	time.Sleep(300)
+	require.Equal(t, ctx3.Err(), mergedContext.Err())
 }
 
 func TestMergedContextLink(t *testing.T) {
 	tracerProvider := componenttest.NewTelemetry().NewTelemetrySettings().TracerProvider
 	tracer := tracerProvider.Tracer("go.opentelemetry.io/collector/exporter/exporterhelper")
 
-	ctx1 := context.WithValue(context.Background(), "key", "value")
+	ctx1 := context.Background()
 	ctx2, span2 := tracer.Start(ctx1, "span2")
 	defer span2.End()
 
-	mergedContext := NewMergedContext(ctx2)
+	mergedContext := newMergedContext(ctx2)
 	ctx3, span3 := tracer.Start(ctx1, "span3")
 	defer span3.End()
 	mergedContext = mergedContext.Merge(ctx3)

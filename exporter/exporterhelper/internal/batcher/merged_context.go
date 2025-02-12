@@ -11,36 +11,41 @@ import (
 
 // mergedContext links the underlying context to all incoming span contexts.
 type mergedContext struct {
-	deadline   time.Time
-	deadlineOk bool
-	ctx        context.Context
+	deadline    time.Time
+	deadlineOk  bool
+	deadlineCtx context.Context
+	ctx         context.Context
 }
 
-func NewMergedContext(ctx context.Context) mergedContext {
+func newMergedContext(ctx context.Context) mergedContext {
 	deadline, ok := ctx.Deadline()
 	return mergedContext{
-		deadline:   deadline,
-		deadlineOk: ok,
-		ctx:        ctx,
+		deadline:    deadline,
+		deadlineOk:  ok,
+		deadlineCtx: ctx,
+		ctx:         ctx,
 	}
 }
 
 // Merge links the span from incoming context to the span from the first context.
 func (mc *mergedContext) Merge(other context.Context) mergedContext {
 	deadline, deadlineOk := mc.Deadline()
+	ctx := mc.deadlineCtx
 	if otherDeadline, ok := other.Deadline(); ok {
 		deadlineOk = true
 		if deadline.Before(otherDeadline) {
 			deadline = otherDeadline
+			ctx = other
 		}
 	}
 
 	link := trace.LinkFromContext(other)
 	trace.SpanFromContext(mc.ctx).AddLink(link)
 	return mergedContext{
-		deadline:   deadline,
-		deadlineOk: deadlineOk,
-		ctx:        mc.ctx,
+		deadline:    deadline,
+		deadlineOk:  deadlineOk,
+		deadlineCtx: ctx,
+		ctx:         mc.ctx,
 	}
 }
 
@@ -50,11 +55,11 @@ func (mc mergedContext) Deadline() (time.Time, bool) {
 }
 
 func (mc mergedContext) Done() <-chan struct{} {
-	return nil
+	return mc.deadlineCtx.Done()
 }
 
 func (mc mergedContext) Err() error {
-	return nil
+	return mc.deadlineCtx.Err()
 }
 
 // Value delegates to the first context.

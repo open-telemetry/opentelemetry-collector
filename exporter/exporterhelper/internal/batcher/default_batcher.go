@@ -86,7 +86,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  NewMergedContext(ctx),
+				ctx:  newMergedContext(ctx),
 				req:  lastReq,
 				done: multiDone{done},
 			}
@@ -142,7 +142,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  NewMergedContext(ctx),
+				ctx:  newMergedContext(ctx),
 				req:  lastReq,
 				done: multiDone{done},
 			}

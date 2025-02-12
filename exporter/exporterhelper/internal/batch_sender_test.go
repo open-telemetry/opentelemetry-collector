@@ -474,7 +474,7 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
-	runTest("enable_queue_batcher", true)
+	// When queue_batcher is enabled, we don't cancel the whole batch when the first request is canceled.
 	runTest("disable_queue_batcher", false)
 }
 
