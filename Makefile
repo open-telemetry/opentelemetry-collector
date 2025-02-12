@@ -284,6 +284,7 @@ generate-contrib:
 	@echo -e "\nGenerating files in contrib"
 	$(MAKE) -C $(CONTRIB_PATH) -B install-tools
 	$(MAKE) -C $(CONTRIB_PATH) generate
+	$(MAKE) -C $(CONTRIB_PATH) gofmt
 
 # Restores contrib to its original state after running check-contrib.
 .PHONY: restore-contrib
