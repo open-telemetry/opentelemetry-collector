@@ -74,14 +74,6 @@ func TestAddFlagToSettings(t *testing.T) {
 	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-
-	err = flgs.Parse([]string{"--merge-paths-append=service", "--merge-paths-append=processor::nop::paths"})
-	require.NoError(t, err)
-
-	err = updateSettingsUsingFlags(&set, flgs)
-	require.NoError(t, err)
-
-	require.Len(t, set.ConfigProviderSettings.ResolverSettings.MergePaths, 2)
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {

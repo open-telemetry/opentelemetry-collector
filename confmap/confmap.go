@@ -169,11 +169,13 @@ func (l *Conf) Merge(in *Conf) error {
 	return l.k.Merge(in.k)
 }
 
-// MergeAppend merges the input given configuration into the existing config.
+// mergeAppend merges the input given configuration into the existing config.
 // Note that the given map may be modified.
-// Note: MergeAppend merges the lists in a name-aware fashion.
-func (l *Conf) MergeAppend(in *Conf, paths []string) error {
-	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeComponentsAppend(paths)))
+// Additionally, mergeAppend performs deduplication when merging lists.
+// For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
+// the resulting list will be [extension1, extension2, extension3].
+func (l *Conf) mergeAppend(in *Conf) error {
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend))
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.

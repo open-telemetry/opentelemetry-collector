@@ -466,8 +466,11 @@ func TestMergeFunctionality(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.flagEnabled {
-				featuregate.GlobalRegistry().Set(EnableMergeAppendOption.ID(), true)
-				defer featuregate.GlobalRegistry().Set(EnableMergeAppendOption.ID(), false)
+				require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
+				defer func() {
+					// Restore previous value.
+					require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
+				}()
 			}
 			runScenario(t, tt.scenarioFile)
 		})
@@ -475,10 +478,10 @@ func TestMergeFunctionality(t *testing.T) {
 }
 
 func runScenario(t *testing.T, path string) {
-	yamlFile, err := os.ReadFile(path)
+	yamlData, err := os.ReadFile(path)
 	require.NoError(t, err)
 	var testcases []*mergeTest
-	err = yaml.Unmarshal(yamlFile, &testcases)
+	err = yaml.Unmarshal(yamlData, &testcases)
 	require.NoError(t, err)
 	for _, tt := range testcases {
 		t.Run(tt.Name, func(t *testing.T) {
@@ -498,7 +501,6 @@ func runScenario(t *testing.T, path string) {
 
 			resolver, err := NewResolver(ResolverSettings{
 				URIs:              configFiles,
-				MergePaths:        tt.AppendPaths,
 				ProviderFactories: []ProviderFactory{newFileProvider(t)},
 				DefaultScheme:     "file",
 			})

@@ -62,14 +62,13 @@
         nop/myextension:
 
     service:
-        extensions: [nop2]
+        extensions: [nop, nop2]
         pipelines:
             traces:
-                receivers: [nop2]
-                processors: [nop2]
-                exporters: [nop2]
+                receivers: [nop, nop2]
+                processors: [nop, nop2]
+                exporters: [nop, nop2]
 - name: merge-mode-append
-  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -138,7 +137,6 @@
                 processors: [nop, nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append-override-old-values
-  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -208,7 +206,6 @@
                 processors: [nop]
                 exporters: [nop, nop2]
 - name: merge-mode-append-name-aware
-  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -267,7 +264,6 @@
                 receivers: [nop]
                 exporters: [nop]
 - name: merge-mode-append-multiple
-  append_paths: ["service"]
   configs:
     -
         receivers:
@@ -340,7 +336,6 @@
                 receivers: [nop, nop2, nop3]
                 exporters: [nop, nop2, nop3]
 - name: merge-mode-append-processor
-  append_paths: ["processors::processor::path"]
   configs:
     -
         receivers:
@@ -398,14 +393,13 @@
             path: [path, path2]
 
     service:
-        extensions: [nop2]
+        extensions: [nop, nop2]
         pipelines:
             traces:
-                receivers: [nop2]
+                receivers: [nop, nop2]
                 processors: [processor]
-                exporters: [nop2]
+                exporters: [nop, nop2]
 - name: merge-mode-append-processor-service
-  append_paths: ["processors::processor::path", "service"]
   configs:
     -
         receivers:
@@ -470,7 +464,6 @@
                 processors: [processor]
                 exporters: [nop, nop2]
 - name: merge-mode-append-entire-config
-  append_paths: ["*"]
   configs:
     -
         receivers:
@@ -561,7 +554,6 @@
                 processors: [processor, processor2]
                 exporters: [nop, nop2, nop3]
 - name: merge-mode-append-different-kinds
-  append_paths: ["receivers::nop"]
   configs:
     -
         receivers:

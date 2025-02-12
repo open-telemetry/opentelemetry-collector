@@ -5,71 +5,25 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"reflect"
-	"strings"
 
 	"github.com/knadh/koanf/maps"
 )
 
-const (
-	mergeAllAlias = "*"
-)
+func mergeAppend(src, dest map[string]any) error {
+	// mergeAppend recursively merges the src map into the dest map (left to right),
+	// modifying and expanding the dest map in the process.
+	// This function does not overwrite lists, and ensures that the final value is a name-aware
+	// copy of lists from src and dest.
 
-func mergeComponentsAppend(mergePaths []string) func(src, dest map[string]any) error {
-	return func(src, dest map[string]any) error {
-		// mergeComponentsAppend recursively merges the src map into the dest map (left to right),
-		// modifying and expanding the dest map in the process.
-		// This function does not overwrite lists, and ensures that the final value is a name-aware
-		// copy of lists from src and dest.
+	// First, merge the src and dest config maps
+	mergeMaps(src, dest)
 
-		// loop through all the paths specified by the user and merge the lists under the specified path
-		for _, path := range mergePaths {
-			merge(path, src, dest)
-			if path == mergeAllAlias {
-				// every list in the config is now merged, we can exit early.
-				break
-			}
-		}
-		// unflatten the new config
-		src = maps.Unflatten(src, KeyDelimiter)
+	// Second, unflatten the new config
+	src = maps.Unflatten(src, KeyDelimiter)
 
-		// merge rest of the config.
-		maps.Merge(src, dest)
-		return nil
-	}
-}
-
-func merge(path string, src, dest map[string]any) {
-	if path == mergeAllAlias {
-		// user has specified to merge all the lists in config
-		mergeMaps(src, dest)
-		return
-	}
-
-	pathSplit := strings.Split(path, KeyDelimiter)
-
-	sVal := maps.Search(src, pathSplit)
-	dVal := maps.Search(dest, pathSplit)
-
-	srcVal := reflect.ValueOf(sVal)
-	destVal := reflect.ValueOf(dVal)
-
-	if srcVal.Kind() != destVal.Kind() {
-		// different kinds, maps.Merge will override the old config
-		return
-	}
-	switch destVal.Kind() {
-	case reflect.Array, reflect.Slice:
-		// both of them are array. Merge the lists
-
-		// delete old value from the src, we'll overwrite the merged value in next step
-		maps.Delete(src, pathSplit)
-
-		// Note: path is a delimited by KeyDelimiter. We will call "Unflatten" later to get the final config
-		src[path] = mergeSlice(srcVal, destVal)
-	case reflect.Map:
-		// both of them are maps. Recursively call the mergeMaps
-		mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
-	}
+	// merge rest of the config.
+	maps.Merge(src, dest)
+	return nil
 }
 
 func mergeMaps(src, dest map[string]any) {
@@ -109,14 +63,20 @@ func mergeSlice(src, dest reflect.Value) any {
 		slice = reflect.Append(slice, dest.Index(i))
 	}
 
-OUTER2:
 	for i := 0; i < src.Len(); i++ {
-		for j := 0; j < slice.Len(); j++ {
-			if slice.Index(j).Equal(src.Index(i)) {
-				continue OUTER2
-			}
+		if isPresent(slice, src.Index(i)) {
+			continue
 		}
 		slice = reflect.Append(slice, src.Index(i))
 	}
 	return slice.Interface()
+}
+
+func isPresent(slice reflect.Value, val reflect.Value) bool {
+	for i := 0; i < slice.Len(); i++ {
+		if slice.Index(i).Equal(val) {
+			return true
+		}
+	}
+	return false
 }

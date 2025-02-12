@@ -24,3 +24,5 @@ require (
 )
 
 replace go.opentelemetry.io/collector/confmap => ../
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

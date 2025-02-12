@@ -105,3 +105,5 @@ replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/m
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

@@ -120,3 +120,5 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 replace go.opentelemetry.io/collector/scraper => ../../scraper
 
 replace go.opentelemetry.io/collector/scraper/scrapertest => ../../scraper/scrapertest
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

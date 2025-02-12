@@ -16,11 +16,11 @@ import (
 	"go.uber.org/zap"
 )
 
-var EnableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
-	"exporter.enableMergeAppendOption",
+var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
+	"confmap.enableMergeAppendOption",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.120.0"),
-	featuregate.WithRegisterDescription("if set to true, enables --merge-paths-append command line option"),
+	featuregate.WithRegisterDescription("if set to true, combines lists when resolving configs from different sources"),
 )
 
 // follows drive-letter specification:
@@ -33,7 +33,6 @@ type Resolver struct {
 	providers     map[string]Provider
 	defaultScheme string
 	converters    []Converter
-	mergePaths    []string
 
 	closers []CloseFunc
 	watcher chan error
@@ -65,11 +64,6 @@ type ResolverSettings struct {
 	// ConverterSettings contains settings that will be passed to Converter
 	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
-
-	// MergePaths contains the paths specified by the user.
-	// This paths will be used while merging the configs and all the lists under the
-	// specified paths will be merged rather than overridden.
-	MergePaths []string
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -160,7 +154,6 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		uris:          uris,
 		providers:     providers,
 		defaultScheme: set.DefaultScheme,
-		mergePaths:    set.MergePaths,
 		converters:    converters,
 		watcher:       make(chan error, 1),
 	}, nil
@@ -186,9 +179,9 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if len(mr.mergePaths) > 0 && EnableMergeAppendOption.IsEnabled() {
-			// only use MergeAppend when user has specified more mergePaths AND EnableMergeAppendOption featuregate is enabled.
-			err = retMap.MergeAppend(retCfgMap, mr.mergePaths)
+		if enableMergeAppendOption.IsEnabled() {
+			// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
+			err = retMap.mergeAppend(retCfgMap)
 		} else {
 			err = retMap.Merge(retCfgMap)
 		}

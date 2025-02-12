@@ -82,3 +82,5 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

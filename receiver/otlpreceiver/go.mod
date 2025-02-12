@@ -144,3 +144,5 @@ retract (
 )
 
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate
