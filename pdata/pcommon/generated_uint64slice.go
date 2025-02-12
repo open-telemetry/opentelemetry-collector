@@ -51,6 +51,14 @@ func (ms UInt64Slice) Len() int {
 	return len(*ms.getOrig())
 }
 
+func (ms UInt64Slice) Cap() int {
+	return cap(*ms.getOrig())
+}
+
+func (ms UInt64Slice) Reslice(from, to int) {
+	*ms.getOrig() = (*ms.getOrig())[from:to]
+}
+
 // At returns an item from particular index.
 // Equivalent of uInt64Slice[i].
 func (ms UInt64Slice) At(i int) uint64 {
@@ -107,6 +115,14 @@ func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 func copyUInt64Slice(dst, src []uint64) []uint64 {
 	dst = dst[:0]
 	return append(dst, src...)
+}
+
+func (ms UInt64Slice) Transform(f func(i int, v uint64) uint64, from, to int) {
+	ms.getState().AssertMutable()
+	orig := *ms.getOrig()
+	for i := from; i < to; i++ {
+		orig[i] = f(i, orig[i])
+	}
 }
 
 // TryIncrementFrom increments all elements from the current slice by the elements from another slice
