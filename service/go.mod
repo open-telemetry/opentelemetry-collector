@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/service
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/google/uuid v1.6.0
@@ -10,7 +10,6 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector v0.119.0
 	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/config/confighttp v0.119.0
@@ -32,6 +31,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.119.0
 	go.opentelemetry.io/collector/featuregate v1.25.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0
@@ -118,9 +118,9 @@ require (
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk/log v0.10.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.70.0 // indirect
@@ -138,7 +138,7 @@ replace go.opentelemetry.io/collector/component => ../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
 
-replace go.opentelemetry.io/collector/component/componentattribute => ../component/componentattribute
+replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry/
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
 

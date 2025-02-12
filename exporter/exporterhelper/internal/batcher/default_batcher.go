@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queue // import "go.opentelemetry.io/collector/exporter/internal/queue"
+package batcher // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
 
 import (
 	"context"
@@ -12,13 +12,13 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
 )
 
 type batch struct {
 	ctx  context.Context
-	req  internal.Request
+	req  request.Request
 	done multiDone
 }
 
@@ -26,7 +26,7 @@ type batch struct {
 type defaultBatcher struct {
 	batchCfg       exporterbatcher.Config
 	workerPool     chan struct{}
-	exportFunc     func(ctx context.Context, req internal.Request) error
+	exportFunc     func(ctx context.Context, req request.Request) error
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
@@ -35,7 +35,7 @@ type defaultBatcher struct {
 }
 
 func newDefaultBatcher(batchCfg exporterbatcher.Config,
-	exportFunc func(ctx context.Context, req internal.Request) error,
+	exportFunc func(ctx context.Context, req request.Request) error,
 	maxWorkers int,
 ) *defaultBatcher {
 	// TODO: Determine what is the right behavior for this in combination with async queue.
@@ -61,10 +61,10 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
-func (qb *defaultBatcher) Consume(ctx context.Context, req internal.Request, done exporterqueue.Done) {
+func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done exporterqueue.Done) {
 	qb.currentBatchMu.Lock()
 
-	var reqList []internal.Request
+	var reqList []request.Request
 	var mergeSplitErr error
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
@@ -201,7 +201,7 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *defaultBatcher) flush(ctx context.Context, req internal.Request, done exporterqueue.Done) {
+func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done exporterqueue.Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool

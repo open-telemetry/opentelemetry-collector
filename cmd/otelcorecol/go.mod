@@ -2,9 +2,9 @@
 
 module go.opentelemetry.io/collector/cmd/otelcorecol
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.22.12
+toolchain go1.23.6
 
 require (
 	go.opentelemetry.io/collector/component v0.119.0
@@ -82,7 +82,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector v0.119.0 // indirect
 	go.opentelemetry.io/collector/client v1.25.0 // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.0.0-20250207221750-83d93cd7cf86 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.119.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
@@ -113,6 +112,7 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0 // indirect
 	go.opentelemetry.io/collector/internal/memorylimiter v0.119.0 // indirect
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
@@ -152,8 +152,8 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
@@ -169,8 +169,6 @@ replace go.opentelemetry.io/collector/client => ../../client
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
-
-replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
 
@@ -261,6 +259,8 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
 
