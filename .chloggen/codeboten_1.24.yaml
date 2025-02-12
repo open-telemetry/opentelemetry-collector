@@ -7,7 +7,7 @@ change_type: breaking
 component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added support for go.14, bumped minimum version to 1.23
+note: Added support for go1.24, bumped minimum version to 1.23
 
 # One or more tracking issues or pull requests related to the change
 issues: [12370]
