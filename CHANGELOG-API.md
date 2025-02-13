@@ -7,6 +7,90 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.25.0/v0.119.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Change queue to embed the async consumers. (#12242)
+- `exporterqueue`: Change Queue interface to return a callback instead of an index (#8122)
+- `cmd/mdatagen`: Allow passing OTel Metric SDK options to the generated `SetupTelemetry` function. (#12166)
+- `exporterhelper`: Rename exporter span signal specific attributes (e.g. "sent_spans" / "send_failed_span") to "items.sent" / "items.failed". (#12165)
+- `component`: Change underlying type for `component.Kind` to be a struct. (#12214)
+- `extension`: Change `extension.Extension` to be an interface that embeds `component.Component` instead of an alias (#11443)
+- `component/componenttest`: Remove deprecated `CheckScraperMetrics` functions (#12183)
+- `scraperhelper`: Remove deprecated ScrapperControllerOption and NewScraperControllerMetrics from scraperhelper. (#12147)
+
+### 🚩 Deprecations 🚩
+
+- `metadatatest`: Deprecate metadatatest.Telemetry in favor of componenttest.Telemetry (#12218)
+  metadatatest.Telemetry -> componenttest.Telemetry |
+  metadatatest.SetupTelemetry -> componenttest.NewTelemetry |
+  metadatatest.Telemetry.NewSettings -> metadatatest.NewSettings |
+  metadatatest.Telemetry.AssertMetrics -> metadatatest.AssertEqual* |
+  
+- `component/componenttest`: Deprecate `CheckExporterEnqueue*` functions in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterEnqueue*` functions.
+- `component/componenttest`: Deprecate CheckExporterLogs in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterLogs`
+- `component/componenttest`: Deprecate CheckExporterMetricGauge in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetricGauge`
+- `component/componenttest`: Deprecate CheckExporterMetrics in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterMetrics`
+- `component/componenttest`: Deprecate CheckExporterTraces in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterTraces`
+- `component/componenttest`: Deprecate CheckReceiverLogs in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverLogs`
+- `mdatagen`: Make registration of callback for async metric always optional. (#12204)
+  Deprecate `metadata.TelemetryBuilder.Init*` and `metadata.With*Callback` in favor of `metadata.TelemetryBuilder.Register*Callback`
+- `component`: Deprecate `component.TelemetrySettings.MetricsLevel` in favor of using views and 'Enabled' method. (#12159)
+  - Components will temporarily need the service to support using views.
+  
+
+### 💡 Enhancements 💡
+
+- `componenttest`: Add helper to get a metric for componentest.Telemetry (#12215)
+- `componenttest`: Extract componenttest.Telemetry as generic struct for telemetry testing (#12151)
+- `mdatagen`: Generate assert function for each metric in mdatagen (#12179)
+- `metadatatest`: Generate NewSettings that accepts componenttest.Telemetry (#12216)
+- `pdata/pprofile`: Add new helper method `FromAttributeIndices` to build a `pcommon.Map` out of `AttributeIndices`. (#12176)
+- `scraper`: Support logs scraper (#12116)
+- `component`: Allow `component.ValidateConfig` to recurse through all fields in a config object (#11524)
+- `component`: Show path to invalid config in errors returned from `component.ValidateConfig` (#12108)
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: All register callbacks to async instruments can now be unregistered by calling `metadata.TelemetryBuilder.Shutdown()` (#12204)
+- `mdatagen`: Fix bug where Histograms were marked as not supporting temporaly aggregation (#12168)
+
+## v1.24.0/v0.118.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterqueue`: Change Queue Size and Capacity to return explicit int64. (#12076)
+- `receiver/scraperhelper`: Removing the deprecated receiver/scraperhelper package (#12054)
+- `processorteset`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
+- `experimental/storage`: Remove deprecated package/module experimental/storage (#12109)
+- `mdatagen`: Remove deprecated generated_component_telemetry_test file from being generated and delete it. (#12068)
+- `receivertest`: Remove deprecated receivertest.NewNopFactoryForType (#12110)
+
+### 🚩 Deprecations 🚩
+
+- `componenttest`: Deprecate CheckScraperMetrics in componenenttest (#12105)
+  Use `metadatatest.AssertMetrics` instead of `obsreporttest.CheckScraperMetrics`
+- `scraperhelper`: Deprecate `scraperhelper.NewScraperControllerReceiver` and `scraperhelper.ScraperControllerOption`. (#12103)
+  Use `scraperhelper.NewMetricsController` instead of `scraperhelper.NewScraperControllerReceiver` | Use `scraperhelper.ScraperControllerOption` instead of `scraperhelper.ControllerOption`
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add capability for memory and persistent queue to block when add items (#12074)
+- `scraper/scraperhelper`: Add obs_logs for scraper/scraperhelper (#12036)
+  This change adds obs for logs in scraper/scraperhelper, also introduced new metrics for scraping logs.
+- `mdatagen`: Add scraper component type support to mdatagen (#12092)
+- `mdatagen`: Add tracing support in metadatatest (#12106)
+- `exporterhelper`: Change persistent queue to not use sized channel, improve memory usage and simplify sized_channel. (#12060)
+- `confighttp`: Added support for configuring compression levels. (#10467)
+  A new configuration option called CompressionParams has been added to confighttp. | This allows users to configure the compression levels for the confighttp client.
+
 ## v1.23.0/v0.117.0
 
 ### 🛑 Breaking changes 🛑

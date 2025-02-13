@@ -76,19 +76,10 @@ func run(ymlPath string) error {
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
-	if err = os.MkdirAll(codeDir, 0o700); err != nil {
-		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
-	}
-	testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
-	if err = os.MkdirAll(testDir, 0o700); err != nil {
-		return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
-	}
+	toGenerate := map[string]string{}
 	if md.Status != nil {
 		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
-			if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
-				filepath.Join(codeDir, "generated_status.go"), md, "metadata"); err != nil {
-				return err
-			}
+			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
 			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
@@ -116,8 +107,11 @@ func run(ymlPath string) error {
 		return fmt.Errorf("unable to remove generated file \"generated_component_telemetry_test.go\": %w", err)
 	}
 
-	toGenerate := map[string]string{}
 	if len(md.Telemetry.Metrics) != 0 { // if there are telemetry metrics, generate telemetry specific files
+		testDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName+"test")
+		if err = os.MkdirAll(testDir, 0o700); err != nil {
+			return fmt.Errorf("unable to create output test directory %q: %w", codeDir, err)
+		}
 		toGenerate[filepath.Join(tmplDir, "telemetry.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry.go")
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
@@ -128,24 +122,15 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
-	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, "metadata"); err != nil {
-			return err
+	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 {
+		testdataDir := filepath.Join(codeDir, "testdata")
+		if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
+			return fmt.Errorf("unable to create output directory %q: %w", testdataDir, err)
 		}
-	}
 
-	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
-		return nil
-	}
-
-	if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
-		return fmt.Errorf("unable to create output directory %q: %w", filepath.Join(codeDir, "testdata"), err)
-	}
-
-	toGenerate = map[string]string{
-		filepath.Join(tmplDir, "testdata", "config.yaml.tmpl"): filepath.Join(codeDir, "testdata", "config.yaml"),
-		filepath.Join(tmplDir, "config.go.tmpl"):               filepath.Join(codeDir, "generated_config.go"),
-		filepath.Join(tmplDir, "config_test.go.tmpl"):          filepath.Join(codeDir, "generated_config_test.go"),
+		toGenerate[filepath.Join(tmplDir, "testdata", "config.yaml.tmpl")] = filepath.Join(testdataDir, "config.yaml")
+		toGenerate[filepath.Join(tmplDir, "config.go.tmpl")] = filepath.Join(codeDir, "generated_config.go")
+		toGenerate[filepath.Join(tmplDir, "config_test.go.tmpl")] = filepath.Join(codeDir, "generated_config_test.go")
 	}
 
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
@@ -156,6 +141,13 @@ func run(ymlPath string) error {
 	if len(md.Metrics) > 0 { // only generate metrics if metrics are present
 		toGenerate[filepath.Join(tmplDir, "metrics.go.tmpl")] = filepath.Join(codeDir, "generated_metrics.go")
 		toGenerate[filepath.Join(tmplDir, "metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_metrics_test.go")
+	}
+
+	// If at least one file to generate, will need the codeDir
+	if len(toGenerate) > 0 {
+		if err = os.MkdirAll(codeDir, 0o700); err != nil {
+			return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
+		}
 	}
 
 	for tmpl, dst := range toGenerate {
@@ -233,6 +225,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				},
 				"isConnector": func() bool {
 					return md.Status.Class == "connector"
+				},
+				"isScraper": func() bool {
+					return md.Status.Class == "scraper"
 				},
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
@@ -380,7 +375,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
 	var readmeContents []byte
 	var err error
-	if readmeContents, err = os.ReadFile(outputFile); err != nil { // nolint: gosec
+	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
 		return err
 	}
 

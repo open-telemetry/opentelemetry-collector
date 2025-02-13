@@ -29,11 +29,18 @@ type Settings struct {
 type Factory interface {
 	component.Factory
 
+	// CreateLogs creates a Logs scraper based on this config.
+	// If the scraper type does not support logs,
+	// this function returns the error [pipeline.ErrSignalNotSupported].
+	CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error)
+
 	// CreateMetrics creates a Metrics scraper based on this config.
 	// If the scraper type does not support metrics,
 	// this function returns the error [pipeline.ErrSignalNotSupported].
-	// Implementers can assume `next` is never nil.
 	CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error)
+
+	// LogsStability gets the stability level of the Logs scraper.
+	LogsStability() component.StabilityLevel
 
 	// MetricsStability gets the stability level of the Metrics scraper.
 	MetricsStability() component.StabilityLevel
@@ -59,7 +66,9 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
-	CreateMetricsFunc
+	createLogsFunc        CreateLogsFunc
+	createMetricsFunc     CreateMetricsFunc
+	logsStabilityLevel    component.StabilityLevel
 	metricsStabilityLevel component.StabilityLevel
 }
 
@@ -69,14 +78,45 @@ func (f *factory) Type() component.Type {
 
 func (f *factory) unexportedFactoryFunc() {}
 
+func (f *factory) LogsStability() component.StabilityLevel {
+	return f.logsStabilityLevel
+}
+
 func (f *factory) MetricsStability() component.StabilityLevel {
 	return f.metricsStabilityLevel
 }
 
+func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
+	if f.createLogsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createLogsFunc(ctx, set, cfg)
+}
+
+func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
+	if f.createMetricsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createMetricsFunc(ctx, set, cfg)
+}
+
+// CreateLogsFunc is the equivalent of Factory.CreateLogs().
+type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
+
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics().
 type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
+// CreateLogs implements Factory.CreateLogs.
+// Deprecated: [v0.120.0] No longer used, will be removed.
+func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
+	if f == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f(ctx, set, cfg)
+}
+
 // CreateMetrics implements Factory.CreateMetrics.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -84,11 +124,19 @@ func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg 
 	return f(ctx, set, cfg)
 }
 
+// WithLogs overrides the default "error not supported" implementation for CreateLogs and the default "undefined" stability level.
+func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
+	return factoryOptionFunc(func(o *factory) {
+		o.logsStabilityLevel = sl
+		o.createLogsFunc = createLogs
+	})
+}
+
 // WithMetrics overrides the default "error not supported" implementation for CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsStabilityLevel = sl
-		o.CreateMetricsFunc = createMetrics
+		o.createMetricsFunc = createMetrics
 	})
 }
 

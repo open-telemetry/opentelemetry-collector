@@ -91,6 +91,9 @@ linters-settings:
     ignore-words:
       - cancelled
 
+  nolintlint:
+    require-specific: true
+
   perfsprint:
     # Optimizes even if it requires an int or uint type cast.
     int-conversion: true
@@ -146,6 +149,7 @@ linters-settings:
       - name: time-naming
       # warns when an exported function or method returns a value of an un-exported type.
       - name: unexported-return
+      - name: unnecessary-stmt
       # spots and proposes to remove unreachable code. also helps to spot errors
       - name: unreachable-code
       # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
@@ -203,6 +207,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - nolintlint
     - perfsprint
     - revive
     - staticcheck

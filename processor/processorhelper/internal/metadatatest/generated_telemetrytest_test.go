@@ -10,44 +10,23 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.ProcessorIncomingItems.Add(context.Background(), 1)
 	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
+	AssertEqualProcessorIncomingItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorOutgoingItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

@@ -14,65 +14,36 @@ import (
 // MergeSplit splits and/or merges the provided metrics request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *metricsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
-	var req2 *metricsRequest
 	if r2 != nil {
-		var ok bool
-		req2, ok = r2.(*metricsRequest)
+		req2, ok := r2.(*metricsRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
+		req2.mergeTo(req)
 	}
 
+	// If no limit we can simply merge the new request into the current and return.
 	if cfg.MaxSizeItems == 0 {
-		req2.md.ResourceMetrics().MoveAndAppendTo(req.md.ResourceMetrics())
 		return []Request{req}, nil
 	}
+	return req.split(cfg)
+}
 
-	var (
-		res          []Request
-		destReq      *metricsRequest
-		capacityLeft = cfg.MaxSizeItems
-	)
-	for _, srcReq := range []*metricsRequest{req, req2} {
-		if srcReq == nil {
-			continue
-		}
+func (req *metricsRequest) mergeTo(dst *metricsRequest) {
+	dst.setCachedItemsCount(dst.ItemsCount() + req.ItemsCount())
+	req.setCachedItemsCount(0)
+	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
+}
 
-		srcCount := srcReq.md.DataPointCount()
-		if srcCount <= capacityLeft {
-			if destReq == nil {
-				destReq = srcReq
-			} else {
-				srcReq.md.ResourceMetrics().MoveAndAppendTo(destReq.md.ResourceMetrics())
-			}
-			capacityLeft -= srcCount
-			continue
-		}
-
-		for {
-			extractedMetrics := extractMetrics(srcReq.md, capacityLeft)
-			if extractedMetrics.DataPointCount() == 0 {
-				break
-			}
-			capacityLeft -= extractedMetrics.DataPointCount()
-			if destReq == nil {
-				destReq = &metricsRequest{md: extractedMetrics, pusher: srcReq.pusher}
-			} else {
-				extractedMetrics.ResourceMetrics().MoveAndAppendTo(destReq.md.ResourceMetrics())
-			}
-			// Create new batch once capacity is reached.
-			if capacityLeft == 0 {
-				res = append(res, destReq)
-				destReq = nil
-				capacityLeft = cfg.MaxSizeItems
-			}
-		}
+func (req *metricsRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]Request, error) {
+	var res []Request
+	for req.ItemsCount() > cfg.MaxSizeItems {
+		md := extractMetrics(req.md, cfg.MaxSizeItems)
+		size := md.DataPointCount()
+		req.setCachedItemsCount(req.ItemsCount() - size)
+		res = append(res, &metricsRequest{md: md, pusher: req.pusher, cachedItemsCount: size})
 	}
-
-	if destReq != nil {
-		res = append(res, destReq)
-	}
-
+	res = append(res, req)
 	return res, nil
 }
 

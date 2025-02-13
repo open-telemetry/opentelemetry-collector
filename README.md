@@ -73,7 +73,7 @@ video calls. Everyone is invited to join those calls, which typically serves the
 - look for a sponsor for a proposed component after trying already via GitHub and Slack
 - get attention to a specific pull-request that got stuck and is difficult to discuss asynchronously
 
-Between 11 July 2024 and 09 January 2025, we'll have our video calls rotating between three time slots, in order to
+We rotate our video calls between three time slots, in order to
 allow everyone to join at least once every three meetings. The rotation order is as follows:
 
 Tuesday:
@@ -86,7 +86,7 @@ Wednesday:
 - [05:00 PT](https://dateful.com/convert/pst-pdt-pacific-time?t=0500)
 
 Contributors to the project are also welcome to have ad-hoc meetings for synchronous discussions about specific points.
-Post a note in #otel-collector on Slack inviting others, specifying the topic to be discussed. Unless there are strong
+Post a note in #otel-collector-dev on Slack inviting others, specifying the topic to be discussed. Unless there are strong
 reasons to keep the meeting private, please make it an open invitation for other contributors to join. Try also to
 identify who would be the other contributors interested on that topic and in which timezones they are.
 
@@ -177,9 +177,8 @@ Here is a list of community roles with current and previous members:
 - Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
 
    - [Antoine Toulme](https://github.com/atoulme), Splunk
-   - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
    - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), Grafana Labs
+   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
    - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
    - [Yang Song](https://github.com/songy23), Datadog
 
@@ -192,6 +191,7 @@ Here is a list of community roles with current and previous members:
    - [Rahul Patel](https://github.com/rghetia)
    - [Steven Karis](https://github.com/sjkaris)
    - [Anthony Mirabella](https://github.com/Aneurysm9)
+   - [Daniel Jaglowski](https://github.com/djaglowski)
 
 - Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
 

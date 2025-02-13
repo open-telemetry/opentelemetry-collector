@@ -40,8 +40,8 @@ require (
 var replaceModules = []string{
 	"",
 	"/component",
-	"/component/componenttest",
 	"/component/componentstatus",
+	"/component/componenttest",
 	"/client",
 	"/config/configauth",
 	"/config/configcompression",
@@ -53,6 +53,7 @@ var replaceModules = []string{
 	"/config/configtelemetry",
 	"/config/configtls",
 	"/confmap",
+	"/confmap/xconfmap",
 	"/confmap/provider/envprovider",
 	"/confmap/provider/fileprovider",
 	"/confmap/provider/httpprovider",
@@ -85,6 +86,7 @@ var replaceModules = []string{
 	"/internal/memorylimiter",
 	"/internal/fanoutconsumer",
 	"/internal/sharedcomponent",
+	"/internal/telemetry",
 	"/otelcol",
 	"/pdata",
 	"/pdata/testdata",
@@ -246,7 +248,19 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.LDSet = true
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
+				return cfg
+			},
+		},
+		{
+			name: "GCFlags Compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				cfg.GCSet = true
+				cfg.GCFlags = `all=-N -l`
 				return cfg
 			},
 		},
@@ -349,6 +363,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 	// Configure all components that we want to use elsewhere in these tests.
 	// This ensures the resulting go.mod file has maximum coverage of modules
 	// that exist in the Core repository.
+	usedNames := make(map[string]int)
 	cfg.Exporters, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/debugexporter v1.9999.9999",
@@ -362,7 +377,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/exporter/otlphttpexporter v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Receivers, err = parseModules([]Module{
 		{
@@ -371,13 +386,13 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/receiver/otlpreceiver v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Extensions, err = parseModules([]Module{
 		{
 			GoMod: "go.opentelemetry.io/collector/extension/zpagesextension v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 	cfg.Processors, err = parseModules([]Module{
 		{
@@ -386,7 +401,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 		{
 			GoMod: "go.opentelemetry.io/collector/processor/memorylimiterprocessor v1.9999.9999",
 		},
-	})
+	}, usedNames)
 	require.NoError(t, err)
 
 	require.NoError(t, cfg.Validate())
@@ -403,7 +418,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 	gomodpath := path.Join(dir, "go.mod")
-	// #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
+	//nolint:gosec // #nosec G304 We control this path and generate the file inside, so we can assume it is safe.
 	gomod, err := os.ReadFile(gomodpath)
 	require.NoError(t, err)
 

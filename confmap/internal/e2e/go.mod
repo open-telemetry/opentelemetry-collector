@@ -1,13 +1,13 @@
 module go.opentelemetry.io/collector/confmap/internal/e2e
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/config/configopaque v1.23.0
-	go.opentelemetry.io/collector/confmap v1.23.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.23.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.23.0
+	go.opentelemetry.io/collector/config/configopaque v1.25.0
+	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.25.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.0
 )
 
 require (
