@@ -15,22 +15,24 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processortest"
-	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
-func TestProcessorBuilder(t *testing.T) {
+func TestReceiverBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := processor.MakeFactoryMap([]processor.Factory{
-		processor.NewFactory(component.MustNewType("err"), nil),
-		xprocessor.NewFactory(
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{
+		receiver.NewFactory(component.MustNewType("err"), nil),
+		xreceiver.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			xprocessor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			xprocessor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			xprocessor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
-			xprocessor.WithProfiles(createxprocessor, component.StabilityLevelDevelopment),
+			xreceiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			xreceiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			xreceiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			xreceiver.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 	require.NoError(t, err)
@@ -47,7 +49,7 @@ func TestProcessorBuilder(t *testing.T) {
 		{
 			name:         "unknown",
 			id:           component.MustNewID("unknown"),
-			err:          "processor factory not available for: \"unknown\"",
+			err:          "receiver factory not available for: \"unknown\"",
 			nextTraces:   consumertest.NewNop(),
 			nextLogs:     consumertest.NewNop(),
 			nextMetrics:  consumertest.NewNop(),
@@ -92,102 +94,102 @@ func TestProcessorBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewProcessor(cfgs, factories)
+			b := builders.NewReceiver(cfgs, factories)
 
-			te, err := b.CreateTraces(context.Background(), createProcessorSettings(tt.id), tt.nextTraces)
+			te, err := b.CreateTraces(context.Background(), settings(tt.id), tt.nextTraces)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				assert.Nil(t, te)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, nopProcessorInstance, te)
+				assert.Equal(t, nopReceiverInstance, te)
 			}
 
-			me, err := b.CreateMetrics(context.Background(), createProcessorSettings(tt.id), tt.nextMetrics)
+			me, err := b.CreateMetrics(context.Background(), settings(tt.id), tt.nextMetrics)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				assert.Nil(t, me)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, nopProcessorInstance, me)
+				assert.Equal(t, nopReceiverInstance, me)
 			}
 
-			le, err := b.CreateLogs(context.Background(), createProcessorSettings(tt.id), tt.nextLogs)
+			le, err := b.CreateLogs(context.Background(), settings(tt.id), tt.nextLogs)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				assert.Nil(t, le)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, nopProcessorInstance, le)
+				assert.Equal(t, nopReceiverInstance, le)
 			}
 
-			pe, err := b.CreateProfiles(context.Background(), createProcessorSettings(tt.id), tt.nextProfiles)
+			pe, err := b.CreateProfiles(context.Background(), settings(tt.id), tt.nextProfiles)
 			if tt.err != "" {
 				require.EqualError(t, err, tt.err)
 				assert.Nil(t, pe)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, nopProcessorInstance, pe)
+				assert.Equal(t, nopReceiverInstance, pe)
 			}
 		})
 	}
 }
 
-func TestProcessorBuilderMissingConfig(t *testing.T) {
+func TestReceiverBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := processor.MakeFactoryMap([]processor.Factory{
-		xprocessor.NewFactory(
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{
+		xreceiver.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
-			xprocessor.WithTraces(createProcessorTraces, component.StabilityLevelDevelopment),
-			xprocessor.WithMetrics(createProcessorMetrics, component.StabilityLevelAlpha),
-			xprocessor.WithLogs(createProcessorLogs, component.StabilityLevelDeprecated),
-			xprocessor.WithProfiles(createxprocessor, component.StabilityLevelDevelopment),
+			xreceiver.WithTraces(createReceiverTraces, component.StabilityLevelDevelopment),
+			xreceiver.WithMetrics(createReceiverMetrics, component.StabilityLevelAlpha),
+			xreceiver.WithLogs(createReceiverLogs, component.StabilityLevelDeprecated),
+			xreceiver.WithProfiles(createReceiverProfiles, component.StabilityLevelAlpha),
 		),
 	}...)
 
 	require.NoError(t, err)
 
-	bErr := NewProcessor(map[component.ID]component.Config{}, factories)
+	bErr := builders.NewReceiver(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
-	te, err := bErr.CreateTraces(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	require.EqualError(t, err, "processor \"all/missing\" is not configured")
+	te, err := bErr.CreateTraces(context.Background(), settings(missingID), consumertest.NewNop())
+	require.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, te)
 
-	me, err := bErr.CreateMetrics(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	require.EqualError(t, err, "processor \"all/missing\" is not configured")
+	me, err := bErr.CreateMetrics(context.Background(), settings(missingID), consumertest.NewNop())
+	require.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, me)
 
-	le, err := bErr.CreateLogs(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	require.EqualError(t, err, "processor \"all/missing\" is not configured")
+	le, err := bErr.CreateLogs(context.Background(), settings(missingID), consumertest.NewNop())
+	require.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, le)
 
-	pe, err := bErr.CreateProfiles(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
-	require.EqualError(t, err, "processor \"all/missing\" is not configured")
+	pe, err := bErr.CreateProfiles(context.Background(), settings(missingID), consumertest.NewNop())
+	require.EqualError(t, err, "receiver \"all/missing\" is not configured")
 	assert.Nil(t, pe)
 }
 
-func TestProcessorBuilderFactory(t *testing.T) {
-	factories, err := processor.MakeFactoryMap([]processor.Factory{processor.NewFactory(component.MustNewType("foo"), nil)}...)
+func TestReceiverBuilderFactory(t *testing.T) {
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{receiver.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewProcessor(cfgs, factories)
+	b := builders.NewReceiver(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
-func TestNewNopProcessorBuilder(t *testing.T) {
-	configs, factories := NewNopProcessorConfigsAndFactories()
-	builder := NewProcessor(configs, factories)
+func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
+	configs, factories := builders.NewNopReceiverConfigsAndFactories()
+	builder := builders.NewReceiver(configs, factories)
 	require.NotNil(t, builder)
 
-	factory := processortest.NewNopFactory()
+	factory := receivertest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := processortest.NewNopSettings()
-	set.ID = component.NewID(nopType)
+	set := receivertest.NewNopSettings()
+	set.ID = component.NewID(builders.NopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -207,44 +209,44 @@ func TestNewNopProcessorBuilder(t *testing.T) {
 	require.NoError(t, err)
 	assert.IsType(t, logs, bLogs)
 
-	profiles, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
+	profiles, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	bProfiles, err := builder.CreateProfiles(context.Background(), set, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.IsType(t, profiles, bProfiles)
 }
 
-var nopProcessorInstance = &nopProcessor{
+func settings(id component.ID) receiver.Settings {
+	return receiver.Settings{
+		ID:                id,
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
+
+var nopReceiverInstance = &nopReceiver{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopProcessor stores consumed traces, metrics, logs and profiles for testing purposes.
-type nopProcessor struct {
+// nopReceiver stores consumed traces and metrics for testing purposes.
+type nopReceiver struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer
 }
 
-func createProcessorTraces(context.Context, processor.Settings, component.Config, consumer.Traces) (processor.Traces, error) {
-	return nopProcessorInstance, nil
+func createReceiverTraces(context.Context, receiver.Settings, component.Config, consumer.Traces) (receiver.Traces, error) {
+	return nopReceiverInstance, nil
 }
 
-func createProcessorMetrics(context.Context, processor.Settings, component.Config, consumer.Metrics) (processor.Metrics, error) {
-	return nopProcessorInstance, nil
+func createReceiverMetrics(context.Context, receiver.Settings, component.Config, consumer.Metrics) (receiver.Metrics, error) {
+	return nopReceiverInstance, nil
 }
 
-func createProcessorLogs(context.Context, processor.Settings, component.Config, consumer.Logs) (processor.Logs, error) {
-	return nopProcessorInstance, nil
+func createReceiverLogs(context.Context, receiver.Settings, component.Config, consumer.Logs) (receiver.Logs, error) {
+	return nopReceiverInstance, nil
 }
 
-func createxprocessor(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (xprocessor.Profiles, error) {
-	return nopProcessorInstance, nil
-}
-
-func createProcessorSettings(id component.ID) processor.Settings {
-	return processor.Settings{
-		ID:                id,
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
+func createReceiverProfiles(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (xreceiver.Profiles, error) {
+	return nopReceiverInstance, nil
 }

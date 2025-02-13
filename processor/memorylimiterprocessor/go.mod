@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/processor/memorylimiterprocessor
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -103,8 +103,6 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
-
-replace go.opentelemetry.io/collector/component/componentattribute => ../../component/componentattribute
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 

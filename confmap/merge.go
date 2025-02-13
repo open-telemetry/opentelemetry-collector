@@ -55,9 +55,6 @@ func mergeMaps(src, dest map[string]any) {
 }
 
 func mergeSlice(src, dest reflect.Value) any {
-	if src.Type() != dest.Type() {
-		return src
-	}
 	slice := reflect.MakeSlice(src.Type(), 0, src.Cap()+dest.Cap())
 	for i := 0; i < dest.Len(); i++ {
 		slice = reflect.Append(slice, dest.Index(i))
