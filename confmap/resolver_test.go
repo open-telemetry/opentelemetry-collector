@@ -478,7 +478,7 @@ func TestMergeFunctionality(t *testing.T) {
 }
 
 func runScenario(t *testing.T, path string) {
-	yamlData, err := os.ReadFile(path)
+	yamlData, err := os.ReadFile(filepath.Clean(path))
 	require.NoError(t, err)
 	var testcases []*mergeTest
 	err = yaml.Unmarshal(yamlData, &testcases)
@@ -494,7 +494,7 @@ func runScenario(t *testing.T, path string) {
 				require.NoError(t, err)
 				n, err := file.Write(b)
 				require.NoError(t, err)
-				require.Greater(t, n, 0)
+				require.Positive(t, n, 0)
 				configFiles = append(configFiles, file.Name())
 				file.Close()
 			}
