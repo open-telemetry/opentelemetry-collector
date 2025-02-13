@@ -215,6 +215,4 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confma
 
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
-replace go.opentelemetry.io/collector/component/componentattribute => ../component/componentattribute
-
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
