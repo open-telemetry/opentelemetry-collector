@@ -7,7 +7,7 @@ change_type: enhancement
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduce a new command line option to allow for merging lists instead of discarding the existing ones.
+note: Introduce a new feature flag to allow for merging lists instead of discarding the existing ones.
 
 # One or more tracking issues or pull requests related to the change
 issues: [8394, 8754, 10370]
@@ -15,7 +15,9 @@ issues: [8394, 8754, 10370]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  You can enable this option via the command line by running following command:
+  otelcol --config=main.yaml --config=extra_config.yaml --feature-gates=-confmap.enableMergeAppendOption
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

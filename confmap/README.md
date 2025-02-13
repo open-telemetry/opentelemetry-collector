@@ -83,6 +83,73 @@ The `Resolve` method proceeds in the following steps:
 4. For each "Converter", call "Convert" for the "result".
 5. Return the "result", aka effective, configuration.
 
+#### New Merging strategy
+
+When merging configs from different sources, we currently override static values such as slices, numbers, and strings.
+However, you can combine lists instead of discarding the existing ones by enabling `confmap.enableMergeAppendOption` feature flag. 
+
+##### Example
+Consider the following configs,
+
+```yaml
+# main.yaml
+receivers:
+  otlp/in:
+processors:
+  batch:
+exporters:
+  otlp/out:
+extensions:
+  file_storage:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp/in ]
+      processors: [ batch ]
+      exporters: [ otlp/out ]
+  extensions: [ file_storage ]
+```
+
+
+```yaml
+# extra_extension.yaml
+extensions:
+  healthcheckv2:
+
+service:
+  extensions: [ healthcheckv2 ]
+```
+
+If you run the collector with following command,
+```
+otelcol --config=main.yaml --config=extra_extension.yaml --feature-gates=-confmap.enableMergeAppendOption
+```
+then the final configuration after config resolution will look like following:
+
+```yaml
+# main.yaml
+receivers:
+  otlp/in:
+processors:
+  batch:
+exporters:
+  otlp/out:
+extensions:
+  file_storage:
+  healthcheckv2:
+
+service:
+  pipelines:
+    traces:
+      receivers: [ otlp/in ]
+      processors: [ batch ]
+      exporters: [ otlp/out ]
+  extensions: [ file_storage, healthcheckv2 ]
+```
+
+Notice that the `service::extensions` list is a combination of both configurations. By default, it is `service::extensions: [healthcheckv2]`.
+
 ### Watching for Updates
 After the configuration was processed, the `Resolver` can be used as a single point to watch for updates in the
 configuration retrieved via the `Provider` used to retrieve the “initial” configuration and to generate the “effective” one.

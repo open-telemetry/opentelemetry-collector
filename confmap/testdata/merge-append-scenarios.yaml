@@ -603,3 +603,55 @@
                 receivers: [nop]
                 processors: [nop]
                 exporters: [nop]
+- name: merge-mode-extra-extension
+  configs:
+    -
+        receivers:
+            nop:
+                key: val
+
+        processors:
+            nop:
+
+        exporters:
+            nop:
+                key: 2
+
+        extensions:
+            nop:
+
+        service:
+            extensions: [nop]
+            pipelines:
+                traces:
+                    receivers: [nop]
+                    processors: [nop]
+                    exporters: [nop]
+    -
+        extensions:
+            nop2:
+        service:
+            extensions: [nop2]
+  expected: 
+    receivers:
+        nop:
+            key: val
+
+    processors:
+        nop:
+
+    exporters:
+        nop:
+            key: 2
+
+    extensions:
+        nop:
+        nop2:
+
+    service:
+        extensions: [nop, nop2]
+        pipelines:
+            traces:
+                receivers: [nop]
+                processors: [nop]
+                exporters: [nop]
