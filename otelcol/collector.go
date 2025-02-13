@@ -94,7 +94,7 @@ type CollectorSettings struct {
 type Collector struct {
 	set CollectorSettings
 
-	configProvider ConfigProvider
+	configProvider *ConfigProvider
 
 	serviceConfig *service.Config
 	service       *service.Service
