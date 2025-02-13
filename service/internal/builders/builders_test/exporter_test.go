@@ -16,11 +16,13 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
 func TestExporterBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
+	factories, err := otelcol.MakeFactoryMap([]exporter.Factory{
 		exporter.NewFactory(component.MustNewType("err"), nil),
 		xexporter.NewFactory(
 			component.MustNewType("all"),
@@ -61,7 +63,7 @@ func TestExporterBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewExporter(cfgs, factories)
+			b := builders.NewExporter(cfgs, factories)
 
 			te, err := b.CreateTraces(context.Background(), createExporterSettings(tt.id))
 			if tt.err != "" {
@@ -104,7 +106,7 @@ func TestExporterBuilder(t *testing.T) {
 
 func TestExporterBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := exporter.MakeFactoryMap([]exporter.Factory{
+	factories, err := otelcol.MakeFactoryMap([]exporter.Factory{
 		xexporter.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
@@ -117,7 +119,7 @@ func TestExporterBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewExporter(map[component.ID]component.Config{}, factories)
+	bErr := builders.NewExporter(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createExporterSettings(missingID))
@@ -138,25 +140,25 @@ func TestExporterBuilderMissingConfig(t *testing.T) {
 }
 
 func TestExporterBuilderFactory(t *testing.T) {
-	factories, err := exporter.MakeFactoryMap([]exporter.Factory{exporter.NewFactory(component.MustNewType("foo"), nil)}...)
+	factories, err := otelcol.MakeFactoryMap([]exporter.Factory{exporter.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewExporter(cfgs, factories)
+	b := builders.NewExporter(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func TestNewNopExporterConfigsAndFactories(t *testing.T) {
-	configs, factories := NewNopExporterConfigsAndFactories()
-	builder := NewExporter(configs, factories)
+	configs, factories := builders.NewNopExporterConfigsAndFactories()
+	builder := builders.NewExporter(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := exportertest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
 	set := exportertest.NewNopSettings()
-	set.ID = component.NewID(nopType)
+	set.ID = component.NewID(builders.NopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
