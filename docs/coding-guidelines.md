@@ -356,7 +356,7 @@ Whenever possible, we adhere to [semver](https://semver.org/) as our minimum sta
 without a good reason. Hence, when a change is known to cause a breaking change, we intend to follow these principles:
 
 - Breaking changes MUST have migration guidelines that clearly explain how to adapt to them.
-- Users SHOULD be able to migrate to the breaking change at their own pace, independent of other software updates.
+- Users SHOULD be able to adopt the breaking change at their own pace, independent of other Collector updates.
 - Users SHOULD be proactively notified about the breaking change before a migration is required.
 - Users SHOULD be able to easily tell whether they have completed the migration for a breaking change.
 
@@ -453,8 +453,8 @@ feedback. Consider the following items before the initial release of an alpha fe
 * If **docs and examples** can be updated in a way that prevents the breaking change from affecting
   users, this is the time to update them\!  
 * Provide users with tools to understand the breaking change  
-  * Create or update a **Github issue** to document what the change is about, who it affects and
-    what its effects are  
+  * (Optional) Create or update a **Github issue** to document what the change is about, who it
+    affects and what its effects are  
   * (Optional) Consider adding **telemetry** that allows users to track their migration. For
     example, you can add a counter for the times that you see a payload that would be affected by
     the breaking change.  
