@@ -102,7 +102,7 @@ func TestPrintCommandFeaturegateDisabled(t *testing.T) {
 		},
 	}}, flags(featuregate.GlobalRegistry()))
 	err := cmd.Execute()
-	require.ErrorContains(t, err, "print-initial-config is currently experimental, use otelcol.printInitialConfig feature gate to enable this command")
+	require.ErrorContains(t, err, "print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 }
 
 func TestConfig(t *testing.T) {
