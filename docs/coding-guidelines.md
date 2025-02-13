@@ -355,10 +355,10 @@ or report a warning back to the collector with a clear error saying CGO is requi
 Whenever possible, we adhere to [semver](https://semver.org/) as our minimum standards. Even before v1, we strive not to break compatibility
 without a good reason. Hence, when a change is known to cause a breaking change, we intend to follow these principles:
 
-- Breaking changes MUST have migration guidelines that clearly explain how to adapt to them.  
-- Users SHOULD be able to migrate to the breaking change at their own pace, independent of other software updates.  
-- Users SHOULD be proactively notified about the breaking change before it becomes law  
-- Users SHOULD be able to easily tell whether they have completed the migration for a breaking change
+- Breaking changes MUST have migration guidelines that clearly explain how to adapt to them.
+- Users SHOULD be able to migrate to the breaking change at their own pace, independent of other software updates.
+- Users SHOULD be proactively notified about the breaking change before a migration is required.
+- Users SHOULD be able to easily tell whether they have completed the migration for a breaking change.
 
 Not all changes have the same effects on users, so some of the steps may be unnecessary for some changes.
 
@@ -460,7 +460,8 @@ feedback. Consider the following items before the initial release of an alpha fe
     the breaking change.  
 * Notify users about the upcoming change  
   * Add a **changelog entry** that describes the feature gate. It should include its name, when you
-    may want to use it, and what its effects are  
+    may want to use it, and what its effects are. The changelog entry can be given the `enhancement`
+    classification at this stage.
   * (Optional but strongly recommended) Log a **warning** if the user is using the software in a way
     that would be affected by the breaking change. Point the user to the feature gate and any
     official docs.  
