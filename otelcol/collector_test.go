@@ -621,5 +621,4 @@ func TestProviderAndConverterModules(t *testing.T) {
 	assert.Equal(t, converterModules, col.set.ConverterModules)
 	col.Shutdown()
 	wg.Wait()
-
 }
