@@ -15,7 +15,10 @@ issues: [11479]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: 
+subtext: |
+  To use the `print-initial-config` subcommand, invoke the Collector with the subcommand and corresponding feature gate: `otelcol print-initial-config --feature-gates=otelcol.printInitialConfig --config=config.yaml`.
+  Note that the feature gate enabling this flag is currently in alpha stability, and the subcommand may
+  be changed in the future.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
