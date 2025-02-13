@@ -14,12 +14,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type mockProvider struct {

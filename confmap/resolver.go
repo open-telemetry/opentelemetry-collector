@@ -10,10 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/featuregate"
-
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
