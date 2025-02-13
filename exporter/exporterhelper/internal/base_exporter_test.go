@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -50,7 +51,7 @@ func newNoopExportSender() Sender[request.Request] {
 func TestBaseExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be, err := NewBaseExporter(defaultSettings, defaultSignal)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -64,7 +65,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			want := errors.New("my error")
 			be, err := NewBaseExporter(
 				defaultSettings, defaultSignal,
@@ -84,7 +85,7 @@ func TestBaseExporterWithOptions(t *testing.T) {
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
@@ -108,7 +109,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 func TestBaseExporterLogging(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
@@ -183,7 +184,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)

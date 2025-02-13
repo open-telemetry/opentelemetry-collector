@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
@@ -91,7 +91,7 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "enabled-featuregate-profiles",
 			cfgFn: func(t *testing.T) Config {
-				require.NoError(t, featuregate.GlobalRegistry().Set(serviceProfileSupportGateID, true))
+				featuregatetest.SetGate(t, serviceProfileSupportGate, true)
 
 				cfg := generateConfig(t)
 				cfg[pipeline.NewID(xpipeline.SignalProfiles)] = &PipelineConfig{
@@ -113,9 +113,6 @@ func TestConfigValidate(t *testing.T) {
 			} else {
 				require.NoError(t, xconfmap.Validate(cfg))
 			}
-
-			// Clean up the profiles support gate, which may have been enabled in `cfgFn`.
-			require.NoError(t, featuregate.GlobalRegistry().Set(serviceProfileSupportGateID, false))
 		})
 	}
 }

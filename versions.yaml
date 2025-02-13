@@ -63,6 +63,7 @@ module-sets:
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
       - go.opentelemetry.io/collector/extension/xextension
+      - go.opentelemetry.io/collector/featuregate/featuregatetest
       - go.opentelemetry.io/collector/otelcol
       - go.opentelemetry.io/collector/otelcol/otelcoltest
       - go.opentelemetry.io/collector/pdata/pprofile

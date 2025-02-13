@@ -157,3 +157,5 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+
+replace go.opentelemetry.io/collector/featuregate/featuregatetest => ../../featuregate/featuregatetest

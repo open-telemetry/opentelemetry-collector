@@ -23,13 +23,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestQueuedBatchStopWhileWaiting(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 			be, err := newQueueBatchExporter(qCfg, exporterbatcher.Config{})
@@ -55,7 +56,7 @@ func TestQueuedBatchStopWhileWaiting(t *testing.T) {
 func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 			be, err := newQueueBatchExporter(qCfg, exporterbatcher.Config{})
@@ -112,7 +113,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be, err := newQueueBatchExporter(tt.qCfg, exporterbatcher.Config{})
 			require.NoError(t, err)
 
@@ -140,7 +141,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 func TestQueueConfig_Validate(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			require.NoError(t, qCfg.Validate())
 
@@ -165,7 +166,7 @@ func TestQueueConfig_Validate(t *testing.T) {
 func TestQueueFailedRequestDropped(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qSet := exporterqueue.Settings{
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
@@ -192,7 +193,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qSet := exporterqueue.Settings{
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
@@ -224,7 +225,7 @@ func TestQueueBatchPersistenceEnabled(t *testing.T) {
 func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			storageError := errors.New("could not get storage client")
 
 			qSet := exporterqueue.Settings{
@@ -257,7 +258,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 
@@ -325,7 +326,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueBatchNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			featuregatetest.SetGate(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			set.ID = exporterID
 			qSet := exporterqueue.Settings{

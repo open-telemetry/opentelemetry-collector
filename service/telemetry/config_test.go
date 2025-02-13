@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/featuregate/featuregatetest"
 )
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -30,12 +30,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 }
 
 func TestUnmarshalEmptyMetricReaders(t *testing.T) {
-	prev := disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), prev))
-	}()
+	featuregatetest.SetGate(t, disableAddressFieldForInternalTelemetryFeatureGate, false)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_empty_readers.yaml"))
 	require.NoError(t, err)
 	cfg := NewFactory().CreateDefaultConfig()
@@ -44,12 +39,7 @@ func TestUnmarshalEmptyMetricReaders(t *testing.T) {
 }
 
 func TestUnmarshalConfigDeprecatedAddress(t *testing.T) {
-	prev := disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), prev))
-	}()
+	featuregatetest.SetGate(t, disableAddressFieldForInternalTelemetryFeatureGate, false)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_deprecated_address.yaml"))
 	require.NoError(t, err)
 	cfg := NewFactory().CreateDefaultConfig()
@@ -60,12 +50,7 @@ func TestUnmarshalConfigDeprecatedAddress(t *testing.T) {
 }
 
 func TestUnmarshalConfigDeprecatedAddressGateEnabled(t *testing.T) {
-	prev := disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), true))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), prev))
-	}()
+	featuregatetest.SetGate(t, disableAddressFieldForInternalTelemetryFeatureGate, true)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_deprecated_address.yaml"))
 	require.NoError(t, err)
 	cfg := NewFactory().CreateDefaultConfig()
@@ -76,12 +61,7 @@ func TestUnmarshalConfigDeprecatedAddressGateEnabled(t *testing.T) {
 }
 
 func TestUnmarshalConfigInvalidDeprecatedAddress(t *testing.T) {
-	prev := disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), prev))
-	}()
+	featuregatetest.SetGate(t, disableAddressFieldForInternalTelemetryFeatureGate, false)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_invalid_deprecated_address.yaml"))
 	require.NoError(t, err)
 	cfg := NewFactory().CreateDefaultConfig()
@@ -89,12 +69,7 @@ func TestUnmarshalConfigInvalidDeprecatedAddress(t *testing.T) {
 }
 
 func TestUnmarshalConfigDeprecatedAddressAndReaders(t *testing.T) {
-	prev := disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), false))
-	defer func() {
-		// Restore previous value.
-		require.NoError(t, featuregate.GlobalRegistry().Set(disableAddressFieldForInternalTelemetryFeatureGate.ID(), prev))
-	}()
+	featuregatetest.SetGate(t, disableAddressFieldForInternalTelemetryFeatureGate, false)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_deprecated_address_and_readers.yaml"))
 	require.NoError(t, err)
 	cfg := NewFactory().CreateDefaultConfig()
