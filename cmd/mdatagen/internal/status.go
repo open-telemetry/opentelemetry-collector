@@ -77,6 +77,7 @@ func (s *Status) Validate() error {
 	if err := s.validateClass(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+
 	if err := s.Stability.Validate(); err != nil {
 		errs = errors.Join(errs, err)
 	}
