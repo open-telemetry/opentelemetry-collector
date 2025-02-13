@@ -18,7 +18,7 @@ import (
 var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 	"otelcol.printInitialConfig",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.119.0"),
+	featuregate.WithRegisterFromVersion("v0.120.0"),
 	featuregate.WithRegisterDescription("if set to true, turns on the print-initial-config command"),
 )
 
