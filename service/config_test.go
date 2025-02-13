@@ -5,15 +5,15 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -48,7 +48,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, fmt.Errorf(`pipeline "traces": %w`, errors.New(`references processor "nop" multiple times`))),
+			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
 			name: "invalid-service-pipeline-type",
@@ -61,7 +61,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`)),
+			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
@@ -71,14 +71,19 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Telemetry.Metrics.Readers = nil
 				return cfg
 			},
-			expected: nil,
+			expected: errors.New("collector telemetry metrics reader should exist when metric level is not none"),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			assert.Equal(t, tt.expected, cfg.Validate())
+			err := xconfmap.Validate(cfg)
+			if tt.expected != nil {
+				assert.ErrorContains(t, err, tt.expected.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -100,7 +105,7 @@ func generateConfig() *Config {
 				Level: configtelemetry.LevelNormal,
 				Readers: []config.MetricReader{
 					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 							Host: newPtr("localhost"),
 							Port: newPtr(8080),
 						}}},

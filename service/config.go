@@ -4,8 +4,6 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	"fmt"
-
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
@@ -21,16 +19,4 @@ type Config struct {
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines pipelines.Config `mapstructure:"pipelines"`
-}
-
-func (cfg *Config) Validate() error {
-	if err := cfg.Pipelines.Validate(); err != nil {
-		return fmt.Errorf("service::pipelines config validation failed: %w", err)
-	}
-
-	if err := cfg.Telemetry.Validate(); err != nil {
-		fmt.Printf("service::telemetry config validation failed: %v\n", err)
-	}
-
-	return nil
 }

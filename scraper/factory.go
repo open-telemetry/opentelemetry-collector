@@ -66,8 +66,8 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
-	CreateLogsFunc
-	CreateMetricsFunc
+	createLogsFunc        CreateLogsFunc
+	createMetricsFunc     CreateMetricsFunc
 	logsStabilityLevel    component.StabilityLevel
 	metricsStabilityLevel component.StabilityLevel
 }
@@ -86,6 +86,20 @@ func (f *factory) MetricsStability() component.StabilityLevel {
 	return f.metricsStabilityLevel
 }
 
+func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
+	if f.createLogsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createLogsFunc(ctx, set, cfg)
+}
+
+func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
+	if f.createMetricsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createMetricsFunc(ctx, set, cfg)
+}
+
 // CreateLogsFunc is the equivalent of Factory.CreateLogs().
 type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
 
@@ -93,6 +107,7 @@ type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, err
 type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
 // CreateLogs implements Factory.CreateLogs.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -101,6 +116,7 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 }
 
 // CreateMetrics implements Factory.CreateMetrics.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -112,7 +128,7 @@ func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg 
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
-		o.CreateLogsFunc = createLogs
+		o.createLogsFunc = createLogs
 	})
 }
 
@@ -120,7 +136,7 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsStabilityLevel = sl
-		o.CreateMetricsFunc = createMetrics
+		o.createMetricsFunc = createMetrics
 	})
 }
 

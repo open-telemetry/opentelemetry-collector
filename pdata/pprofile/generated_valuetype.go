@@ -68,14 +68,14 @@ func (ms ValueType) SetUnitStrindex(v int32) {
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ValueType.
-func (ms ValueType) AggregationTemporality() otlpprofiles.AggregationTemporality {
-	return ms.orig.AggregationTemporality
+func (ms ValueType) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ValueType.
-func (ms ValueType) SetAggregationTemporality(v otlpprofiles.AggregationTemporality) {
+func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = v
+	ms.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

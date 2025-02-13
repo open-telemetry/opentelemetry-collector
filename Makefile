@@ -444,4 +444,20 @@ builder-integration-test: $(ENVSUBST)
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
+
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates: $(GITHUBGEN)
+	$(GITHUBGEN) issue-templates
+
+.PHONY: generate-codeowners
+generate-codeowners: $(GITHUBGEN)
+	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
+
+.PHONY: gengithub
+gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
+
+.PHONY: gendistributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions

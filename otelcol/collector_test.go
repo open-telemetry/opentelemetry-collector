@@ -76,27 +76,27 @@ func TestCollectorCancelContext(t *testing.T) {
 	assert.Equal(t, StateClosed, col.GetState())
 }
 
-type mockCfgProvider struct {
-	ConfigProvider
-	watcher chan error
-}
-
-func (p mockCfgProvider) Watch() <-chan error {
-	return p.watcher
-}
-
 func TestCollectorStateAfterConfigChange(t *testing.T) {
-	watcher := make(chan error, 1)
-	col, err := NewCollector(CollectorSettings{
-		BuildInfo: component.NewDefaultBuildInfo(),
-		Factories: nopFactories,
-		// this will be overwritten, but we need something to get past validation
-		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+	var watcher confmap.WatcherFunc
+	fileProvider := newFakeProvider("file", func(_ context.Context, uri string, w confmap.WatcherFunc) (*confmap.Retrieved, error) {
+		watcher = w
+		return confmap.NewRetrieved(newConfFromFile(t, uri[5:]))
 	})
+	set := ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "otelcol-nop.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileProvider,
+			},
+		},
+	}
+	col, err := NewCollector(CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: set,
+	})
+
 	require.NoError(t, err)
-	provider, err := NewConfigProvider(newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}))
-	require.NoError(t, err)
-	col.configProvider = &mockCfgProvider{ConfigProvider: provider, watcher: watcher}
 
 	wg := startCollector(context.Background(), t, col)
 
@@ -104,7 +104,7 @@ func TestCollectorStateAfterConfigChange(t *testing.T) {
 		return StateRunning == col.GetState()
 	}, 2*time.Second, 200*time.Millisecond)
 
-	watcher <- nil
+	watcher(&confmap.ChangeEvent{})
 
 	assert.Eventually(t, func() bool {
 		return StateRunning == col.GetState()
@@ -145,7 +145,7 @@ func NewStatusWatcherExtensionFactory(
 		func() component.Config {
 			return &struct{}{}
 		},
-		func(context.Context, extension.Settings, component.Config) (component.Component, error) {
+		func(context.Context, extension.Settings, component.Config) (extension.Extension, error) {
 			return &statusWatcherExtension{onStatusChanged: onStatusChanged}, nil
 		},
 		component.StabilityLevelStable)

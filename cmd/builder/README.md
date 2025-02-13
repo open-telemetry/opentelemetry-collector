@@ -96,6 +96,8 @@ go install go.opentelemetry.io/collector/cmd/builder@latest
 
 If installing through this method the binary will be called `builder`.
 
+In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
+
 ## Running
 
 A build configuration file must be provided with the `--config` flag.

@@ -18,6 +18,8 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/publicsuffix"
 
@@ -146,8 +148,15 @@ func (hcs *ClientConfig) Validate() error {
 	return nil
 }
 
+// ToClientOption is an option to change the behavior of the HTTP client
+// returned by ClientConfig.ToClient().
+// There are currently no available options.
+type ToClientOption interface {
+	sealed()
+}
+
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -480,7 +489,6 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		serverOpts.OtelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
@@ -489,15 +497,21 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		includeMetadata: hss.IncludeMetadata,
 	}
 
+	errorLog, err := zap.NewStdLogAt(settings.Logger, zapcore.ErrorLevel)
+	if err != nil {
+		return nil, err // If an error occurs while creating the logger, return nil and the error
+	}
+
 	server := &http.Server{
 		Handler:           handler,
 		ReadTimeout:       hss.ReadTimeout,
 		ReadHeaderTimeout: hss.ReadHeaderTimeout,
 		WriteTimeout:      hss.WriteTimeout,
 		IdleTimeout:       hss.IdleTimeout,
+		ErrorLog:          errorLog,
 	}
 
-	return server, nil
+	return server, err
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {

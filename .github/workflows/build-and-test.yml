@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache
@@ -130,7 +130,7 @@ jobs:
       - name: Gen otelcorecol
         run: |
           make genotelcorecol
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make genotelcorecol" and commit the changes in this PR.' && exit 1)
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genotelcorecol" and commit the changes in this PR.' && exit 1)
       - name: Multimod verify
         run: make multimod-verify
       - name: crosslink
@@ -142,7 +142,7 @@ jobs:
     strategy:
       matrix:
         runner: [ubuntu-latest]
-        go-version: ["~1.23", "~1.22"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["~1.24", "~1.23"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
@@ -200,7 +200,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache
@@ -218,7 +218,7 @@ jobs:
       - name: Run Unit Tests With Coverage
         run: make gotest-with-cover
       - name: Upload coverage report
-        uses: codecov/codecov-action@1e68e06f1dbfde0e4cefc87efeba9e4643565303 # 5.1.2
+        uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # 5.3.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -234,6 +234,8 @@ jobs:
           # on macOS: https://go.dev/doc/go1.15
           #- goos: darwin
           #  goarch: 386
+          - goos: aix
+            goarch: ppc64
           - goos: darwin
             goarch: amd64
           - goos: darwin
@@ -262,7 +264,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
-          go-version: ~1.22.9
+          go-version: ~1.23.6
           cache: false
       - name: Cache Go
         id: go-cache

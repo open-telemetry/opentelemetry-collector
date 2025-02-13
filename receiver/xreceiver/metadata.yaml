@@ -1,0 +1,10 @@
+type: xreceiver
+
+status:
+  class: receiver
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

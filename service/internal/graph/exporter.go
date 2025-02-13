@@ -9,20 +9,19 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
 )
-
-const exporterSeed = "exporter"
 
 var _ consumerNode = (*exporterNode)(nil)
 
 // An exporter instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type exporterNode struct {
-	nodeID
+	attribute.Attributes
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
@@ -30,7 +29,7 @@ type exporterNode struct {
 
 func newExporterNode(pipelineType pipeline.Signal, exprID component.ID) *exporterNode {
 	return &exporterNode{
-		nodeID:       newNodeID(exporterSeed, pipelineType.String(), exprID.String()),
+		Attributes:   attribute.Exporter(pipelineType, exprID),
 		componentID:  exprID,
 		pipelineType: pipelineType,
 	}
@@ -46,7 +45,7 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *builders.ExporterBuilder,
 ) error {
-	tel.Logger = components.ExporterLogger(tel.Logger, n.componentID, n.pipelineType)
+	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {

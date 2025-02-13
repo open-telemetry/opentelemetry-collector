@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 
 	"go.opentelemetry.io/collector/internal/testutil"
 )
@@ -23,6 +23,9 @@ func GetAvailableLocalAddressPrometheus(tb testing.TB) *config.Prometheus {
 
 func addrToPrometheus(address string) *config.Prometheus {
 	host, port, err := net.SplitHostPort(address)
+	if host == "::1" {
+		host = "[::1]"
+	}
 	if err != nil {
 		return nil
 	}
@@ -31,7 +34,17 @@ func addrToPrometheus(address string) *config.Prometheus {
 		return nil
 	}
 	return &config.Prometheus{
-		Host: &host,
-		Port: &portInt,
+		Host:              &host,
+		Port:              &portInt,
+		WithoutScopeInfo:  ptr(true),
+		WithoutUnits:      ptr(true),
+		WithoutTypeSuffix: ptr(true),
+		WithResourceConstantLabels: &config.IncludeExclude{
+			Included: []string{},
+		},
 	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
@@ -26,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -66,7 +70,7 @@ func TestMetrics_NilLogger(t *testing.T) {
 
 func TestMetricsRequest_NilLogger(t *testing.T) {
 	me, err := NewMetricsRequest(context.Background(), exporter.Settings{},
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
@@ -98,7 +102,7 @@ func TestMetrics_Default(t *testing.T) {
 func TestMetricsRequest_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -120,7 +124,7 @@ func TestMetrics_WithCapabilities(t *testing.T) {
 func TestMetricsRequest_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithCapabilities(capabilities))
+		requesttest.RequestFromMetricsFunc(nil), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -152,7 +156,7 @@ func TestMetricsRequest_Default_ExportError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("export_error")
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(want))
+		requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -191,7 +195,7 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, nil)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
 }
 
 func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
@@ -206,7 +210,15 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 
 	require.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.Equal(t, 0, md.MetricCount())
-	require.NoError(t, tt.CheckExporterMetrics(int64(4), 0))
+
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ExporterKey, fakeMetricsName.String())),
+				Value: int64(4),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
@@ -216,11 +228,11 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromMetricsFunc(nil))
+		requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, nil)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, nil)
 }
 
 func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
@@ -233,7 +245,7 @@ func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, want)
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, want)
 }
 
 func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
@@ -244,36 +256,11 @@ func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		internal.RequestFromMetricsFunc(want))
+		requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
-	checkRecordedMetricsForMetrics(t, tt, me, want)
-}
-
-func TestMetrics_WithRecordEnqueueFailedMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
-
-	rCfg := configretry.NewDefaultBackOffConfig()
-	qCfg := NewDefaultQueueConfig()
-	qCfg.NumConsumers = 1
-	qCfg.QueueSize = 2
-	wantErr := errors.New("some-error")
-	te, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(wantErr), WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	md := testdata.GenerateMetrics(1)
-	const numBatches = 7
-	for i := 0; i < numBatches; i++ {
-		// errors are checked in the checkExporterEnqueueFailedMetricsStats function below.
-		_ = te.ConsumeMetrics(context.Background(), md)
-	}
-
-	// 2 batched must be in queue, and 10 metric points rejected due to queue overflow
-	require.NoError(t, tt.CheckExporterEnqueueFailedMetrics(int64(10)))
+	checkRecordedMetricsForMetrics(t, tt, fakeMetricsName, me, want)
 }
 
 func TestMetrics_WithSpan(t *testing.T) {
@@ -296,7 +283,7 @@ func TestMetricsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(nil))
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
@@ -324,7 +311,7 @@ func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := NewMetricsRequest(context.Background(), set, internal.RequestFromMetricsFunc(want))
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
@@ -348,7 +335,7 @@ func TestMetricsRequest_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithShutdown(shutdown))
+		requesttest.RequestFromMetricsFunc(nil), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -374,7 +361,7 @@ func TestMetricsRequest_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(),
-		internal.RequestFromMetricsFunc(nil), WithShutdown(shutdownErr))
+		requesttest.RequestFromMetricsFunc(nil), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -395,7 +382,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 	}
 }
 
-func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry, me exporter.Metrics, wantError error) {
+func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, me exporter.Metrics, wantError error) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -405,9 +392,23 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		require.NoError(t, tt.CheckExporterMetrics(0, numPoints))
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: numPoints,
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		require.NoError(t, tt.CheckExporterMetrics(numPoints, 0))
+		metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ExporterKey, id.String())),
+					Value: numPoints,
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 }
 
@@ -440,7 +441,7 @@ func checkWrapSpanForMetrics(t *testing.T, sr *tracetest.SpanRecorder, tracer tr
 			sentMetricPoints = 0
 			failedToSendMetricPoints = 2
 		}
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.SentMetricPointsKey, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
-		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.FailedToSendMetricPointsKey, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsSent, Value: attribute.Int64Value(sentMetricPoints)}, "SpanData %v", sd)
+		require.Containsf(t, sd.Attributes(), attribute.KeyValue{Key: internal.ItemsFailed, Value: attribute.Int64Value(failedToSendMetricPoints)}, "SpanData %v", sd)
 	}
 }

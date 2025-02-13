@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 // BatchSender is a component that places requests into batches before passing them to the downstream senders.
@@ -23,8 +23,8 @@ import (
 // - cfg.FlushTimeout is elapsed since the timestamp when the previous batch was sent out.
 // - concurrencyLimit is reached.
 type BatchSender struct {
-	BaseSender[internal.Request]
-	cfg exporterbatcher.Config
+	cfg  exporterbatcher.Config
+	next Sender[request.Request]
 
 	// concurrencyLimit is the maximum number of goroutines that can be blocked by the batcher.
 	// If this number is reached and all the goroutines are busy, the batch will be sent right away.
@@ -43,11 +43,13 @@ type BatchSender struct {
 	stopped            *atomic.Bool
 }
 
-// newBatchSender returns a new batch consumer component.
-func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings) *BatchSender {
+// NewBatchSender returns a new batch consumer component.
+func NewBatchSender(cfg exporterbatcher.Config, set exporter.Settings, concurrencyLimit int64, next Sender[request.Request]) *BatchSender {
 	bs := &BatchSender{
-		activeBatch:        newEmptyBatch(),
 		cfg:                cfg,
+		next:               next,
+		concurrencyLimit:   concurrencyLimit,
+		activeBatch:        newEmptyBatch(),
 		logger:             set.Logger,
 		shutdownCh:         nil,
 		shutdownCompleteCh: make(chan struct{}),
@@ -99,7 +101,7 @@ func (bs *BatchSender) Start(_ context.Context, _ component.Host) error {
 
 type batch struct {
 	ctx     context.Context
-	request internal.Request
+	request request.Request
 	done    chan struct{}
 	err     error
 
@@ -119,7 +121,7 @@ func newEmptyBatch() *batch {
 // Caller must hold the lock.
 func (bs *BatchSender) exportActiveBatch() {
 	go func(b *batch) {
-		b.err = bs.NextSender.Send(b.ctx, b.request)
+		b.err = bs.next.Send(b.ctx, b.request)
 		close(b.done)
 		bs.activeRequests.Add(-b.requestsBlocked)
 	}(bs.activeBatch)
@@ -135,10 +137,10 @@ func (bs *BatchSender) isActiveBatchReady() bool {
 		(bs.concurrencyLimit > 0 && bs.activeRequests.Load() >= bs.concurrencyLimit)
 }
 
-func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
+func (bs *BatchSender) Send(ctx context.Context, req request.Request) error {
 	// Stopped batch sender should act as pass-through to allow the queue to be drained.
 	if bs.stopped.Load() {
-		return bs.NextSender.Send(ctx, req)
+		return bs.next.Send(ctx, req)
 	}
 
 	if bs.cfg.MaxSizeItems > 0 {
@@ -148,10 +150,10 @@ func (bs *BatchSender) Send(ctx context.Context, req internal.Request) error {
 }
 
 // sendMergeSplitBatch sends the request to the batch which may be split into multiple requests.
-func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Request) error {
+func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req request.Request) error {
 	bs.mu.Lock()
 
-	var reqs []internal.Request
+	var reqs []request.Request
 	var mergeSplitErr error
 	if bs.activeBatch.request == nil {
 		reqs, mergeSplitErr = req.MergeSplit(ctx, bs.cfg.MaxSizeConfig, nil)
@@ -190,7 +192,7 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Req
 	// Intentionally do not put the last request in the active batch to not block it.
 	// TODO: Consider including the partial request in the error to avoid double publishing.
 	for _, r := range reqs {
-		if err := bs.NextSender.Send(ctx, r); err != nil {
+		if err := bs.next.Send(ctx, r); err != nil {
 			return err
 		}
 	}
@@ -198,7 +200,7 @@ func (bs *BatchSender) sendMergeSplitBatch(ctx context.Context, req internal.Req
 }
 
 // sendMergeBatch sends the request to the batch and waits for the batch to be exported.
-func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request) error {
+func (bs *BatchSender) sendMergeBatch(ctx context.Context, req request.Request) error {
 	bs.mu.Lock()
 
 	if bs.activeBatch.request != nil {
@@ -226,7 +228,7 @@ func (bs *BatchSender) sendMergeBatch(ctx context.Context, req internal.Request)
 // The context is only set once and is not updated after the first call.
 // Merging the context would be complex and require an additional goroutine to handle the context cancellation.
 // We take the approach of using the context from the first request since it's likely to have the shortest timeout.
-func (bs *BatchSender) updateActiveBatch(ctx context.Context, req internal.Request) {
+func (bs *BatchSender) updateActiveBatch(ctx context.Context, req request.Request) {
 	if bs.activeBatch.request == nil {
 		bs.activeBatch.ctx = ctx
 	}

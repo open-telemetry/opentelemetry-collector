@@ -5,8 +5,10 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
@@ -23,13 +25,14 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                    metric.Meter
-	ProcessorBatchBatchSendSize              metric.Int64Histogram
-	ProcessorBatchBatchSendSizeBytes         metric.Int64Histogram
-	ProcessorBatchBatchSizeTriggerSend       metric.Int64Counter
-	ProcessorBatchMetadataCardinality        metric.Int64ObservableUpDownCounter
-	observeProcessorBatchMetadataCardinality func(context.Context, metric.Observer) error
-	ProcessorBatchTimeoutTriggerSend         metric.Int64Counter
+	meter                              metric.Meter
+	mu                                 sync.Mutex
+	registrations                      []metric.Registration
+	ProcessorBatchBatchSendSize        metric.Int64Histogram
+	ProcessorBatchBatchSendSizeBytes   metric.Int64Histogram
+	ProcessorBatchBatchSizeTriggerSend metric.Int64Counter
+	ProcessorBatchMetadataCardinality  metric.Int64ObservableUpDownCounter
+	ProcessorBatchTimeoutTriggerSend   metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -43,14 +46,38 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
-// WithProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
-func WithProcessorBatchMetadataCardinalityCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessorBatchMetadataCardinality = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessorBatchMetadataCardinality, cb(), opts...)
-			return nil
-		}
-	})
+// RegisterProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
+func (builder *TelemetryBuilder) RegisterProcessorBatchMetadataCardinalityCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ProcessorBatchMetadataCardinality, obs: o})
+		return nil
+	}, builder.ProcessorBatchMetadataCardinality)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
+}
+
+type observerInt64 struct {
+	embedded.Int64Observer
+	inst metric.Int64Observable
+	obs  metric.Observer
+}
+
+func (oi *observerInt64) Observe(value int64, opts ...metric.ObserveOption) {
+	oi.obs.ObserveInt64(oi.inst, value, opts...)
+}
+
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
 }
 
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
@@ -87,8 +114,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
 		metric.WithUnit("{combinations}"),
 	)
-	errs = errors.Join(errs, err)
-	_, err = builder.meter.RegisterCallback(builder.observeProcessorBatchMetadataCardinality, builder.ProcessorBatchMetadataCardinality)
 	errs = errors.Join(errs, err)
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		"otelcol_processor_batch_timeout_trigger_send",

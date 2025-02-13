@@ -7,6 +7,42 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.25.0/v0.119.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Rename exporter span signal specific attributes (e.g. "sent_spans" / "send_failed_span") to "items.sent" / "items.failed". (#12165)
+- `cmd/mdatagen`: Remove dead field `telemetry::level` (#12144)
+- `exporterhelper`: Change exporter ID to be a Span level attribute instead on each event. (#12164)
+  This does not have an impact on the level of information emitted, but on the structure of the Span.
+- `cmd/mdatagen`: Remove `level` field from metrics definition (#12145)
+  This mechanism will be added back once a new views mechanism is implemented.
+- `service`: Value for telemetry exporter `otlp.protocol` updated from `grpc/protobuf` to `grpc`. (#12337)
+
+### 💡 Enhancements 💡
+
+- `configtls`: Allow users to mention their preferred curve types for ECDHE handshake (#12174)
+- `service`: remove custom code and instead use config package to instantiate meter provider. (#11611)
+- `otelcol`: Adds support for listing config providers in components command's output (#11570)
+- `general`: Reduce memory allocations when loading configuration and parsing component names (#11964)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix bug that the exporter with new batcher may have been marked as non mutation. (#12239)
+  Only affects users that manually turned on `exporter.UsePullingBasedExporterQueueBatcher` featuregate.
+- `service`: Preserve URL normalization logic that was present before. (#12254)
+- `confighttp`: confighttp.ToServer now sets ErrorLog with a default logger backed by Zap (#11820)
+  
+  This change ensures that the http.Server's ErrorLog is correctly set using Zap's logger at the error level, addressing the issue of error logs being printed using a different logger.
+  
+- `exporterhelper`: Fix context propagation for DisabledBatcher (#12231)
+- `mdatagen`: apply fieldalignment to generated code (#12125)
+- `mdatagen`: Fix bug where Histograms were marked as not supporting temporaly aggregation (#12168)
+- `exporterhelper`: Fix MergeSplit issue that ignores the initial message size. (#12257)
+- `service`: Include validation errors from telemetry.Config when validating the service config (#12100)
+  Previously validation errors were only printed to the console
+- `service-telemetry`: pass the missing async error channel into service telemetry settings (#11417)
+
 ## v1.24.0/v0.118.0
 
 ### 💡 Enhancements 💡

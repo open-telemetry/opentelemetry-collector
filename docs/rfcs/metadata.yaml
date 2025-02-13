@@ -1,0 +1,10 @@
+type: rfcs
+
+status:
+  class: docs
+  codeowners:
+    active:
+      - codeboten
+      - BogdanDrutu
+      - dmitryax
+      - mx-psi

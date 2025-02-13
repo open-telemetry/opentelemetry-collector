@@ -21,8 +21,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+var typ = component.MustNewType("batch")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "batch", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -33,8 +35,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{
