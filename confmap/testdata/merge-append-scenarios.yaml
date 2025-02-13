@@ -603,7 +603,7 @@
                 receivers: [nop]
                 processors: [nop]
                 exporters: [nop]
-- name: merge-mode-extra-extension
+- name: merge-mode-extra-processor
   configs:
     -
         receivers:
@@ -611,7 +611,11 @@
                 key: val
 
         processors:
-            nop:
+            attributes/example:
+                actions:
+                - key: key
+                value: "value"
+                action: upsert
 
         exporters:
             nop:
@@ -625,20 +629,30 @@
             pipelines:
                 traces:
                     receivers: [nop]
-                    processors: [nop]
+                    processors: [attributes/example]
                     exporters: [nop]
     -
         extensions:
             nop2:
+        processors:
+            nop2:
         service:
             extensions: [nop2]
+            pipelines:
+                traces:
+                    processors: [nop2]
   expected: 
     receivers:
         nop:
             key: val
 
     processors:
-        nop:
+        nop2:
+        attributes/example:
+            actions:
+            - key: key
+            value: "value"
+            action: upsert
 
     exporters:
         nop:
@@ -653,5 +667,5 @@
         pipelines:
             traces:
                 receivers: [nop]
-                processors: [nop]
+                processors: [attributes/example, nop2]
                 exporters: [nop]

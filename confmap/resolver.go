@@ -20,7 +20,8 @@ var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
 	"confmap.enableMergeAppendOption",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.120.0"),
-	featuregate.WithRegisterDescription("if set to true, combines lists when resolving configs from different sources"),
+	featuregate.WithRegisterDescription("Combines lists when resolving configs from different sources. This feature gate will not be stabilized 'as is'; the current behavior will remain the default."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/8754"),
 )
 
 // follows drive-letter specification:
