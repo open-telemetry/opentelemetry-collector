@@ -26,7 +26,7 @@ var printCommandFeatureFlag = featuregate.GlobalRegistry().MustRegister(
 func newConfigPrintSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "print-initial-config",
-		Short: "Prints the final yaml configuration after all --config sources are resolved and merged",
+		Short: "Prints the Collector's configuration in YAML format after all config sources are resolved and merged",
 		Long:  `Note: This command prints the final yaml configuration before it is unmarshaled into config structs, which may contain sensitive values.`,
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
