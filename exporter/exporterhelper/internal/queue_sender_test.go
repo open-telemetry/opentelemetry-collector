@@ -29,7 +29,7 @@ import (
 func TestQueuedBatchStopWhileWaiting(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 			be, err := newQueueBatchExporter(qCfg, exporterbatcher.Config{})
@@ -55,18 +55,12 @@ func TestQueuedBatchStopWhileWaiting(t *testing.T) {
 func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 			be, err := newQueueBatchExporter(qCfg, exporterbatcher.Config{})
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-
-			require.NoError(t, err)
-			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				resetFeatureGate()
-			})
 
 			ctx, cancelFunc := context.WithCancel(context.Background())
 			cancelFunc()
@@ -118,7 +112,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			be, err := newQueueBatchExporter(tt.qCfg, exporterbatcher.Config{})
 			require.NoError(t, err)
 
@@ -131,14 +125,10 @@ func TestQueueBatchHappyPath(t *testing.T) {
 			require.Error(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				assert.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
-			})
-
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 10 && sink.ItemsCount() == 45
 			}, 1*time.Second, 10*time.Millisecond)
+			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
 	for _, tt := range tests {
@@ -150,7 +140,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 func TestQueueConfig_Validate(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := NewDefaultQueueConfig()
 			require.NoError(t, qCfg.Validate())
 
@@ -175,7 +165,7 @@ func TestQueueConfig_Validate(t *testing.T) {
 func TestQueueFailedRequestDropped(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qSet := exporterqueue.Settings{
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
@@ -202,7 +192,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qSet := exporterqueue.Settings{
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
@@ -234,7 +224,7 @@ func TestQueueBatchPersistenceEnabled(t *testing.T) {
 func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			storageError := errors.New("could not get storage client")
 
 			qSet := exporterqueue.Settings{
@@ -267,7 +257,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 1
 
@@ -320,16 +310,12 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 				}),
 				qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 			require.NoError(t, err)
-			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), host))
-			t.Cleanup(func() {
-				require.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
-			})
 
 			assert.Eventually(t, func() bool {
 				return sink.ItemsCount() == 7 && sink.RequestsCount() == 1
 			}, 1*time.Second, 10*time.Millisecond)
+			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
 	runTest("enable_queue_batcher", true)
@@ -339,7 +325,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueBatchNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			set := exportertest.NewNopSettings()
 			set.ID = exporterID
 			qSet := exporterqueue.Settings{
