@@ -150,6 +150,7 @@ service:
 
 Notice that the `service::extensions` list is a combination of both configurations. By default, it is `service::extensions: [healthcheckv2]`.
 
+
 ### Watching for Updates
 After the configuration was processed, the `Resolver` can be used as a single point to watch for updates in the
 configuration retrieved via the `Provider` used to retrieve the “initial” configuration and to generate the “effective” one.
@@ -197,6 +198,8 @@ Calling the `onChange` func from a provider triggers the collector to re-resolve
 ```
 
 An example of a `Provider` with an `onChange` func that periodically gets notified can be found in provider_test.go as UpdatingProvider
+
+> Note: By enabling this feature gate, all the lists in the given configuration will be merged. 
 
 ## Troubleshooting
 
