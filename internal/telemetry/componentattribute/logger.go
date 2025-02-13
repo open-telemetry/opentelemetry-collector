@@ -9,38 +9,24 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var _ zapcore.Core = (*coreWithout)(nil)
+var _ zapcore.Core = (*loggerCoreWithAttributes)(nil)
 
-type coreWithout struct {
+type loggerCoreWithAttributes struct {
 	zapcore.Core
-	from   zapcore.Core
-	fields []zap.Field
+	from zapcore.Core
 }
 
-func NewLogger(logger *zap.Logger, attrs *attribute.Set) *zap.Logger {
+func LoggerWithAttributes(logger *zap.Logger, attrs attribute.Set) *zap.Logger {
 	fields := []zap.Field{}
 	for _, kv := range attrs.ToSlice() {
 		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
 	}
 	return logger.WithOptions(
 		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return &coreWithout{Core: core.With(fields), from: core, fields: fields}
+			if cwa, ok := core.(loggerCoreWithAttributes); ok {
+				core = cwa.from
+			}
+			return &loggerCoreWithAttributes{Core: core.With(fields), from: core}
 		}),
 	)
-}
-
-func (l *coreWithout) Without(keys ...string) zapcore.Core {
-	excludeKeys := make(map[string]struct{})
-	for _, key := range keys {
-		excludeKeys[key] = struct{}{}
-	}
-
-	fieldsWithout := []zap.Field{}
-	for _, field := range l.fields {
-		if _, excluded := excludeKeys[field.Key]; !excluded {
-			fieldsWithout = append(fieldsWithout, field)
-		}
-	}
-
-	return &coreWithout{Core: l.from.With(fieldsWithout), from: l.from, fields: fieldsWithout}
 }

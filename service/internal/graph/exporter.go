@@ -45,7 +45,8 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *builders.ExporterBuilder,
 ) error {
-	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
+	tel.InstanceAttributes = *n.Attributes.Set()
+	componentattribute.UpdateInstanceAttributes(&tel)
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {

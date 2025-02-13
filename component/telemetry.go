@@ -4,6 +4,7 @@
 package component // import "go.opentelemetry.io/collector/component"
 
 import (
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
@@ -25,4 +26,7 @@ type TelemetrySettings struct {
 
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
+
+	// Attributes identifying a component instance
+	InstanceAttributes attribute.Set
 }

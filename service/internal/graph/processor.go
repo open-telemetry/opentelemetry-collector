@@ -47,7 +47,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
+	tel.InstanceAttributes = *n.Attributes.Set()
+	componentattribute.UpdateInstanceAttributes(&tel)
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineID.Signal() {

@@ -42,7 +42,8 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
+	tel.InstanceAttributes = *n.Attributes.Set()
+	componentattribute.UpdateInstanceAttributes(&tel)
 	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {

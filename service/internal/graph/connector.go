@@ -49,7 +49,8 @@ func (n *connectorNode) buildComponent(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
+	tel.InstanceAttributes = *n.Attributes.Set()
+	componentattribute.UpdateInstanceAttributes(&tel)
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
