@@ -70,7 +70,10 @@ type CollectorSettings struct {
 	ConfigProviderSettings ConfigProviderSettings
 
 	// ProviderModules maps provider schemes to their respective go modules.
-	ProviderModules map[string]string
+	ProviderModules map[component.Type]string
+
+	// ConverterModules maps converter names to their respective go modules.
+	ConverterModules map[component.Type]string
 
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
@@ -212,6 +215,8 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Exporter:  buildModuleInfo(factories.ExporterModules),
 			Extension: buildModuleInfo(factories.ExtensionModules),
 			Connector: buildModuleInfo(factories.ConnectorModules),
+			Provider:  buildModuleInfo(col.set.ProviderModules),
+			Converter: buildModuleInfo(col.set.ConverterModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,

@@ -17,4 +17,6 @@ type ModuleInfos struct {
 	Exporter  map[component.Type]ModuleInfo
 	Extension map[component.Type]ModuleInfo
 	Connector map[component.Type]ModuleInfo
+	Provider  map[component.Type]ModuleInfo
+	Converter map[component.Type]ModuleInfo
 }
