@@ -153,5 +153,5 @@ extensions:
 ## How to examine the final configuration after merging and resolving from various sources?
 
 ```bash
-   ./otelcorecol examine --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
+   ./otelcorecol print-initial-config --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
 ```
