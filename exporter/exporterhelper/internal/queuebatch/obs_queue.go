@@ -26,10 +26,10 @@ const (
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
 	Queue[T]
-	tb                *metadata.TelemetryBuilder
-	metricAttr        metric.MeasurementOption
-	enqueueFailedInst metric.Int64Counter
-	tracer            trace.Tracer
+	tb         *metadata.TelemetryBuilder
+	metricAttr metric.MeasurementOption
+	signal     pipeline.Signal
+	tracer     trace.Tracer
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
@@ -62,16 +62,8 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		Queue:      delegate,
 		tb:         tb,
 		metricAttr: metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
+		signal:     set.Signal,
 		tracer:     tracer,
-	}
-
-	switch set.Signal {
-	case pipeline.SignalTraces:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedSpans
-	case pipeline.SignalMetrics:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
-	case pipeline.SignalLogs:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
 	}
 
 	return or, nil
@@ -92,8 +84,15 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	span.End()
 
 	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
-	if err != nil && or.enqueueFailedInst != nil {
-		or.enqueueFailedInst.Add(ctx, int64(numItems), or.metricAttr)
+	if err != nil {
+		switch or.signal {
+		case pipeline.SignalTraces:
+			or.tb.RecordExporterEnqueueFailedSpans(ctx, int64(numItems), or.metricAttr)
+		case pipeline.SignalMetrics:
+			or.tb.RecordExporterEnqueueFailedMetricPoints(ctx, int64(numItems), or.metricAttr)
+		case pipeline.SignalLogs:
+			or.tb.RecordExporterEnqueueFailedLogRecords(ctx, int64(numItems), or.metricAttr)
+		}
 	}
 	return err
 }

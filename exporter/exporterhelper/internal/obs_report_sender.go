@@ -40,13 +40,13 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName         string
-	tracer           trace.Tracer
-	signal           pipeline.Signal
-	telemetryBuilder *metadata.TelemetryBuilder
-	spanAttrs        trace.SpanStartEventOption
-	metricAttr       metric.MeasurementOption
-	next             sender.Sender[K]
+	spanName   string
+	tracer     trace.Tracer
+	signal     pipeline.Signal
+	tb         *metadata.TelemetryBuilder
+	spanAttrs  trace.SpanStartEventOption
+	metricAttr metric.MeasurementOption
+	next       sender.Sender[K]
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -59,13 +59,13 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:           metadata.Tracer(set.TelemetrySettings),
-		signal:           signal,
-		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:             next,
-		telemetryBuilder: telemetryBuilder,
+		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:     metadata.Tracer(set.TelemetrySettings),
+		signal:     signal,
+		tb:         telemetryBuilder,
+		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		next:       next,
 	}
 
 	return or, nil
@@ -99,14 +99,14 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	// No metrics recorded for profiles.
 	switch ors.signal {
 	case pipeline.SignalTraces:
-		ors.telemetryBuilder.RecordExporterSentSpans(ctx, numSent, ors.metricAttr)
-		ors.telemetryBuilder.RecordExporterSendFailedSpans(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.RecordExporterSentSpans(ctx, numSent, ors.metricAttr)
+		ors.tb.RecordExporterSendFailedSpans(ctx, numFailedToSend, ors.metricAttr)
 	case pipeline.SignalMetrics:
-		ors.telemetryBuilder.RecordExporterSentMetricPoints(ctx, numSent, ors.metricAttr)
-		ors.telemetryBuilder.RecordExporterSendFailedMetricPoints(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.RecordExporterSentMetricPoints(ctx, numSent, ors.metricAttr)
+		ors.tb.RecordExporterSendFailedMetricPoints(ctx, numFailedToSend, ors.metricAttr)
 	case pipeline.SignalLogs:
-		ors.telemetryBuilder.RecordExporterSentLogRecords(ctx, numSent, ors.metricAttr)
-		ors.telemetryBuilder.RecordExporterSendFailedLogRecords(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.RecordExporterSentLogRecords(ctx, numSent, ors.metricAttr)
+		ors.tb.RecordExporterSendFailedLogRecords(ctx, numFailedToSend, ors.metricAttr)
 	}
 
 	span := trace.SpanFromContext(ctx)
