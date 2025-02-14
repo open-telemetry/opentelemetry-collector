@@ -1,5 +1,7 @@
 ---
 
+testing fossa license compliance check - do not merge
+
 <p align="center">
   <strong>
     <a href="https://opentelemetry.io/docs/collector/getting-started/">Getting Started</a>
