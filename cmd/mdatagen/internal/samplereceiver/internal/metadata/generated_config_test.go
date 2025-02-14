@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,7 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					DefaultMetric:            MetricConfig{Enabled: true},
 					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
 					MetricInputType:          MetricConfig{Enabled: true},
-					MetricWithInterval:       MetricConfig{Enabled: true},
+					MetricWithInterval:       MetricConfig{Enabled: true, Interval: 15},
 					OptionalMetric:           MetricConfig{Enabled: true},
 					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
 				},
@@ -51,7 +52,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					DefaultMetric:            MetricConfig{Enabled: false},
 					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
 					MetricInputType:          MetricConfig{Enabled: false},
-					MetricWithInterval:       MetricConfig{Enabled: false},
+					MetricWithInterval:       MetricConfig{Enabled: false, Interval: 15},
 					OptionalMetric:           MetricConfig{Enabled: false},
 					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
 				},
