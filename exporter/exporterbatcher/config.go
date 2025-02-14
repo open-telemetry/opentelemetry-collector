@@ -71,10 +71,6 @@ func (c Config) Validate() error {
 }
 
 func (c SizeConfig) Validate() error {
-	if c.Sizer.string == "" && c.MinSize == 0 && c.MaxSize == 0 {
-		return nil
-	}
-
 	if c.MinSize < 0 {
 		return errors.New("min_size must be greater than or equal to zero")
 	}
