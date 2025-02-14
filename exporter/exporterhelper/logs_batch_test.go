@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -246,7 +247,7 @@ func TestMergeSplitLogsInvalidInput(t *testing.T) {
 func TestExtractLogs(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		ld := testdata.GenerateLogs(10)
-		extractedLogs := extractLogs(ld, i)
+		extractedLogs := extractLogs(ld, i, &sizer.LogsCountSizer{})
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
 	}
