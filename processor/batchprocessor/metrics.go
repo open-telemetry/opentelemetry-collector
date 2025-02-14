@@ -53,11 +53,11 @@ func newBatchProcessorTelemetry(set processor.Settings, currentMetadataCardinali
 func (bpt *batchProcessorTelemetry) record(trigger trigger, sent, bytes int64) {
 	switch trigger {
 	case triggerBatchSize:
-		bpt.telemetryBuilder.ProcessorBatchBatchSizeTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr)
+		bpt.telemetryBuilder.RecordProcessorBatchBatchSizeTriggerSend(bpt.exportCtx, 1, bpt.processorAttr)
 	case triggerTimeout:
-		bpt.telemetryBuilder.ProcessorBatchTimeoutTriggerSend.Add(bpt.exportCtx, 1, bpt.processorAttr)
+		bpt.telemetryBuilder.RecordProcessorBatchTimeoutTriggerSend(bpt.exportCtx, 1, bpt.processorAttr)
 	}
 
-	bpt.telemetryBuilder.ProcessorBatchBatchSendSize.Record(bpt.exportCtx, sent, bpt.processorAttr)
-	bpt.telemetryBuilder.ProcessorBatchBatchSendSizeBytes.Record(bpt.exportCtx, bytes, bpt.processorAttr)
+	bpt.telemetryBuilder.RecordProcessorBatchBatchSendSize(bpt.exportCtx, sent, bpt.processorAttr)
+	bpt.telemetryBuilder.RecordProcessorBatchBatchSendSizeBytes(bpt.exportCtx, bytes, bpt.processorAttr)
 }
