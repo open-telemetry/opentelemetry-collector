@@ -8,6 +8,7 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/otel/attribute"
+	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -16,13 +17,28 @@ type tracerProviderWithAttributes struct {
 	option trace.SpanStartOption
 }
 
+// Necessary for components that use SDK-only methods, such as zpagesextension
+type tracerProviderWithAttributesSdk struct {
+	*sdkTrace.TracerProvider
+	option trace.SpanStartOption
+}
+
 func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) trace.TracerProvider {
-	if tpwa, ok := tp.(tracerProviderWithAttributes); ok {
+	if tpwa, ok := tp.(tracerProviderWithAttributesSdk); ok {
+		tp = tpwa.TracerProvider
+	} else if tpwa, ok := tp.(tracerProviderWithAttributes); ok {
 		tp = tpwa.TracerProvider
 	}
-	return tracerProviderWithAttributes{
-		TracerProvider: tp,
-		option:         trace.WithAttributes(attrs.ToSlice()...),
+	if tpSdk, ok := tp.(*sdkTrace.TracerProvider); ok {
+		return tracerProviderWithAttributesSdk{
+			TracerProvider: tpSdk,
+			option:         trace.WithAttributes(attrs.ToSlice()...),
+		}
+	} else {
+		return tracerProviderWithAttributes{
+			TracerProvider: tp,
+			option:         trace.WithAttributes(attrs.ToSlice()...),
+		}
 	}
 }
 
@@ -32,6 +48,13 @@ type tracerWithAttributes struct {
 }
 
 func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+	return tracerWithAttributes{
+		Tracer: tpwa.TracerProvider.Tracer(name, options...),
+		option: tpwa.option,
+	}
+}
+
+func (tpwa tracerProviderWithAttributesSdk) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
 	return tracerWithAttributes{
 		Tracer: tpwa.TracerProvider.Tracer(name, options...),
 		option: tpwa.option,
