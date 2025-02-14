@@ -21,20 +21,8 @@ import (
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
-// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
-type getExporters interface {
-	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
-}
-
-type getModuleInfos interface {
-	// GetModuleInfo returns the module information for the host.
-	GetModuleInfos() moduleinfo.ModuleInfos
-}
-
 var (
-	_ getExporters                = (*Host)(nil)
 	_ component.Host              = (*Host)(nil)
-	_ getModuleInfos              = (*Host)(nil)
 	_ hostcapabilities.ModuleInfo = (*Host)(nil)
 )
 
