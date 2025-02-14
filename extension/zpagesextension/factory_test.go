@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -27,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 		cfg)
 
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	ext, err := create(context.Background(), extensiontest.NewNopSettingsWithType(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -36,7 +37,7 @@ func TestFactoryCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettingsWithType(extensiontest.NopType)
 	set.ID = component.NewID(NewFactory().Type())
 	ext, err := create(context.Background(), set, cfg)
 	require.NoError(t, err)

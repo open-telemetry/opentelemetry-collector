@@ -11,12 +11,18 @@ import (
 	"go.opentelemetry.io/collector/scraper"
 )
 
-var defaultComponentType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
 // NewNopSettings returns a new nop scraper.Settings.
+// Deprecated: [v0.120.0] Use NewNopSettingsWithType(NopType) instead.
 func NewNopSettings() scraper.Settings {
+	return NewNopSettingsWithType(NopType)
+}
+
+// NewNopSettings returns a new nop scraper.Settings with the given type.
+func NewNopSettingsWithType(typ component.Type) scraper.Settings {
 	return scraper.Settings{
-		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}

@@ -27,7 +27,7 @@ func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		memorylimiterextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	)
@@ -38,7 +38,7 @@ func components() (otelcol.Factories, error) {
 	factories.ExtensionModules[memorylimiterextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/memorylimiterextension v0.119.0"
 	factories.ExtensionModules[zpagesextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/zpagesextension v0.119.0"
 
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		nopreceiver.NewFactory(),
 		otlpreceiver.NewFactory(),
 	)
@@ -49,7 +49,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[nopreceiver.NewFactory().Type()] = "go.opentelemetry.io/collector/receiver/nopreceiver v0.119.0"
 	factories.ReceiverModules[otlpreceiver.NewFactory().Type()] = "go.opentelemetry.io/collector/receiver/otlpreceiver v0.119.0"
 
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		debugexporter.NewFactory(),
 		nopexporter.NewFactory(),
 		otlpexporter.NewFactory(),
@@ -64,7 +64,7 @@ func components() (otelcol.Factories, error) {
 	factories.ExporterModules[otlpexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/otlpexporter v0.119.0"
 	factories.ExporterModules[otlphttpexporter.NewFactory().Type()] = "go.opentelemetry.io/collector/exporter/otlphttpexporter v0.119.0"
 
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		batchprocessor.NewFactory(),
 		memorylimiterprocessor.NewFactory(),
 	)
@@ -75,7 +75,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[batchprocessor.NewFactory().Type()] = "go.opentelemetry.io/collector/processor/batchprocessor v0.119.0"
 	factories.ProcessorModules[memorylimiterprocessor.NewFactory().Type()] = "go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.119.0"
 
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		forwardconnector.NewFactory(),
 	)
 	if err != nil {

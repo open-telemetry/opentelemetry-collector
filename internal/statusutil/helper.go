@@ -1,11 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package httphelper // import "go.opentelemetry.io/collector/internal/httphelper"
+package statusutil // import "go.opentelemetry.io/collector/internal/statusutil"
 
 import (
 	"net/http"
 
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -33,4 +34,13 @@ func NewStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
 		c = codes.Unknown
 	}
 	return status.New(c, errMsg)
+}
+
+func GetRetryInfo(status *status.Status) *errdetails.RetryInfo {
+	for _, detail := range status.Details() {
+		if t, ok := detail.(*errdetails.RetryInfo); ok {
+			return t
+		}
+	}
+	return nil
 }

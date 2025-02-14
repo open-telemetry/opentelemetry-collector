@@ -9,18 +9,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
-	set := receivertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("receiverhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
 
 func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{

@@ -16,12 +16,18 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
-var defaultComponentType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
 // NewNopSettings returns a new nop settings for Create*Receiver functions.
+// Deprecated: [v0.120.0] Use NewNopSettingsWithType instead.
 func NewNopSettings() receiver.Settings {
+	return NewNopSettingsWithType(NopType)
+}
+
+// NewNopSettingsWithType returns a new nop settings for Create*Receiver functions with the given type.
+func NewNopSettingsWithType(typ component.Type) receiver.Settings {
 	return receiver.Settings{
-		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -30,7 +36,7 @@ func NewNopSettings() receiver.Settings {
 // NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
 func NewNopFactory() receiver.Factory {
 	return xreceiver.NewFactory(
-		defaultComponentType,
+		NopType,
 		func() component.Config { return &nopConfig{} },
 		xreceiver.WithTraces(createTraces, component.StabilityLevelStable),
 		xreceiver.WithMetrics(createMetrics, component.StabilityLevelStable),

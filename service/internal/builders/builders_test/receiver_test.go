@@ -15,14 +15,16 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
 func TestReceiverBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{
 		receiver.NewFactory(component.MustNewType("err"), nil),
 		xreceiver.NewFactory(
 			component.MustNewType("all"),
@@ -92,7 +94,7 @@ func TestReceiverBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewReceiver(cfgs, factories)
+			b := builders.NewReceiver(cfgs, factories)
 
 			te, err := b.CreateTraces(context.Background(), settings(tt.id), tt.nextTraces)
 			if tt.err != "" {
@@ -135,7 +137,7 @@ func TestReceiverBuilder(t *testing.T) {
 
 func TestReceiverBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := receiver.MakeFactoryMap([]receiver.Factory{
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{
 		xreceiver.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
@@ -148,7 +150,7 @@ func TestReceiverBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewReceiver(map[component.ID]component.Config{}, factories)
+	bErr := builders.NewReceiver(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), settings(missingID), consumertest.NewNop())
@@ -169,25 +171,25 @@ func TestReceiverBuilderMissingConfig(t *testing.T) {
 }
 
 func TestReceiverBuilderFactory(t *testing.T) {
-	factories, err := receiver.MakeFactoryMap([]receiver.Factory{receiver.NewFactory(component.MustNewType("foo"), nil)}...)
+	factories, err := otelcol.MakeFactoryMap([]receiver.Factory{receiver.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewReceiver(cfgs, factories)
+	b := builders.NewReceiver(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
-	configs, factories := NewNopReceiverConfigsAndFactories()
-	builder := NewReceiver(configs, factories)
+	configs, factories := builders.NewNopReceiverConfigsAndFactories()
+	builder := builders.NewReceiver(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := receivertest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
-	set.ID = component.NewID(nopType)
+	set := receivertest.NewNopSettingsWithType(factory.Type())
+	set.ID = component.NewID(builders.NopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)

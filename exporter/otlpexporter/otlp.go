@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -21,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -167,7 +167,7 @@ func processError(err error) error {
 	}
 
 	// Now, this is a real error.
-	retryInfo := getRetryInfo(st)
+	retryInfo := statusutil.GetRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
 		// It is not a retryable error, we should not retry.
@@ -175,7 +175,7 @@ func processError(err error) error {
 	}
 
 	// Check if server returned throttling information.
-	throttleDuration := getThrottleDuration(retryInfo)
+	throttleDuration := retryInfo.GetRetryDelay().AsDuration()
 	if throttleDuration != 0 {
 		// We are throttled. Wait before retrying as requested by the server.
 		return exporterhelper.NewThrottleRetry(err, throttleDuration)
@@ -202,23 +202,4 @@ func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
 	}
 	// Don't retry on any other code.
 	return false
-}
-
-func getRetryInfo(status *status.Status) *errdetails.RetryInfo {
-	for _, detail := range status.Details() {
-		if t, ok := detail.(*errdetails.RetryInfo); ok {
-			return t
-		}
-	}
-	return nil
-}
-
-func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
-	if t == nil || t.RetryDelay == nil {
-		return 0
-	}
-	if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
-		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
-	}
-	return 0
 }

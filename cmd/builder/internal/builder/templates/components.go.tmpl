@@ -31,7 +31,7 @@ func components() (otelcol.Factories, error) {
 	var err error
 	factories := otelcol.Factories{}
 
-	factories.Extensions, err = extension.MakeFactoryMap(
+	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		{{- range .Extensions}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
@@ -44,7 +44,7 @@ func components() (otelcol.Factories, error) {
 	factories.ExtensionModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
 	{{- end}}
 
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		{{- range .Receivers}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
@@ -57,7 +57,7 @@ func components() (otelcol.Factories, error) {
 	factories.ReceiverModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
 	{{- end}}
 
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		{{- range .Exporters}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
@@ -70,7 +70,7 @@ func components() (otelcol.Factories, error) {
 	factories.ExporterModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
 	{{- end}}
 
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		{{- range .Processors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}
@@ -83,7 +83,7 @@ func components() (otelcol.Factories, error) {
 	factories.ProcessorModules[{{.Name}}.NewFactory().Type()] = "{{.GoMod}}"
 	{{- end}}
 
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		{{- range .Connectors}}
 		{{.Name}}.NewFactory(),
 		{{- end}}

@@ -30,7 +30,7 @@ var (
 	defaultSignal   = pipeline.SignalMetrics
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.Settings {
-		set := exportertest.NewNopSettings()
+		set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 		set.ID = defaultID
 		return set
 	}()
@@ -85,16 +85,16 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			bs, err := NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
+			bs, err := NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
 				WithRetry(configretry.NewDefaultBackOffConfig()))
 			require.NoError(t, err)
 			require.Nil(t, bs.Marshaler)
 			require.Nil(t, bs.Unmarshaler)
-			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
+			_, err = NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
 				WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 			require.Error(t, err)
 
-			_, err = NewBaseExporter(exportertest.NewNopSettings(), defaultSignal,
+			_, err = NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
 				WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
 				WithRetry(configretry.NewDefaultBackOffConfig()),
 				WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[request.Request]()))
@@ -109,7 +109,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 			rCfg := configretry.NewDefaultBackOffConfig()
@@ -184,7 +184,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	) {
 		t.Run(testName, func(t *testing.T) {
 			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
 			be, err := NewBaseExporter(set, pipeline.SignalLogs, tt.queueOptions...)

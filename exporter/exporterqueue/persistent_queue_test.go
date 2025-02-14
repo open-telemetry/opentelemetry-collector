@@ -227,7 +227,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	})
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
@@ -250,7 +250,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	pq.initClient(context.Background(), client)
 	return pq
@@ -274,7 +274,7 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
@@ -422,7 +422,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				storageID:   component.ID{},
 				marshaler:   uint64Marshaler,
 				unmarshaler: uint64Unmarshaler,
-				set:         exportertest.NewNopSettings(),
+				set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
@@ -524,7 +524,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	// make a test extension
 	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
-	settings := extensiontest.NewNopSettings()
+	settings := extensiontest.NewNopSettingsWithType(factory.Type())
 	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
 	extensions := map[component.ID]component.Component{
