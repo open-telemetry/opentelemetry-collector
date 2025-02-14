@@ -23,7 +23,7 @@ func LoggerWithAttributes(logger *zap.Logger, attrs attribute.Set) *zap.Logger {
 	}
 	return logger.WithOptions(
 		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			if cwa, ok := core.(loggerCoreWithAttributes); ok {
+			if cwa, ok := core.(*loggerCoreWithAttributes); ok {
 				core = cwa.from
 			}
 			return &loggerCoreWithAttributes{Core: core.With(fields), from: core}
