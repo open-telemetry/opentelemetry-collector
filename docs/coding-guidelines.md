@@ -451,20 +451,20 @@ coming, so they can start preparing for it and we have some early adopters that 
 feedback. Consider the following items before the initial release of an alpha feature gate:
 
 * If **docs and examples** can be updated in a way that prevents the breaking change from affecting
-  users, this is the time to update them\!  
-* Provide users with tools to understand the breaking change  
+  users, this is the time to update them!
+* Provide users with tools to understand the breaking change
   * (Optional) Create or update a **Github issue** to document what the change is about, who it
-    affects and what its effects are  
+    affects and what its effects are
   * (Optional) Consider adding **telemetry** that allows users to track their migration. For
     example, you can add a counter for the times that you see a payload that would be affected by
-    the breaking change.  
-* Notify users about the upcoming change  
+    the breaking change.
+* Notify users about the upcoming change
   * Add a **changelog entry** that describes the feature gate. It should include its name, when you
     may want to use it, and what its effects are. The changelog entry can be given the `enhancement`
     classification at this stage.
   * (Optional but strongly recommended) Log a **warning** if the user is using the software in a way
     that would be affected by the breaking change. Point the user to the feature gate and any
-    official docs.  
+    official docs.
 * (Optional) Try to **test this in a realistic setting.** If this solves an issue, ask the poster to
   try to use it and check that everything works.
 
@@ -477,13 +477,13 @@ or for changes that should not have a functional impact such as performance chan
 following items before moving from alpha to beta:
 
 * Schedule the **docs and examples** update to align with the breaking change release if you
-  couldn’t do it before  
-* Provide users with tools to understand the breaking change  
-  * Update the **Github issue** with the new default behavior (or create one if starting from here)  
-  * Update the feature gate to add the ‘to version’ to the feature gate  
-* Notify users about the change  
+  couldn’t do it before
+* Provide users with tools to understand the breaking change
+  * Update the **Github issue** with the new default behavior (or create one if starting from here)
+  * Update the feature gate to add the ‘to version’ to the feature gate
+* Notify users about the change
   * Add a second **changelog entry** that describes the change one more time and is marked as
-    ‘breaking’.  
+    ‘breaking’.
   * If applicable, add an **error message** that tells you this is the result of a breaking change
     that can be temporarily reverted disabling the feature gate and points to any issue or docs
     about it.
@@ -495,12 +495,12 @@ just do the change, in which case you do not need a feature gate, but you should
 checklist below (notify, update docs and examples). Consider the following items before moving from
 beta to stable:
 
-* Remove the dead code  
-* Provide users with tools to understand the breaking change  
+* Remove the dead code
+* Provide users with tools to understand the breaking change
   * Update the **documentation** **and examples** to remove any references to the feature gate and
-    the previous behavior. Close the **Github issue** if you opened one before.  
-* Notify users about the change  
-  * Add one last **changelog entry** so users know the range where the feature gate was in beta  
+    the previous behavior. Close the **Github issue** if you opened one before.
+* Notify users about the change
+  * Add one last **changelog entry** so users know the range where the feature gate was in beta
   * Amend the **error message** to remove any references to the feature gate.
 
 ## Specification Tracking
