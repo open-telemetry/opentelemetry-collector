@@ -1,15 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry
+package telemetry // import "go.opentelemetry.io/collector/internal/telemetry"
 
 import (
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type TelemetrySettings struct {
