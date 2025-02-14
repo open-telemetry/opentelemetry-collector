@@ -4,6 +4,10 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
+	"errors"
+	"fmt"
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -25,4 +29,36 @@ func FromAttributeIndices(table AttributeTableSlice, record attributable) pcommo
 	}
 
 	return m
+}
+
+// AddAttribute updates an AttributeTable and a record's AttributeIndices to
+// add a new attribute.
+// The record can by any struct that implements an `AttributeIndices` method.
+func AddAttribute(table AttributeTableSlice, record attributable, key string, value any) error {
+	for i := 0; i < table.Len(); i++ {
+		a := table.At(i)
+
+		if a.Key() == key && value == a.Value().AsRaw() {
+			if i >= math.MaxInt32 {
+				return fmt.Errorf("Attribute %s=%#v has too high an indice to be added to AttributeIndices", key, value)
+			}
+
+			record.AttributeIndices().Append(int32(i)) //nolint:gosec // overflow checked
+			return nil
+		}
+	}
+
+	if table.Len() >= math.MaxInt32 {
+		return errors.New("AttributeTable can't take more attributes")
+	}
+	table.EnsureCapacity(table.Len() + 1)
+	entry := table.AppendEmpty()
+	entry.SetKey(key)
+	err := entry.Value().FromRaw(value)
+	if err != nil {
+		return err
+	}
+	record.AttributeIndices().Append(int32(table.Len()) - 1) //nolint:gosec // overflow checked
+
+	return nil
 }
