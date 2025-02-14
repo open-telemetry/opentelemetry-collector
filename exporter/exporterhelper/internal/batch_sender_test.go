@@ -622,7 +622,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 			assert.EqualValues(t, 12, sink.ItemsCount())
 		})
 	}
-	runTest("enable_queue_batcher", true)
+	// When queue_batcher is enabled, we don't propagate context deadline.
 	runTest("disable_queue_batcher", false)
 }
 

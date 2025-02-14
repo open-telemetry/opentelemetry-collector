@@ -96,10 +96,10 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 // StartOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
-	spanLinks := batcher.SpanLinksFromContext(ctx)
-
-	// This span should contain the links to spans of all batched requests.
-	ctx, _ = ors.tracer.Start(ctx, ors.spanName, ors.spanAttrs, trace.WithLinks(spanLinks...))
+	ctx, _ = ors.tracer.Start(ctx,
+		ors.spanName,
+		ors.spanAttrs,
+		trace.WithLinks(batcher.LinksFromContext(ctx)...))
 	return ctx
 }
 

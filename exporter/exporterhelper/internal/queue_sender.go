@@ -7,11 +7,13 @@ import (
 	"context"
 	"errors"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/featuregate"
@@ -111,7 +113,11 @@ func NewQueueSender(
 		}
 
 		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req request.Request, done exporterqueue.Done) {
+			// TODO: move start of span to enqueue instead to dequeue.
+			// Figure out how to preserve span context across persistent storage.
+			ctx, _ = metadata.Tracer(qSet.ExporterSettings.TelemetrySettings).Start(ctx, "exporter/enqueue")
 			done.OnDone(exportFunc(ctx, req))
+			trace.SpanFromContext(ctx).End()
 		}))
 		if err != nil {
 			return nil, err
