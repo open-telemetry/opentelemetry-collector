@@ -129,7 +129,7 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, internal.NewObsReportSender, options...)
+	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, options...)
 	if err != nil {
 		return nil, err
 	}

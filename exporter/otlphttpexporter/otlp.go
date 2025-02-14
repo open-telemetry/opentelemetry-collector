@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/httphelper"
+	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -220,26 +220,35 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
-	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
+	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
-	if isRetryableStatusCode(resp.StatusCode) {
-		// A retry duration of 0 seconds will trigger the default backoff policy
-		// of our caller (retry handler).
-		retryAfter := 0
-
-		// Check if the server is overwhelmed.
-		// See spec https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlphttp-throttling
-		isThrottleError := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable
-		if val := resp.Header.Get(headerRetryAfter); isThrottleError && val != "" {
-			if seconds, err2 := strconv.Atoi(val); err2 == nil {
-				retryAfter = seconds
-			}
-		}
-
-		return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(retryAfter)*time.Second)
+	if !isRetryableStatusCode(resp.StatusCode) {
+		return consumererror.NewPermanent(formattedErr)
 	}
 
-	return consumererror.NewPermanent(formattedErr)
+	// Check if the server is overwhelmed.
+	// See spec https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md#otlphttp-throttling
+	isThrottleError := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable
+	if isThrottleError {
+		// Use Values to check if the header is present, and if present even if it is empty return ThrottleRetry.
+		values := resp.Header.Values(headerRetryAfter)
+		if len(values) == 0 {
+			return formattedErr
+		}
+		// The value of Retry-After field can be either an HTTP-date or a number of
+		// seconds to delay after the response is received. See https://datatracker.ietf.org/doc/html/rfc7231#section-7.1.3
+		//
+		// Retry-After = HTTP-date / delay-seconds
+		//
+		// First try to parse delay-seconds, since that is what the receiver will send.
+		if seconds, err := strconv.Atoi(values[0]); err == nil {
+			return exporterhelper.NewThrottleRetry(formattedErr, time.Duration(seconds)*time.Second)
+		}
+		if date, err := time.Parse(time.RFC1123, values[0]); err == nil {
+			return exporterhelper.NewThrottleRetry(formattedErr, time.Until(date))
+		}
+	}
+	return formattedErr
 }
 
 // Determine if the status code is retryable according to the specification.

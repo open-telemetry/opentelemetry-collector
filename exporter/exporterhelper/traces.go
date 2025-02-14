@@ -126,7 +126,7 @@ func NewTracesRequest(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, internal.NewObsReportSender, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, options...)
 	if err != nil {
 		return nil, err
 	}

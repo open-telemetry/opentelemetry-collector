@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/receiver/xreceiver
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
@@ -54,7 +54,3 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
-
-replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest

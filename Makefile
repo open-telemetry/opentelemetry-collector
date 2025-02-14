@@ -270,6 +270,8 @@ check-contrib:
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
+	@$(MAKE) generate-contrib
+
 	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 
@@ -444,6 +446,7 @@ builder-integration-test: $(ENVSUBST)
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
 .PHONY: generate-gh-issue-templates
