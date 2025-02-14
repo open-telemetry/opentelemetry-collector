@@ -705,7 +705,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(receivertest.NopType),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -774,7 +774,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettingsWithType(receivertest.NopType),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -840,7 +840,7 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(receivertest.NopType)
 	set.TelemetrySettings = settings
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
@@ -1017,7 +1017,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettingsWithType(receivertest.NopType)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),

@@ -19,13 +19,15 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
 func TestConnectorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := connector.MakeFactoryMap([]connector.Factory{
+	factories, err := otelcol.MakeFactoryMap([]connector.Factory{
 		connector.NewFactory(component.MustNewType("err"), nil),
 		xconnector.NewFactory(
 			component.MustNewType("all"),
@@ -119,7 +121,7 @@ func TestConnectorBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewConnector(cfgs, factories)
+			b := builders.NewConnector(cfgs, factories)
 
 			t2t, err := b.CreateTracesToTraces(context.Background(), createConnectorSettings(tt.id), tt.nextTraces)
 			if expectedErr := tt.err(pipeline.SignalTraces, pipeline.SignalTraces); expectedErr != "" {
@@ -262,7 +264,7 @@ func TestConnectorBuilder(t *testing.T) {
 
 func TestConnectorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := connector.MakeFactoryMap([]connector.Factory{
+	factories, err := otelcol.MakeFactoryMap([]connector.Factory{
 		xconnector.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
@@ -287,7 +289,7 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewConnector(map[component.ID]component.Config{}, factories)
+	bErr := builders.NewConnector(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	t2t, err := bErr.CreateTracesToTraces(context.Background(), createConnectorSettings(missingID), consumertest.NewNop())
@@ -356,11 +358,11 @@ func TestConnectorBuilderMissingConfig(t *testing.T) {
 }
 
 func TestConnectorBuilderGetters(t *testing.T) {
-	factories, err := connector.MakeFactoryMap([]connector.Factory{connector.NewFactory(component.MustNewType("foo"), nil)}...)
+	factories, err := otelcol.MakeFactoryMap([]connector.Factory{connector.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewConnector(cfgs, factories)
+	b := builders.NewConnector(cfgs, factories)
 
 	assert.True(t, b.IsConfigured(component.MustNewID("foo")))
 	assert.False(t, b.IsConfigured(component.MustNewID("bar")))
@@ -370,14 +372,14 @@ func TestConnectorBuilderGetters(t *testing.T) {
 }
 
 func TestNewNopConnectorConfigsAndFactories(t *testing.T) {
-	configs, factories := NewNopConnectorConfigsAndFactories()
-	builder := NewConnector(configs, factories)
+	configs, factories := builders.NewNopConnectorConfigsAndFactories()
+	builder := builders.NewConnector(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := connectortest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := connectortest.NewNopSettings()
-	set.ID = component.NewIDWithName(nopType, "conn")
+	set := connectortest.NewNopSettingsWithType(factory.Type())
+	set.ID = component.NewIDWithName(builders.NopType, "conn")
 
 	tracesToTraces, err := factory.CreateTracesToTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
