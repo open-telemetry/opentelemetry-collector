@@ -34,11 +34,10 @@ func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) 
 			TracerProvider: tpSdk,
 			option:         trace.WithAttributes(attrs.ToSlice()...),
 		}
-	} else {
-		return tracerProviderWithAttributes{
-			TracerProvider: tp,
-			option:         trace.WithAttributes(attrs.ToSlice()...),
-		}
+	}
+	return tracerProviderWithAttributes{
+		TracerProvider: tp,
+		option:         trace.WithAttributes(attrs.ToSlice()...),
 	}
 }
 
