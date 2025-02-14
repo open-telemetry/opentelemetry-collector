@@ -22,6 +22,7 @@ func (mwa meterWithAttributes) Float64Counter(name string, options ...metric.Flo
 		option:         mwa.option,
 	}, err
 }
+
 func (inst float64Counter) Add(ctx context.Context, incr float64, options ...metric.AddOption) {
 	options = slices.Insert(options, 0, metric.AddOption(inst.option))
 	inst.Float64Counter.Add(ctx, incr, options...)
@@ -39,6 +40,7 @@ func (mwa meterWithAttributes) Float64UpDownCounter(name string, options ...metr
 		option:               mwa.option,
 	}, err
 }
+
 func (inst float64UpDownCounter) Add(ctx context.Context, incr float64, options ...metric.AddOption) {
 	options = slices.Insert(options, 0, metric.AddOption(inst.option))
 	inst.Float64UpDownCounter.Add(ctx, incr, options...)
@@ -56,6 +58,7 @@ func (mwa meterWithAttributes) Float64Histogram(name string, options ...metric.F
 		option:           mwa.option,
 	}, err
 }
+
 func (inst float64Histogram) Record(ctx context.Context, incr float64, options ...metric.RecordOption) {
 	options = slices.Insert(options, 0, metric.RecordOption(inst.option))
 	inst.Float64Histogram.Record(ctx, incr, options...)
@@ -73,6 +76,7 @@ func (mwa meterWithAttributes) Float64Gauge(name string, options ...metric.Float
 		option:       mwa.option,
 	}, err
 }
+
 func (inst float64Gauge) Record(ctx context.Context, incr float64, options ...metric.RecordOption) {
 	options = slices.Insert(options, 0, metric.RecordOption(inst.option))
 	inst.Float64Gauge.Record(ctx, incr, options...)

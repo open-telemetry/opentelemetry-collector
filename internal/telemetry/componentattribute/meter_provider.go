@@ -48,10 +48,12 @@ func (obs observerWithAttributes) ObserveInt64(obsrv metric.Int64Observable, val
 	options = slices.Insert(options, 0, metric.ObserveOption(obs.option))
 	obs.Observer.ObserveInt64(obsrv, value, options...)
 }
+
 func (obs observerWithAttributes) ObserveFloat64(obsrv metric.Float64Observable, value float64, options ...metric.ObserveOption) {
 	options = slices.Insert(options, 0, metric.ObserveOption(obs.option))
 	obs.Observer.ObserveFloat64(obsrv, value, options...)
 }
+
 func (mwa meterWithAttributes) RegisterCallback(f metric.Callback, instruments ...metric.Observable) (metric.Registration, error) {
 	return mwa.Meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
 		return f(ctx, observerWithAttributes{Observer: o, option: mwa.option})
