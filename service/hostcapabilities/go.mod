@@ -73,3 +73,5 @@ replace (
 	go.opentelemetry.io/collector/semconv => ../../semconv
 	go.opentelemetry.io/collector/service => ..
 )
+
+replace go.opentelemetry.io/collector/otelcol => ../../otelcol
