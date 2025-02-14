@@ -47,7 +47,9 @@ func TestCreateSameReceiver(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
 	creationSet := receivertest.NewNopSettingsWithType(factory.Type())
-	creationSet.Logger = componentattribute.LoggerWithAttributes(zap.New(core), attrs)
+	creationSet.Logger = zap.New(core)
+	creationSet.InstanceAttributes = attrs
+	componentattribute.UpdateInstanceAttributes(&creationSet.TelemetrySettings)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
