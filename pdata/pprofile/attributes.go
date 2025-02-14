@@ -54,8 +54,7 @@ func AddAttribute(table AttributeTableSlice, record attributable, key string, va
 	table.EnsureCapacity(table.Len() + 1)
 	entry := table.AppendEmpty()
 	entry.SetKey(key)
-	err := entry.Value().FromRaw(value)
-	if err != nil {
+	if err := entry.Value().FromRaw(value); err != nil {
 		return err
 	}
 	record.AttributeIndices().Append(int32(table.Len()) - 1) //nolint:gosec // overflow checked
