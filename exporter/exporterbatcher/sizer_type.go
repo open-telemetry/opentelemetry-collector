@@ -7,9 +7,7 @@ import (
 	"fmt"
 )
 
-type SizerType struct {
-	string
-}
+type SizerType string
 
 const (
 	itemsSizerString = "items"
