@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.0
-	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214125809-b0de9a6fc444
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0

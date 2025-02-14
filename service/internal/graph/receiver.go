@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
@@ -42,9 +42,11 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.InstanceAttributes = *n.Attributes.Set()
-	componentattribute.UpdateInstanceAttributes(&tel)
-	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := receiver.Settings{
+		ID:                n.componentID,
+		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
+		BuildInfo:         info,
+	}
 	var err error
 	switch n.pipelineType {
 	case pipeline.SignalTraces:

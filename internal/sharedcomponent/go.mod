@@ -18,6 +18,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214125809-b0de9a6fc444 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
@@ -45,3 +46,5 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../telemetry

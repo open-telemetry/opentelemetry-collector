@@ -31,6 +31,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214125809-b0de9a6fc444 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.119.0 // indirect
@@ -69,3 +70,5 @@ replace go.opentelemetry.io/collector/processor/xprocessor => ./xprocessor
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
 
 replace go.opentelemetry.io/collector/processor/processortest => ./processortest
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry

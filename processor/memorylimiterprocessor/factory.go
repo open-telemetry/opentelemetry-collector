@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
@@ -106,7 +107,8 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	componentattribute.RemoveInstanceAttributes(&set.TelemetrySettings,
+	set.TelemetrySettings = telemetry.WithoutAttributes(
+		set.TelemetrySettings,
 		componentattribute.SignalKey,
 		componentattribute.PipelineIDKey,
 		componentattribute.ComponentIDKey,

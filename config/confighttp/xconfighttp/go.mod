@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.25.0 // indirect
 	go.opentelemetry.io/collector/extension v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214125809-b0de9a6fc444 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
@@ -73,3 +74,7 @@ replace go.opentelemetry.io/collector/extension => ../../../extension
 replace go.opentelemetry.io/collector/config/configtls => ../../configtls
 
 replace go.opentelemetry.io/collector/config/configcompression => ../../configcompression
+
+replace go.opentelemetry.io/collector/pipeline => ../../../pipeline
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../../internal/telemetry

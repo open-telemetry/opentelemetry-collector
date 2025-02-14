@@ -63,6 +63,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.119.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.25.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214125809-b0de9a6fc444 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.119.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.119.0 // indirect
@@ -157,3 +158,5 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry

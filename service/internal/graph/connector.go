@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -49,9 +49,11 @@ func (n *connectorNode) buildComponent(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.InstanceAttributes = *n.Attributes.Set()
-	componentattribute.UpdateInstanceAttributes(&tel)
-	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := connector.Settings{
+		ID:                n.componentID,
+		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
+		BuildInfo:         info,
+	}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
 		return n.buildTraces(ctx, set, builder, nexts)

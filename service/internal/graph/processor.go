@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -47,9 +47,11 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	tel.InstanceAttributes = *n.Attributes.Set()
-	componentattribute.UpdateInstanceAttributes(&tel)
-	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	set := processor.Settings{
+		ID:                n.componentID,
+		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
+		BuildInfo:         info,
+	}
 	var err error
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
