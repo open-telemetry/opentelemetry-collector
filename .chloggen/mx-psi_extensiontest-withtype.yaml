@@ -4,10 +4,10 @@
 change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: extensiontest
+component: extensiontest, connectortest, processortest, receivertest, exportertest, scrapertest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Deprecate `extensiontest.NewNopSettings` in favor of `extensiontest.NewNopSettingsWithType`
+note: Deprecate `*test.NewNopSettings` in favor of `*test.NewNopSettingsWithType`
 
 # One or more tracking issues or pull requests related to the change
 issues: [12305]

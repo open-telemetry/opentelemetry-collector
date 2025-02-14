@@ -326,7 +326,7 @@ func TestQueueBatchNoStartShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
 			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettingsWithType(exportertest.NopType)
 			set.ID = exporterID
 			qSet := exporterqueue.Settings{
 				Signal:           pipeline.SignalTraces,
