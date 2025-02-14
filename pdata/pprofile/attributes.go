@@ -35,7 +35,7 @@ func FromAttributeIndices(table AttributeTableSlice, record attributable) pcommo
 // add a new attribute.
 // The record can by any struct that implements an `AttributeIndices` method.
 func AddAttribute(table AttributeTableSlice, record attributable, key string, value any) error {
-	for i := 0; i < table.Len(); i++ {
+	for i := range table.Len() {
 		a := table.At(i)
 
 		if a.Key() == key && value == a.Value().AsRaw() {
