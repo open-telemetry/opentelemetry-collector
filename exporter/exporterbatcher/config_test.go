@@ -35,21 +35,21 @@ func TestValidateConfig(t *testing.T) {
 
 func TestValidateSizeConfig(t *testing.T) {
 	cfg := SizeConfig{
-		Sizer:   MustNewSizer("bytes"),
+		Sizer:   SizerTypeItems,
 		MaxSize: -100,
 		MinSize: 100,
 	}
 	require.EqualError(t, cfg.Validate(), "max_size must be greater than or equal to zero")
 
 	cfg = SizeConfig{
-		Sizer:   MustNewSizer("bytes"),
+		Sizer:   SizerTypeBytes,
 		MaxSize: 100,
 		MinSize: -100,
 	}
 	require.EqualError(t, cfg.Validate(), "min_size must be greater than or equal to zero")
 
 	cfg = SizeConfig{
-		Sizer:   MustNewSizer("bytes"),
+		Sizer:   SizerTypeBytes,
 		MaxSize: 100,
 		MinSize: 200,
 	}
