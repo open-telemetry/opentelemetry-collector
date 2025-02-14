@@ -10,7 +10,7 @@ import (
 type SizerType string
 
 const (
-	itemsSizerString = "items"
+	SizerTypeItems SizerType = "items"
 	bytesSizerString = "bytes"
 )
 
