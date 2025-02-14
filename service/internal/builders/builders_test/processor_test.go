@@ -15,14 +15,16 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/processor/xprocessor"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
 func TestProcessorBuilder(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := processor.MakeFactoryMap([]processor.Factory{
+	factories, err := otelcol.MakeFactoryMap([]processor.Factory{
 		processor.NewFactory(component.MustNewType("err"), nil),
 		xprocessor.NewFactory(
 			component.MustNewType("all"),
@@ -92,7 +94,7 @@ func TestProcessorBuilder(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfgs := map[component.ID]component.Config{tt.id: defaultCfg}
-			b := NewProcessor(cfgs, factories)
+			b := builders.NewProcessor(cfgs, factories)
 
 			te, err := b.CreateTraces(context.Background(), createProcessorSettings(tt.id), tt.nextTraces)
 			if tt.err != "" {
@@ -135,7 +137,7 @@ func TestProcessorBuilder(t *testing.T) {
 
 func TestProcessorBuilderMissingConfig(t *testing.T) {
 	defaultCfg := struct{}{}
-	factories, err := processor.MakeFactoryMap([]processor.Factory{
+	factories, err := otelcol.MakeFactoryMap([]processor.Factory{
 		xprocessor.NewFactory(
 			component.MustNewType("all"),
 			func() component.Config { return &defaultCfg },
@@ -148,7 +150,7 @@ func TestProcessorBuilderMissingConfig(t *testing.T) {
 
 	require.NoError(t, err)
 
-	bErr := NewProcessor(map[component.ID]component.Config{}, factories)
+	bErr := builders.NewProcessor(map[component.ID]component.Config{}, factories)
 	missingID := component.MustNewIDWithName("all", "missing")
 
 	te, err := bErr.CreateTraces(context.Background(), createProcessorSettings(missingID), consumertest.NewNop())
@@ -169,25 +171,25 @@ func TestProcessorBuilderMissingConfig(t *testing.T) {
 }
 
 func TestProcessorBuilderFactory(t *testing.T) {
-	factories, err := processor.MakeFactoryMap([]processor.Factory{processor.NewFactory(component.MustNewType("foo"), nil)}...)
+	factories, err := otelcol.MakeFactoryMap([]processor.Factory{processor.NewFactory(component.MustNewType("foo"), nil)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewProcessor(cfgs, factories)
+	b := builders.NewProcessor(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func TestNewNopProcessorBuilder(t *testing.T) {
-	configs, factories := NewNopProcessorConfigsAndFactories()
-	builder := NewProcessor(configs, factories)
+	configs, factories := builders.NewNopProcessorConfigsAndFactories()
+	builder := builders.NewProcessor(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := processortest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := processortest.NewNopSettings()
-	set.ID = component.NewID(nopType)
+	set := processortest.NewNopSettingsWithType(factory.Type())
+	set.ID = component.NewID(builders.NopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)

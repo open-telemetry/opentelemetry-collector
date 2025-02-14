@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/service/internal/builders"
 )
 
 func TestExtensionBuilder(t *testing.T) {
@@ -22,7 +24,7 @@ func TestExtensionBuilder(t *testing.T) {
 	testID := component.NewID(testType)
 	unknownID := component.MustNewID("unknown")
 
-	factories, err := extension.MakeFactoryMap([]extension.Factory{
+	factories, err := otelcol.MakeFactoryMap([]extension.Factory{
 		extension.NewFactory(
 			testType,
 			func() component.Config { return &defaultCfg },
@@ -34,7 +36,7 @@ func TestExtensionBuilder(t *testing.T) {
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{testID: defaultCfg, unknownID: defaultCfg}
-	b := NewExtension(cfgs, factories)
+	b := builders.NewExtension(cfgs, factories)
 
 	e, err := b.Create(context.Background(), createExtensionSettings(testID))
 	require.NoError(t, err)
@@ -55,25 +57,25 @@ func TestExtensionBuilder(t *testing.T) {
 }
 
 func TestExtensionBuilderFactory(t *testing.T) {
-	factories, err := extension.MakeFactoryMap([]extension.Factory{extension.NewFactory(component.MustNewType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
+	factories, err := otelcol.MakeFactoryMap([]extension.Factory{extension.NewFactory(component.MustNewType("foo"), nil, nil, component.StabilityLevelDevelopment)}...)
 	require.NoError(t, err)
 
 	cfgs := map[component.ID]component.Config{component.MustNewID("foo"): struct{}{}}
-	b := NewExtension(cfgs, factories)
+	b := builders.NewExtension(cfgs, factories)
 
 	assert.NotNil(t, b.Factory(component.MustNewID("foo").Type()))
 	assert.Nil(t, b.Factory(component.MustNewID("bar").Type()))
 }
 
 func TestNewNopExtensionConfigsAndFactories(t *testing.T) {
-	configs, factories := NewNopExtensionConfigsAndFactories()
-	builder := NewExtension(configs, factories)
+	configs, factories := builders.NewNopExtensionConfigsAndFactories()
+	builder := builders.NewExtension(configs, factories)
 	require.NotNil(t, builder)
 
 	factory := extensiontest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := extensiontest.NewNopSettings()
-	set.ID = component.NewID(nopType)
+	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set.ID = component.NewID(builders.NopType)
 
 	ext, err := factory.Create(context.Background(), set, cfg)
 	require.NoError(t, err)

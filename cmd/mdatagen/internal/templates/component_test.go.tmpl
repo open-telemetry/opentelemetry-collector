@@ -112,7 +112,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -121,7 +121,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), exportertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
@@ -209,7 +209,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -218,7 +218,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			err = c.Start(context.Background(), host)
@@ -304,7 +304,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), receivertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -313,13 +313,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
@@ -373,7 +373,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), scrapertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -382,13 +382,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(), cfg)
+			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(), cfg)
+			secondRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))
@@ -535,7 +535,7 @@ func TestComponentLifecycle(t *testing.T) {
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), connectortest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
@@ -544,13 +544,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
+			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
-			secondConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(), cfg)
+			secondConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettingsWithType(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondConnector.Start(context.Background(), host))
 			require.NoError(t, secondConnector.Shutdown(context.Background()))

@@ -50,7 +50,7 @@ func TestCreateProcessor(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(factory.Type())
 	set.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
