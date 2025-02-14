@@ -8,7 +8,7 @@ import (
 )
 
 func RemoveInstanceAttributes(ts *component.TelemetrySettings, fields ...string) {
-	ts.InstanceAttributes = RemoveAttributes(ts.InstanceAttributes)
+	ts.InstanceAttributes = RemoveAttributes(ts.InstanceAttributes, fields...)
 	UpdateInstanceAttributes(ts)
 }
 
