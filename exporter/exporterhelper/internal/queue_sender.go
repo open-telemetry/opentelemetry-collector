@@ -113,11 +113,7 @@ func NewQueueSender(
 		}
 
 		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req request.Request, done exporterqueue.Done) {
-			// TODO: move start of span to enqueue instead to dequeue.
-			// Figure out how to preserve span context across persistent storage.
-			ctx, _ = metadata.Tracer(qSet.ExporterSettings.TelemetrySettings).Start(ctx, "exporter/enqueue")
 			done.OnDone(exportFunc(ctx, req))
-			trace.SpanFromContext(ctx).End()
 		}))
 		if err != nil {
 			return nil, err
@@ -129,7 +125,13 @@ func NewQueueSender(
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
+
+		// TODO: move start of span to enqueue instead to dequeue.
+		// Figure out how to preserve span context across persistent storage.
+		ctx, _ = metadata.Tracer(qSet.ExporterSettings.TelemetrySettings).Start(ctx, "exporter/enqueue")
 		err := next.Send(ctx, req)
+		trace.SpanFromContext(ctx).End()
+
 		if err != nil {
 			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(err), zap.Int("dropped_items", itemsCount))
