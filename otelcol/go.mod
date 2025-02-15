@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/otelcol
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/spf13/cobra v1.8.1
@@ -71,7 +71,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentattribute v0.119.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.119.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.119.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.25.0 // indirect
@@ -81,6 +80,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.119.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760 // indirect
 	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
@@ -109,8 +109,8 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.5.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	gonum.org/v1/gonum v0.15.1 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
@@ -209,4 +209,4 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/au
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
 
-replace go.opentelemetry.io/collector/component/componentattribute => ../component/componentattribute
+replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry

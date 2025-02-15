@@ -134,6 +134,7 @@ func (f factoryOptionFunc) apply(o *factory) {
 type CreateTracesToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Traces, error)
 
 // CreateTracesToTraces implements Factory.CreateTracesToTraces().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateTracesToTracesFunc) CreateTracesToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalTraces)
@@ -145,6 +146,7 @@ func (f CreateTracesToTracesFunc) CreateTracesToTraces(ctx context.Context, set 
 type CreateTracesToMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Traces, error)
 
 // CreateTracesToMetrics implements Factory.CreateTracesToMetrics().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateTracesToMetricsFunc) CreateTracesToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Traces, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalMetrics)
@@ -156,6 +158,7 @@ func (f CreateTracesToMetricsFunc) CreateTracesToMetrics(ctx context.Context, se
 type CreateTracesToLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Traces, error)
 
 // CreateTracesToLogs implements Factory.CreateTracesToLogs().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateTracesToLogsFunc) CreateTracesToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Traces, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalLogs)
@@ -167,6 +170,7 @@ func (f CreateTracesToLogsFunc) CreateTracesToLogs(ctx context.Context, set Sett
 type CreateMetricsToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Metrics, error)
 
 // CreateMetricsToTraces implements Factory.CreateMetricsToTraces().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsToTracesFunc) CreateMetricsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Metrics, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalTraces)
@@ -178,6 +182,7 @@ func (f CreateMetricsToTracesFunc) CreateMetricsToTraces(ctx context.Context, se
 type CreateMetricsToMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
 // CreateMetricsToMetrics implements Factory.CreateMetricsToTraces().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalMetrics)
@@ -189,6 +194,7 @@ func (f CreateMetricsToMetricsFunc) CreateMetricsToMetrics(ctx context.Context, 
 type CreateMetricsToLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Metrics, error)
 
 // CreateMetricsToLogs implements Factory.CreateMetricsToLogs().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Metrics, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalLogs)
@@ -200,6 +206,7 @@ func (f CreateMetricsToLogsFunc) CreateMetricsToLogs(ctx context.Context, set Se
 type CreateLogsToTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Logs, error)
 
 // CreateLogsToTraces implements Factory.CreateLogsToTraces().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateLogsToTracesFunc) CreateLogsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Logs, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalTraces)
@@ -211,6 +218,7 @@ func (f CreateLogsToTracesFunc) CreateLogsToTraces(ctx context.Context, set Sett
 type CreateLogsToMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Logs, error)
 
 // CreateLogsToMetrics implements Factory.CreateLogsToMetrics().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateLogsToMetricsFunc) CreateLogsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Logs, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalMetrics)
@@ -222,6 +230,7 @@ func (f CreateLogsToMetricsFunc) CreateLogsToMetrics(ctx context.Context, set Se
 type CreateLogsToLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
 
 // CreateLogsToLogs implements Factory.CreateLogsToLogs().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateLogsToLogsFunc) CreateLogsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
 	if f == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
@@ -233,7 +242,7 @@ func (f CreateLogsToLogsFunc) CreateLogsToLogs(ctx context.Context, set Settings
 func WithTracesToTraces(createTracesToTraces CreateTracesToTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesToTracesStabilityLevel = sl
-		o.CreateTracesToTracesFunc = createTracesToTraces
+		o.createTracesToTracesFunc = createTracesToTraces
 	})
 }
 
@@ -241,7 +250,7 @@ func WithTracesToTraces(createTracesToTraces CreateTracesToTracesFunc, sl compon
 func WithTracesToMetrics(createTracesToMetrics CreateTracesToMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesToMetricsStabilityLevel = sl
-		o.CreateTracesToMetricsFunc = createTracesToMetrics
+		o.createTracesToMetricsFunc = createTracesToMetrics
 	})
 }
 
@@ -249,7 +258,7 @@ func WithTracesToMetrics(createTracesToMetrics CreateTracesToMetricsFunc, sl com
 func WithTracesToLogs(createTracesToLogs CreateTracesToLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesToLogsStabilityLevel = sl
-		o.CreateTracesToLogsFunc = createTracesToLogs
+		o.createTracesToLogsFunc = createTracesToLogs
 	})
 }
 
@@ -257,7 +266,7 @@ func WithTracesToLogs(createTracesToLogs CreateTracesToLogsFunc, sl component.St
 func WithMetricsToTraces(createMetricsToTraces CreateMetricsToTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsToTracesStabilityLevel = sl
-		o.CreateMetricsToTracesFunc = createMetricsToTraces
+		o.createMetricsToTracesFunc = createMetricsToTraces
 	})
 }
 
@@ -265,7 +274,7 @@ func WithMetricsToTraces(createMetricsToTraces CreateMetricsToTracesFunc, sl com
 func WithMetricsToMetrics(createMetricsToMetrics CreateMetricsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsToMetricsStabilityLevel = sl
-		o.CreateMetricsToMetricsFunc = createMetricsToMetrics
+		o.createMetricsToMetricsFunc = createMetricsToMetrics
 	})
 }
 
@@ -273,7 +282,7 @@ func WithMetricsToMetrics(createMetricsToMetrics CreateMetricsToMetricsFunc, sl 
 func WithMetricsToLogs(createMetricsToLogs CreateMetricsToLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsToLogsStabilityLevel = sl
-		o.CreateMetricsToLogsFunc = createMetricsToLogs
+		o.createMetricsToLogsFunc = createMetricsToLogs
 	})
 }
 
@@ -281,7 +290,7 @@ func WithMetricsToLogs(createMetricsToLogs CreateMetricsToLogsFunc, sl component
 func WithLogsToTraces(createLogsToTraces CreateLogsToTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsToTracesStabilityLevel = sl
-		o.CreateLogsToTracesFunc = createLogsToTraces
+		o.createLogsToTracesFunc = createLogsToTraces
 	})
 }
 
@@ -289,7 +298,7 @@ func WithLogsToTraces(createLogsToTraces CreateLogsToTracesFunc, sl component.St
 func WithLogsToMetrics(createLogsToMetrics CreateLogsToMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsToMetricsStabilityLevel = sl
-		o.CreateLogsToMetricsFunc = createLogsToMetrics
+		o.createLogsToMetricsFunc = createLogsToMetrics
 	})
 }
 
@@ -297,7 +306,7 @@ func WithLogsToMetrics(createLogsToMetrics CreateLogsToMetricsFunc, sl component
 func WithLogsToLogs(createLogsToLogs CreateLogsToLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsToLogsStabilityLevel = sl
-		o.CreateLogsToLogsFunc = createLogsToLogs
+		o.createLogsToLogsFunc = createLogsToLogs
 	})
 }
 
@@ -306,17 +315,17 @@ type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
 
-	CreateTracesToTracesFunc
-	CreateTracesToMetricsFunc
-	CreateTracesToLogsFunc
+	createTracesToTracesFunc  CreateTracesToTracesFunc
+	createTracesToMetricsFunc CreateTracesToMetricsFunc
+	createTracesToLogsFunc    CreateTracesToLogsFunc
 
-	CreateMetricsToTracesFunc
-	CreateMetricsToMetricsFunc
-	CreateMetricsToLogsFunc
+	createMetricsToTracesFunc  CreateMetricsToTracesFunc
+	createMetricsToMetricsFunc CreateMetricsToMetricsFunc
+	createMetricsToLogsFunc    CreateMetricsToLogsFunc
 
-	CreateLogsToTracesFunc
-	CreateLogsToMetricsFunc
-	CreateLogsToLogsFunc
+	createLogsToTracesFunc  CreateLogsToTracesFunc
+	createLogsToMetricsFunc CreateLogsToMetricsFunc
+	createLogsToLogsFunc    CreateLogsToLogsFunc
 
 	tracesToTracesStabilityLevel  component.StabilityLevel
 	tracesToMetricsStabilityLevel component.StabilityLevel
@@ -374,6 +383,69 @@ func (f *factory) LogsToLogsStability() component.StabilityLevel {
 	return f.logsToLogsStabilityLevel
 }
 
+func (f *factory) CreateTracesToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
+	if f.createTracesToTracesFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalTraces)
+	}
+	return f.createTracesToTracesFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateTracesToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Traces, error) {
+	if f.createTracesToMetricsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalMetrics)
+	}
+	return f.createTracesToMetricsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateTracesToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Traces, error) {
+	if f.createTracesToLogsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalLogs)
+	}
+	return f.createTracesToLogsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateMetricsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Metrics, error) {
+	if f.createMetricsToTracesFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalTraces)
+	}
+	return f.createMetricsToTracesFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateMetricsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
+	if f.createMetricsToMetricsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalMetrics)
+	}
+	return f.createMetricsToMetricsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateMetricsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Metrics, error) {
+	if f.createMetricsToLogsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalLogs)
+	}
+	return f.createMetricsToLogsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateLogsToTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Logs, error) {
+	if f.createLogsToTracesFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalTraces)
+	}
+	return f.createLogsToTracesFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateLogsToMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Logs, error) {
+	if f.createLogsToMetricsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalMetrics)
+	}
+	return f.createLogsToMetricsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateLogsToLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
+	if f.createLogsToLogsFunc == nil {
+		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
+	}
+	return f.createLogsToLogsFunc(ctx, set, cfg, next)
+}
+
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := &factory{
@@ -388,6 +460,8 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 
 // MakeFactoryMap takes a list of connector factories and returns a map with factory type as keys.
 // It returns a non-nil error when there are factories with duplicate type.
+//
+// Deprecated: [v0.120.0] Use otelcol.MakeFactoryMap[connector.Factory] instead
 func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 	fMap := map[component.Type]Factory{}
 	for _, f := range factories {

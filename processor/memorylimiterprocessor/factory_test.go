@@ -15,10 +15,10 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/component/componentattribute"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -50,7 +50,7 @@ func TestCreateProcessor(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(factory.Type())
 	set.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())

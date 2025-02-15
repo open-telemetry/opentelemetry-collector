@@ -148,8 +148,15 @@ func (hcs *ClientConfig) Validate() error {
 	return nil
 }
 
+// ToClientOption is an option to change the behavior of the HTTP client
+// returned by ClientConfig.ToClient().
+// There are currently no available options.
+type ToClientOption interface {
+	sealed()
+}
+
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings) (*http.Client, error) {
+func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
 	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -482,7 +489,6 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		serverOpts.OtelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
-	// TODO: Consider to use component ID string as prefix for all the operations.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context

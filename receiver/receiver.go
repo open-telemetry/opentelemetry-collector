@@ -104,6 +104,7 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 type CreateTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Traces, error)
 
 // CreateTraces implements Factory.CreateTraces().
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -115,6 +116,7 @@ func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg co
 type CreateMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
 // CreateMetrics implements Factory.CreateMetrics.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -126,6 +128,7 @@ func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg 
 type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
 
 // CreateLogs implements Factory.CreateLogs.
+// Deprecated: [v0.120.0] No longer used, will be removed.
 func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
 	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
@@ -136,12 +139,12 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 type factory struct {
 	cfgType component.Type
 	component.CreateDefaultConfigFunc
-	CreateTracesFunc
-	tracesStabilityLevel component.StabilityLevel
-	CreateMetricsFunc
+	createTracesFunc      CreateTracesFunc
+	tracesStabilityLevel  component.StabilityLevel
+	createMetricsFunc     CreateMetricsFunc
 	metricsStabilityLevel component.StabilityLevel
-	CreateLogsFunc
-	logsStabilityLevel component.StabilityLevel
+	createLogsFunc        CreateLogsFunc
+	logsStabilityLevel    component.StabilityLevel
 }
 
 func (f *factory) Type() component.Type {
@@ -162,11 +165,32 @@ func (f *factory) LogsStability() component.StabilityLevel {
 	return f.logsStabilityLevel
 }
 
+func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
+	if f.createTracesFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createTracesFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
+	if f.createMetricsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createMetricsFunc(ctx, set, cfg, next)
+}
+
+func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
+	if f.createLogsFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createLogsFunc(ctx, set, cfg, next)
+}
+
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.tracesStabilityLevel = sl
-		o.CreateTracesFunc = createTraces
+		o.createTracesFunc = createTraces
 	})
 }
 
@@ -174,7 +198,7 @@ func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) Fact
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.metricsStabilityLevel = sl
-		o.CreateMetricsFunc = createMetrics
+		o.createMetricsFunc = createMetrics
 	})
 }
 
@@ -182,7 +206,7 @@ func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) F
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factory) {
 		o.logsStabilityLevel = sl
-		o.CreateLogsFunc = createLogs
+		o.createLogsFunc = createLogs
 	})
 }
 
@@ -200,6 +224,8 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 
 // MakeFactoryMap takes a list of receiver factories and returns a map with factory type as keys.
 // It returns a non-nil error when there are factories with duplicate type.
+//
+// Deprecated: [v0.120.0] Use otelcol.MakeFactoryMap[receiver.Factory] instead
 func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
 	fMap := map[component.Type]Factory{}
 	for _, f := range factories {
