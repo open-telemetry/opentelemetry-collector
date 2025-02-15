@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/internal/httphelper"
+	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -220,7 +220,7 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 			"error exporting items, request to %s responded with HTTP Status Code %d",
 			url, resp.StatusCode)
 	}
-	formattedErr = httphelper.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
+	formattedErr = statusutil.NewStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if !isRetryableStatusCode(resp.StatusCode) {
 		return consumererror.NewPermanent(formattedErr)
@@ -247,7 +247,6 @@ func (e *baseExporter) export(ctx context.Context, url string, request []byte, p
 		if date, err := time.Parse(time.RFC1123, values[0]); err == nil {
 			return exporterhelper.NewThrottleRetry(formattedErr, time.Until(date))
 		}
-		return formattedErr
 	}
 	return formattedErr
 }
