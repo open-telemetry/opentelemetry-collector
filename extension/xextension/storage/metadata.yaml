@@ -4,5 +4,7 @@ github_project: open-telemetry/opentelemetry-collector
 status:
   class: extension
   codeowners:
+    active:
+      - swiatekm
   stability:
     development: [profiles]
