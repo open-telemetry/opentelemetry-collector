@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.17.11
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector v0.119.0
+	go.opentelemetry.io/collector v0.119.1-0.20250217085205-36e046737251
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
