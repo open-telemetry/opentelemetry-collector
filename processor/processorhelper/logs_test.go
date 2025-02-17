@@ -184,8 +184,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 }
 
 func newSettings(tel *componenttest.Telemetry) processor.Settings {
-	set := processortest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("processorhelper"))
+	set := processortest.NewNopSettingsWithType(component.MustNewType("processorhelper"))
 	set.TelemetrySettings = tel.NewTelemetrySettings()
 	return set
 }
