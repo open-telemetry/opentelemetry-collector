@@ -31,9 +31,7 @@ type TelemetrySettings struct {
 	extraAttributes attribute.Set
 }
 
-// Once this API is ready to be made public:
-// - the two functions should be made methods of TelemetrySettings
-// - the three declarations should be moved back into `component/telemetry.go`
+// The publicization of this API is tracked in https://github.com/open-telemetry/opentelemetry-collector/issues/12405
 
 func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings {
 	return WithAttributeSet(ts, componentattribute.RemoveAttributes(ts.extraAttributes, fields...))
