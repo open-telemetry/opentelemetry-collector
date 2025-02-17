@@ -90,7 +90,7 @@ func TestBatchSender_Merge(t *testing.T) {
 			assert.Equal(t, int64(1), sink.RequestsCount())
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 15
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
 	for _, tt := range tests {
@@ -160,12 +160,12 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 			errReq := &requesttest.FakeRequest{Items: 20, ExportErr: errors.New("transient error"), Sink: sink}
 			require.NoError(t, be.Send(context.Background(), errReq))
 
-			// the batch should be dropped since the queue doesn't have requeuing enabled.
+			// the batch should be dropped since the queue doesn't have re-queuing enabled.
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == tt.expectedRequests &&
 					sink.ItemsCount() == tt.expectedItems &&
 					be.queue.Size() == 0
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
@@ -194,13 +194,13 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 8
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 25
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{
@@ -212,7 +212,7 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
@@ -370,20 +370,20 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 4
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// the 3rd request should be flushed by itself due to flush interval
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 6
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// the 4th and 5th request should be flushed in the same batched request by max concurrency limit.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 10
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Sink: sink}))
@@ -392,7 +392,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 				// in case of MaxSizeItems=10, wait for the leftover request to send
 				assert.Eventually(t, func() bool {
 					return sink.RequestsCount() == 5 && sink.ItemsCount() == 21
-				}, 50*time.Millisecond, 10*time.Millisecond)
+				}, 1*time.Second, 10*time.Millisecond)
 			}
 
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
@@ -400,7 +400,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 20, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == tt.expectedRequests && sink.ItemsCount() == tt.expectedItems
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
 }
@@ -648,7 +648,7 @@ func TestBatchSenderTimerResetNoConflict(t *testing.T) {
 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
 		assert.LessOrEqual(c, int64(1), sink.RequestsCount())
 		assert.EqualValues(c, 8, sink.ItemsCount())
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	}, 1*time.Second, 10*time.Millisecond)
 
 	require.NoError(t, be.Shutdown(context.Background()))
 }

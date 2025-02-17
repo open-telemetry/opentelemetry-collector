@@ -38,6 +38,12 @@ var (
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
 )
 
+var indexDonePool = sync.Pool{
+	New: func() any {
+		return &indexDone{}
+	},
+}
+
 type persistentQueueSettings[T any] struct {
 	sizer       sizer[T]
 	capacity    int64
@@ -292,16 +298,9 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 				pq.hasMoreSpace.Signal()
 			}
 			if consumed {
-				pq.queueSize -= pq.set.sizer.Sizeof(req)
-				// The size might be not in sync with the queue in case it's restored from the disk
-				// because we don't flush the current queue size on the disk on every read/write.
-				// In that case we need to make sure it doesn't go below 0.
-				if pq.queueSize < 0 {
-					pq.queueSize = 0
-				}
-				pq.hasMoreSpace.Signal()
-
-				return context.Background(), req, indexDone[T]{index: index, pq: pq}, true
+				id := indexDonePool.Get().(*indexDone)
+				id.reset(index, pq.set.sizer.Sizeof(req), pq)
+				return context.Background(), req, id, true
 			}
 		}
 
@@ -348,7 +347,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.
-func (pq *persistentQueue[T]) onDone(index uint64, consumeErr error) {
+func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr error) {
 	// Delete the item from the persistent storage after it was processed.
 	pq.mu.Lock()
 	// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
@@ -358,6 +357,15 @@ func (pq *persistentQueue[T]) onDone(index uint64, consumeErr error) {
 		}
 		pq.mu.Unlock()
 	}()
+
+	pq.queueSize -= elSize
+	// The size might be not in sync with the queue in case it's restored from the disk
+	// because we don't flush the current queue size on the disk on every read/write.
+	// In that case we need to make sure it doesn't go below 0.
+	if pq.queueSize < 0 {
+		pq.queueSize = 0
+	}
+	pq.hasMoreSpace.Signal()
 
 	if experr.IsShutdownErr(consumeErr) {
 		// The queue is shutting down, don't mark the item as dispatched, so it's picked up again after restart.
@@ -555,11 +563,20 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	return val, nil
 }
 
-type indexDone[T any] struct {
+type indexDone struct {
 	index uint64
-	pq    *persistentQueue[T]
+	size  int64
+	queue interface {
+		onDone(uint64, int64, error)
+	}
 }
 
-func (id indexDone[T]) OnDone(err error) {
-	id.pq.onDone(id.index, err)
+func (id *indexDone) reset(index uint64, size int64, queue interface{ onDone(uint64, int64, error) }) {
+	id.index = index
+	id.size = size
+	id.queue = queue
+}
+
+func (id *indexDone) OnDone(err error) {
+	id.queue.onDone(id.index, id.size, err)
 }
