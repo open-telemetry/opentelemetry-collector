@@ -26,7 +26,7 @@ func TestCore(t *testing.T) {
 
 	parent := componentattribute.LoggerWithAttributes(logger, attrs)
 	parent.Info("test parent before child")
-	child := componentattribute.LoggerWithAttributes(logger, componentattribute.RemoveAttributes(attrs, componentattribute.SignalKey))
+	child := componentattribute.LoggerWithAttributes(parent, componentattribute.RemoveAttributes(attrs, componentattribute.SignalKey))
 	child.Info("test child")
 	parent.Info("test parent after child")
 
