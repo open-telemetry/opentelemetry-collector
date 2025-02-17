@@ -15,9 +15,22 @@ import (
 	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/embedded"
 
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
+
+// Emulate a TracerProvider from a non-official SDK
+type customTracerProvider struct {
+	embedded.TracerProvider
+	tp *sdkTrace.TracerProvider
+}
+
+func (ctp customTracerProvider) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
+	return ctp.tp.Tracer(name, options...)
+}
+
+var _ trace.TracerProvider = customTracerProvider{}
 
 func TestTPWA(t *testing.T) {
 	exporter := tracetest.NewInMemoryExporter()
@@ -34,6 +47,11 @@ func TestTPWA(t *testing.T) {
 		attribute.String("extrakey3", "extraval3"),
 	)
 	tp3 := componentattribute.TracerProviderWithAttributes(tp2, extraAttrs3)
+
+	// The same thing, but with a non-official SDK Provider
+	tp4 := &customTracerProvider{tp: tp1}
+	tp5 := componentattribute.TracerProviderWithAttributes(tp4, extraAttrs2)
+	tp6 := componentattribute.TracerProviderWithAttributes(tp5, extraAttrs3)
 
 	noAttrs := attribute.NewSet()
 	// Add a standard attribute on top of the extra attributes
@@ -57,6 +75,9 @@ func TestTPWA(t *testing.T) {
 		{tp: tp3, attrs: noAttrs, expAttrs: extraAttrs3, name: "reset extra attributes"},
 		{tp: tp3, attrs: attrs4, expAttrs: expAttrs4, name: "merge attributes"},
 		{tp: tp3, attrs: attrs5, expAttrs: attrs5, name: "overwrite extra attribute"},
+		{tp: tp4, attrs: noAttrs, expAttrs: noAttrs, name: "no extra attributes, non-official SDK"},
+		{tp: tp5, attrs: noAttrs, expAttrs: extraAttrs2, name: "set extra attributes, non-official SDK"},
+		{tp: tp6, attrs: noAttrs, expAttrs: extraAttrs3, name: "reset extra attributes, non-official SDK"},
 	}
 
 	for i, test := range tests {
