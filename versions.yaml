@@ -85,6 +85,7 @@ module-sets:
       - go.opentelemetry.io/collector/scraper/scrapertest
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
+      - go.opentelemetry.io/collector/service/hostcapabilities
       - go.opentelemetry.io/collector/filter
 
 excluded-modules:

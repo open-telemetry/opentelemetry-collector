@@ -1,0 +1,24 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+// Package hostcapabilities provides interfaces that can be implemented by the host
+// to provide additional capabilities.
+package hostcapabilities // import "go.opentelemetry.io/collector/service/hostcapabilities"
+
+import (
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
+)
+
+// ModuleInfo is an interface that may be implemented by the host to provide
+// information about modules that were used to build the host.
+type ModuleInfo interface {
+	// GetModuleInfos returns the module information for the host
+	// i.e. Receivers, Processors, Exporters, Extensions, and Connectors
+	GetModuleInfos() moduleinfo.ModuleInfos
+
+	// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
+	// Deprecated: [v0.120.0] Will be removed in Service 1.0.
+	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
+}
