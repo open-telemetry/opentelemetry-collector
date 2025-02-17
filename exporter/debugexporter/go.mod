@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.25.0
 	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/exporter v0.119.0
-	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.119.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.119.1-0.20250217142445-a567a0176541
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0

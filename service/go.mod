@@ -8,7 +8,7 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/shirou/gopsutil/v4 v4.25.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector v0.119.0
+	go.opentelemetry.io/collector v0.119.1-0.20250217085205-36e046737251
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
@@ -31,7 +31,7 @@ require (
 	go.opentelemetry.io/collector/extension/zpagesextension v0.119.0
 	go.opentelemetry.io/collector/featuregate v1.25.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0
-	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760
 	go.opentelemetry.io/collector/otelcol v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0

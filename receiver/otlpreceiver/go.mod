@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.17.11
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector v0.119.0
+	go.opentelemetry.io/collector v0.119.1-0.20250217085205-36e046737251
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componentstatus v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.0
-	go.opentelemetry.io/collector/internal/telemetry v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760
 	go.opentelemetry.io/collector/pdata v1.25.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0

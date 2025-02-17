@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -121,7 +122,7 @@ func TestLogs_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	lp, err := NewLogs(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
@@ -159,7 +160,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	lp, err := NewLogs(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
@@ -180,4 +181,10 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func newSettings(tel *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettingsWithType(component.MustNewType("processorhelper"))
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+	return set
 }

@@ -1,7 +1,8 @@
 type: xexporter
+github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: exporter
+  class: pkg
   codeowners:
     active:
       - mx-psi

@@ -24,7 +24,7 @@ jobs:
   arm-unittest-matrix:
     strategy:
       matrix:
-        os: [otel-linux-arm64, macos-14]
+        os: [ubuntu-22.04-arm, macos-14]
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: ${{ matrix.os }}
     steps:

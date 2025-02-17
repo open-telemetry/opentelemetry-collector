@@ -11,6 +11,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var sizeDonePool = sync.Pool{
+	New: func() any {
+		return &sizeDone{}
+	},
+}
+
 var errInvalidSize = errors.New("invalid element size")
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
@@ -91,11 +97,11 @@ func (sq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 	defer sq.mu.Unlock()
 
 	for {
-		if sq.size > 0 {
+		if sq.items.hasElements() {
 			elCtx, el, elSize := sq.items.pop()
-			sq.size -= elSize
-			sq.hasMoreSpace.Signal()
-			return elCtx, el, noopDoneInst, true
+			sd := sizeDonePool.Get().(*sizeDone)
+			sd.reset(elSize, sq)
+			return elCtx, el, sd, true
 		}
 
 		if sq.stopped {
@@ -107,6 +113,13 @@ func (sq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 		//  Until then use the sync.Cond.
 		sq.hasMoreElements.Wait()
 	}
+}
+
+func (sq *memoryQueue[T]) onDone(elSize int64) {
+	sq.mu.Lock()
+	defer sq.mu.Unlock()
+	sq.size -= elSize
+	sq.hasMoreSpace.Signal()
 }
 
 // Shutdown closes the queue channel to initiate draining of the queue.
@@ -142,6 +155,7 @@ type linkedQueue[T any] struct {
 
 func (l *linkedQueue[T]) push(ctx context.Context, data T, size int64) {
 	n := &node[T]{ctx: ctx, data: data, size: size}
+	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
 		l.head = n
 		l.tail = n
@@ -151,9 +165,14 @@ func (l *linkedQueue[T]) push(ctx context.Context, data T, size int64) {
 	l.tail = n
 }
 
+func (l *linkedQueue[T]) hasElements() bool {
+	return l.head != nil
+}
+
 func (l *linkedQueue[T]) pop() (context.Context, T, int64) {
 	n := l.head
 	l.head = n.next
+	// If it gets to the last element, then update tail as well.
 	if l.head == nil {
 		l.tail = nil
 	}
@@ -161,8 +180,19 @@ func (l *linkedQueue[T]) pop() (context.Context, T, int64) {
 	return n.ctx, n.data, n.size
 }
 
-type noopDone struct{}
+type sizeDone struct {
+	size  int64
+	queue interface {
+		onDone(int64)
+	}
+}
 
-func (*noopDone) OnDone(error) {}
+func (sd *sizeDone) reset(size int64, queue interface{ onDone(int64) }) {
+	sd.size = size
+	sd.queue = queue
+}
 
-var noopDoneInst = &noopDone{}
+func (sd *sizeDone) OnDone(error) {
+	defer sizeDonePool.Put(sd)
+	sd.queue.onDone(sd.size)
+}

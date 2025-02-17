@@ -9,18 +9,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/processor"
-	"go.opentelemetry.io/collector/processor/processortest"
 )
-
-func NewSettings(tt *componenttest.Telemetry) processor.Settings {
-	set := processortest.NewNopSettingsWithType(processortest.NopType)
-	set.ID = component.NewID(component.MustNewType("processorhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
 
 func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
