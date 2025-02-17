@@ -121,7 +121,7 @@ func TestMetrics_RecordInOut(t *testing.T) {
 	dps.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	mp, err := NewMetrics(context.Background(), metadatatest.NewSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	mp, err := NewMetrics(context.Background(), newSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
@@ -158,7 +158,7 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 	dps.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	mp, err := NewMetrics(context.Background(), metadatatest.NewSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockErr)
+	mp, err := NewMetrics(context.Background(), newSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))

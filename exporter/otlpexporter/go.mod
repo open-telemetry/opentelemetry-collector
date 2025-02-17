@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector v0.119.0
+	go.opentelemetry.io/collector v0.119.1-0.20250217085205-36e046737251
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/config/configauth v0.119.0
@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.25.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/exporter v0.119.0
-	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.119.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.119.1-0.20250217142445-a567a0176541
 	go.opentelemetry.io/collector/exporter/exportertest v0.119.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.119.0
 	go.opentelemetry.io/collector/pdata v1.25.0
