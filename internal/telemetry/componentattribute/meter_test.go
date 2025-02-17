@@ -194,6 +194,22 @@ func TestMPWAInstruments(t *testing.T) {
 				assert.Equal(t, attrs, metrics.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes)
 			},
 		},
+		{
+			testName: "RegisterCallback/Int64ObservableCounter",
+			sendData: func(t *testing.T, meter metric.Meter) {
+				inst, err := meter.Int64ObservableCounter("intctr")
+				require.NoError(t, err)
+				_, err = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+					o.ObserveInt64(inst, 42)
+					return nil
+				}, inst)
+				require.NoError(t, err)
+			},
+			checkData: func(t *testing.T, metrics metricdata.Metrics) {
+				assert.Equal(t, attrs, metrics.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes)
+			},
+		},
+
 		// And now the float instruments (mostly copypasted from above)
 		{
 			testName: "Float64Counter",
@@ -276,6 +292,21 @@ func TestMPWAInstruments(t *testing.T) {
 			},
 			checkData: func(t *testing.T, metrics metricdata.Metrics) {
 				assert.Equal(t, attrs, metrics.Data.(metricdata.Gauge[float64]).DataPoints[0].Attributes)
+			},
+		},
+		{
+			testName: "RegisterCallback/Float64ObservableCounter",
+			sendData: func(t *testing.T, meter metric.Meter) {
+				inst, err := meter.Float64ObservableCounter("floatctr")
+				require.NoError(t, err)
+				_, err = meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+					o.ObserveFloat64(inst, 42)
+					return nil
+				}, inst)
+				require.NoError(t, err)
+			},
+			checkData: func(t *testing.T, metrics metricdata.Metrics) {
+				assert.Equal(t, attrs, metrics.Data.(metricdata.Sum[float64]).DataPoints[0].Attributes)
 			},
 		},
 	}
