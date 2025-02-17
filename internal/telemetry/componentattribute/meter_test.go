@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package componentattribute_test
 
 import (
@@ -8,11 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	sdkMetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 func TestMPWA(t *testing.T) {
@@ -108,7 +112,7 @@ func TestMPWAInstruments(t *testing.T) {
 				inst.Add(context.Background(), 42)
 			},
 			checkData: func(t *testing.T, metrics metricdata.Metrics) {
-				require.Equal(t, metrics.Name, "intctr")
+				require.Equal(t, "intctr", metrics.Name)
 				sum, ok := metrics.Data.(metricdata.Sum[int64])
 				require.True(t, ok)
 				require.Len(t, sum.DataPoints, 1)
@@ -154,7 +158,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Int64ObservableCounter",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Int64ObservableCounter("intctr", metric.WithInt64Callback(func(ctx context.Context, io metric.Int64Observer) error {
+				_, err := meter.Int64ObservableCounter("intctr", metric.WithInt64Callback(func(_ context.Context, io metric.Int64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
@@ -167,7 +171,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Int64ObservableUpDownCounter",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Int64ObservableUpDownCounter("intctr", metric.WithInt64Callback(func(ctx context.Context, io metric.Int64Observer) error {
+				_, err := meter.Int64ObservableUpDownCounter("intctr", metric.WithInt64Callback(func(_ context.Context, io metric.Int64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
@@ -180,7 +184,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Int64ObservableGauge",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Int64ObservableGauge("intctr", metric.WithInt64Callback(func(ctx context.Context, io metric.Int64Observer) error {
+				_, err := meter.Int64ObservableGauge("intctr", metric.WithInt64Callback(func(_ context.Context, io metric.Int64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
@@ -238,7 +242,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Float64ObservableCounter",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Float64ObservableCounter("floatctr", metric.WithFloat64Callback(func(ctx context.Context, io metric.Float64Observer) error {
+				_, err := meter.Float64ObservableCounter("floatctr", metric.WithFloat64Callback(func(_ context.Context, io metric.Float64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
@@ -251,7 +255,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Float64ObservableUpDownCounter",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Float64ObservableUpDownCounter("floatctr", metric.WithFloat64Callback(func(ctx context.Context, io metric.Float64Observer) error {
+				_, err := meter.Float64ObservableUpDownCounter("floatctr", metric.WithFloat64Callback(func(_ context.Context, io metric.Float64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
@@ -264,7 +268,7 @@ func TestMPWAInstruments(t *testing.T) {
 		{
 			testName: "Float64ObservableGauge",
 			sendData: func(t *testing.T, meter metric.Meter) {
-				_, err := meter.Float64ObservableGauge("floatctr", metric.WithFloat64Callback(func(ctx context.Context, io metric.Float64Observer) error {
+				_, err := meter.Float64ObservableGauge("floatctr", metric.WithFloat64Callback(func(_ context.Context, io metric.Float64Observer) error {
 					io.Observe(42)
 					return nil
 				}))
