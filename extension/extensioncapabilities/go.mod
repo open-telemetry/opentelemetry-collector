@@ -3,9 +3,9 @@ module go.opentelemetry.io/collector/extension/extensioncapabilities
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/confmap v1.26.0
-	go.opentelemetry.io/collector/extension v0.119.0
+	go.opentelemetry.io/collector/extension v0.120.0
 )
 
 require (

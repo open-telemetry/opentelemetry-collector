@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/extension/xextension
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/extension v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
+	go.opentelemetry.io/collector/extension v0.120.0
 )
 
 require (
