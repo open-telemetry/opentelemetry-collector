@@ -14,12 +14,12 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
 	go.opentelemetry.io/collector/config/confighttp v0.119.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.119.0
-	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/confmap v1.26.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250205001856-68ff067415c1
 	go.opentelemetry.io/collector/connector v0.119.0
 	go.opentelemetry.io/collector/connector/connectortest v0.119.0
 	go.opentelemetry.io/collector/connector/xconnector v0.119.0
-	go.opentelemetry.io/collector/consumer v1.25.0
+	go.opentelemetry.io/collector/consumer v1.26.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
 	go.opentelemetry.io/collector/exporter v0.119.0
@@ -29,11 +29,11 @@ require (
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.119.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.119.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.119.0
-	go.opentelemetry.io/collector/featuregate v1.25.0
+	go.opentelemetry.io/collector/featuregate v1.26.0
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0
 	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760
 	go.opentelemetry.io/collector/otelcol v0.119.0
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
@@ -100,11 +100,11 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.25.0 // indirect
+	go.opentelemetry.io/collector/client v1.26.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.119.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.25.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.26.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.26.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.26.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect

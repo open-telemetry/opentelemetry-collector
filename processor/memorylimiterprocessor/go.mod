@@ -6,13 +6,13 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.119.0
 	go.opentelemetry.io/collector/component/componenttest v0.119.0
-	go.opentelemetry.io/collector/confmap v1.25.0
-	go.opentelemetry.io/collector/consumer v1.25.0
+	go.opentelemetry.io/collector/confmap v1.26.0
+	go.opentelemetry.io/collector/consumer v1.26.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/internal/memorylimiter v0.119.0
 	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/pipeline v0.119.0
 	go.opentelemetry.io/collector/processor v0.119.0
 	go.opentelemetry.io/collector/processor/processortest v0.119.0

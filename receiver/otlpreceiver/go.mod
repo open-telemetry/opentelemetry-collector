@@ -13,18 +13,18 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.119.0
 	go.opentelemetry.io/collector/config/configgrpc v0.119.0
 	go.opentelemetry.io/collector/config/confighttp v0.119.0
-	go.opentelemetry.io/collector/config/confignet v1.25.0
-	go.opentelemetry.io/collector/config/configopaque v1.25.0
-	go.opentelemetry.io/collector/config/configtls v1.25.0
-	go.opentelemetry.io/collector/confmap v1.25.0
+	go.opentelemetry.io/collector/config/confignet v1.26.0
+	go.opentelemetry.io/collector/config/configopaque v1.26.0
+	go.opentelemetry.io/collector/config/configtls v1.26.0
+	go.opentelemetry.io/collector/confmap v1.26.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.0.0-20250205001856-68ff067415c1
-	go.opentelemetry.io/collector/consumer v1.25.0
+	go.opentelemetry.io/collector/consumer v1.26.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.119.0
 	go.opentelemetry.io/collector/internal/telemetry v0.0.0-20250214114048-c713e7c4d760
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
 	go.opentelemetry.io/collector/pdata/testdata v0.119.0
 	go.opentelemetry.io/collector/receiver v0.119.0
@@ -61,8 +61,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.25.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.25.0 // indirect
+	go.opentelemetry.io/collector/client v1.26.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.26.0 // indirect
 	go.opentelemetry.io/collector/extension v0.119.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.119.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
