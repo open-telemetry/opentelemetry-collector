@@ -44,3 +44,6 @@ extensions:
 providers:
     - scheme: nop
       module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
+converters:
+    - scheme: nopconverter
+      module: go.opentelemetry.io/collector/converter/testconverter v1.2.3

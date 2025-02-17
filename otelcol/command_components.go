@@ -37,6 +37,7 @@ type componentsOutput struct {
 	Connectors []componentWithStability
 	Extensions []componentWithStability
 	Providers  []componentWithoutStability
+	Converters []componentWithoutStability
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -118,8 +119,15 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 
 			for providerScheme, providerModuleModule := range set.ProviderModules {
 				components.Providers = append(components.Providers, componentWithoutStability{
-					Scheme: providerScheme,
+					Scheme: providerScheme.String(),
 					Module: providerModuleModule,
+				})
+			}
+
+			for converterType, converterModule := range set.ConverterModules {
+				components.Converters = append(components.Converters, componentWithoutStability{
+					Scheme: converterType.String(),
+					Module: converterModule,
 				})
 			}
 
