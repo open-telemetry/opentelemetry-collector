@@ -70,7 +70,7 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for j := 0; j < 11; j++ {
+		for j := 0; j < 10; j++ {
 			assert.NoError(t, ac.Offer(ctx, 1))
 		}
 		assert.ErrorIs(t, ac.Offer(ctx, 3), context.Canceled)
