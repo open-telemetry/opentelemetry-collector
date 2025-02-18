@@ -28,6 +28,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.120.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
@@ -61,3 +62,5 @@ replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consu
 retract v0.76.0 // Depends on retracted pdata v1.0.0-rc10 module
 
 replace go.opentelemetry.io/collector/pipeline => ../pipeline
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry

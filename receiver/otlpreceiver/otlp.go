@@ -54,7 +54,7 @@ type otlpReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
-	set.Logger = telemetry.LoggerWithout(set.TelemetrySettings, componentattribute.SignalKey)
+	set.TelemetrySettings = telemetry.WithoutAttributes(set.TelemetrySettings, componentattribute.SignalKey)
 	set.Logger.Debug("created signal-agnostic logger")
 	r := &otlpReceiver{
 		cfg:          cfg,

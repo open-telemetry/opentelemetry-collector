@@ -33,6 +33,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.120.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.120.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
@@ -80,3 +81,5 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../receivertest
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
