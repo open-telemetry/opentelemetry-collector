@@ -605,8 +605,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 
 			// Put some items, make sure they are loaded and shutdown the storage...
 			for i := 0; i < 3; i++ {
-				err := ps.Offer(context.Background(), uint64(50))
-				require.NoError(t, err)
+				require.NoError(t, ps.Offer(context.Background(), uint64(50)))
 			}
 			assert.Equal(t, int64(3), ps.Size())
 			require.True(t, consume(ps, func(context.Context, uint64) error {
@@ -652,8 +651,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
 	for i := 0; i < 5; i++ {
-		err := ps.Offer(context.Background(), req)
-		require.NoError(t, err)
+		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
@@ -712,21 +710,20 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 
 	// Put in items up to capacity
 	for i := 0; i < 5; i++ {
-		err := ps.Offer(context.Background(), req)
-		require.NoError(t, err)
+		require.NoError(t, ps.Offer(context.Background(), req))
 	}
+	require.Equal(t, int64(5), ps.Size())
 
 	require.True(t, consume(ps, func(context.Context, uint64) error {
-		// put one more item in
-		require.NoError(t, ps.Offer(context.Background(), req))
+		// Check that size is still full even when consuming the element.
 		require.Equal(t, int64(5), ps.Size())
 		return experr.NewShutdownErr(nil)
 	}))
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	// Reload with extra capacity to make sure we re-enqueue in-progress items.
-	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 6)
-	require.Equal(t, int64(6), newPs.Size())
+	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 5)
+	require.Equal(t, int64(5), newPs.Size())
 }
 
 func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
@@ -1004,9 +1001,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 			ps := createTestPersistentQueueWithClient(client)
 			client.Reset()
 
-			err := ps.itemDispatchingFinish(context.Background(), 0)
-
-			require.ErrorIs(t, err, tt.expectedError)
+			require.ErrorIs(t, ps.itemDispatchingFinish(context.Background(), 0), tt.expectedError)
 		})
 	}
 }
