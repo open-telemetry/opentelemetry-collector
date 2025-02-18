@@ -19,6 +19,7 @@ var donePool = sync.Pool{
 
 func newDisabledQueue[T any](consumeFunc ConsumeFunc[T]) Queue[T] {
 	return &disabledQueue[T]{
+		sizer:       &requestSizer[T]{},
 		consumeFunc: consumeFunc,
 		size:        &atomic.Int64{},
 	}
@@ -28,14 +29,18 @@ type disabledQueue[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumeFunc ConsumeFunc[T]
+	sizer       sizer[T]
 	size        *atomic.Int64
 }
 
 func (d *disabledQueue[T]) Offer(ctx context.Context, req T) error {
+	elSize := d.sizer.Sizeof(req)
+	d.size.Add(elSize)
+
 	done := donePool.Get().(*blockingDone)
-	d.size.Add(1)
+	done.queue = d
+	done.elSize = elSize
 	d.consumeFunc(ctx, req, done)
-	defer d.size.Add(-1)
 	// Only re-add the blockingDone instance back to the pool if successfully received the
 	// message from the consumer which guarantees consumer will not use that anymore,
 	// otherwise no guarantee about when the consumer will add the message to the channel so cannot reuse or close.
@@ -46,6 +51,10 @@ func (d *disabledQueue[T]) Offer(ctx context.Context, req T) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (d *disabledQueue[T]) onDone(elSize int64) {
+	d.size.Add(-elSize)
 }
 
 // Size returns the current number of blocked requests waiting to be processed.
@@ -59,9 +68,14 @@ func (d *disabledQueue[T]) Capacity() int64 {
 }
 
 type blockingDone struct {
-	ch chan error
+	queue interface {
+		onDone(int64)
+	}
+	elSize int64
+	ch     chan error
 }
 
 func (d *blockingDone) OnDone(err error) {
+	d.queue.onDone(d.elSize)
 	d.ch <- err
 }

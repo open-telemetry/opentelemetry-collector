@@ -1,4 +1,5 @@
 type: xconsumer
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: consumer
