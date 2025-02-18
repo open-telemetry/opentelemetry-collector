@@ -5,7 +5,6 @@ package processor // import "go.opentelemetry.io/collector/processor"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -146,38 +145,11 @@ func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Co
 // CreateTracesFunc is the equivalent of Factory.CreateTraces().
 type CreateTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Traces, error)
 
-// CreateTraces implements Factory.CreateTraces.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics().
 type CreateMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
-// CreateMetrics implements Factory.CreateMetrics.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
-
-// CreateLogs implements Factory.CreateLogs().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
@@ -213,19 +185,4 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 		opt.applyOption(f)
 	}
 	return f
-}
-
-// MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
-// It returns a non-nil error when there are factories with duplicate type.
-//
-// Deprecated: [v0.120.0] Use otelcol.MakeFactoryMap[processor.Factory] instead
-func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
-	fMap := map[component.Type]Factory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate processor factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
 }
