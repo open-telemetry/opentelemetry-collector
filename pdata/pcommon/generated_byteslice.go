@@ -7,6 +7,8 @@
 package pcommon
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -105,4 +107,60 @@ func (ms ByteSlice) CopyTo(dest ByteSlice) {
 func copyByteSlice(dst, src []byte) []byte {
 	dst = dst[:0]
 	return append(dst, src...)
+}
+
+// TryIncrementFrom increments all elements from the current slice by the elements from another slice
+// if it has enough capacity for the other slice's length plus the offset.
+// If there isn't enough capacity, this method returns false and the slice is not mutated.
+func (ms ByteSlice) TryIncrementFrom(other ByteSlice, offset int) bool {
+	if offset < 0 {
+		return false
+	}
+	ms.getState().AssertMutable()
+	newLen := max(ms.Len(), other.Len()+offset)
+	ours := *ms.getOrig()
+	if cap(ours) < newLen {
+		return false
+	}
+	ours = ours[:newLen]
+	theirs := *other.getOrig()
+	for i := 0; i < len(theirs); i++ {
+		ours[i+offset] += theirs[i]
+	}
+	*ms.getOrig() = ours
+	return true
+}
+
+// Collapse merges (sums) n adjacent buckets and reslices to account for the decreased length
+//
+//	n=2 offset=1
+//	before:  1  1 1  1 1  1 1  1
+//	        V    V    V    V    V
+//	after:  1    2    2    2    1
+func (ms ByteSlice) Collapse(n, offset int) {
+	ms.getState().AssertMutable()
+	if offset >= n || offset < 0 {
+		panic(fmt.Sprintf("offset %d must be positive and smaller than n %d", offset, n))
+	}
+	if n < 2 {
+		return
+	}
+	orig := *ms.getOrig()
+	newLen := (len(orig) + offset) / n
+	if (len(orig)+offset)%n != 0 {
+		newLen++
+	}
+
+	for i := 0; i < newLen; i++ {
+		if offset == 0 || i > 0 {
+			orig[i] = orig[i*n-offset]
+		}
+		for j := i*n + 1 - offset; j < i*n+n-offset && j < len(orig); j++ {
+			if j > 0 {
+				orig[i] += orig[j]
+			}
+		}
+	}
+
+	*ms.getOrig() = orig[:newLen]
 }

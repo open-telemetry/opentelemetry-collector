@@ -81,3 +81,41 @@ func TestByteSliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestByteSliceTryIncrementFrom(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{10, 9})
+
+	ms2 := NewByteSlice()
+	ms2.FromRaw([]byte{1, 10})
+
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
+	ms.EnsureCapacity(4)
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
+	assert.Equal(t, byte(10), ms.At(0))
+	assert.Equal(t, byte(10), ms.At(1))
+	assert.Equal(t, byte(10), ms.At(2))
+}
+
+func TestByteSliceCollapse(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, byte(4), ms.At(0))
+	assert.Equal(t, byte(2), ms.At(1))
+}
+
+func TestByteSliceCollapseOffset(t *testing.T) {
+	ms := NewByteSlice()
+	ms.FromRaw([]byte{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, byte(1), ms.At(0))
+	assert.Equal(t, byte(4), ms.At(1))
+	assert.Equal(t, byte(1), ms.At(2))
+}

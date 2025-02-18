@@ -7,6 +7,9 @@
 package pcommon
 
 import (
+	"fmt"
+	"iter"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -47,6 +50,14 @@ func (ms UInt64Slice) FromRaw(val []uint64) {
 // Equivalent of len(uInt64Slice).
 func (ms UInt64Slice) Len() int {
 	return len(*ms.getOrig())
+}
+
+func (ms UInt64Slice) Cap() int {
+	return cap(*ms.getOrig())
+}
+
+func (ms UInt64Slice) Reslice(from, to int) {
+	*ms.getOrig() = (*ms.getOrig())[from:to]
 }
 
 // At returns an item from particular index.
@@ -105,4 +116,89 @@ func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 func copyUInt64Slice(dst, src []uint64) []uint64 {
 	dst = dst[:0]
 	return append(dst, src...)
+}
+
+func (ms UInt64Slice) Transform(f func(i int, v uint64) uint64, from, to int) {
+	ms.getState().AssertMutable()
+	orig := *ms.getOrig()
+	for i := from; i < to; i++ {
+		orig[i] = f(i, orig[i])
+	}
+}
+
+// TryIncrementFrom increments all elements from the current slice by the elements from another slice
+// if it has enough capacity for the other slice's length plus the offset.
+// If there isn't enough capacity, this method returns false and the slice is not mutated.
+func (ms UInt64Slice) TryIncrementFrom(other UInt64Slice, offset int) bool {
+	if offset < 0 {
+		return false
+	}
+	ms.getState().AssertMutable()
+	newLen := max(ms.Len(), other.Len()+offset)
+	ours := *ms.getOrig()
+	if cap(ours) < newLen {
+		return false
+	}
+	ours = ours[:newLen]
+	theirs := *other.getOrig()
+	for i := 0; i < len(theirs); i++ {
+		ours[i+offset] += theirs[i]
+	}
+	*ms.getOrig() = ours
+	return true
+}
+
+func (ms UInt64Slice) IncrementFromSeq(other iter.Seq2[int, uint64], offset int) {
+	ms.getState().AssertMutable()
+	ours := *ms.getOrig()
+	for i, v := range other {
+		if i+offset >= len(ours) {
+			return
+		}
+		ours[i+offset] += v
+	}
+}
+
+func (ms UInt64Slice) All() iter.Seq2[int, uint64] {
+	return func(yield func(int, uint64) bool) {
+		for i := 0; i < ms.Len(); i++ {
+			if !yield(i, ms.At(i)) {
+				return
+			}
+		}
+	}
+}
+
+// Collapse merges (sums) n adjacent buckets and reslices to account for the decreased length
+//
+//	n=2 offset=1
+//	before:  1  1 1  1 1  1 1  1
+//	        V    V    V    V    V
+//	after:  1    2    2    2    1
+func (ms UInt64Slice) Collapse(n, offset int) {
+	ms.getState().AssertMutable()
+	if offset >= n || offset < 0 {
+		panic(fmt.Sprintf("offset %d must be positive and smaller than n %d", offset, n))
+	}
+	if n < 2 {
+		return
+	}
+	orig := *ms.getOrig()
+	newLen := (len(orig) + offset) / n
+	if (len(orig)+offset)%n != 0 {
+		newLen++
+	}
+
+	for i := 0; i < newLen; i++ {
+		if offset == 0 || i > 0 {
+			orig[i] = orig[i*n-offset]
+		}
+		for j := i*n + 1 - offset; j < i*n+n-offset && j < len(orig); j++ {
+			if j > 0 {
+				orig[i] += orig[j]
+			}
+		}
+	}
+
+	*ms.getOrig() = orig[:newLen]
 }
