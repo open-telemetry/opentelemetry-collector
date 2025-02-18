@@ -15,8 +15,10 @@ import (
 
 type TracesConfigV030 struct {
 	// Level configures whether spans are emitted or not, the possible values are:
-	//  - "none" indicates that no tracing data should be collected;
-	//  - "basic" is the recommended and covers the basics of the service telemetry.
+	//  - "None" indicates that no tracing data should be collected.
+	//  - "Basic" is the recommended and covers the basics of the service telemetry.
+	//  - "Normal" adds some other indicators on top of basic.
+	//  - "Detailed" adds dimensions and views to the previous levels.
 	Level configtelemetry.Level `mapstructure:"level"`
 	// Propagators is a list of TextMapPropagators from the supported propagators list. Currently,
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and
@@ -57,10 +59,10 @@ func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 
 type MetricsConfigV030 struct {
 	// Level is the level of telemetry metrics, the possible values are:
-	//  - "none" indicates that no telemetry data should be collected;
-	//  - "basic" is the recommended and covers the basics of the service telemetry.
-	//  - "normal" adds some other indicators on top of basic.
-	//  - "detailed" adds dimensions and views to the previous levels.
+	//  - "None" indicates that no telemetry data should be collected.
+	//  - "Basic" is the recommended and covers the basics of the service telemetry.
+	//  - "Normal" adds some other indicators on top of basic.
+	//  - "Detailed" adds dimensions and views to the previous levels.
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	// Deprecated: [v0.111.0] use readers configuration.
