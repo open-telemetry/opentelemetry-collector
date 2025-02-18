@@ -7,7 +7,7 @@ change_type: new_component
 component: service/hostcapabilities
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: create `service/hostcapabilities` module to expose GetModuleInfos in service/internal/graph/host.go
+note: create `service/hostcapabilities` module
 
 # One or more tracking issues or pull requests related to the change
 issues: [12296, 12375]
@@ -15,8 +15,11 @@ issues: [12296, 12375]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Removes getExporters interface in service/internal/graph in favor of GetExporters in service/hostcapabilities
-
+subtext: |
+  Removes getExporters interface in service/internal/graph.
+  Removes getModuleInfos interface in service/internal/graph.
+  Creates interface ExposeExporters in service/hostcapabilities to expose GetExporters function.
+  Creates interface ModuleInfo in service/hostcapabilities to expose GetModuleInfos function.
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
 # Include 'user' if the change is relevant to end users.
