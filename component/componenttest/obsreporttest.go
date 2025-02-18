@@ -19,11 +19,10 @@ const (
 	// that are used to monitor the Collector in production deployments.
 	// DO NOT SWITCH THE VARIABLES BELOW TO SIMILAR ONES DEFINED ON THE PACKAGE.
 	receiverTag  = "receiver"
-	scraperTag   = "scraper"
 	transportTag = "transport"
-	exporterTag  = "exporter"
 )
 
+// Deprecated: [v0.121.0] use the componenttest.Telemetry instead.
 type TestTelemetry struct {
 	*Telemetry
 	id component.ID
@@ -41,14 +40,12 @@ func (tts *TestTelemetry) CheckReceiverMetrics(protocol string, acceptedMetricPo
 	return checkReceiver(tts.Telemetry, tts.id, "metric_points", protocol, acceptedMetricPoints, droppedMetricPoints)
 }
 
-// TelemetrySettings returns the TestTelemetry's TelemetrySettings
+// Deprecated: [v0.121.0] use the NewTelemetrySettings from componenttest.Telemetry.
 func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 	return tts.NewTelemetrySettings()
 }
 
-// SetupTelemetry sets up the testing environment to check the metrics recorded by receivers, producers, or exporters.
-// The caller must pass the ID of the component being tested. The ID will be used by the CreateSettings and Check methods.
-// The caller must defer a call to `Shutdown` on the returned TestTelemetry.
+// Deprecated: [v0.121.0] use the componenttest.NewTelemetry instead.
 func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	return TestTelemetry{
 		Telemetry: NewTelemetry(
