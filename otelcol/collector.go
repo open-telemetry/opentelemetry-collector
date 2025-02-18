@@ -215,8 +215,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 			Exporter:  buildModuleInfo(factories.ExporterModules),
 			Extension: buildModuleInfo(factories.ExtensionModules),
 			Connector: buildModuleInfo(factories.ConnectorModules),
-			Provider:  buildModuleInfo(col.set.ProviderModules),
-			Converter: buildModuleInfo(col.set.ConverterModules),
 		},
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
