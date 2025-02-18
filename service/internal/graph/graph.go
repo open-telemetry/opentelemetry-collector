@@ -605,8 +605,8 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 }
 
 var (
-	_ component.Host           = (*HostWrapper)(nil)
-	_ componentstatus.Reporter = (*HostWrapper)(nil)
+	_ component.Host                   = (*HostWrapper)(nil)
+	_ componentstatus.Reporter         = (*HostWrapper)(nil)
 	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil)
 )
 
