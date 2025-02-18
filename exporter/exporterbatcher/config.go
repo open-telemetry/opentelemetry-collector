@@ -41,6 +41,9 @@ type MaxSizeConfig struct {
 	// If the batch size exceeds this value, it will be broken up into smaller batches if possible.
 	// Setting this value to zero disables the maximum size limit.
 	MaxSizeItems int `mapstructure:"max_size_items"`
+
+	// MaxSizeBytes is the maximum serialized byte size of the batch.
+	MaxSizeBytes int `mapstructure:"max_size_bytes"`
 }
 
 func (c Config) Validate() error {
@@ -55,6 +58,9 @@ func (c Config) Validate() error {
 	}
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
+	}
+	if c.MaxSizeBytes != 0 {
+		return errors.New("max_size_bytes is not yet supported")
 	}
 	return nil
 }
