@@ -16,24 +16,27 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+var (
+	testType = component.MustNewType("test")
+	testID   = component.NewID(testType)
+)
+
 func TestNewFactory(t *testing.T) {
-	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
 	assert.EqualValues(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
-	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
-	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
-	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	f := NewFactory(
 		testType,
@@ -45,15 +48,15 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, f.TracesStability())
-	_, err := f.CreateTraces(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelBeta, f.MetricsStability())
-	_, err = f.CreateMetrics(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, f.LogsStability())
-	_, err = f.CreateLogs(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.NoError(t, err)
 }
 

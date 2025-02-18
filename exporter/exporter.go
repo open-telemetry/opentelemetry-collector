@@ -160,6 +160,10 @@ func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
+	if set.ID.Type() != f.Type() {
+		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+	}
+
 	return f.createTracesFunc(ctx, set, cfg)
 }
 
@@ -168,12 +172,20 @@ func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
+	if set.ID.Type() != f.Type() {
+		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+	}
+
 	return f.createMetricsFunc(ctx, set, cfg)
 }
 
 func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
 	if f.createLogsFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
+	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
 	}
 
 	return f.createLogsFunc(ctx, set, cfg)

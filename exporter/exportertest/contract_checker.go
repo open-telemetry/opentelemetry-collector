@@ -151,7 +151,7 @@ func checkTraces(t *testing.T, params CheckConsumeContractParams, mockReceiver c
 	ctx := context.Background()
 	var exp exporter.Traces
 	var err error
-	exp, err = params.ExporterFactory.CreateTraces(ctx, NewNopSettingsWithType(NopType), params.ExporterConfig)
+	exp, err = params.ExporterFactory.CreateTraces(ctx, NewNopSettingsWithType(params.ExporterFactory.Type()), params.ExporterConfig)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -191,7 +191,7 @@ func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver com
 	ctx := context.Background()
 	var exp exporter.Logs
 	var err error
-	exp, err = params.ExporterFactory.CreateLogs(ctx, NewNopSettingsWithType(NopType), params.ExporterConfig)
+	exp, err = params.ExporterFactory.CreateLogs(ctx, NewNopSettingsWithType(params.ExporterFactory.Type()), params.ExporterConfig)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 

@@ -113,11 +113,11 @@ func checkConsumeContractScenario(params CheckConsumeContractParams, decisionFun
 	var err error
 	switch params.Signal {
 	case pipeline.SignalLogs:
-		receiver, err = params.Factory.CreateLogs(ctx, NewNopSettingsWithType(NopType), params.Config, consumer)
+		receiver, err = params.Factory.CreateLogs(ctx, NewNopSettingsWithType(params.Factory.Type()), params.Config, consumer)
 	case pipeline.SignalTraces:
-		receiver, err = params.Factory.CreateTraces(ctx, NewNopSettingsWithType(NopType), params.Config, consumer)
+		receiver, err = params.Factory.CreateTraces(ctx, NewNopSettingsWithType(params.Factory.Type()), params.Config, consumer)
 	case pipeline.SignalMetrics:
-		receiver, err = params.Factory.CreateMetrics(ctx, NewNopSettingsWithType(NopType), params.Config, consumer)
+		receiver, err = params.Factory.CreateMetrics(ctx, NewNopSettingsWithType(params.Factory.Type()), params.Config, consumer)
 	default:
 		require.FailNow(params.T, "must specify a valid DataType to test for")
 	}
