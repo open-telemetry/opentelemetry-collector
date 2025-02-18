@@ -2,7 +2,7 @@ type: xconnector
 github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: connector
+  class: pkg
   codeowners:
     active:
       - mx-psi

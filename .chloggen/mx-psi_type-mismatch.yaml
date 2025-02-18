@@ -4,7 +4,7 @@
 change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: extension, processor, connector, exporter, receiver
+component: processor, connector, exporter, receiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Explicitly error out at component creation time if there is a type mismatch.
