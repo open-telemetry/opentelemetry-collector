@@ -109,6 +109,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMetricInputTypeDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMetricWithIntervalDataPoint(ts, "1", "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true, false)
 
@@ -195,6 +199,35 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = dp.Attributes().Get("enum_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, "red", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					attrVal, ok = dp.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+				case "metric.with_interval":
+					assert.False(t, validatedMetrics["metric.with_interval"], "Found a duplicate in the metrics slice: metric.with_interval")
+					validatedMetrics["metric.with_interval"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
