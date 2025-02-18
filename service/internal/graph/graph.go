@@ -171,13 +171,13 @@ func (g *Graph) createNodes(set Settings) error {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, expType)
+			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, formatPipelineNameWithSignal(connectorsAsExporter[connID], expType))
 		}
 		for recType, supportedUse := range recTypes {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, recType)
+			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, formatPipelineNameWithSignal(connectorsAsReceiver[connID], recType))
 		}
 
 		for _, eID := range connectorsAsExporter[connID] {
@@ -194,6 +194,23 @@ func (g *Graph) createNodes(set Settings) error {
 		}
 	}
 	return nil
+}
+
+// formatPipelineNameWithSignal formats pipeline signal types with their names.
+func formatPipelineNameWithSignal(pipelineIDs []pipeline.ID, signal pipeline.Signal) string {
+	var formatted string
+
+	for _, pid := range pipelineIDs {
+		if pid.Signal().String() == signal.String() {
+			if name := pid.Name(); name == "" {
+				formatted = pid.Signal().String()
+			} else {
+				formatted = fmt.Sprintf("%s/%s", pid.Signal().String(), name)
+			}
+			break
+		}
+	}
+	return formatted
 }
 
 func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *receiverNode {
