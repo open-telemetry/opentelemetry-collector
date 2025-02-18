@@ -1,6 +1,8 @@
 module go.opentelemetry.io/collector/receiver/otlpreceiver
 
-go 1.22.0
+go 1.23.0
+
+toolchain go1.23.4
 
 require (
 	github.com/gogo/protobuf v1.3.2

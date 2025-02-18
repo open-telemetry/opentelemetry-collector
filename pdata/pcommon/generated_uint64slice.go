@@ -8,6 +8,7 @@ package pcommon
 
 import (
 	"fmt"
+	"iter"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 )
@@ -145,6 +146,27 @@ func (ms UInt64Slice) TryIncrementFrom(other UInt64Slice, offset int) bool {
 	}
 	*ms.getOrig() = ours
 	return true
+}
+
+func (ms UInt64Slice) IncrementFromSeq(other iter.Seq2[int, uint64], offset int) {
+	ms.getState().AssertMutable()
+	ours := *ms.getOrig()
+	for i, v := range other {
+		if i+offset >= len(ours) {
+			return
+		}
+		ours[i+offset] += v
+	}
+}
+
+func (ms UInt64Slice) All() iter.Seq2[int, uint64] {
+	return func(yield func(int, uint64) bool) {
+		for i := 0; i < ms.Len(); i++ {
+			if !yield(i, ms.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // Collapse merges (sums) n adjacent buckets and reslices to account for the decreased length
