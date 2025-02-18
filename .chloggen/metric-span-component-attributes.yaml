@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Internal metrics and spans now include component attributes.
+note: Internal metrics and spans now include component-related attributes.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12217]
@@ -16,10 +16,18 @@ issues: [12217]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The `MeterProvider` and `TracerProvider` passed to components for emitting internal telemetry
-  are now wrapped to automatically insert metric/span attributes which identify the originating
-  component instance, as defined in the [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md#attributes).
-  The set of added attributes is available as `TelemetrySettings.InstanceAttributes`.
+  All internal telemetry now includes one or more of the following metric/span attributes:
+  - `otelcol.component.kind`
+  - `otelcol.component.id`
+  - `otelcol.pipeline.id`
+  - `otelcol.signal`
+  - `otelcol.signal.output`
+  These attributes are defined in the [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md#attributes),
+  and identify the component instance from which the telemetry originates.
+  These attribues are added automatically without changes to component code by wrapping the
+  `MeterProvider` and `TracerProvider` provided to them.
+  Components will be able to opt out of one or more of these attributes, but that API is not yet
+  publicly available.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
