@@ -186,11 +186,10 @@ func TestLogs_WithPersistentQueue(t *testing.T) {
 }
 
 func TestLogs_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsData(nil))
+	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -198,11 +197,10 @@ func TestLogs_WithRecordMetrics(t *testing.T) {
 }
 
 func TestLogs_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 	ld := testdata.GenerateLogs(2)
@@ -210,7 +208,7 @@ func TestLogs_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, le.ConsumeLogs(context.Background(), ld))
 	assert.Equal(t, 0, ld.LogRecordCount())
 
-	metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+	metadatatest.AssertEqualExporterSentLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -221,12 +219,11 @@ func TestLogs_pLogModifiedDownStream_WithRecordMetrics(t *testing.T) {
 }
 
 func TestLogsRequest_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	le, err := NewLogsRequest(context.Background(),
-		exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		requesttest.RequestFromLogsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
@@ -236,11 +233,10 @@ func TestLogsRequest_WithRecordMetrics(t *testing.T) {
 
 func TestLogs_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsData(want))
+	le, err := NewLogs(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeLogsConfig, newPushLogsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -249,11 +245,10 @@ func TestLogs_WithRecordMetrics_ReturnError(t *testing.T) {
 
 func TestLogsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	want := errors.New("export_error")
-	tt, err := componenttest.SetupTelemetry(fakeLogsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	le, err := NewLogsRequest(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	le, err := NewLogsRequest(context.Background(), exporter.Settings{ID: fakeLogsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		requesttest.RequestFromLogsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
@@ -376,7 +371,7 @@ func newPushLogsData(retError error) consumer.ConsumeLogsFunc {
 	}
 }
 
-func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, id component.ID, le exporter.Logs, wantError error) {
+func checkRecordedMetricsForLogs(t *testing.T, tt *componenttest.Telemetry, id component.ID, le exporter.Logs, wantError error) {
 	ld := testdata.GenerateLogs(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -385,7 +380,7 @@ func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, i
 
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	if wantError != nil {
-		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
@@ -394,7 +389,7 @@ func checkRecordedMetricsForLogs(t *testing.T, tt componenttest.TestTelemetry, i
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSentLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(

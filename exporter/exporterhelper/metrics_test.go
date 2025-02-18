@@ -187,11 +187,10 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 }
 
 func TestMetrics_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -199,11 +198,10 @@ func TestMetrics_WithRecordMetrics(t *testing.T) {
 }
 
 func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsDataModifiedDownstream(nil), WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	md := testdata.GenerateMetrics(2)
@@ -211,7 +209,7 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 	require.NoError(t, me.ConsumeMetrics(context.Background(), md))
 	assert.Equal(t, 0, md.MetricCount())
 
-	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -222,12 +220,11 @@ func TestMetrics_pMetricModifiedDownStream_WithRecordMetrics(t *testing.T) {
 }
 
 func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	me, err := NewMetricsRequest(context.Background(),
-		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		requesttest.RequestFromMetricsFunc(nil))
 	require.NoError(t, err)
 	require.NotNil(t, me)
@@ -237,11 +234,10 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 
 func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(want))
+	me, err := NewMetrics(context.Background(), exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, &fakeMetricsConfig, newPushMetricsData(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -250,12 +246,11 @@ func TestMetrics_WithRecordMetrics_ReturnError(t *testing.T) {
 
 func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 	want := errors.New("my_error")
-	tt, err := componenttest.SetupTelemetry(fakeMetricsName)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	me, err := NewMetricsRequest(context.Background(),
-		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		requesttest.RequestFromMetricsFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
@@ -382,7 +377,7 @@ func newPushMetricsDataModifiedDownstream(retError error) consumer.ConsumeMetric
 	}
 }
 
-func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry, id component.ID, me exporter.Metrics, wantError error) {
+func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, me exporter.Metrics, wantError error) {
 	md := testdata.GenerateMetrics(2)
 	const numBatches = 7
 	for i := 0; i < numBatches; i++ {
@@ -392,7 +387,7 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry
 	// TODO: When the new metrics correctly count partial dropped fix this.
 	numPoints := int64(numBatches * md.MetricCount() * 2) /* 2 points per metric*/
 	if wantError != nil {
-		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
@@ -401,7 +396,7 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt componenttest.TestTelemetry
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	} else {
-		metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(

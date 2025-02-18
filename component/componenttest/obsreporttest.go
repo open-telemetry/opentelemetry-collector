@@ -11,19 +11,18 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+// Deprecated: [v0.121.0] use the componenttest.Telemetry instead.
 type TestTelemetry struct {
 	*Telemetry
 	id component.ID
 }
 
-// TelemetrySettings returns the TestTelemetry's TelemetrySettings
+// Deprecated: [v0.121.0] use the NewTelemetrySettings from componenttest.Telemetry.
 func (tts *TestTelemetry) TelemetrySettings() component.TelemetrySettings {
 	return tts.NewTelemetrySettings()
 }
 
-// SetupTelemetry sets up the testing environment to check the metrics recorded by receivers, producers, or exporters.
-// The caller must pass the ID of the component being tested. The ID will be used by the CreateSettings and Check methods.
-// The caller must defer a call to `Shutdown` on the returned TestTelemetry.
+// Deprecated: [v0.121.0] use the componenttest.NewTelemetry instead.
 func SetupTelemetry(id component.ID) (TestTelemetry, error) {
 	return TestTelemetry{
 		Telemetry: NewTelemetry(
