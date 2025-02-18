@@ -171,13 +171,13 @@ func (g *Graph) createNodes(set Settings) error {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, expType)
+			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, formatPipelineNameWithSignal(connectorsAsExporter[connID], expType))
 		}
 		for recType, supportedUse := range recTypes {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, recType)
+			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, formatPipelineNameWithSignal(connectorsAsReceiver[connID], recType))
 		}
 
 		for _, eID := range connectorsAsExporter[connID] {
@@ -194,6 +194,18 @@ func (g *Graph) createNodes(set Settings) error {
 		}
 	}
 	return nil
+}
+
+// formatPipelineNameWithSignal formats pipeline name with signal as "signal[/name]" format.
+func formatPipelineNameWithSignal(pipelineIDs []pipeline.ID, signal pipeline.Signal) string {
+	var formatted string
+	for _, pid := range pipelineIDs {
+		if pid.Signal() == signal {
+			formatted = pid.String()
+			break
+		}
+	}
+	return formatted
 }
 
 func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *receiverNode {
