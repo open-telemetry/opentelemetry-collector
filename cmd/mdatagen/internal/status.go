@@ -46,7 +46,6 @@ type Status struct {
 	Warnings             []string     `mapstructure:"warnings"`
 	Codeowners           *Codeowners  `mapstructure:"codeowners"`
 	UnsupportedPlatforms []string     `mapstructure:"unsupported_platforms"`
-	NotComponent         bool         `mapstructure:"not_component"`
 }
 
 func (s *Status) SortedDistributions() []string {
@@ -77,6 +76,7 @@ func (s *Status) Validate() error {
 	if err := s.validateClass(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+
 	if err := s.Stability.Validate(); err != nil {
 		errs = errors.Join(errs, err)
 	}

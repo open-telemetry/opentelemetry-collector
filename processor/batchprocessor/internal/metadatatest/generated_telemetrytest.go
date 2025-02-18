@@ -16,7 +16,7 @@ import (
 )
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettingsWithType(processortest.NopType)
 	set.ID = component.NewID(component.MustNewType("batch"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
@@ -98,25 +98,4 @@ func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest
 	got, err := tt.GetMetric("otelcol_processor_batch_timeout_trigger_send")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
 }

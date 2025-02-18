@@ -2,11 +2,9 @@ module go.opentelemetry.io/collector/component
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/otel/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0

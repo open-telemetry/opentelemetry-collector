@@ -2,13 +2,11 @@ module go.opentelemetry.io/collector/consumer/consumererror
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.25.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
-	go.opentelemetry.io/collector/pdata/testdata v0.119.0
+	go.opentelemetry.io/collector/pdata v1.26.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.120.0
+	go.opentelemetry.io/collector/pdata/testdata v0.120.0
 	go.uber.org/goleak v1.3.0
 )
 

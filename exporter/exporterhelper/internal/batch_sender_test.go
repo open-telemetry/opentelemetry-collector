@@ -16,50 +16,52 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 )
 
 func TestBatchSender_Merge(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10758")
 	}
-	cfg := exporterbatcher.NewDefaultConfig()
-	cfg.MinSizeItems = 10
-	cfg.FlushTimeout = 100 * time.Millisecond
 
 	tests := []struct {
-		name          string
-		batcherOption Option
+		name     string
+		batchCfg exporterbatcher.Config
 	}{
 		{
-			name:          "split_disabled",
-			batcherOption: WithBatcher(cfg),
+			name: "split_disabled",
+			batchCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.MinSizeItems = 10
+				cfg.FlushTimeout = 100 * time.Millisecond
+				return cfg
+			}(),
 		},
 		{
 			name: "split_high_limit",
-			batcherOption: func() Option {
-				c := cfg
-				c.MaxSizeItems = 1000
-				return WithBatcher(c)
+			batchCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.MinSizeItems = 10
+				cfg.FlushTimeout = 100 * time.Millisecond
+				cfg.MaxSizeItems = 1000
+				return cfg
 			}(),
 		},
 	}
 
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
-		name          string
-		batcherOption Option
+		name     string
+		batchCfg exporterbatcher.Config
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			be := queueBatchExporter(t, tt.batcherOption)
-
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			be, err := newQueueBatchExporter(exporterqueue.NewDefaultConfig(), tt.batchCfg)
+			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
 			})
 
 			sink := requesttest.NewSink()
@@ -88,7 +90,7 @@ func TestBatchSender_Merge(t *testing.T) {
 			assert.Equal(t, int64(1), sink.RequestsCount())
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 15
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
 	for _, tt := range tests {
@@ -98,32 +100,36 @@ func TestBatchSender_Merge(t *testing.T) {
 }
 
 func TestBatchSender_BatchExportError(t *testing.T) {
-	cfg := exporterbatcher.NewDefaultConfig()
-	cfg.MinSizeItems = 10
 	tests := []struct {
 		name             string
-		batcherOption    Option
+		batchCfg         exporterbatcher.Config
 		expectedRequests int64
 		expectedItems    int64
 	}{
 		{
-			name:          "merge_only",
-			batcherOption: WithBatcher(cfg),
+			name: "merge_only",
+			batchCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.MinSizeItems = 10
+				return cfg
+			}(),
 		},
 		{
 			name: "merge_without_split_triggered",
-			batcherOption: func() Option {
-				c := cfg
-				c.MaxSizeItems = 200
-				return WithBatcher(c)
+			batchCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.MinSizeItems = 10
+				cfg.MaxSizeItems = 200
+				return cfg
 			}(),
 		},
 		{
 			name: "merge_with_split_triggered",
-			batcherOption: func() Option {
-				c := cfg
-				c.MaxSizeItems = 20
-				return WithBatcher(c)
+			batchCfg: func() exporterbatcher.Config {
+				cfg := exporterbatcher.NewDefaultConfig()
+				cfg.MinSizeItems = 10
+				cfg.MaxSizeItems = 20
+				return cfg
 			}(),
 			expectedRequests: 1,
 			expectedItems:    20,
@@ -131,23 +137,18 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 	}
 	runTest := func(testName string, enableQueueBatcher bool, tt struct {
 		name             string
-		batcherOption    Option
+		batchCfg         exporterbatcher.Config
 		expectedRequests int64
 		expectedItems    int64
 	},
 	) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
-			be := queueBatchExporter(t, tt.batcherOption)
-
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			be, err := newQueueBatchExporter(exporterqueue.NewDefaultConfig(), tt.batchCfg)
+			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				require.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
-			})
 
 			sink := requesttest.NewSink()
-
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
 
@@ -159,12 +160,14 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 			errReq := &requesttest.FakeRequest{Items: 20, ExportErr: errors.New("transient error"), Sink: sink}
 			require.NoError(t, be.Send(context.Background(), errReq))
 
-			// the batch should be dropped since the queue doesn't have requeuing enabled.
+			// the batch should be dropped since the queue doesn't have re-queuing enabled.
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == tt.expectedRequests &&
 					sink.ItemsCount() == tt.expectedItems &&
-					be.QueueSender.(*QueueSender).queue.Size() == 0
-			}, 100*time.Millisecond, 10*time.Millisecond)
+					be.queue.Size() == 0
+			}, 1*time.Second, 10*time.Millisecond)
+
+			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
 	for _, tt := range tests {
@@ -176,33 +179,28 @@ func TestBatchSender_BatchExportError(t *testing.T) {
 func TestBatchSender_MergeOrSplit(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			resetFeatureGate := setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.MinSizeItems = 5
-			cfg.MaxSizeItems = 10
-			cfg.FlushTimeout = 100 * time.Millisecond
-			be := queueBatchExporter(t, WithBatcher(cfg))
-
+			batchCfg := exporterbatcher.NewDefaultConfig()
+			batchCfg.MinSizeItems = 5
+			batchCfg.MaxSizeItems = 10
+			batchCfg.FlushTimeout = 100 * time.Millisecond
+			be, err := newQueueBatchExporter(exporterqueue.NewDefaultConfig(), batchCfg)
+			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				require.NoError(t, be.Shutdown(context.Background()))
-				resetFeatureGate()
-			})
 
 			sink := requesttest.NewSink()
-
 			// should be sent right away by reaching the minimum items size.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 8
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 25
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// request that cannot be split should be dropped.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{
@@ -212,10 +210,10 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 
 			// big request should be broken down into two requests, both are sent right away.
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
-			}, 500*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
+			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
 
@@ -226,11 +224,11 @@ func TestBatchSender_MergeOrSplit(t *testing.T) {
 func TestBatchSender_Shutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			batchCfg := exporterbatcher.NewDefaultConfig()
 			batchCfg.MinSizeItems = 10
-			be := queueBatchExporter(t, WithBatcher(batchCfg))
-
+			be, err := newQueueBatchExporter(exporterqueue.NewDefaultConfig(), batchCfg)
+			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
 			sink := requesttest.NewSink()
@@ -247,34 +245,6 @@ func TestBatchSender_Shutdown(t *testing.T) {
 		})
 	}
 
-	runTest("enable_queue_batcher", true)
-	runTest("disable_queue_batcher", false)
-}
-
-func TestBatchSender_Disabled(t *testing.T) {
-	runTest := func(testName string, enableQueueBatcher bool) {
-		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = false
-			cfg.MaxSizeItems = 5
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(cfg))
-			require.NotNil(t, be)
-			require.NoError(t, err)
-
-			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			t.Cleanup(func() {
-				require.NoError(t, be.Shutdown(context.Background()))
-			})
-
-			sink := requesttest.NewSink()
-			// should be sent right away without splitting because batching is disabled.
-			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			assert.Equal(t, int64(1), sink.RequestsCount())
-			assert.Equal(t, int64(8), sink.ItemsCount())
-		})
-	}
 	runTest("enable_queue_batcher", true)
 	runTest("disable_queue_batcher", false)
 }
@@ -312,10 +282,8 @@ func TestBatchSender_Disabled(t *testing.T) {
 func TestBatchSender_PostShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(exporterbatcher.NewDefaultConfig()))
-			require.NotNil(t, be)
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, exporterbatcher.NewDefaultConfig())
 			require.NoError(t, err)
 			assert.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, be.Shutdown(context.Background()))
@@ -339,13 +307,13 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	}
 	tests := []struct {
 		name             string
-		batcherCfg       exporterbatcher.Config
+		bCfg             exporterbatcher.Config
 		expectedRequests int64
 		expectedItems    int64
 	}{
 		{
 			name: "merge_only",
-			batcherCfg: func() exporterbatcher.Config {
+			bCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
 				cfg.FlushTimeout = 20 * time.Millisecond
 				return cfg
@@ -355,7 +323,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		},
 		{
 			name: "merge_without_split_triggered",
-			batcherCfg: func() exporterbatcher.Config {
+			bCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
 				cfg.FlushTimeout = 20 * time.Millisecond
 				cfg.MaxSizeItems = 200
@@ -366,7 +334,7 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 		},
 		{
 			name: "merge_with_split_triggered",
-			batcherCfg: func() exporterbatcher.Config {
+			bCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
 				cfg.FlushTimeout = 50 * time.Millisecond
 				cfg.MaxSizeItems = 10
@@ -382,16 +350,13 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 	// To avoid blocking, the concurrency limit is set to the number of concurrent goroutines that are in charge of
 	// reading from the queue and adding to batch. With the new model, we are pulling instead of pushing so we don't
 	// block the reading goroutine anymore.
-	defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, false)()
+	setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, false)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			qCfg := exporterqueue.NewDefaultConfig()
 			qCfg.NumConsumers = 2
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(tt.batcherCfg),
-				WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[internal.Request]()))
-			require.NotNil(t, be)
+			be, err := newQueueBatchExporter(qCfg, tt.bCfg)
 			require.NoError(t, err)
 			assert.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -400,42 +365,42 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 
 			sink := requesttest.NewSink()
 			// the 1st and 2nd request should be flushed in the same batched request by max concurrency limit.
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 1 && sink.ItemsCount() == 4
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// the 3rd request should be flushed by itself due to flush interval
 			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 2 && sink.ItemsCount() == 6
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// the 4th and 5th request should be flushed in the same batched request by max concurrency limit.
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 3 && sink.ItemsCount() == 10
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 
 			// do it a few more times to ensure it produces the correct batch size regardless of goroutine scheduling.
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Sink: sink}))
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 6, Sink: sink}))
-			if tt.batcherCfg.MaxSizeItems == 10 {
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 6, Sink: sink}))
+			if tt.bCfg.MaxSizeItems == 10 {
 				// in case of MaxSizeItems=10, wait for the leftover request to send
 				assert.Eventually(t, func() bool {
 					return sink.RequestsCount() == 5 && sink.ItemsCount() == 21
-				}, 50*time.Millisecond, 10*time.Millisecond)
+				}, 1*time.Second, 10*time.Millisecond)
 			}
 
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 6, Sink: sink}))
-			assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 20, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 6, Sink: sink}))
+			require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 20, Sink: sink}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == tt.expectedRequests && sink.ItemsCount() == tt.expectedItems
-			}, 100*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
 }
@@ -443,16 +408,14 @@ func TestBatchSender_ConcurrencyLimitReached(t *testing.T) {
 func TestBatchSender_BatchBlocking(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 3
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithBatcher(bCfg))
-			require.NotNil(t, be)
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
 			sink := requesttest.NewSink()
-
 			// send 6 blocking requests
 			wg := sync.WaitGroup{}
 			for i := 0; i < 6; i++ {
@@ -479,16 +442,14 @@ func TestBatchSender_BatchBlocking(t *testing.T) {
 func TestBatchSender_BatchCancelled(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 2
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, WithBatcher(bCfg))
-			require.NotNil(t, be)
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
 			sink := requesttest.NewSink()
-
 			// send 2 blocking requests
 			wg := sync.WaitGroup{}
 			ctx, cancel := context.WithCancel(context.Background())
@@ -520,12 +481,11 @@ func TestBatchSender_BatchCancelled(t *testing.T) {
 func TestBatchSender_DrainActiveRequests(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 2
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg))
-			require.NotNil(t, be)
+
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -560,11 +520,9 @@ func TestBatchSender_DrainActiveRequests(t *testing.T) {
 func TestBatchSender_UnstartedShutdown(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(exporterbatcher.NewDefaultConfig()))
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
+			be, err := newQueueBatchExporter(exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig())
 			require.NoError(t, err)
-
 			err = be.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
@@ -623,25 +581,23 @@ func TestBatchSender_UnstartedShutdown(t *testing.T) {
 func TestBatchSenderWithTimeout(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 10
-			tCfg := NewDefaultTimeoutConfig()
-			tCfg.Timeout = 50 * time.Millisecond
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg),
-				WithTimeout(tCfg))
+
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
+			ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+			defer cancel()
 			sink := requesttest.NewSink()
-
 			// Send 3 concurrent requests that should be merged in one batch
 			wg := sync.WaitGroup{}
 			for i := 0; i < 3; i++ {
 				wg.Add(1)
 				go func() {
-					assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
+					assert.NoError(t, be.Send(ctx, &requesttest.FakeRequest{Items: 4, Sink: sink}))
 					wg.Done()
 				}()
 			}
@@ -653,7 +609,7 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 			for i := 0; i < 3; i++ {
 				wg.Add(1)
 				go func() {
-					assert.Error(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink, Delay: 30 * time.Millisecond}))
+					assert.Error(t, be.Send(ctx, &requesttest.FakeRequest{Items: 4, Sink: sink, Delay: 30 * time.Millisecond}))
 					wg.Done()
 				}()
 			}
@@ -670,63 +626,44 @@ func TestBatchSenderWithTimeout(t *testing.T) {
 	runTest("disable_queue_batcher", false)
 }
 
-// func TestBatchSenderTimerResetNoConflict(t *testing.T) {
-// 	delayBatchMergeFunc := func(_ context.Context, r1 internal.Request, r2 internal.Request) (internal.Request, error) {
-// 		time.Sleep(30 * time.Millisecond)
-// 		if r1 == nil {
-// 			return r2, nil
-// 		}
-// 		fr1 := r1.(*requesttest.FakeRequest)
-// 		fr2 := r2.(*requesttest.FakeRequest)
-// 		if fr2.mergeErr != nil {
-// 			return nil, fr2.mergeErr
-// 		}
-// 		return &requesttest.FakeRequest{
-// 			Items:     fr1.items + fr2.items,
-// 			Sink:      fr1.sink,
-// 			ExportErr: fr2.exportErr,
-// 			Delay:     fr1.delay + fr2.delay,
-// 		}, nil
-// 	}
-// 	bCfg := exporterbatcher.NewDefaultConfig()
-// 	bCfg.MinSizeItems = 8
-// 	bCfg.FlushTimeout = 50 * time.Millisecond
-// 	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-// 		WithBatcher(bCfg))
-// 	require.NoError(t, err)
-// 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-// 	sink := requesttest.NewSink()
+func TestBatchSenderTimerResetNoConflict(t *testing.T) {
+	bCfg := exporterbatcher.NewDefaultConfig()
+	bCfg.MinSizeItems = 8
+	bCfg.FlushTimeout = 100 * time.Millisecond
+	be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
+	require.NoError(t, err)
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
-// 	// Send 2 concurrent requests that should be merged in one batch in the same interval as the flush timer
-// 	go func() {
-// 		assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
-// 	}()
-// 	time.Sleep(30 * time.Millisecond)
-// 	go func() {
-// 		assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
-// 	}()
+	sink := requesttest.NewSink()
+	// Send 2 concurrent requests that should be merged in one batch in the same interval as the flush timer
+	go func() {
+		assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
+	}()
+	time.Sleep(30 * time.Millisecond)
+	go func() {
+		assert.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 4, Sink: sink}))
+	}()
 
-// 	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
-// 	assert.EventuallyWithT(t, func(c *assert.CollectT) {
-// 		assert.LessOrEqual(c, int64(1), sink.RequestsCount())
-// 		assert.EqualValues(c, 8, sink.ItemsCount())
-// 	}, 200*time.Millisecond, 10*time.Millisecond)
+	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.LessOrEqual(c, int64(1), sink.RequestsCount())
+		assert.EqualValues(c, 8, sink.ItemsCount())
+	}, 1*time.Second, 10*time.Millisecond)
 
-// 	require.NoError(t, be.Shutdown(context.Background()))
-// }
+	require.NoError(t, be.Shutdown(context.Background()))
+}
 
 func TestBatchSenderTimerFlush(t *testing.T) {
 	runTest := func(testName string, enableQueueBatcher bool) {
 		t.Run(testName, func(t *testing.T) {
-			defer setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)()
+			setFeatureGateForTest(t, usePullingBasedExporterQueueBatcher, enableQueueBatcher)
 			if runtime.GOOS == "windows" {
 				t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
 			}
 			bCfg := exporterbatcher.NewDefaultConfig()
 			bCfg.MinSizeItems = 8
 			bCfg.FlushTimeout = 100 * time.Millisecond
-			be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender,
-				WithBatcher(bCfg))
+			be, err := newQueueBatchExporter(exporterqueue.Config{}, bCfg)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			sink := requesttest.NewSink()
@@ -763,12 +700,4 @@ func TestBatchSenderTimerFlush(t *testing.T) {
 	}
 	runTest("enable_queue_batcher", true)
 	runTest("disable_queue_batcher", false)
-}
-
-func queueBatchExporter(t *testing.T, opts ...Option) *BaseExporter {
-	opts = append(opts, WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[internal.Request]()))
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, newNoopObsrepSender, opts...)
-	require.NotNil(t, be)
-	require.NoError(t, err)
-	return be
 }

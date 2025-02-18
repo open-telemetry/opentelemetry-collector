@@ -2,19 +2,17 @@ module go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/component/componenttest v0.119.0
-	go.opentelemetry.io/collector/consumer v1.25.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
-	go.opentelemetry.io/collector/processor v0.119.0
-	go.opentelemetry.io/collector/processor/processortest v0.119.0
-	go.opentelemetry.io/collector/processor/xprocessor v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
+	go.opentelemetry.io/collector/component/componenttest v0.120.0
+	go.opentelemetry.io/collector/consumer v1.26.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.120.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.120.0
+	go.opentelemetry.io/collector/processor v0.120.0
+	go.opentelemetry.io/collector/processor/processortest v0.120.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.120.0
 )
 
 require (
@@ -28,10 +26,10 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.119.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.119.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.120.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.120.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect

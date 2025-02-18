@@ -78,7 +78,7 @@ func run(ymlPath string) error {
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
 	toGenerate := map[string]string{}
 	if md.Status != nil {
-		if md.Status.Class != "cmd" && md.Status.Class != "pkg" && !md.Status.NotComponent {
+		if md.Status.Class != "cmd" && md.Status.Class != "pkg" {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
 			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {

@@ -2,12 +2,10 @@ module go.opentelemetry.io/collector/pdata/pprofile
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.70.0
 )

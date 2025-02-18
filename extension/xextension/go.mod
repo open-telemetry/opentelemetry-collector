@@ -2,16 +2,14 @@ module go.opentelemetry.io/collector/extension/xextension
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/extension v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
+	go.opentelemetry.io/collector/extension v0.120.0
 )
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
-	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect

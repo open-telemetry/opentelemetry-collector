@@ -2,20 +2,18 @@ module go.opentelemetry.io/collector/connector/xconnector
 
 go 1.23.0
 
-toolchain go1.23.4
-
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/connector v0.119.0
-	go.opentelemetry.io/collector/consumer v1.25.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0
-	go.opentelemetry.io/collector/internal/fanoutconsumer v0.119.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0
-	go.opentelemetry.io/collector/pdata/testdata v0.119.0
-	go.opentelemetry.io/collector/pipeline v0.119.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
+	go.opentelemetry.io/collector/connector v0.120.0
+	go.opentelemetry.io/collector/consumer v1.26.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.120.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.120.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.120.0
+	go.opentelemetry.io/collector/pdata/testdata v0.120.0
+	go.opentelemetry.io/collector/pipeline v0.120.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.120.0
 )
 
 require (
@@ -25,7 +23,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.25.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
