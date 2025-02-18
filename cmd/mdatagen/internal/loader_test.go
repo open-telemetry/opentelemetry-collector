@@ -301,7 +301,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 				},
-				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
+				ScopeName:       "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				ShortFolderName: "sample",
 				Tests:           Tests{Host: "componenttest.NewNopHost()"},
 			},

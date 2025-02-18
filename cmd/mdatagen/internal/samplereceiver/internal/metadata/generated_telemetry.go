@@ -15,11 +15,11 @@ import (
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
-	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/internal/receiver/samplereceiver")
+	return settings.MeterProvider.Meter("go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
-	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/internal/receiver/samplereceiver")
+	return settings.TracerProvider.Tracer("go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver")
 }
 
 // TelemetryBuilder provides an interface for components to report telemetry
