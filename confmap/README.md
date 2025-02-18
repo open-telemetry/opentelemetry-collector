@@ -95,7 +95,7 @@ The `Resolve` method proceeds in the following steps:
 
 #### (Experimental) Append merging strategy for lists
 
-You can opt-in to experimentally combine slices instead of discarding the existing ones by enabling `confmap.enableMergeAppendOption` feature flag. Lists are appended in the order in which they appear in their configuration sources.
+You can opt-in to experimentally combine slices instead of discarding the existing ones by enabling the `confmap.enableMergeAppendOption` feature flag. Lists are appended in the order in which they appear in their configuration sources.
 This will **not** become the default in the future, we are still deciding how this should be configured and want your feedback on [this issue](https://github.com/open-telemetry/opentelemetry-collector/issues/8754).
 
 ##### Example
