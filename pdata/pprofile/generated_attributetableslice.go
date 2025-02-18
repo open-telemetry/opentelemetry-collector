@@ -7,6 +7,8 @@
 package pprofile
 
 import (
+	"iter"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
@@ -52,6 +54,21 @@ func (es AttributeTableSlice) Len() int {
 //	}
 func (es AttributeTableSlice) At(i int) Attribute {
 	return newAttribute(&(*es.orig)[i], es.state)
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es AttributeTableSlice) All() iter.Seq2[int, Attribute] {
+	return func(yield func(int, Attribute) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
