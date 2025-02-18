@@ -7,13 +7,11 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/featuregate"
@@ -125,13 +123,7 @@ func NewQueueSender(
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
-
-		// TODO: move start of span to enqueue instead to dequeue.
-		// Figure out how to preserve span context across persistent storage.
-		ctx, _ = metadata.Tracer(qSet.ExporterSettings.TelemetrySettings).Start(ctx, "exporter/enqueue")
 		err := next.Send(ctx, req)
-		trace.SpanFromContext(ctx).End()
-
 		if err != nil {
 			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(err), zap.Int("dropped_items", itemsCount))
