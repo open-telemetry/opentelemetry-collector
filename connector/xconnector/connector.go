@@ -57,85 +57,23 @@ type Profiles interface {
 // CreateTracesToProfilesFunc is the equivalent of Factory.CreateTracesToProfiles().
 type CreateTracesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Traces, error)
 
-// CreateTracesToProfiles implements Factory.CreateTracesToProfiles().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateTracesToProfilesFunc) CreateTracesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Traces, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateMetricsToProfilesFunc is the equivalent of Factory.CreateMetricsToProfiles().
 type CreateMetricsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Metrics, error)
-
-// CreateMetricsToProfiles implements Factory.CreateMetricsToProfiles().
-func (f CreateMetricsToProfilesFunc) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Metrics, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
 
 // CreateLogsToProfilesFunc is the equivalent of Factory.CreateLogsToProfiles().
 type CreateLogsToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (connector.Logs, error)
 
-// CreateLogsToProfiles implements Factory.CreateLogsToProfiles().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateLogsToProfilesFunc) CreateLogsToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (connector.Logs, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateProfilesToProfilesFunc is the equivalent of Factory.CreateProfilesToProfiles().
 type CreateProfilesToProfilesFunc func(context.Context, connector.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
-
-// CreateProfilesToProfiles implements Factory.CreateProfilesToProfiles().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesToProfilesFunc) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
-	}
-	return f(ctx, set, cfg, next)
-}
 
 // CreateProfilesToTracesFunc is the equivalent of Factory.CreateProfilesToTraces().
 type CreateProfilesToTracesFunc func(context.Context, connector.Settings, component.Config, consumer.Traces) (Profiles, error)
 
-// CreateProfilesToTraces implements Factory.CreateProfilesToTraces().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesToTracesFunc) CreateProfilesToTraces(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Traces) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateProfilesToMetricsFunc is the equivalent of Factory.CreateProfilesToMetrics().
 type CreateProfilesToMetricsFunc func(context.Context, connector.Settings, component.Config, consumer.Metrics) (Profiles, error)
 
-// CreateProfilesToMetrics implements Factory.CreateProfilesToMetrics().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesToMetricsFunc) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Metrics) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateProfilesToLogsFunc is the equivalent of Factory.CreateProfilesToLogs().
 type CreateProfilesToLogsFunc func(context.Context, connector.Settings, component.Config, consumer.Logs) (Profiles, error)
-
-// CreateProfilesToLogs implements Factory.CreateProfilesToLogs().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesToLogsFunc) CreateProfilesToLogs(ctx context.Context, set connector.Settings, cfg component.Config, next consumer.Logs) (Profiles, error) {
-	if f == nil {
-		return nil, internal.ErrDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
-	}
-	return f(ctx, set, cfg, next)
-}
 
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption interface {
