@@ -65,6 +65,13 @@ func TestAddAttribute(t *testing.T) {
 
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
+
+	// Add a duplicate attribute
+	err = AddAttribute(table, mapp, "hello", "world")
+	require.NoError(t, err)
+
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
 }
 
 func BenchmarkFromAttributeIndices(b *testing.B) {
@@ -93,7 +100,7 @@ func BenchmarkAddAttribute(b *testing.B) {
 		key   string
 		value any
 
-		runBefore func(*testing.B, AttributeTableSlice)
+		runBefore func(*testing.B, AttributeTableSlice, attributable)
 	}{
 		{
 			name:  "with a new string attribute",
@@ -105,10 +112,19 @@ func BenchmarkAddAttribute(b *testing.B) {
 			key:   "attribute",
 			value: "test",
 
-			runBefore: func(_ *testing.B, table AttributeTableSlice) {
+			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
 				entry := table.AppendEmpty()
 				entry.SetKey("attribute")
 				entry.Value().SetStr("test")
+			},
+		},
+		{
+			name:  "with a duplicate attribute",
+			key:   "attribute",
+			value: "test",
+
+			runBefore: func(_ *testing.B, table AttributeTableSlice, obj attributable) {
+				require.NoError(b, AddAttribute(table, obj, "attribute", "test"))
 			},
 		},
 		{
@@ -116,7 +132,7 @@ func BenchmarkAddAttribute(b *testing.B) {
 			key:   "attribute",
 			value: "test",
 
-			runBefore: func(_ *testing.B, table AttributeTableSlice) {
+			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
 				for i := range 100 {
 					entry := table.AppendEmpty()
 					entry.SetKey(fmt.Sprintf("attr_%d", i))
@@ -134,7 +150,7 @@ func BenchmarkAddAttribute(b *testing.B) {
 			obj := NewLocation()
 
 			if bb.runBefore != nil {
-				bb.runBefore(b, table)
+				bb.runBefore(b, table, obj)
 			}
 
 			b.ResetTimer()

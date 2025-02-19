@@ -43,6 +43,13 @@ func AddAttribute(table AttributeTableSlice, record attributable, key string, va
 				return fmt.Errorf("Attribute %s=%#v has too high an indice to be added to AttributeIndices", key, value)
 			}
 
+			for j := range record.AttributeIndices().Len() {
+				v := record.AttributeIndices().At(j)
+				if v == int32(i) { //nolint:gosec // overflow checked
+					return nil
+				}
+			}
+
 			record.AttributeIndices().Append(int32(i)) //nolint:gosec // overflow checked
 			return nil
 		}
