@@ -227,7 +227,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	})
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
@@ -250,7 +250,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	pq.initClient(context.Background(), client)
 	return pq
@@ -274,7 +274,7 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		storageID:   component.ID{},
 		marshaler:   uint64Marshaler,
 		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(),
+		set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
@@ -422,7 +422,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				storageID:   component.ID{},
 				marshaler:   uint64Marshaler,
 				unmarshaler: uint64Unmarshaler,
-				set:         exportertest.NewNopSettings(),
+				set:         exportertest.NewNopSettingsWithType(exportertest.NopType),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
@@ -524,7 +524,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	// make a test extension
 	factory := extensiontest.NewNopFactory()
 	extConfig := factory.CreateDefaultConfig()
-	settings := extensiontest.NewNopSettings()
+	settings := extensiontest.NewNopSettingsWithType(factory.Type())
 	extension, err := factory.Create(context.Background(), settings, extConfig)
 	require.NoError(t, err)
 	extensions := map[component.ID]component.Component{
@@ -605,8 +605,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 
 			// Put some items, make sure they are loaded and shutdown the storage...
 			for i := 0; i < 3; i++ {
-				err := ps.Offer(context.Background(), uint64(50))
-				require.NoError(t, err)
+				require.NoError(t, ps.Offer(context.Background(), uint64(50)))
 			}
 			assert.Equal(t, int64(3), ps.Size())
 			require.True(t, consume(ps, func(context.Context, uint64) error {
@@ -652,8 +651,7 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
 	for i := 0; i < 5; i++ {
-		err := ps.Offer(context.Background(), req)
-		require.NoError(t, err)
+		require.NoError(t, ps.Offer(context.Background(), req))
 	}
 
 	requireCurrentlyDispatchedItemsEqual(t, ps, []uint64{})
@@ -712,21 +710,20 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 
 	// Put in items up to capacity
 	for i := 0; i < 5; i++ {
-		err := ps.Offer(context.Background(), req)
-		require.NoError(t, err)
+		require.NoError(t, ps.Offer(context.Background(), req))
 	}
+	require.Equal(t, int64(5), ps.Size())
 
 	require.True(t, consume(ps, func(context.Context, uint64) error {
-		// put one more item in
-		require.NoError(t, ps.Offer(context.Background(), req))
+		// Check that size is still full even when consuming the element.
 		require.Equal(t, int64(5), ps.Size())
 		return experr.NewShutdownErr(nil)
 	}))
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	// Reload with extra capacity to make sure we re-enqueue in-progress items.
-	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 6)
-	require.Equal(t, int64(6), newPs.Size())
+	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 5)
+	require.Equal(t, int64(5), newPs.Size())
 }
 
 func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
@@ -1004,9 +1001,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 			ps := createTestPersistentQueueWithClient(client)
 			client.Reset()
 
-			err := ps.itemDispatchingFinish(context.Background(), 0)
-
-			require.ErrorIs(t, err, tt.expectedError)
+			require.ErrorIs(t, ps.itemDispatchingFinish(context.Background(), 0), tt.expectedError)
 		})
 	}
 }

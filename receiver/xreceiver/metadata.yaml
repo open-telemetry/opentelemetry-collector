@@ -1,7 +1,8 @@
 type: xreceiver
+github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: receiver
+  class: pkg
   codeowners:
     active:
       - mx-psi
