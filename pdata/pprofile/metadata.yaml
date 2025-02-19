@@ -1,4 +1,5 @@
 type: pprofile
+github_project: open-telemetry/opentelemetry-collector
 
 status:
   class: pdata

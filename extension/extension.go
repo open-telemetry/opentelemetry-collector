@@ -31,12 +31,6 @@ type Settings struct {
 // CreateFunc is the equivalent of Factory.Create(...) function.
 type CreateFunc func(context.Context, Settings, component.Config) (Extension, error)
 
-// Create implements Factory.Create.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateFunc) Create(ctx context.Context, set Settings, cfg component.Config) (Extension, error) {
-	return f(ctx, set, cfg)
-}
-
 type Factory interface {
 	component.Factory
 
@@ -87,19 +81,4 @@ func NewFactory(
 		createFunc:              createServiceExtension,
 		extensionStability:      sl,
 	}
-}
-
-// MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
-// It returns a non-nil error when there are factories with duplicate type.
-//
-// Deprecated: [v0.120.0] Use otelcol.MakeFactoryMap[extension.Factory] instead
-func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
-	fMap := map[component.Type]Factory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate extension factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
 }
