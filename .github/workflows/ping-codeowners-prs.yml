@@ -3,8 +3,12 @@ on:
   pull_request_target:
     types: [labeled]
 
+permissions: read-all
+
 jobs:
   ping-owners:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && github.repository_owner == 'open-telemetry' }}
     steps:
