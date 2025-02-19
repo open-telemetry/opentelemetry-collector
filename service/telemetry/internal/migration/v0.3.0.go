@@ -29,7 +29,10 @@ type TracesConfigV030 struct {
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(c); err != nil {
-		var v2TracesConfig tracesConfigV020
+		v2TracesConfig := tracesConfigV020{
+			Level:       c.Level,
+			Propagators: c.Propagators,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v2TracesConfig); e != nil {
 			// error could not be resolved through backwards
@@ -73,7 +76,10 @@ type MetricsConfigV030 struct {
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 metricsConfigV020
+		v02 := metricsConfigV020{
+			Level:   c.Level,
+			Address: c.Address,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards
@@ -180,7 +186,17 @@ type LogsSamplingConfig struct {
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 logsConfigV020
+		v02 := logsConfigV020{
+			Level:             c.Level,
+			Development:       c.Development,
+			Encoding:          c.Encoding,
+			DisableCaller:     c.DisableCaller,
+			DisableStacktrace: c.DisableStacktrace,
+			Sampling:          c.Sampling,
+			OutputPaths:       c.OutputPaths,
+			ErrorOutputPaths:  c.ErrorOutputPaths,
+			InitialFields:     c.InitialFields,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards
