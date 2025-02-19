@@ -69,6 +69,11 @@ type MetricsConfigV030 struct {
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
 	Readers []config.MetricReader `mapstructure:"readers"`
+
+	// Views allows advanced configuration of emitted metrics by setting
+	// the list of views passed to the SDK.
+	// This is incompatible with `level` values other than `detailed`.
+	Views []config.View `mapstructure:"views"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
