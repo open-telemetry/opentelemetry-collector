@@ -158,7 +158,9 @@ func TestZPagesEnableExpvar(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
-		EnableExpvar: true,
+		Expvar: ExpvarConfig{
+			Enabled: true,
+		},
 	}
 
 	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())

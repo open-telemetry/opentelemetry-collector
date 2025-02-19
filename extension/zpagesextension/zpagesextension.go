@@ -58,7 +58,7 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 		zpe.telemetry.Logger.Warn("zPages span processor registration is not available")
 	}
 
-	if zpe.config.EnableExpvar {
+	if zpe.config.Expvar.Enabled {
 		zPagesMux.Handle(path.Join("/debug", expvarzPath), expvar.Handler())
 		zpe.telemetry.Logger.Info("Registered zPages expvar handler")
 	}

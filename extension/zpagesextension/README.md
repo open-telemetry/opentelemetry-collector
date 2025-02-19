@@ -29,7 +29,8 @@ make it available on all network interfaces.
 
 The following settings can be optionally configured:
 
-- `enable_expvar` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
+- `expvar`
+  - `enabled` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
 
 Example:
 ```yaml

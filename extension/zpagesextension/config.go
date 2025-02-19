@@ -14,9 +14,14 @@ import (
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
 
-	// EnableExpvar indicates whether to enable expvar service.
+	Expvar ExpvarConfig `mapstructure:"expvar"`
+}
+
+// ExpvarConfig has the configuration for the expvar service.
+type ExpvarConfig struct {
+	// Enabled indicates whether to enable expvar service.
 	// (default = false)
-	EnableExpvar bool `mapstructure:"enable_expvar"`
+	Enabled bool `mapstructure:"enabled"`
 }
 
 var _ component.Config = (*Config)(nil)
