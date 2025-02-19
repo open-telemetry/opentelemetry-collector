@@ -5,6 +5,7 @@ package exporter // import "go.opentelemetry.io/collector/exporter"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"

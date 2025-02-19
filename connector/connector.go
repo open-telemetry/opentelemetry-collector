@@ -5,6 +5,7 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"

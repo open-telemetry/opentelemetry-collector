@@ -5,6 +5,7 @@ package processor // import "go.opentelemetry.io/collector/processor"
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
