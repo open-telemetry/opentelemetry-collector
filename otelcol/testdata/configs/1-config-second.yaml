@@ -1,0 +1,6 @@
+receivers:
+    foo:
+        key: val
+exporters:
+    foo:
+        key: val

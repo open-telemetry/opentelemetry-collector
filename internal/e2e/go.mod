@@ -249,3 +249,7 @@ replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
