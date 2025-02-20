@@ -19,25 +19,26 @@ import (
 )
 
 type componentWithStability struct {
-	Name      component.Type
-	Module    string
-	Stability map[string]string
+	Name      component.Type    `yaml:"name"`
+	Module    string            `yaml:"module"`
+	Stability map[string]string `yaml:"stability"`
 }
 
 type componentWithoutStability struct {
-	Scheme string
-	Module string
+	Name   string `yaml:"name,omitempty"`
+	Scheme string `yaml:"scheme,omitempty"`
+	Module string `yaml:"module"`
 }
 
 type componentsOutput struct {
-	BuildInfo  component.BuildInfo
-	Receivers  []componentWithStability
-	Processors []componentWithStability
-	Exporters  []componentWithStability
-	Connectors []componentWithStability
-	Extensions []componentWithStability
-	Providers  []componentWithoutStability
-	Converters []componentWithoutStability
+	BuildInfo  component.BuildInfo         `yaml:"build_info"`
+	Receivers  []componentWithStability    `yaml:"receivers"`
+	Processors []componentWithStability    `yaml:"processors"`
+	Exporters  []componentWithStability    `yaml:"exporters"`
+	Connectors []componentWithStability    `yaml:"connectors"`
+	Extensions []componentWithStability    `yaml:"extensions"`
+	Providers  []componentWithoutStability `yaml:"providers"`
+	Converters []componentWithoutStability `yaml:"converters,omitempty"`
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -119,14 +120,14 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 
 			for providerScheme, providerModuleModule := range set.ProviderModules {
 				components.Providers = append(components.Providers, componentWithoutStability{
-					Scheme: providerScheme.String(),
+					Scheme: providerScheme,
 					Module: providerModuleModule,
 				})
 			}
 
-			for converterType, converterModule := range set.ConverterModules {
+			for converterName, converterModule := range set.ConverterModules {
 				components.Converters = append(components.Converters, componentWithoutStability{
-					Scheme: converterType.String(),
+					Name:   converterName,
 					Module: converterModule,
 				})
 			}

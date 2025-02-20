@@ -35,6 +35,4 @@ func NewConverterFactory(f CreateConverterFunc) ConverterFactory {
 type Converter interface {
 	// Convert applies the conversion logic to the given "conf".
 	Convert(ctx context.Context, conf *Conf) error
-	// Type returns the type of the converter.
-	Type() string
 }

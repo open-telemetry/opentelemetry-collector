@@ -600,22 +600,22 @@ func TestProviderAndConverterModules(t *testing.T) {
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
-		ProviderModules: map[component.Type]string{
-			component.MustNewType("nop"): "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+		ProviderModules: map[string]string{
+			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
-		ConverterModules: map[component.Type]string{
-			component.MustNewType("nopconverter"): "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+		ConverterModules: map[string]string{
+			"nopconverter": "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
 		},
 	}
 	col, err := NewCollector(set)
 	require.NoError(t, err)
 	wg := startCollector(context.Background(), t, col)
 	require.NoError(t, err)
-	providerModules := map[component.Type]string{
-		component.MustNewType("nop"): "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+	providerModules := map[string]string{
+		"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 	}
-	converterModules := map[component.Type]string{
-		component.MustNewType("nopconverter"): "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+	converterModules := map[string]string{
+		"nopconverter": "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
 	}
 	assert.Equal(t, providerModules, col.set.ProviderModules)
 	assert.Equal(t, converterModules, col.set.ConverterModules)

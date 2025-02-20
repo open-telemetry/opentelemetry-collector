@@ -106,16 +106,11 @@ func (f *fakeProvider) Shutdown(context.Context) error {
 }
 
 type mockConverter struct {
-	err               error
-	mockConverterType string
+	err error
 }
 
 func (m *mockConverter) Convert(context.Context, *Conf) error {
 	return errors.New("converter_err")
-}
-
-func (m *mockConverter) Type() string {
-	return m.mockConverterType
 }
 
 func TestNewResolverInvalidSchemeInURI(t *testing.T) {
@@ -179,7 +174,7 @@ func TestResolverErrors(t *testing.T) {
 			name:             "converter error",
 			locations:        []string{"mock:"},
 			providers:        []Provider{&mockProvider{}},
-			converters:       []Converter{&mockConverter{err: errors.New("converter_err"), mockConverterType: "mock"}},
+			converters:       []Converter{&mockConverter{err: errors.New("converter_err")}},
 			expectResolveErr: true,
 		},
 		{

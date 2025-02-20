@@ -45,13 +45,13 @@ func main() {
 				DefaultScheme: "{{ .ConfResolver.DefaultURIScheme }}",
 				{{- end }}
 			},
-		}, ProviderModules: map[component.Type]string{
+		}, ProviderModules: map[string]string{
 			{{- range .ConfmapProviders}}
-			component.MustNewType({{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme()): "{{.GoMod}}",
+			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
 			{{- end}}
-    }, ConverterModules: map[component.Type]string{
+    }, ConverterModules: map[string]string{
 		  {{- range .ConfmapConverters}}
-			component.MustNewType({{.Name}}.NewFactory().Create(confmap.ConverterSettings{}).Type()): "{{.GoMod}}",
+			{{.Name}}: "{{.GoMod}}",
 			{{- end}}
 		},
 
