@@ -21,8 +21,8 @@ type ModuleInfo interface {
 
 // ExposeExporters is an interface that may be implemented by the host to provide
 // access to the exporters that were used to build the host.
+// Deprecated: [v0.121.0] Will be removed in Service 1.0.
+// See: https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
 type ExposeExporters interface {
-	// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
-	// Deprecated: [v0.121.0] Will be removed in Service 1.0.
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
