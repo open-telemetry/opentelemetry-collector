@@ -24,8 +24,8 @@ func TestNewBuildSubCommand(t *testing.T) {
 		ProviderModules: map[string]string{
 			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
-		ConverterModules: map[string]string{
-			"nopconverter": "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+		ConverterModules: []string{
+			"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
 		},
 	}
 	cmd := NewCommand(set)

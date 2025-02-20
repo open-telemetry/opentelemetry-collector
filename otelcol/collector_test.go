@@ -603,8 +603,8 @@ func TestProviderAndConverterModules(t *testing.T) {
 		ProviderModules: map[string]string{
 			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 		},
-		ConverterModules: map[string]string{
-			"nopconverter": "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+		ConverterModules: []string{
+			"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
 		},
 	}
 	col, err := NewCollector(set)
@@ -614,8 +614,8 @@ func TestProviderAndConverterModules(t *testing.T) {
 	providerModules := map[string]string{
 		"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
 	}
-	converterModules := map[string]string{
-		"nopconverter": "go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+	converterModules := []string{
+		"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
 	}
 	assert.Equal(t, providerModules, col.set.ProviderModules)
 	assert.Equal(t, converterModules, col.set.ConverterModules)

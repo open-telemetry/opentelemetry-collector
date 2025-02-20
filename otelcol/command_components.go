@@ -19,26 +19,25 @@ import (
 )
 
 type componentWithStability struct {
-	Name      component.Type    `yaml:"name"`
-	Module    string            `yaml:"module"`
-	Stability map[string]string `yaml:"stability"`
+	Name      component.Type
+	Module    string
+	Stability map[string]string
 }
 
 type componentWithoutStability struct {
-	Name   string `yaml:"name,omitempty"`
-	Scheme string `yaml:"scheme,omitempty"`
-	Module string `yaml:"module"`
+	Scheme string `yaml:",omitempty"`
+	Module string
 }
 
 type componentsOutput struct {
-	BuildInfo  component.BuildInfo         `yaml:"build_info"`
-	Receivers  []componentWithStability    `yaml:"receivers"`
-	Processors []componentWithStability    `yaml:"processors"`
-	Exporters  []componentWithStability    `yaml:"exporters"`
-	Connectors []componentWithStability    `yaml:"connectors"`
-	Extensions []componentWithStability    `yaml:"extensions"`
-	Providers  []componentWithoutStability `yaml:"providers"`
-	Converters []componentWithoutStability `yaml:"converters,omitempty"`
+	BuildInfo  component.BuildInfo
+	Receivers  []componentWithStability
+	Processors []componentWithStability
+	Exporters  []componentWithStability
+	Connectors []componentWithStability
+	Extensions []componentWithStability
+	Providers  []componentWithoutStability
+	Converters []componentWithoutStability `yaml:",omitempty"`
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -125,9 +124,8 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 				})
 			}
 
-			for converterName, converterModule := range set.ConverterModules {
+			for _, converterModule := range set.ConverterModules {
 				components.Converters = append(components.Converters, componentWithoutStability{
-					Name:   converterName,
 					Module: converterModule,
 				})
 			}

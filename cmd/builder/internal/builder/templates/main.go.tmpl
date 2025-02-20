@@ -49,9 +49,9 @@ func main() {
 			{{- range .ConfmapProviders}}
 			{{.Name}}.NewFactory().Create(confmap.ProviderSettings{}).Scheme(): "{{.GoMod}}",
 			{{- end}}
-    }, ConverterModules: map[string]string{
+    }, ConverterModules: []string{
 		  {{- range .ConfmapConverters}}
-			{{.Name}}: "{{.GoMod}}",
+			"{{.GoMod}}",
 			{{- end}}
 		},
 
