@@ -9,8 +9,10 @@ import (
 
 type SizerType string
 
-const SizerTypeItems SizerType = "items"
-const SizerTypeBytes SizerType = "bytes"
+const (
+	SizerTypeItems SizerType = "items"
+	SizerTypeBytes SizerType = "bytes"
+)
 
 // UnmarshalText implements TextUnmarshaler interface.
 func (s *SizerType) UnmarshalText(text []byte) error {
