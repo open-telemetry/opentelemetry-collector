@@ -422,9 +422,14 @@ func configureViews(level configtelemetry.Level) []config.View {
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
 			}),
 		)
-	} else if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
-		views = append(views,
-			config.View{
+	}
+
+	// Make sure to add the AttributeKeys view after the AggregationDrop view:
+	// Only the first view outputting a given metric identity is actually used, so placing the
+	// AttributeKeys view first would never drop the metrics regadless of level.
+	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+		views = append(views, []config.View{
+			{
 				Selector: &config.ViewSelector{
 					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
 				},
@@ -438,7 +443,7 @@ func configureViews(level configtelemetry.Level) []config.View {
 					},
 				},
 			},
-			config.View{
+			{
 				Selector: &config.ViewSelector{
 					MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
 				},
@@ -451,7 +456,7 @@ func configureViews(level configtelemetry.Level) []config.View {
 					},
 				},
 			},
-		)
+		}...)
 	}
 
 	// otel-arrow library metrics
