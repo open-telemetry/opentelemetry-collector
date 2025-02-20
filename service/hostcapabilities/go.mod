@@ -75,3 +75,7 @@ replace (
 )
 
 replace go.opentelemetry.io/collector/otelcol => ../../otelcol
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
