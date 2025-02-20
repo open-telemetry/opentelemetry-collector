@@ -28,8 +28,12 @@ type TracesConfigV030 struct {
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v2TracesConfig tracesConfigV020
+		v2TracesConfig := tracesConfigV020{
+			Level:       unmarshaled.Level,
+			Propagators: unmarshaled.Propagators,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v2TracesConfig); e != nil {
 			// error could not be resolved through backwards
@@ -72,8 +76,12 @@ type MetricsConfigV030 struct {
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 metricsConfigV020
+		v02 := metricsConfigV020{
+			Level:   unmarshaled.Level,
+			Address: unmarshaled.Address,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards
@@ -179,8 +187,19 @@ type LogsSamplingConfig struct {
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 logsConfigV020
+		v02 := logsConfigV020{
+			Level:             unmarshaled.Level,
+			Development:       unmarshaled.Development,
+			Encoding:          unmarshaled.Encoding,
+			DisableCaller:     unmarshaled.DisableCaller,
+			DisableStacktrace: unmarshaled.DisableStacktrace,
+			Sampling:          unmarshaled.Sampling,
+			OutputPaths:       unmarshaled.OutputPaths,
+			ErrorOutputPaths:  unmarshaled.ErrorOutputPaths,
+			InitialFields:     unmarshaled.InitialFields,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards

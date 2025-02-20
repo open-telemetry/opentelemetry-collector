@@ -77,10 +77,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
 				Cookies:              &CookiesConfig{Enabled: true},
@@ -98,10 +98,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "none",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -118,10 +118,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -138,10 +138,10 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				},
 				ReadBufferSize:       1024,
 				WriteBufferSize:      512,
-				MaxIdleConns:         &maxIdleConns,
-				MaxIdleConnsPerHost:  &maxIdleConnsPerHost,
-				MaxConnsPerHost:      &maxConnsPerHost,
-				IdleConnTimeout:      &idleConnTimeout,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "gzip",
 				DisableKeepAlives:    true,
 				HTTP2ReadIdleTimeout: idleConnTimeout,
@@ -212,10 +212,10 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			transport := client.Transport.(*http.Transport)
 			assert.EqualValues(t, 1024, transport.ReadBufferSize)
 			assert.EqualValues(t, 512, transport.WriteBufferSize)
-			assert.EqualValues(t, 100, transport.MaxIdleConns)
+			assert.EqualValues(t, 0, transport.MaxIdleConns)
 			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
 			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
-			assert.EqualValues(t, 90*time.Second, transport.IdleConnTimeout)
+			assert.EqualValues(t, 0, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
 		})
 	}
@@ -223,8 +223,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
-	assert.EqualValues(t, 100, *httpClientSettings.MaxIdleConns)
-	assert.EqualValues(t, 90*time.Second, *httpClientSettings.IdleConnTimeout)
+	assert.EqualValues(t, 100, httpClientSettings.MaxIdleConns)
+	assert.EqualValues(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
 }
 
 func TestProxyURL(t *testing.T) {
@@ -1025,6 +1025,41 @@ func TestHttpClientHostHeader(t *testing.T) {
 		_, err = client.Do(req)
 		assert.NoError(t, err)
 	})
+}
+
+func TestHttpTransportOptions(t *testing.T) {
+	settings := componenttest.NewNopTelemetrySettings()
+	// Disable OTel instrumentation so the *http.Transport object is directly accessible
+	settings.MeterProvider = nil
+	settings.TracerProvider = nil
+
+	clientConfig := NewDefaultClientConfig()
+	clientConfig.MaxIdleConns = 100
+	clientConfig.IdleConnTimeout = time.Duration(100)
+	clientConfig.MaxConnsPerHost = 100
+	clientConfig.MaxIdleConnsPerHost = 100
+	client, err := clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	require.NoError(t, err)
+	transport, ok := client.Transport.(*http.Transport)
+	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Equal(t, 100, transport.MaxIdleConns)
+	require.Equal(t, time.Duration(100), transport.IdleConnTimeout)
+	require.Equal(t, 100, transport.MaxConnsPerHost)
+	require.Equal(t, 100, transport.MaxIdleConnsPerHost)
+
+	clientConfig = NewDefaultClientConfig()
+	clientConfig.MaxIdleConns = 0
+	clientConfig.IdleConnTimeout = 0
+	clientConfig.MaxConnsPerHost = 0
+	clientConfig.IdleConnTimeout = time.Duration(0)
+	client, err = clientConfig.ToClient(context.Background(), &mockHost{}, settings)
+	require.NoError(t, err)
+	transport, ok = client.Transport.(*http.Transport)
+	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Equal(t, 0, transport.MaxIdleConns)
+	require.Equal(t, time.Duration(0), transport.IdleConnTimeout)
+	require.Equal(t, 0, transport.MaxConnsPerHost)
+	require.Equal(t, 0, transport.MaxIdleConnsPerHost)
 }
 
 func TestContextWithClient(t *testing.T) {

@@ -1,4 +1,3 @@
-level: "none"
 processors:
   - batch:
       exporter:

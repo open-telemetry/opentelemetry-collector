@@ -7,6 +7,68 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.26.0/v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `configauth`: Remove NewDefaultAuthentication (#12223)
+  The value returned by this function will always cause an error on startup.
+  In `configgrpc.Client/ServerConfig.Auth`, `nil` should be used instead to disable authentication.
+  
+- `otelcol`: Make the `ConfigProvider` interface a struct (#12297)
+  Calls to `NewConfigProvider` will now return `*ConfigProvider`,
+  but will otherwise work the same as before.
+  
+- `extension`: Remove `extension.Settings.ModuleInfo` (#12296)
+  - The functionality is now available as an optional, hidden interface on `service`'s implementation of the `Host`
+  
+- `component`: Remove deprecated field `component.TelemetrySettings.MetricsLevel`. (#11061)
+- `confighttp`: Add `ToClientOption` type and add it to signature of `ToClient` method. (#12353)
+  - This has no use for now, it may be used in the future.
+  
+- `mdatagen`: Remove unused not_component config for mdatagen (#12237)
+
+### 🚩 Deprecations 🚩
+
+- `component/componenttest`: Deprecate CheckReceiverMetrics in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetrics`
+- `component/componenttest`: Deprecate CheckReceiverTraces in componenenttest (#12185)
+  Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverTraces`
+- `component`: Deprecate `ConfigValidator` and `ValidateConfig` (#11524)
+  Please use `Validator` and `Validate` respectively from `xconfmap`.
+- `receiver, scraper, processor, exporter, extension`: Deprecate existing MakeFactoryMap functions in favor of generic implementation (#12222)
+- `extension, connector, processor, receiver, exporter, scraper`: Deprecate `Create*` methods from `Create*Func` types. (#12305)
+- `extensiontest, connectortest, processortest, receivertest, exportertest, scrapertest`: Deprecate `*test.NewNopSettings` in favor of `*test.NewNopSettingsWithType` (#12305)
+
+### 🚀 New components 🚀
+
+- `xconfmap`: Create the xconfmap module and add the `Validator` interface and `Validate` function to facilitate config validation (#11524)
+
+### 💡 Enhancements 💡
+
+- `configgrpc`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `confignet`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `configtls`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `consumer`: Clarify that data cannot be accessed after Consume* func is called. (#12284)
+- `pdata/pprofile`: Introduce aggregation temporality constants (#12253)
+
+### 🧰 Bug fixes 🧰
+
+- `configgrpc`: Apply configured Headers automatically (#12307)
+  configgrpc now calls metadata.AppendToOutgoingContext automatically in an interceptor.
+  Components that were manually using metadata.NewOutgoingContext as a workaround no longer need to
+  do so, unless they are overwriting or adding header keys.
+  
+- `configgrpc`: Set Auth to nil in NewDefaultClientConfig/NewDefaultServerConfig (#12223)
+  The value that was used previously would always cause an error on startup.
+  
+- `exporterqueue`: Fix async queue to propagate cancellation all they way to the queue (#12282)
+- `otlpreceiver`: Fix OTLP http receiver to correctly set Retry-After (#12367)
+- `extension`: Explicitly error out at extension creation time if there is a type mismatch. (#12305)
+
 ## v1.25.0/v0.119.0
 
 ### 🛑 Breaking changes 🛑
