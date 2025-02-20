@@ -140,7 +140,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	var views []config.View
 	if cfg.Telemetry.Metrics.Views != nil {
 		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
-			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with setting views explicitly")
+			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
 		}
 		views = cfg.Telemetry.Metrics.Views
 	} else {

@@ -112,7 +112,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
-		return errors.New("metric views can only be set when level is detailed")
+		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
 	}
 
 	return nil
