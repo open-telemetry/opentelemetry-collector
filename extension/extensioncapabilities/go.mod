@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
+	github.com/goccy/go-yaml v1.15.23 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -28,7 +29,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace go.opentelemetry.io/collector/extension => ../

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/goccy/go-yaml"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
 )
 
 // ProviderSettings are the settings to initialize a Provider.

@@ -3,6 +3,7 @@ module go.opentelemetry.io/collector/otelcol
 go 1.23.0
 
 require (
+	github.com/goccy/go-yaml v1.15.23
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
@@ -30,7 +31,6 @@ require (
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
 	golang.org/x/sys v0.30.0
 	google.golang.org/grpc v1.70.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -115,6 +115,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 replace go.opentelemetry.io/collector => ../
