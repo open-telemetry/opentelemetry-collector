@@ -9,8 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	config "go.opentelemetry.io/contrib/config/v0.3.0"
+
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestUnmarshalLogsConfigV020(t *testing.T) {
