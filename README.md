@@ -163,6 +163,7 @@ Here is a list of community roles with current and previous members:
 - Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
 
   - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+  - [Chao Weng](https://github.com/sincejune), AppDynamics
   - [Damien Mathieu](https://github.com/dmathieu), Elastic
   - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
   - Actively seeking contributors to triage issues
