@@ -5,8 +5,12 @@ on:
       - opened
       - synchronize
 
+permissions: read-all
+
 jobs:
   add-owners-to-pr:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && github.repository_owner == 'open-telemetry' }}
     steps:

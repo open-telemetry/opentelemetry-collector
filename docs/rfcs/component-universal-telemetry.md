@@ -27,7 +27,7 @@ be automatically captured for each kind of pipeline component.
 
 ## Attributes
 
-All signals should use the following attributes:
+Spans, data points, and log records should carry the following attributes:
 
 ### Receivers
 
