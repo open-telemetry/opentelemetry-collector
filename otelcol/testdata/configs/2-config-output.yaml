@@ -1,0 +1,19 @@
+exporters:
+    bar:
+        key: val
+    foo:
+        key: val
+receivers:
+    bar:
+        key: val
+    foo:
+        key: val
+service:
+    pipelines:
+        logs:
+            exporters:
+                - foo
+                - bar
+            receivers:
+                - foo
+                - bar
