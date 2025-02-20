@@ -37,7 +37,7 @@ type logsConfigV020 struct {
 }
 
 func headersV02ToV03(in configv02.Headers) []config.NameStringValuePair {
-	var headers []config.NameStringValuePair
+	headers := make([]config.NameStringValuePair, 0, len(in))
 	for k, v := range in {
 		headers = append(headers, config.NameStringValuePair{
 			Name:  k,
