@@ -245,3 +245,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)        |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
 | 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)      |
+| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                |
