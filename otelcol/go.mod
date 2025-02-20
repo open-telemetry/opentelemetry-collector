@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/collector/processor/processortest v0.120.0
 	go.opentelemetry.io/collector/receiver v0.120.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.120.0
-	go.opentelemetry.io/collector/service v0.119.0
+	go.opentelemetry.io/collector/service v0.120.0
 	go.opentelemetry.io/contrib/config v0.14.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
