@@ -8,7 +8,7 @@ service:
   telemetry:
     metrics:
       level: none
-    logs:
+    traces:
       processors:
       - batch:
           exporter:
