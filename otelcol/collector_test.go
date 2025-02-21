@@ -391,6 +391,7 @@ func TestCollectorRun(t *testing.T) {
 	}{
 		{file: "otelcol-noreaders.yaml"},
 		{file: "otelcol-emptyreaders.yaml"},
+		{file: "otelcol-multipleheaders.yaml"},
 	}
 
 	for _, tt := range tests {

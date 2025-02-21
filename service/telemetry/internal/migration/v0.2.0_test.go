@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/config/v0.3.0"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -58,6 +59,11 @@ func TestUnmarshalMetricsConfigV020(t *testing.T) {
 	require.Len(t, cfg.Readers, 2)
 	// check the endpoint is prefixed w/ http
 	require.Equal(t, "http://127.0.0.1:4317", *cfg.Readers[0].Periodic.Exporter.OTLP.Endpoint)
+	require.ElementsMatch(t, []config.NameStringValuePair{{Name: "key1", Value: ptr("value1")}, {Name: "key2", Value: ptr("value2")}}, cfg.Readers[0].Periodic.Exporter.OTLP.Headers)
 	// ensure defaults set in the original config object are not lost
 	require.Equal(t, configtelemetry.LevelBasic, cfg.Level)
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
