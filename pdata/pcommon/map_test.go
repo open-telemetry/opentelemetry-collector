@@ -324,6 +324,31 @@ func TestMap_Range(t *testing.T) {
 	assert.Empty(t, rawMap)
 }
 
+func TestMap_All(t *testing.T) {
+	rawMap := map[string]any{
+		"k_string": "123",
+		"k_int":    int64(123),
+		"k_double": float64(1.23),
+		"k_bool":   true,
+		"k_empty":  nil,
+	}
+	am := NewMap()
+	require.NoError(t, am.FromRaw(rawMap))
+	assert.Equal(t, 5, am.Len())
+
+	calls := 0
+	for range am.All() {
+		calls++
+	}
+	assert.Equal(t, am.Len(), calls)
+
+	for k, v := range am.All() {
+		assert.Equal(t, rawMap[k], v.AsRaw())
+		delete(rawMap, k)
+	}
+	assert.Empty(t, rawMap)
+}
+
 func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
 	require.NoError(t, am.FromRaw(map[string]any{}))
