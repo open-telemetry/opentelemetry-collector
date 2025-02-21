@@ -261,7 +261,7 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 }
 
 func TestQueueBatcherNoStartShutdown(t *testing.T) {
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = exporterID
 	qSet := exporterqueue.Settings{
 		Signal:           pipeline.SignalTraces,

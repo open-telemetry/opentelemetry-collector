@@ -30,7 +30,7 @@ var (
 	defaultSignal   = pipeline.SignalMetrics
 	defaultID       = component.NewID(defaultType)
 	defaultSettings = func() exporter.Settings {
-		set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+		set := exportertest.NewNopSettings(exportertest.NopType)
 		set.ID = defaultID
 		return set
 	}()
@@ -68,16 +68,16 @@ func TestBaseExporterWithOptions(t *testing.T) {
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
-	bs, err := NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
+	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.NoError(t, err)
 	require.Nil(t, bs.Marshaler)
 	require.Nil(t, bs.Unmarshaler)
-	_, err = NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
 		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 	require.Error(t, err)
 
-	_, err = NewBaseExporter(exportertest.NewNopSettingsWithType(exportertest.NopType), defaultSignal,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
 		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
 		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[request.Request]()))
@@ -85,7 +85,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 }
 
 func TestBaseExporterLogging(t *testing.T) {
-	set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
@@ -151,7 +151,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettingsWithType(exportertest.NopType)
+			set := exportertest.NewNopSettings(exportertest.NopType)
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
 			be, err := NewBaseExporter(set, pipeline.SignalLogs, tt.queueOptions...)
