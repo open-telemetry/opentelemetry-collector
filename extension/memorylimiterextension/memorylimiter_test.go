@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 )
@@ -70,14 +70,20 @@ func TestMemoryPressureResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.GetMemoryFn = func() (uint64, error) {
+				return uint64(2048), nil
+			}
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
 				ms.Alloc = tt.memAlloc
 			}
+			t.Cleanup(func() {
+				memorylimiter.GetMemoryFn = iruntime.TotalMemory
+				memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
+			})
 			ml, err := newMemoryLimiter(tt.mlCfg, zap.NewNop())
 			assert.NoError(t, err)
 
-			assert.NoError(t, ml.Start(ctx, &mockHost{}))
+			assert.NoError(t, ml.Start(ctx, componenttest.NewNopHost()))
 			ml.memLimiter.CheckMemLimits()
 			mustRefuse := ml.MustRefuse()
 			if tt.expectError {
@@ -88,20 +94,4 @@ func TestMemoryPressureResponse(t *testing.T) {
 			assert.NoError(t, ml.Shutdown(ctx))
 		})
 	}
-	t.Cleanup(func() {
-		memorylimiter.GetMemoryFn = iruntime.TotalMemory
-		memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
-	})
-}
-
-type mockHost struct {
-	component.Host
-}
-
-func (h *mockHost) GetExtensions() map[component.ID]component.Component {
-	return make(map[component.ID]component.Component)
-}
-
-func totalMemory() (uint64, error) {
-	return uint64(2048), nil
 }
