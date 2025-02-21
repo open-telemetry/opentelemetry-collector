@@ -69,6 +69,10 @@ github.com/yusufpapurcu/wmi v1.2.4 h1:zFUKzehAFReQwLys1b/iSMl+JQGSCSjtVqQn9bBrPo
 github.com/yusufpapurcu/wmi v1.2.4/go.mod h1:SBZ9tNy3G9/m5Oi98Zks0QjeHVDvuK0qfxQmPyzfmi0=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.120.0 h1:klY22BaRMO1+JmjUu0Af961hpHA5qnOTAVR7tN+UTW8=
+go.opentelemetry.io/collector/pipeline/xpipeline v0.120.0/go.mod h1:K/7Ki7toZQpNV0GF7TbrOEoo8dP3dDXKKSRNnTyEsBE=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.120.0 h1:yO9QPJoYrHM62M1nUZRaAltvTZFQIYpl2V1EfBtOp3E=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.120.0/go.mod h1:ALMYNJNnGvGEiHrbLHzg4xV3Cjs2Y/V2C2capETsRmY=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
 go.opentelemetry.io/otel v1.34.0/go.mod h1:OWFPOQ+h4G8xpyjgqo4SxJYdDQ/qmRH+wivy7zzx9oI=
 go.opentelemetry.io/otel/metric v1.34.0 h1:+eTR3U0MyfWjRDhmFMxe2SsW64QrZ84AOhvqS7Y+PoQ=
