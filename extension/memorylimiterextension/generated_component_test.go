@@ -34,12 +34,12 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
+		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, firstExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
-		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettingsWithType(typ), cfg)
+		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
 		require.NoError(t, secondExt.Start(context.Background(), componenttest.NewNopHost()))
 		require.NoError(t, secondExt.Shutdown(context.Background()))

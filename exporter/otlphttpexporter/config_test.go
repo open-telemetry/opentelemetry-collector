@@ -77,10 +77,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
 				Compression:         "gzip",
-				MaxIdleConns:        &defaultMaxIdleConns,
-				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
-				MaxConnsPerHost:     &defaultMaxConnsPerHost,
-				IdleConnTimeout:     &defaultIdleConnTimeout,
+				MaxIdleConns:        defaultMaxIdleConns,
+				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+				MaxConnsPerHost:     defaultMaxConnsPerHost,
+				IdleConnTimeout:     defaultIdleConnTimeout,
 			},
 		}, cfg)
 }

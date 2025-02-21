@@ -57,7 +57,7 @@ func TestNoDataLoss(t *testing.T) {
 	cfg.MemoryLimitMiB = uint32(ms.Alloc/(1024*1024) + expectedMemoryIncreaseMiB)
 	cfg.MemorySpikeLimitMiB = 1
 
-	set := processortest.NewNopSettingsWithType(metadata.Type)
+	set := processortest.NewNopSettings(metadata.Type)
 
 	limiter, err := newMemoryLimiterProcessor(set, cfg)
 	require.NoError(t, err)
@@ -180,11 +180,11 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettingsWithType(metadata.Type), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			mp, err := processorhelper.NewMetrics(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processMetrics,
@@ -299,11 +299,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettingsWithType(metadata.Type), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewTraces(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processTraces,
@@ -389,11 +389,11 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettingsWithType(metadata.Type), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewLogs(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processLogs,

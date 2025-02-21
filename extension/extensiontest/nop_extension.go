@@ -16,12 +16,16 @@ import (
 // NopType is the type of the nop extension.
 var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for extension.Factory Create* functions.
-// Deprecated: [v0.120.0] Use NewNopSettingsWithType(NopType) instead.
-func NewNopSettings() extension.Settings {
-	return NewNopSettingsWithType(NopType)
+// NewNopSettings returns a new nop settings for extension.Factory Create* functions with the given type.
+func NewNopSettings(typ component.Type) extension.Settings {
+	return extension.Settings{
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
 }
 
+// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
 // NewNopSettings returns a new nop settings for extension.Factory Create* functions with the given type.
 func NewNopSettingsWithType(ty component.Type) extension.Settings {
 	return extension.Settings{

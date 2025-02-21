@@ -19,8 +19,19 @@ type Config struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	SizeConfig `mapstructure:",squash"`
+
+	// Deprecated. Ignored if SizeConfig is set.
 	MinSizeConfig `mapstructure:",squash"`
+	// Deprecated. Ignored if SizeConfig is set.
 	MaxSizeConfig `mapstructure:",squash"`
+}
+
+type SizeConfig struct {
+	Sizer SizerType `mapstructure:"sizer"`
+
+	MinSize int `mapstructure:"mix_size"`
+	MaxSize int `mapstructure:"max_size"`
 }
 
 // MinSizeConfig defines the configuration for the minimum number of items in a batch.
@@ -55,6 +66,19 @@ func (c Config) Validate() error {
 	}
 	if c.FlushTimeout <= 0 {
 		return errors.New("timeout must be greater than zero")
+	}
+	return nil
+}
+
+func (c SizeConfig) Validate() error {
+	if c.MinSize < 0 {
+		return errors.New("min_size must be greater than or equal to zero")
+	}
+	if c.MaxSize < 0 {
+		return errors.New("max_size must be greater than or equal to zero")
+	}
+	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
+		return errors.New("max_size must be greater than or equal to mix_size")
 	}
 	return nil
 }
