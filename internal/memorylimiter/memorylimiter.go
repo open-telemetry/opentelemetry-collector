@@ -13,6 +13,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
@@ -29,7 +33,16 @@ const (
 var (
 	// ErrDataRefused will be returned to callers of ConsumeTraceData to indicate
 	// that data is being refused due to high memory usage.
-	ErrDataRefused = errors.New("data refused due to high memory usage")
+	ErrDataRefused = func() error {
+		st := status.New(codes.ResourceExhausted, "data refused due to high memory usage")
+		dt, err := st.WithDetails(&errdetails.RetryInfo{
+			RetryDelay: durationpb.New(1 * time.Second),
+		})
+		if err != nil {
+			panic(err)
+		}
+		return dt.Err()
+	}()
 
 	// ErrShutdownNotStarted indicates no memorylimiter has not start when shutdown
 	ErrShutdownNotStarted = errors.New("no existing monitoring routine is running")
