@@ -1,7 +1,7 @@
 # Sample metadata file with all available configurations for a receiver.
 
 type: sample
-scope_name: go.opentelemetry.io/collector/internal/receiver/samplereceiver
+scope_name: go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver
 github_project: open-telemetry/opentelemetry-collector
 
 sem_conv_version: 1.9.0
