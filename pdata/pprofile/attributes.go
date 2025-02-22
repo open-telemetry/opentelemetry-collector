@@ -40,7 +40,7 @@ func AddAttribute(table AttributeTableSlice, record attributable, key string, va
 
 		if a.Key() == key && value == a.Value().AsRaw() {
 			if i >= math.MaxInt32 {
-				return fmt.Errorf("Attribute %s=%#v has too high an indice to be added to AttributeIndices", key, value)
+				return fmt.Errorf("Attribute %s=%#v has too high an index to be added to AttributeIndices", key, value)
 			}
 
 			for j := range record.AttributeIndices().Len() {
