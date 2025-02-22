@@ -290,7 +290,7 @@ To record the measurement, you can then call the metric stored in the telemetry
 builder:
 
 ```go
-tsp.telemetry.ProcessorTailsamplingSamplingdecisionLatency.Record(ctx, ...)
+tsp.telemetry.RecordProcessorTailsamplingSamplingdecisionLatency(ctx, ...)
 ```
 
 ## Resource Usage
