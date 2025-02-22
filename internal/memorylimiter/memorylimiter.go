@@ -50,7 +50,7 @@ type MemoryLimiter struct {
 	minGCIntervalWhenHardLimited time.Duration
 	lastGCDone                   time.Time
 
-	// The functions to read the mem values and run GS are set as a reference to help with
+	// The functions to read the mem values and run GC are set as a reference to help with
 	// testing different values.
 	readMemStatsFn func(m *runtime.MemStats)
 	runGCFn        func()
