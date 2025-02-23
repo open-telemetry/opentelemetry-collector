@@ -22,6 +22,11 @@ status:
     stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
     deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
     unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+  # Required for deprecated components: The deprecation information for the components - See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
+  deprecation:
+    <component>:
+      date: string
+      migration: string
   # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
   distributions: [string]
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
