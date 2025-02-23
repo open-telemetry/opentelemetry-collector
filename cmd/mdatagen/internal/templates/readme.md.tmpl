@@ -10,6 +10,12 @@
 | {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ toLowerCase $stability.String }}]{{ if and (ne $class "extension") (ne $class "converter") (ne $class "provider") }}: {{ stringsJoin $value ", " }} {{ end }}  |
 {{- $idx = inc $idx }}
 {{- end }}
+{{- if .Status.Deprecation }}
+{{- range $deprecation, $value := .Status.Deprecation }}
+| Deprecation of {{ toLowerCase $deprecation }} | [Date]: {{ $value.Date }}{{ if and (ne $class "extension") (ne $class "converter") (ne $class "provider") }} {{ end }}  |
+|                      | [Migration Note]: {{ $value.Migration }}{{ if ne $class "extension" }} {{ end }}  |
+{{- end }}
+{{- end }}
 {{- end}}
 {{- if .Status.UnsupportedPlatforms }}
 | Unsupported Platforms | {{ stringsJoin .Status.UnsupportedPlatforms ", " }} |
@@ -33,6 +39,10 @@
 {{- end }}
 {{range $stability, $val := .Status.Stability}}
 [{{ toLowerCase $stability.String }}]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#{{ toLowerCase $stability.String }}
+{{- end }}
+{{- if .Status.Deprecation }}
+[Date]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
+[Migration Note]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#deprecation-information
 {{- end }}
 {{- range .Status.SortedDistributions }}
 [{{.}}]: {{ distroURL . }}

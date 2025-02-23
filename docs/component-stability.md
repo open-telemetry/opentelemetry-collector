@@ -257,6 +257,12 @@ To move within the 'Maintained' ladder ("graduate"), the process for doing so is
 3. If approved, a PR to change the stability level should be opened and MUST be approved by all
    listed code owners.
 
+## Deprecation Information
+
+When a component is moved to deprecated, a deprecation section should indicate the date it was deprecated
+as well as any migration guidance. In some occasions might not be offered migration guidance but reviewers should
+explicitly agree on this, and use a "No migration is offered for this component" hint.
+
 ## Versioning
 
 For a component to be marked as 1.x it MUST be stable for at least one signal.
