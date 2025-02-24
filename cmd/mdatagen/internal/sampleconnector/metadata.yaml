@@ -8,9 +8,7 @@ sem_conv_version: 1.9.0
 status:
   class: connector
   stability:
-    development: [logs]
-    beta: [traces]
-    stable: [metrics]
+    development: [metrics_to_metrics]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:

@@ -18,7 +18,7 @@ func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		metadata.Type,
 		func() component.Config { return &struct{}{} },
-		connector.WithMetricsToMetrics(createMetricsToMetricsConnector, metadata.MetricsStability))
+		connector.WithMetricsToMetrics(createMetricsToMetricsConnector, metadata.MetricsToMetricsStability))
 }
 
 func createMetricsToMetricsConnector(context.Context, connector.Settings, component.Config, consumer.Metrics) (connector.Metrics, error) {
