@@ -9,6 +9,8 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.120.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.120.0
 	go.opentelemetry.io/collector/confmap v1.26.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.25.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.25.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.120.0
 	go.opentelemetry.io/collector/connector v0.120.0
 	go.opentelemetry.io/collector/connector/connectortest v0.120.0
@@ -88,6 +90,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.120.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.0 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.120.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.34.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
@@ -120,6 +123,8 @@ require (
 replace go.opentelemetry.io/collector => ../
 
 replace go.opentelemetry.io/collector/service => ../service
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => ../service/hostcapabilities
 
 replace go.opentelemetry.io/collector/connector => ../connector
 
@@ -208,5 +213,9 @@ replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/ex
 replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
