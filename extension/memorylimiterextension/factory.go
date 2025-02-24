@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/memorylimiterextension/internal/metadata"
+	"go.opentelemetry.io/collector/internal/memorylimiter"
 )
 
 // NewFactory returns a new factory for the Memory Limiter extension.
@@ -25,7 +26,7 @@ func NewFactory() extension.Factory {
 // CreateDefaultConfig creates the default configuration for extension. Notice
 // that the default configuration is expected to fail for this extension.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return memorylimiter.NewDefaultConfig()
 }
 
 func create(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
