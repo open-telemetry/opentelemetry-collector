@@ -50,6 +50,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error {
 	resolverSet := &set.ConfigProviderSettings.ResolverSettings
 	configFlags := getConfigFlag(flags)
+	mergeStrategy := getMergeStrategy(flags)
 
 	if len(configFlags) > 0 {
 		resolverSet.URIs = configFlags
@@ -65,6 +66,8 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.ProviderFactories) == 0 {
 		return errors.New("at least one Provider must be supplied")
 	}
+
+	set.ConfigProviderSettings.ResolverSettings.MergeStrategy = mergeStrategy
 
 	return nil
 }
