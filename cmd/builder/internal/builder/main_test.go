@@ -97,6 +97,7 @@ var replaceModules = []string{
 	"/processor/processortest",
 	"/processor/batchprocessor",
 	"/processor/memorylimiterprocessor",
+	"/processor/processorhelper/xprocessorhelper",
 	"/processor/xprocessor",
 	"/receiver",
 	"/receiver/nopreceiver",
@@ -432,7 +433,7 @@ func verifyGoMod(t *testing.T, dir string, replaceMods map[string]bool) {
 		}
 
 		_, ok := replaceMods[req.Mod.Path]
-		assert.Truef(t, ok, "Module missing from replace statements list: %s", req.Mod.Path)
+		assert.Truef(t, ok, "Module missing from replace statements list: %s. ", req.Mod.Path)
 
 		replaceMods[req.Mod.Path] = true
 	}
