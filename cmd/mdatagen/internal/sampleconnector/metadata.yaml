@@ -1,4 +1,4 @@
-# Sample metadata file with all available configurations for a receiver.
+# Sample metadata file with all available configurations for a connector.
 
 type: sample
 github_project: open-telemetry/opentelemetry-collector

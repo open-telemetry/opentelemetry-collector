@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// NewFactory returns a receiver.Factory for sample receiver.
+// NewFactory returns a connector.Factory for sample connector.
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		metadata.Type,
