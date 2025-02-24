@@ -1,6 +1,0 @@
-type: metric
-
-status:
-  class: provider
-  stability:
-    beta: [provider]

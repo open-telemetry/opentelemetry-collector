@@ -91,14 +91,6 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated: true,
 		},
 		{
-			yml:                 "with_tests_converter.yaml",
-			wantStatusGenerated: true,
-		},
-		{
-			yml:                 "with_tests_provider.yaml",
-			wantStatusGenerated: true,
-		},
-		{
 			yml:                 "with_tests_connector.yaml",
 			wantStatusGenerated: true,
 		},

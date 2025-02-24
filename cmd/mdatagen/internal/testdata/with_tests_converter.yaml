@@ -1,6 +1,0 @@
-type: metric
-
-status:
-  class: converter
-  stability:
-    beta: [converter]
