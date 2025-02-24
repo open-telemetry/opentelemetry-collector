@@ -52,7 +52,7 @@ func flags(reg *featuregate.Registry) *flag.FlagSet {
 
 	strategy := new(mergeStrategy)
 	flagSet.Var(strategy, mergeStrategyFlag, "Merge strategy to be used while merging configurations"+
-		" from multiple sources. This is currently experimental and can be enabled with confmap.enableMergeAppendOption feature gate.")
+		" from multiple sources. This is currently experimental and can be enabled with confmap.enableMergeAppendOption feature gate")
 
 	flagSet.Func("set",
 		"Set arbitrary component config property. The component has to be defined in the config file and the flag"+

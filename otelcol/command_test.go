@@ -81,7 +81,7 @@ func TestAddFlagToSettings(t *testing.T) {
 	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
 
-	require.Equal(t, set.ConfigProviderSettings.ResolverSettings.MergeStrategy, "append")
+	require.Equal(t, "append", set.ConfigProviderSettings.ResolverSettings.MergeStrategy)
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {

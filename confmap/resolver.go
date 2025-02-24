@@ -11,9 +11,10 @@ import (
 	"slices"
 	"strings"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
@@ -102,12 +103,12 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no Providers")
 	}
 
-	if !enableMergeAppendOption.IsEnabled() && set.MergeStrategy != "" {
+	if set.MergeStrategy != "" && !enableMergeAppendOption.IsEnabled() {
 		// merge strategy specified but flag is disabled. Throw error.
-		return nil, errors.New("--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate.")
+		return nil, errors.New("--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate")
 	}
 
-	if slices.Index(supportedMergeStrategies, set.MergeStrategy) == -1 {
+	if set.MergeStrategy != "" && slices.Index(supportedMergeStrategies, set.MergeStrategy) == -1 {
 		// invalid option specified
 		return nil, fmt.Errorf("invalid option provided for --merge-strategy. Only %v options are supported", supportedMergeStrategies)
 	}
