@@ -7,6 +7,8 @@
 package pcommon
 
 import (
+	"iter"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -53,6 +55,17 @@ func (ms ByteSlice) Len() int {
 // Equivalent of byteSlice[i].
 func (ms ByteSlice) At(i int) byte {
 	return (*ms.getOrig())[i]
+}
+
+// All returns an iterator over index-value pairs in the slice.
+func (ms ByteSlice) All() iter.Seq2[int, byte] {
+	return func(yield func(int, byte) bool) {
+		for i := 0; i < ms.Len(); i++ {
+			if !yield(i, ms.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // SetAt sets byte item at particular index.
