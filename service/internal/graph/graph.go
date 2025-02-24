@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -615,9 +616,9 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 }
 
 var (
-	_ getExporters             = (*HostWrapper)(nil)
-	_ component.Host           = (*HostWrapper)(nil)
-	_ componentstatus.Reporter = (*HostWrapper)(nil)
+	_ component.Host                   = (*HostWrapper)(nil)
+	_ componentstatus.Reporter         = (*HostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil)
 )
 
 type HostWrapper struct {
