@@ -30,6 +30,7 @@ body:
       - exporter/x
       - extension/memorylimiter
       - extension/x
+      - extension/x/storage
       - extension/zpages
       - pdata
       - pdata/pprofile
