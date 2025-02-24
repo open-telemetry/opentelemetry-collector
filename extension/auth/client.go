@@ -27,12 +27,12 @@ type Client interface {
 
 // ClientOption represents the possible options for NewClient.
 type ClientOption interface {
-	apply(*defaultClient)
+	apply(*clientOptions)
 }
 
-type clientOptionFunc func(*defaultClient)
+type clientOptionFunc func(*clientOptions)
 
-func (of clientOptionFunc) apply(e *defaultClient) {
+func (of clientOptionFunc) apply(e *clientOptions) {
 	of(e)
 }
 
@@ -56,52 +56,63 @@ func (f ClientPerRPCCredentialsFunc) PerRPCCredentials() (credentials.PerRPCCred
 	return f()
 }
 
-type defaultClient struct {
-	component.StartFunc
-	component.ShutdownFunc
-	ClientRoundTripperFunc
-	ClientPerRPCCredentialsFunc
+type clientOptions struct {
+	componentOptions  []component.Option
+	roundTripper      ClientRoundTripperFunc
+	perRPCCredentials ClientPerRPCCredentialsFunc
 }
 
-// WithClientStart overrides the default `Start` function for a component.Component.
-// The default always returns nil.
-func WithClientStart(startFunc component.StartFunc) ClientOption {
-	return clientOptionFunc(func(o *defaultClient) {
-		o.StartFunc = startFunc
+// WithClientComponentOptions overrides the default component.Component (start/shutdown) functions for a Client.
+// The default functions do nothing and always returns nil.
+func WithClientComponentOptions(option ...component.Option) ClientOption {
+	return clientOptionFunc(func(e *clientOptions) {
+		e.componentOptions = append(e.componentOptions, option...)
 	})
 }
 
-// WithClientShutdown overrides the default `Shutdown` function for a component.Component.
-// The default always returns nil.
-func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
-	return clientOptionFunc(func(o *defaultClient) {
-		o.ShutdownFunc = shutdownFunc
-	})
+// Deprecated: [v0.121.0] use WithClientComponentOptions.
+func WithClientStart(start component.StartFunc) ClientOption {
+	return WithClientComponentOptions(component.WithStartFunc(start))
+}
+
+// Deprecated: [v0.121.0] use WithClientComponentOptions.
+func WithClientShutdown(shutdown component.ShutdownFunc) ClientOption {
+	return WithClientComponentOptions(component.WithShutdownFunc(shutdown))
 }
 
 // WithClientRoundTripper provides a `RoundTripper` function for this client authenticator.
 // The default round tripper is no-op.
 func WithClientRoundTripper(roundTripperFunc ClientRoundTripperFunc) ClientOption {
-	return clientOptionFunc(func(o *defaultClient) {
-		o.ClientRoundTripperFunc = roundTripperFunc
+	return clientOptionFunc(func(o *clientOptions) {
+		o.roundTripper = roundTripperFunc
 	})
 }
 
 // WithClientPerRPCCredentials provides a `PerRPCCredentials` function for this client authenticator.
 // There's no default.
 func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFunc) ClientOption {
-	return clientOptionFunc(func(o *defaultClient) {
-		o.ClientPerRPCCredentialsFunc = perRPCCredentialsFunc
+	return clientOptionFunc(func(o *clientOptions) {
+		o.perRPCCredentials = perRPCCredentialsFunc
 	})
+}
+
+type baseClient struct {
+	component.Component
+	ClientRoundTripperFunc
+	ClientPerRPCCredentialsFunc
 }
 
 // NewClient returns a Client configured with the provided options.
 func NewClient(options ...ClientOption) Client {
-	bc := &defaultClient{}
+	bc := &clientOptions{}
 
 	for _, op := range options {
 		op.apply(bc)
 	}
 
-	return bc
+	return baseClient{
+		Component:                   component.NewComponent(bc.componentOptions...),
+		ClientRoundTripperFunc:      bc.roundTripper,
+		ClientPerRPCCredentialsFunc: bc.perRPCCredentials,
+	}
 }

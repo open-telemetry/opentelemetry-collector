@@ -77,6 +77,41 @@ func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 	return f(ctx)
 }
 
+type baseComponent struct {
+	StartFunc
+	ShutdownFunc
+}
+
+type Option interface {
+	apply(bc *baseComponent)
+}
+
+type optionFunc func(*baseComponent)
+
+func (of optionFunc) apply(bc *baseComponent) {
+	of(bc)
+}
+
+func WithStartFunc(start StartFunc) Option {
+	return optionFunc(func(o *baseComponent) {
+		o.StartFunc = start
+	})
+}
+
+func WithShutdownFunc(shutdown ShutdownFunc) Option {
+	return optionFunc(func(o *baseComponent) {
+		o.ShutdownFunc = shutdown
+	})
+}
+
+func NewComponent(opts ...Option) Component {
+	bc := baseComponent{}
+	for _, opt := range opts {
+		opt.apply(&bc)
+	}
+	return bc
+}
+
 // Kind represents component kinds.
 type Kind struct {
 	name string
