@@ -537,7 +537,7 @@ func TestMergeStrategy(t *testing.T) {
 			ConverterFactories: nil,
 			MergeStrategy:      "append",
 		})
-		require.ErrorContains(t, err, "--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate.")
+		require.ErrorContains(t, err, "--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate")
 	})
 	t.Run("error-gate-disabled", func(t *testing.T) {
 		require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
