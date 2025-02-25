@@ -23,17 +23,17 @@ func TestNewNopFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &struct{}{}, cfg)
 
-	traces, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	traces, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(receivertest.NopType), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
 
-	metrics, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	metrics, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(receivertest.NopType), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, metrics.Shutdown(context.Background()))
 
-	logs, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	logs, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(receivertest.NopType), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	assert.NoError(t, logs.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, logs.Shutdown(context.Background()))

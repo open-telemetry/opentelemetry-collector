@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
@@ -22,6 +24,12 @@ import (
 const (
 	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
 	KeyDelimiter = "::"
+)
+
+const (
+	// MapstructureTag is the struct field tag used to record marshaling/unmarshaling settings.
+	// See https://pkg.go.dev/github.com/go-viper/mapstructure/v2 for supported values.
+	MapstructureTag = "mapstructure"
 )
 
 // New creates a new empty confmap.Conf instance.
@@ -205,7 +213,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
-		TagName:          "mapstructure",
+		TagName:          MapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
@@ -407,7 +415,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 		for i := 0; i < to.Type().NumField(); i++ {
 			// embedded structs passed in via `squash` cannot be pointers. We just check if they are structs:
 			f := to.Type().Field(i)
-			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get("mapstructure"), ","), "squash") {
+			if f.IsExported() && slices.Contains(strings.Split(f.Tag.Get(MapstructureTag), ","), "squash") {
 				if unmarshaler, ok := to.Field(i).Addr().Interface().(Unmarshaler); ok {
 					c := NewFromStringMap(fromAsMap)
 					c.skipTopLevelUnmarshaler = true

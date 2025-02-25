@@ -30,11 +30,9 @@ type TelemetryBuilder struct {
 	registrations                 []metric.Registration
 	BatchSizeTriggerSend          metric.Int64Counter
 	ProcessRuntimeTotalAllocBytes metric.Int64ObservableCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
-	QueueCapacity                        metric.Int64Gauge
-	QueueLength                          metric.Int64ObservableGauge
-	RequestDuration                      metric.Float64Histogram
+	QueueCapacity                 metric.Int64Gauge
+	QueueLength                   metric.Int64ObservableGauge
+	RequestDuration               metric.Float64Histogram
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -46,16 +44,6 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
-}
-
-// Deprecated: [v0.119.0] use RegisterProcessRuntimeTotalAllocBytesCallback.
-func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessRuntimeTotalAllocBytes, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
@@ -71,15 +59,6 @@ func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(c
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
-}
-
-// Deprecated: [v0.119.0] use RegisterQueueLengthCallback.
-func (builder *TelemetryBuilder) InitQueueLength(cb func() int64, opts ...metric.ObserveOption) (metric.Registration, error) {
-	reg, err := builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(builder.QueueLength, cb(), opts...)
-		return nil
-	}, builder.QueueLength)
-	return reg, err
 }
 
 // RegisterQueueLengthCallback sets callback for observable QueueLength metric.
@@ -137,13 +116,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessRuntimeTotalAllocBytes != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
 		"otelcol_queue_capacity",
 		metric.WithDescription("Queue capacity - sync gauge example."),

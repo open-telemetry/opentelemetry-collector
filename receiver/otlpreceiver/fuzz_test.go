@@ -28,7 +28,7 @@ func FuzzReceiverHandlers(f *testing.F) {
 		} else {
 			req.Header.Add("Content-Type", jsonContentType)
 		}
-		set := receivertest.NewNopSettings()
+		set := receivertest.NewNopSettings(receivertest.NopType)
 		set.TelemetrySettings = componenttest.NewNopTelemetrySettings()
 		set.ID = otlpReceiverID
 		cfg := createDefaultConfig().(*Config)

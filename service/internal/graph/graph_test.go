@@ -1649,7 +1649,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [traces/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_traces_metrics.yaml",
@@ -1672,7 +1672,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [traces/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_traces_logs.yaml",
@@ -1695,7 +1695,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [traces/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_traces_profiles.yaml",
@@ -1718,7 +1718,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in traces pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [traces/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_traces.yaml",
@@ -1741,7 +1741,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_metrics.yaml",
@@ -1764,7 +1764,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_logs.yaml",
@@ -1787,7 +1787,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_metrics_profiles.yaml",
@@ -1810,7 +1810,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in metrics pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_traces.yaml",
@@ -1833,7 +1833,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [logs/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_metrics.yaml",
@@ -1856,7 +1856,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [logs/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_logs.yaml",
@@ -1879,7 +1879,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [logs/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_logs_profiles.yaml",
@@ -1902,7 +1902,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in logs pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [logs/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_profiles_traces.yaml",
@@ -1925,7 +1925,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in profiles pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [profiles/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_profiles_metrics.yaml",
@@ -1948,7 +1948,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in profiles pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [profiles/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_profiles_logs.yaml",
@@ -1971,7 +1971,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in profiles pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [profiles/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "not_supported_connector_profiles_profiles.yaml",
@@ -1994,7 +1994,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: "connector \"bf\" used as exporter in profiles pipeline but not used in any supported receiver pipeline",
+			expected: "connector \"bf\" used as exporter in [profiles/in] pipeline but not used in any supported receiver pipeline",
 		},
 		{
 			name: "orphaned-connector-use-as-exporter",
@@ -2013,7 +2013,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewIDWithName("nop", "conn")},
 				},
 			},
-			expected: `connector "nop/conn" used as exporter in metrics pipeline but not used in any supported receiver pipeline`,
+			expected: `connector "nop/conn" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline`,
 		},
 		{
 			name: "orphaned-connector-use-as-receiver",
@@ -2032,7 +2032,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: `connector "nop/conn" used as receiver in traces pipeline but not used in any supported exporter pipeline`,
+			expected: `connector "nop/conn" used as receiver in [traces/out] pipeline but not used in any supported exporter pipeline`,
 		},
 		{
 			name: "partially-orphaned-connector-use-as-exporter",
@@ -2059,7 +2059,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("mockforward")},
 				},
 			},
-			expected: `connector "mockforward" used as exporter in metrics pipeline but not used in any supported receiver pipeline`,
+			expected: `connector "mockforward" used as exporter in [metrics/in] pipeline but not used in any supported receiver pipeline`,
 		},
 		{
 			name: "partially-orphaned-connector-use-as-receiver",
@@ -2086,7 +2086,7 @@ func TestGraphBuildErrors(t *testing.T) {
 					Exporters: []component.ID{component.MustNewID("nop")},
 				},
 			},
-			expected: `connector "mockforward" used as receiver in traces pipeline but not used in any supported exporter pipeline`,
+			expected: `connector "mockforward" used as receiver in [traces/out] pipeline but not used in any supported exporter pipeline`,
 		},
 		{
 			name: "not_allowed_simple_cycle_traces.yaml",
@@ -2231,11 +2231,11 @@ func TestGraphBuildErrors(t *testing.T) {
 				},
 			},
 			expected: `cycle detected: ` +
-				`connector "nop/conn1" (traces to traces) -> ` +
-				`processor "nop" in pipeline "traces/2" -> ` +
 				`connector "nop/conn" (traces to traces) -> ` +
 				`processor "nop" in pipeline "traces/1" -> ` +
-				`connector "nop/conn1" (traces to traces)`,
+				`connector "nop/conn1" (traces to traces) -> ` +
+				`processor "nop" in pipeline "traces/2" -> ` +
+				`connector "nop/conn" (traces to traces)`,
 		},
 		{
 			name: "not_allowed_deep_cycle_metrics.yaml",

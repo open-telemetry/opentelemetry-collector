@@ -1,11 +1,11 @@
 module go.opentelemetry.io/collector/pdata/pprofile
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.25.0
+	go.opentelemetry.io/collector/pdata v1.26.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.70.0
 )
@@ -22,7 +22,7 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

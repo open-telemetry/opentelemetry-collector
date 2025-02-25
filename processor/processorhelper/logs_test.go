@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -27,7 +28,7 @@ import (
 var testLogsCfg = struct{}{}
 
 func TestNewLogs(t *testing.T) {
-	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, lp.Capabilities().MutatesData)
@@ -38,7 +39,7 @@ func TestNewLogs(t *testing.T) {
 
 func TestNewLogs_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -50,19 +51,19 @@ func TestNewLogs_WithOptions(t *testing.T) {
 }
 
 func TestNewLogs_NilRequiredFields(t *testing.T) {
-	_, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), nil)
+	_, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
 func TestNewLogs_ProcessLogError(t *testing.T) {
 	want := errors.New("my_error")
-	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
 
 func TestNewLogs_ProcessLogsErrSkipProcessingData(t *testing.T) {
-	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), newTestLProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), plog.NewLogs()))
 }
@@ -86,7 +87,7 @@ func TestLogsConcurrency(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 	incomingLogRecords.AppendEmpty()
 
-	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), logsFunc)
+	lp, err := NewLogs(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), logsFunc)
 	require.NoError(t, err)
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -121,7 +122,7 @@ func TestLogs_RecordInOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	lp, err := NewLogs(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
@@ -159,7 +160,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 	incomingLogRecords.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
-	lp, err := NewLogs(context.Background(), metadatatest.NewSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
@@ -180,4 +181,10 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+}
+
+func newSettings(tel *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings(component.MustNewType("processorhelper"))
+	set.TelemetrySettings = tel.NewTelemetrySettings()
+	return set
 }

@@ -39,8 +39,8 @@ type testParams struct {
 }
 
 func TestReceiveTraceDataOp(t *testing.T) {
-	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
-		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+		parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -51,7 +51,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
@@ -81,13 +81,31 @@ func TestReceiveTraceDataOp(t *testing.T) {
 				t.Fatalf("unexpected param: %v", params[i])
 			}
 		}
-		require.NoError(t, tt.CheckReceiverTraces(transport, int64(acceptedSpans), int64(refusedSpans)))
+
+		metadatatest.AssertEqualReceiverAcceptedSpans(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedSpans),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedSpans(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedSpans),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
 func TestReceiveLogsOp(t *testing.T) {
-	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
-		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+		parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -98,7 +116,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
 
@@ -129,21 +147,21 @@ func TestReceiveLogsOp(t *testing.T) {
 				t.Fatalf("unexpected param: %v", params[i])
 			}
 		}
-		metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("receiver", receiverID.String()),
-						attribute.String("transport", transport)),
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
 					Value: int64(acceptedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-		metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
-						attribute.String("receiver", receiverID.String()),
-						attribute.String("transport", transport)),
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
 					Value: int64(refusedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -151,8 +169,8 @@ func TestReceiveLogsOp(t *testing.T) {
 }
 
 func TestReceiveMetricsOp(t *testing.T) {
-	testTelemetry(t, receiverID, func(t *testing.T, tt componenttest.TestTelemetry) {
-		parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	testTelemetry(t, func(t *testing.T, tt *componenttest.Telemetry) {
+		parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 		defer parentSpan.End()
 
 		params := []testParams{
@@ -163,7 +181,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			rec, err := newReceiver(ObsReportSettings{
 				ReceiverID:             receiverID,
 				Transport:              transport,
-				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
 
@@ -195,16 +213,32 @@ func TestReceiveMetricsOp(t *testing.T) {
 			}
 		}
 
-		require.NoError(t, tt.CheckReceiverMetrics(transport, int64(acceptedMetricPoints), int64(refusedMetricPoints)))
+		metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedMetricPoints),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
 func TestReceiveWithLongLivedCtx(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	longLivedCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	longLivedCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	params := []testParams{
@@ -218,7 +252,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			ReceiverID:             receiverID,
 			Transport:              transport,
 			LongLivedCtx:           true,
-			ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+			ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		})
 		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
@@ -254,85 +288,109 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 }
 
 func TestCheckReceiverTracesViews(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartTracesOp(context.Background())
 	require.NotNil(t, ctx)
 	rec.EndTracesOp(ctx, format, 7, nil)
 
-	require.NoError(t, tt.CheckReceiverTraces(transport, 7, 0))
-	require.Error(t, tt.CheckReceiverTraces(transport, 7, 7))
-	require.Error(t, tt.CheckReceiverTraces(transport, 0, 0))
-	assert.Error(t, tt.CheckReceiverTraces(transport, 0, 7))
+	metadatatest.AssertEqualReceiverAcceptedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(7),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverMetricsViews(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
 	rec.EndMetricsOp(ctx, format, 7, nil)
 
-	require.NoError(t, tt.CheckReceiverMetrics(transport, 7, 0))
-	require.Error(t, tt.CheckReceiverMetrics(transport, 7, 7))
-	require.Error(t, tt.CheckReceiverMetrics(transport, 0, 0))
-	assert.Error(t, tt.CheckReceiverMetrics(transport, 0, 7))
+	metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(7),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverLogsViews(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	rec, err := NewObsReport(ObsReportSettings{
 		ReceiverID:             receiverID,
 		Transport:              transport,
-		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 	})
 	require.NoError(t, err)
 	ctx := rec.StartLogsOp(context.Background())
 	require.NotNil(t, ctx)
 	rec.EndLogsOp(ctx, format, 7, nil)
 
-	metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt.Telemetry,
+	metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("receiver", receiverID.String()),
-					attribute.String("transport", transport)),
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
-	metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt.Telemetry,
+	metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("receiver", receiverID.String()),
-					attribute.String("transport", transport)),
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
 				Value: int64(0),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
-func testTelemetry(t *testing.T, id component.ID, testFunc func(t *testing.T, tt componenttest.TestTelemetry)) {
-	tt, err := componenttest.SetupTelemetry(id)
-	require.NoError(t, err)
+func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt *componenttest.Telemetry)) {
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	testFunc(t, tt)

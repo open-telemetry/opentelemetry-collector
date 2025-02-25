@@ -24,7 +24,7 @@ import (
 var testProfilesCfg = struct{}{}
 
 func TestNewProfiles(t *testing.T) {
-	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil))
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, pp.Capabilities().MutatesData)
@@ -35,7 +35,7 @@ func TestNewProfiles(t *testing.T) {
 
 func TestNewProfiles_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil),
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -47,19 +47,19 @@ func TestNewProfiles_WithOptions(t *testing.T) {
 }
 
 func TestNewProfiles_NilRequiredFields(t *testing.T) {
-	_, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), nil)
+	_, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
 func TestNewProfiles_ProcessProfileError(t *testing.T) {
 	want := errors.New("my_error")
-	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(want))
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, pp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 }
 
 func TestNewProfiles_ProcessProfilesErrSkipProcessingData(t *testing.T) {
-	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(processorhelper.ErrSkipProcessingData))
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), newTestPProcessor(processorhelper.ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, pp.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
 }
@@ -83,7 +83,7 @@ func TestProfilesConcurrency(t *testing.T) {
 	ps.AppendEmpty()
 	ps.AppendEmpty()
 
-	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(), &testProfilesCfg, consumertest.NewNop(), profilesFunc)
+	pp, err := NewProfiles(context.Background(), processortest.NewNopSettings(processortest.NopType), &testProfilesCfg, consumertest.NewNop(), profilesFunc)
 	require.NoError(t, err)
 	assert.NoError(t, pp.Start(context.Background(), componenttest.NewNopHost()))
 

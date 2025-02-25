@@ -7,14 +7,22 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var _ = featuregate.GlobalRegistry().MustRegister(
+	"exporter.UsePullingBasedExporterQueueBatcher",
+	featuregate.StageStable,
+	featuregate.WithRegisterFromVersion("v0.115.0"),
+	featuregate.WithRegisterToVersion("v0.121.0"),
+	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
 
 // QueueConfig defines configuration for queueing batches before sending to the consumerSender.
@@ -66,37 +74,31 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	queue   exporterqueue.Queue[internal.Request]
+	queue   exporterqueue.Queue[request.Request]
 	batcher component.Component
 }
 
 func NewQueueSender(
-	qf exporterqueue.Factory[internal.Request],
+	qf exporterqueue.Factory[request.Request],
 	qSet exporterqueue.Settings,
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	next Sender[internal.Request],
+	next Sender[request.Request],
 ) (*QueueSender, error) {
-	exportFunc := func(ctx context.Context, req internal.Request) error {
+	exportFunc := func(ctx context.Context, req request.Request) error {
+		// Have to read the number of items before sending the request since the request can
+		// be modified by the downstream components like the batcher.
+		itemsCount := req.ItemsCount()
 		err := next.Send(ctx, req)
 		if err != nil {
 			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-				zap.Error(err), zap.Int("dropped_items", req.ItemsCount()))
+				zap.Error(err), zap.Int("dropped_items", itemsCount))
 		}
 		return err
 	}
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
-		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.Done) {
-			done.OnDone(exportFunc(ctx, req))
-		}))
-		if err != nil {
-			return nil, err
-		}
-		return &QueueSender{queue: q}, nil
-	}
 
-	b, err := queue.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+	b, err := batcher.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
 	if err != nil {
 		return nil, err
 	}
@@ -118,38 +120,19 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return qs.batcher.Start(ctx, host)
-	}
-
-	return nil
+	return qs.batcher.Start(ctx, host)
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
 	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-	err := qs.queue.Shutdown(ctx)
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return errors.Join(err, qs.batcher.Shutdown(ctx))
-	}
-	return err
+	return errors.Join(qs.queue.Shutdown(ctx), qs.batcher.Shutdown(ctx))
 }
 
 // Send implements the requestSender interface. It puts the request in the queue.
-func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
-	// Prevent cancellation and deadline to propagate to the context stored in the queue.
-	// The grpc/http based receivers will cancel the request context after this function returns.
-	c := context.WithoutCancel(ctx)
-
-	span := trace.SpanFromContext(c)
-	if err := qs.queue.Offer(c, req); err != nil {
-		span.AddEvent("Failed to enqueue item.")
-		return err
-	}
-
-	span.AddEvent("Enqueued item.")
-	return nil
+func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
+	return qs.queue.Offer(ctx, req)
 }
 
 type MockHost struct {

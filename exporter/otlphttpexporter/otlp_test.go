@@ -19,7 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-	codes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/otlphttpexporter/internal/metadata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -94,86 +95,116 @@ func TestErrorResponses(t *testing.T) {
 		name           string
 		responseStatus int
 		responseBody   *status.Status
-		err            func(srv *httptest.Server) error
-		isPermErr      bool
+		checkErr       func(t *testing.T, err error, srv *httptest.Server)
 		headers        map[string]string
 	}{
 		{
 			name:           "400",
 			responseStatus: http.StatusBadRequest,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "402",
 			responseStatus: http.StatusPaymentRequired,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "404",
 			responseStatus: http.StatusNotFound,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "405",
 			responseStatus: http.StatusMethodNotAllowed,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "413",
 			responseStatus: http.StatusRequestEntityTooLarge,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "414",
 			responseStatus: http.StatusRequestURITooLong,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "431",
 			responseStatus: http.StatusRequestHeaderFieldsTooLarge,
 			responseBody:   status.New(codes.InvalidArgument, "Bad field"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "429",
 			responseStatus: http.StatusTooManyRequests,
 			responseBody:   status.New(codes.ResourceExhausted, "Quota exceeded"),
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
-					status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").Err(),
-					time.Duration(0)*time.Second)
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").String())
+			},
+		},
+		{
+			name:           "429-Retry-After",
+			responseStatus: http.StatusTooManyRequests,
+			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
+			headers:        map[string]string{"Retry-After": "Mon, 09 Feb 2025 15:04:05 GMT"},
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				// Cannot test for the delay part since it depends on now. Check first part (which has a negative duration) and last part:
+				require.ErrorContains(t, err, "Throttle (-")
+				require.ErrorContains(t, err, "), error: "+status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").String())
+			},
+		},
+		{
+			name:           "429-Retry-After-Malformed",
+			responseStatus: http.StatusTooManyRequests,
+			responseBody:   status.New(codes.InvalidArgument, "Quota exceeded"),
+			headers:        map[string]string{"Retry-After": "Malformed"},
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				// Cannot test for the delay part since it depends on now. Check first part (which has a negative duration) and last part:
+				require.EqualError(t, err, status.New(codes.ResourceExhausted, errMsgPrefix(srv)+"429, Message=Quota exceeded, Details=[]").String())
 			},
 		},
 		{
 			name:           "500",
 			responseStatus: http.StatusInternalServerError,
 			responseBody:   status.New(codes.InvalidArgument, "Internal server error"),
-			isPermErr:      true,
+			checkErr: func(t *testing.T, err error, _ *httptest.Server) {
+				assert.True(t, consumererror.IsPermanent(err))
+			},
 		},
 		{
 			name:           "502",
 			responseStatus: http.StatusBadGateway,
 			responseBody:   status.New(codes.InvalidArgument, "Bad gateway"),
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
-					status.New(codes.Unavailable, errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]").Err(),
-					time.Duration(0)*time.Second)
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, status.New(codes.Unavailable, errMsgPrefix(srv)+"502, Message=Bad gateway, Details=[]").String())
 			},
 		},
 		{
 			name:           "503",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
-					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
-					time.Duration(0)*time.Second)
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").String())
 			},
 		},
 		{
@@ -181,30 +212,26 @@ func TestErrorResponses(t *testing.T) {
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, "Server overloaded"),
 			headers:        map[string]string{"Retry-After": "30"},
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, exporterhelper.NewThrottleRetry(
 					status.New(codes.Unavailable, errMsgPrefix(srv)+"503, Message=Server overloaded, Details=[]").Err(),
-					time.Duration(30)*time.Second)
+					time.Duration(30)*time.Second).Error())
 			},
 		},
 		{
 			name:           "504",
 			responseStatus: http.StatusGatewayTimeout,
 			responseBody:   status.New(codes.InvalidArgument, "Gateway timeout"),
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
-					status.New(codes.Unavailable, errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]").Err(),
-					time.Duration(0)*time.Second)
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, status.New(codes.Unavailable, errMsgPrefix(srv)+"504, Message=Gateway timeout, Details=[]").String())
 			},
 		},
 		{
 			name:           "Bad response payload",
 			responseStatus: http.StatusServiceUnavailable,
 			responseBody:   status.New(codes.InvalidArgument, strings.Repeat("a", maxHTTPResponseReadBytes+1)),
-			err: func(srv *httptest.Server) error {
-				return exporterhelper.NewThrottleRetry(
-					status.New(codes.Unavailable, errMsgPrefix(srv)+"503").Err(),
-					time.Duration(0)*time.Second)
+			checkErr: func(t *testing.T, err error, srv *httptest.Server) {
+				require.EqualError(t, err, status.New(codes.Unavailable, errMsgPrefix(srv)+"503").String())
 			},
 		},
 	}
@@ -231,7 +258,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			// start the exporter
@@ -245,12 +272,7 @@ func TestErrorResponses(t *testing.T) {
 			traces := ptrace.NewTraces()
 			err = exp.ConsumeTraces(context.Background(), traces)
 			require.Error(t, err)
-
-			if test.isPermErr {
-				assert.True(t, consumererror.IsPermanent(err))
-			} else {
-				assert.EqualValues(t, test.err(srv), err)
-			}
+			test.checkErr(t, err, srv)
 		})
 	}
 }
@@ -261,12 +283,11 @@ func TestErrorResponseInvalidResponseBody(t *testing.T) {
 		Body:          io.NopCloser(badReader{}),
 		ContentLength: 100,
 	}
-	status := readResponseStatus(resp)
-	assert.Nil(t, status)
+	assert.Nil(t, readResponseStatus(resp))
 }
 
 func TestUserAgent(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -432,7 +453,7 @@ func TestUserAgent(t *testing.T) {
 
 func TestPartialSuccessInvalidBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	invalidBodyCases := []struct {
@@ -466,7 +487,7 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 
 func TestPartialSuccessUnsupportedContentType(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	unsupportedContentTypeCases := []struct {
@@ -526,7 +547,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 		LogsEndpoint: srv.URL + "/v1/logs",
 		ClientConfig: confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
@@ -551,7 +572,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 
 func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -624,7 +645,7 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 
 func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -677,7 +698,7 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 
 func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -692,7 +713,7 @@ func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 
 func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -797,7 +818,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 		for _, tt := range telemetryTypes {
 			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
 				cfg := createDefaultConfig()
-				set := exportertest.NewNopSettings()
+				set := exportertest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.TelemetrySettings.Logger = zap.New(logger)
 				exp, err := newExporter(cfg, set)
@@ -852,7 +873,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 
 func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -886,7 +907,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 		TracesEndpoint: srv.URL + "/v1/traces",
 		ClientConfig:   confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createTraces(context.Background(), set, cfg)
@@ -926,7 +947,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		MetricsEndpoint: srv.URL + "/v1/metrics",
 		ClientConfig:    confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createMetrics(context.Background(), set, cfg)
@@ -967,7 +988,7 @@ func TestPartialSuccess_profiles(t *testing.T) {
 			Endpoint: srv.URL,
 		},
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createProfiles(context.Background(), set, cfg)
@@ -989,7 +1010,7 @@ func TestPartialSuccess_profiles(t *testing.T) {
 }
 
 func TestEncoding(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 

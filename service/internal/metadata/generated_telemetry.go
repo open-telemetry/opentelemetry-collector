@@ -25,27 +25,15 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter             metric.Meter
-	mu                sync.Mutex
-	registrations     []metric.Registration
-	ProcessCPUSeconds metric.Float64ObservableCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessCPUSeconds func(context.Context, metric.Observer) error
-	ProcessMemoryRss         metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessMemoryRss      func(context.Context, metric.Observer) error
-	ProcessRuntimeHeapAllocBytes metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessRuntimeHeapAllocBytes func(context.Context, metric.Observer) error
-	ProcessRuntimeTotalAllocBytes       metric.Int64ObservableCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessRuntimeTotalAllocBytes func(context.Context, metric.Observer) error
-	ProcessRuntimeTotalSysMemoryBytes    metric.Int64ObservableGauge
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessRuntimeTotalSysMemoryBytes func(context.Context, metric.Observer) error
-	ProcessUptime                            metric.Float64ObservableCounter
-	// TODO: Remove in v0.119.0 when remove deprecated funcs.
-	observeProcessUptime func(context.Context, metric.Observer) error
+	meter                             metric.Meter
+	mu                                sync.Mutex
+	registrations                     []metric.Registration
+	ProcessCPUSeconds                 metric.Float64ObservableCounter
+	ProcessMemoryRss                  metric.Int64ObservableGauge
+	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
+	ProcessRuntimeTotalAllocBytes     metric.Int64ObservableCounter
+	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
+	ProcessUptime                     metric.Float64ObservableCounter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -57,16 +45,6 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
-}
-
-// Deprecated: [v0.119.0] use RegisterProcessCPUSecondsCallback.
-func WithProcessCPUSecondsCallback(cb func() float64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessCPUSeconds = func(_ context.Context, o metric.Observer) error {
-			o.ObserveFloat64(builder.ProcessCPUSeconds, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterProcessCPUSecondsCallback sets callback for observable ProcessCPUSeconds metric.
@@ -84,16 +62,6 @@ func (builder *TelemetryBuilder) RegisterProcessCPUSecondsCallback(cb metric.Flo
 	return nil
 }
 
-// Deprecated: [v0.119.0] use RegisterProcessMemoryRssCallback.
-func WithProcessMemoryRssCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessMemoryRss = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessMemoryRss, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterProcessMemoryRssCallback sets callback for observable ProcessMemoryRss metric.
 func (builder *TelemetryBuilder) RegisterProcessMemoryRssCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -107,16 +75,6 @@ func (builder *TelemetryBuilder) RegisterProcessMemoryRssCallback(cb metric.Int6
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
-}
-
-// Deprecated: [v0.119.0] use RegisterProcessRuntimeHeapAllocBytesCallback.
-func WithProcessRuntimeHeapAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeHeapAllocBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessRuntimeHeapAllocBytes, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterProcessRuntimeHeapAllocBytesCallback sets callback for observable ProcessRuntimeHeapAllocBytes metric.
@@ -134,16 +92,6 @@ func (builder *TelemetryBuilder) RegisterProcessRuntimeHeapAllocBytesCallback(cb
 	return nil
 }
 
-// Deprecated: [v0.119.0] use RegisterProcessRuntimeTotalAllocBytesCallback.
-func WithProcessRuntimeTotalAllocBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalAllocBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessRuntimeTotalAllocBytes, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
 func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -159,16 +107,6 @@ func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(c
 	return nil
 }
 
-// Deprecated: [v0.119.0] use RegisterProcessRuntimeTotalSysMemoryBytesCallback.
-func WithProcessRuntimeTotalSysMemoryBytesCallback(cb func() int64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessRuntimeTotalSysMemoryBytes = func(_ context.Context, o metric.Observer) error {
-			o.ObserveInt64(builder.ProcessRuntimeTotalSysMemoryBytes, cb(), opts...)
-			return nil
-		}
-	})
-}
-
 // RegisterProcessRuntimeTotalSysMemoryBytesCallback sets callback for observable ProcessRuntimeTotalSysMemoryBytes metric.
 func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalSysMemoryBytesCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -182,16 +120,6 @@ func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalSysMemoryBytesCallba
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
-}
-
-// Deprecated: [v0.119.0] use RegisterProcessUptimeCallback.
-func WithProcessUptimeCallback(cb func() float64, opts ...metric.ObserveOption) TelemetryBuilderOption {
-	return telemetryBuilderOptionFunc(func(builder *TelemetryBuilder) {
-		builder.observeProcessUptime = func(_ context.Context, o metric.Observer) error {
-			o.ObserveFloat64(builder.ProcessUptime, cb(), opts...)
-			return nil
-		}
-	})
 }
 
 // RegisterProcessUptimeCallback sets callback for observable ProcessUptime metric.
@@ -253,77 +181,35 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessCPUSeconds != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessCPUSeconds, builder.ProcessCPUSeconds)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
 		"otelcol_process_memory_rss",
 		metric.WithDescription("Total physical memory (resident set size) [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessMemoryRss != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessMemoryRss, builder.ProcessMemoryRss)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
 		"otelcol_process_runtime_heap_alloc_bytes",
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessRuntimeHeapAllocBytes != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeHeapAllocBytes, builder.ProcessRuntimeHeapAllocBytes)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
 		"otelcol_process_runtime_total_alloc_bytes",
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessRuntimeTotalAllocBytes != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalAllocBytes, builder.ProcessRuntimeTotalAllocBytes)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
 		"otelcol_process_runtime_total_sys_memory_bytes",
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessRuntimeTotalSysMemoryBytes != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessRuntimeTotalSysMemoryBytes, builder.ProcessRuntimeTotalSysMemoryBytes)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	builder.ProcessUptime, err = builder.meter.Float64ObservableCounter(
 		"otelcol_process_uptime",
 		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	if builder.observeProcessUptime != nil {
-		reg, err := builder.meter.RegisterCallback(builder.observeProcessUptime, builder.ProcessUptime)
-		errs = errors.Join(errs, err)
-		if err == nil {
-			builder.registrations = append(builder.registrations, reg)
-		}
-	}
 	return &builder, errs
 }

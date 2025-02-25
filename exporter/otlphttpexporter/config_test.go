@@ -12,13 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -28,7 +28,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	// Default/Empty config is invalid.
-	assert.Error(t, component.ValidateConfig(cfg))
+	assert.Error(t, xconfmap.Validate(cfg))
 }
 
 func TestUnmarshalConfig(t *testing.T) {
@@ -77,10 +77,10 @@ func TestUnmarshalConfig(t *testing.T) {
 				WriteBufferSize:     345,
 				Timeout:             time.Second * 10,
 				Compression:         "gzip",
-				MaxIdleConns:        &defaultMaxIdleConns,
-				MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
-				MaxConnsPerHost:     &defaultMaxConnsPerHost,
-				IdleConnTimeout:     &defaultIdleConnTimeout,
+				MaxIdleConns:        defaultMaxIdleConns,
+				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+				MaxConnsPerHost:     defaultMaxConnsPerHost,
+				IdleConnTimeout:     defaultIdleConnTimeout,
 			},
 		}, cfg)
 }

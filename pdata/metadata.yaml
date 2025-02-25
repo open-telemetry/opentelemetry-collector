@@ -1,0 +1,11 @@
+type: pdata
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: pkg
+  codeowners:
+    active:
+      - BogdanDrutu
+      - dmitryax
+  stability:
+    stable: [traces, metrics, logs]

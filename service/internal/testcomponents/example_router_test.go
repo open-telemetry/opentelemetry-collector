@@ -51,7 +51,7 @@ func TestTracesRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Traces: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateTracesToTraces(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
@@ -90,7 +90,7 @@ func TestMetricsRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Metrics: &LeftRightConfig{Left: leftID, Right: rightID}}
 	mr, err := ExampleRouterFactory.CreateMetricsToMetrics(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, mr.Capabilities().MutatesData)
 
@@ -129,7 +129,7 @@ func TestLogsRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Logs: &LeftRightConfig{Left: leftID, Right: rightID}}
 	lr, err := ExampleRouterFactory.CreateLogsToLogs(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, lr.Capabilities().MutatesData)
 
@@ -168,7 +168,7 @@ func TestProfilesRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Profiles: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateProfilesToProfiles(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
