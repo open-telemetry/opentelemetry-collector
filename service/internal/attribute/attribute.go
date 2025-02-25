@@ -9,16 +9,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 const (
-	componentKindKey = "otelcol.component.kind"
-	componentIDKey   = "otelcol.component.id"
-	pipelineIDKey    = "otelcol.pipeline.id"
-	signalKey        = "otelcol.signal"
-	signalOutputKey  = "otelcol.signal.output"
-
 	capabiltiesKind = "capabilities"
 	fanoutKind      = "fanout"
 )
@@ -28,18 +23,18 @@ type Attributes struct {
 	id  int64
 }
 
-func newAttributes(attrs ...attribute.KeyValue) *Attributes {
+func newAttributes(attrs ...attribute.KeyValue) Attributes {
 	h := fnv.New64a()
 	for _, kv := range attrs {
 		h.Write([]byte("(" + string(kv.Key) + "|" + kv.Value.AsString() + ")"))
 	}
-	return &Attributes{
+	return Attributes{
 		set: attribute.NewSet(attrs...),
 		id:  int64(h.Sum64()), // #nosec G115
 	}
 }
 
-func (a Attributes) Attributes() *attribute.Set {
+func (a Attributes) Set() *attribute.Set {
 	return &a.set
 }
 
@@ -47,57 +42,57 @@ func (a Attributes) ID() int64 {
 	return a.id
 }
 
-func Receiver(pipelineType pipeline.Signal, id component.ID) *Attributes {
+func Receiver(pipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, component.KindReceiver.String()),
-		attribute.String(signalKey, pipelineType.String()),
-		attribute.String(componentIDKey, id.String()),
+		attribute.String(componentattribute.ComponentKindKey, component.KindReceiver.String()),
+		attribute.String(componentattribute.SignalKey, pipelineType.String()),
+		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }
 
-func Processor(pipelineID pipeline.ID, id component.ID) *Attributes {
+func Processor(pipelineID pipeline.ID, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, component.KindProcessor.String()),
-		attribute.String(signalKey, pipelineID.Signal().String()),
-		attribute.String(pipelineIDKey, pipelineID.String()),
-		attribute.String(componentIDKey, id.String()),
+		attribute.String(componentattribute.ComponentKindKey, component.KindProcessor.String()),
+		attribute.String(componentattribute.SignalKey, pipelineID.Signal().String()),
+		attribute.String(componentattribute.PipelineIDKey, pipelineID.String()),
+		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }
 
-func Exporter(pipelineType pipeline.Signal, id component.ID) *Attributes {
+func Exporter(pipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, component.KindExporter.String()),
-		attribute.String(signalKey, pipelineType.String()),
-		attribute.String(componentIDKey, id.String()),
+		attribute.String(componentattribute.ComponentKindKey, component.KindExporter.String()),
+		attribute.String(componentattribute.SignalKey, pipelineType.String()),
+		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }
 
-func Connector(exprPipelineType, rcvrPipelineType pipeline.Signal, id component.ID) *Attributes {
+func Connector(exprPipelineType, rcvrPipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, component.KindConnector.String()),
-		attribute.String(signalKey, exprPipelineType.String()),
-		attribute.String(signalOutputKey, rcvrPipelineType.String()),
-		attribute.String(componentIDKey, id.String()),
+		attribute.String(componentattribute.ComponentKindKey, component.KindConnector.String()),
+		attribute.String(componentattribute.SignalKey, exprPipelineType.String()),
+		attribute.String(componentattribute.SignalOutputKey, rcvrPipelineType.String()),
+		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }
 
-func Capabilities(pipelineID pipeline.ID) *Attributes {
+func Extension(id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, capabiltiesKind),
-		attribute.String(pipelineIDKey, pipelineID.String()),
+		attribute.String(componentattribute.ComponentKindKey, component.KindExtension.String()),
+		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }
 
-func Fanout(pipelineID pipeline.ID) *Attributes {
+func Capabilities(pipelineID pipeline.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, fanoutKind),
-		attribute.String(pipelineIDKey, pipelineID.String()),
+		attribute.String(componentattribute.ComponentKindKey, capabiltiesKind),
+		attribute.String(componentattribute.PipelineIDKey, pipelineID.String()),
 	)
 }
 
-func Extension(id component.ID) *Attributes {
+func Fanout(pipelineID pipeline.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentKindKey, component.KindExtension.String()),
-		attribute.String(componentIDKey, id.String()),
+		attribute.String(componentattribute.ComponentKindKey, fanoutKind),
+		attribute.String(componentattribute.PipelineIDKey, pipelineID.String()),
 	)
 }

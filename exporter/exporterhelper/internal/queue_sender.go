@@ -11,16 +11,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var usePullingBasedExporterQueueBatcher = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	"exporter.UsePullingBasedExporterQueueBatcher",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.115.0"),
+	featuregate.WithRegisterToVersion("v0.121.0"),
 	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
 
@@ -73,53 +74,19 @@ func (qCfg *QueueConfig) Validate() error {
 }
 
 type QueueSender struct {
-	queue   exporterqueue.Queue[internal.Request]
+	queue   exporterqueue.Queue[request.Request]
 	batcher component.Component
-	bs      *BatchSender
 }
 
 func NewQueueSender(
-	qf exporterqueue.Factory[internal.Request],
+	qf exporterqueue.Factory[request.Request],
 	qSet exporterqueue.Settings,
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	next Sender[internal.Request],
+	next Sender[request.Request],
 ) (*QueueSender, error) {
-	if !usePullingBasedExporterQueueBatcher.IsEnabled() {
-		concurrencyLimit := int64(0)
-		if qCfg.Enabled {
-			concurrencyLimit = int64(qCfg.NumConsumers)
-		}
-
-		var bs *BatchSender
-		if bCfg.Enabled {
-			bs = NewBatchSender(bCfg, qSet.ExporterSettings, concurrencyLimit, next)
-			next = bs
-		}
-
-		exportFunc := func(ctx context.Context, req internal.Request) error {
-			// Have to read the number of items before sending the request since the request can
-			// be modified by the downstream components like the batcher.
-			itemsCount := req.ItemsCount()
-			err := next.Send(ctx, req)
-			if err != nil {
-				qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-					zap.Error(err), zap.Int("dropped_items", itemsCount))
-			}
-			return err
-		}
-
-		q, err := newObsQueue(qSet, qf(context.Background(), qSet, qCfg, func(ctx context.Context, req internal.Request, done exporterqueue.Done) {
-			done.OnDone(exportFunc(ctx, req))
-		}))
-		if err != nil {
-			return nil, err
-		}
-		return &QueueSender{queue: q, bs: bs}, nil
-	}
-
-	exportFunc := func(ctx context.Context, req internal.Request) error {
+	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
@@ -131,7 +98,7 @@ func NewQueueSender(
 		return err
 	}
 
-	b, err := queue.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+	b, err := batcher.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
 	if err != nil {
 		return nil, err
 	}
@@ -149,43 +116,22 @@ func NewQueueSender(
 
 // Start is invoked during service startup.
 func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
-	if qs.bs != nil {
-		// If no error then start the BatchSender.
-		if err := qs.bs.Start(ctx, host); err != nil {
-			return err
-		}
-	}
-
 	if err := qs.queue.Start(ctx, host); err != nil {
 		return err
 	}
 
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return qs.batcher.Start(ctx, host)
-	}
-
-	return nil
+	return qs.batcher.Start(ctx, host)
 }
 
 // Shutdown is invoked during service shutdown.
 func (qs *QueueSender) Shutdown(ctx context.Context) error {
-	var err error
-	// Then shutdown the batch sender
-	if qs.bs != nil {
-		err = errors.Join(err, qs.bs.Shutdown(ctx))
-	}
-
 	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
-	err = errors.Join(err, qs.queue.Shutdown(ctx))
-	if usePullingBasedExporterQueueBatcher.IsEnabled() {
-		return errors.Join(err, qs.batcher.Shutdown(ctx))
-	}
-	return err
+	return errors.Join(qs.queue.Shutdown(ctx), qs.batcher.Shutdown(ctx))
 }
 
 // Send implements the requestSender interface. It puts the request in the queue.
-func (qs *QueueSender) Send(ctx context.Context, req internal.Request) error {
+func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
 }
 

@@ -9,18 +9,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 )
-
-func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
-	set := receivertest.NewNopSettings()
-	set.ID = component.NewID(component.MustNewType("receiverhelper"))
-	set.TelemetrySettings = tt.NewTelemetrySettings()
-	return set
-}
 
 func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
@@ -116,25 +106,4 @@ func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, 
 	got, err := tt.GetMetric("otelcol_receiver_refused_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
 }

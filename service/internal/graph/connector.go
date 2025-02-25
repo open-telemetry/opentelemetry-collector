@@ -11,21 +11,18 @@ import (
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
-	"go.opentelemetry.io/collector/service/internal/components"
 )
-
-const connectorSeed = "connector"
 
 var _ consumerNode = (*connectorNode)(nil)
 
-// A connector instance connects one pipeline type to one other pipeline type.
-// Therefore, nodeID is derived from "exporter pipeline type", "receiver pipeline type", and "component ID".
 type connectorNode struct {
-	nodeID
+	attribute.Attributes
 	componentID      component.ID
 	exprPipelineType pipeline.Signal
 	rcvrPipelineType pipeline.Signal
@@ -34,7 +31,7 @@ type connectorNode struct {
 
 func newConnectorNode(exprPipelineType, rcvrPipelineType pipeline.Signal, connID component.ID) *connectorNode {
 	return &connectorNode{
-		nodeID:           newNodeID(connectorSeed, connID.String(), exprPipelineType.String(), rcvrPipelineType.String()),
+		Attributes:       attribute.Connector(exprPipelineType, rcvrPipelineType, connID),
 		componentID:      connID,
 		exprPipelineType: exprPipelineType,
 		rcvrPipelineType: rcvrPipelineType,
@@ -52,7 +49,7 @@ func (n *connectorNode) buildComponent(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = components.ConnectorLogger(tel.Logger, n.componentID, n.exprPipelineType, n.rcvrPipelineType)
+	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:

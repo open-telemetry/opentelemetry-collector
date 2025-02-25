@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package attribute
+package attribute_test
 
 import (
 	"testing"
@@ -9,8 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 )
 
 var (
@@ -42,16 +44,16 @@ var (
 func TestReceiver(t *testing.T) {
 	for _, sig := range signals {
 		for _, id := range cIDs {
-			r := Receiver(sig, id)
-			componentKind, ok := r.Attributes().Value(componentKindKey)
+			r := attribute.Receiver(sig, id)
+			componentKind, ok := r.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, component.KindReceiver.String(), componentKind.AsString())
 
-			signal, ok := r.Attributes().Value(signalKey)
+			signal, ok := r.Set().Value(componentattribute.SignalKey)
 			require.True(t, ok)
 			require.Equal(t, sig.String(), signal.AsString())
 
-			componentID, ok := r.Attributes().Value(componentIDKey)
+			componentID, ok := r.Set().Value(componentattribute.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -61,16 +63,16 @@ func TestReceiver(t *testing.T) {
 func TestProcessor(t *testing.T) {
 	for _, pID := range pIDs {
 		for _, id := range cIDs {
-			p := Processor(pID, id)
-			componentKind, ok := p.Attributes().Value(componentKindKey)
+			p := attribute.Processor(pID, id)
+			componentKind, ok := p.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, component.KindProcessor.String(), componentKind.AsString())
 
-			pipelineID, ok := p.Attributes().Value(pipelineIDKey)
+			pipelineID, ok := p.Set().Value(componentattribute.PipelineIDKey)
 			require.True(t, ok)
 			require.Equal(t, pID.String(), pipelineID.AsString())
 
-			componentID, ok := p.Attributes().Value(componentIDKey)
+			componentID, ok := p.Set().Value(componentattribute.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -80,16 +82,16 @@ func TestProcessor(t *testing.T) {
 func TestExporter(t *testing.T) {
 	for _, sig := range signals {
 		for _, id := range cIDs {
-			e := Exporter(sig, id)
-			componentKind, ok := e.Attributes().Value(componentKindKey)
+			e := attribute.Exporter(sig, id)
+			componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
 			require.Equal(t, component.KindExporter.String(), componentKind.AsString())
 
-			signal, ok := e.Attributes().Value(signalKey)
+			signal, ok := e.Set().Value(componentattribute.SignalKey)
 			require.True(t, ok)
 			require.Equal(t, sig.String(), signal.AsString())
 
-			componentID, ok := e.Attributes().Value(componentIDKey)
+			componentID, ok := e.Set().Value(componentattribute.ComponentIDKey)
 			require.True(t, ok)
 			require.Equal(t, id.String(), componentID.AsString())
 		}
@@ -100,20 +102,20 @@ func TestConnector(t *testing.T) {
 	for _, exprSig := range signals {
 		for _, rcvrSig := range signals {
 			for _, id := range cIDs {
-				c := Connector(exprSig, rcvrSig, id)
-				componentKind, ok := c.Attributes().Value(componentKindKey)
+				c := attribute.Connector(exprSig, rcvrSig, id)
+				componentKind, ok := c.Set().Value(componentattribute.ComponentKindKey)
 				require.True(t, ok)
 				require.Equal(t, component.KindConnector.String(), componentKind.AsString())
 
-				signal, ok := c.Attributes().Value(signalKey)
+				signal, ok := c.Set().Value(componentattribute.SignalKey)
 				require.True(t, ok)
 				require.Equal(t, exprSig.String(), signal.AsString())
 
-				signalOutput, ok := c.Attributes().Value(signalOutputKey)
+				signalOutput, ok := c.Set().Value(componentattribute.SignalOutputKey)
 				require.True(t, ok)
 				require.Equal(t, rcvrSig.String(), signalOutput.AsString())
 
-				componentID, ok := c.Attributes().Value(componentIDKey)
+				componentID, ok := c.Set().Value(componentattribute.ComponentIDKey)
 				require.True(t, ok)
 				require.Equal(t, id.String(), componentID.AsString())
 			}
@@ -122,8 +124,8 @@ func TestConnector(t *testing.T) {
 }
 
 func TestExtension(t *testing.T) {
-	e := Extension(component.MustNewID("foo"))
-	componentKind, ok := e.Attributes().Value(componentKindKey)
+	e := attribute.Extension(component.MustNewID("foo"))
+	componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
 	require.True(t, ok)
 	require.Equal(t, component.KindExtension.String(), componentKind.AsString())
 }
@@ -137,36 +139,38 @@ func TestSetEquality(t *testing.T) {
 		for j, ej := range setJ {
 			if i == j {
 				require.Equal(t, ei.ID(), ej.ID())
-				require.True(t, ei.Attributes().Equals(ej.Attributes()))
+				si, sj := ei.Set(), ej.Set()
+				require.True(t, si.Equals(sj))
 			} else {
 				require.NotEqual(t, ei.ID(), ej.ID())
-				require.False(t, ei.Attributes().Equals(ej.Attributes()))
+				si, sj := ei.Set(), ej.Set()
+				require.False(t, si.Equals(sj))
 			}
 		}
 	}
 }
 
-func createExampleSets() []*Attributes {
-	sets := []*Attributes{}
+func createExampleSets() []attribute.Attributes {
+	sets := []attribute.Attributes{}
 
 	// Receiver examples.
 	for _, sig := range signals {
 		for _, id := range cIDs {
-			sets = append(sets, Receiver(sig, id))
+			sets = append(sets, attribute.Receiver(sig, id))
 		}
 	}
 
 	// Processor examples.
 	for _, pID := range pIDs {
 		for _, cID := range cIDs {
-			sets = append(sets, Processor(pID, cID))
+			sets = append(sets, attribute.Processor(pID, cID))
 		}
 	}
 
 	// Exporter examples.
 	for _, sig := range signals {
 		for _, id := range cIDs {
-			sets = append(sets, Exporter(sig, id))
+			sets = append(sets, attribute.Exporter(sig, id))
 		}
 	}
 
@@ -174,19 +178,19 @@ func createExampleSets() []*Attributes {
 	for _, exprSig := range signals {
 		for _, rcvrSig := range signals {
 			for _, id := range cIDs {
-				sets = append(sets, Connector(exprSig, rcvrSig, id))
+				sets = append(sets, attribute.Connector(exprSig, rcvrSig, id))
 			}
 		}
 	}
 
 	// Capabilities examples.
 	for _, pID := range pIDs {
-		sets = append(sets, Capabilities(pID))
+		sets = append(sets, attribute.Capabilities(pID))
 	}
 
 	// Fanout examples.
 	for _, pID := range pIDs {
-		sets = append(sets, Fanout(pID))
+		sets = append(sets, attribute.Fanout(pID))
 	}
 
 	return sets

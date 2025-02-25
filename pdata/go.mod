@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/pdata
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
@@ -9,7 +9,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 )
 
 require (

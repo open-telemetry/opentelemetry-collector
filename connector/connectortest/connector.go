@@ -17,12 +17,22 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 )
 
-var nopType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create* functions.
-func NewNopSettings() connector.Settings {
+// NewNopSettings returns a new nop settings for Create* functions with the given type.
+func NewNopSettings(typ component.Type) connector.Settings {
 	return connector.Settings{
-		ID:                component.NewIDWithName(nopType, uuid.NewString()),
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		BuildInfo:         component.NewDefaultBuildInfo(),
+	}
+}
+
+// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
+// NewNopSettingsWithType returns a new nop settings for Create* functions with the given type.
+func NewNopSettingsWithType(typ component.Type) connector.Settings {
+	return connector.Settings{
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -33,7 +43,7 @@ type nopConfig struct{}
 // NewNopFactory returns a connector.Factory that constructs nop processors.
 func NewNopFactory() connector.Factory {
 	return xconnector.NewFactory(
-		nopType,
+		NopType,
 		func() component.Config {
 			return &nopConfig{}
 		},

@@ -38,14 +38,6 @@ type Profiles interface {
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles().
 type CreateProfilesFunc func(context.Context, processor.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
-// CreateProfiles implements Factory.CreateProfiles.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // FactoryOption apply changes to ReceiverOptions.
 type FactoryOption interface {
 	// applyOption applies the option.
@@ -61,12 +53,19 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts) {
 
 type factory struct {
 	processor.Factory
-	CreateProfilesFunc
+	createProfilesFunc     CreateProfilesFunc
 	profilesStabilityLevel component.StabilityLevel
 }
 
 func (f factory) ProfilesStability() component.StabilityLevel {
 	return f.profilesStabilityLevel
+}
+
+func (f factory) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
+	if f.createProfilesFunc == nil {
+		return nil, pipeline.ErrSignalNotSupported
+	}
+	return f.createProfilesFunc(ctx, set, cfg, next)
 }
 
 type factoryOpts struct {
@@ -99,7 +98,7 @@ func WithLogs(createLogs processor.CreateLogsFunc, sl component.StabilityLevel) 
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts) {
 		o.profilesStabilityLevel = sl
-		o.CreateProfilesFunc = createProfiles
+		o.createProfilesFunc = createProfiles
 	})
 }
 

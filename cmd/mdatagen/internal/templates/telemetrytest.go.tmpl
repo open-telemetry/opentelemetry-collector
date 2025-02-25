@@ -22,7 +22,7 @@ import (
 
 {{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 func NewSettings(tt *componenttest.Telemetry) {{ .Status.Class }}.Settings {
-set := {{ .Status.Class }}test.NewNopSettings()
+set := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
 set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
 set.TelemetrySettings = tt.NewTelemetrySettings()
 return set
@@ -52,24 +52,3 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 }
 
 {{- end }}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
-}

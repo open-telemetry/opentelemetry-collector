@@ -17,9 +17,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -42,7 +42,7 @@ func (fq *fakeQueue[T]) Offer(context.Context, T) error {
 	return fq.offerErr
 }
 
-func newFakeQueue[T internal.Request](offerErr error, size, capacity int64) exporterqueue.Queue[T] {
+func newFakeQueue[T request.Request](offerErr error, size, capacity int64) exporterqueue.Queue[T] {
 	return &fakeQueue[T]{offerErr: offerErr, size: size, capacity: capacity}
 }
 
@@ -50,10 +50,10 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalLogs,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](nil, 7, 9))
+	}, newFakeQueue[request.Request](nil, 7, 9))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2}))
 	metadatatest.AssertEqualExporterQueueSize(t, tt,
@@ -80,10 +80,10 @@ func TestObsQueueLogsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalLogs,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](errors.New("my error"), 7, 9))
+	}, newFakeQueue[request.Request](errors.New("my error"), 7, 9))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2}))
 	metadatatest.AssertEqualExporterEnqueueFailedLogRecords(t, tt,
@@ -100,10 +100,10 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalTraces,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](nil, 17, 19))
+	}, newFakeQueue[request.Request](nil, 17, 19))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12}))
 	metadatatest.AssertEqualExporterQueueSize(t, tt,
@@ -130,10 +130,10 @@ func TestObsQueueTracesFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalTraces,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](errors.New("my error"), 0, 0))
+	}, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12}))
 	metadatatest.AssertEqualExporterEnqueueFailedSpans(t, tt,
@@ -150,10 +150,10 @@ func TestObsQueueMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalMetrics,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](nil, 27, 29))
+	}, newFakeQueue[request.Request](nil, 27, 29))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
 	metadatatest.AssertEqualExporterQueueSize(t, tt,
@@ -180,10 +180,10 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[internal.Request](exporterqueue.Settings{
+	te, err := newObsQueue[request.Request](exporterqueue.Settings{
 		Signal:           pipeline.SignalMetrics,
 		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-	}, newFakeQueue[internal.Request](errors.New("my error"), 0, 0))
+	}, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
 	metadatatest.AssertEqualExporterEnqueueFailedMetricPoints(t, tt,

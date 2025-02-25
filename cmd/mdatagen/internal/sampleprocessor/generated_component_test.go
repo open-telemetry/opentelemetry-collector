@@ -22,8 +22,10 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
+var typ = component.MustNewType("sample")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "sample", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -69,13 +71,13 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			err = c.Start(context.Background(), host)

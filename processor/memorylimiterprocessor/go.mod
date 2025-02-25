@@ -1,25 +1,27 @@
 module go.opentelemetry.io/collector/processor/memorylimiterprocessor
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/component/componenttest v0.119.0
-	go.opentelemetry.io/collector/confmap v1.25.0
-	go.opentelemetry.io/collector/consumer v1.25.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.119.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.119.0
-	go.opentelemetry.io/collector/internal/memorylimiter v0.119.0
-	go.opentelemetry.io/collector/pdata v1.25.0
-	go.opentelemetry.io/collector/pipeline v0.119.0
-	go.opentelemetry.io/collector/processor v0.119.0
-	go.opentelemetry.io/collector/processor/processortest v0.119.0
+	go.opentelemetry.io/collector/component v0.120.0
+	go.opentelemetry.io/collector/component/componenttest v0.120.0
+	go.opentelemetry.io/collector/confmap v1.26.0
+	go.opentelemetry.io/collector/consumer v1.26.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.120.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.120.0
+	go.opentelemetry.io/collector/internal/memorylimiter v0.120.0
+	go.opentelemetry.io/collector/internal/telemetry v0.120.0
+	go.opentelemetry.io/collector/pdata v1.26.0
+	go.opentelemetry.io/collector/pipeline v0.120.0
+	go.opentelemetry.io/collector/processor v0.120.0
+	go.opentelemetry.io/collector/processor/processortest v0.120.0
 	go.opentelemetry.io/otel v1.34.0
 	go.opentelemetry.io/otel/metric v1.34.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0
 	go.opentelemetry.io/otel/trace v1.34.0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -47,20 +49,19 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.119.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.119.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.119.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.119.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.120.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.120.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.120.0 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.120.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.4 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -98,5 +99,7 @@ replace go.opentelemetry.io/collector/processor/xprocessor => ../xprocessor
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/internal/memorylimiter => ../../internal/memorylimiter
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror

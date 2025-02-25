@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
@@ -37,7 +38,10 @@ func TestCreate(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err := factory.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(factory.Type())
+
+	tp, err := factory.Create(context.Background(), set, cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started

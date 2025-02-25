@@ -29,8 +29,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -55,7 +55,7 @@ func TestProfilesRequest(t *testing.T) {
 }
 
 func TestProfilesExporter_InvalidName(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), nil, newPushProfilesData(nil))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushProfilesData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilConfig, err)
 }
@@ -73,20 +73,20 @@ func TestProfilesRequestExporter_NilLogger(t *testing.T) {
 }
 
 func TestProfilesExporter_NilPushProfilesData(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, nil)
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushProfileData, err)
 }
 
 func TestProfilesRequestExporter_NilProfilesConverter(t *testing.T) {
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(), nil)
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilProfilesConverter, err)
 }
 
 func TestProfilesExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -98,7 +98,7 @@ func TestProfilesExporter_Default(t *testing.T) {
 
 func TestProfilesRequestExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		requestFromProfilesFunc(nil))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
@@ -111,7 +111,7 @@ func TestProfilesRequestExporter_Default(t *testing.T) {
 
 func TestProfilesExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithCapabilities(capabilities))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -120,7 +120,7 @@ func TestProfilesExporter_WithCapabilities(t *testing.T) {
 
 func TestProfilesRequestExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		requestFromProfilesFunc(nil), exporterhelper.WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
@@ -131,7 +131,7 @@ func TestProfilesRequestExporter_WithCapabilities(t *testing.T) {
 func TestProfilesExporter_Default_ReturnError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("my_error")
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(want))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeProfiles(context.Background(), ld))
@@ -140,7 +140,7 @@ func TestProfilesExporter_Default_ReturnError(t *testing.T) {
 func TestProfilesRequestExporter_Default_ConvertError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("convert_error")
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		func(context.Context, pprofile.Profiles) (exporterhelper.Request, error) {
 			return nil, want
 		})
@@ -152,7 +152,7 @@ func TestProfilesRequestExporter_Default_ConvertError(t *testing.T) {
 func TestProfilesRequestExporter_Default_ExportError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("export_error")
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		requestFromProfilesFunc(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
@@ -165,7 +165,7 @@ func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
 	qCfg.StorageID = &storageID
 	rCfg := configretry.NewDefaultBackOffConfig()
 	ts := consumertest.ProfilesSink{}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_profiles", "with_persistent_queue")
 	te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithRetry(rCfg), exporterhelper.WithQueue(qCfg))
 	require.NoError(t, err)
@@ -184,7 +184,7 @@ func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
 }
 
 func TestProfilesExporter_WithSpan(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -197,7 +197,7 @@ func TestProfilesExporter_WithSpan(t *testing.T) {
 }
 
 func TestProfilesRequestExporter_WithSpan(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -210,7 +210,7 @@ func TestProfilesRequestExporter_WithSpan(t *testing.T) {
 }
 
 func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -224,7 +224,7 @@ func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
 }
 
 func TestProfilesRequestExporter_WithSpan_ReturnError(t *testing.T) {
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	sr := new(tracetest.SpanRecorder)
 	set.TracerProvider = sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(sr))
 	otel.SetTracerProvider(set.TracerProvider)
@@ -241,7 +241,7 @@ func TestProfilesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -253,7 +253,7 @@ func TestProfilesRequestExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		requestFromProfilesFunc(nil), exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
@@ -266,7 +266,7 @@ func TestProfilesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
+	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -277,7 +277,7 @@ func TestProfilesRequestExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(),
+	le, err := NewProfilesRequestExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
 		requestFromProfilesFunc(nil), exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	require.NoError(t, err)

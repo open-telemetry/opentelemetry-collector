@@ -559,13 +559,12 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newGRPCReceiver(t, tt.TelemetrySettings(), addr, sink)
+	recv := newGRPCReceiver(t, tt.NewTelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -640,13 +639,12 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	td := testdata.GenerateTraces(1)
 
-	tt, err := componenttest.SetupTelemetry(otlpReceiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
-	recv := newHTTPReceiver(t, tt.TelemetrySettings(), addr, sink)
+	recv := newHTTPReceiver(t, tt.NewTelemetrySettings(), addr, sink)
 	require.NotNil(t, recv)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -705,7 +703,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -774,7 +772,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	// TLS is resolved during Start for HTTP.
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		cfg,
 		consumertest.NewNop())
 	require.NoError(t, err)
@@ -840,7 +838,7 @@ func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 }
 
 func newReceiver(t *testing.T, settings component.TelemetrySettings, cfg *Config, id component.ID, c consumertest.Consumer) component.Component {
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	set.TelemetrySettings = settings
 	set.ID = id
 	r, err := newOtlpReceiver(cfg, &set)
@@ -1017,7 +1015,7 @@ func TestShutdown(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 	cfg.HTTP.Endpoint = endpointHTTP
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(receivertest.NopType)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
@@ -1235,7 +1233,7 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	}
 }
 
-func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,

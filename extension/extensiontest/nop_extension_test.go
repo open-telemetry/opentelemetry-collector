@@ -21,7 +21,7 @@ func TestNewNopFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &nopConfig{}, cfg)
 
-	traces, err := factory.Create(context.Background(), NewNopSettings(), cfg)
+	traces, err := factory.Create(context.Background(), NewNopSettings(NopType), cfg)
 	require.NoError(t, err)
 	assert.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, traces.Shutdown(context.Background()))
