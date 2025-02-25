@@ -64,7 +64,7 @@ require (
 	go.opentelemetry.io/collector/client v1.26.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.26.0 // indirect
 	go.opentelemetry.io/collector/extension v0.120.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.120.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
@@ -104,7 +104,7 @@ replace go.opentelemetry.io/collector/confmap/xconfmap => ../../confmap/xconfmap
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -141,4 +141,4 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
