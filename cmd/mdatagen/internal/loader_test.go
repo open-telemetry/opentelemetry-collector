@@ -346,6 +346,23 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
+			name: "testdata/extra_fields.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Status: &Status{
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"traces_to_traces"},
+					},
+					Distributions: nil,
+					Class:         "connector",
+				},
+			},
+		},
+		{
 			name: "testdata/no_value_type.yaml",
 			want: Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +

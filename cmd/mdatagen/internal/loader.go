@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
@@ -38,7 +39,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	}
 
 	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "componenttest.NewNopHost()"}}
-	if err = conf.Unmarshal(&md); err != nil {
+	if err = conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 	if md.ScopeName == "" {

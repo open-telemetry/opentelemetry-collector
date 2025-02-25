@@ -1,0 +1,7 @@
+type: test
+extra: extra field that is not read
+status:
+  class: connector
+  extra: extra field that is not read
+  stability:
+    beta: [traces_to_traces]
