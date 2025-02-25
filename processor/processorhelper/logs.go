@@ -21,8 +21,7 @@ import (
 type ProcessLogsFunc func(context.Context, plog.Logs) (plog.Logs, error)
 
 type logs struct {
-	component.StartFunc
-	component.ShutdownFunc
+	component.Component
 	consumer.Logs
 }
 
@@ -70,8 +69,7 @@ func NewLogs(
 	}
 
 	return &logs{
-		StartFunc:    bs.StartFunc,
-		ShutdownFunc: bs.ShutdownFunc,
-		Logs:         logsConsumer,
+		Component: component.NewComponent(bs.componentOptions...),
+		Logs:      logsConsumer,
 	}, nil
 }

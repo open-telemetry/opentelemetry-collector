@@ -21,8 +21,7 @@ import (
 type ProcessMetricsFunc func(context.Context, pmetric.Metrics) (pmetric.Metrics, error)
 
 type metrics struct {
-	component.StartFunc
-	component.ShutdownFunc
+	component.Component
 	consumer.Metrics
 }
 
@@ -70,8 +69,7 @@ func NewMetrics(
 	}
 
 	return &metrics{
-		StartFunc:    bs.StartFunc,
-		ShutdownFunc: bs.ShutdownFunc,
-		Metrics:      metricsConsumer,
+		Component: component.NewComponent(bs.componentOptions...),
+		Metrics:   metricsConsumer,
 	}, nil
 }

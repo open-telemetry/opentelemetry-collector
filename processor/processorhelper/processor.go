@@ -32,20 +32,22 @@ func (of optionFunc) apply(e *baseSettings) {
 	of(e)
 }
 
-// WithStart overrides the default Start function for an processor.
-// The default shutdown function does nothing and always returns nil.
-func WithStart(start component.StartFunc) Option {
-	return optionFunc(func(o *baseSettings) {
-		o.StartFunc = start
+// WithComponentOptions overrides the default component (start/shutdown) functions for a processor.
+// The default functions do nothing and always returns nil.
+func WithComponentOptions(option ...component.Option) Option {
+	return optionFunc(func(e *baseSettings) {
+		e.componentOptions = append(e.componentOptions, option...)
 	})
 }
 
-// WithShutdown overrides the default Shutdown function for an processor.
-// The default shutdown function does nothing and always returns nil.
+// Deprecated: [v0.121.0] use WithComponentOptions.
+func WithStart(start component.StartFunc) Option {
+	return WithComponentOptions(component.WithStartFunc(start))
+}
+
+// Deprecated: [v0.121.0] use WithComponentOptions.
 func WithShutdown(shutdown component.ShutdownFunc) Option {
-	return optionFunc(func(o *baseSettings) {
-		o.ShutdownFunc = shutdown
-	})
+	return WithComponentOptions(component.WithShutdownFunc(shutdown))
 }
 
 // WithCapabilities overrides the default GetCapabilities function for an processor.
@@ -57,9 +59,8 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 }
 
 type baseSettings struct {
-	component.StartFunc
-	component.ShutdownFunc
-	consumerOptions []consumer.Option
+	componentOptions []component.Option
+	consumerOptions  []consumer.Option
 }
 
 // fromOptions returns the internal settings starting from the default and applying all options.
