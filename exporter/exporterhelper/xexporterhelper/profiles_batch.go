@@ -13,7 +13,7 @@ import (
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	if r2 != nil {
 		req2, ok := r2.(*profilesRequest)
 		if !ok {
@@ -23,7 +23,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Ma
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSizeItems == 0 {
+	if cfg.MaxSize == 0 {
 		return []exporterhelper.Request{req}, nil
 	}
 	return req.split(cfg)
@@ -35,10 +35,10 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest) {
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
 }
 
-func (req *profilesRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) split(cfg exporterbatcher.SizeConfig) ([]exporterhelper.Request, error) {
 	var res []exporterhelper.Request
-	for req.ItemsCount() > cfg.MaxSizeItems {
-		pd := extractProfiles(req.pd, cfg.MaxSizeItems)
+	for req.ItemsCount() > cfg.MaxSize {
+		pd := extractProfiles(req.pd, cfg.MaxSize)
 		size := pd.SampleCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
 		res = append(res, &profilesRequest{pd: pd, pusher: req.pusher, cachedItemsCount: size})

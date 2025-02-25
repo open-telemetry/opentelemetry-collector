@@ -285,7 +285,7 @@ func TestQueueBatcher_Merge(t *testing.T) {
 			name: "split_disabled",
 			batchCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSizeItems = 10
+				cfg.MinSize = 10
 				cfg.FlushTimeout = 100 * time.Millisecond
 				return cfg
 			}(),
@@ -294,9 +294,9 @@ func TestQueueBatcher_Merge(t *testing.T) {
 			name: "split_high_limit",
 			batchCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSizeItems = 10
+				cfg.MinSize = 10
 				cfg.FlushTimeout = 100 * time.Millisecond
-				cfg.MaxSizeItems = 1000
+				cfg.MaxSize = 1000
 				return cfg
 			}(),
 		},
@@ -353,7 +353,7 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 			name: "merge_only",
 			batchCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSizeItems = 10
+				cfg.MinSize = 10
 				return cfg
 			}(),
 		},
@@ -361,8 +361,8 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 			name: "merge_without_split_triggered",
 			batchCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSizeItems = 10
-				cfg.MaxSizeItems = 200
+				cfg.MinSize = 10
+				cfg.MaxSize = 200
 				return cfg
 			}(),
 		},
@@ -370,8 +370,8 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 			name: "merge_with_split_triggered",
 			batchCfg: func() exporterbatcher.Config {
 				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSizeItems = 10
-				cfg.MaxSizeItems = 20
+				cfg.MinSize = 10
+				cfg.MaxSize = 20
 				return cfg
 			}(),
 			expectedRequests: 1,
@@ -410,8 +410,8 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 
 func TestQueueBatcher_MergeOrSplit(t *testing.T) {
 	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSizeItems = 5
-	batchCfg.MaxSizeItems = 10
+	batchCfg.MinSize = 5
+	batchCfg.MaxSize = 10
 	batchCfg.FlushTimeout = 100 * time.Millisecond
 	be, err := newQueueBatcherExporter(exporterqueue.NewDefaultConfig(), batchCfg)
 	require.NoError(t, err)
@@ -446,7 +446,7 @@ func TestQueueBatcher_MergeOrSplit(t *testing.T) {
 
 func TestQueueBatcher_Shutdown(t *testing.T) {
 	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSizeItems = 10
+	batchCfg.MinSize = 10
 	be, err := newQueueBatcherExporter(exporterqueue.NewDefaultConfig(), batchCfg)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -466,7 +466,7 @@ func TestQueueBatcher_Shutdown(t *testing.T) {
 
 func TestQueueBatcher_BatchBlocking(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 3
+	bCfg.MinSize = 3
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -493,7 +493,7 @@ func TestQueueBatcher_BatchBlocking(t *testing.T) {
 // Validate that the batch is cancelled once the first request in the request is cancelled
 func TestQueueBatcher_BatchCancelled(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 2
+	bCfg.MinSize = 2
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -525,7 +525,7 @@ func TestQueueBatcher_BatchCancelled(t *testing.T) {
 
 func TestQueueBatcher_DrainActiveRequests(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 2
+	bCfg.MinSize = 2
 
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)
@@ -564,7 +564,7 @@ func TestQueueBatcherUnstartedShutdown(t *testing.T) {
 
 func TestQueueBatcherWithTimeout(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 10
+	bCfg.MinSize = 10
 
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)
@@ -605,7 +605,7 @@ func TestQueueBatcherWithTimeout(t *testing.T) {
 
 func TestQueueBatcherTimerResetNoConflict(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 8
+	bCfg.MinSize = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)
@@ -635,7 +635,7 @@ func TestQueueBatcherTimerFlush(t *testing.T) {
 		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
 	}
 	bCfg := exporterbatcher.NewDefaultConfig()
-	bCfg.MinSizeItems = 8
+	bCfg.MinSize = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
 	be, err := newQueueBatcherExporter(exporterqueue.Config{}, bCfg)
 	require.NoError(t, err)

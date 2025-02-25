@@ -7,20 +7,21 @@ import (
 	"fmt"
 )
 
-type SizerType string
+type SizerType struct {
+	val string
+}
 
 const (
-	SizerTypeItems SizerType = "items"
-	SizerTypeBytes SizerType = "bytes"
+	sizerTypeItems = "items"
 )
+
+var SizerTypeItems = SizerType{val: sizerTypeItems}
 
 // UnmarshalText implements TextUnmarshaler interface.
 func (s *SizerType) UnmarshalText(text []byte) error {
 	switch str := string(text); str {
-	case string(SizerTypeItems):
+	case sizerTypeItems:
 		*s = SizerTypeItems
-	case string(SizerTypeBytes):
-		*s = SizerTypeBytes
 	default:
 		return fmt.Errorf("invalid sizer: %q", str)
 	}
