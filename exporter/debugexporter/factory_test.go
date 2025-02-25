@@ -26,7 +26,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	me, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 }
@@ -35,7 +35,7 @@ func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -44,7 +44,7 @@ func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -53,7 +53,7 @@ func TestCreateFactoryProfiles(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, te)
 }

@@ -5,7 +5,6 @@ package exporter // import "go.opentelemetry.io/collector/exporter"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -93,38 +92,11 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
 type CreateTracesFunc func(context.Context, Settings, component.Config) (Traces, error)
 
-// CreateTraces implements Factory.CreateTraces.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config) (Traces, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg)
-}
-
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, Settings, component.Config) (Metrics, error)
 
-// CreateMetrics implements Factory.CreateMetrics.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config) (Metrics, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg)
-}
-
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config) (Logs, error)
-
-// CreateLogs implements Factory.CreateLogs.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config) (Logs, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg)
-}
 
 type factory struct {
 	cfgType component.Type
@@ -213,17 +185,4 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 		opt.applyOption(f)
 	}
 	return f
-}
-
-// MakeFactoryMap takes a list of factories and returns a map with Factory type as keys.
-// It returns a non-nil error when there are factories with duplicate type.
-func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
-	fMap := map[component.Type]Factory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate exporter factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
 }

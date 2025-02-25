@@ -22,7 +22,7 @@ import (
 
 {{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
 func NewSettings(tt *componenttest.Telemetry) {{ .Status.Class }}.Settings {
-set := {{ .Status.Class }}test.NewNopSettings()
+set := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
 set.ID = component.NewID(component.MustNewType("{{ .Type }}"))
 set.TelemetrySettings = tt.NewTelemetrySettings()
 return set

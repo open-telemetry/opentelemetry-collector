@@ -530,7 +530,7 @@ func TestSingleLogsScraperPerInterval(t *testing.T) {
 
 	recv, err := NewLogsController(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.LogsSink),
 		addLogsScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
@@ -573,7 +573,7 @@ func TestSingleMetricsScraperPerInterval(t *testing.T) {
 
 	recv, err := NewMetricsController(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
 		AddScraper(component.MustNewType("scraper"), scp),
 		WithTickerChannel(tickerCh),
@@ -618,7 +618,7 @@ func TestLogsScraperControllerStartsOnInit(t *testing.T) {
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.LogsSink),
 		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
@@ -645,7 +645,7 @@ func TestMetricsScraperControllerStartsOnInit(t *testing.T) {
 			CollectionInterval: time.Hour,
 			InitialDelay:       0,
 		},
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
 		AddScraper(component.MustNewType("scraper"), scp),
 	)
@@ -681,7 +681,7 @@ func TestLogsScraperControllerInitialDelay(t *testing.T) {
 
 	r, err := NewLogsController(
 		&cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.LogsSink),
 		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
@@ -720,7 +720,7 @@ func TestMetricsScraperControllerInitialDelay(t *testing.T) {
 
 	r, err := NewMetricsController(
 		&cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
 		AddScraper(component.MustNewType("scraper"), scp),
 	)
@@ -750,7 +750,7 @@ func TestLogsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 
 	r, err := NewLogsController(
 		&cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.LogsSink),
 		addLogsScraper(component.MustNewType("scraper"), scp),
 	)
@@ -784,7 +784,7 @@ func TestMetricsScraperShutdownBeforeScrapeCanStart(t *testing.T) {
 
 	r, err := NewMetricsController(
 		&cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(receivertest.NopType),
 		new(consumertest.MetricsSink),
 		AddScraper(component.MustNewType("scraper"), scp),
 	)
