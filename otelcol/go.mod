@@ -168,7 +168,7 @@ replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
 
-replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../extension/extensionauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
 
@@ -210,7 +210,7 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fan
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
 
