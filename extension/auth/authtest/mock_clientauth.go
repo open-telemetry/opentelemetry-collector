@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package authtest // import "go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+package authtest // import "go.opentelemetry.io/collector/extension/auth/authtest"
 
 import (
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
