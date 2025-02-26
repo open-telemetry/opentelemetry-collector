@@ -70,6 +70,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 		}
 	}
 
+	//nolint: staticcheck
+	if be.batcherCfg.MinSizeItems != nil || be.batcherCfg.MaxSizeItems != nil {
+		set.Logger.Warn("Using of deprecated fields `min_size_items` and `max_size_items`")
+	}
+
 	// Consumer Sender is always initialized.
 	be.firstSender = newSender(func(ctx context.Context, req request.Request) error {
 		return req.Export(ctx)
