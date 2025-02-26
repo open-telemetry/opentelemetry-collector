@@ -5,8 +5,6 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
 	"reflect"
-
-	"github.com/knadh/koanf/maps"
 )
 
 func mergeAppend(src, dest map[string]any) error {
@@ -15,23 +13,11 @@ func mergeAppend(src, dest map[string]any) error {
 	// This function does not overwrite lists, and ensures that the final value is a name-aware
 	// copy of lists from src and dest.
 
-	// First, merge the src and dest config maps
-	mergeMaps(src, dest)
-
-	// Second, unflatten the new config
-	src = maps.Unflatten(src, KeyDelimiter)
-
-	// merge rest of the config.
-	maps.Merge(src, dest)
-	return nil
-}
-
-func mergeMaps(src, dest map[string]any) {
-	for dKey, dVal := range dest {
-		sVal, sOk := src[dKey]
-		if !sOk {
-			// old key is not present in new config. Hence, add it to src
-			src[dKey] = dVal
+	for sKey, sVal := range src {
+		dVal, dOk := dest[sKey]
+		if !dOk {
+			// key is not present in destination config. Hence, add it to destination map
+			dest[sKey] = sVal
 			continue
 		}
 
@@ -39,19 +25,25 @@ func mergeMaps(src, dest map[string]any) {
 		destVal := reflect.ValueOf(dVal)
 
 		if destVal.Kind() != srcVal.Kind() {
-			// different kinds, maps.Merge will override the old config
+			// different kinds. Override the destination map
+			dest[sKey] = sVal
 			continue
 		}
 
 		switch srcVal.Kind() {
 		case reflect.Array, reflect.Slice:
 			// both of them are array. Merge them
-			src[dKey] = mergeSlice(srcVal, destVal)
+			dest[sKey] = mergeSlice(srcVal, destVal)
 		case reflect.Map:
-			// both of them are maps. Recursively call the mergeMaps
-			mergeMaps(sVal.(map[string]any), dVal.(map[string]any))
+			// both of them are maps. Recursively call the mergeAppend
+			mergeAppend(sVal.(map[string]any), dVal.(map[string]any))
+		default:
+			// any other datatype. Override the destination map
+			dest[sKey] = sVal
 		}
 	}
+
+	return nil
 }
 
 func mergeSlice(src, dest reflect.Value) any {
