@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -25,16 +26,16 @@ var (
 )
 
 type logsRequest struct {
-	ld               plog.Logs
-	pusher           consumer.ConsumeLogsFunc
-	cachedItemsCount int
+	ld         plog.Logs
+	pusher     consumer.ConsumeLogsFunc
+	cachedSize int
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
-		ld:               ld,
-		pusher:           pusher,
-		cachedItemsCount: ld.LogRecordCount(),
+		ld:         ld,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -65,11 +66,18 @@ func (req *logsRequest) Export(ctx context.Context) error {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *logsRequest) Size(sizer sizer.LogsSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.LogsSize(req.ld)
+	}
+	return req.cachedSize
+}
+
+func (req *logsRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type logsExporter struct {
