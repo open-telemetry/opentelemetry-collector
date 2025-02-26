@@ -39,8 +39,9 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = true
 			cfg.FlushTimeout = 0
-			cfg.MinSizeConfig = exporterbatcher.MinSizeConfig{
-				MinSizeItems: 0,
+			cfg.SizeConfig = exporterbatcher.SizeConfig{
+				Sizer:   exporterbatcher.SizerTypeItems,
+				MinSize: 0,
 			}
 
 			ba, err := NewBatcher(cfg,
@@ -89,8 +90,9 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = true
 			cfg.FlushTimeout = 0
-			cfg.MinSizeConfig = exporterbatcher.MinSizeConfig{
-				MinSizeItems: 10,
+			cfg.SizeConfig = exporterbatcher.SizeConfig{
+				Sizer:   exporterbatcher.SizerTypeItems,
+				MinSize: 10,
 			}
 
 			ba, err := NewBatcher(cfg,
@@ -154,8 +156,9 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = true
 			cfg.FlushTimeout = 50 * time.Millisecond
-			cfg.MinSizeConfig = exporterbatcher.MinSizeConfig{
-				MinSizeItems: 100,
+			cfg.SizeConfig = exporterbatcher.SizeConfig{
+				Sizer:   exporterbatcher.SizerTypeItems,
+				MinSize: 100,
 			}
 
 			ba, err := NewBatcher(cfg,
@@ -211,11 +214,10 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = true
 			cfg.FlushTimeout = 0
-			cfg.MinSizeConfig = exporterbatcher.MinSizeConfig{
-				MinSizeItems: 100,
-			}
-			cfg.MaxSizeConfig = exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 100,
+			cfg.SizeConfig = exporterbatcher.SizeConfig{
+				Sizer:   exporterbatcher.SizerTypeItems,
+				MinSize: 100,
+				MaxSize: 100,
 			}
 
 			ba, err := NewBatcher(cfg,
@@ -264,7 +266,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 
 func TestDefaultBatcher_Shutdown(t *testing.T) {
 	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSizeItems = 10
+	batchCfg.MinSize = 10
 	batchCfg.FlushTimeout = 100 * time.Second
 
 	ba, err := NewBatcher(batchCfg,
@@ -293,8 +295,8 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 
 func TestDefaultBatcher_MergeError(t *testing.T) {
 	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSizeItems = 5
-	batchCfg.MaxSizeItems = 7
+	batchCfg.MinSize = 5
+	batchCfg.MaxSize = 7
 
 	ba, err := NewBatcher(batchCfg,
 		func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
