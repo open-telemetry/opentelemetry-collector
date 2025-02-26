@@ -168,33 +168,18 @@ func buildModuleInfo(m map[component.Type]string) map[component.Type]service.Mod
 	return moduleInfo
 }
 
-// setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
-// sets the col.service with the service currently running.
-func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
-	col.setCollectorState(StateStarting)
-
-	factories, err := col.set.Factories()
-	if err != nil {
-		return fmt.Errorf("failed to initialize factories: %w", err)
-	}
-	cfg, err := col.configProvider.Get(ctx, factories)
-	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
-	}
-
-	if err = xconfmap.Validate(cfg); err != nil {
-		return fmt.Errorf("invalid configuration: %w", err)
-	}
-
+// createService initializes a new service instance using the provided configuration and factories.
+// Returns the service or an error if marshaling or service creation fails.
+func (col *Collector) createService(ctx context.Context, cfg *Config, factories Factories) (*service.Service, error) {
 	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
 
-	if err = conf.Marshal(cfg); err != nil {
-		return fmt.Errorf("could not marshal configuration: %w", err)
+	if err := conf.Marshal(cfg); err != nil {
+		return nil, fmt.Errorf("could not marshal configuration: %w", err)
 	}
 
-	col.service, err = service.New(ctx, service.Settings{
+	return service.New(ctx, service.Settings{
 		BuildInfo:     col.set.BuildInfo,
 		CollectorConf: conf,
 
@@ -219,6 +204,27 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 		AsyncErrorChannel: col.asyncErrorChannel,
 		LoggingOptions:    col.set.LoggingOptions,
 	}, cfg.Service)
+}
+
+// setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
+// sets the col.service with the service currently running.
+func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+	col.setCollectorState(StateStarting)
+
+	factories, err := col.set.Factories()
+	if err != nil {
+		return fmt.Errorf("failed to initialize factories: %w", err)
+	}
+	cfg, err := col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return fmt.Errorf("failed to get config: %w", err)
+	}
+
+	if err = xconfmap.Validate(cfg); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	col.service, err = col.createService(ctx, cfg, factories)
 	if err != nil {
 		return err
 	}
@@ -272,7 +278,12 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return xconfmap.Validate(cfg)
+	if err = xconfmap.Validate(cfg); err != nil {
+		return err
+	}
+
+	_, err = col.createService(ctx, cfg, factories)
+	return err
 }
 
 func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {

@@ -462,6 +462,14 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
+		"invalid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-connector-use.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
 	}
 
 	for name, test := range tests {
@@ -474,6 +482,58 @@ func TestCollectorDryRun(t *testing.T) {
 				require.NoError(t, err)
 			} else {
 				require.EqualError(t, err, test.expectedErr)
+			}
+		})
+	}
+}
+
+func TestCreateService(t *testing.T) {
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-connector-use.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
+		"valid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-valid-connector-use.yaml")}),
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			factories, err := nopFactories()
+			require.NoError(t, err)
+
+			cfg, err := col.configProvider.Get(ctx, factories)
+			require.NoError(t, err)
+
+			svc, err := col.createService(ctx, cfg, factories)
+
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				require.NotNil(t, svc)
+				defer func() {
+					require.NoError(t, svc.Shutdown(ctx))
+				}()
+			} else {
+				require.EqualError(t, err, test.expectedErr)
+				require.Nil(t, svc)
 			}
 		})
 	}
