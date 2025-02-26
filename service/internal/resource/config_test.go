@@ -21,8 +21,9 @@ const (
 )
 
 var buildInfo = component.BuildInfo{
-	Command: "otelcol",
-	Version: "1.0.0",
+	Command:   "otelcol",
+	Version:   "1.0.0",
+	Namespace: "opentelemetry",
 }
 
 func ptr[T any](v T) *T {
@@ -41,6 +42,7 @@ func TestNew(t *testing.T) {
 			want: map[string]string{
 				"service.name":        "otelcol",
 				"service.version":     "1.0.0",
+				"service.namespace":   "opentelemetry",
 				"service.instance.id": randomUUIDSpecialValue,
 			},
 		},
@@ -49,11 +51,13 @@ func TestNew(t *testing.T) {
 			resourceCfg: map[string]*string{
 				"service.name":        ptr("my-service"),
 				"service.version":     ptr("1.2.3"),
+				"service.namespace":   ptr("my-namespace"),
 				"service.instance.id": ptr("123"),
 			},
 			want: map[string]string{
 				"service.name":        "my-service",
 				"service.version":     "1.2.3",
+				"service.namespace":   "my-namespace",
 				"service.instance.id": "123",
 			},
 		},
@@ -62,6 +66,7 @@ func TestNew(t *testing.T) {
 			resourceCfg: map[string]*string{
 				"service.name":        nil,
 				"service.version":     nil,
+				"service.namespace":   nil,
 				"service.instance.id": nil,
 			},
 			want: map[string]string{},
@@ -74,6 +79,7 @@ func TestNew(t *testing.T) {
 			want: map[string]string{
 				"service.name":        "otelcol",
 				"service.version":     "1.0.0",
+				"service.namespace":   "opentelemetry",
 				"service.instance.id": randomUUIDSpecialValue,
 				"host.name":           "my-host",
 			},
@@ -124,7 +130,7 @@ func TestBuildResource(t *testing.T) {
 	otelRes := New(buildInfo, resMap)
 	res := pdataFromSdk(otelRes)
 
-	assert.Equal(t, 3, res.Attributes().Len())
+	assert.Equal(t, 4, res.Attributes().Len())
 	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
@@ -140,6 +146,7 @@ func TestBuildResource(t *testing.T) {
 		semconv.AttributeServiceName:       nil,
 		semconv.AttributeServiceVersion:    nil,
 		semconv.AttributeServiceInstanceID: nil,
+		semconv.AttributeServiceNamespace:  nil,
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
@@ -153,11 +160,12 @@ func TestBuildResource(t *testing.T) {
 		semconv.AttributeServiceName:       strPtr("a"),
 		semconv.AttributeServiceVersion:    strPtr("b"),
 		semconv.AttributeServiceInstanceID: strPtr("c"),
+		semconv.AttributeServiceNamespace:  strPtr("d"),
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
 
-	assert.Equal(t, 3, res.Attributes().Len())
+	assert.Equal(t, 4, res.Attributes().Len())
 	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())
@@ -167,4 +175,7 @@ func TestBuildResource(t *testing.T) {
 	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
 	assert.True(t, ok)
 	assert.Equal(t, "c", value.AsString())
+	value, ok = res.Attributes().Get(semconv.AttributeServiceNamespace)
+	assert.True(t, ok)
+	assert.Equal(t, "d", value.AsString())
 }
