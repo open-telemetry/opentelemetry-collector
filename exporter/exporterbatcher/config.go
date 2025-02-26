@@ -56,11 +56,11 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if c.MinSizeItems != nil {
+	if c.MinSizeItems != nil && !conf.IsSet("min_size") {
 		c.SizeConfig.MinSize = *c.MinSizeItems
 	}
 
-	if c.MaxSizeItems != nil {
+	if c.MaxSizeItems != nil && !conf.IsSet("max_size") {
 		c.SizeConfig.MaxSize = *c.MaxSizeItems
 	}
 
