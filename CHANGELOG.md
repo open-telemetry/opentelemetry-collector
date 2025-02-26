@@ -51,6 +51,11 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `cmd/mdatagen`: Remove `level` field from metrics definition (#12145)
   This mechanism will be added back once a new views mechanism is implemented.
 - `service`: Value for telemetry exporter `otlp.protocol` updated from `grpc/protobuf` to `grpc`. (#12337)
+- `service`: internal metrics exported over Prometheus will append a `_total` suffix to the metric name if `without_type_suffix` is not configured. (#11611)
+  The change to update the internal telemetry to use [otel-go config](https://pkg.go.dev/go.opentelemetry.io/contrib/config) can cause unexpected behaviour
+  for end users. The default value in `config` for `without_type_suffix` is `false` as per the specification which causes the `_total` suffix to be appended. Users
+  that configure their `service::telemetry::metrics::readers` can set `without_type_suffix` to `true` to keep their metrics name consistent with previous versions
+  of the collector.
 
 ### 💡 Enhancements 💡
 
