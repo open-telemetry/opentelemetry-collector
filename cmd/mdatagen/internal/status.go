@@ -41,12 +41,20 @@ type Codeowners struct {
 }
 
 type Status struct {
-	Stability            StabilityMap `mapstructure:"stability"`
-	Distributions        []string     `mapstructure:"distributions"`
-	Class                string       `mapstructure:"class"`
-	Warnings             []string     `mapstructure:"warnings"`
-	Codeowners           *Codeowners  `mapstructure:"codeowners"`
-	UnsupportedPlatforms []string     `mapstructure:"unsupported_platforms"`
+	Stability            StabilityMap   `mapstructure:"stability"`
+	Distributions        []string       `mapstructure:"distributions"`
+	Class                string         `mapstructure:"class"`
+	Warnings             []string       `mapstructure:"warnings"`
+	Codeowners           *Codeowners    `mapstructure:"codeowners"`
+	UnsupportedPlatforms []string       `mapstructure:"unsupported_platforms"`
+	Deprecation          DeprecationMap `mapstructure:"deprecation"`
+}
+
+type DeprecationMap map[string]DeprecationInfo
+
+type DeprecationInfo struct {
+	Date      string `mapstructure:"date"`
+	Migration string `mapstructure:"migration"`
 }
 
 var validClasses = []string{
