@@ -100,6 +100,7 @@ type ChangeEvent struct {
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
 	rawConf   any
+	errorHint error
 	closeFunc CloseFunc
 
 	stringRepresentation string
@@ -107,6 +108,7 @@ type Retrieved struct {
 }
 
 type retrievedSettings struct {
+	errorHint            error
 	stringRepresentation string
 	isSetString          bool
 	closeFunc            CloseFunc
@@ -138,6 +140,12 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 	})
 }
 
+func withErrorHint(errorHint error) RetrievedOption {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
+		settings.errorHint = errorHint
+	})
+}
+
 // NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
 // * yamlBytes the yaml bytes that will be deserialized.
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
@@ -146,7 +154,10 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		// If the string is not valid YAML, we try to use it verbatim as a string.
 		strRep := string(yamlBytes)
-		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
+		return NewRetrieved(strRep, append(opts,
+			withStringRepresentation(strRep),
+			withErrorHint(fmt.Errorf("assuming string type since contents are not valid YAML: %w", err)),
+		)...)
 	}
 
 	switch rawConf.(type) {
@@ -175,6 +186,7 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	}
 	return &Retrieved{
 		rawConf:              rawConf,
+		errorHint:            set.errorHint,
 		closeFunc:            set.closeFunc,
 		stringRepresentation: set.stringRepresentation,
 		isSetString:          set.isSetString,
@@ -188,6 +200,9 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 	}
 	val, ok := r.rawConf.(map[string]any)
 	if !ok {
+		if r.errorHint != nil {
+			return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf: %w", r.rawConf, r.errorHint)
+		}
 		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
 	}
 	return NewFromStringMap(val), nil

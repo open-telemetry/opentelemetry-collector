@@ -188,7 +188,7 @@ func TestNewNopReceiverConfigsAndFactories(t *testing.T) {
 
 	factory := receivertest.NewNopFactory()
 	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettingsWithType(factory.Type())
+	set := receivertest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(builders.NopType)
 
 	traces, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())

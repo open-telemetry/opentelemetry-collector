@@ -19,7 +19,7 @@ import (
 func TestMergeLogs(t *testing.T) {
 	lr1 := newLogsRequest(testdata.GenerateLogs(2), nil)
 	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	res, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
+	res, err := lr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, lr2)
 	require.NoError(t, err)
 	require.Equal(t, 5, res[0].ItemsCount())
 }
@@ -27,42 +27,42 @@ func TestMergeLogs(t *testing.T) {
 func TestMergeLogsInvalidInput(t *testing.T) {
 	lr1 := newTracesRequest(testdata.GenerateTraces(2), nil)
 	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	_, err := lr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, lr2)
+	_, err := lr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, lr2)
 	require.Error(t, err)
 }
 
 func TestMergeSplitLogs(t *testing.T) {
 	tests := []struct {
 		name     string
-		cfg      exporterbatcher.MaxSizeConfig
+		cfg      exporterbatcher.SizeConfig
 		lr1      request.Request
 		lr2      request.Request
 		expected []Request
 	}{
 		{
 			name:     "both_requests_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			lr1:      newLogsRequest(plog.NewLogs(), nil),
 			lr2:      newLogsRequest(plog.NewLogs(), nil),
 			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
 		},
 		{
 			name:     "first_request_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			lr1:      newLogsRequest(plog.NewLogs(), nil),
 			lr2:      newLogsRequest(testdata.GenerateLogs(5), nil),
 			expected: []Request{newLogsRequest(testdata.GenerateLogs(5), nil)},
 		},
 		{
 			name:     "first_empty_second_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			lr1:      newLogsRequest(plog.NewLogs(), nil),
 			lr2:      nil,
 			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
 		},
 		{
 			name: "merge_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			lr1:  newLogsRequest(testdata.GenerateLogs(4), nil),
 			lr2:  newLogsRequest(testdata.GenerateLogs(6), nil),
 			expected: []Request{newLogsRequest(func() plog.Logs {
@@ -73,7 +73,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name: "split_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
 			lr1:  newLogsRequest(plog.NewLogs(), nil),
 			lr2:  newLogsRequest(testdata.GenerateLogs(10), nil),
 			expected: []Request{
@@ -84,7 +84,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name: "merge_and_split",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			lr1:  newLogsRequest(testdata.GenerateLogs(8), nil),
 			lr2:  newLogsRequest(testdata.GenerateLogs(20), nil),
 			expected: []Request{
@@ -99,7 +99,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		},
 		{
 			name: "scope_logs_split",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
 			lr1: newLogsRequest(func() plog.Logs {
 				ld := testdata.GenerateLogs(4)
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("extra log")
@@ -132,7 +132,7 @@ func TestMergeSplitLogs(t *testing.T) {
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newLogsRequest(testdata.GenerateLogs(18), nil)
 	r2 := newTracesRequest(testdata.GenerateTraces(3), nil)
-	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
@@ -140,7 +140,7 @@ func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestMergeSplitLogsInvalidInput(t *testing.T) {
 	r1 := newTracesRequest(testdata.GenerateTraces(2), nil)
 	r2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{}, r2)
 	require.Error(t, err)
 }
 
@@ -155,7 +155,7 @@ func TestExtractLogs(t *testing.T) {
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
 	// All requests merge into a single batch.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	merged := []Request{newLogsRequest(testdata.GenerateLogs(1), nil)}
 	for j := 0; j < 1000; j++ {
 		lr2 := newLogsRequest(testdata.GenerateLogs(10), nil)
@@ -167,7 +167,7 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 	// All requests merge into a single batch.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10010}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10010}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(10), nil)}
@@ -182,7 +182,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 
 func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
@@ -197,7 +197,7 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 
 func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 	// One request splits into many batches.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}

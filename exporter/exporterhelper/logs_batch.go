@@ -13,7 +13,7 @@ import (
 
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
 	if r2 != nil {
 		req2, ok := r2.(*logsRequest)
 		if !ok {
@@ -23,7 +23,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSiz
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSizeItems == 0 {
+	if cfg.MaxSize == 0 {
 		return []Request{req}, nil
 	}
 	return req.split(cfg)
@@ -35,10 +35,10 @@ func (req *logsRequest) mergeTo(dst *logsRequest) {
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]Request, error) {
+func (req *logsRequest) split(cfg exporterbatcher.SizeConfig) ([]Request, error) {
 	var res []Request
-	for req.ItemsCount() > cfg.MaxSizeItems {
-		ld := extractLogs(req.ld, cfg.MaxSizeItems)
+	for req.ItemsCount() > cfg.MaxSize {
+		ld := extractLogs(req.ld, cfg.MaxSize)
 		size := ld.LogRecordCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
 		res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedItemsCount: size})
