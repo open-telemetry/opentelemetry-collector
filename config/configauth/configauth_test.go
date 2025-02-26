@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 var mockID = component.MustNewID("mock")
@@ -25,12 +25,12 @@ func TestGetServer(t *testing.T) {
 	}{
 		{
 			name:          "obtain server authenticator",
-			authenticator: auth.NewServer(),
+			authenticator: extensionauth.NewServer(),
 			expected:      nil,
 		},
 		{
 			name:          "not a server authenticator",
-			authenticator: auth.NewClient(),
+			authenticator: extensionauth.NewClient(),
 			expected:      errNotServer,
 		},
 	}
@@ -76,12 +76,12 @@ func TestGetClient(t *testing.T) {
 	}{
 		{
 			name:          "obtain client authenticator",
-			authenticator: auth.NewClient(),
+			authenticator: extensionauth.NewClient(),
 			expected:      nil,
 		},
 		{
 			name:          "not a client authenticator",
-			authenticator: auth.NewServer(),
+			authenticator: extensionauth.NewServer(),
 			expected:      errNotClient,
 		},
 	}
