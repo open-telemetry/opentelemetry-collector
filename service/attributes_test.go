@@ -24,29 +24,29 @@ func TestAttributes(t *testing.T) {
 		{
 			name:           "no build info and no resource config",
 			cfg:            telemetry.Config{},
-			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: ""}, {Name: "service.version", Value: ""}, {Name: "service.instance.id", Value: ""}},
+			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: ""}, {Name: "service.version", Value: ""}, {Name: "service.namespace", Value: ""}, {Name: "service.instance.id", Value: ""}},
 		},
 		{
 			name:           "build info and no resource config",
 			cfg:            telemetry.Config{},
-			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "otelcoltest"}, {Name: "service.version", Value: "0.0.0-test"}, {Name: "service.instance.id", Value: ""}},
+			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test", Namespace: "opentelemetry"},
+			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "otelcoltest"}, {Name: "service.version", Value: "0.0.0-test"}, {Name: "service.namespace", Value: "opentelemetry"}, {Name: "service.instance.id", Value: ""}},
 		},
 		{
 			name:           "no build info and resource config",
-			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "test": ptr("test")}},
-			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "resource.name"}, {Name: "service.version", Value: "resource.version"}, {Name: "test", Value: "test"}, {Name: "service.instance.id", Value: ""}},
+			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "service.namespace": ptr("resource.namespace"), "test": ptr("test")}},
+			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "resource.name"}, {Name: "service.version", Value: "resource.version"}, {Name: "service.namespace", Value: "resource.namespace"}, {Name: "test", Value: "test"}, {Name: "service.instance.id", Value: ""}},
 		},
 		{
 			name:           "build info and resource config",
 			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "test": ptr("test")}},
-			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "resource.name"}, {Name: "service.version", Value: "resource.version"}, {Name: "test", Value: "test"}, {Name: "service.instance.id", Value: ""}},
+			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": ptr("resource.name"), "service.version": ptr("resource.version"), "service.namespace": ptr("resource.namespace"), "test": ptr("test")}},
+			wantAttributes: []config.AttributeNameValue{{Name: "service.name", Value: "resource.name"}, {Name: "service.version", Value: "resource.version"}, {Name: "service.namespace", Value: "resource.namespace"}, {Name: "test", Value: "test"}, {Name: "service.instance.id", Value: ""}},
 		},
 		{
 			name:           "deleting a nil value",
-			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test"},
-			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": nil, "service.version": ptr("resource.version"), "test": ptr("test")}},
+			buildInfo:      component.BuildInfo{Command: "otelcoltest", Version: "0.0.0-test", Namespace: "opentelemetry"},
+			cfg:            telemetry.Config{Resource: map[string]*string{"service.name": nil, "service.version": ptr("resource.version"), "service.namespace": nil, "test": ptr("test")}},
 			wantAttributes: []config.AttributeNameValue{{Name: "service.version", Value: "resource.version"}, {Name: "test", Value: "test"}, {Name: "service.instance.id", Value: ""}},
 		},
 	}

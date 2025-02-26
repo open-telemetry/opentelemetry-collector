@@ -19,6 +19,7 @@ import (
 func main() {
 	info := component.BuildInfo{
 		Command:     "otelcorecol",
+		Namespace:   "opentelemetry-core",
 		Description: "Local OpenTelemetry Collector binary, testing only.",
 		Version:     "0.121.0-dev",
 	}

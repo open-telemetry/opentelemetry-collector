@@ -28,6 +28,11 @@ func New(buildInfo component.BuildInfo, resourceCfg map[string]*string) *resourc
 		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceName, buildInfo.Command))
 	}
 
+	if _, ok := resourceCfg[semconv.AttributeServiceNamespace]; !ok {
+		// AttributeServiceNamespace is not specified in the config. Use the default namespace.
+		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceNamespace, buildInfo.Namespace))
+	}
+
 	if _, ok := resourceCfg[semconv.AttributeServiceInstanceID]; !ok {
 		// AttributeServiceInstanceID is not specified in the config. Auto-generate one.
 		instanceUUID, _ := uuid.NewRandom()

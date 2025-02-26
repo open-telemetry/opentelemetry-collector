@@ -9,6 +9,9 @@ type BuildInfo struct {
 	// Command is the executable file name, e.g. "otelcol".
 	Command string
 
+	// Namespace is the namespace of the collector, e.g. "opentelemetry".
+	Namespace string
+
 	// Description is the full name of the collector, e.g. "OpenTelemetry Collector".
 	Description string
 
@@ -20,6 +23,7 @@ type BuildInfo struct {
 func NewDefaultBuildInfo() BuildInfo {
 	return BuildInfo{
 		Command:     "otelcol",
+		Namespace:   "opentelemetry",
 		Description: "OpenTelemetry Collector",
 		Version:     "latest",
 	}
