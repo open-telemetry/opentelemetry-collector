@@ -165,7 +165,7 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, request.Request) ([]request.Request, error) {
+func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.SizeConfig, request.Request) ([]request.Request, error) {
 	return nil, nil
 }
 

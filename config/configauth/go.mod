@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/extension v0.120.0
-	go.opentelemetry.io/collector/extension/auth v0.120.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -37,4 +37,4 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth

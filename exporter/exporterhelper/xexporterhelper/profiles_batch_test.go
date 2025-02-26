@@ -20,7 +20,7 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := newProfilesRequest(testdata.GenerateProfiles(2), nil)
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
-	res, err := pr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, pr2)
+	res, err := pr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, pr2)
 	require.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, 5, res[0].ItemsCount())
@@ -28,42 +28,42 @@ func TestMergeProfiles(t *testing.T) {
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3), nil)
-	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, &requesttest.FakeRequest{Items: 1})
+	_, err := pr2.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, &requesttest.FakeRequest{Items: 1})
 	assert.Error(t, err)
 }
 
 func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		cfg      exporterbatcher.MaxSizeConfig
+		cfg      exporterbatcher.SizeConfig
 		pr1      exporterhelper.Request
 		pr2      exporterhelper.Request
 		expected []exporterhelper.Request
 	}{
 		{
 			name:     "both_requests_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
 			pr2:      newProfilesRequest(pprofile.NewProfiles(), nil),
 			expected: []exporterhelper.Request{newProfilesRequest(pprofile.NewProfiles(), nil)},
 		},
 		{
 			name:     "first_request_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
 			pr2:      newProfilesRequest(testdata.GenerateProfiles(5), nil),
 			expected: []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(5), nil)},
 		},
 		{
 			name:     "first_empty_second_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			pr1:      newProfilesRequest(pprofile.NewProfiles(), nil),
 			pr2:      nil,
 			expected: []exporterhelper.Request{newProfilesRequest(pprofile.NewProfiles(), nil)},
 		},
 		{
 			name: "merge_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			pr1:  newProfilesRequest(testdata.GenerateProfiles(4), nil),
 			pr2:  newProfilesRequest(testdata.GenerateProfiles(6), nil),
 			expected: []exporterhelper.Request{newProfilesRequest(func() pprofile.Profiles {
@@ -74,7 +74,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name: "split_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
 			pr1:  newProfilesRequest(testdata.GenerateProfiles(10), nil),
 			pr2:  nil,
 			expected: []exporterhelper.Request{
@@ -85,7 +85,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name: "merge_and_split",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			pr1:  newProfilesRequest(testdata.GenerateProfiles(8), nil),
 			pr2:  newProfilesRequest(testdata.GenerateProfiles(20), nil),
 			expected: []exporterhelper.Request{
@@ -100,7 +100,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name: "scope_profiles_split",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
 			pr1: newProfilesRequest(func() pprofile.Profiles {
 				return testdata.GenerateProfiles(6)
 			}(), nil),
@@ -136,7 +136,7 @@ func TestExtractProfiles(t *testing.T) {
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
 	// All requests merge into a single batch.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1), nil)}
 	for j := 0; j < 1000; j++ {
 		lr2 := newProfilesRequest(testdata.GenerateProfiles(10), nil)
