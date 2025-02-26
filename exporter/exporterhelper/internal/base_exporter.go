@@ -70,7 +70,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	//nolint: staticcheck
-	if be.batcherCfg.MinSizeItems != nil || be.batcherCfg.MaxSizeItems != nil {
+	if be.batcherCfg.MinSizeItems != 0 || be.batcherCfg.MaxSizeItems != 0 {
 		set.Logger.Warn("Using of deprecated fields `min_size_items` and `max_size_items`")
 	}
 

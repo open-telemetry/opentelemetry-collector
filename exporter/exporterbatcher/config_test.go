@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestValidateConfig(t *testing.T) {
@@ -39,4 +41,30 @@ func TestValidateSizeConfig(t *testing.T) {
 		MinSize: 200,
 	}
 	require.EqualError(t, cfg.Validate(), "`max_size` must be greater than or equal to mix_size")
+}
+
+func TestUnmarshalDeprecatedConfig(t *testing.T) {
+	cfg := NewDefaultConfig()
+	require.NoError(t, cfg.Unmarshal(confmap.NewFromStringMap(map[string]any{
+		"enabled":        true,
+		"flush_timeout":  200,
+		"min_size_items": 111,
+		"max_size_items": 222,
+	})))
+	require.NoError(t, cfg.Validate())
+	require.Equal(t, Config{
+		Enabled:      true,
+		FlushTimeout: 200,
+		SizeConfig: SizeConfig{
+			Sizer:   SizerTypeItems,
+			MinSize: 111,
+			MaxSize: 222,
+		},
+		MinSizeConfig: MinSizeConfig{
+			MinSizeItems: 111,
+		},
+		MaxSizeConfig: MaxSizeConfig{
+			MaxSizeItems: 222,
+		},
+	}, cfg)
 }

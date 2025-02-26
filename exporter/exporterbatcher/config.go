@@ -42,13 +42,13 @@ type SizeConfig struct {
 // Deprecated: [v0.121.0] use SizeConfig.
 type MinSizeConfig struct {
 	// Deprecated: [v0.121.0] use SizeConfig.MinSize.
-	MinSizeItems *int `mapstructure:"min_size_items"`
+	MinSizeItems int `mapstructure:"min_size_items"`
 }
 
 // Deprecated: [v0.121.0] use SizeConfig.
 type MaxSizeConfig struct {
 	// Deprecated: [v0.121.0] use SizeConfig.MaxSize.
-	MaxSizeItems *int `mapstructure:"max_size_items"`
+	MaxSizeItems int `mapstructure:"max_size_items"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
@@ -56,12 +56,12 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if c.MinSizeItems != nil {
-		c.SizeConfig.MinSize = *c.MinSizeItems
+	if conf.IsSet("min_size_items") {
+		c.SizeConfig.MinSize = c.MinSizeItems
 	}
 
-	if c.MaxSizeItems != nil {
-		c.SizeConfig.MaxSize = *c.MaxSizeItems
+	if conf.IsSet("max_size_items") {
+		c.SizeConfig.MaxSize = c.MaxSizeItems
 	}
 
 	return nil
