@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/processor"
@@ -43,7 +44,7 @@ func NewFactory() processor.Factory {
 // CreateDefaultConfig creates the default configuration for processor. Notice
 // that the default configuration is expected to fail for this processor.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return memorylimiter.NewDefaultConfig()
 }
 
 func (f *factory) createTraces(

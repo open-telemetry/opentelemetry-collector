@@ -312,7 +312,7 @@ func TestCollectorStartInvalidConfig(t *testing.T) {
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
 	})
 	require.NoError(t, err)
-	assert.Error(t, col.Run(context.Background()))
+	assert.EqualError(t, col.Run(context.Background()), "invalid configuration: service::pipelines::traces: references processor \"invalid\" which is not configured")
 }
 
 func TestNewCollectorInvalidConfigProviderSettings(t *testing.T) {
@@ -594,4 +594,32 @@ func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return confmap.NewFromStringMap(data).ToStringMap()
+}
+
+func TestProviderAndConverterModules(t *testing.T) {
+	set := CollectorSettings{
+		BuildInfo:              component.NewDefaultBuildInfo(),
+		Factories:              nopFactories,
+		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		ProviderModules: map[string]string{
+			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+		},
+		ConverterModules: []string{
+			"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+		},
+	}
+	col, err := NewCollector(set)
+	require.NoError(t, err)
+	wg := startCollector(context.Background(), t, col)
+	require.NoError(t, err)
+	providerModules := map[string]string{
+		"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+	}
+	converterModules := []string{
+		"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+	}
+	assert.Equal(t, providerModules, col.set.ProviderModules)
+	assert.Equal(t, converterModules, col.set.ConverterModules)
+	col.Shutdown()
+	wg.Wait()
 }
