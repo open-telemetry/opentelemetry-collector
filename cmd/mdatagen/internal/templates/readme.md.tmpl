@@ -7,7 +7,7 @@
 {{- if ne $class "connector" }}
 {{- $idx := 0 }}
 {{- range $stability, $value := .Status.Stability }}
-| {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ toLowerCase $stability.String }}]{{ if ne $class "extension" }}: {{ stringsJoin $value ", " }} {{ end }}  |
+| {{ if not $idx }}Stability{{ else }}         {{ end }}     | [{{ toLowerCase $stability.String }}]{{ if and (ne $class "extension") (ne $class "converter") (ne $class "provider") }}: {{ stringsJoin $value ", " }} {{ end }}  |
 {{- $idx = inc $idx }}
 {{- end }}
 {{- end}}
