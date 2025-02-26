@@ -5,4 +5,4 @@ status:
   class: provider
   stability:
     stable: [provider]
-  distributions: [core, contrib, k8s, otlp]
+  distributions: [core, contrib, k8s]
