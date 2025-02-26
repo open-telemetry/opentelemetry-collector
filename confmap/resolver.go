@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"slices"
 	"strings"
 
 	"go.uber.org/multierr"
@@ -25,8 +24,6 @@ var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/8754"),
 )
 
-var supportedMergeStrategies = []string{"append"}
-
 // follows drive-letter specification:
 // https://datatracker.ietf.org/doc/html/draft-kerwin-file-scheme-07.html#section-2.2
 var driverLetterRegexp = regexp.MustCompile("^[A-z]:")
@@ -37,7 +34,6 @@ type Resolver struct {
 	providers     map[string]Provider
 	defaultScheme string
 	converters    []Converter
-	mergeStrategy string
 
 	closers []CloseFunc
 	watcher chan error
@@ -69,10 +65,6 @@ type ResolverSettings struct {
 	// ConverterSettings contains settings that will be passed to Converter
 	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
-
-	// Following option is used to specify the merging strategy to be used while
-	// merging configurations from multiple sources.
-	MergeStrategy string
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -101,16 +93,6 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 
 	if len(set.ProviderFactories) == 0 {
 		return nil, errors.New("invalid 'confmap.ResolverSettings' configuration: no Providers")
-	}
-
-	if set.MergeStrategy != "" && !enableMergeAppendOption.IsEnabled() {
-		// merge strategy specified but flag is disabled. Throw error.
-		return nil, errors.New("--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate")
-	}
-
-	if set.MergeStrategy != "" && slices.Index(supportedMergeStrategies, set.MergeStrategy) == -1 {
-		// invalid option specified
-		return nil, fmt.Errorf("invalid option provided for --merge-strategy. Only %v options are supported", supportedMergeStrategies)
 	}
 
 	if set.ProviderSettings.Logger == nil {
@@ -175,7 +157,6 @@ func NewResolver(set ResolverSettings) (*Resolver, error) {
 		defaultScheme: set.DefaultScheme,
 		converters:    converters,
 		watcher:       make(chan error, 1),
-		mergeStrategy: set.MergeStrategy,
 	}, nil
 }
 
@@ -199,7 +180,7 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if enableMergeAppendOption.IsEnabled() && mr.mergeStrategy == "append" {
+		if enableMergeAppendOption.IsEnabled() {
 			// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
 			err = retMap.mergeAppend(retCfgMap)
 		} else {

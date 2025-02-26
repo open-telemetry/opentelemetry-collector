@@ -503,7 +503,6 @@ func runScenario(t *testing.T, path string) {
 				URIs:              configFiles,
 				ProviderFactories: []ProviderFactory{newFileProvider(t)},
 				DefaultScheme:     "file",
-				MergeStrategy:     "append",
 			})
 			require.NoError(t, err)
 			conf, err := resolver.Resolve(context.Background())
@@ -512,46 +511,4 @@ func runScenario(t *testing.T, path string) {
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
 		})
 	}
-}
-
-func TestMergeStrategy(t *testing.T) {
-	t.Run("no-error", func(t *testing.T) {
-		require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
-		defer func() {
-			// Restore previous value.
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
-		}()
-
-		_, err := NewResolver(ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "config.yaml")},
-			ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-			ConverterFactories: nil,
-			MergeStrategy:      "append",
-		})
-		require.NoError(t, err)
-	})
-	t.Run("error-gate-disabled", func(t *testing.T) {
-		_, err := NewResolver(ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "config.yaml")},
-			ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-			ConverterFactories: nil,
-			MergeStrategy:      "append",
-		})
-		require.ErrorContains(t, err, "--merge-strategy is experimental and can be enabled with confmap.enableMergeAppendOption feature gate")
-	})
-	t.Run("error-gate-disabled", func(t *testing.T) {
-		require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
-		defer func() {
-			// Restore previous value.
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
-		}()
-
-		_, err := NewResolver(ResolverSettings{
-			URIs:               []string{filepath.Join("testdata", "config.yaml")},
-			ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-			ConverterFactories: nil,
-			MergeStrategy:      "foobar",
-		})
-		require.ErrorContains(t, err, "invalid option provided for --merge-strategy.")
-	})
 }

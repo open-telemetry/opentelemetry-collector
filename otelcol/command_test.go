@@ -74,14 +74,6 @@ func TestAddFlagToSettings(t *testing.T) {
 	err = updateSettingsUsingFlags(&set, flgs)
 	require.NoError(t, err)
 	require.Len(t, set.ConfigProviderSettings.ResolverSettings.URIs, 1)
-
-	err = flgs.Parse([]string{"--merge-strategy=append"})
-	require.NoError(t, err)
-
-	err = updateSettingsUsingFlags(&set, flgs)
-	require.NoError(t, err)
-
-	require.Equal(t, "append", set.ConfigProviderSettings.ResolverSettings.MergeStrategy)
 }
 
 func TestInvalidCollectorSettings(t *testing.T) {
