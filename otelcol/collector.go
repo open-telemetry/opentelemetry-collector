@@ -175,9 +175,7 @@ func (col *Collector) createService(ctx context.Context, cfg *Config, factories 
 
 	conf := confmap.New()
 
-	if err := conf.Marshal(cfg); err != nil {
-		return nil, fmt.Errorf("could not marshal configuration: %w", err)
-	}
+	_ = conf.Marshal(cfg)
 
 	return service.New(ctx, service.Settings{
 		BuildInfo:     col.set.BuildInfo,
