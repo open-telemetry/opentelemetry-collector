@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
 
 	"go.opentelemetry.io/collector/component"
@@ -48,6 +49,45 @@ type Status struct {
 	UnsupportedPlatforms []string     `mapstructure:"unsupported_platforms"`
 }
 
+var validClasses = []string{
+	"cmd",
+	"connector",
+	"converter",
+	"exporter",
+	"extension",
+	"pkg",
+	"processor",
+	"provider",
+	"receiver",
+	"scraper",
+}
+
+var validStabilityKeys = []string{
+	"converter",
+	"extension",
+	"logs",
+	"logs_to_traces",
+	"logs_to_metrics",
+	"logs_to_logs",
+	"logs_to_profiles",
+	"metrics",
+	"metrics_to_traces",
+	"metrics_to_metrics",
+	"metrics_to_logs",
+	"metrics_to_profiles",
+	"profiles",
+	"profiles_to_profiles",
+	"profiles_to_traces",
+	"profiles_to_metrics",
+	"profiles_to_logs",
+	"provider",
+	"traces_to_traces",
+	"traces_to_metrics",
+	"traces_to_logs",
+	"traces_to_profiles",
+	"traces",
+}
+
 func (s *Status) SortedDistributions() []string {
 	sorted := s.Distributions
 	sort.Slice(sorted, func(i, j int) bool {
@@ -87,10 +127,7 @@ func (s *Status) validateClass() error {
 	if s.Class == "" {
 		return errors.New("missing class")
 	}
-	if s.Class != "receiver" && s.Class != "processor" &&
-		s.Class != "exporter" && s.Class != "connector" &&
-		s.Class != "extension" && s.Class != "scraper" &&
-		s.Class != "cmd" && s.Class != "pkg" {
+	if !slices.Contains(validClasses, s.Class) {
 		return fmt.Errorf("invalid class: %v", s.Class)
 	}
 	return nil
@@ -108,27 +145,7 @@ func (ms StabilityMap) Validate() error {
 			errs = errors.Join(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range cmps {
-			if c != "metrics" &&
-				c != "traces" &&
-				c != "logs" &&
-				c != "profiles" &&
-				c != "traces_to_traces" &&
-				c != "traces_to_metrics" &&
-				c != "traces_to_logs" &&
-				c != "traces_to_profiles" &&
-				c != "metrics_to_traces" &&
-				c != "metrics_to_metrics" &&
-				c != "metrics_to_logs" &&
-				c != "metrics_to_profiles" &&
-				c != "logs_to_traces" &&
-				c != "logs_to_metrics" &&
-				c != "logs_to_logs" &&
-				c != "logs_to_profiles" &&
-				c != "profiles_to_profiles" &&
-				c != "profiles_to_traces" &&
-				c != "profiles_to_metrics" &&
-				c != "profiles_to_logs" &&
-				c != "extension" {
+			if !slices.Contains(validStabilityKeys, c) {
 				errs = errors.Join(errs, fmt.Errorf("invalid component: %v", c))
 			}
 		}

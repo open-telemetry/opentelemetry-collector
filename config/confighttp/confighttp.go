@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 const (
@@ -537,7 +537,7 @@ func NewDefaultCORSConfig() *CORSConfig {
 	return &CORSConfig{}
 }
 
-func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
+func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sources := r.Header
 		query := r.URL.Query()
