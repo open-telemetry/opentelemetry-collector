@@ -54,7 +54,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     steps:
       - name: Checkout Repo

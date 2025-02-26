@@ -88,7 +88,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0 // indirect
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.120.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.120.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.120.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.0 // indirect
@@ -155,7 +155,7 @@ replace go.opentelemetry.io/collector/config/configretry => ../../config/configr
 
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
 
@@ -245,7 +245,7 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telem
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
