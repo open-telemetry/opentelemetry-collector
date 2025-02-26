@@ -1,5 +1,6 @@
 buildinfo:
     command: otelcol
+    namespace: opentelemetry
     description: OpenTelemetry Collector
     version: latest
 receivers:
