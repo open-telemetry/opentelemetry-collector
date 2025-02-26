@@ -315,6 +315,47 @@ func TestCollectorStartInvalidConfig(t *testing.T) {
 	assert.EqualError(t, col.Run(context.Background()), "invalid configuration: service::pipelines::traces: references processor \"invalid\" which is not configured")
 }
 
+func TestSetupConfigurationComponentsInvalidConfig(t *testing.T) {
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_factories": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              func() (Factories, error) { return Factories{}, nil },
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: "failed to get config",
+		},
+		"error_factories": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              func() (Factories, error) { return Factories{}, errors.New("error") },
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: "failed to initialize factories",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err = col.setupConfigurationComponents(ctx)
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, test.expectedErr)
+			}
+		})
+	}
+}
+
 func TestNewCollectorInvalidConfigProviderSettings(t *testing.T) {
 	_, err := NewCollector(CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
