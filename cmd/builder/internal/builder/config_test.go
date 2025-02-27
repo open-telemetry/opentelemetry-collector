@@ -291,6 +291,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
+	assert.Empty(t, cfg.Distribution.Namespace)
 	assert.False(t, cfg.LDSet)
 	assert.Empty(t, cfg.LDFlags)
 	assert.False(t, cfg.GCSet)
@@ -362,6 +363,16 @@ func TestDebugOptionSetConfig(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 	assert.True(t, cfg.Distribution.DebugCompilation)
+}
+
+func TestNamespaceConfig(t *testing.T) {
+	cfg := Config{
+		Distribution: Distribution{
+			Namespace: "customNamespace",
+		},
+	}
+	require.NoError(t, cfg.Validate())
+	assert.Equal(t, "customNamespace", cfg.Distribution.Namespace)
 }
 
 func TestAddsDefaultProviders(t *testing.T) {
