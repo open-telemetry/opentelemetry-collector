@@ -60,7 +60,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.120.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.120.0 // indirect
 	go.opentelemetry.io/collector/extension v0.120.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.120.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.120.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.26.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
