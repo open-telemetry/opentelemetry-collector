@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -46,17 +47,26 @@ func TestNewFactoryWithOptions(t *testing.T) {
 	assert.EqualValues(t, testType, f.Type())
 	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := experr.ErrIDMismatch(wrongID, testType).Error()
+
 	assert.Equal(t, component.StabilityLevelDevelopment, f.TracesStability())
 	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg)
 	require.NoError(t, err)
+	_, err = f.CreateTraces(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelAlpha, f.MetricsStability())
 	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg)
 	require.NoError(t, err)
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelDeprecated, f.LogsStability())
 	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	_, err = f.CreateLogs(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
 }
 
 var nopInstance = &nop{

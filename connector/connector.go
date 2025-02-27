@@ -5,7 +5,6 @@ package connector // import "go.opentelemetry.io/collector/connector"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector/internal"
@@ -308,7 +307,7 @@ func (f *factory) CreateTracesToTraces(ctx context.Context, set Settings, cfg co
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createTracesToTracesFunc(ctx, set, cfg, next)
@@ -320,7 +319,7 @@ func (f *factory) CreateTracesToMetrics(ctx context.Context, set Settings, cfg c
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createTracesToMetricsFunc(ctx, set, cfg, next)
@@ -332,7 +331,7 @@ func (f *factory) CreateTracesToLogs(ctx context.Context, set Settings, cfg comp
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createTracesToLogsFunc(ctx, set, cfg, next)
@@ -344,7 +343,7 @@ func (f *factory) CreateMetricsToTraces(ctx context.Context, set Settings, cfg c
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createMetricsToTracesFunc(ctx, set, cfg, next)
@@ -356,7 +355,7 @@ func (f *factory) CreateMetricsToMetrics(ctx context.Context, set Settings, cfg 
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createMetricsToMetricsFunc(ctx, set, cfg, next)
@@ -368,7 +367,7 @@ func (f *factory) CreateMetricsToLogs(ctx context.Context, set Settings, cfg com
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createMetricsToLogsFunc(ctx, set, cfg, next)
@@ -380,7 +379,7 @@ func (f *factory) CreateLogsToTraces(ctx context.Context, set Settings, cfg comp
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createLogsToTracesFunc(ctx, set, cfg, next)
@@ -392,7 +391,7 @@ func (f *factory) CreateLogsToMetrics(ctx context.Context, set Settings, cfg com
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createLogsToMetricsFunc(ctx, set, cfg, next)
@@ -404,7 +403,7 @@ func (f *factory) CreateLogsToLogs(ctx context.Context, set Settings, cfg compon
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createLogsToLogsFunc(ctx, set, cfg, next)

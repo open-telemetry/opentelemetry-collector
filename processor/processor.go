@@ -5,11 +5,11 @@ package processor // import "go.opentelemetry.io/collector/processor"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/processor/internal"
 )
 
 // Traces is a processor that can consume traces.
@@ -128,7 +128,7 @@ func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createTracesFunc(ctx, set, cfg, next)
@@ -140,7 +140,7 @@ func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createMetricsFunc(ctx, set, cfg, next)
@@ -152,7 +152,7 @@ func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Co
 	}
 
 	if set.ID.Type() != f.Type() {
-		return nil, fmt.Errorf("component type mismatch: component ID %q does not have type %q", set.ID, f.Type())
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 
 	return f.createLogsFunc(ctx, set, cfg, next)

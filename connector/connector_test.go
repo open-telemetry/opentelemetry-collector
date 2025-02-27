@@ -58,18 +58,25 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
 	assert.EqualValues(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToTracesStability())
 	_, err := factory.CreateTracesToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateTracesToTraces(context.Background(), Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToMetricsStability())
 	_, err = factory.CreateMetricsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToLogsStability())
 	_, err = factory.CreateLogsToLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateLogsToLogs(context.Background(), Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorContains(t, err, wrongIDErrStr)
 
 	_, err = factory.CreateTracesToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	assert.Equal(t, err, internal.ErrDataTypes(testID, pipeline.SignalTraces, pipeline.SignalMetrics))
