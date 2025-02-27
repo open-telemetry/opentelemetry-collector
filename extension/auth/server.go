@@ -48,5 +48,9 @@ func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
 // NewServer returns a Server configured with the provided options.
 // Deprecated: [v0.121.0] Use extensionauth.NewServer instead.
 func NewServer(options ...ServerOption) Server {
-	return extensionauth.NewServer(options...)
+	srv, err := extensionauth.NewServer(options...)
+	if err != nil {
+		panic("unexpected error when calling extensionauth.NewServer: " + err.Error())
+	}
+	return srv
 }

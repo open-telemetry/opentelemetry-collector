@@ -92,12 +92,12 @@ func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
 }
 
 // NewServer returns a Server configured with the provided options.
-func NewServer(options ...ServerOption) Server {
+func NewServer(options ...ServerOption) (Server, error) {
 	bc := &defaultServer{}
 
 	for _, op := range options {
 		op.apply(bc)
 	}
 
-	return bc
+	return bc, nil
 }

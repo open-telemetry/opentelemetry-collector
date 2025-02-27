@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/collector/component"
@@ -17,7 +18,8 @@ import (
 
 func TestClientDefaultValues(t *testing.T) {
 	// prepare
-	e := NewClient()
+	e, err := NewClient()
+	require.NoError(t, err)
 
 	// test
 	t.Run("start", func(t *testing.T) {
@@ -45,13 +47,14 @@ func TestClientDefaultValues(t *testing.T) {
 
 func TestWithClientStart(t *testing.T) {
 	called := false
-	e := NewClient(WithClientStart(func(context.Context, component.Host) error {
+	e, err := NewClient(WithClientStart(func(context.Context, component.Host) error {
 		called = true
 		return nil
 	}))
+	require.NoError(t, err)
 
 	// test
-	err := e.Start(context.Background(), componenttest.NewNopHost())
+	err = e.Start(context.Background(), componenttest.NewNopHost())
 
 	// verify
 	assert.True(t, called)
@@ -60,13 +63,14 @@ func TestWithClientStart(t *testing.T) {
 
 func TestWithClientShutdown(t *testing.T) {
 	called := false
-	e := NewClient(WithClientShutdown(func(context.Context) error {
+	e, err := NewClient(WithClientShutdown(func(context.Context) error {
 		called = true
 		return nil
 	}))
+	require.NoError(t, err)
 
 	// test
-	err := e.Shutdown(context.Background())
+	err = e.Shutdown(context.Background())
 
 	// verify
 	assert.True(t, called)
@@ -75,10 +79,11 @@ func TestWithClientShutdown(t *testing.T) {
 
 func TestWithClientRoundTripper(t *testing.T) {
 	called := false
-	e := NewClient(WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
+	e, err := NewClient(WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
 		called = true
 		return base, nil
 	}))
+	require.NoError(t, err)
 
 	// test
 	rt, err := e.RoundTripper(http.DefaultTransport)
@@ -103,10 +108,11 @@ func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
 
 func TestWithPerRPCCredentials(t *testing.T) {
 	called := false
-	e := NewClient(WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+	e, err := NewClient(WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 		called = true
 		return &customPerRPCCredentials{}, nil
 	}))
+	require.NoError(t, err)
 
 	// test
 	p, err := e.PerRPCCredentials()
