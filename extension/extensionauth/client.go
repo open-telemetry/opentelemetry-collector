@@ -96,12 +96,12 @@ func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFu
 }
 
 // NewClient returns a Client configured with the provided options.
-func NewClient(options ...ClientOption) Client {
+func NewClient(options ...ClientOption) (Client, error) {
 	bc := &defaultClient{}
 
 	for _, op := range options {
 		op.apply(bc)
 	}
 
-	return bc
+	return bc, nil
 }
