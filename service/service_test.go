@@ -72,6 +72,7 @@ var prometheusToOtelConv = map[string]string{
 	"service_instance_id": "service.instance.id",
 	"service_name":        "service.name",
 	"service_version":     "service.version",
+	"service_namespace":   "service.namespace",
 }
 
 const (
