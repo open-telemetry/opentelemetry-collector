@@ -69,11 +69,17 @@ type defaultClient struct {
 
 // PerRPCCredentials implements Client.
 func (d *defaultClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	if d.clientPerRPCCredentialsFunc == nil {
+		return nil, nil
+	}
 	return d.clientPerRPCCredentialsFunc()
 }
 
 // RoundTripper implements Client.
 func (d *defaultClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	if d.clientRoundTripperFunc == nil {
+		return base, nil
+	}
 	return d.clientRoundTripperFunc(base)
 }
 
