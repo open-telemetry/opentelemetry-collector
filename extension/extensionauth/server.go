@@ -29,10 +29,20 @@ type Server interface {
 	Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error)
 }
 
+var _ Server = (*defaultServer)(nil)
+
 type defaultServer struct {
-	ServerAuthenticateFunc
+	serverAuthenticateFunc ServerAuthenticateFunc
 	component.StartFunc
 	component.ShutdownFunc
+}
+
+// Authenticate implements Server.
+func (d *defaultServer) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
+	if d.serverAuthenticateFunc == nil {
+		return ctx, nil
+	}
+	return d.serverAuthenticateFunc(ctx, sources)
 }
 
 // ServerOption represents the possible options for NewServer.
@@ -50,6 +60,7 @@ func (of serverOptionFunc) apply(e *defaultServer) {
 // on the given sources map. See Server.Authenticate.
 type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
 
+// Deprecated: [v0.121.0] No longer used, will be removed.
 func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
 	if f == nil {
 		return ctx, nil
@@ -60,7 +71,7 @@ func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[st
 // WithServerAuthenticate specifies which function to use to perform the authentication.
 func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
 	return serverOptionFunc(func(o *defaultServer) {
-		o.ServerAuthenticateFunc = authFunc
+		o.serverAuthenticateFunc = authFunc
 	})
 }
 
