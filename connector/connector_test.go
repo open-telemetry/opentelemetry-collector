@@ -70,6 +70,7 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	assert.Equal(t, component.StabilityLevelBeta, factory.MetricsToMetricsStability())
 	_, err = factory.CreateMetricsToMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.NoError(t, err)
+	_, err = factory.CreateMetricsToMetrics(context.Background(), Settings{ID: wrongID}, &defaultCfg, consumertest.NewNop())
 	require.ErrorContains(t, err, wrongIDErrStr)
 
 	assert.Equal(t, component.StabilityLevelUnmaintained, factory.LogsToLogsStability())
