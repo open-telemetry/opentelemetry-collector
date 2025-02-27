@@ -49,7 +49,7 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 				context.Background(),
 				exporterqueue.Settings{
 					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettingsWithType(exportertest.NopType),
+					ExporterSettings: exportertest.NewNopSettings(exportertest.NopType),
 				},
 				exporterqueue.NewDefaultConfig(),
 				ba.Consume)

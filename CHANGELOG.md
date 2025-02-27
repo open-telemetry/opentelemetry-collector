@@ -7,6 +7,39 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.26.0/v0.120.0
+
+### 🛑 Breaking changes 🛑
+
+- `all`: Added support for go1.24, bumped minimum version to 1.23 (#12370)
+- `mdatagen`: Removing deprecated generated funcs and a few test funcs as well. (#12304)
+- `service`: Align component logger attributes with those defined in RFC (#12217)
+  See [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md#attributes)
+  
+
+### 💡 Enhancements 💡
+
+- `otlpreceiver`: Update stability for logs (#12335)
+- `exporterhelper`: Implement sync disabled queue used when batching is enabled. (#12245)
+- `exporterhelper`: Enable the new pull-based batcher in exporterhelper (#12291)
+- `exporterhelper`: Update queue size after the element is done exported (#12399)
+  After this change the active queue size will include elements in the process of being exported.
+- `otelcol`: Add featuregate command to display information about available features (#11998)
+  The featuregate command allows users to view detailed information about feature gates
+  including their status, stage, and description.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `memorylimiter`: Logger no longer attributes to single signal, pipeline, or component. (#12217)
+- `otlpreceiver`: Logger no longer attributes to random signal when receiving multiple signals. (#12217)
+- `exporterhelper`: Fix undefined behavior access to request after send to next component. This causes random memory access. (#12281)
+- `exporterhelper`: Fix default batcher to correctly call all done callbacks exactly once (#12247)
+- `otlpreceiver`: Fix OTLP http receiver to correctly set Retry-After (#12367)
+- `otlphttpexporter`: Fix parsing logic for Retry-After in OTLP http protocol. (#12366)
+  The value of Retry-After field can be either an HTTP-date or delay-seconds and the current logic only parsed delay-seconds.
+- `cmd/builder`: Ensure unique aliases for modules with same suffix (#12201)
+
 ## v1.25.0/v0.119.0
 
 ### 🛑 Breaking changes 🛑

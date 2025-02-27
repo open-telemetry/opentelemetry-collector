@@ -6,11 +6,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/codes"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -42,9 +38,8 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	QueueSender  Sender[request.Request]
-	ObsrepSender Sender[request.Request]
-	RetrySender  Sender[request.Request]
+	QueueSender Sender[request.Request]
+	RetrySender Sender[request.Request]
 
 	firstSender Sender[request.Request]
 
@@ -70,6 +65,11 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 		}
 	}
 
+	//nolint: staticcheck
+	if be.batcherCfg.MinSizeItems != nil || be.batcherCfg.MaxSizeItems != nil {
+		set.Logger.Warn("Using of deprecated fields `min_size_items` and `max_size_items`")
+	}
+
 	// Consumer Sender is always initialized.
 	be.firstSender = newSender(func(ctx context.Context, req request.Request) error {
 		return req.Export(ctx)
@@ -87,11 +87,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	var err error
-	be.ObsrepSender, err = newObsReportSender(set, signal, be.firstSender)
+	be.firstSender, err = newObsReportSender(set, signal, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
-	be.firstSender = be.ObsrepSender
 
 	if be.batcherCfg.Enabled {
 		// Batcher mutates the data.
@@ -279,14 +278,5 @@ func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[request.Request]) Opt
 	return func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
 		return nil
-	}
-}
-
-func CheckStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
-	if err != nil {
-		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
-		require.EqualError(t, err, sd.Status().Description, "SpanData %v", sd)
-	} else {
-		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
 }
