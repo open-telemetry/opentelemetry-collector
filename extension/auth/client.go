@@ -57,5 +57,9 @@ func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFu
 // NewClient returns a Client configured with the provided options.
 // Deprecated: [v0.121.0] Use extensionauth.NewClient instead.
 func NewClient(options ...ClientOption) Client {
-	return extensionauth.NewClient(options...)
+	client, err := extensionauth.NewClient(options...)
+	if err != nil {
+		panic("unexpected error when calling extensionauth.NewClient: " + err.Error())
+	}
+	return client
 }

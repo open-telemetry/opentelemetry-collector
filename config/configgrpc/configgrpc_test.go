@@ -34,6 +34,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
+func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensionauth.Server {
+	t.Helper()
+	srv, err := extensionauth.NewServer(opts...)
+	require.NoError(t, err)
+	return srv
+}
+
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 	expectedKeepaliveClientConfig := &KeepaliveClientConfig{
 		Time:    time.Second * 10,
@@ -399,9 +406,10 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 	gss.Auth = &configauth.Authentication{
 		AuthenticatorID: mockID,
 	}
+
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(),
+			mockID: mustNewServerAuth(t),
 		},
 	}
 	srv, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings())
@@ -976,7 +984,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -1000,7 +1008,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -1021,7 +1029,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Nil(t, res)
@@ -1052,7 +1060,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	require.NoError(t, err)
@@ -1078,7 +1086,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	require.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
@@ -1101,7 +1109,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, extensionauth.NewServer(extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
