@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 )
 
 // Profiles receiver receives profiles.
@@ -66,6 +67,9 @@ func (f *factory) ProfilesStability() component.StabilityLevel {
 func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createProfilesFunc(ctx, set, cfg, next)
 }

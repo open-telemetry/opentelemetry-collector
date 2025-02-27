@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package envprovider // import "go.opentelemetry.io/collector/confmap/provider/envprovider"
 
 import (
@@ -31,7 +33,7 @@ type provider struct {
 // A default value for unset variable can be provided after :- suffix, for example:
 // `env:NAME_OF_ENVIRONMENT_VARIABLE:-default_value`
 //
-// See also: https://opentelemetry.io/docs/specs/otel/configuration/file-configuration/#environment-variable-substitution
+// See also: https://opentelemetry.io/docs/specs/otel/configuration/data-model/#environment-variable-substitution
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newProvider)
 }

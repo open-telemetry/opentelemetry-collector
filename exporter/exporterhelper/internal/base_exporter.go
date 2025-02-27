@@ -6,11 +6,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/codes"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -282,14 +278,5 @@ func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[request.Request]) Opt
 	return func(o *BaseExporter) error {
 		o.Unmarshaler = unmarshaler
 		return nil
-	}
-}
-
-func CheckStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
-	if err != nil {
-		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
-		require.EqualError(t, err, sd.Status().Description, "SpanData %v", sd)
-	} else {
-		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
 }

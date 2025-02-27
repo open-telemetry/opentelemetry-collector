@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.26.0
 	go.opentelemetry.io/collector/config/configopaque v1.26.0
 	go.opentelemetry.io/collector/config/configtls v1.26.0
-	go.opentelemetry.io/collector/extension/extensionauth v0.120.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.120.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227134758-6a98ee8b14a2
 	go.opentelemetry.io/collector/pdata v1.26.0
 	go.opentelemetry.io/collector/pdata/testdata v0.120.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0

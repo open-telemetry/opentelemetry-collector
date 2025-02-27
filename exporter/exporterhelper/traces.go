@@ -131,19 +131,23 @@ func NewTracesRequest(
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		req, cErr := converter(ctx, td)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert traces. Dropping data.",
+	tc, err := consumer.NewTraces(newConsumeTraces(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tracesExporter{BaseExporter: be, Traces: tc}, nil
+}
+
+func newConsumeTraces(converter RequestFromTracesFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeTracesFunc {
+	return func(ctx context.Context, td ptrace.Traces) error {
+		req, err := converter(ctx, td)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_spans", td.SpanCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
 		return be.Send(ctx, req)
-	}, be.ConsumerOptions...)
-
-	return &tracesExporter{
-		BaseExporter: be,
-		Traces:       tc,
-	}, err
+	}
 }

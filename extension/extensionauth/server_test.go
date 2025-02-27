@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -15,7 +16,8 @@ import (
 
 func TestDefaultValues(t *testing.T) {
 	// prepare
-	e := NewServer()
+	e, err := NewServer()
+	require.NoError(t, err)
 
 	// test
 	t.Run("start", func(t *testing.T) {
@@ -38,15 +40,16 @@ func TestDefaultValues(t *testing.T) {
 func TestWithServerAuthenticateFunc(t *testing.T) {
 	// prepare
 	authCalled := false
-	e := NewServer(
+	e, err := NewServer(
 		WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 			authCalled = true
 			return ctx, nil
 		}),
 	)
+	require.NoError(t, err)
 
 	// test
-	_, err := e.Authenticate(context.Background(), make(map[string][]string))
+	_, err = e.Authenticate(context.Background(), make(map[string][]string))
 
 	// verify
 	assert.True(t, authCalled)
@@ -55,13 +58,14 @@ func TestWithServerAuthenticateFunc(t *testing.T) {
 
 func TestWithServerStart(t *testing.T) {
 	called := false
-	e := NewServer(WithServerStart(func(context.Context, component.Host) error {
+	e, err := NewServer(WithServerStart(func(context.Context, component.Host) error {
 		called = true
 		return nil
 	}))
+	require.NoError(t, err)
 
 	// test
-	err := e.Start(context.Background(), componenttest.NewNopHost())
+	err = e.Start(context.Background(), componenttest.NewNopHost())
 
 	// verify
 	assert.True(t, called)
@@ -70,13 +74,14 @@ func TestWithServerStart(t *testing.T) {
 
 func TestWithServerShutdown(t *testing.T) {
 	called := false
-	e := NewServer(WithServerShutdown(func(context.Context) error {
+	e, err := NewServer(WithServerShutdown(func(context.Context) error {
 		called = true
 		return nil
 	}))
+	require.NoError(t, err)
 
 	// test
-	err := e.Shutdown(context.Background())
+	err = e.Shutdown(context.Background())
 
 	// verify
 	assert.True(t, called)

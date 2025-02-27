@@ -131,19 +131,23 @@ func NewMetricsRequest(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
-		req, cErr := converter(ctx, md)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert metrics. Dropping data.",
+	mc, err := consumer.NewMetrics(newConsumeMetrics(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsExporter{BaseExporter: be, Metrics: mc}, nil
+}
+
+func newConsumeMetrics(converter RequestFromMetricsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
+	return func(ctx context.Context, md pmetric.Metrics) error {
+		req, err := converter(ctx, md)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_data_points", md.DataPointCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
 		return be.Send(ctx, req)
-	}, be.ConsumerOptions...)
-
-	return &metricsExporter{
-		BaseExporter: be,
-		Metrics:      mc,
-	}, err
+	}
 }
