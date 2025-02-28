@@ -76,8 +76,8 @@ replaces:
   - go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
   - go.opentelemetry.io/collector/exporter/otlphttpexporter => ../../exporter/otlphttpexporter
   - go.opentelemetry.io/collector/extension => ../../extension
-  - go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-  - go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+  - go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
+  - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
@@ -99,6 +99,7 @@ replaces:
   - go.opentelemetry.io/collector/processor/batchprocessor => ../../processor/batchprocessor
   - go.opentelemetry.io/collector/processor/memorylimiterprocessor => ../../processor/memorylimiterprocessor
   - go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
+  - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper => ../../processor/processorhelper/xprocessorhelper
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver

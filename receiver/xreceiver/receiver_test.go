@@ -8,12 +8,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 )
+
+var testID = component.MustNewID("test")
 
 func TestNewFactoryWithProfiles(t *testing.T) {
 	testType := component.MustNewType("test")
@@ -27,8 +31,12 @@ func TestNewFactoryWithProfiles(t *testing.T) {
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesStability())
-	_, err := factory.CreateProfiles(context.Background(), receiver.Settings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
+	_, err := factory.CreateProfiles(context.Background(), receiver.Settings{ID: testID}, &defaultCfg, nil)
+	require.NoError(t, err)
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
+	_, err = factory.CreateProfiles(context.Background(), receiver.Settings{ID: wrongID}, &defaultCfg, nil)
+	assert.EqualError(t, err, wrongIDErrStr)
 }
 
 var nopInstance = &nopReceiver{

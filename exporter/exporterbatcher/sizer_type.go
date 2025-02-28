@@ -7,20 +7,26 @@ import (
 	"fmt"
 )
 
-type SizerType string
+type SizerType struct {
+	val string
+}
 
 const (
-	SizerTypeItems SizerType = "items"
-	SizerTypeBytes SizerType = "bytes"
+	sizerTypeItems = "items"
+	sizerTypeBytes = "bytes"
+)
+
+var (
+	SizerTypeItems = SizerType{val: sizerTypeItems}
+	SizerTypeBytes = SizerType{val: sizerTypeBytes}
 )
 
 // UnmarshalText implements TextUnmarshaler interface.
 func (s *SizerType) UnmarshalText(text []byte) error {
 	switch str := string(text); str {
-	case string(SizerTypeItems):
+	case sizerTypeItems:
 		*s = SizerTypeItems
-	case string(SizerTypeBytes):
-		*s = SizerTypeBytes
+	// TODO support setting sizer to SizerTypeBytes when all logs, traces, and metrics batching support it
 	default:
 		return fmt.Errorf("invalid sizer: %q", str)
 	}

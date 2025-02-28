@@ -15,8 +15,8 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.26.0
 	go.opentelemetry.io/collector/config/configopaque v1.26.0
 	go.opentelemetry.io/collector/config/configtls v1.26.0
-	go.opentelemetry.io/collector/extension/auth v0.120.0
-	go.opentelemetry.io/collector/extension/auth/authtest v0.120.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.0.0-20250227134758-6a98ee8b14a2
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
 	go.opentelemetry.io/otel v1.34.0
 	go.uber.org/goleak v1.3.0
@@ -59,7 +59,7 @@ replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -71,4 +71,4 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/client => ../../client
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest

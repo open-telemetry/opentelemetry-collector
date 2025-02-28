@@ -90,7 +90,7 @@ require (
 	go.opentelemetry.io/collector/processor/xprocessor v0.120.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.0 // indirect
-	go.opentelemetry.io/collector/service/hostcapabilities v0.120.0 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250225223953-66e901c716a0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.34.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
@@ -168,7 +168,7 @@ replace go.opentelemetry.io/collector/config/confighttp => ../config/confighttp
 
 replace go.opentelemetry.io/collector/config/configauth => ../config/configauth
 
-replace go.opentelemetry.io/collector/extension/auth => ../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../extension/extensionauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../config/configcompression
 
@@ -210,7 +210,7 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../internal/fan
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
 

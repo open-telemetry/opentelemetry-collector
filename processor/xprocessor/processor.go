@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/internal"
 )
 
 // Factory is a component.Factory interface for processors.
@@ -64,6 +65,9 @@ func (f factory) ProfilesStability() component.StabilityLevel {
 func (f factory) CreateProfiles(ctx context.Context, set processor.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createProfilesFunc(ctx, set, cfg, next)
 }

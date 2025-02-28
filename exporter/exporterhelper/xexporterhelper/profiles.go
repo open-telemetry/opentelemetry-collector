@@ -134,19 +134,23 @@ func NewProfilesRequestExporter(
 		return nil, err
 	}
 
-	tc, err := xconsumer.NewProfiles(func(ctx context.Context, pd pprofile.Profiles) error {
-		req, cErr := converter(ctx, pd)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert profiles. Dropping data.",
+	tc, err := xconsumer.NewProfiles(newConsumeProfiles(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profileExporter{BaseExporter: be, Profiles: tc}, nil
+}
+
+func newConsumeProfiles(converter RequestFromProfilesFunc, be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
+	return func(ctx context.Context, pd pprofile.Profiles) error {
+		req, err := converter(ctx, pd)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_samples", pd.SampleCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
 		return be.Send(ctx, req)
-	}, be.ConsumerOptions...)
-
-	return &profileExporter{
-		BaseExporter: be,
-		Profiles:     tc,
-	}, err
+	}
 }

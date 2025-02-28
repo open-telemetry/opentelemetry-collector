@@ -1,0 +1,8 @@
+type: http
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: provider
+  stability:
+    stable: [provider]
+  distributions: [core, contrib, k8s]
