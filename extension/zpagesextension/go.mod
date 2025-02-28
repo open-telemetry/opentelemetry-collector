@@ -30,7 +30,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect
@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.26.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.26.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.26.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.120.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2 // indirect
 	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.120.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
@@ -85,7 +85,7 @@ replace go.opentelemetry.io/collector/config/configcompression => ../../config/c
 
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
-replace go.opentelemetry.io/collector/extension/auth => ../auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../extensionauth
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
@@ -100,4 +100,4 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest

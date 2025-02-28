@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	go.opentelemetry.io/collector/component v0.120.0
 	go.opentelemetry.io/collector/pipeline v0.120.0
-	go.opentelemetry.io/collector/service v0.119.0
+	go.opentelemetry.io/collector/service v0.120.0
 )
 
 require (
@@ -50,8 +50,8 @@ replace (
 	go.opentelemetry.io/collector/exporter/exportertest => ../../exporter/exportertest
 	go.opentelemetry.io/collector/exporter/xexporter => ../../exporter/xexporter
 	go.opentelemetry.io/collector/extension => ../../extension
-	go.opentelemetry.io/collector/extension/auth => ../../extension/auth
-	go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+	go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
 	go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 	go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 	go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
