@@ -161,7 +161,7 @@ otelcorecol:
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
-	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
+	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --generate-doc-cmd --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
 
 .PHONY: ocb

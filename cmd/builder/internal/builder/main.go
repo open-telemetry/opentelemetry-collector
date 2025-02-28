@@ -96,6 +96,19 @@ func Generate(cfg *Config) error {
 		}
 	}
 
+	if cfg.GenerateDocCmd {
+		docFolder := filepath.Clean(filepath.Join(cfg.Distribution.OutputPath, "internal", "doc"))
+		if err := os.MkdirAll(docFolder, 0o750); err != nil {
+			return fmt.Errorf("failed to create source folder: %w", err)
+		}
+		if err := os.WriteFile(filepath.Join(docFolder, "md.tmpl"), mdBytes, 0o600); err != nil {
+			return fmt.Errorf("failed to write markdown doc template: %w", err)
+		}
+		if err := processAndWrite(cfg, docBytesTemplate, filepath.Join(docFolder, docBytesTemplate.Name()), cfg); err != nil {
+			return fmt.Errorf("failed to generate docs source file %q: %w", docBytesTemplate.Name(), err)
+		}
+	}
+
 	cfg.Logger.Info("Sources created", zap.String("path", cfg.Distribution.OutputPath))
 	return nil
 }

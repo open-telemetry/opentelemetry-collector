@@ -30,6 +30,7 @@ const (
 	gcflagsFlag                = "gcflags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
+	generateDocCmdFlag         = "generate-doc-cmd"
 )
 
 // Command is the main entrypoint for this application
@@ -84,6 +85,7 @@ func initFlags(flags *flag.FlagSet) error {
 	flags.Bool(skipGetModulesFlag, false, "Whether builder should skip updating go.mod and retrieve Go module list (default false)")
 	flags.Bool(skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	flags.Bool(verboseFlag, false, "Whether builder should print verbose output (default false)")
+	flags.Bool(generateDocCmdFlag, false, "Whether builder should generate an additional command to output docs (default false)")
 	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	flags.String(gcflagsFlag, "", `gcflags to include in the "go build" command`)
 	flags.String(distributionOutputPathFlag, "", "Where to write the resulting files")
@@ -159,6 +161,9 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	}
 
 	cfg.Verbose, err = flags.GetBool(verboseFlag)
+	errs = multierr.Append(errs, err)
+
+	cfg.GenerateDocCmd, err = flags.GetBool(generateDocCmdFlag)
 	errs = multierr.Append(errs, err)
 
 	if flags.Changed(distributionOutputPathFlag) {

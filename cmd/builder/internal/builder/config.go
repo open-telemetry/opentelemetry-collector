@@ -39,6 +39,7 @@ type Config struct {
 	GCFlags              string `mapstructure:"-"`
 	GCSet                bool   `mapstructure:"-"` // only used to override GCFlags
 	Verbose              bool   `mapstructure:"-"`
+	GenerateDocCmd       bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
 	Exporters         []Module     `mapstructure:"exporters"`
