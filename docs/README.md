@@ -1,5 +1,6 @@
 # OpenTelemetry Collector
 
+**Status**: [Beta](https://github.com/open-telemetry/opentelemetry-specification/blob/main/oteps/0232-maturity-of-otel.md#beta)
 The OpenTelemetry Collector consists of the following components:
 
 * A mechanism that _MUST_ be able to load and parse an [OpenTelemetry Collector configuration
