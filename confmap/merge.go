@@ -36,7 +36,7 @@ func mergeAppend(src, dest map[string]any) error {
 			dest[sKey] = mergeSlice(srcVal, destVal)
 		case reflect.Map:
 			// both of them are maps. Recursively call the mergeAppend
-			_ = mergeAppend(sVal.(map[string]any), dVal.(map[string]any)) //nolint:errcheck // return value of mergeAppend is always nil.
+			_ = mergeAppend(sVal.(map[string]any), dVal.(map[string]any))
 		default:
 			// any other datatype. Override the destination map
 			dest[sKey] = sVal
