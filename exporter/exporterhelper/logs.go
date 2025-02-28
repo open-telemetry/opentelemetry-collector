@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -25,16 +26,16 @@ var (
 )
 
 type logsRequest struct {
-	ld               plog.Logs
-	pusher           consumer.ConsumeLogsFunc
-	cachedItemsCount int
+	ld         plog.Logs
+	pusher     consumer.ConsumeLogsFunc
+	cachedSize int
 }
 
 func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	return &logsRequest{
-		ld:               ld,
-		pusher:           pusher,
-		cachedItemsCount: ld.LogRecordCount(),
+		ld:         ld,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -65,11 +66,18 @@ func (req *logsRequest) Export(ctx context.Context) error {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *logsRequest) Size(sizer sizer.LogsSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.LogsSize(req.ld)
+	}
+	return req.cachedSize
+}
+
+func (req *logsRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type logsExporter struct {
@@ -131,19 +139,23 @@ func NewLogsRequest(
 		return nil, err
 	}
 
-	lc, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
-		req, cErr := converter(ctx, ld)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert logs. Dropping data.",
+	lc, err := consumer.NewLogs(newConsumeLogs(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &logsExporter{BaseExporter: be, Logs: lc}, nil
+}
+
+func newConsumeLogs(converter RequestFromLogsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
+	return func(ctx context.Context, ld plog.Logs) error {
+		req, err := converter(ctx, ld)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_log_records", ld.LogRecordCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
 		return be.Send(ctx, req)
-	}, be.ConsumerOptions...)
-
-	return &logsExporter{
-		BaseExporter: be,
-		Logs:         lc,
-	}, err
+	}
 }
