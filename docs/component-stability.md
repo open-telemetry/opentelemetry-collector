@@ -214,6 +214,9 @@ If data can be dropped/created/held at multiple distinct points in a component's
 scraping, validation, processing, etc.), it is recommended to define additional attributes to help
 diagnose the specific source of the discrepancy, or to define different signals for each.
 
+The breakdown of emitted telemetry per telemetry level (basic / normal / detailed) should follow
+the guidelines in [the Go package documentation for `configtelemetry`](config/configtelemetry/doc.go).
+
 ### Deprecated
 
 The component is planned to be removed in a future version and no further support will be provided. Note that new issues will likely not be worked on. When a component enters "deprecated" mode, it is expected to exist for at least two minor releases. See the component's readme file for more details on when a component will cease to exist.
