@@ -146,7 +146,7 @@ func newConsumeProfiles(converter RequestFromProfilesFunc, be *internal.BaseExpo
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {
-			logger.Error("Failed to convert metrics. Dropping data.",
+			logger.Error("Failed to convert profiles. Dropping data.",
 				zap.Int("dropped_samples", pd.SampleCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(err)
