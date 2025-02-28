@@ -143,7 +143,7 @@ func newConsumeTraces(converter RequestFromTracesFunc, be *internal.BaseExporter
 	return func(ctx context.Context, td ptrace.Traces) error {
 		req, err := converter(ctx, td)
 		if err != nil {
-			logger.Error("Failed to convert metrics. Dropping data.",
+			logger.Error("Failed to convert traces. Dropping data.",
 				zap.Int("dropped_spans", td.SpanCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(err)

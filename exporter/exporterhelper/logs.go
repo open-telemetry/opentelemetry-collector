@@ -151,7 +151,7 @@ func newConsumeLogs(converter RequestFromLogsFunc, be *internal.BaseExporter, lo
 	return func(ctx context.Context, ld plog.Logs) error {
 		req, err := converter(ctx, ld)
 		if err != nil {
-			logger.Error("Failed to convert metrics. Dropping data.",
+			logger.Error("Failed to convert logs. Dropping data.",
 				zap.Int("dropped_log_records", ld.LogRecordCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(err)
