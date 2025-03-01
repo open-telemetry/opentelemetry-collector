@@ -2,9 +2,12 @@ default:
 all_set:
   {{- if .Metrics }}
   metrics:
-    {{- range $name, $_ := .Metrics }}
+    {{- range $name, $v := .Metrics }}
     {{ $name }}:
       enabled: true
+    {{- if $v.Interval }}
+      interval: {{ $v.Interval }}
+    {{- end }}
     {{- end }}
   {{- end }}
   {{- if .ResourceAttributes }}
