@@ -81,3 +81,129 @@ func TestUInt64SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestUInt64SliceTryIncrementFrom(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{10, 9})
+
+	ms2 := NewUInt64Slice()
+	ms2.FromRaw([]uint64{1, 10})
+
+	//assert.False(t, ms.TryIncrementFrom(ms2, 1))
+	//assert.False(t, ms.tryIncrementFromWithCurrentFunctions(ms2, 1))
+	//assert.False(t, ms.tryIncrementFromTransform(ms2, 1))
+	assert.False(t, ms.tryIncrementFromNewSlice(ms2, 1))
+	ms.EnsureCapacity(4)
+	//assert.True(t, ms.TryIncrementFrom(ms2, 1))
+	//assert.True(t, ms.tryIncrementFromWithCurrentFunctions(ms2, 1))
+	//assert.True(t, ms.tryIncrementFromTransform(ms2, 1))
+	assert.True(t, ms.tryIncrementFromNewSlice(ms2, 1))
+	assert.Equal(t, uint64(10), ms.At(0))
+	assert.Equal(t, uint64(10), ms.At(1))
+	assert.Equal(t, uint64(10), ms.At(2))
+}
+
+func TestUInt64SliceCollapse(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, uint64(4), ms.At(0))
+	assert.Equal(t, uint64(2), ms.At(1))
+}
+
+func TestUInt64SliceCollapseOffset(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, uint64(1), ms.At(0))
+	assert.Equal(t, uint64(4), ms.At(1))
+	assert.Equal(t, uint64(1), ms.At(2))
+}
+
+func BenchmarkUInt64SliceTryIncrementFrom(b *testing.B) {
+	benchmarks := []struct {
+		name             string
+		tryIncrementFrom func(s1, s2 UInt64Slice, offset int) bool
+	}{
+		{
+			name:             "TryIncrementFromDirectAccess",
+			tryIncrementFrom: UInt64Slice.TryIncrementFrom,
+		},
+		{
+			name:             "tryIncrementFromWithCurrentFunctions",
+			tryIncrementFrom: UInt64Slice.tryIncrementFromWithCurrentFunctions,
+		},
+		{
+			name:             "tryIncrementFromTransform",
+			tryIncrementFrom: UInt64Slice.tryIncrementFromTransform,
+		},
+		{
+			name:             "tryIncrementFromNewSlice",
+			tryIncrementFrom: UInt64Slice.tryIncrementFromNewSlice,
+		},
+		{
+			name: "incrementFromSeq",
+			tryIncrementFrom: func(s1, s2 UInt64Slice, offset int) bool {
+				s1.IncrementFromSeq(s2.All(), offset)
+				return true
+			},
+		},
+	}
+	ms1 := NewUInt64Slice()
+	ms1.FromRaw(make([]uint64, 160))
+	ms2 := NewUInt64Slice()
+	ms2.FromRaw(make([]uint64, 80))
+	b.ResetTimer()
+	for _, bm := range benchmarks {
+
+		b.Run(bm.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				bm.tryIncrementFrom(ms1, ms2, 40)
+			}
+		})
+	}
+}
+
+func (ms UInt64Slice) tryIncrementFromWithCurrentFunctions(s2 UInt64Slice, offset int) bool {
+	if ms.Cap() < s2.Len()+offset {
+		return false
+	}
+	ms.Reslice(0, max(ms.Len(), s2.Len()+offset))
+	for i := 0; i < s2.Len(); i++ {
+		ms.SetAt(i+offset, ms.At(i+offset)+s2.At(i))
+	}
+	return true
+}
+
+func (ms UInt64Slice) tryIncrementFromTransform(s2 UInt64Slice, offset int) bool {
+	if ms.Cap() < s2.Len()+offset {
+		return false
+	}
+	ms.Reslice(0, max(ms.Len(), s2.Len()+offset))
+	ms.Transform(func(i int, v uint64) uint64 {
+		return v + s2.At(i-offset)
+	}, offset, s2.Len()+offset)
+	return true
+}
+
+func (ms UInt64Slice) tryIncrementFromNewSlice(s2 UInt64Slice, offset int) bool {
+	if ms.Cap() < s2.Len()+offset {
+		return false
+	}
+
+	newSlice := make([]uint64, max(ms.Len(), s2.Len()+offset))
+	for i := 0; i < ms.Len(); i++ {
+		newSlice[i] = ms.At(i)
+	}
+	for i := 0; i < s2.Len(); i++ {
+		newSlice[i+offset] += s2.At(i)
+	}
+	ms.FromRaw(newSlice)
+	return true
+}
