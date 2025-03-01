@@ -13,15 +13,20 @@ generated_package_name: string
 # Required for components (Optional for subcomponents): A high-level view of the development status and use of this component
 status:
   # Required: The class of the component (For example receiver)
-  class: <receiver|processor|exporter|connector|extension|cmd|pkg>
+  class: <receiver|processor|exporter|connector|extension|cmd|pkg|scraper|converter|provider>
   # Required: The stability of the component - See https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stability-levels
   stability:
-    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
-    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
-    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
-    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
-    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
-    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension>]
+    development: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    alpha: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    beta: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    stable: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    deprecated: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+    unmaintained: [<metrics|traces|logs|traces_to_metrics|metrics_to_metrics|logs_to_metrics|extension,converter,provider>]
+  # [WIP] Will be a requirement for deprecated components: The deprecation information for the deprecated components
+  deprecation:
+    <component>:
+      date: string
+      migration: string
   # Optional: The distributions that this component is bundled with (For example core or contrib). See statusdata.go for a list of common distros.
   distributions: [string]
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
@@ -133,8 +138,6 @@ tests:
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
 telemetry:
-  # Optional: level allows components to specify the minimum telemetry level for metrics to be produced. defaults to basic if not set.
-  level: string
   metrics:
     <metric.name>:
       # Required: whether the metric is collected by default.

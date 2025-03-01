@@ -38,7 +38,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect
@@ -86,6 +86,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.120.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.120.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.120.0 // indirect
+	go.opentelemetry.io/collector/service/hostcapabilities v0.0.0-20250225223953-66e901c716a0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
 	go.opentelemetry.io/contrib/config v0.14.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.34.0 // indirect
@@ -200,7 +201,7 @@ replace go.opentelemetry.io/collector/config/confighttp => ../../config/confight
 
 replace go.opentelemetry.io/collector/client => ../../client
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/otelcol => ../
 
@@ -208,11 +209,13 @@ replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extensi
 
 replace go.opentelemetry.io/collector/service => ../../service
 
+replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
+
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 

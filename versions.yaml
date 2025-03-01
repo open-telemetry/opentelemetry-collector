@@ -8,6 +8,7 @@ module-sets:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
       - go.opentelemetry.io/collector/pdata
+      - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/confmap
       - go.opentelemetry.io/collector/confmap/provider/envprovider
       - go.opentelemetry.io/collector/confmap/provider/fileprovider
@@ -20,6 +21,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configtls
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/consumer
+      - go.opentelemetry.io/collector/extension
   beta:
     version: v0.120.0
     modules:
@@ -30,7 +32,6 @@ module-sets:
       - go.opentelemetry.io/collector/internal/telemetry
       - go.opentelemetry.io/collector/cmd/builder
       - go.opentelemetry.io/collector/cmd/mdatagen
-      - go.opentelemetry.io/collector/component
       - go.opentelemetry.io/collector/component/componentstatus
       - go.opentelemetry.io/collector/component/componenttest
       - go.opentelemetry.io/collector/confmap/xconfmap
@@ -55,7 +56,8 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/exporter/xexporter
-      - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/extensionauth
+      - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest
       - go.opentelemetry.io/collector/extension/auth
       - go.opentelemetry.io/collector/extension/auth/authtest
       - go.opentelemetry.io/collector/extension/extensioncapabilities
@@ -85,6 +87,7 @@ module-sets:
       - go.opentelemetry.io/collector/scraper/scrapertest
       - go.opentelemetry.io/collector/semconv
       - go.opentelemetry.io/collector/service
+      - go.opentelemetry.io/collector/service/hostcapabilities
       - go.opentelemetry.io/collector/filter
 
 excluded-modules:

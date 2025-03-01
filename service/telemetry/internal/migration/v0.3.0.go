@@ -28,8 +28,12 @@ type TracesConfigV030 struct {
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v2TracesConfig tracesConfigV020
+		v2TracesConfig := tracesConfigV020{
+			Level:       unmarshaled.Level,
+			Propagators: unmarshaled.Propagators,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v2TracesConfig); e != nil {
 			// error could not be resolved through backwards
@@ -64,7 +68,7 @@ type MetricsConfigV030 struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	// Deprecated: [v0.111.0] use readers configuration.
-	Address string `mapstructure:"address"`
+	Address string `mapstructure:"address,omitempty"`
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
@@ -72,8 +76,12 @@ type MetricsConfigV030 struct {
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 metricsConfigV020
+		v02 := metricsConfigV020{
+			Level:   unmarshaled.Level,
+			Address: unmarshaled.Address,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards
@@ -102,7 +110,7 @@ type LogsConfigV030 struct {
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
 	// (default = false)
-	Development bool `mapstructure:"development"`
+	Development bool `mapstructure:"development,omitempty"`
 
 	// Encoding sets the logger's encoding.
 	// Example values are "json", "console".
@@ -111,13 +119,13 @@ type LogsConfigV030 struct {
 	// DisableCaller stops annotating logs with the calling function's file
 	// name and line number. By default, all logs are annotated.
 	// (default = false)
-	DisableCaller bool `mapstructure:"disable_caller"`
+	DisableCaller bool `mapstructure:"disable_caller,omitempty"`
 
 	// DisableStacktrace completely disables automatic stacktrace capturing. By
 	// default, stacktraces are captured for WarnLevel and above logs in
 	// development and ErrorLevel and above in production.
 	// (default = false)
-	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
+	DisableStacktrace bool `mapstructure:"disable_stacktrace,omitempty"`
 
 	// Sampling sets a sampling policy.
 	// Default:
@@ -156,11 +164,11 @@ type LogsConfigV030 struct {
 	//	   		foo: "bar"
 	//
 	// By default, there is no initial field.
-	InitialFields map[string]any `mapstructure:"initial_fields"`
+	InitialFields map[string]any `mapstructure:"initial_fields,omitempty"`
 
 	// Processors allow configuration of log record processors to emit logs to
-	// any number of suported backends.
-	Processors []config.LogRecordProcessor `mapstructure:"processors"`
+	// any number of supported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
@@ -179,8 +187,19 @@ type LogsSamplingConfig struct {
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
+	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
-		var v02 logsConfigV020
+		v02 := logsConfigV020{
+			Level:             unmarshaled.Level,
+			Development:       unmarshaled.Development,
+			Encoding:          unmarshaled.Encoding,
+			DisableCaller:     unmarshaled.DisableCaller,
+			DisableStacktrace: unmarshaled.DisableStacktrace,
+			Sampling:          unmarshaled.Sampling,
+			OutputPaths:       unmarshaled.OutputPaths,
+			ErrorOutputPaths:  unmarshaled.ErrorOutputPaths,
+			InitialFields:     unmarshaled.InitialFields,
+		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {
 			// error could not be resolved through backwards

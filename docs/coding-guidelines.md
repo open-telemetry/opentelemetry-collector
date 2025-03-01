@@ -61,6 +61,12 @@ We use the following rules for some common situations where we split into separa
 1. Consider splitting into separate modules if the API may evolve independently in separate groups
    of packages. For example, the configuration related to HTTP and gRPC evolve independently, so
    `config/configgrpc` and `config/confighttp` are separate modules.
+1. For component names, add the component kind as a suffix for the module name. For example, the
+   OTLP receiver is in the `receiver/otlpreceiver` module.
+1. Modules that add specific functionality related to a parent folder should have a prefix in the
+   name that relates to the parent module. For example, `configauth` has the `config` prefix since
+   it is part of the `config` folder, and `extensionauth` has `extension` as a prefix since it is
+   part of the `extension` module.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
    have a module `component`, the helpers should be in `component/componenttest`.
 1. Experimental packages that will later be added to another module should be in their own module,

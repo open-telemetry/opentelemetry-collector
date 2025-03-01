@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 const (
@@ -77,21 +77,20 @@ type ClientConfig struct {
 	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
-	// By default, it is set to 100.
-	MaxIdleConns *int `mapstructure:"max_idle_conns"`
+	// By default, it is set to 100. Zero means no limit.
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
-	// By default, it is set to [http.DefaultTransport.MaxIdleConnsPerHost].
-	MaxIdleConnsPerHost *int `mapstructure:"max_idle_conns_per_host"`
+	// Default is 0 (unlimited).
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
-	// active, and idle states.
-	// By default, it is set to [http.DefaultTransport.MaxConnsPerHost].
-	MaxConnsPerHost *int `mapstructure:"max_conns_per_host"`
+	// active, and idle states. Default is 0 (unlimited).
+	MaxConnsPerHost int `mapstructure:"max_conns_per_host"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
-	// By default, it is set to [http.DefaultTransport.IdleConnTimeout]
-	IdleConnTimeout *time.Duration `mapstructure:"idle_conn_timeout"`
+	// By default, it is set to 90 seconds.
+	IdleConnTimeout time.Duration `mapstructure:"idle_conn_timeout"`
 
 	// DisableKeepAlives, if true, disables HTTP keep-alives and will only use the connection to the server
 	// for a single HTTP request.
@@ -129,13 +128,9 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		ReadBufferSize:      defaultTransport.ReadBufferSize,
-		WriteBufferSize:     defaultTransport.WriteBufferSize,
-		Headers:             map[string]configopaque.String{},
-		MaxIdleConns:        &defaultTransport.MaxIdleConns,
-		MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
-		MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
-		IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
+		Headers:         map[string]configopaque.String{},
+		MaxIdleConns:    defaultTransport.MaxIdleConns,
+		IdleConnTimeout: defaultTransport.IdleConnTimeout,
 	}
 }
 
@@ -172,21 +167,10 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		transport.WriteBufferSize = hcs.WriteBufferSize
 	}
 
-	if hcs.MaxIdleConns != nil {
-		transport.MaxIdleConns = *hcs.MaxIdleConns
-	}
-
-	if hcs.MaxIdleConnsPerHost != nil {
-		transport.MaxIdleConnsPerHost = *hcs.MaxIdleConnsPerHost
-	}
-
-	if hcs.MaxConnsPerHost != nil {
-		transport.MaxConnsPerHost = *hcs.MaxConnsPerHost
-	}
-
-	if hcs.IdleConnTimeout != nil {
-		transport.IdleConnTimeout = *hcs.IdleConnTimeout
-	}
+	transport.MaxIdleConns = hcs.MaxIdleConns
+	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
+	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
+	transport.IdleConnTimeout = hcs.IdleConnTimeout
 
 	// Setting the Proxy URL
 	if hcs.ProxyURL != "" {
@@ -553,7 +537,7 @@ func NewDefaultCORSConfig() *CORSConfig {
 	return &CORSConfig{}
 }
 
-func authInterceptor(next http.Handler, server auth.Server, requestParams []string) http.Handler {
+func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sources := r.Header
 		query := r.URL.Query()

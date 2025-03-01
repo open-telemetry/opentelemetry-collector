@@ -4,10 +4,8 @@
 package auth // import "go.opentelemetry.io/collector/extension/auth"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 // Server is an Extension that can be used as an authenticator for the configauth.Authentication option.
@@ -15,78 +13,44 @@ import (
 // names from the Authentication configuration. Each Server is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
-type Server interface {
-	extension.Extension
-
-	// Authenticate checks whether the given map contains valid auth data. Successfully authenticated calls will always return a nil error.
-	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,
-	// on behalf of receivers, but receivers can still call this directly if the usage of interceptors isn't suitable.
-	// The deadline and cancellation given to this function must be respected, but note that authentication data has to be part of the map, not context.
-	// The resulting context should contain the authentication data, such as the principal/username, group membership (if available), and the raw
-	// authentication data (if possible). This will allow other components in the pipeline to make decisions based on that data, such as routing based
-	// on tenancy as determined by the group membership, or passing through the authentication data to the next collector/backend.
-	// The context keys to be used are not defined yet.
-	Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error)
-}
-
-type defaultServer struct {
-	ServerAuthenticateFunc
-	component.StartFunc
-	component.ShutdownFunc
-}
+// Deprecated: [v0.121.0] Use extensionauth.Server instead.
+type Server = extensionauth.Server
 
 // ServerOption represents the possible options for NewServer.
-type ServerOption interface {
-	apply(*defaultServer)
-}
-
-type serverOptionFunc func(*defaultServer)
-
-func (of serverOptionFunc) apply(e *defaultServer) {
-	of(e)
-}
+// Deprecated: [v0.121.0] Use extensionauth.ServerOption instead.
+type ServerOption = extensionauth.ServerOption
 
 // ServerAuthenticateFunc defines the signature for the function responsible for performing the authentication based
 // on the given sources map. See Server.Authenticate.
-type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
-
-func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
-	if f == nil {
-		return ctx, nil
-	}
-	return f(ctx, sources)
-}
+// Deprecated: [v0.121.0] Use extensionauth.ServerAuthenticateFunc instead.
+type ServerAuthenticateFunc = extensionauth.ServerAuthenticateFunc
 
 // WithServerAuthenticate specifies which function to use to perform the authentication.
+// Deprecated: [v0.121.0] Use extensionauth.WithServerAuthenticate instead.
 func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
-	return serverOptionFunc(func(o *defaultServer) {
-		o.ServerAuthenticateFunc = authFunc
-	})
+	return extensionauth.WithServerAuthenticate(authFunc)
 }
 
 // WithServerStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
+// Deprecated: [v0.121.0] Use extensionauth.WithServerStart instead.
 func WithServerStart(startFunc component.StartFunc) ServerOption {
-	return serverOptionFunc(func(o *defaultServer) {
-		o.StartFunc = startFunc
-	})
+	return extensionauth.WithServerStart(startFunc)
 }
 
 // WithServerShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
+// Deprecated: [v0.121.0] Use extensionauth.WithServerShutdown instead.
 func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
-	return serverOptionFunc(func(o *defaultServer) {
-		o.ShutdownFunc = shutdownFunc
-	})
+	return extensionauth.WithServerShutdown(shutdownFunc)
 }
 
 // NewServer returns a Server configured with the provided options.
+// Deprecated: [v0.121.0] Use extensionauth.NewServer instead.
 func NewServer(options ...ServerOption) Server {
-	bc := &defaultServer{}
-
-	for _, op := range options {
-		op.apply(bc)
+	srv, err := extensionauth.NewServer(options...)
+	if err != nil {
+		panic("unexpected error when calling extensionauth.NewServer: " + err.Error())
 	}
-
-	return bc
+	return srv
 }

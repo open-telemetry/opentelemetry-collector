@@ -23,6 +23,9 @@ type Config struct {
 	// Blocking controls the queue behavior when full.
 	// If true it blocks until enough space to add the new request to the queue.
 	Blocking bool `mapstructure:"blocking"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *component.ID `mapstructure:"storage"`
 }
 
 // NewDefaultConfig returns the default Config.
@@ -49,17 +52,4 @@ func (qCfg *Config) Validate() error {
 		return errors.New("`queue_size` must be positive")
 	}
 	return nil
-}
-
-// PersistentQueueConfig defines configuration for queueing requests in a persistent storage.
-// The struct is provided to be added in the exporter configuration as one struct under the "sending_queue" key.
-// The exporter helper Go interface requires the fields to be provided separately to WithRequestQueue and
-// NewPersistentQueueFactory.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type PersistentQueueConfig struct {
-	Config `mapstructure:",squash"`
-	// StorageID if not empty, enables the persistent storage and uses the component specified
-	// as a storage extension for the persistent queue
-	StorageID *component.ID `mapstructure:"storage"`
 }
