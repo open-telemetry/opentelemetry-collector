@@ -28,9 +28,9 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.BatchSizeTriggerSend.Add(context.Background(), 1)
-	tb.QueueCapacity.Record(context.Background(), 1)
-	tb.RequestDuration.Record(context.Background(), 1)
+	tb.RecordBatchSizeTriggerSend(context.Background(), 1)
+	tb.RecordQueueCapacity(context.Background(), 1)
+	tb.RecordRequestDuration(context.Background(), 1)
 	AssertEqualBatchSizeTriggerSend(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
