@@ -67,6 +67,7 @@ type ConfResolver struct {
 type Distribution struct {
 	Module      string `mapstructure:"module"`
 	Name        string `mapstructure:"name"`
+	Namespace   string `mapstructure:"namespace"`
 	Go          string `mapstructure:"go"`
 	Description string `mapstructure:"description"`
 	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.

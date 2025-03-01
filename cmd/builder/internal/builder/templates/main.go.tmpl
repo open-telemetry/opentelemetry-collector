@@ -20,6 +20,7 @@ import (
 func main() {
 	info := component.BuildInfo{
 		Command:     "{{ .Distribution.Name }}",
+		Namespace:   "{{ .Distribution.Namespace }}",
 		Description: "{{ .Distribution.Description }}",
 		Version:     "{{ .Distribution.Version }}",
 	}
