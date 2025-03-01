@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"gopkg.in/yaml.v3"
+	"github.com/goccy/go-yaml"
 
 	"go.opentelemetry.io/collector/confmap"
 )
