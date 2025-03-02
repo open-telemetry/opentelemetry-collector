@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -39,17 +38,19 @@ func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
 	}
 }
 
-func newLogsRequestUnmarshalerFunc(pusher consumer.ConsumeLogsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
-		logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newLogsRequest(logs, pusher), nil
-	}
+type logsEncoding struct {
+	pusher consumer.ConsumeLogsFunc
 }
 
-func logsRequestMarshaler(req Request) ([]byte, error) {
+func (le *logsEncoding) Unmarshal(bytes []byte) (Request, error) {
+	logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newLogsRequest(logs, le.pusher), nil
+}
+
+func (le *logsEncoding) Marshal(req Request) ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
 }
 
@@ -85,7 +86,7 @@ type logsExporter struct {
 	consumer.Logs
 }
 
-// NewLogs creates an exporter.Logs that records observability metrics and wraps every request with a Span.
+// NewLogs creates an exporter.Logs that records observability logs and wraps every request with a Span.
 func NewLogs(
 	ctx context.Context,
 	set exporter.Settings,
@@ -99,10 +100,7 @@ func NewLogs(
 	if pusher == nil {
 		return nil, errNilPushLogsData
 	}
-	logsOpts := []Option{
-		internal.WithMarshaler(logsRequestMarshaler), internal.WithUnmarshaler(newLogsRequestUnmarshalerFunc(pusher)),
-	}
-	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append(logsOpts, options...)...)
+	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append([]Option{internal.WithEncoding(&logsEncoding{pusher: pusher})}, options...)...)
 }
 
 // RequestFromLogsFunc converts plog.Logs data into a user-defined request.
