@@ -42,39 +42,39 @@ var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy"
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
 	// The target URL to send data to (e.g.: http://some.url:9411/v1/traces).
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// ProxyURL setting for the collector
-	ProxyURL string `mapstructure:"proxy_url"`
+	ProxyURL string `mapstructure:"proxy_url,omitempty"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	// Default is 0.
-	ReadBufferSize int `mapstructure:"read_buffer_size"`
+	ReadBufferSize int `mapstructure:"read_buffer_size,omitempty"`
 
 	// WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.
 	// Default is 0.
-	WriteBufferSize int `mapstructure:"write_buffer_size"`
+	WriteBufferSize int `mapstructure:"write_buffer_size,omitempty"`
 
 	// Timeout parameter configures `http.Client.Timeout`.
 	// Default is 0 (unlimited).
-	Timeout time.Duration `mapstructure:"timeout"`
+	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 
 	// Additional headers attached to each HTTP request sent by the client.
 	// Existing header values are overwritten if collision happens.
 	// Header values are opaque since they may be sensitive.
-	Headers map[string]configopaque.String `mapstructure:"headers"`
+	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Authentication `mapstructure:"auth"`
+	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
-	Compression configcompression.Type `mapstructure:"compression"`
+	Compression configcompression.Type `mapstructure:"compression,omitempty"`
 
 	// Advanced configuration options for the Compression
-	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params,omitempty"`
 
 	// MaxIdleConns is used to set a limit to the maximum idle HTTP connections the client can keep open.
 	// By default, it is set to 100. Zero means no limit.
@@ -82,11 +82,11 @@ type ClientConfig struct {
 
 	// MaxIdleConnsPerHost is used to set a limit to the maximum idle HTTP connections the host can keep open.
 	// Default is 0 (unlimited).
-	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host"`
+	MaxIdleConnsPerHost int `mapstructure:"max_idle_conns_per_host,omitempty"`
 
 	// MaxConnsPerHost limits the total number of connections per host, including connections in the dialing,
 	// active, and idle states. Default is 0 (unlimited).
-	MaxConnsPerHost int `mapstructure:"max_conns_per_host"`
+	MaxConnsPerHost int `mapstructure:"max_conns_per_host,omitempty"`
 
 	// IdleConnTimeout is the maximum amount of time a connection will remain open before closing itself.
 	// By default, it is set to 90 seconds.
@@ -98,25 +98,25 @@ type ClientConfig struct {
 	// WARNING: enabling this option can result in significant overhead establishing a new HTTP(S)
 	// connection for every request. Before enabling this option please consider whether changes
 	// to idle connection settings can achieve your goal.
-	DisableKeepAlives bool `mapstructure:"disable_keep_alives"`
+	DisableKeepAlives bool `mapstructure:"disable_keep_alives,omitempty"`
 
 	// This is needed in case you run into
 	// https://github.com/golang/go/issues/59690
 	// https://github.com/golang/go/issues/36026
 	// HTTP2ReadIdleTimeout if the connection has been idle for the configured value send a ping frame for health check
 	// 0s means no health check will be performed.
-	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout"`
+	HTTP2ReadIdleTimeout time.Duration `mapstructure:"http2_read_idle_timeout,omitempty"`
 	// HTTP2PingTimeout if there's no response to the ping within the configured value, the connection will be closed.
 	// If not set or set to 0, it defaults to 15s.
-	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout"`
+	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
-	Cookies *CookiesConfig `mapstructure:"cookies"`
+	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
 	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled,omitempty"`
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -284,7 +284,7 @@ func (interceptor *headerRoundTripper) RoundTrip(req *http.Request) (*http.Respo
 // ServerConfig defines settings for creating an HTTP server.
 type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// TLSSetting struct exposes TLS client configuration.
 	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
@@ -293,20 +293,20 @@ type ServerConfig struct {
 	CORS *CORSConfig `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *AuthConfig `mapstructure:"auth"`
+	Auth *AuthConfig `mapstructure:"auth,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
-	MaxRequestBodySize int64 `mapstructure:"max_request_body_size"`
+	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
 
 	// IncludeMetadata propagates the client metadata from the incoming requests to the downstream consumers
-	IncludeMetadata bool `mapstructure:"include_metadata"`
+	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 
 	// Additional headers attached to each HTTP response sent to the client.
 	// Header values are opaque since they may be sensitive.
 	ResponseHeaders map[string]configopaque.String `mapstructure:"response_headers"`
 
 	// CompressionAlgorithms configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
-	CompressionAlgorithms []string `mapstructure:"compression_algorithms"`
+	CompressionAlgorithms []string `mapstructure:"compression_algorithms,omitempty"`
 
 	// ReadTimeout is the maximum duration for reading the entire
 	// request, including the body. A zero or negative value means
@@ -316,7 +316,7 @@ type ServerConfig struct {
 	// decisions on each request body's acceptable deadline or
 	// upload rate, most users will prefer to use
 	// ReadHeaderTimeout. It is valid to use them both.
-	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+	ReadTimeout time.Duration `mapstructure:"read_timeout,omitempty"`
 
 	// ReadHeaderTimeout is the amount of time allowed to read
 	// request headers. The connection's read deadline is reset
@@ -360,7 +360,7 @@ type AuthConfig struct {
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
-	RequestParameters []string `mapstructure:"request_params"`
+	RequestParameters []string `mapstructure:"request_params,omitempty"`
 }
 
 // ToListener creates a net.Listener.
@@ -517,19 +517,19 @@ type CORSConfig struct {
 	// HTTP/JSON requests to an OTLP receiver. An origin may contain a
 	// wildcard (*) to replace 0 or more characters (e.g.,
 	// "http://*.domain.com", or "*" to allow any origin).
-	AllowedOrigins []string `mapstructure:"allowed_origins"`
+	AllowedOrigins []string `mapstructure:"allowed_origins,omitempty"`
 
 	// AllowedHeaders sets what headers will be allowed in CORS requests.
 	// The Accept, Accept-Language, Content-Type, and Content-Language
 	// headers are implicitly allowed. If no headers are listed,
 	// X-Requested-With will also be accepted by default. Include "*" to
 	// allow any request header.
-	AllowedHeaders []string `mapstructure:"allowed_headers"`
+	AllowedHeaders []string `mapstructure:"allowed_headers,omitempty"`
 
 	// MaxAge sets the value of the Access-Control-Max-Age response header.
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
-	MaxAge int `mapstructure:"max_age"`
+	MaxAge int `mapstructure:"max_age,omitempty"`
 }
 
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
