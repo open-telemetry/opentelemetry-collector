@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
-	go.opentelemetry.io/collector/pipeline v0.120.0
+	go.opentelemetry.io/collector/pipeline v0.121.0
 	go.opentelemetry.io/otel v1.34.0
 	go.uber.org/zap v1.27.0
 )

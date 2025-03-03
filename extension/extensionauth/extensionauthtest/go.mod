@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.70.0
 )

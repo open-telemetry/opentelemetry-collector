@@ -5,7 +5,7 @@ go 1.23.0
 
 require (
 	go.opentelemetry.io/collector/component v1.27.0
-	go.opentelemetry.io/collector/extension/extensionauth v0.0.0-20250227134758-6a98ee8b14a2
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
 )
 
 require (
