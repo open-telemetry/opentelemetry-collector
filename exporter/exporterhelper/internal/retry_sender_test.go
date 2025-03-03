@@ -21,19 +21,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
-
-func mockRequestUnmarshaler(mr request.Request) exporterqueue.Unmarshaler[request.Request] {
-	return func([]byte) (request.Request, error) {
-		return mr, nil
-	}
-}
-
-func mockRequestMarshaler(request.Request) ([]byte, error) {
-	return []byte("mockRequest"), nil
-}
 
 func TestRetrySenderDropOnPermanentError(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()

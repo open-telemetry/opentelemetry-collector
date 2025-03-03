@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -41,17 +40,19 @@ func newProfilesRequest(pd pprofile.Profiles, pusher xconsumer.ConsumeProfilesFu
 	}
 }
 
-func newProfileRequestUnmarshalerFunc(pusher xconsumer.ConsumeProfilesFunc) exporterqueue.Unmarshaler[exporterhelper.Request] {
-	return func(bytes []byte) (exporterhelper.Request, error) {
-		profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newProfilesRequest(profiles, pusher), nil
-	}
+type profilesEncoding struct {
+	pusher xconsumer.ConsumeProfilesFunc
 }
 
-func profilesRequestMarshaler(req exporterhelper.Request) ([]byte, error) {
+func (le *profilesEncoding) Unmarshal(bytes []byte) (exporterhelper.Request, error) {
+	profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newProfilesRequest(profiles, le.pusher), nil
+}
+
+func (le *profilesEncoding) Marshal(req exporterhelper.Request) ([]byte, error) {
 	return profilesMarshaler.MarshalProfiles(req.(*profilesRequest).pd)
 }
 
@@ -94,10 +95,8 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	profilesOpts := []exporterhelper.Option{
-		internal.WithMarshaler(profilesRequestMarshaler), internal.WithUnmarshaler(newProfileRequestUnmarshalerFunc(pusher)),
-	}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(profilesOpts, options...)...)
+	opts := []exporterhelper.Option{internal.WithEncoding(&profilesEncoding{pusher: pusher})}
+	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(opts, options...)...)
 }
 
 // RequestFromProfilesFunc converts pprofile.Profiles into a user-defined Request.
@@ -146,7 +145,7 @@ func newConsumeProfiles(converter RequestFromProfilesFunc, be *internal.BaseExpo
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {
-			logger.Error("Failed to convert metrics. Dropping data.",
+			logger.Error("Failed to convert profiles. Dropping data.",
 				zap.Int("dropped_samples", pd.SampleCount()),
 				zap.Error(err))
 			return consumererror.NewPermanent(err)

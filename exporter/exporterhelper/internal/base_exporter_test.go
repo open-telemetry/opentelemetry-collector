@@ -71,16 +71,18 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.NoError(t, err)
-	require.Nil(t, bs.Marshaler)
-	require.Nil(t, bs.Unmarshaler)
+	require.Nil(t, bs.encoding)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(exporterqueue.NewDefaultConfig()))
 	require.Error(t, err)
 
+	qCfg := exporterqueue.NewDefaultConfig()
+	storageID := component.NewID(component.MustNewType("test"))
+	qCfg.StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
-		WithMarshaler(mockRequestMarshaler), WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
+		WithEncoding(newFakeEncoding(&requesttest.FakeRequest{Items: 1})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithRequestQueue(exporterqueue.NewDefaultConfig(), exporterqueue.NewMemoryQueueFactory[request.Request]()))
+		WithRequestQueue(qCfg, nil))
 	require.Error(t, err)
 }
 
@@ -93,7 +95,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.Enabled = false
 	bs, err := NewBaseExporter(set, defaultSignal,
-		WithRequestQueue(qCfg, exporterqueue.NewMemoryQueueFactory[request.Request]()),
+		WithRequestQueue(qCfg, newFakeEncoding(&requesttest.FakeRequest{})),
 		WithBatcher(exporterbatcher.NewDefaultConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
@@ -118,10 +120,9 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		{
 			name: "WithQueue",
 			queueOptions: []Option{
-				WithMarshaler(mockRequestMarshaler),
-				WithUnmarshaler(mockRequestUnmarshaler(&requesttest.FakeRequest{Items: 1})),
+				WithEncoding(newFakeEncoding(&requesttest.FakeRequest{Items: 1})),
 				func() Option {
-					qs := NewDefaultQueueConfig()
+					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
@@ -138,7 +139,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
-					return WithRequestQueue(qs, exporterqueue.NewMemoryQueueFactory[request.Request]())
+					return WithRequestQueue(qs, newFakeEncoding(&requesttest.FakeRequest{Items: 1}))
 				}(),
 				func() Option {
 					bs := exporterbatcher.NewDefaultConfig()
