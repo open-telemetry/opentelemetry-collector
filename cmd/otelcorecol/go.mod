@@ -121,6 +121,7 @@ require (
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.121.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.121.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.121.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.121.0 // indirect
@@ -293,6 +294,8 @@ replace go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
 replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
 

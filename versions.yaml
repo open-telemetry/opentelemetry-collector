@@ -76,6 +76,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
       - go.opentelemetry.io/collector/processor/xprocessor
       - go.opentelemetry.io/collector/receiver
+      - go.opentelemetry.io/collector/receiver/receiverhelper
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver
       - go.opentelemetry.io/collector/receiver/receivertest

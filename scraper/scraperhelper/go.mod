@@ -12,6 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/collector/pipeline v0.121.0
 	go.opentelemetry.io/collector/receiver v0.121.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0
 	go.opentelemetry.io/collector/scraper v0.121.0
 	go.opentelemetry.io/otel v1.34.0
@@ -57,6 +58,8 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
