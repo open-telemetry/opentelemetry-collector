@@ -46,7 +46,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.27.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.27.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v0.121.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.26.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.27.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect

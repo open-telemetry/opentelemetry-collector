@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.26.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
