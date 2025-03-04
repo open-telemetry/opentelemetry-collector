@@ -26,16 +26,6 @@ func NewNopSettings(typ component.Type) exporter.Settings {
 	}
 }
 
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettingsWithType returns a new nop settings for Create* functions with the given type.
-func NewNopSettingsWithType(typ component.Type) exporter.Settings {
-	return exporter.Settings{
-		ID:                component.NewIDWithName(typ, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
 	return xexporter.NewFactory(
