@@ -26,16 +26,6 @@ func NewNopSettings(typ component.Type) processor.Settings {
 	}
 }
 
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettingsWithType returns a new nop settings for Create* functions with the given type.
-func NewNopSettingsWithType(typ component.Type) processor.Settings {
-	return processor.Settings{
-		ID:                component.NewID(typ),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopFactory() processor.Factory {
 	return xprocessor.NewFactory(

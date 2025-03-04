@@ -25,16 +25,6 @@ func NewNopSettings(typ component.Type) extension.Settings {
 	}
 }
 
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettings returns a new nop settings for extension.Factory Create* functions with the given type.
-func NewNopSettingsWithType(ty component.Type) extension.Settings {
-	return extension.Settings{
-		ID:                component.NewIDWithName(ty, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // NewNopFactory returns an extension.Factory that constructs nop extensions.
 func NewNopFactory() extension.Factory {
 	return extension.NewFactory(
