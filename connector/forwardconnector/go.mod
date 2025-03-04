@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.26.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.121.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.0 // indirect

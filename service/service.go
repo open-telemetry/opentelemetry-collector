@@ -509,8 +509,12 @@ func configureViews(level configtelemetry.Level) []config.View {
 	}
 
 	// Batch processor metrics
-	if level < configtelemetry.LevelDetailed {
-		scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
+	scope := ptr("go.opentelemetry.io/collector/processor/batchprocessor")
+	if level < configtelemetry.LevelNormal {
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName: scope,
+		}))
+	} else if level < configtelemetry.LevelDetailed {
 		views = append(views, dropViewOption(&config.ViewSelector{
 			MeterName:      scope,
 			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
