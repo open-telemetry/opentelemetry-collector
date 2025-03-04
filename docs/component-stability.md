@@ -215,7 +215,7 @@ scraping, validation, processing, etc.), it is recommended to define additional 
 diagnose the specific source of the discrepancy, or to define different signals for each.
 
 The breakdown of emitted telemetry per telemetry level (basic / normal / detailed) should follow
-the guidelines in [the Go package documentation for `configtelemetry`](config/configtelemetry/doc.go).
+the guidelines in [the Go package documentation for `configtelemetry`](/config/configtelemetry/doc.go).
 
 ### Deprecated
 
