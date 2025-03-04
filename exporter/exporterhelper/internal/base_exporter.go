@@ -27,8 +27,7 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Marshaler   exporterqueue.Marshaler[request.Request]
-	Unmarshaler exporterqueue.Unmarshaler[request.Request]
+	encoding exporterqueue.Encoding[request.Request]
 
 	Set exporter.Settings
 
@@ -45,18 +44,16 @@ type BaseExporter struct {
 
 	ConsumerOptions []consumer.Option
 
-	timeoutCfg   TimeoutConfig
-	retryCfg     configretry.BackOffConfig
-	queueFactory exporterqueue.Factory[request.Request]
-	queueCfg     exporterqueue.Config
-	batcherCfg   exporterbatcher.Config
+	timeoutCfg TimeoutConfig
+	retryCfg   configretry.BackOffConfig
+	queueCfg   exporterqueue.Config
+	batcherCfg exporterbatcher.Config
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...Option) (*BaseExporter, error) {
 	be := &BaseExporter{
-		Set:          set,
-		timeoutCfg:   NewDefaultTimeoutConfig(),
-		queueFactory: exporterqueue.NewMemoryQueueFactory[request.Request](),
+		Set:        set,
+		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
 
 	for _, op := range options {
@@ -98,11 +95,12 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
-		qSet := exporterqueue.Settings{
+		qSet := exporterqueue.Settings[request.Request]{
 			Signal:           signal,
 			ExporterSettings: set,
+			Encoding:         be.encoding,
 		}
-		be.QueueSender, err = NewQueueSender(be.queueFactory, qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
+		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {
 			return nil, err
 		}
@@ -199,26 +197,12 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueConfig) Option {
+func WithQueue(cfg exporterqueue.Config) Option {
 	return func(o *BaseExporter) error {
-		if o.Marshaler == nil || o.Unmarshaler == nil {
+		if o.encoding == nil {
 			return errors.New("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
 		}
-		if !config.Enabled {
-			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
-			return nil
-		}
-		o.queueCfg = exporterqueue.Config{
-			Enabled:      config.Enabled,
-			NumConsumers: config.NumConsumers,
-			QueueSize:    config.QueueSize,
-			Blocking:     config.Blocking,
-		}
-		o.queueFactory = exporterqueue.NewPersistentQueueFactory[request.Request](config.StorageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   o.Marshaler,
-			Unmarshaler: o.Unmarshaler,
-		})
-		return nil
+		return WithRequestQueue(cfg, o.encoding)(o)
 	}
 }
 
@@ -226,17 +210,17 @@ func WithQueue(config QueueConfig) Option {
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[request.Request]) Option {
+func WithRequestQueue(cfg exporterqueue.Config, encoding exporterqueue.Encoding[request.Request]) Option {
 	return func(o *BaseExporter) error {
-		if o.Marshaler != nil || o.Unmarshaler != nil {
-			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
+		if cfg.Enabled && cfg.StorageID != nil && encoding == nil {
+			return errors.New("`encoding` must not be nil when persistent queue is enabled")
 		}
+		o.encoding = encoding
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
 		o.queueCfg = cfg
-		o.queueFactory = queueFactory
 		return nil
 	}
 }
@@ -263,20 +247,11 @@ func WithBatcher(cfg exporterbatcher.Config) Option {
 	}
 }
 
-// WithMarshaler is used to set the request marshaler for the new exporter helper.
+// WithEncoding is used to set the request encoding for the new exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
-func WithMarshaler(marshaler exporterqueue.Marshaler[request.Request]) Option {
+func WithEncoding(encoding exporterqueue.Encoding[request.Request]) Option {
 	return func(o *BaseExporter) error {
-		o.Marshaler = marshaler
-		return nil
-	}
-}
-
-// WithUnmarshaler is used to set the request unmarshaler for the new exporter helper.
-// It must be provided as the first option when creating a new exporter helper.
-func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[request.Request]) Option {
-	return func(o *BaseExporter) error {
-		o.Unmarshaler = unmarshaler
+		o.encoding = encoding
 		return nil
 	}
 }

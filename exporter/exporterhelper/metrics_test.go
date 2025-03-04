@@ -70,8 +70,7 @@ func TestMetrics_NilLogger(t *testing.T) {
 }
 
 func TestMetricsRequest_NilLogger(t *testing.T) {
-	me, err := NewMetricsRequest(context.Background(), exporter.Settings{},
-		requesttest.RequestFromMetricsFunc(nil))
+	me, err := NewMetricsRequest(context.Background(), exporter.Settings{}, requesttest.RequestFromMetricsFunc(nil))
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }

@@ -39,28 +39,32 @@ func (of clientOptionFunc) apply(e *defaultClient) {
 // ClientRoundTripperFunc specifies the function that returns a RoundTripper that can be used to authenticate HTTP requests.
 type ClientRoundTripperFunc func(base http.RoundTripper) (http.RoundTripper, error)
 
-func (f ClientRoundTripperFunc) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
-	if f == nil {
-		return base, nil
-	}
-	return f(base)
-}
-
 // ClientPerRPCCredentialsFunc specifies the function that returns a PerRPCCredentials that can be used to authenticate gRPC requests.
 type ClientPerRPCCredentialsFunc func() (credentials.PerRPCCredentials, error)
 
-func (f ClientPerRPCCredentialsFunc) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
-	if f == nil {
-		return nil, nil
-	}
-	return f()
-}
+var _ Client = (*defaultClient)(nil)
 
 type defaultClient struct {
 	component.StartFunc
 	component.ShutdownFunc
-	ClientRoundTripperFunc
-	ClientPerRPCCredentialsFunc
+	clientRoundTripperFunc      ClientRoundTripperFunc
+	clientPerRPCCredentialsFunc ClientPerRPCCredentialsFunc
+}
+
+// PerRPCCredentials implements Client.
+func (d *defaultClient) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	if d.clientPerRPCCredentialsFunc == nil {
+		return nil, nil
+	}
+	return d.clientPerRPCCredentialsFunc()
+}
+
+// RoundTripper implements Client.
+func (d *defaultClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	if d.clientRoundTripperFunc == nil {
+		return base, nil
+	}
+	return d.clientRoundTripperFunc(base)
 }
 
 // WithClientStart overrides the default `Start` function for a component.Component.
@@ -83,7 +87,7 @@ func WithClientShutdown(shutdownFunc component.ShutdownFunc) ClientOption {
 // The default round tripper is no-op.
 func WithClientRoundTripper(roundTripperFunc ClientRoundTripperFunc) ClientOption {
 	return clientOptionFunc(func(o *defaultClient) {
-		o.ClientRoundTripperFunc = roundTripperFunc
+		o.clientRoundTripperFunc = roundTripperFunc
 	})
 }
 
@@ -91,17 +95,17 @@ func WithClientRoundTripper(roundTripperFunc ClientRoundTripperFunc) ClientOptio
 // There's no default.
 func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFunc) ClientOption {
 	return clientOptionFunc(func(o *defaultClient) {
-		o.ClientPerRPCCredentialsFunc = perRPCCredentialsFunc
+		o.clientPerRPCCredentialsFunc = perRPCCredentialsFunc
 	})
 }
 
 // NewClient returns a Client configured with the provided options.
-func NewClient(options ...ClientOption) Client {
+func NewClient(options ...ClientOption) (Client, error) {
 	bc := &defaultClient{}
 
 	for _, op := range options {
 		op.apply(bc)
 	}
 
-	return bc
+	return bc, nil
 }

@@ -28,16 +28,6 @@ func NewNopSettings(typ component.Type) connector.Settings {
 	}
 }
 
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettingsWithType returns a new nop settings for Create* functions with the given type.
-func NewNopSettingsWithType(typ component.Type) connector.Settings {
-	return connector.Settings{
-		ID:                component.NewIDWithName(typ, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 type nopConfig struct{}
 
 // NewNopFactory returns a connector.Factory that constructs nop processors.

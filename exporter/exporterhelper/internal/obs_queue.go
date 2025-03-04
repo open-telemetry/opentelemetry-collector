@@ -23,7 +23,7 @@ type obsQueue[T request.Request] struct {
 	enqueueFailedInst metric.Int64Counter
 }
 
-func newObsQueue[T request.Request](set exporterqueue.Settings, delegate exporterqueue.Queue[T]) (exporterqueue.Queue[T], error) {
+func newObsQueue[T request.Request](set exporterqueue.Settings[T], delegate exporterqueue.Queue[T]) (exporterqueue.Queue[T], error) {
 	tb, err := metadata.NewTelemetryBuilder(set.ExporterSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err

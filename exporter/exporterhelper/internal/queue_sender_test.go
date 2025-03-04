@@ -28,6 +28,22 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+type fakeEncoding struct {
+	mr request.Request
+}
+
+func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+	return []byte("mockRequest"), nil
+}
+
+func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
+	return f.mr, nil
+}
+
+func newFakeEncoding(mr request.Request) exporterqueue.Encoding[request.Request] {
+	return &fakeEncoding{mr: mr}
+}
+
 func TestQueueBatcherStopWhileWaiting(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.NumConsumers = 1
@@ -67,79 +83,37 @@ func TestQueueBatcherDoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueueBatcherHappyPath(t *testing.T) {
-	tests := []struct {
-		name string
-		qCfg exporterqueue.Config
-		qf   exporterqueue.Factory[request.Request]
-	}{
-		{
-			name: "WithRequestQueue/MemoryQueueFactory",
-			qCfg: exporterqueue.Config{
-				Enabled:      true,
-				QueueSize:    10,
-				NumConsumers: 1,
-			},
-			qf: exporterqueue.NewMemoryQueueFactory[request.Request](),
-		},
-		{
-			name: "WithRequestQueue/PersistentQueueFactory",
-			qCfg: exporterqueue.Config{
-				Enabled:      true,
-				QueueSize:    10,
-				NumConsumers: 1,
-			},
-			qf: exporterqueue.NewPersistentQueueFactory[request.Request](nil, exporterqueue.PersistentQueueSettings[request.Request]{}),
-		},
+	qCfg := exporterqueue.Config{
+		Enabled:      true,
+		QueueSize:    10,
+		NumConsumers: 1,
+	}
+	be, err := newQueueBatcherExporter(qCfg, exporterbatcher.Config{})
+	require.NoError(t, err)
+
+	sink := requesttest.NewSink()
+	for i := 0; i < 10; i++ {
+		require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: i, Sink: sink}))
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			be, err := newQueueBatcherExporter(tt.qCfg, exporterbatcher.Config{})
-			require.NoError(t, err)
+	// expect queue to be full
+	require.Error(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
 
-			sink := requesttest.NewSink()
-			for i := 0; i < 10; i++ {
-				require.NoError(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: i, Sink: sink}))
-			}
-
-			// expect queue to be full
-			require.Error(t, be.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
-
-			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 10 && sink.ItemsCount() == 45
-			}, 1*time.Second, 10*time.Millisecond)
-			require.NoError(t, be.Shutdown(context.Background()))
-		})
-	}
-}
-
-func TestQueueConfig_Validate(t *testing.T) {
-	qCfg := NewDefaultQueueConfig()
-	require.NoError(t, qCfg.Validate())
-
-	qCfg.QueueSize = 0
-	require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
-
-	qCfg = NewDefaultQueueConfig()
-	qCfg.NumConsumers = 0
-
-	require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
-
-	// Confirm Validate doesn't return error with invalid config when feature is disabled
-	qCfg.Enabled = false
-	assert.NoError(t, qCfg.Validate())
+	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 10 && sink.ItemsCount() == 45
+	}, 1*time.Second, 10*time.Millisecond)
+	require.NoError(t, be.Shutdown(context.Background()))
 }
 
 func TestQueueFailedRequestDropped(t *testing.T) {
-	qSet := exporterqueue.Settings{
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 	}
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.ExporterSettings.Logger = zap.New(logger)
 	be, err := NewQueueSender(
-		exporterqueue.NewMemoryQueueFactory[request.Request](),
 		qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", newNoopExportSender())
 
 	require.NoError(t, err)
@@ -151,17 +125,15 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 }
 
 func TestQueueBatcherPersistenceEnabled(t *testing.T) {
-	qSet := exporterqueue.Settings{
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
+		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
 	}
+	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	be, err := NewQueueSender(
-		exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   mockRequestMarshaler,
-			Unmarshaler: mockRequestUnmarshaler(&requesttest.FakeRequest{}),
-		}),
-		qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", newNoopExportSender())
+	qCfg.StorageID = &storageID
+	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 	require.NoError(t, err)
 
 	extensions := map[component.ID]component.Component{
@@ -177,17 +149,15 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 
-	qSet := exporterqueue.Settings{
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
+		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
 	}
+	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	be, err := NewQueueSender(
-		exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   mockRequestMarshaler,
-			Unmarshaler: mockRequestUnmarshaler(&requesttest.FakeRequest{}),
-		}),
-		qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", newNoopExportSender())
+	qCfg.StorageID = &storageID
+	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 	require.NoError(t, err)
 
 	extensions := map[component.ID]component.Component{
@@ -202,6 +172,8 @@ func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.NumConsumers = 1
+	storageID := component.MustNewIDWithName("file_storage", "storage")
+	qCfg.StorageID = &storageID
 
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = time.Millisecond
@@ -209,18 +181,13 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	rs := newRetrySender(rCfg, defaultSettings, newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 
-	qSet := exporterqueue.Settings{
+	mockReq := newErrorRequest(errors.New("transient error"))
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
+		Encoding:         newFakeEncoding(mockReq),
 	}
-	storageID := component.MustNewIDWithName("file_storage", "storage")
-	mockReq := newErrorRequest(errors.New("transient error"))
-	be, err := NewQueueSender(
-		exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   mockRequestMarshaler,
-			Unmarshaler: mockRequestUnmarshaler(mockReq),
-		}),
-		qSet, qCfg, exporterbatcher.Config{}, "", rs)
+	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", rs)
 	require.NoError(t, err)
 
 	extensions := map[component.ID]component.Component{
@@ -245,12 +212,8 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	// start the exporter again replacing the preserved mockRequest in the unmarshaler with a new one that doesn't fail.
 	sink := requesttest.NewSink()
 	replacedReq := &requesttest.FakeRequest{Items: 7, Sink: sink}
-	be, err = NewQueueSender(
-		exporterqueue.NewPersistentQueueFactory[request.Request](&storageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   mockRequestMarshaler,
-			Unmarshaler: mockRequestUnmarshaler(replacedReq),
-		}),
-		qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
+	qSet.Encoding = newFakeEncoding(replacedReq)
+	be, err = NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), host))
 
@@ -263,11 +226,11 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 func TestQueueBatcherNoStartShutdown(t *testing.T) {
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = exporterID
-	qSet := exporterqueue.Settings{
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           pipeline.SignalTraces,
 		ExporterSettings: set,
 	}
-	qs, err := NewQueueSender(exporterqueue.NewMemoryQueueFactory[request.Request](), qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
+	qs, err := NewQueueSender(qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
 	require.NoError(t, err)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
@@ -284,20 +247,20 @@ func TestQueueBatcher_Merge(t *testing.T) {
 		{
 			name: "split_disabled",
 			batchCfg: func() exporterbatcher.Config {
-				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSize = 10
-				cfg.FlushTimeout = 100 * time.Millisecond
-				return cfg
+				qCfg := exporterbatcher.NewDefaultConfig()
+				qCfg.MinSize = 10
+				qCfg.FlushTimeout = 100 * time.Millisecond
+				return qCfg
 			}(),
 		},
 		{
 			name: "split_high_limit",
 			batchCfg: func() exporterbatcher.Config {
-				cfg := exporterbatcher.NewDefaultConfig()
-				cfg.MinSize = 10
-				cfg.FlushTimeout = 100 * time.Millisecond
-				cfg.MaxSize = 1000
-				return cfg
+				qCfg := exporterbatcher.NewDefaultConfig()
+				qCfg.MinSize = 10
+				qCfg.FlushTimeout = 100 * time.Millisecond
+				qCfg.MaxSize = 1000
+				return qCfg
 			}(),
 		},
 	}
@@ -673,9 +636,9 @@ func TestQueueBatcherTimerFlush(t *testing.T) {
 }
 
 func newQueueBatcherExporter(qCfg exporterqueue.Config, bCfg exporterbatcher.Config) (*QueueSender, error) {
-	qSet := exporterqueue.Settings{
+	qSet := exporterqueue.Settings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 	}
-	return NewQueueSender(exporterqueue.NewMemoryQueueFactory[request.Request](), qSet, qCfg, bCfg, "", newNoopExportSender())
+	return NewQueueSender(qSet, qCfg, bCfg, "", newNoopExportSender())
 }

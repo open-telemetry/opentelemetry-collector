@@ -15,16 +15,16 @@ type LogsSizer interface {
 	ScopeLogsSize(sl plog.ScopeLogs) int
 	LogRecordSize(lr plog.LogRecord) int
 
-	// DeltaSize() returns the delta size when a ResourceLog, ScopeLog or LogRecord is added.
+	// DeltaSize returns the delta size when a ResourceLog, ScopeLog or LogRecord is added.
 	DeltaSize(newItemSize int) int
 }
 
-// LogsByteSizer returns the byte size of serialized protos.
+// LogsBytesSizer returns the byte size of serialized protos.
 type LogsBytesSizer struct {
 	plog.ProtoMarshaler
 }
 
-// DeltaSize() returns the delta size of a proto slice when a new item is added.
+// DeltaSize returns the delta size of a proto slice when a new item is added.
 // Example:
 //
 //	prevSize := proto1.Size()
