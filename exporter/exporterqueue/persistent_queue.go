@@ -45,14 +45,13 @@ var indexDonePool = sync.Pool{
 }
 
 type persistentQueueSettings[T any] struct {
-	sizer       sizer[T]
-	capacity    int64
-	blocking    bool
-	signal      pipeline.Signal
-	storageID   component.ID
-	marshaler   Marshaler[T]
-	unmarshaler Unmarshaler[T]
-	set         exporter.Settings
+	sizer     sizer[T]
+	capacity  int64
+	blocking  bool
+	signal    pipeline.Signal
+	storageID component.ID
+	encoding  Encoding[T]
+	set       exporter.Settings
 }
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
@@ -250,7 +249,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		}
 	}
 
-	reqBuf, err := pq.set.marshaler(req)
+	reqBuf, err := pq.set.encoding.Marshal(req)
 	if err != nil {
 		return err
 	}
@@ -326,7 +325,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 
 	var request T
 	if err == nil {
-		request, err = pq.set.unmarshaler(getOp.Value)
+		request, err = pq.set.encoding.Unmarshal(getOp.Value)
 	}
 
 	if err != nil {
@@ -435,7 +434,7 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pq.set.unmarshaler(op.Value)
+		req, err := pq.set.encoding.Unmarshal(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))

@@ -38,11 +38,13 @@ func (is *itemsSizer) Sizeof(val uint64) int64 {
 	return int64(val)
 }
 
-func uint64Marshaler(val uint64) ([]byte, error) {
+type uint64Encoding struct{}
+
+func (uint64Encoding) Marshal(val uint64) ([]byte, error) {
 	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
 }
 
-func uint64Unmarshaler(bytes []byte) (uint64, error) {
+func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
 	if len(bytes) < 8 {
 		return 0, errInvalidValue
 	}
@@ -221,13 +223,12 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 	consumeFunc func(_ context.Context, item uint64) error,
 ) Queue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:       sizer,
-		capacity:    capacity,
-		signal:      pipeline.SignalTraces,
-		storageID:   component.ID{},
-		marshaler:   uint64Marshaler,
-		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(exportertest.NopType),
+		sizer:     sizer,
+		capacity:  capacity,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  uint64Encoding{},
+		set:       exportertest.NewNopSettings(exportertest.NopType),
 	})
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
@@ -244,13 +245,12 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:       &requestSizer[uint64]{},
-		capacity:    1000,
-		signal:      pipeline.SignalTraces,
-		storageID:   component.ID{},
-		marshaler:   uint64Marshaler,
-		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(exportertest.NopType),
+		sizer:     &requestSizer[uint64]{},
+		capacity:  1000,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  uint64Encoding{},
+		set:       exportertest.NewNopSettings(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	pq.initClient(context.Background(), client)
 	return pq
@@ -268,13 +268,12 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 	capacity int64,
 ) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:       sizer,
-		capacity:    capacity,
-		signal:      pipeline.SignalTraces,
-		storageID:   component.ID{},
-		marshaler:   uint64Marshaler,
-		unmarshaler: uint64Unmarshaler,
-		set:         exportertest.NewNopSettings(exportertest.NopType),
+		sizer:     sizer,
+		capacity:  capacity,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  uint64Encoding{},
+		set:       exportertest.NewNopSettings(exportertest.NopType),
 	}).(*persistentQueue[uint64])
 	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
 	return pq
@@ -415,14 +414,13 @@ func TestPersistentBlockingQueue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-				sizer:       tt.sizer,
-				capacity:    100,
-				blocking:    true,
-				signal:      pipeline.SignalTraces,
-				storageID:   component.ID{},
-				marshaler:   uint64Marshaler,
-				unmarshaler: uint64Unmarshaler,
-				set:         exportertest.NewNopSettings(exportertest.NopType),
+				sizer:     tt.sizer,
+				capacity:  100,
+				blocking:  true,
+				signal:    pipeline.SignalTraces,
+				storageID: component.ID{},
+				encoding:  uint64Encoding{},
+				set:       exportertest.NewNopSettings(exportertest.NopType),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
@@ -917,7 +915,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Marshaler(uint64(50))
+	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 

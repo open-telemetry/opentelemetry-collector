@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -38,17 +37,19 @@ func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) R
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
-		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newMetricsRequest(metrics, pusher), nil
-	}
+type metricsEncoding struct {
+	pusher consumer.ConsumeMetricsFunc
 }
 
-func metricsRequestMarshaler(req Request) ([]byte, error) {
+func (me *metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
+	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newMetricsRequest(metrics, me.pusher), nil
+}
+
+func (me *metricsEncoding) Marshal(req Request) ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
 }
 
@@ -91,10 +92,7 @@ func NewMetrics(
 	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
-	metricsOpts := []Option{
-		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-	}
-	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append([]Option{internal.WithEncoding(&metricsEncoding{pusher: pusher})}, options...)...)
 }
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.

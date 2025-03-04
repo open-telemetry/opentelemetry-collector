@@ -17,6 +17,13 @@ import (
 
 var mockID = component.MustNewID("mock")
 
+func must[T any](t *testing.T, builder func() (T, error)) T {
+	t.Helper()
+	thing, err := builder()
+	require.NoError(t, err)
+	return thing
+}
+
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -24,14 +31,18 @@ func TestGetServer(t *testing.T) {
 		expected      error
 	}{
 		{
-			name:          "obtain server authenticator",
-			authenticator: extensionauth.NewServer(),
-			expected:      nil,
+			name: "obtain server authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewServer()
+			}),
+			expected: nil,
 		},
 		{
-			name:          "not a server authenticator",
-			authenticator: extensionauth.NewClient(),
-			expected:      errNotServer,
+			name: "not a server authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewClient()
+			}),
+			expected: errNotServer,
 		},
 	}
 	for _, tt := range testCases {
@@ -75,14 +86,18 @@ func TestGetClient(t *testing.T) {
 		expected      error
 	}{
 		{
-			name:          "obtain client authenticator",
-			authenticator: extensionauth.NewClient(),
-			expected:      nil,
+			name: "obtain client authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewClient()
+			}),
+			expected: nil,
 		},
 		{
-			name:          "not a client authenticator",
-			authenticator: extensionauth.NewServer(),
-			expected:      errNotClient,
+			name: "not a client authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewServer()
+			}),
+			expected: errNotClient,
 		},
 	}
 	for _, tt := range testCases {
