@@ -51,87 +51,101 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
 	var res []Request
 	for req.Size(sz) > maxSize {
-		ld := extractLogs(req.ld, maxSize, sz)
-		size := sz.LogsSize(ld)
-		req.setCachedSize(req.Size(sz) - size)
-		res = append(res, &logsRequest{ld: ld, pusher: req.pusher, cachedSize: size})
+		ld, rmSize := extractLogs(req.ld, maxSize, sz)
+		req.setCachedSize(req.Size(sz) - rmSize)
+		res = append(res, newLogsRequest(ld, req.pusher))
 	}
 	res = append(res, req)
 	return res
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.
-func extractLogs(srcLogs plog.Logs, capacity int, sizer sizer.LogsSizer) plog.Logs {
+func extractLogs(srcLogs plog.Logs, capacity int, sz sizer.LogsSizer) (plog.Logs, int) {
 	destLogs := plog.NewLogs()
-	capacityLeft := capacity - sizer.LogsSize(destLogs)
+	capacityLeft := capacity - sz.LogsSize(destLogs)
+	removedSize := 0
 	srcLogs.ResourceLogs().RemoveIf(func(srcRL plog.ResourceLogs) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
 			return false
 		}
-		rlSize := sizer.DeltaSize(sizer.ResourceLogsSize(srcRL))
+		rawRlSize := sz.ResourceLogsSize(srcRL)
+		rlSize := sz.DeltaSize(rawRlSize)
 		if rlSize > capacityLeft {
-			srcRL = extractResourceLogs(srcRL, capacityLeft, sizer)
+			extSrcRL, extRlSize := extractResourceLogs(srcRL, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			removedSize += extRlSize
+			// There represents the delta between the delta sizes.
+			removedSize += rlSize - rawRlSize - (sz.DeltaSize(rawRlSize-extRlSize) - (rawRlSize - extRlSize))
 			// It is possible that for the bytes scenario, the extracted field contains no log records.
 			// Do not add it to the destination if that is the case.
-			if srcRL.ScopeLogs().Len() > 0 {
-				srcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
+			if extSrcRL.ScopeLogs().Len() > 0 {
+				extSrcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 			}
-			return srcRL.ScopeLogs().Len() != 0
+			return extSrcRL.ScopeLogs().Len() != 0
 		}
 		capacityLeft -= rlSize
+		removedSize += rlSize
 		srcRL.MoveTo(destLogs.ResourceLogs().AppendEmpty())
 		return true
 	})
-	return destLogs
+	return destLogs, removedSize
 }
 
 // extractResourceLogs extracts resource logs and returns a new resource logs with the specified number of log records.
-func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sizer sizer.LogsSizer) plog.ResourceLogs {
+func extractResourceLogs(srcRL plog.ResourceLogs, capacity int, sz sizer.LogsSizer) (plog.ResourceLogs, int) {
 	destRL := plog.NewResourceLogs()
 	destRL.SetSchemaUrl(srcRL.SchemaUrl())
 	srcRL.Resource().CopyTo(destRL.Resource())
-	capacityLeft := capacity - sizer.ResourceLogsSize(destRL)
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceLogsSize(destRL)
+	removedSize := 0
 	srcRL.ScopeLogs().RemoveIf(func(srcSL plog.ScopeLogs) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
 			return false
 		}
-		slSize := sizer.DeltaSize(sizer.ScopeLogsSize(srcSL))
+		rawSlSize := sz.ScopeLogsSize(srcSL)
+		slSize := sz.DeltaSize(rawSlSize)
 		if slSize > capacityLeft {
-			srcSL = extractScopeLogs(srcSL, capacityLeft, sizer)
+			extSrcSL, extSlSize := extractScopeLogs(srcSL, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
+			removedSize += extSlSize
+			// There represents the delta between the delta sizes.
+			removedSize += slSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSlSize) - (rawSlSize - extSlSize))
 			// It is possible that for the bytes scenario, the extracted field contains no log records.
 			// Do not add it to the destination if that is the case.
-			if srcSL.LogRecords().Len() > 0 {
-				srcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
+			if extSrcSL.LogRecords().Len() > 0 {
+				extSrcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 			}
-			return srcSL.LogRecords().Len() != 0
+			return extSrcSL.LogRecords().Len() != 0
 		}
 		capacityLeft -= slSize
+		removedSize += slSize
 		srcSL.MoveTo(destRL.ScopeLogs().AppendEmpty())
 		return true
 	})
-	return destRL
+	return destRL, removedSize
 }
 
 // extractScopeLogs extracts scope logs and returns a new scope logs with the specified number of log records.
-func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sizer sizer.LogsSizer) plog.ScopeLogs {
+func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sz sizer.LogsSizer) (plog.ScopeLogs, int) {
 	destSL := plog.NewScopeLogs()
 	destSL.SetSchemaUrl(srcSL.SchemaUrl())
 	srcSL.Scope().CopyTo(destSL.Scope())
-	capacityLeft := capacity - sizer.ScopeLogsSize(destSL)
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeLogsSize(destSL)
+	removedSize := 0
 	srcSL.LogRecords().RemoveIf(func(srcLR plog.LogRecord) bool {
 		// If the no more capacity left just return.
 		if capacityLeft == 0 {
 			return false
 		}
-		rlSize := sizer.DeltaSize(sizer.LogRecordSize(srcLR))
+		rlSize := sz.DeltaSize(sz.LogRecordSize(srcLR))
 		if rlSize > capacityLeft {
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
@@ -139,8 +153,9 @@ func extractScopeLogs(srcSL plog.ScopeLogs, capacity int, sizer sizer.LogsSizer)
 			return false
 		}
 		capacityLeft -= rlSize
+		removedSize += rlSize
 		srcLR.MoveTo(destSL.LogRecords().AppendEmpty())
 		return true
 	})
-	return destSL
+	return destSL, removedSize
 }
