@@ -100,6 +100,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.121.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.121.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.121.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.121.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.121.0 // indirect
