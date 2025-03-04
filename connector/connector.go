@@ -305,6 +305,11 @@ func (f *factory) CreateTracesToTraces(ctx context.Context, set Settings, cfg co
 	if f.createTracesToTracesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalTraces)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createTracesToTracesFunc(ctx, set, cfg, next)
 }
 
@@ -312,6 +317,11 @@ func (f *factory) CreateTracesToMetrics(ctx context.Context, set Settings, cfg c
 	if f.createTracesToMetricsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalMetrics)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createTracesToMetricsFunc(ctx, set, cfg, next)
 }
 
@@ -319,6 +329,11 @@ func (f *factory) CreateTracesToLogs(ctx context.Context, set Settings, cfg comp
 	if f.createTracesToLogsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalTraces, pipeline.SignalLogs)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createTracesToLogsFunc(ctx, set, cfg, next)
 }
 
@@ -326,6 +341,11 @@ func (f *factory) CreateMetricsToTraces(ctx context.Context, set Settings, cfg c
 	if f.createMetricsToTracesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalTraces)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createMetricsToTracesFunc(ctx, set, cfg, next)
 }
 
@@ -333,6 +353,11 @@ func (f *factory) CreateMetricsToMetrics(ctx context.Context, set Settings, cfg 
 	if f.createMetricsToMetricsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalMetrics)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createMetricsToMetricsFunc(ctx, set, cfg, next)
 }
 
@@ -340,6 +365,11 @@ func (f *factory) CreateMetricsToLogs(ctx context.Context, set Settings, cfg com
 	if f.createMetricsToLogsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalMetrics, pipeline.SignalLogs)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createMetricsToLogsFunc(ctx, set, cfg, next)
 }
 
@@ -347,6 +377,11 @@ func (f *factory) CreateLogsToTraces(ctx context.Context, set Settings, cfg comp
 	if f.createLogsToTracesFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalTraces)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createLogsToTracesFunc(ctx, set, cfg, next)
 }
 
@@ -354,6 +389,11 @@ func (f *factory) CreateLogsToMetrics(ctx context.Context, set Settings, cfg com
 	if f.createLogsToMetricsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalMetrics)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createLogsToMetricsFunc(ctx, set, cfg, next)
 }
 
@@ -361,6 +401,11 @@ func (f *factory) CreateLogsToLogs(ctx context.Context, set Settings, cfg compon
 	if f.createLogsToLogsFunc == nil {
 		return nil, internal.ErrDataTypes(set.ID, pipeline.SignalLogs, pipeline.SignalLogs)
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createLogsToLogsFunc(ctx, set, cfg, next)
 }
 

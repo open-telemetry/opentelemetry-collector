@@ -42,6 +42,13 @@ func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
 	return nil, nil
 }
 
+func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensionauth.Server {
+	t.Helper()
+	srv, err := extensionauth.NewServer(opts...)
+	require.NoError(t, err)
+	return srv
+}
+
 var (
 	testAuthID    = component.MustNewID("testauth")
 	mockID        = component.MustNewID("mock")
@@ -825,7 +832,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
+			mockID: mustNewServerAuth(t,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
@@ -1137,7 +1144,7 @@ func TestServerAuth(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
+			mockID: mustNewServerAuth(t,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
@@ -1188,7 +1195,7 @@ func TestFailedServerAuth(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
+			mockID: mustNewServerAuth(t,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
@@ -1369,7 +1376,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
+			mockID: mustNewServerAuth(t,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
 					require.Len(t, sources, 1)
 					assert.Equal(t, "1", sources["auth"][0])

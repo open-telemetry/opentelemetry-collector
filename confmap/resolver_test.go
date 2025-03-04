@@ -5,8 +5,11 @@ package confmap
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,6 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type mockProvider struct {
@@ -431,4 +437,78 @@ func TestResolverDefaultProviderSet(t *testing.T) {
 	assert.NotNil(t, r.defaultScheme)
 	_, ok := r.providers["env"]
 	assert.True(t, ok)
+}
+
+type mergeTest struct {
+	Name        string           `yaml:"name"`
+	AppendPaths []string         `yaml:"append_paths"`
+	Configs     []map[string]any `yaml:"configs"`
+	Expected    map[string]any   `yaml:"expected"`
+}
+
+func TestMergeFunctionality(t *testing.T) {
+	tests := []struct {
+		name         string
+		scenarioFile string
+		flagEnabled  bool
+	}{
+		{
+			name:         "feature-flag-enabled",
+			scenarioFile: "testdata/merge-append-scenarios.yaml",
+			flagEnabled:  true,
+		},
+		{
+			name:         "feature-flag-disabled",
+			scenarioFile: "testdata/merge-append-scenarios-featuregate-disabled.yaml",
+			flagEnabled:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.flagEnabled {
+				require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
+				defer func() {
+					// Restore previous value.
+					require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
+				}()
+			}
+			runScenario(t, tt.scenarioFile)
+		})
+	}
+}
+
+func runScenario(t *testing.T, path string) {
+	yamlData, err := os.ReadFile(filepath.Clean(path))
+	require.NoError(t, err)
+	var testcases []*mergeTest
+	err = yaml.Unmarshal(yamlData, &testcases)
+	require.NoError(t, err)
+	for _, tt := range testcases {
+		t.Run(tt.Name, func(t *testing.T) {
+			configFiles := make([]string, 0)
+			for _, c := range tt.Configs {
+				// store configs into a temp file. This makes it easier for us to test feature gate functionality
+				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
+				require.NoError(t, err)
+				b, err := json.Marshal(c)
+				require.NoError(t, err)
+				n, err := file.Write(b)
+				require.NoError(t, err)
+				require.Positive(t, n, 0)
+				configFiles = append(configFiles, file.Name())
+				file.Close()
+			}
+
+			resolver, err := NewResolver(ResolverSettings{
+				URIs:              configFiles,
+				ProviderFactories: []ProviderFactory{newFileProvider(t)},
+				DefaultScheme:     "file",
+			})
+			require.NoError(t, err)
+			conf, err := resolver.Resolve(context.Background())
+			require.NoError(t, err)
+			mergedConf := conf.ToStringMap()
+			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
+		})
+	}
 }
