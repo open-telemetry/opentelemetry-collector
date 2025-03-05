@@ -81,3 +81,41 @@ func TestInt64SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestInt64SliceTryIncrementFrom(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{10, 9})
+
+	ms2 := NewInt64Slice()
+	ms2.FromRaw([]int64{1, 10})
+
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
+	ms.EnsureCapacity(4)
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
+	assert.Equal(t, int64(10), ms.At(0))
+	assert.Equal(t, int64(10), ms.At(1))
+	assert.Equal(t, int64(10), ms.At(2))
+}
+
+func TestInt64SliceCollapse(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	assert.Equal(t, int64(4), ms.At(0))
+	assert.Equal(t, int64(2), ms.At(1))
+}
+
+func TestInt64SliceCollapseOffset(t *testing.T) {
+	ms := NewInt64Slice()
+	ms.FromRaw([]int64{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	assert.Equal(t, int64(1), ms.At(0))
+	assert.Equal(t, int64(4), ms.At(1))
+	assert.Equal(t, int64(1), ms.At(2))
+}
