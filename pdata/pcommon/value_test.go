@@ -816,7 +816,7 @@ func TestValueEqual(t *testing.T) {
 			expected:   true,
 		},
 		{
-			name: "different slice",
+			name: "different maps",
 			value: func() Value {
 				m := NewValueMap()
 				m.Map().PutStr("hello", "world")
@@ -828,6 +828,121 @@ func TestValueEqual(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkValueEqual(b *testing.B) {
+	for _, bb := range []struct {
+		name       string
+		value      Value
+		comparison any
+	}{
+		{
+			name:       "strings",
+			value:      NewValueStr("test"),
+			comparison: "test",
+		},
+		{
+			name:       "booleans",
+			value:      NewValueBool(true),
+			comparison: true,
+		},
+		{
+			name:       "ints",
+			value:      NewValueInt(42),
+			comparison: int(42),
+		},
+		{
+			name:       "ints8",
+			value:      NewValueInt(42),
+			comparison: int8(42),
+		},
+		{
+			name:       "ints16",
+			value:      NewValueInt(42),
+			comparison: int16(42),
+		},
+		{
+			name:       "ints32",
+			value:      NewValueInt(42),
+			comparison: int32(42),
+		},
+		{
+			name:       "ints64",
+			value:      NewValueInt(42),
+			comparison: int(42),
+		},
+		{
+			name:       "uints",
+			value:      NewValueInt(42),
+			comparison: uint(42),
+		},
+		{
+			name:       "uints8",
+			value:      NewValueInt(42),
+			comparison: uint8(42),
+		},
+		{
+			name:       "uints16",
+			value:      NewValueInt(42),
+			comparison: uint16(42),
+		},
+		{
+			name:       "uints32",
+			value:      NewValueInt(42),
+			comparison: uint32(42),
+		},
+		{
+			name:       "uints64",
+			value:      NewValueInt(42),
+			comparison: uint(42),
+		},
+		{
+			name:       "floats32",
+			value:      NewValueDouble(13.37),
+			comparison: float32(13.37),
+		},
+		{
+			name:       "floats64",
+			value:      NewValueDouble(13.37),
+			comparison: float64(13.37),
+		},
+		{
+			name: "byte slices",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: []byte{1, 3, 3, 7},
+		},
+		{
+			name: "slices",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(b, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: []any{1337},
+		},
+		{
+			name: "maps",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: map[string]any{"hello": "world"},
+		},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for n := 0; n < b.N; n++ {
+				_ = bb.value.Equal(bb.comparison)
+			}
 		})
 	}
 }
