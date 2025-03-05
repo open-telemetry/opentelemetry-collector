@@ -586,6 +586,12 @@ func TestValueEqual(t *testing.T) {
 		expected   bool
 	}{
 		{
+			name:       "same empty",
+			value:      NewValueEmpty(),
+			comparison: nil,
+			expected:   true,
+		},
+		{
 			name:       "same strings",
 			value:      NewValueStr("test"),
 			comparison: "test",
@@ -838,6 +844,11 @@ func BenchmarkValueEqual(b *testing.B) {
 		value      Value
 		comparison any
 	}{
+		{
+			name:       "nil",
+			value:      NewValueEmpty(),
+			comparison: nil,
+		},
 		{
 			name:       "strings",
 			value:      NewValueStr("test"),

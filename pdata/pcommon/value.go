@@ -454,6 +454,8 @@ func (v Value) AsRaw() any {
 
 func (v Value) Equal(c any) bool {
 	switch t := c.(type) {
+	case nil:
+		return v.Type() == ValueTypeEmpty
 	case string:
 		if v.Type() == ValueTypeEmpty {
 			return t == ""
