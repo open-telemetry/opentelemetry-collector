@@ -27,7 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: true},
+					{{ $name.Render }}: MetricConfig{Enabled: true, Name: "{{ $name }}"},
 					{{- end }}
 				},
 				{{- if .ResourceAttributes }}
@@ -44,7 +44,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: false},
+					{{ $name.Render }}: MetricConfig{Enabled: false, Name: "{{ $name }}"},
 					{{- end }}
 				},
 				{{- if .ResourceAttributes }}
