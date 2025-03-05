@@ -81,3 +81,25 @@ func TestStringSliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestStringSliceEqual(t *testing.T) {
+	ms := NewStringSlice()
+	assert.True(t, ms.Equal([]string{}))
+
+	ms.Append("a", "b", "c")
+	assert.False(t, ms.Equal([]string{}))
+	assert.True(t, ms.Equal([]string{"a", "b", "c"}))
+}
+
+func BenchmarkStringSliceEqual(b *testing.B) {
+	ms := NewStringSlice()
+	ms.Append("a", "b", "c")
+	cmp := []string{"a", "b", "c"}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}

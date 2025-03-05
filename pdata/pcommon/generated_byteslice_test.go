@@ -81,3 +81,25 @@ func TestByteSliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestByteSliceEqual(t *testing.T) {
+	ms := NewByteSlice()
+	assert.True(t, ms.Equal([]byte{}))
+
+	ms.Append(1, 2, 3)
+	assert.False(t, ms.Equal([]byte{}))
+	assert.True(t, ms.Equal([]byte{1, 2, 3}))
+}
+
+func BenchmarkByteSliceEqual(b *testing.B) {
+	ms := NewByteSlice()
+	ms.Append(1, 2, 3)
+	cmp := []byte{1, 2, 3}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}

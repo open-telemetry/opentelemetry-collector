@@ -150,3 +150,27 @@ func TestInvalidSlice(t *testing.T) {
 	assert.Panics(t, func() { es.AsRaw() })
 	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }
+
+func TestSliceEqual(t *testing.T) {
+	es := NewSlice()
+	assert.True(t, es.Equal([]any{}))
+
+	v := es.AppendEmpty()
+	v.SetStr("test")
+	assert.False(t, es.Equal([]any{}))
+	assert.True(t, es.Equal([]any{"test"}))
+}
+
+func BenchmarkSliceEqual(b *testing.B) {
+	es := NewSlice()
+	v := es.AppendEmpty()
+	v.SetStr("test")
+	cmp := []any{"test"}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = es.Equal(cmp)
+	}
+}
