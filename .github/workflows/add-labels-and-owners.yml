@@ -1,4 +1,4 @@
-name: 'Add code owners to a PR'
+name: 'Add labels and code owners to PR'
 on:
   pull_request_target:
     types:
@@ -8,7 +8,7 @@ on:
 permissions: read-all
 
 jobs:
-  add-owners-to-pr:
+  add-labels-and-owners:
     permissions:
       pull-requests: write
     runs-on: ubuntu-24.04
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Run add-codeowners-to-pr.sh
-        run: ./.github/workflows/scripts/add-codeowners-to-pr.sh
+        run: ./.github/workflows/scripts/add-labels-and-owners.sh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
