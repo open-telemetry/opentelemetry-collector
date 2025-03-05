@@ -59,6 +59,8 @@ type Metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	Interval uint64 `mapstructure:"interval"`
 }
 
 type Stability struct {
