@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -27,16 +28,16 @@ var (
 )
 
 type profilesRequest struct {
-	pd               pprofile.Profiles
-	pusher           xconsumer.ConsumeProfilesFunc
-	cachedItemsCount int
+	pd         pprofile.Profiles
+	pusher     xconsumer.ConsumeProfilesFunc
+	cachedSize int
 }
 
 func newProfilesRequest(pd pprofile.Profiles, pusher xconsumer.ConsumeProfilesFunc) exporterhelper.Request {
 	return &profilesRequest{
-		pd:               pd,
-		pusher:           pusher,
-		cachedItemsCount: pd.SampleCount(),
+		pd:         pd,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -69,11 +70,18 @@ func (req *profilesRequest) Export(ctx context.Context) error {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.pd.SampleCount()
 }
 
-func (req *profilesRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *profilesRequest) Size(sizer sizer.ProfilesSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.ProfilesSize(req.pd)
+	}
+	return req.cachedSize
+}
+
+func (req *profilesRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type profileExporter struct {
