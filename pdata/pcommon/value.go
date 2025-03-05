@@ -501,6 +501,12 @@ func (v Value) Equal(c any) bool {
 	case float64:
 		return v.Type() == ValueTypeDouble &&
 			v.Double() == t
+	case []byte:
+		return v.Type() == ValueTypeBytes &&
+			v.Bytes().Equal(t)
+	case []any:
+		return v.Type() == ValueTypeSlice &&
+			v.Slice().Equal(t)
 	}
 
 	return false

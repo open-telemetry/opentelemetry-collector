@@ -765,6 +765,46 @@ func TestValueEqual(t *testing.T) {
 			comparison: float64(17.01),
 			expected:   false,
 		},
+		{
+			name: "same byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: []byte{1, 3, 3, 7},
+			expected:   true,
+		},
+		{
+			name: "different byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: []byte{1, 7, 0, 1},
+			expected:   false,
+		},
+		{
+			name: "same slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: []any{1337},
+			expected:   true,
+		},
+		{
+			name: "different slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: []any{1701},
+			expected:   false,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))

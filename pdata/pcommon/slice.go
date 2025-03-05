@@ -164,3 +164,17 @@ func (es Slice) FromRaw(rawSlice []any) error {
 	*es.getOrig() = origs
 	return errs
 }
+
+// Equal checks equality with a raw []any
+func (es Slice) Equal(val []any) bool {
+	if es.Len() != len(val) {
+		return false
+	}
+
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val[i]) {
+			return false
+		}
+	}
+	return true
+}
