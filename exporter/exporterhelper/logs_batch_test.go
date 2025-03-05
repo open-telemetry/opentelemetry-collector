@@ -266,7 +266,7 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	assert.Len(t, merged, 2)
 }
 
-func TestMergeSplitExactBytes(t *testing.T) {
+func TestLogsMergeSplitExactBytes(t *testing.T) {
 	pb := plog.ProtoMarshaler{}
 	// Set max size off by 1, so forces every log to be it's own batch.
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: pb.LogsSize(testdata.GenerateLogs(2)) - 1}
@@ -276,7 +276,7 @@ func TestMergeSplitExactBytes(t *testing.T) {
 	assert.Len(t, merged, 4)
 }
 
-func TestMergeSplitExactItems(t *testing.T) {
+func TestLogsMergeSplitExactItems(t *testing.T) {
 	// Set max size off by 1, so forces every log to be it's own batch.
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 1}
 	lr := newLogsRequest(testdata.GenerateLogs(4), nil)
