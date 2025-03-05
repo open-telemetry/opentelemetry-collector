@@ -507,6 +507,9 @@ func (v Value) Equal(c any) bool {
 	case []any:
 		return v.Type() == ValueTypeSlice &&
 			v.Slice().Equal(t)
+	case map[string]any:
+		return v.Type() == ValueTypeMap &&
+			v.Map().Equal(t)
 	}
 
 	return false

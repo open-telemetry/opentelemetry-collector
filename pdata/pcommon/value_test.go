@@ -805,6 +805,26 @@ func TestValueEqual(t *testing.T) {
 			comparison: []any{1701},
 			expected:   false,
 		},
+		{
+			name: "same map",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: map[string]any{"hello": "world"},
+			expected:   true,
+		},
+		{
+			name: "different slice",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: map[string]any{"bonjour": "monde"},
+			expected:   false,
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
