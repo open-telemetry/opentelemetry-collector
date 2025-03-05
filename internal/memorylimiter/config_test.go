@@ -21,9 +21,11 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.NoError(t, cm.Unmarshal(&cfg))
 	assert.Equal(t,
 		&Config{
-			CheckInterval:       5 * time.Second,
-			MemoryLimitMiB:      4000,
-			MemorySpikeLimitMiB: 500,
+			GCStats: GCStatsConfig{
+				CheckInterval:       5 * time.Second,
+				MemoryLimitMiB:      4000,
+				MemorySpikeLimitMiB: 500,
+			},
 		}, cfg)
 }
 
@@ -36,64 +38,105 @@ func TestConfigValidate(t *testing.T) {
 		{
 			name: "valid",
 			cfg: &Config{
-				MemoryLimitMiB:      5722,
-				MemorySpikeLimitMiB: 1907,
-				CheckInterval:       100 * time.Millisecond,
+				GCStats: GCStatsConfig{
+					MemoryLimitMiB:      5722,
+					MemorySpikeLimitMiB: 1907,
+					CheckInterval:       100 * time.Millisecond,
+				},
 			},
 			err: nil,
 		},
 		{
 			name: "zero check interval",
 			cfg: &Config{
-				CheckInterval: 0,
+				GCStats: GCStatsConfig{
+					CheckInterval: 0,
+				},
 			},
 			err: errCheckIntervalOutOfRange,
 		},
 		{
 			name: "unset memory limit",
 			cfg: &Config{
-				CheckInterval:         1 * time.Second,
-				MemoryLimitMiB:        0,
-				MemoryLimitPercentage: 0,
+				GCStats: GCStatsConfig{
+					CheckInterval:         1 * time.Second,
+					MemoryLimitMiB:        0,
+					MemoryLimitPercentage: 0,
+				},
 			},
 			err: errLimitOutOfRange,
 		},
 		{
 			name: "invalid memory spike limit",
 			cfg: &Config{
-				CheckInterval:       1 * time.Second,
-				MemoryLimitMiB:      10,
-				MemorySpikeLimitMiB: 10,
+				GCStats: GCStatsConfig{
+					CheckInterval:       1 * time.Second,
+					MemoryLimitMiB:      10,
+					MemorySpikeLimitMiB: 10,
+				},
 			},
 			err: errSpikeLimitOutOfRange,
 		},
 		{
 			name: "invalid memory percentage limit",
 			cfg: &Config{
-				CheckInterval:         1 * time.Second,
-				MemoryLimitPercentage: 101,
+				GCStats: GCStatsConfig{
+					CheckInterval:         1 * time.Second,
+					MemoryLimitPercentage: 101,
+				},
 			},
 			err: errLimitPercentageOutOfRange,
 		},
 		{
 			name: "invalid memory spike percentage limit",
 			cfg: &Config{
-				CheckInterval:         1 * time.Second,
-				MemoryLimitPercentage: 50,
-				MemorySpikePercentage: 60,
+				GCStats: GCStatsConfig{
+					CheckInterval:         1 * time.Second,
+					MemoryLimitPercentage: 50,
+					MemorySpikePercentage: 60,
+				},
 			},
 			err: errSpikeLimitPercentageOutOfRange,
 		},
 		{
 			name: "invalid gc intervals",
 			cfg: &Config{
-				CheckInterval:                100 * time.Millisecond,
-				MinGCIntervalWhenSoftLimited: 50 * time.Millisecond,
-				MinGCIntervalWhenHardLimited: 100 * time.Millisecond,
-				MemoryLimitMiB:               5722,
-				MemorySpikeLimitMiB:          1907,
+				GCStats: GCStatsConfig{
+					CheckInterval:                100 * time.Millisecond,
+					MinGCIntervalWhenSoftLimited: 50 * time.Millisecond,
+					MinGCIntervalWhenHardLimited: 100 * time.Millisecond,
+					MemoryLimitMiB:               5722,
+					MemorySpikeLimitMiB:          1907,
+				},
 			},
 			err: errInconsistentGCMinInterval,
+		},
+		{
+			name: "missing request_limit",
+			cfg: &Config{
+				Model:     "admission",
+				Admission: AdmissionConfig{},
+			},
+			err: errAdmissionLimitOutOfRange,
+		},
+		{
+			name: "valid request_limit without waiting_limit",
+			cfg: &Config{
+				Model: "admission",
+				Admission: AdmissionConfig{
+					RequestLimitMiB: 128,
+				},
+			},
+		},
+		{
+			name: "valid request_limit with waiting_limit",
+			cfg: &Config{
+				Model: "admission",
+				Admission: AdmissionConfig{
+					RequestLimitMiB: 128,
+					WaitingLimitMiB: 32,
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

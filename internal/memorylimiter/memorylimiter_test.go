@@ -20,9 +20,11 @@ import (
 func TestMemoryPressureResponse(t *testing.T) {
 	var currentMemAlloc uint64
 	cfg := &Config{
-		CheckInterval:       1 * time.Minute,
-		MemoryLimitMiB:      1024,
-		MemorySpikeLimitMiB: 0,
+		GCStats: GCStatsConfig{
+			CheckInterval:       1 * time.Minute,
+			MemoryLimitMiB:      1024,
+			MemorySpikeLimitMiB: 0,
+		},
 	}
 	ml, err := NewMemoryLimiter(cfg, zap.NewNop())
 	require.NoError(t, err)
@@ -56,7 +58,12 @@ func TestMemoryPressureResponse(t *testing.T) {
 
 func TestGetDecision(t *testing.T) {
 	t.Run("fixed_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitMiB: 100, MemorySpikeLimitMiB: 20}, zap.NewNop())
+		d, err := getMemUsageChecker(&Config{
+			GCStats: GCStatsConfig{
+				MemoryLimitMiB:      100,
+				MemorySpikeLimitMiB: 20,
+			},
+		}, zap.NewNop())
 		require.NoError(t, err)
 		assert.Equal(t, &memUsageChecker{
 			memAllocLimit: 100 * mibBytes,
@@ -71,7 +78,12 @@ func TestGetDecision(t *testing.T) {
 		return 100 * mibBytes, nil
 	}
 	t.Run("percentage_limit", func(t *testing.T) {
-		d, err := getMemUsageChecker(&Config{MemoryLimitPercentage: 50, MemorySpikePercentage: 10}, zap.NewNop())
+		d, err := getMemUsageChecker(&Config{
+			GCStats: GCStatsConfig{
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+		}, zap.NewNop())
 		require.NoError(t, err)
 		assert.Equal(t, &memUsageChecker{
 			memAllocLimit: 50 * mibBytes,
@@ -143,10 +155,12 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 		{
 			name: "GC when first soft limit and not immediately",
 			mlCfg: &Config{
-				CheckInterval:                1 * time.Minute,
-				MinGCIntervalWhenSoftLimited: 10 * time.Second,
-				MemoryLimitMiB:               50,
-				MemorySpikeLimitMiB:          10,
+				GCStats: GCStatsConfig{
+					CheckInterval:                1 * time.Minute,
+					MinGCIntervalWhenSoftLimited: 10 * time.Second,
+					MemoryLimitMiB:               50,
+					MemorySpikeLimitMiB:          10,
+				},
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      1,
@@ -154,10 +168,12 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 		{
 			name: "GC always when soft limit min interval is 0",
 			mlCfg: &Config{
-				CheckInterval:                1 * time.Minute,
-				MinGCIntervalWhenSoftLimited: 0,
-				MemoryLimitMiB:               50,
-				MemorySpikeLimitMiB:          10,
+				GCStats: GCStatsConfig{
+					CheckInterval:                1 * time.Minute,
+					MinGCIntervalWhenSoftLimited: 0,
+					MemoryLimitMiB:               50,
+					MemorySpikeLimitMiB:          10,
+				},
 			},
 			memAllocMiB: [2]uint64{45, 45},
 			numGCs:      2,
@@ -165,10 +181,12 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 		{
 			name: "GC when first hard limit and not immediately",
 			mlCfg: &Config{
-				CheckInterval:                1 * time.Minute,
-				MinGCIntervalWhenHardLimited: 10 * time.Second,
-				MemoryLimitMiB:               50,
-				MemorySpikeLimitMiB:          10,
+				GCStats: GCStatsConfig{
+					CheckInterval:                1 * time.Minute,
+					MinGCIntervalWhenHardLimited: 10 * time.Second,
+					MemoryLimitMiB:               50,
+					MemorySpikeLimitMiB:          10,
+				},
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      1,
@@ -176,10 +194,12 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 		{
 			name: "GC always when hard limit min interval is 0",
 			mlCfg: &Config{
-				CheckInterval:                1 * time.Minute,
-				MinGCIntervalWhenHardLimited: 0,
-				MemoryLimitMiB:               50,
-				MemorySpikeLimitMiB:          10,
+				GCStats: GCStatsConfig{
+					CheckInterval:                1 * time.Minute,
+					MinGCIntervalWhenHardLimited: 0,
+					MemoryLimitMiB:               50,
+					MemorySpikeLimitMiB:          10,
+				},
 			},
 			memAllocMiB: [2]uint64{55, 55},
 			numGCs:      2,
@@ -187,11 +207,13 @@ func TestCallGCWhenSoftLimit(t *testing.T) {
 		{
 			name: "GC based on soft then based on hard limit",
 			mlCfg: &Config{
-				CheckInterval:                1 * time.Minute,
-				MinGCIntervalWhenSoftLimited: 10 * time.Second,
-				MinGCIntervalWhenHardLimited: 0,
-				MemoryLimitMiB:               50,
-				MemorySpikeLimitMiB:          10,
+				GCStats: GCStatsConfig{
+					CheckInterval:                1 * time.Minute,
+					MinGCIntervalWhenSoftLimited: 10 * time.Second,
+					MinGCIntervalWhenHardLimited: 0,
+					MemoryLimitMiB:               50,
+					MemorySpikeLimitMiB:          10,
+				},
 			},
 			memAllocMiB: [2]uint64{45, 55},
 			numGCs:      2,
