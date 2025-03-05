@@ -452,6 +452,60 @@ func (v Value) AsRaw() any {
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
 
+func (v Value) Equal(c any) bool {
+	switch t := c.(type) {
+	case string:
+		if v.Type() == ValueTypeEmpty {
+			return t == ""
+		}
+		return v.Type() == ValueTypeStr &&
+			v.Str() == t
+	case bool:
+		return v.Type() == ValueTypeBool &&
+			v.Bool() == t
+	case int:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case int8:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case int16:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case int32:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case int64:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == t
+	case uint:
+		//nolint:gosec
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case uint8:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case uint16:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case uint32:
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case uint64:
+		//nolint:gosec
+		return v.Type() == ValueTypeInt &&
+			v.Int() == int64(t)
+	case float32:
+		return v.Type() == ValueTypeDouble &&
+			float32(v.Double()) == t
+	case float64:
+		return v.Type() == ValueTypeDouble &&
+			v.Double() == t
+	}
+
+	return false
+}
+
 func newKeyValueString(k string, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	state := internal.StateMutable

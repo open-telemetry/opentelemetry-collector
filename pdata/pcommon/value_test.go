@@ -578,6 +578,200 @@ func TestInvalidValue(t *testing.T) {
 	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
 }
 
+func TestValueEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		value      Value
+		comparison any
+		expected   bool
+	}{
+		{
+			name:       "same strings",
+			value:      NewValueStr("test"),
+			comparison: "test",
+			expected:   true,
+		},
+		{
+			name:       "different strings",
+			value:      NewValueStr("test"),
+			comparison: "non-test",
+			expected:   false,
+		},
+		{
+			name:       "an empty value and an empty string",
+			value:      NewValueEmpty(),
+			comparison: "",
+			expected:   true,
+		},
+		{
+			name:       "an empty value and a non-empty string",
+			value:      NewValueEmpty(),
+			comparison: "test",
+			expected:   false,
+		},
+		{
+			name:       "same booleans",
+			value:      NewValueBool(true),
+			comparison: true,
+			expected:   true,
+		},
+		{
+			name:       "different booleans",
+			value:      NewValueBool(true),
+			comparison: false,
+			expected:   false,
+		},
+		{
+			name:       "same int",
+			value:      NewValueInt(42),
+			comparison: int(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints",
+			value:      NewValueInt(42),
+			comparison: int(1701),
+			expected:   false,
+		},
+		{
+			name:       "same int8",
+			value:      NewValueInt(42),
+			comparison: int8(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints8",
+			value:      NewValueInt(42),
+			comparison: int8(127),
+			expected:   false,
+		},
+		{
+			name:       "same int16",
+			value:      NewValueInt(42),
+			comparison: int16(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints16",
+			value:      NewValueInt(42),
+			comparison: int16(1701),
+			expected:   false,
+		},
+		{
+			name:       "same int32",
+			value:      NewValueInt(42),
+			comparison: int32(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints32",
+			value:      NewValueInt(42),
+			comparison: int32(1701),
+			expected:   false,
+		},
+		{
+			name:       "same int64",
+			value:      NewValueInt(42),
+			comparison: int(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints64",
+			value:      NewValueInt(42),
+			comparison: int64(1701),
+			expected:   false,
+		},
+		{
+			name:       "same uint",
+			value:      NewValueInt(42),
+			comparison: uint(42),
+			expected:   true,
+		},
+		{
+			name:       "different uints",
+			value:      NewValueInt(42),
+			comparison: uint(1701),
+			expected:   false,
+		},
+		{
+			name:       "same uint8",
+			value:      NewValueInt(42),
+			comparison: uint8(42),
+			expected:   true,
+		},
+		{
+			name:       "different uints8",
+			value:      NewValueInt(42),
+			comparison: uint8(255),
+			expected:   false,
+		},
+		{
+			name:       "same uint16",
+			value:      NewValueInt(42),
+			comparison: uint16(42),
+			expected:   true,
+		},
+		{
+			name:       "different uints16",
+			value:      NewValueInt(42),
+			comparison: uint16(1701),
+			expected:   false,
+		},
+		{
+			name:       "same uint32",
+			value:      NewValueInt(42),
+			comparison: uint32(42),
+			expected:   true,
+		},
+		{
+			name:       "different uints32",
+			value:      NewValueInt(42),
+			comparison: uint32(1701),
+			expected:   false,
+		},
+		{
+			name:       "same uint64",
+			value:      NewValueInt(42),
+			comparison: uint(42),
+			expected:   true,
+		},
+		{
+			name:       "different uints64",
+			value:      NewValueInt(42),
+			comparison: uint64(1701),
+			expected:   false,
+		},
+		{
+			name:       "same float32",
+			value:      NewValueDouble(13.37),
+			comparison: float32(13.37),
+			expected:   true,
+		},
+		{
+			name:       "different floats32",
+			value:      NewValueDouble(13.37),
+			comparison: float32(17.01),
+			expected:   false,
+		},
+		{
+			name:       "same float64",
+			value:      NewValueDouble(13.37),
+			comparison: float64(13.37),
+			expected:   true,
+		},
+		{
+			name:       "different floats64",
+			value:      NewValueDouble(13.37),
+			comparison: float64(17.01),
+			expected:   false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
+		})
+	}
+}
+
 func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.Map()
