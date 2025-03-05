@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -24,16 +25,16 @@ var (
 )
 
 type metricsRequest struct {
-	md               pmetric.Metrics
-	pusher           consumer.ConsumeMetricsFunc
-	cachedItemsCount int
+	md         pmetric.Metrics
+	pusher     consumer.ConsumeMetricsFunc
+	cachedSize int
 }
 
 func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
 	return &metricsRequest{
-		md:               md,
-		pusher:           pusher,
-		cachedItemsCount: md.DataPointCount(),
+		md:         md,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -66,11 +67,18 @@ func (req *metricsRequest) Export(ctx context.Context) error {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.md.DataPointCount()
 }
 
-func (req *metricsRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *metricsRequest) Size(sizer sizer.MetricsSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.MetricsSize(req.md)
+	}
+	return req.cachedSize
+}
+
+func (req *metricsRequest) setCachedSize(count int) {
+	req.cachedSize = count
 }
 
 type metricsExporter struct {
