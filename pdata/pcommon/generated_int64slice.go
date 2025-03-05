@@ -7,6 +7,8 @@
 package pcommon
 
 import (
+	"slices"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 )
 
@@ -100,6 +102,11 @@ func (ms Int64Slice) MoveTo(dest Int64Slice) {
 func (ms Int64Slice) CopyTo(dest Int64Slice) {
 	dest.getState().AssertMutable()
 	*dest.getOrig() = copyInt64Slice(*dest.getOrig(), *ms.getOrig())
+}
+
+// Equal checks equality with a raw []int64
+func (ms Int64Slice) Equal(val []int64) bool {
+	return slices.Equal(*ms.getOrig(), val)
 }
 
 func copyInt64Slice(dst, src []int64) []int64 {

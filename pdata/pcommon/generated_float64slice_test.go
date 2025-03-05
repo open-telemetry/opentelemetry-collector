@@ -81,3 +81,25 @@ func TestFloat64SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestFloat64SliceEqual(t *testing.T) {
+	ms := NewFloat64Slice()
+	assert.True(t, ms.Equal([]float64{}))
+
+	ms.Append(1, 2, 3)
+	assert.False(t, ms.Equal([]float64{}))
+	assert.True(t, ms.Equal([]float64{1, 2, 3}))
+}
+
+func BenchmarkFloat64SliceEqual(b *testing.B) {
+	ms := NewFloat64Slice()
+	ms.Append(1, 2, 3)
+	cmp := []float64{1, 2, 3}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}
