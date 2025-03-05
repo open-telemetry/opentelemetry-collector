@@ -74,14 +74,14 @@ func NewMemoryLimiter(cfg *Config, logger *zap.Logger) (*MemoryLimiter, error) {
 	logger.Info("Memory limiter configured",
 		zap.Uint64("limit_mib", usageChecker.memAllocLimit/mibBytes),
 		zap.Uint64("spike_limit_mib", usageChecker.memSpikeLimit/mibBytes),
-		zap.Duration("check_interval", cfg.CheckInterval))
+		zap.Duration("check_interval", cfg.GCStats.CheckInterval))
 
 	return &MemoryLimiter{
 		usageChecker:                 *usageChecker,
-		memCheckWait:                 cfg.CheckInterval,
-		ticker:                       time.NewTicker(cfg.CheckInterval),
-		minGCIntervalWhenSoftLimited: cfg.MinGCIntervalWhenSoftLimited,
-		minGCIntervalWhenHardLimited: cfg.MinGCIntervalWhenHardLimited,
+		memCheckWait:                 cfg.GCStats.CheckInterval,
+		ticker:                       time.NewTicker(cfg.GCStats.CheckInterval),
+		minGCIntervalWhenSoftLimited: cfg.GCStats.MinGCIntervalWhenSoftLimited,
+		minGCIntervalWhenHardLimited: cfg.GCStats.MinGCIntervalWhenHardLimited,
 		lastGCDone:                   time.Now(),
 		readMemStatsFn:               ReadMemStatsFn,
 		runGCFn:                      runtime.GC,
@@ -136,9 +136,9 @@ func (ml *MemoryLimiter) MustRefuse() bool {
 }
 
 func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, error) {
-	memAllocLimit := uint64(cfg.MemoryLimitMiB) * mibBytes
-	memSpikeLimit := uint64(cfg.MemorySpikeLimitMiB) * mibBytes
-	if cfg.MemoryLimitMiB != 0 {
+	memAllocLimit := uint64(cfg.GCStats.MemoryLimitMiB) * mibBytes
+	memSpikeLimit := uint64(cfg.GCStats.MemorySpikeLimitMiB) * mibBytes
+	if cfg.GCStats.MemoryLimitMiB != 0 {
 		return newFixedMemUsageChecker(memAllocLimit, memSpikeLimit), nil
 	}
 	totalMemory, err := GetMemoryFn()
@@ -147,10 +147,10 @@ func getMemUsageChecker(cfg *Config, logger *zap.Logger) (*memUsageChecker, erro
 	}
 	logger.Info("Using percentage memory limiter",
 		zap.Uint64("total_memory_mib", totalMemory/mibBytes),
-		zap.Uint32("limit_percentage", cfg.MemoryLimitPercentage),
-		zap.Uint32("spike_limit_percentage", cfg.MemorySpikePercentage))
-	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.MemoryLimitPercentage),
-		uint64(cfg.MemorySpikePercentage)), nil
+		zap.Uint32("limit_percentage", cfg.GCStats.MemoryLimitPercentage),
+		zap.Uint32("spike_limit_percentage", cfg.GCStats.MemorySpikePercentage))
+	return newPercentageMemUsageChecker(totalMemory, uint64(cfg.GCStats.MemoryLimitPercentage),
+		uint64(cfg.GCStats.MemorySpikePercentage)), nil
 }
 
 func (ml *MemoryLimiter) readMemStats() *runtime.MemStats {
