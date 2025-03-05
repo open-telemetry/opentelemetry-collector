@@ -34,19 +34,11 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
-type customRoundTripper struct{}
-
-var _ http.RoundTripper = (*customRoundTripper)(nil)
-
-func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
-	return nil, nil
-}
-
-func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensionauth.Server {
+func build[T any, O any](t *testing.T, builder func(...O) (T, error), opts ...O) T {
 	t.Helper()
-	srv, err := extensionauth.NewServer(opts...)
+	obj, err := builder(opts...)
 	require.NoError(t, err)
-	return srv
+	return obj
 }
 
 var (
@@ -61,7 +53,7 @@ var (
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			testAuthID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+			testAuthID: build(t, extensionauth.NewClient),
 		},
 	}
 
@@ -187,7 +179,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 func TestPartialHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			testAuthID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+			testAuthID: build(t, extensionauth.NewClient),
 		},
 	}
 
@@ -355,9 +347,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{},
-					},
+					mockID: build(t, extensionauth.NewClient),
 				},
 			},
 		},
@@ -370,7 +360,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: build(t, extensionauth.NewClient),
 				},
 			},
 		},
@@ -392,7 +382,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: build(t, extensionauth.NewClient),
 				},
 			},
 		},
@@ -406,7 +396,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: build(t, extensionauth.NewClient),
 				},
 			},
 		},
@@ -420,7 +410,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: build(t, extensionauth.NewClient),
 				},
 			},
 		},
@@ -433,9 +423,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true,
-					},
+					mockID: build(t, extensionauthtest.NewErrorClient),
 				},
 			},
 		},
@@ -469,8 +457,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			}
 
 			if tt.settings.Auth != nil {
-				_, ok := transport.(*customRoundTripper)
-				assert.True(t, ok)
+				assert.Nil(t, transport)
 			}
 		})
 	}
@@ -832,7 +819,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t,
+			mockID: build(t, extensionauth.NewServer,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
@@ -1144,7 +1131,7 @@ func TestServerAuth(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t,
+			mockID: build(t, extensionauth.NewServer,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					authCalled = true
 					return ctx, nil
@@ -1195,7 +1182,7 @@ func TestFailedServerAuth(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t,
+			mockID: build(t, extensionauth.NewServer,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 					return ctx, errors.New("Settings failed")
 				}),
@@ -1376,7 +1363,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t,
+			mockID: build(t, extensionauth.NewServer,
 				extensionauth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
 					require.Len(t, sources, 1)
 					assert.Equal(t, "1", sources["auth"][0])
