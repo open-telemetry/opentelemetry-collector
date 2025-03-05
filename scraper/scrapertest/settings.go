@@ -21,13 +21,3 @@ func NewNopSettings(typ component.Type) scraper.Settings {
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
 }
-
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettings returns a new nop scraper.Settings with the given type.
-func NewNopSettingsWithType(typ component.Type) scraper.Settings {
-	return scraper.Settings{
-		ID:                component.NewIDWithName(typ, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}

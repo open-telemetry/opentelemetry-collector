@@ -27,16 +27,6 @@ func NewNopSettings(typ component.Type) receiver.Settings {
 	}
 }
 
-// Deprecated: [v0.121.0] Use NewNopSettings(NopType) instead.
-// NewNopSettingsWithType returns a new nop settings for Create*Receiver functions with the given type.
-func NewNopSettingsWithType(typ component.Type) receiver.Settings {
-	return receiver.Settings{
-		ID:                component.NewIDWithName(typ, uuid.NewString()),
-		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-		BuildInfo:         component.NewDefaultBuildInfo(),
-	}
-}
-
 // NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
 func NewNopFactory() receiver.Factory {
 	return xreceiver.NewFactory(

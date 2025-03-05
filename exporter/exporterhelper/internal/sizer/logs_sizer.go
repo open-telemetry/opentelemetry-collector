@@ -37,7 +37,7 @@ type LogsBytesSizer struct {
 // This is derived from opentelemetry-collector/pdata/internal/data/protogen/logs/v1/logs.pb.go
 // which is generated with gogo/protobuf.
 func (s *LogsBytesSizer) DeltaSize(newItemSize int) int {
-	return 1 + newItemSize + math_bits.Len64(uint64(newItemSize|1)+6)/7 //nolint:gosec // disable G115
+	return 1 + newItemSize + sov(uint64(newItemSize)) //nolint:gosec // disable G115
 }
 
 // LogsCountSizer returns the nunmber of logs entries.
@@ -65,4 +65,8 @@ func (s *LogsCountSizer) LogRecordSize(_ plog.LogRecord) int {
 
 func (s *LogsCountSizer) DeltaSize(newItemSize int) int {
 	return newItemSize
+}
+
+func sov(x uint64) int {
+	return (math_bits.Len64(x|1) + 6) / 7
 }

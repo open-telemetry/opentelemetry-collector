@@ -55,3 +55,10 @@ func TestLogsBytesSizer(t *testing.T) {
 	lr.CopyTo(sl.LogRecords().AppendEmpty())
 	require.Equal(t, sizer.ScopeLogsSize(sl), prevSize+sizer.DeltaSize(sizer.LogRecordSize(lr)))
 }
+
+func TestLogsBytesDeltaSize(t *testing.T) {
+	sizer := LogsBytesSizer{}
+	require.Equal(t, 129, sizer.DeltaSize(127))
+	require.Equal(t, 131, sizer.DeltaSize(128))
+	require.Equal(t, 242, sizer.DeltaSize(239))
+}

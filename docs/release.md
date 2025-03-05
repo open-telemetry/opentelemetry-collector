@@ -236,7 +236,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2025-03-03 | v0.121.0 | [@mx-psi](https://github.com/mx-psi)              |
 | 2025-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2025-03-31 | v0.123.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)            |
@@ -247,3 +246,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)      |
 | 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd)  |
 | 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                |
+| 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)              |

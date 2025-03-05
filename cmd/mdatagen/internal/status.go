@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"slices"
 	"sort"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -128,6 +129,9 @@ func (s *Status) Validate() error {
 	if err := s.Stability.Validate(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+	if err := s.Deprecation.Validate(s.Stability); err != nil {
+		errs = errors.Join(errs, err)
+	}
 	return errs
 }
 
@@ -155,6 +159,34 @@ func (ms StabilityMap) Validate() error {
 		for _, c := range cmps {
 			if !slices.Contains(validStabilityKeys, c) {
 				errs = errors.Join(errs, fmt.Errorf("invalid component: %v", c))
+			}
+		}
+	}
+	return errs
+}
+
+func (dm DeprecationMap) Validate(ms StabilityMap) error {
+	var errs error
+	for stability, cmps := range ms {
+		if stability != component.StabilityLevelDeprecated {
+			continue
+		}
+		for _, c := range cmps {
+			depInfo, found := dm[c]
+			if !found {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing deprecation date and migration guide for %v", c))
+				continue
+			}
+			if depInfo.Migration == "" {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing migration guide: %v", c))
+			}
+			if depInfo.Date == "" {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing date in YYYY-MM-DD format: %v", c))
+			} else {
+				_, err := time.Parse("2006-01-02", depInfo.Date)
+				if err != nil {
+					errs = errors.Join(errs, fmt.Errorf("deprecated component missing valid date in YYYY-MM-DD format: %v", c))
+				}
 			}
 		}
 	}
