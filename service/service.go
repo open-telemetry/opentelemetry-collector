@@ -190,8 +190,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
-	logger.Info("Setting up own telemetry...")
-
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		err = multierr.Append(err, sdk.Shutdown(ctx))
