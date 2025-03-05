@@ -123,6 +123,18 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanSliceAll(t *testing.T) {
+	ms := generateTestSpanSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestSpanSlice_Sort(t *testing.T) {
 	es := generateTestSpanSlice()
 	es.Sort(func(a, b Span) bool {

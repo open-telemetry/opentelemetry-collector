@@ -127,6 +127,18 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func Test{{ .structName }}All(t *testing.T) {
+	ms := generateTest{{ .structName }}()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 {{ if eq .type "sliceOfPtrs" -}}
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()
