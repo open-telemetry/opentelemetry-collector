@@ -29,7 +29,7 @@ func New(buildInfo component.BuildInfo, resourceCfg map[string]*string) *resourc
 	}
 
 	if _, ok := resourceCfg[semconv.AttributeServiceNamespace]; !ok {
-		// AttributeServiceNamespace is not specified in the config. Use the default namespace.
+		// AttributeServiceNamespace is not specified in the config. Use the default namespace built into the binary.
 		telAttrs = append(telAttrs, attribute.String(semconv.AttributeServiceNamespace, buildInfo.Namespace))
 	}
 
