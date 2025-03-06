@@ -6,7 +6,7 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/int
 import (
 	"time"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
