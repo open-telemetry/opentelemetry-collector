@@ -102,6 +102,7 @@ replaces:
   - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper => ../../processor/processorhelper/xprocessorhelper
   - go.opentelemetry.io/collector/receiver => ../../receiver
   - go.opentelemetry.io/collector/receiver/nopreceiver => ../../receiver/nopreceiver
+  - go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
   - go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
   - go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
   - go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
