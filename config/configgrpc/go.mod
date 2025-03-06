@@ -79,5 +79,3 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
-
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
