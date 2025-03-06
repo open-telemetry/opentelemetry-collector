@@ -28,7 +28,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/collector/receiver v0.121.0
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250306210537-36eaf6a917b5
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0
 	go.opentelemetry.io/otel v1.35.0
