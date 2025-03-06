@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
-	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
@@ -39,6 +38,13 @@ func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensi
 	srv, err := extensionauth.NewServer(opts...)
 	require.NoError(t, err)
 	return srv
+}
+
+func mustNewClientAuth(t *testing.T, opts ...extensionauth.ClientOption) extensionauth.Client {
+	t.Helper()
+	client, err := extensionauth.NewClient(opts...)
+	require.NoError(t, err)
+	return client
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
@@ -171,7 +177,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: mustNewClientAuth(t),
 				},
 			},
 		},
@@ -200,7 +206,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: mustNewClientAuth(t),
 				},
 			},
 		},
@@ -229,7 +235,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: mustNewClientAuth(t),
 				},
 			},
 		},
