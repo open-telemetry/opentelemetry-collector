@@ -29,22 +29,38 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensionauth.Server {
-	t.Helper()
-	srv, err := extensionauth.NewServer(opts...)
-	require.NoError(t, err)
-	return srv
+var (
+	_ extension.Extension  = (*mockAuthServer)(nil)
+	_ extensionauth.Server = (*mockAuthServer)(nil)
+)
+
+type mockAuthServer struct {
+	auth func(ctx context.Context, sources map[string][]string) (context.Context, error)
 }
 
-func mustNewClientAuth(t *testing.T, opts ...extensionauth.ClientOption) extensionauth.Client {
-	t.Helper()
-	client, err := extensionauth.NewClient(opts...)
-	require.NoError(t, err)
-	return client
+// Authenticate implements extensionauth.Server.
+func (m *mockAuthServer) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
+	return m.auth(ctx, sources)
+}
+
+// Shutdown implements extension.Extension.
+func (m *mockAuthServer) Shutdown(context.Context) error {
+	return nil
+}
+
+// Start implements extension.Extension.
+func (m *mockAuthServer) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
+	return &mockAuthServer{auth: auth}
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
@@ -177,7 +193,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: mustNewClientAuth(t),
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -206,7 +222,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: mustNewClientAuth(t),
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -235,7 +251,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: mustNewClientAuth(t),
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -415,7 +431,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t),
+			mockID: extensionauthtest.NewNopServer(),
 		},
 	}
 	srv, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings())
@@ -990,7 +1006,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1014,7 +1030,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1035,7 +1051,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1066,7 +1082,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	require.NoError(t, err)
@@ -1092,7 +1108,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	require.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
@@ -1115,7 +1131,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
