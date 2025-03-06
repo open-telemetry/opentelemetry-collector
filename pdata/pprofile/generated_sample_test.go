@@ -71,6 +71,16 @@ func TestSample_AttributeIndices(t *testing.T) {
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
+func TestSample_LinkIndex(t *testing.T) {
+	ms := NewSample()
+	assert.Equal(t, int32(0), ms.LinkIndex())
+	ms.SetLinkIndex(int32(1))
+	assert.True(t, ms.HasLinkIndex())
+	assert.Equal(t, int32(1), ms.LinkIndex())
+	ms.RemoveLinkIndex()
+	assert.False(t, ms.HasLinkIndex())
+}
+
 func TestSample_TimestampsUnixNano(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.TimestampsUnixNano())
@@ -89,5 +99,6 @@ func fillTestSample(tv Sample) {
 	tv.orig.LocationsLength = int32(1)
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Value, tv.state))
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
+	tv.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(1)}
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.TimestampsUnixNano, tv.state))
 }

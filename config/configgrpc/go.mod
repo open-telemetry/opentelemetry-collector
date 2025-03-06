@@ -5,22 +5,22 @@ go 1.23.0
 require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/client v1.25.0
-	go.opentelemetry.io/collector/component v0.119.0
-	go.opentelemetry.io/collector/component/componenttest v0.119.0
-	go.opentelemetry.io/collector/config/configauth v0.119.0
-	go.opentelemetry.io/collector/config/configcompression v1.25.0
-	go.opentelemetry.io/collector/config/confignet v1.25.0
-	go.opentelemetry.io/collector/config/configopaque v1.25.0
-	go.opentelemetry.io/collector/config/configtls v1.25.0
-	go.opentelemetry.io/collector/extension/auth v0.119.0
-	go.opentelemetry.io/collector/extension/auth/authtest v0.119.0
-	go.opentelemetry.io/collector/pdata v1.25.0
-	go.opentelemetry.io/collector/pdata/testdata v0.119.0
+	go.opentelemetry.io/collector/client v1.27.0
+	go.opentelemetry.io/collector/component v1.27.0
+	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/config/configauth v0.121.0
+	go.opentelemetry.io/collector/config/configcompression v1.27.0
+	go.opentelemetry.io/collector/config/confignet v1.27.0
+	go.opentelemetry.io/collector/config/configopaque v1.27.0
+	go.opentelemetry.io/collector/config/configtls v1.27.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.0
+	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
 	go.opentelemetry.io/otel v1.34.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.70.0
+	google.golang.org/grpc v1.71.0
 )
 
 require (
@@ -37,8 +37,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/extension v0.119.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.119.0 // indirect
+	go.opentelemetry.io/collector/extension v1.27.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
@@ -67,7 +67,7 @@ replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/auth => ../../extension/auth
+replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
@@ -81,4 +81,4 @@ replace go.opentelemetry.io/collector/component/componenttest => ../../component
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
-replace go.opentelemetry.io/collector/extension/auth/authtest => ../../extension/auth/authtest
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest

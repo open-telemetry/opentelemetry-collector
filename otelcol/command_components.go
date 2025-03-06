@@ -25,7 +25,7 @@ type componentWithStability struct {
 }
 
 type componentWithoutStability struct {
-	Scheme string
+	Scheme string `yaml:",omitempty"`
 	Module string
 }
 
@@ -37,6 +37,7 @@ type componentsOutput struct {
 	Connectors []componentWithStability
 	Extensions []componentWithStability
 	Providers  []componentWithoutStability
+	Converters []componentWithoutStability `yaml:",omitempty"`
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -120,6 +121,12 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 				components.Providers = append(components.Providers, componentWithoutStability{
 					Scheme: providerScheme,
 					Module: providerModuleModule,
+				})
+			}
+
+			for _, converterModule := range set.ConverterModules {
+				components.Converters = append(components.Converters, componentWithoutStability{
+					Module: converterModule,
 				})
 			}
 

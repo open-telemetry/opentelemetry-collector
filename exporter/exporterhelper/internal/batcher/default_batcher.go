@@ -67,7 +67,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	var reqList []request.Request
 	var mergeSplitErr error
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
+		reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.SizeConfig, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -80,9 +80,9 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		}
 
 		// We have at least one result in the reqList. Last in the list may not have enough data to be flushed.
-		// Find if it has at least MinSizeItems, and if it does then move that as the current batch.
+		// Find if it has at least MinSize, and if it does then move that as the current batch.
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSizeItems {
+		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
@@ -101,7 +101,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
+	reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.SizeConfig, req)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
@@ -127,7 +127,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
 	// Need to check the currentBatch if more than 1 result returned or if 1 result return but larger than MinSize.
-	if len(reqList) > 1 || qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
+	if len(reqList) > 1 || qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSize {
 		firstBatch = qb.currentBatch
 		qb.currentBatch = nil
 	}
@@ -137,7 +137,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// If we still have results to process, then we need to check if the last result has enough data to flush, or we add it to the currentBatch.
 	if len(reqList) > 0 {
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSizeItems {
+		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{

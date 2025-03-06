@@ -258,7 +258,7 @@ func TestErrorResponses(t *testing.T) {
 				// Create without QueueConfig and RetryConfig so that ConsumeTraces
 				// returns the errors that we want to check immediately.
 			}
-			exp, err := createTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+			exp, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			// start the exporter
@@ -287,7 +287,7 @@ func TestErrorResponseInvalidResponseBody(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 
@@ -453,7 +453,7 @@ func TestUserAgent(t *testing.T) {
 
 func TestPartialSuccessInvalidBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	invalidBodyCases := []struct {
@@ -487,7 +487,7 @@ func TestPartialSuccessInvalidBody(t *testing.T) {
 
 func TestPartialSuccessUnsupportedContentType(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 	unsupportedContentTypeCases := []struct {
@@ -547,7 +547,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 		LogsEndpoint: srv.URL + "/v1/logs",
 		ClientConfig: confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
@@ -572,7 +572,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 
 func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -645,7 +645,7 @@ func TestPartialResponse_missingHeaderButHasBody(t *testing.T) {
 
 func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -698,7 +698,7 @@ func TestPartialResponse_missingHeaderAndBody(t *testing.T) {
 
 func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -713,7 +713,7 @@ func TestPartialResponse_nonErrUnexpectedEOFError(t *testing.T) {
 
 func TestPartialSuccess_shortContentLengthHeader(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -818,7 +818,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 		for _, tt := range telemetryTypes {
 			t.Run(tt.telemetryType+" "+ct.contentType, func(t *testing.T) {
 				cfg := createDefaultConfig()
-				set := exportertest.NewNopSettingsWithType(metadata.Type)
+				set := exportertest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
 				set.TelemetrySettings.Logger = zap.New(logger)
 				exp, err := newExporter(cfg, set)
@@ -873,7 +873,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 
 func TestPartialSuccessInvalidResponseBody(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
 
@@ -907,7 +907,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 		TracesEndpoint: srv.URL + "/v1/traces",
 		ClientConfig:   confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createTraces(context.Background(), set, cfg)
@@ -947,7 +947,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 		MetricsEndpoint: srv.URL + "/v1/metrics",
 		ClientConfig:    confighttp.ClientConfig{},
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createMetrics(context.Background(), set, cfg)
@@ -988,7 +988,7 @@ func TestPartialSuccess_profiles(t *testing.T) {
 			Endpoint: srv.URL,
 		},
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
 	set.TelemetrySettings.Logger = zap.New(logger)
 	exp, err := createProfiles(context.Background(), set, cfg)
@@ -1010,7 +1010,7 @@ func TestPartialSuccess_profiles(t *testing.T) {
 }
 
 func TestEncoding(t *testing.T) {
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 

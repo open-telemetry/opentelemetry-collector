@@ -30,15 +30,14 @@ var (
 )
 
 func TestExportTraceDataOp(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(exporterID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
 		newNoopExportSender(),
 	)
@@ -75,7 +74,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualExporterSentSpans(t, tt.Telemetry,
+	metadatatest.AssertEqualExporterSentSpans(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -85,7 +84,7 @@ func TestExportTraceDataOp(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	if failedToSendSpans > 0 {
-		metadatatest.AssertEqualExporterSendFailedSpans(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSendFailedSpans(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
@@ -97,15 +96,14 @@ func TestExportTraceDataOp(t *testing.T) {
 }
 
 func TestExportMetricsOp(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(exporterID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
 		newNoopExportSender(),
 	)
@@ -142,7 +140,7 @@ func TestExportMetricsOp(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualExporterSentMetricPoints(t, tt.Telemetry,
+	metadatatest.AssertEqualExporterSentMetricPoints(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -152,7 +150,7 @@ func TestExportMetricsOp(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	if failedToSendMetricPoints > 0 {
-		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSendFailedMetricPoints(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
@@ -164,15 +162,14 @@ func TestExportMetricsOp(t *testing.T) {
 }
 
 func TestExportLogsOp(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(exporterID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	parentCtx, parentSpan := tt.TelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
+	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
 	obsrep, err := newObsReportSender(
-		exporter.Settings{ID: exporterID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
 		newNoopExportSender(),
 	)
@@ -209,7 +206,7 @@ func TestExportLogsOp(t *testing.T) {
 		}
 	}
 
-	metadatatest.AssertEqualExporterSentLogRecords(t, tt.Telemetry,
+	metadatatest.AssertEqualExporterSentLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -219,7 +216,7 @@ func TestExportLogsOp(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
 	if failedToSendLogRecords > 0 {
-		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt.Telemetry,
+		metadatatest.AssertEqualExporterSendFailedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(

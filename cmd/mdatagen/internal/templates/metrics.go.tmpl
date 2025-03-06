@@ -18,6 +18,9 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{ if .ResourceAttributes -}}
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 
 {{ range $name, $info := .Attributes }}
@@ -290,7 +293,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	{{- end }}
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("{{ .ScopeName }}")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	{{- range $name, $metric := .Metrics }}

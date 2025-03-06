@@ -37,6 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, xconfmap.Validate(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{
@@ -58,11 +59,10 @@ func TestUnmarshalConfig(t *testing.T) {
 			BatcherConfig: exporterbatcher.Config{
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				MinSizeConfig: exporterbatcher.MinSizeConfig{
-					MinSizeItems: 1000,
-				},
-				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-					MaxSizeItems: 10000,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: 1000,
+					MaxSize: 10000,
 				},
 			},
 			ClientConfig: configgrpc.ClientConfig{

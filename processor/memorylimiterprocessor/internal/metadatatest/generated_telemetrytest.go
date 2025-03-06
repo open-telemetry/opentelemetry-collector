@@ -16,7 +16,7 @@ import (
 )
 
 func NewSettings(tt *componenttest.Telemetry) processor.Settings {
-	set := processortest.NewNopSettingsWithType(processortest.NopType)
+	set := processortest.NewNopSettings(processortest.NopType)
 	set.ID = component.NewID(component.MustNewType("memory_limiter"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set

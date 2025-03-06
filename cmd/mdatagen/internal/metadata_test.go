@@ -38,6 +38,22 @@ func TestValidate(t *testing.T) {
 			wantErr: "missing stability",
 		},
 		{
+			name:    "testdata/no_deprecation_info.yaml",
+			wantErr: "deprecated component missing deprecation date and migration guide for traces",
+		},
+		{
+			name:    "testdata/no_deprecation_date_info.yaml",
+			wantErr: "deprecated component missing date in YYYY-MM-DD format: traces",
+		},
+		{
+			name:    "testdata/no_deprecation_migration_info.yaml",
+			wantErr: "deprecated component missing migration guide: traces",
+		},
+		{
+			name:    "testdata/deprecation_info_invalid_date.yaml",
+			wantErr: "deprecated component missing valid date in YYYY-MM-DD format: traces",
+		},
+		{
 			name:    "testdata/invalid_stability.yaml",
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'status.stability': unsupported stability level: \"incorrectstability\"",
 		},

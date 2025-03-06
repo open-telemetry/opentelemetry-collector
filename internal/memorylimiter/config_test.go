@@ -84,6 +84,17 @@ func TestConfigValidate(t *testing.T) {
 			},
 			err: errSpikeLimitPercentageOutOfRange,
 		},
+		{
+			name: "invalid gc intervals",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MinGCIntervalWhenSoftLimited: 50 * time.Millisecond,
+				MinGCIntervalWhenHardLimited: 100 * time.Millisecond,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errInconsistentGCMinInterval,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

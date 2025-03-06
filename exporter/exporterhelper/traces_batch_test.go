@@ -18,7 +18,7 @@ import (
 func TestMergeTraces(t *testing.T) {
 	tr1 := newTracesRequest(testdata.GenerateTraces(2), nil)
 	tr2 := newTracesRequest(testdata.GenerateTraces(3), nil)
-	res, err := tr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, tr2)
+	res, err := tr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, tr2)
 	require.NoError(t, err)
 	assert.Equal(t, 5, res[0].ItemsCount())
 }
@@ -26,49 +26,49 @@ func TestMergeTraces(t *testing.T) {
 func TestMergeTracesInvalidInput(t *testing.T) {
 	tr1 := newLogsRequest(testdata.GenerateLogs(2), nil)
 	tr2 := newTracesRequest(testdata.GenerateTraces(3), nil)
-	_, err := tr1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{}, tr2)
+	_, err := tr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, tr2)
 	require.Error(t, err)
 }
 
 func TestMergeSplitTraces(t *testing.T) {
 	tests := []struct {
 		name     string
-		cfg      exporterbatcher.MaxSizeConfig
+		cfg      exporterbatcher.SizeConfig
 		tr1      Request
 		tr2      Request
 		expected []Request
 	}{
 		{
 			name:     "both_requests_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:      newTracesRequest(ptrace.NewTraces(), nil),
 			tr2:      newTracesRequest(ptrace.NewTraces(), nil),
 			expected: []Request{newTracesRequest(ptrace.NewTraces(), nil)},
 		},
 		{
 			name:     "first_request_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:      newTracesRequest(ptrace.NewTraces(), nil),
 			tr2:      newTracesRequest(testdata.GenerateTraces(5), nil),
 			expected: []Request{newTracesRequest(testdata.GenerateTraces(5), nil)},
 		},
 		{
 			name:     "second_request_empty",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:      newTracesRequest(testdata.GenerateTraces(5), nil),
 			tr2:      newTracesRequest(ptrace.NewTraces(), nil),
 			expected: []Request{newTracesRequest(testdata.GenerateTraces(5), nil)},
 		},
 		{
 			name:     "first_empty_second_nil",
-			cfg:      exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:      newTracesRequest(ptrace.NewTraces(), nil),
 			tr2:      nil,
 			expected: []Request{newTracesRequest(ptrace.NewTraces(), nil)},
 		},
 		{
 			name: "merge_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:  newTracesRequest(testdata.GenerateTraces(5), nil),
 			tr2:  newTracesRequest(testdata.GenerateTraces(5), nil),
 			expected: []Request{newTracesRequest(func() ptrace.Traces {
@@ -79,7 +79,7 @@ func TestMergeSplitTraces(t *testing.T) {
 		},
 		{
 			name: "split_only",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 4},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
 			tr1:  newTracesRequest(ptrace.NewTraces(), nil),
 			tr2:  newTracesRequest(testdata.GenerateTraces(10), nil),
 			expected: []Request{
@@ -90,7 +90,7 @@ func TestMergeSplitTraces(t *testing.T) {
 		},
 		{
 			name: "split_and_merge",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1:  newTracesRequest(testdata.GenerateTraces(4), nil),
 			tr2:  newTracesRequest(testdata.GenerateTraces(20), nil),
 			expected: []Request{
@@ -105,7 +105,7 @@ func TestMergeSplitTraces(t *testing.T) {
 		},
 		{
 			name: "scope_spans_split",
-			cfg:  exporterbatcher.MaxSizeConfig{MaxSizeItems: 10},
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
 			tr1: newTracesRequest(func() ptrace.Traces {
 				td := testdata.GenerateTraces(10)
 				extraScopeTraces := testdata.GenerateTraces(5)
@@ -139,7 +139,7 @@ func TestMergeSplitTraces(t *testing.T) {
 func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newTracesRequest(testdata.GenerateTraces(18), nil)
 	r2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
@@ -147,7 +147,7 @@ func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 func TestMergeSplitTracesInvalidInput(t *testing.T) {
 	r1 := newTracesRequest(testdata.GenerateTraces(2), nil)
 	r2 := newMetricsRequest(testdata.GenerateMetrics(3), nil)
-	_, err := r1.MergeSplit(context.Background(), exporterbatcher.MaxSizeConfig{MaxSizeItems: 10}, r2)
+	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10}, r2)
 	require.Error(t, err)
 }
 
@@ -161,7 +161,7 @@ func TestExtractTraces(t *testing.T) {
 }
 
 func TestMergeSplitManySmallTraces(t *testing.T) {
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	merged := []Request{newTracesRequest(testdata.GenerateTraces(1), nil)}
 	for j := 0; j < 1000; j++ {
 		lr2 := newTracesRequest(testdata.GenerateTraces(10), nil)
@@ -173,7 +173,7 @@ func TestMergeSplitManySmallTraces(t *testing.T) {
 
 func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 	// All requests merge into a single batch.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10010}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10010}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(10), nil)}
@@ -188,7 +188,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 
 func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B) {
 	// Every incoming request results in a split.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(0), nil)}
@@ -203,7 +203,7 @@ func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B
 
 func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	// One request splits into many batches.
-	cfg := exporterbatcher.MaxSizeConfig{MaxSizeItems: 10000}
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(0), nil)}

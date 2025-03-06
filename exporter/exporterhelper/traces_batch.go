@@ -13,7 +13,7 @@ import (
 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
 	if r2 != nil {
 		req2, ok := r2.(*tracesRequest)
 		if !ok {
@@ -23,7 +23,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxS
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSizeItems == 0 {
+	if cfg.MaxSize == 0 {
 		return []Request{req}, nil
 	}
 	return req.split(cfg)
@@ -35,10 +35,10 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest) {
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(cfg exporterbatcher.MaxSizeConfig) ([]Request, error) {
+func (req *tracesRequest) split(cfg exporterbatcher.SizeConfig) ([]Request, error) {
 	var res []Request
-	for req.ItemsCount() > cfg.MaxSizeItems {
-		td := extractTraces(req.td, cfg.MaxSizeItems)
+	for req.ItemsCount() > cfg.MaxSize {
+		td := extractTraces(req.td, cfg.MaxSize)
 		size := td.SpanCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
 		res = append(res, &tracesRequest{td: td, pusher: req.pusher, cachedItemsCount: size})

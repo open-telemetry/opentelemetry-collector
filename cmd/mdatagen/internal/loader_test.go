@@ -32,8 +32,15 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelDevelopment: {"logs"},
 						component.StabilityLevelBeta:        {"traces"},
 						component.StabilityLevelStable:      {"metrics"},
+						component.StabilityLevelDeprecated:  {"profiles"},
 					},
 					Distributions: []string{},
+					Deprecation: DeprecationMap{
+						"profiles": DeprecationInfo{
+							Date:      "2025-02-05",
+							Migration: "no migration needed",
+						},
+					},
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},

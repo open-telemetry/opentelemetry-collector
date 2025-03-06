@@ -5,11 +5,11 @@ package receiver // import "go.opentelemetry.io/collector/receiver"
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/receiver/internal"
 )
 
 // Traces receiver receives traces.
@@ -103,38 +103,11 @@ func (f factoryOptionFunc) applyOption(o *factory) {
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
 type CreateTracesFunc func(context.Context, Settings, component.Config, consumer.Traces) (Traces, error)
 
-// CreateTraces implements Factory.CreateTraces().
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateMetricsFunc is the equivalent of Factory.CreateMetrics.
 type CreateMetricsFunc func(context.Context, Settings, component.Config, consumer.Metrics) (Metrics, error)
 
-// CreateMetrics implements Factory.CreateMetrics.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
-
-// CreateLogs implements Factory.CreateLogs.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
 
 type factory struct {
 	cfgType component.Type
@@ -169,6 +142,11 @@ func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.
 	if f.createTracesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createTracesFunc(ctx, set, cfg, next)
 }
 
@@ -176,6 +154,11 @@ func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component
 	if f.createMetricsFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createMetricsFunc(ctx, set, cfg, next)
 }
 
@@ -183,6 +166,11 @@ func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Co
 	if f.createLogsFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
+
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
+	}
+
 	return f.createLogsFunc(ctx, set, cfg, next)
 }
 
@@ -220,19 +208,4 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 		opt.applyOption(f)
 	}
 	return f
-}
-
-// MakeFactoryMap takes a list of receiver factories and returns a map with factory type as keys.
-// It returns a non-nil error when there are factories with duplicate type.
-//
-// Deprecated: [v0.120.0] Use otelcol.MakeFactoryMap[receiver.Factory] instead
-func MakeFactoryMap(factories ...Factory) (map[component.Type]Factory, error) {
-	fMap := map[component.Type]Factory{}
-	for _, f := range factories {
-		if _, ok := fMap[f.Type()]; ok {
-			return fMap, fmt.Errorf("duplicate receiver factory %q", f.Type())
-		}
-		fMap[f.Type()] = f
-	}
-	return fMap, nil
 }

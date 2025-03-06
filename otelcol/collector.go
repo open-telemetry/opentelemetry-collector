@@ -72,6 +72,9 @@ type CollectorSettings struct {
 	// ProviderModules maps provider schemes to their respective go modules.
 	ProviderModules map[string]string
 
+	// ConverterModules maps converter names to their respective go modules.
+	ConverterModules []string
+
 	// LoggingOptions provides a way to change behavior of zap logging.
 	LoggingOptions []zap.Option
 

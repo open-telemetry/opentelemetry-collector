@@ -56,75 +56,45 @@ type readableQueue[T any] interface {
 }
 
 // Settings defines settings for creating a queue.
-type Settings struct {
+type Settings[T any] struct {
 	Signal           pipeline.Signal
 	ExporterSettings exporter.Settings
+	Encoding         Encoding[T]
 }
 
-// Marshaler is a function that can marshal a request into bytes.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Marshaler[T any] func(T) ([]byte, error)
+type Encoding[T any] interface {
+	// Marshal is a function that can marshal a request into bytes.
+	Marshal(T) ([]byte, error)
 
-// Unmarshaler is a function that can unmarshal bytes into a request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Unmarshaler[T any] func([]byte) (T, error)
+	// Unmarshal is a function that can unmarshal bytes into a request.
+	Unmarshal([]byte) (T, error)
+}
 
-// Factory is a function that creates a new queue.
+// NewQueue returns a queue
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Factory[T any] func(context.Context, Settings, Config, ConsumeFunc[T]) Queue[T]
-
-// NewMemoryQueueFactory returns a factory to create a new memory queue.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMemoryQueueFactory[T any]() Factory[T] {
-	return func(_ context.Context, _ Settings, cfg Config, consume ConsumeFunc[T]) Queue[T] {
-		if !cfg.Enabled {
-			return newDisabledQueue(consume)
-		}
-		q := newMemoryQueue[T](memoryQueueSettings[T]{
-			sizer:    &requestSizer[T]{},
-			capacity: int64(cfg.QueueSize),
-			blocking: cfg.Blocking,
-		})
-		return newAsyncQueue(q, cfg.NumConsumers, consume)
+func NewQueue[T any](_ context.Context, set Settings[T], cfg Config, consume ConsumeFunc[T]) Queue[T] {
+	if !cfg.Enabled {
+		return newDisabledQueue(consume)
 	}
-}
-
-// PersistentQueueSettings defines developer settings for the persistent queue factory.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type PersistentQueueSettings[T any] struct {
-	// Marshaler is used to serialize queue elements before storing them in the persistent storage.
-	Marshaler Marshaler[T]
-	// Unmarshaler is used to deserialize requests after reading them from the persistent storage.
-	Unmarshaler Unmarshaler[T]
-}
-
-// NewPersistentQueueFactory returns a factory to create a new persistent queue.
-// If cfg.storageID is nil then it falls back to memory queue.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewPersistentQueueFactory[T any](storageID *component.ID, factorySettings PersistentQueueSettings[T]) Factory[T] {
-	if storageID == nil {
-		return NewMemoryQueueFactory[T]()
-	}
-	return func(_ context.Context, set Settings, cfg Config, consume ConsumeFunc[T]) Queue[T] {
-		if !cfg.Enabled {
-			return newDisabledQueue(consume)
-		}
+	if cfg.StorageID != nil {
 		q := newPersistentQueue[T](persistentQueueSettings[T]{
-			sizer:       &requestSizer[T]{},
-			capacity:    int64(cfg.QueueSize),
-			blocking:    cfg.Blocking,
-			signal:      set.Signal,
-			storageID:   *storageID,
-			marshaler:   factorySettings.Marshaler,
-			unmarshaler: factorySettings.Unmarshaler,
-			set:         set.ExporterSettings,
+			sizer:     &requestSizer[T]{},
+			capacity:  int64(cfg.QueueSize),
+			blocking:  cfg.Blocking,
+			signal:    set.Signal,
+			storageID: *cfg.StorageID,
+			encoding:  set.Encoding,
+			set:       set.ExporterSettings,
 		})
 		return newAsyncQueue(q, cfg.NumConsumers, consume)
 	}
+
+	q := newMemoryQueue[T](memoryQueueSettings[T]{
+		sizer:    &requestSizer[T]{},
+		capacity: int64(cfg.QueueSize),
+		blocking: cfg.Blocking,
+	})
+
+	return newAsyncQueue(q, cfg.NumConsumers, consume)
 }

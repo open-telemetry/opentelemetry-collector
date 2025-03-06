@@ -325,6 +325,12 @@ var sample = &messageValueStruct{
 			fieldName:   "AttributeIndices",
 			returnSlice: int32Slice,
 		},
+		&optionalPrimitiveValue{
+			fieldName:  "LinkIndex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
+		},
 		&sliceField{
 			fieldName:   "TimestampsUnixNano",
 			returnSlice: uInt64Slice,

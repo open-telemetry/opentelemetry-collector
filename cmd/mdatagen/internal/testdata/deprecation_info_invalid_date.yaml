@@ -1,0 +1,11 @@
+type: file
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+    stable: [metrics]
+    deprecated: [traces]
+  deprecation:
+    traces:
+      date: "05-09-2007"
+      migration: "no migration needed"

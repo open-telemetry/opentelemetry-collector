@@ -3,7 +3,12 @@
 
 package experr // import "go.opentelemetry.io/collector/exporter/internal/experr"
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+
+	"go.opentelemetry.io/collector/component"
+)
 
 type shutdownErr struct {
 	err error
@@ -24,4 +29,8 @@ func (s shutdownErr) Unwrap() error {
 func IsShutdownErr(err error) bool {
 	var sdErr shutdownErr
 	return errors.As(err, &sdErr)
+}
+
+func ErrIDMismatch(id component.ID, typ component.Type) error {
+	return fmt.Errorf("component type mismatch: component ID %q does not have type %q", id, typ)
 }

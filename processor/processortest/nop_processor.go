@@ -17,14 +17,8 @@ import (
 
 var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create* functions.
-// Deprecated: [v0.120.0] Use NewNopSettingsWithType instead.
-func NewNopSettings() processor.Settings {
-	return NewNopSettingsWithType(NopType)
-}
-
-// NewNopSettingsWithType returns a new nop settings for Create* functions with the given type.
-func NewNopSettingsWithType(typ component.Type) processor.Settings {
+// NewNopSettings returns a new nop settings for Create* functions with the given type.
+func NewNopSettings(typ component.Type) processor.Settings {
 	return processor.Settings{
 		ID:                component.NewID(typ),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
