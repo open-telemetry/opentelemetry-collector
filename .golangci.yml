@@ -211,7 +211,7 @@ linters:
     - perfsprint
     - revive
     - staticcheck
-    - tenv
+    - usetesting
     - testifylint
     - thelper
     - unconvert

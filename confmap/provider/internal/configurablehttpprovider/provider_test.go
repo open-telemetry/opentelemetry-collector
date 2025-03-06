@@ -130,7 +130,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	certPath, keyPath, err := generateCertificate("localhost")
 	require.NoError(t, err)
 
-	invalidCert, err := os.CreateTemp("", "cert*.crt")
+	invalidCert, err := os.CreateTemp(t.TempDir(), "cert*.crt")
 	require.NoError(t, err)
 	_, err = invalidCert.Write([]byte{0, 1, 2})
 	require.NoError(t, err)
