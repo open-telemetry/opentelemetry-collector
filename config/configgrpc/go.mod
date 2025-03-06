@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.27.0
 	go.opentelemetry.io/collector/config/configtls v1.27.0
 	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0
@@ -80,5 +79,3 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
-
-replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
