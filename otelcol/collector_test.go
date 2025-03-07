@@ -315,6 +315,47 @@ func TestCollectorStartInvalidConfig(t *testing.T) {
 	assert.EqualError(t, col.Run(context.Background()), "invalid configuration: service::pipelines::traces: references processor \"invalid\" which is not configured")
 }
 
+func TestSetupConfigurationComponentsInvalidConfig(t *testing.T) {
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_factories": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              func() (Factories, error) { return Factories{}, nil },
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: "failed to get config",
+		},
+		"error_factories": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              func() (Factories, error) { return Factories{}, errors.New("error") },
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid.yaml")}),
+			},
+			expectedErr: "failed to initialize factories",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			err = col.setupConfigurationComponents(ctx)
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, test.expectedErr)
+			}
+		})
+	}
+}
+
 func TestNewCollectorInvalidConfigProviderSettings(t *testing.T) {
 	_, err := NewCollector(CollectorSettings{
 		BuildInfo:              component.NewDefaultBuildInfo(),
@@ -462,6 +503,22 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
+		"invalid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-connector-use.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
+		"cyclic_connector": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-cyclic-connector.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: cycle detected: connector "nop/forward" (traces to traces) -> connector "nop/forward" (traces to traces)`,
+		},
 	}
 
 	for name, test := range tests {
@@ -474,6 +531,58 @@ func TestCollectorDryRun(t *testing.T) {
 				require.NoError(t, err)
 			} else {
 				require.EqualError(t, err, test.expectedErr)
+			}
+		})
+	}
+}
+
+func TestCreateService(t *testing.T) {
+	tests := map[string]struct {
+		settings    CollectorSettings
+		expectedErr string
+	}{
+		"invalid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-connector-use.yaml")}),
+			},
+			expectedErr: `failed to build pipelines: connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
+		"valid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-valid-connector-use.yaml")}),
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			col, err := NewCollector(test.settings)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			factories, err := nopFactories()
+			require.NoError(t, err)
+
+			cfg, err := col.configProvider.Get(ctx, factories)
+			require.NoError(t, err)
+
+			svc, err := col.createService(ctx, cfg, factories)
+
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				require.NotNil(t, svc)
+				defer func() {
+					require.NoError(t, svc.Shutdown(ctx))
+				}()
+			} else {
+				require.EqualError(t, err, test.expectedErr)
+				require.Nil(t, svc)
 			}
 		})
 	}
