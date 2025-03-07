@@ -13,7 +13,9 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.27.0
 	go.opentelemetry.io/collector/config/configopaque v1.27.0
 	go.opentelemetry.io/collector/config/configtls v1.27.0
+	go.opentelemetry.io/collector/extension v1.27.0
 	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
@@ -36,7 +38,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/extension v1.27.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
@@ -79,3 +80,5 @@ replace go.opentelemetry.io/collector/component => ../../component
 replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
