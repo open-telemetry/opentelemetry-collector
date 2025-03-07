@@ -127,7 +127,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 	require.NoError(t, err)
 
 	invalidCert, err := os.CreateTemp(t.TempDir(), "cert*.crt")
-	defer require.NoError(t, invalidCert.Close())
+	defer func() { require.NoError(t, invalidCert.Close()) }()
 	require.NoError(t, err)
 	_, err = invalidCert.Write([]byte{0, 1, 2})
 	require.NoError(t, err)
