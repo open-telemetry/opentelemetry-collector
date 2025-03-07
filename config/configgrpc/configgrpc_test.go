@@ -41,26 +41,13 @@ var (
 )
 
 type mockAuthServer struct {
-	auth func(ctx context.Context, sources map[string][]string) (context.Context, error)
-}
-
-// Authenticate implements extensionauth.Server.
-func (m *mockAuthServer) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
-	return m.auth(ctx, sources)
-}
-
-// Shutdown implements extension.Extension.
-func (m *mockAuthServer) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extension.Extension.
-func (m *mockAuthServer) Start(context.Context, component.Host) error {
-	return nil
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ServerAuthenticateFunc
 }
 
 func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
-	return &mockAuthServer{auth: auth}
+	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {

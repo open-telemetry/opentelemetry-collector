@@ -59,7 +59,6 @@ func (of serverOptionFunc) apply(e *defaultServer) {
 
 // ServerAuthenticateFunc defines the signature for the function responsible for performing the authentication based
 // on the given sources map. See Server.Authenticate.
-// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
 
 // Deprecated: [v0.121.0] No longer used, will be removed.

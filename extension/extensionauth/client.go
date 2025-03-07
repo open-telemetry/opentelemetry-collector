@@ -50,13 +50,29 @@ func (of clientOptionFunc) apply(e *defaultClient) {
 	of(e)
 }
 
+var _ HTTPClient = (*ClientRoundTripperFunc)(nil)
+
 // ClientRoundTripperFunc specifies the function that returns a RoundTripper that can be used to authenticate HTTP requests.
-// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 type ClientRoundTripperFunc func(base http.RoundTripper) (http.RoundTripper, error)
 
+func (f ClientRoundTripperFunc) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	if f == nil {
+		return base, nil
+	}
+	return f(base)
+}
+
+var _ GRPCClient = (*ClientPerRPCCredentialsFunc)(nil)
+
 // ClientPerRPCCredentialsFunc specifies the function that returns a PerRPCCredentials that can be used to authenticate gRPC requests.
-// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 type ClientPerRPCCredentialsFunc func() (credentials.PerRPCCredentials, error)
+
+func (f ClientPerRPCCredentialsFunc) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return f()
+}
 
 var _ Client = (*defaultClient)(nil)
 

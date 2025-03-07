@@ -4,6 +4,7 @@
 package extensionauthtest
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestErrorClient(t *testing.T) {
-	client := NewErrorClient()
+	client := NewErrorClient(errors.New("error"))
 
 	httpClient, ok := client.(extensionauth.HTTPClient)
 	require.True(t, ok)

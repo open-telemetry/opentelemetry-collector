@@ -41,26 +41,13 @@ var (
 )
 
 type mockAuthServer struct {
-	auth func(ctx context.Context, sources map[string][]string) (context.Context, error)
-}
-
-// Authenticate implements extensionauth.Server.
-func (m *mockAuthServer) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
-	return m.auth(ctx, sources)
-}
-
-// Shutdown implements extension.Extension.
-func (m *mockAuthServer) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extension.Extension.
-func (m *mockAuthServer) Start(context.Context, component.Host) error {
-	return nil
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ServerAuthenticateFunc
 }
 
 func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
-	return &mockAuthServer{auth: auth}
+	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 
 var (
@@ -366,16 +353,9 @@ var (
 	_ extension.Extension      = (*mockClient)(nil)
 )
 
-type mockClient struct{}
-
-// Shutdown implements extension.Extension.
-func (m *mockClient) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extension.Extension.
-func (m *mockClient) Start(context.Context, component.Host) error {
-	return nil
+type mockClient struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 // RoundTripper implements extensionauth.HTTPClient.
@@ -475,7 +455,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewErrorClient(),
+					mockID: extensionauthtest.NewErrorClient(errors.New("error")),
 				},
 			},
 		},

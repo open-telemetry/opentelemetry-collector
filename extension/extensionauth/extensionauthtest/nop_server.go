@@ -16,21 +16,14 @@ var (
 	_ extensionauth.Server = (*nopServer)(nil)
 )
 
-type nopServer struct{}
+type nopServer struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
 
 // Authenticate implements extensionauth.Server.
 func (n *nopServer) Authenticate(ctx context.Context, _ map[string][]string) (context.Context, error) {
 	return ctx, nil
-}
-
-// Shutdown implements extensionauth.Server.
-func (n *nopServer) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extensionauth.Server.
-func (n *nopServer) Start(context.Context, component.Host) error {
-	return nil
 }
 
 // NewNopServer returns a new extension.Extension that implements the extensionauth.Server.
