@@ -536,16 +536,17 @@ func TestCertificateReload(t *testing.T) {
 			tempDir := t.TempDir()
 			certFile, err := os.CreateTemp(tempDir, "cert")
 			require.NoError(t, err)
-			defer os.Remove(certFile.Name())
+			defer certFile.Close()
 
 			keyFile, err := os.CreateTemp(tempDir, "key")
 			require.NoError(t, err)
-			defer os.Remove(keyFile.Name())
+			defer keyFile.Close()
 
 			fdc, err := os.Open(filepath.Join("testdata", "client-1.crt"))
 			require.NoError(t, err)
 			_, err = io.Copy(certFile, fdc)
 			require.NoError(t, err)
+			require.NoError(t, fdc.Close())
 
 			fdk, err := os.Open(filepath.Join("testdata", "client-1.key"))
 			require.NoError(t, err)
