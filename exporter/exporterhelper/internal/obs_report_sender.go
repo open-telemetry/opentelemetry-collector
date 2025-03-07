@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
@@ -95,7 +96,10 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 // StartOp creates the span used to trace the operation. Returning
 // the updated context and the created span.
 func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
-	ctx, _ = ors.tracer.Start(ctx, ors.spanName, ors.spanAttrs)
+	ctx, _ = ors.tracer.Start(ctx,
+		ors.spanName,
+		ors.spanAttrs,
+		trace.WithLinks(batcher.LinksFromContext(ctx)...))
 	return ctx
 }
 
