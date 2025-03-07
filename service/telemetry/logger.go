@@ -37,6 +37,13 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		return nil, nil, err
 	}
 
+	fields := []zap.Field{}
+	for k, v := range cfg.Resource {
+		f := zap.Field{Key: k, Type: zapcore.StringType, String: *v}
+		fields = append(fields, f)
+	}
+	logger = logger.With(fields...)
+
 	var lp log.LoggerProvider
 
 	if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
@@ -52,6 +59,10 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 			if err != nil {
 				panic(err)
 			}
+
+			// Adding the fields to the logger ensures they are shown in the collector
+			// logs but they are not propagated to the core. We need to add them
+			core.With(fields)
 			return core
 		}))
 	}
