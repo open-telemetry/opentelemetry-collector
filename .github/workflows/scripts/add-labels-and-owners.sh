@@ -28,7 +28,7 @@ main () {
     # review. The GitHub CLI does not offer a list of all reviewers, which
     # is only available through the API. To cut down on API calls to GitHub,
     # we use the latest reviews to determine which users to filter out.
-    JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
+    JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | LC_ALL=C tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
     AUTHOR=$(echo -n "${JSON}"| jq -r '.author.login')
     FILES=$(echo -n "${JSON}"| jq -r '.files[].path')
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
@@ -50,6 +50,22 @@ main () {
         echo "Users that have already reviewed this PR and will not have another review requested:" "${!REVIEWED[@]}"
     else
         echo "This PR has not yet been reviewed, all code owners are eligible for a review request"
+    fi
+
+    RISKY_REGEX='
+     ^.github/workflows/prepare-release.yml$
+    |^.github/workflows/scripts/release-prepare-release.sh$
+    |^Makefile$
+    |^Makefile.Common$
+    '
+    RISKY_REGEX="$(echo "$RISKY_REGEX" | tr -d ' \n')"
+    RISKY_FILES="$(echo "$FILES" | grep -E "$RISKY_REGEX")"
+    if [[ -n "${RISKY_FILES}" ]]; then
+        echo "This PR may affect the release process, as it touches the following files:" \
+            "$(echo "$RISKY_FILES" | sed -E 's/\n/, /')"
+        LABELS="release:risky-change"
+    else
+        echo "This PR does not have release-affecting changes."
     fi
 
     for COMPONENT in ${COMPONENTS}; do
