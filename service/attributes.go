@@ -4,7 +4,7 @@
 package service // import "go.opentelemetry.io/collector/service"
 
 import (
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 
 	"go.opentelemetry.io/collector/service/telemetry"
