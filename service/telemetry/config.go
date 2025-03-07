@@ -111,5 +111,9 @@ func (c *Config) Validate() error {
 		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
 	}
 
+	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
+		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+	}
+
 	return nil
 }
