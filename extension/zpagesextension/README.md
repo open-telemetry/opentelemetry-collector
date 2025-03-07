@@ -85,7 +85,7 @@ Example URL: http://localhost:55679/debug/tracez
 
 ### ExpvarZ
 
-The ExpvarZ exposes the useful information about Go runtime, OTEL components could leverage [expvar](https://pkg.go.dev/expvar) library to expose their own state.
+The ExpvarZ exposes the useful information about Go runtime, OTel components could leverage [expvar](https://pkg.go.dev/expvar) library to expose their own state.
 
 Example URL: http://localhost:55679/debug/expvarz
 
