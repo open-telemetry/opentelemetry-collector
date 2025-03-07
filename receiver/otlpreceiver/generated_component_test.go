@@ -23,7 +23,7 @@ func TestComponentFactoryType(t *testing.T) {
 }
 
 func TestComponentConfigStruct(t *testing.T) {
-	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+	require.NoError(t, confmaptest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
 func TestComponentLifecycle(t *testing.T) {

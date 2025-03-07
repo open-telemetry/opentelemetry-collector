@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -19,7 +18,7 @@ import (
 )
 
 func TestComponentConfigStruct(t *testing.T) {
-	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+	require.NoError(t, confmaptest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
 }
 
 func TestUnmarshalDefaultConfig(t *testing.T) {

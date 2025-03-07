@@ -9,5 +9,5 @@ package component // import "go.opentelemetry.io/collector/component"
 // MUST implement xconfmap.Validator if any validation is required for that part of the configuration
 // (e.g. check if a required field is present).
 //
-// A valid implementation MUST pass the check componenttest.CheckConfigStruct (return nil error).
+// A valid implementation MUST pass the check confmaptest.CheckConfigStruct (return nil error).
 type Config any

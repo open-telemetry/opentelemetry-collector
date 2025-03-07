@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 )
@@ -23,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	cfg := factory.CreateDefaultConfig()
 	assert.NotNil(t, cfg, "failed to create default config")
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	assert.NoError(t, confmaptest.CheckConfigStruct(cfg))
 }
 
 func TestCreate(t *testing.T) {
