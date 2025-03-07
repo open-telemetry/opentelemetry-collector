@@ -31,6 +31,8 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.120.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.26.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.120.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
+	go.opentelemetry.io/otel/log v0.10.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect

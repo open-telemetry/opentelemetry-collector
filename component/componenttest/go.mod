@@ -25,6 +25,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.120.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.9.0 // indirect
+	go.opentelemetry.io/otel/log v0.10.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect

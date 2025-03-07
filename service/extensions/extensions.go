@@ -40,7 +40,7 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
-		extLogger := componentattribute.LoggerWithAttributes(bes.telemetry.Logger,
+		extLogger := componentattribute.ZapLoggerWithAttributes(bes.telemetry.Logger,
 			*attribute.Extension(extID).Set())
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]

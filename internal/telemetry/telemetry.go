@@ -27,7 +27,7 @@ type TelemetrySettings struct {
 	// Resource contains the resource attributes for the collector's telemetry.
 	Resource pcommon.Resource
 
-	// Extra attributes added to spans, metric points, and log records
+	// Extra attributes added to instrumentation scopes
 	extraAttributes attribute.Set
 }
 
@@ -39,7 +39,7 @@ func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings
 
 func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettings {
 	ts.extraAttributes = attrs
-	ts.Logger = componentattribute.LoggerWithAttributes(ts.Logger, ts.extraAttributes)
+	ts.Logger = componentattribute.ZapLoggerWithAttributes(ts.Logger, ts.extraAttributes)
 	ts.TracerProvider = componentattribute.TracerProviderWithAttributes(ts.TracerProvider, ts.extraAttributes)
 	ts.MeterProvider = componentattribute.MeterProviderWithAttributes(ts.MeterProvider, ts.extraAttributes)
 	return ts

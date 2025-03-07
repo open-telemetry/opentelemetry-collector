@@ -4,7 +4,8 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
-	"go.opentelemetry.io/contrib/bridges/otelzap"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -43,36 +44,37 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		lp = set.SDK.LoggerProvider()
 
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
-				c,
-				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
-					otelzap.WithLoggerProvider(lp),
-				),
-			), zap.NewAtomicLevelAt(cfg.Logs.Level))
-			if err != nil {
-				panic(err)
-			}
-			return core
+			return componentattribute.NewServiceZapCore(lp, "go.opentelemetry.io/collector/service/telemetry", func(otelCore zapcore.Core, _ attribute.Set) zapcore.Core {
+				// TODO: Add component attributes to the console output as well?
+				core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
+					c,
+					otelCore,
+				), zap.NewAtomicLevelAt(cfg.Logs.Level))
+				if err != nil {
+					panic(err)
+				}
+				if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+					core = newSampledCore(core, cfg.Logs.Sampling)
+				}
+				return core
+			}, attribute.NewSet())
 		}))
-	}
-
-	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-		logger = newSampledLogger(logger, cfg.Logs.Sampling)
+	} else if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			return newSampledCore(c, cfg.Logs.Sampling)
+		}))
 	}
 
 	return logger, lp, nil
 }
 
-func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
+func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
 	// Create a logger that samples every Nth message after the first M messages every S seconds
 	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			sc.Tick,
-			sc.Initial,
-			sc.Thereafter,
-		)
-	})
-	return logger.WithOptions(opts)
+	return zapcore.NewSamplerWithOptions(
+		core,
+		sc.Tick,
+		sc.Initial,
+		sc.Thereafter,
+	)
 }

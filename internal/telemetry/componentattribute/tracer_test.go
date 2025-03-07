@@ -82,11 +82,10 @@ func TestTPWA(t *testing.T) {
 
 	for i, test := range tests {
 		tracerName := fmt.Sprintf("testtracer%d", i+1)
-		_, span := test.tp.Tracer(tracerName).Start(
-			context.Background(),
-			"testspan",
-			trace.WithAttributes(test.attrs.ToSlice()...),
-		)
+		_, span := test.tp.Tracer(
+			tracerName,
+			trace.WithInstrumentationAttributes(test.attrs.ToSlice()...),
+		).Start(context.Background(), "testspan")
 		span.End()
 	}
 
@@ -102,7 +101,7 @@ func TestTPWA(t *testing.T) {
 			assert.NotEqual(t, i, -1)
 			span := spans[i]
 			assert.Equal(t, "testspan", span.Name)
-			assert.Equal(t, test.expAttrs.ToSlice(), span.Attributes)
+			assert.Equal(t, test.expAttrs, span.InstrumentationScope.Attributes)
 		})
 	}
 }

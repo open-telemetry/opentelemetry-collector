@@ -4,7 +4,6 @@
 package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 
 import (
-	"context"
 	"slices"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -14,13 +13,13 @@ import (
 
 type tracerProviderWithAttributes struct {
 	trace.TracerProvider
-	option trace.SpanStartOption
+	attrs []attribute.KeyValue
 }
 
 // Necessary for components that use SDK-only methods, such as zpagesextension
 type tracerProviderWithAttributesSdk struct {
 	*sdkTrace.TracerProvider
-	option trace.SpanStartOption
+	attrs []attribute.KeyValue
 }
 
 func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) trace.TracerProvider {
@@ -32,35 +31,29 @@ func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) 
 	if tpSdk, ok := tp.(*sdkTrace.TracerProvider); ok {
 		return tracerProviderWithAttributesSdk{
 			TracerProvider: tpSdk,
-			option:         trace.WithAttributes(attrs.ToSlice()...),
+			attrs:          attrs.ToSlice(),
 		}
 	}
 	return tracerProviderWithAttributes{
 		TracerProvider: tp,
-		option:         trace.WithAttributes(attrs.ToSlice()...),
+		attrs:          attrs.ToSlice(),
 	}
 }
 
-type tracerWithAttributes struct {
-	trace.Tracer
-	option trace.SpanStartOption
+func tracerWithAttributes(tp trace.TracerProvider, attrs []attribute.KeyValue, name string, opts ...trace.TracerOption) trace.Tracer {
+	conf := trace.NewTracerConfig(opts...)
+	attrSet := conf.InstrumentationAttributes()
+	// prepend our attributes so they can be overwritten
+	newAttrs := append(slices.Clone(attrs), attrSet.ToSlice()...)
+	// append our attribute set option to overwrite the old one
+	opts = append(opts, trace.WithInstrumentationAttributes(newAttrs...))
+	return tp.Tracer(name, opts...)
 }
 
 func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
-	return tracerWithAttributes{
-		Tracer: tpwa.TracerProvider.Tracer(name, options...),
-		option: tpwa.option,
-	}
+	return tracerWithAttributes(tpwa.TracerProvider, tpwa.attrs, name, options...)
 }
 
 func (tpwa tracerProviderWithAttributesSdk) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
-	return tracerWithAttributes{
-		Tracer: tpwa.TracerProvider.Tracer(name, options...),
-		option: tpwa.option,
-	}
-}
-
-func (twa tracerWithAttributes) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	opts = slices.Insert(opts, 0, twa.option)
-	return twa.Tracer.Start(ctx, spanName, opts...)
+	return tracerWithAttributes(tpwa.TracerProvider, tpwa.attrs, name, options...)
 }
