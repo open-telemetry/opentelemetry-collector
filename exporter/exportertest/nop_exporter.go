@@ -15,12 +15,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
-var nopType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create* functions.
-func NewNopSettings() exporter.Settings {
+// NewNopSettings returns a new nop settings for Create* functions with the given type.
+func NewNopSettings(typ component.Type) exporter.Settings {
 	return exporter.Settings{
-		ID:                component.NewIDWithName(nopType, uuid.NewString()),
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -29,7 +29,7 @@ func NewNopSettings() exporter.Settings {
 // NewNopFactory returns an exporter.Factory that constructs nop exporters.
 func NewNopFactory() exporter.Factory {
 	return xexporter.NewFactory(
-		nopType,
+		NopType,
 		func() component.Config { return &nopConfig{} },
 		xexporter.WithTraces(createTraces, component.StabilityLevelStable),
 		xexporter.WithMetrics(createMetrics, component.StabilityLevelStable),

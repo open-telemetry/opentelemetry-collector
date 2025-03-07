@@ -61,6 +61,12 @@ We use the following rules for some common situations where we split into separa
 1. Consider splitting into separate modules if the API may evolve independently in separate groups
    of packages. For example, the configuration related to HTTP and gRPC evolve independently, so
    `config/configgrpc` and `config/confighttp` are separate modules.
+1. For component names, add the component kind as a suffix for the module name. For example, the
+   OTLP receiver is in the `receiver/otlpreceiver` module.
+1. Modules that add specific functionality related to a parent folder should have a prefix in the
+   name that relates to the parent module. For example, `configauth` has the `config` prefix since
+   it is part of the `config` folder, and `extensionauth` has `extension` as a prefix since it is
+   part of the `extension` module.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
    have a module `component`, the helpers should be in `component/componenttest`.
 1. Experimental packages that will later be added to another module should be in their own module,
@@ -353,10 +359,18 @@ or report a warning back to the collector with a clear error saying CGO is requi
 ## Breaking changes
 
 Whenever possible, we adhere to [semver](https://semver.org/) as our minimum standards. Even before v1, we strive not to break compatibility
-without a good reason. Hence, when a change is known to cause a breaking change, it MUST be clearly marked in the
-changelog and SHOULD include a line instructing users how to move forward.
+without a good reason. Hence, when a change is known to cause a breaking change, we intend to follow these principles:
 
-We also strive to perform breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
+- Breaking changes MUST have migration guidelines that clearly explain how to adapt to them.
+- Users SHOULD be able to adopt the breaking change at their own pace, independent of other Collector updates.
+- Users SHOULD be proactively notified about the breaking change before a migration is required.
+- Users SHOULD be able to easily tell whether they have completed the migration for a breaking change.
+
+Not all changes have the same effects on users, so some of the steps may be unnecessary for some changes.
+
+### API breaking changes
+
+We strive to perform API breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
 version (`vM.N+1`).
 
 - when we need to remove something, we MUST mark a feature as deprecated in one version and MAY remove it in a
@@ -377,19 +391,7 @@ package test
 func DoFoo() {}
 ```
 
-### End-user impacting changes
-
-When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
-behind a [feature
-gate](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
-in a subsequent version, and eventually removing it after yet another version. This is how it would look like, considering
-that each of the following steps is done in a separate version:
-
-1. Mark the feature as deprecated, add a short-lived feature gate with the feature enabled by default
-1. Change the feature gate to disable the feature by default, deprecating the gate at the same time
-1. Remove the feature and the gate
-
-### Example #1 - Renaming a function
+#### Example #1 - Renaming a function
 
 1. Current version `v0.N` has `func GetFoo() Bar`
 1. We now decided that `GetBar` is a better name. As such, on `v0.N+1` we add a new `func GetBar() Bar` function,
@@ -397,7 +399,7 @@ that each of the following steps is done in a separate version:
    warning is added to the old function, along with an entry to the changelog.
 1. On `v0.N+2`, we MAY remove `func GetFoo() Bar`.
 
-### Example #2 - Changing the return values of a function
+#### Example #2 - Changing the return values of a function
 
 1. Current version `v0.N` has `func GetFoo() Foo`
 1. We now need to also return an error. We do it by creating a new function that will be equivalent to the existing one
@@ -406,7 +408,7 @@ that each of the following steps is done in a separate version:
    entry with a warning.
 1. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo() (Foo, error)`.
 
-### Example #3 - Changing the arguments of a function
+#### Example #3 - Changing the arguments of a function
 
 1. Current version `v0.N` has `func GetFoo() Foo`
 2. We now decide to do something that might be blocking as part of `func GetFoo() Foo`, so, we start accepting a
@@ -416,7 +418,7 @@ that each of the following steps is done in a separate version:
 3. On `v0.N+2`, we change `func GetFoo() Foo` to `func GetFoo(context.Context) Foo` if desired or remove it entirely if
    needed.
 
-### Exceptions
+#### Exceptions
 
 For changes to modules that do not have a version of `v1` or higher, we may skip the deprecation process described above
 for the following situations. Note that these changes should still be recorded as breaking changes in the changelog.
@@ -429,9 +431,83 @@ for the following situations. Note that these changes should still be recorded a
   breaking change. For this reason, the deprecation process should only be skipped when it is not expected that
   the function is commonly passed as a value.
 
-### Configuration changes
+### End-user impacting changes
 
-See [docs/component-stability.md](component-stability.md) for more information on how to handle configuration changes.
+For end user breaking changes, we follow the [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle)
+approach. This is a well-known approach in other projects such as Kubernetes. A feature gate has
+three stages: alpha, beta and stable. The intent of these stages is to decouple other software
+changes from the breaking change; some users may adopt the change early, while other users may delay
+its adoption.
+
+#### Feature gate IDs
+
+Feature gate IDs should be namespaced using dots to denote the hierarchy. The namespace should be as
+specific as possible; in particular, for feature gates specific to a certain component the ID should
+have the following structure: `<component kind>.<component type>.<base ID>`. The "base ID" should be
+written with a verb that describes what happens when the feature gate is enabled. For example, if
+you want to add a feature gate for the OTLP receiver that changes the default endpoint to bind to an
+unspecified host, you could name your feature gate `receiver.otlp.UseUnspecifiedHostAsDefaultHost`.
+
+#### Lifecycle of a breaking change
+
+##### Alpha stage
+
+At the alpha stage, the change is opt-in. At this stage we want to notify users that a change is
+coming, so they can start preparing for it and we have some early adopters that provide us with
+feedback. Consider the following items before the initial release of an alpha feature gate:
+
+* If **docs and examples** can be updated in a way that prevents the breaking change from affecting
+  users, this is the time to update them!
+* Provide users with tools to understand the breaking change
+  * (Optional) Create or update a **Github issue** to document what the change is about, who it
+    affects and what its effects are
+  * (Optional) Consider adding **telemetry** that allows users to track their migration. For
+    example, you can add a counter for the times that you see a payload that would be affected by
+    the breaking change.
+* Notify users about the upcoming change
+  * Add a **changelog entry** that describes the feature gate. It should include its name, when you
+    may want to use it, and what its effects are. The changelog entry can be given the `enhancement`
+    classification at this stage.
+  * (Optional but strongly recommended) Log a **warning** if the user is using the software in a way
+    that would be affected by the breaking change. Point the user to the feature gate and any
+    official docs.
+* (Optional) Try to **test this in a realistic setting.** If this solves an issue, ask the poster to
+  try to use it and check that everything works.
+
+##### Beta stage
+
+At the beta stage, the change is opt-out. At this stage we want to notify users that the change is
+happening, and help them understand how to revert back to the previous behavior temporarily if they
+need to do so. You may directly start from this stage for breaking changes that are less impactful
+or for changes that should not have a functional impact such as performance changes. Consider the
+following items before moving from alpha to beta:
+
+* Schedule the **docs and examples** update to align with the breaking change release if you
+  couldn’t do it before
+* Provide users with tools to understand the breaking change
+  * Update the **Github issue** with the new default behavior (or create one if starting from here)
+  * Update the feature gate to add the ‘to version’ to the feature gate
+* Notify users about the change
+  * Add a second **changelog entry** that describes the change one more time and is marked as
+    ‘breaking’.
+  * If applicable, add an **error message** that tells you this is the result of a breaking change
+    that can be temporarily reverted disabling the feature gate and points to any issue or docs
+    about it.
+
+##### Stable stage
+
+At the stable stage, the change cannot be reverted. In some cases, you may directly start here and
+just do the change, in which case you do not need a feature gate, but you should still follow the
+checklist below (notify, update docs and examples). Consider the following items before moving from
+beta to stable:
+
+* Remove the dead code
+* Provide users with tools to understand the breaking change
+  * Update the **documentation** **and examples** to remove any references to the feature gate and
+    the previous behavior. Close the **Github issue** if you opened one before.
+* Notify users about the change
+  * Add one last **changelog entry** so users know the range where the feature gate was in beta
+  * Amend the **error message** to remove any references to the feature gate.
 
 ## Specification Tracking
 

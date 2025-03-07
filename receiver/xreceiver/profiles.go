@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/internal"
 )
 
 // Profiles receiver receives profiles.
@@ -40,15 +41,6 @@ type Factory interface {
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
 type CreateProfilesFunc func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
-// CreateProfiles implements Factory.CreateProfiles.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg, next)
-}
-
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
@@ -75,6 +67,9 @@ func (f *factory) ProfilesStability() component.StabilityLevel {
 func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f.createProfilesFunc == nil {
 		return nil, pipeline.ErrSignalNotSupported
+	}
+	if set.ID.Type() != f.Type() {
+		return nil, internal.ErrIDMismatch(set.ID, f.Type())
 	}
 	return f.createProfilesFunc(ctx, set, cfg, next)
 }

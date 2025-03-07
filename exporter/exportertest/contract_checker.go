@@ -86,17 +86,17 @@ func checkConsumeContractScenario(t *testing.T, params CheckConsumeContractParam
 	mockConsumerInstance := newMockConsumer(decisionFunc)
 	switch params.Signal {
 	case pipeline.SignalLogs:
-		r, err := params.ReceiverFactory.CreateLogs(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateLogs(context.Background(), receivertest.NewNopSettings(params.ReceiverFactory.Type()), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkLogs(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case pipeline.SignalTraces:
-		r, err := params.ReceiverFactory.CreateTraces(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateTraces(context.Background(), receivertest.NewNopSettings(params.ReceiverFactory.Type()), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkTraces(t, params, r, &mockConsumerInstance, checkIfTestPassed)
 	case pipeline.SignalMetrics:
-		r, err := params.ReceiverFactory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), params.ReceiverConfig, &mockConsumerInstance)
+		r, err := params.ReceiverFactory.CreateMetrics(context.Background(), receivertest.NewNopSettings(params.ReceiverFactory.Type()), params.ReceiverConfig, &mockConsumerInstance)
 		require.NoError(t, err)
 		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 		checkMetrics(t, params, r, &mockConsumerInstance, checkIfTestPassed)
@@ -111,7 +111,7 @@ func checkMetrics(t *testing.T, params CheckConsumeContractParams, mockReceiver 
 	ctx := context.Background()
 	var exp exporter.Metrics
 	var err error
-	exp, err = params.ExporterFactory.CreateMetrics(ctx, NewNopSettings(), params.ExporterConfig)
+	exp, err = params.ExporterFactory.CreateMetrics(ctx, NewNopSettings(params.ExporterFactory.Type()), params.ExporterConfig)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -151,7 +151,7 @@ func checkTraces(t *testing.T, params CheckConsumeContractParams, mockReceiver c
 	ctx := context.Background()
 	var exp exporter.Traces
 	var err error
-	exp, err = params.ExporterFactory.CreateTraces(ctx, NewNopSettings(), params.ExporterConfig)
+	exp, err = params.ExporterFactory.CreateTraces(ctx, NewNopSettings(params.ExporterFactory.Type()), params.ExporterConfig)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 
@@ -191,7 +191,7 @@ func checkLogs(t *testing.T, params CheckConsumeContractParams, mockReceiver com
 	ctx := context.Background()
 	var exp exporter.Logs
 	var err error
-	exp, err = params.ExporterFactory.CreateLogs(ctx, NewNopSettings(), params.ExporterConfig)
+	exp, err = params.ExporterFactory.CreateLogs(ctx, NewNopSettings(params.ExporterFactory.Type()), params.ExporterConfig)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 

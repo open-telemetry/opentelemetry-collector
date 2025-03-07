@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	// LevelNone indicates that no telemetry data should be collected.
+	// LevelNone indicates that no telemetry should be collected.
 	LevelNone Level = iota - 1
-	// LevelBasic is the recommended and covers the basics of the service telemetry.
+	// LevelBasic indicates that only core Collector telemetry should be collected.
 	LevelBasic
-	// LevelNormal adds some other indicators on top of basic.
+	// LevelNormal indicates that all low-overhead telemetry should be collected.
 	LevelNormal
-	// LevelDetailed adds dimensions and views to the previous levels.
+	// LevelDetailed indicates that all available telemetry should be collected.
 	LevelDetailed
 
 	levelNoneStr     = "None"

@@ -386,13 +386,13 @@ func NewNopConnectorConfigsAndFactories() (map[component.ID]component.Config, ma
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
 	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
 	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(nopType, "conn")
+	connID := component.NewIDWithName(NopType, "conn")
 
 	configs := map[component.ID]component.Config{
 		connID: nopFactory.CreateDefaultConfig(),
 	}
 	factories := map[component.Type]connector.Factory{
-		nopType: nopFactory,
+		NopType: nopFactory,
 	}
 
 	return configs, factories

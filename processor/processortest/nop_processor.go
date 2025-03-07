@@ -15,12 +15,12 @@ import (
 	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
-var nopType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create* functions.
-func NewNopSettings() processor.Settings {
+// NewNopSettings returns a new nop settings for Create* functions with the given type.
+func NewNopSettings(typ component.Type) processor.Settings {
 	return processor.Settings{
-		ID:                component.NewID(nopType),
+		ID:                component.NewID(typ),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -29,7 +29,7 @@ func NewNopSettings() processor.Settings {
 // NewNopFactory returns a component.ProcessorFactory that constructs nop processors.
 func NewNopFactory() processor.Factory {
 	return xprocessor.NewFactory(
-		nopType,
+		NopType,
 		func() component.Config { return &nopConfig{} },
 		xprocessor.WithTraces(createTraces, component.StabilityLevelStable),
 		xprocessor.WithMetrics(createMetrics, component.StabilityLevelStable),

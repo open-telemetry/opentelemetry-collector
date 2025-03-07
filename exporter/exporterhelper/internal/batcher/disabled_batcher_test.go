@@ -45,11 +45,11 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 				tt.maxWorkers)
 			require.NoError(t, err)
 
-			q := exporterqueue.NewMemoryQueueFactory[request.Request]()(
+			q := exporterqueue.NewQueue[request.Request](
 				context.Background(),
-				exporterqueue.Settings{
+				exporterqueue.Settings[request.Request]{
 					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(),
+					ExporterSettings: exportertest.NewNopSettings(exportertest.NopType),
 				},
 				exporterqueue.NewDefaultConfig(),
 				ba.Consume)

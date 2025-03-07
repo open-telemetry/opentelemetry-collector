@@ -12,9 +12,8 @@ receivers:
 
 - **Built-in scraping metrics receivers:** Receivers of this type emit a predefined set of metrics. However, the 
   metrics themselves are configurable via user settings. Examples of scrapings metrics receivers:
-
-- [Redis Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/redisreceiver)
-- [Zookeeper Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zookeeperreceiver)
+  - [Redis Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/redisreceiver)
+  - [Zookeeper Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zookeeperreceiver)
 
 This document covers built-in scraping metrics receivers. It defines which metrics these receivers can emit, 
 defines stability guarantees and provides guidelines for metric updates.

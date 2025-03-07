@@ -21,25 +21,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
-
-func mockRequestUnmarshaler(mr request.Request) exporterqueue.Unmarshaler[request.Request] {
-	return func([]byte) (request.Request, error) {
-		return mr, nil
-	}
-}
-
-func mockRequestMarshaler(request.Request) ([]byte, error) {
-	return []byte("mockRequest"), nil
-}
 
 func TestRetrySenderDropOnPermanentError(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	sink := requesttest.NewSink()
 	expErr := consumererror.NewPermanent(errors.New("bad data"))
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	require.ErrorIs(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink, ExportErr: expErr}), expErr)
 	require.ErrorIs(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 3, Sink: sink, ExportErr: expErr}), expErr)
@@ -53,7 +42,7 @@ func TestRetrySenderSimpleRetry(t *testing.T) {
 	rCfg.InitialInterval = 0
 	sink := requesttest.NewSink()
 	expErr := errors.New("transient error")
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink, ExportErr: expErr}))
 	assert.Equal(t, int64(2), sink.ItemsCount())
@@ -65,7 +54,7 @@ func TestRetrySenderRetryPartial(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 0
 	sink := requesttest.NewSink()
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, rs.Send(context.Background(), &requesttest.FakeRequest{Items: 5, Sink: sink, Partial: 3}))
 	assert.Equal(t, int64(5), sink.ItemsCount())
@@ -78,7 +67,7 @@ func TestRetrySenderMaxElapsedTime(t *testing.T) {
 	rCfg.InitialInterval = time.Millisecond
 	rCfg.MaxElapsedTime = 100 * time.Millisecond
 	sink := requesttest.NewSink()
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	expErr := errors.New("transient error")
 	require.ErrorIs(t, rs.Send(context.Background(), newErrorRequest(expErr)), expErr)
@@ -91,7 +80,7 @@ func TestRetrySenderThrottleError(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.InitialInterval = 10 * time.Millisecond
 	sink := requesttest.NewSink()
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	retry := fmt.Errorf("wrappe error: %w", NewThrottleRetry(errors.New("throttle error"), 100*time.Millisecond))
 	start := time.Now()
@@ -112,7 +101,7 @@ func TestRetrySenderWithContextTimeout(t *testing.T) {
 	rCfg.RandomizationFactor = 0
 	// Second attempt is at twice the testTimeout
 	rCfg.Multiplier = float64(2 * testTimeout / rCfg.InitialInterval)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	logger, observed := observer.New(zap.InfoLevel)
 	set.Logger = zap.New(logger)
 	rs := newRetrySender(rCfg, set, newNoopExportSender())
@@ -134,7 +123,7 @@ func TestRetrySenderWithCancelledContext(t *testing.T) {
 	rCfg.Enabled = true
 	// First attempt after 1s is attempted
 	rCfg.InitialInterval = 1 * time.Second
-	rs := newRetrySender(rCfg, exportertest.NewNopSettings(), newNoopExportSender())
+	rs := newRetrySender(rCfg, exportertest.NewNopSettings(exportertest.NopType), newNoopExportSender())
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 	start := time.Now()
 	ctx, cancel := context.WithCancelCause(context.Background())
@@ -165,7 +154,7 @@ func (mer *mockErrorRequest) ItemsCount() int {
 	return 7
 }
 
-func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.MaxSizeConfig, request.Request) ([]request.Request, error) {
+func (mer *mockErrorRequest) MergeSplit(context.Context, exporterbatcher.SizeConfig, request.Request) ([]request.Request, error) {
 	return nil, nil
 }
 

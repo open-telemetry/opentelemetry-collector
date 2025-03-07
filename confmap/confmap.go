@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
@@ -167,6 +169,15 @@ func (l *Conf) IsSet(key string) bool {
 // Note that the given map may be modified.
 func (l *Conf) Merge(in *Conf) error {
 	return l.k.Merge(in.k)
+}
+
+// mergeAppend merges the input given configuration into the existing config.
+// Note that the given map may be modified.
+// Additionally, mergeAppend performs deduplication when merging lists.
+// For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
+// the resulting list will be [extension1, extension2, extension3].
+func (l *Conf) mergeAppend(in *Conf) error {
+	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend))
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.

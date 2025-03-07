@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -50,15 +51,6 @@ type factoryOpts struct {
 
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
 type CreateProfilesFunc func(context.Context, exporter.Settings, component.Config) (Profiles, error)
-
-// CreateProfiles implements Factory.CreateProfiles.
-// Deprecated: [v0.120.0] No longer used, will be removed.
-func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set exporter.Settings, cfg component.Config) (Profiles, error) {
-	if f == nil {
-		return nil, pipeline.ErrSignalNotSupported
-	}
-	return f(ctx, set, cfg)
-}
 
 // WithTraces overrides the default "error not supported" implementation for CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces exporter.CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
@@ -104,6 +96,9 @@ func (f *factory) CreateProfiles(ctx context.Context, set exporter.Settings, cfg
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
+	if set.ID.Type() != f.Type() {
+		return nil, experr.ErrIDMismatch(set.ID, f.Type())
+	}
 	return f.createProfilesFunc(ctx, set, cfg)
 }
 

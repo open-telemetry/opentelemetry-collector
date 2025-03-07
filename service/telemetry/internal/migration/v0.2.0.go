@@ -4,8 +4,8 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/internal/migration"
 
 import (
-	configv02 "go.opentelemetry.io/contrib/config/v0.2.0"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	configv02 "go.opentelemetry.io/contrib/otelconf/v0.2.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -37,13 +37,12 @@ type logsConfigV020 struct {
 }
 
 func headersV02ToV03(in configv02.Headers) []config.NameStringValuePair {
-	headers := make([]config.NameStringValuePair, len(in))
-	idx := 0
+	headers := make([]config.NameStringValuePair, 0, len(in))
 	for k, v := range in {
-		headers[idx] = config.NameStringValuePair{
+		headers = append(headers, config.NameStringValuePair{
 			Name:  k,
 			Value: &v,
-		}
+		})
 	}
 	return headers
 }

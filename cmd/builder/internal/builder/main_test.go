@@ -76,8 +76,8 @@ var replaceModules = []string{
 	"/exporter/otlpexporter",
 	"/exporter/otlphttpexporter",
 	"/extension",
-	"/extension/auth",
-	"/extension/auth/authtest",
+	"/extension/extensionauth",
+	"/extension/extensionauth/extensionauthtest",
 	"/extension/extensioncapabilities",
 	"/extension/extensiontest",
 	"/extension/zpagesextension",
@@ -97,14 +97,17 @@ var replaceModules = []string{
 	"/processor/processortest",
 	"/processor/batchprocessor",
 	"/processor/memorylimiterprocessor",
+	"/processor/processorhelper/xprocessorhelper",
 	"/processor/xprocessor",
 	"/receiver",
 	"/receiver/nopreceiver",
 	"/receiver/otlpreceiver",
 	"/receiver/receivertest",
+	"/receiver/receiverhelper",
 	"/receiver/xreceiver",
 	"/semconv",
 	"/service",
+	"/service/hostcapabilities",
 }
 
 func newTestConfig(tb testing.TB) *Config {

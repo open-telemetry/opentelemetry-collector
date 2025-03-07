@@ -6,7 +6,9 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sort"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -40,13 +42,59 @@ type Codeowners struct {
 }
 
 type Status struct {
-	Stability            StabilityMap `mapstructure:"stability"`
-	Distributions        []string     `mapstructure:"distributions"`
-	Class                string       `mapstructure:"class"`
-	Warnings             []string     `mapstructure:"warnings"`
-	Codeowners           *Codeowners  `mapstructure:"codeowners"`
-	UnsupportedPlatforms []string     `mapstructure:"unsupported_platforms"`
-	NotComponent         bool         `mapstructure:"not_component"`
+	Stability            StabilityMap   `mapstructure:"stability"`
+	Distributions        []string       `mapstructure:"distributions"`
+	Class                string         `mapstructure:"class"`
+	Warnings             []string       `mapstructure:"warnings"`
+	Codeowners           *Codeowners    `mapstructure:"codeowners"`
+	UnsupportedPlatforms []string       `mapstructure:"unsupported_platforms"`
+	Deprecation          DeprecationMap `mapstructure:"deprecation"`
+}
+
+type DeprecationMap map[string]DeprecationInfo
+
+type DeprecationInfo struct {
+	Date      string `mapstructure:"date"`
+	Migration string `mapstructure:"migration"`
+}
+
+var validClasses = []string{
+	"cmd",
+	"connector",
+	"converter",
+	"exporter",
+	"extension",
+	"pkg",
+	"processor",
+	"provider",
+	"receiver",
+	"scraper",
+}
+
+var validStabilityKeys = []string{
+	"converter",
+	"extension",
+	"logs",
+	"logs_to_traces",
+	"logs_to_metrics",
+	"logs_to_logs",
+	"logs_to_profiles",
+	"metrics",
+	"metrics_to_traces",
+	"metrics_to_metrics",
+	"metrics_to_logs",
+	"metrics_to_profiles",
+	"profiles",
+	"profiles_to_profiles",
+	"profiles_to_traces",
+	"profiles_to_metrics",
+	"profiles_to_logs",
+	"provider",
+	"traces_to_traces",
+	"traces_to_metrics",
+	"traces_to_logs",
+	"traces_to_profiles",
+	"traces",
 }
 
 func (s *Status) SortedDistributions() []string {
@@ -77,7 +125,11 @@ func (s *Status) Validate() error {
 	if err := s.validateClass(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+
 	if err := s.Stability.Validate(); err != nil {
+		errs = errors.Join(errs, err)
+	}
+	if err := s.Deprecation.Validate(s.Stability); err != nil {
 		errs = errors.Join(errs, err)
 	}
 	return errs
@@ -87,10 +139,7 @@ func (s *Status) validateClass() error {
 	if s.Class == "" {
 		return errors.New("missing class")
 	}
-	if s.Class != "receiver" && s.Class != "processor" &&
-		s.Class != "exporter" && s.Class != "connector" &&
-		s.Class != "extension" && s.Class != "scraper" &&
-		s.Class != "cmd" && s.Class != "pkg" {
+	if !slices.Contains(validClasses, s.Class) {
 		return fmt.Errorf("invalid class: %v", s.Class)
 	}
 	return nil
@@ -108,28 +157,36 @@ func (ms StabilityMap) Validate() error {
 			errs = errors.Join(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range cmps {
-			if c != "metrics" &&
-				c != "traces" &&
-				c != "logs" &&
-				c != "profiles" &&
-				c != "traces_to_traces" &&
-				c != "traces_to_metrics" &&
-				c != "traces_to_logs" &&
-				c != "traces_to_profiles" &&
-				c != "metrics_to_traces" &&
-				c != "metrics_to_metrics" &&
-				c != "metrics_to_logs" &&
-				c != "metrics_to_profiles" &&
-				c != "logs_to_traces" &&
-				c != "logs_to_metrics" &&
-				c != "logs_to_logs" &&
-				c != "logs_to_profiles" &&
-				c != "profiles_to_profiles" &&
-				c != "profiles_to_traces" &&
-				c != "profiles_to_metrics" &&
-				c != "profiles_to_logs" &&
-				c != "extension" {
+			if !slices.Contains(validStabilityKeys, c) {
 				errs = errors.Join(errs, fmt.Errorf("invalid component: %v", c))
+			}
+		}
+	}
+	return errs
+}
+
+func (dm DeprecationMap) Validate(ms StabilityMap) error {
+	var errs error
+	for stability, cmps := range ms {
+		if stability != component.StabilityLevelDeprecated {
+			continue
+		}
+		for _, c := range cmps {
+			depInfo, found := dm[c]
+			if !found {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing deprecation date and migration guide for %v", c))
+				continue
+			}
+			if depInfo.Migration == "" {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing migration guide: %v", c))
+			}
+			if depInfo.Date == "" {
+				errs = errors.Join(errs, fmt.Errorf("deprecated component missing date in YYYY-MM-DD format: %v", c))
+			} else {
+				_, err := time.Parse("2006-01-02", depInfo.Date)
+				if err != nil {
+					errs = errors.Join(errs, fmt.Errorf("deprecated component missing valid date in YYYY-MM-DD format: %v", c))
+				}
 			}
 		}
 	}
