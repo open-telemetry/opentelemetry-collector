@@ -45,7 +45,7 @@ fi
 set -ex
 
 # Create temp dir for generated files.
-tmp_dir=$(mktemp -d -t apidiff)
+tmp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t 'apidiff')
 clean_up() {
     ARG=$?
     if [ $dry_run = true ]; then
