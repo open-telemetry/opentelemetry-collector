@@ -82,7 +82,7 @@ func createReloader(t *testing.T) (*clientCAsFileReloader, *testLoader, string) 
 }
 
 func createTempFile(t *testing.T) string {
-	tmpCa, err := os.CreateTemp("", "clientCAs.crt")
+	tmpCa, err := os.CreateTemp(t.TempDir(), "clientCAs.crt")
 	require.NoError(t, err)
 	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
