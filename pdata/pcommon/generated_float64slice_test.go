@@ -81,3 +81,16 @@ func TestFloat64SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestFloat64SliceAll(t *testing.T) {
+	ms := NewFloat64Slice()
+	ms.FromRaw([]float64{1, 2, 3})
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
