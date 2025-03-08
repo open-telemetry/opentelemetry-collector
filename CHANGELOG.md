@@ -7,6 +7,45 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.27.0/v0.121.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Make the client config options `max_idle_conns`, `max_idle_conns_per_host`, `max_conns_per_host`, and `idle_conn_timeout` integers (#9478)
+  All four options can be set to `0` where they were previously set to `null`
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate `min_size_items` and `max_size_items` in favor of `min_size` and `max_size`. (#12486)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add `converter` and `provider` module classes (#12467)
+- `pipeline`: output pipeline name with signal as signal[/name] format in logs. (#12410)
+- `memorylimiter`: Add support to configure min GC intervals for soft and hard limits. (#12450)
+- `otlpexporter`: Update the stability level for logs, it has been as stable as traces and metrics for some time. (#12423)
+- `service`: Create a new subcommand to dump the initial configuration after resolving/merging. (#11479)
+  To use the `print-initial-config` subcommand, invoke the Collector with the subcommand and corresponding feature gate: `otelcol print-initial-config --feature-gates=otelcol.printInitialConfig --config=config.yaml`.
+  Note that the feature gate enabling this flag is currently in alpha stability, and the subcommand may
+  be changed in the future.
+  
+- `memorylimiterprocessor`: Add support for profiles. (#12453)
+- `otelcol`: Converters are now available in the `components` command. (#11900, #12385)
+- `component`: Mark module as stable (#9376)
+- `confmap`: Surface YAML parsing errors when they happen at the top-level. (#12180)
+  This adds context to some instances of the error "retrieved value (type=string) cannot be used as a Conf", which typically happens because of invalid YAML documents
+  
+- `pprofile`: Add LinkIndex attribute to the generated Sample type (#12485)
+- `exporterhelper`: Stabilize exporter.UsePullingBasedExporterQueueBatcher and remove old batch sender (#12425)
+- `mdatagen`: Update metadata schema with new fields without enforcing them (#12359)
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fix crash at startup when converting from v0.2.0 to v0.3.0 (#12438)
+- `service`: fix bug in parsing service::telemetry configuration (#12437)
+- `exporterhelper`: Fix bug where the error logged when conversion of data fails is always nil (#12510)
+- `mdatagen`: Adds back missing import for filter when emitting resource attributes (#12455)
+
 ## v1.26.0/v0.120.0
 
 ### 🛑 Breaking changes 🛑
@@ -51,6 +90,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `cmd/mdatagen`: Remove `level` field from metrics definition (#12145)
   This mechanism will be added back once a new views mechanism is implemented.
 - `service`: Value for telemetry exporter `otlp.protocol` updated from `grpc/protobuf` to `grpc`. (#12337)
+- `service`: internal metrics exported over Prometheus may differ from previous versions. (#11611)
+
+  Users who do not customize the Prometheus reader should not be impacted. The change to update the internal telemetry to use [otel-go config](https://pkg.go.dev/go.opentelemetry.io/contrib/config) can cause unexpected behaviour
+  for end users. This change is caused by the default values in `config` being different from what the Collector has used in previous versions. The
+  following changes can occur when users configure their `service::telemetry::metrics::readers`:
+  - the metric name will append a `_total` suffix if `without_type_suffix` is not configured. Set `without_type_suffix` to `true` to disable this.
+  - units will be appended to metric name if `without_units` is not configured. Set `without_units` to `true` to disable this.
+  - a `target_info` metric will be emitted if `without_scope_info` is not configured. Set `without_scope_info` to `true` to disable this.
 
 ### 💡 Enhancements 💡
 

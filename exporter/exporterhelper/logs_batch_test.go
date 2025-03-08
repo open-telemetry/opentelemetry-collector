@@ -248,7 +248,7 @@ func TestMergeSplitLogsInvalidInput(t *testing.T) {
 func TestExtractLogs(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		ld := testdata.GenerateLogs(10)
-		extractedLogs := extractLogs(ld, i, &sizer.LogsCountSizer{})
+		extractedLogs, _ := extractLogs(ld, i, &sizer.LogsCountSizer{})
 		assert.Equal(t, i, extractedLogs.LogRecordCount())
 		assert.Equal(t, 10-i, ld.LogRecordCount())
 	}
@@ -264,6 +264,25 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
+}
+
+func TestMergeSplitExactBytes(t *testing.T) {
+	pb := plog.ProtoMarshaler{}
+	// Set max size off by 1, so forces every log to be it's own batch.
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: pb.LogsSize(testdata.GenerateLogs(2)) - 1}
+	lr := newLogsRequest(testdata.GenerateLogs(4), nil)
+	merged, err := lr.MergeSplit(context.Background(), cfg, nil)
+	require.NoError(t, err)
+	assert.Len(t, merged, 4)
+}
+
+func TestMergeSplitExactItems(t *testing.T) {
+	// Set max size off by 1, so forces every log to be it's own batch.
+	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 1}
+	lr := newLogsRequest(testdata.GenerateLogs(4), nil)
+	merged, err := lr.MergeSplit(context.Background(), cfg, nil)
+	require.NoError(t, err)
+	assert.Len(t, merged, 4)
 }
 
 func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {

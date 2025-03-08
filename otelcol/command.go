@@ -66,6 +66,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.ProviderFactories) == 0 {
 		return errors.New("at least one Provider must be supplied")
 	}
+
 	return nil
 }
 
