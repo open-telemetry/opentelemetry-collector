@@ -9,7 +9,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool   `mapstructure:"enabled"`
+	Name    string `mapstructure:"name"`
 
 	enabledSetByUser bool
 }
@@ -39,18 +40,23 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
 			Enabled: true,
+			Name:    "default.metric",
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
 			Enabled: true,
+			Name:    "default.metric.to_be_removed",
 		},
 		MetricInputType: MetricConfig{
 			Enabled: true,
+			Name:    "metric.input_type",
 		},
 		OptionalMetric: MetricConfig{
 			Enabled: false,
+			Name:    "optional.metric",
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
 			Enabled: false,
+			Name:    "optional.metric.empty_unit",
 		},
 	}
 }

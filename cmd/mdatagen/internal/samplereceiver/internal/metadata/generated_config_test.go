@@ -26,11 +26,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: true},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
-					MetricInputType:          MetricConfig{Enabled: true},
-					OptionalMetric:           MetricConfig{Enabled: true},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
+					DefaultMetric:            MetricConfig{Enabled: true, Name: "default.metric"},
+					DefaultMetricToBeRemoved: MetricConfig{Enabled: true, Name: "default.metric.to_be_removed"},
+					MetricInputType:          MetricConfig{Enabled: true, Name: "metric.input_type"},
+					OptionalMetric:           MetricConfig{Enabled: true, Name: "optional.metric"},
+					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true, Name: "optional.metric.empty_unit"},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -48,11 +48,11 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: false},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
-					MetricInputType:          MetricConfig{Enabled: false},
-					OptionalMetric:           MetricConfig{Enabled: false},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+					DefaultMetric:            MetricConfig{Enabled: false, Name: "default.metric"},
+					DefaultMetricToBeRemoved: MetricConfig{Enabled: false, Name: "default.metric.to_be_removed"},
+					MetricInputType:          MetricConfig{Enabled: false, Name: "metric.input_type"},
+					OptionalMetric:           MetricConfig{Enabled: false, Name: "optional.metric"},
+					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false, Name: "optional.metric.empty_unit"},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
