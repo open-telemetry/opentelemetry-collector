@@ -28,6 +28,7 @@ const (
 	skipStrictVersioningFlag   = "skip-strict-versioning"
 	ldflagsFlag                = "ldflags"
 	gcflagsFlag                = "gcflags"
+	goBuildFlagsFlag           = "go-build-flags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
 )
@@ -86,6 +87,7 @@ func initFlags(flags *flag.FlagSet) error {
 	flags.Bool(verboseFlag, false, "Whether builder should print verbose output (default false)")
 	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
 	flags.String(gcflagsFlag, "", `gcflags to include in the "go build" command`)
+	flags.String(goBuildFlagsFlag, "", `Addition args for the "go build" command`)
 	flags.String(distributionOutputPathFlag, "", "Where to write the resulting files")
 	return flags.MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path")
 }
@@ -148,13 +150,15 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	errs = multierr.Append(errs, err)
 
 	if flags.Changed(ldflagsFlag) {
-		cfg.LDSet = true
 		cfg.LDFlags, err = flags.GetString(ldflagsFlag)
 		errs = multierr.Append(errs, err)
 	}
 	if flags.Changed(gcflagsFlag) {
-		cfg.GCSet = true
 		cfg.GCFlags, err = flags.GetString(gcflagsFlag)
+		errs = multierr.Append(errs, err)
+	}
+	if flags.Changed(goBuildFlagsFlag) {
+		cfg.GoBuildFlags, err = flags.GetString(goBuildFlagsFlag)
 		errs = multierr.Append(errs, err)
 	}
 

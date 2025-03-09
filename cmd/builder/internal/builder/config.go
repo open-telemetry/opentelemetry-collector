@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -35,9 +36,8 @@ type Config struct {
 	SkipGetModules       bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
-	LDSet                bool   `mapstructure:"-"` // only used to override LDFlags
 	GCFlags              string `mapstructure:"-"`
-	GCSet                bool   `mapstructure:"-"` // only used to override GCFlags
+	GoBuildFlags         string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
 	Distribution      Distribution `mapstructure:"dist"`
@@ -210,6 +210,50 @@ func (c *Config) ParseModules() error {
 
 func (c *Config) allComponents() []Module {
 	return slices.Concat[[]Module](c.Exporters, c.Receivers, c.Processors, c.Extensions, c.Connectors, c.ConfmapProviders, c.ConfmapConverters)
+}
+
+func (c *Config) getGoBuildArgs() []string {
+	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
+	gcflags := ""
+	executableName := c.Distribution.Name
+	if runtime.GOOS == "windows" {
+		executableName += ".exe"
+	}
+
+	args := []string{"build", "-trimpath", "-o", executableName}
+
+	if c.Distribution.DebugCompilation {
+		c.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
+		ldflags = c.LDFlags
+		gcflags = "all=-N -l"
+	} else {
+		if c.LDFlags != "" {
+			c.Logger.Info("Using custom ldflags", zap.String("ldflags", c.LDFlags))
+			ldflags = c.LDFlags
+		}
+		if c.GCFlags != "" {
+			c.Logger.Info("Using custom gcflags", zap.String("gcflags", c.GCFlags))
+			gcflags = c.GCFlags
+		}
+	}
+
+	// Typically the -ldflags values are quoted i.e. -ldflags="<flags>".
+	// However since these args are used as exec.Cmd args, adding quotes
+	// will break the exec.Cmd argument parser. So they are instead provided
+	// as -ldflags=<flags>.
+	args = append(args, "-ldflags="+ldflags)
+	args = append(args, "-gcflags="+gcflags)
+
+	if c.Distribution.BuildTags != "" {
+		args = append(args, "-tags", c.Distribution.BuildTags)
+	}
+
+	if c.GoBuildFlags != "" {
+		c.Logger.Info(`Using additional "go build" flags`, zap.String("flags", c.GoBuildFlags))
+		args = append(args, strings.Fields(c.GoBuildFlags)...)
+	}
+
+	return args
 }
 
 func validateModules(name string, mods []Module) error {
