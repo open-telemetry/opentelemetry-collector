@@ -111,6 +111,9 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
+
+	// source vip to use while creating connection
+	SourceVip string `mapstructure:"source_vip,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -159,6 +162,14 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	if tlsCfg != nil {
 		transport.TLSClientConfig = tlsCfg
+	}
+	if hcs.SourceVip != "" {
+		dialer := &net.Dialer{
+			Timeout:   30 * time.Second, // Same as defaultTransport value
+			KeepAlive: 30 * time.Second, // Same as defaultTransport value
+			LocalAddr: &net.TCPAddr{IP: net.ParseIP(hcs.SourceVip)},
+		}
+		transport.DialContext = dialer.DialContext
 	}
 	if hcs.ReadBufferSize > 0 {
 		transport.ReadBufferSize = hcs.ReadBufferSize
