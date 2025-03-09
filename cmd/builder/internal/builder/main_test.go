@@ -319,6 +319,19 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			name: "Go Build Flags compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.ConfResolver = ConfResolver{
+					DefaultURIScheme: "env",
+				}
+				cfg.GoBuildFlags = "-p 16"
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -327,6 +340,9 @@ func TestGenerateAndCompile(t *testing.T) {
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())
 			assert.NoError(t, cfg.ParseModules())
+			if testing.Verbose() {
+				cfg.Verbose = true
+			}
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}

@@ -407,6 +407,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 			name: "override ldflags",
 			cfg: &Config{
 				Distribution: distribution,
+				LDSet:        true,
 				LDFlags:      "-B test",
 			},
 			expectedArgs: []string{
@@ -418,6 +419,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 			name: "override gcflags",
 			cfg: &Config{
 				Distribution: distribution,
+				GCSet:        true,
 				GCFlags:      "-asan",
 			},
 			expectedArgs: []string{
