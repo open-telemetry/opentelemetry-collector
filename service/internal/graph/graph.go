@@ -440,7 +440,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 					zap.String("type", instanceID.Kind().String()),
 					zap.String("id", instanceID.ComponentID().String()),
 				)
-			return compErr
+			return fmt.Errorf("failed to start %q %s: %w", instanceID.ComponentID().String(), strings.ToLower(instanceID.Kind().String()), compErr)
 		}
 
 		host.Reporter.ReportOKIfStarting(instanceID)

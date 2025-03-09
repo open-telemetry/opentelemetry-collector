@@ -489,6 +489,7 @@ func runScenario(t *testing.T, path string) {
 			for _, c := range tt.Configs {
 				// store configs into a temp file. This makes it easier for us to test feature gate functionality
 				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
+				defer func() { require.NoError(t, file.Close()) }()
 				require.NoError(t, err)
 				b, err := json.Marshal(c)
 				require.NoError(t, err)
@@ -496,7 +497,6 @@ func runScenario(t *testing.T, path string) {
 				require.NoError(t, err)
 				require.Positive(t, n, 0)
 				configFiles = append(configFiles, file.Name())
-				file.Close()
 			}
 
 			resolver, err := NewResolver(ResolverSettings{
