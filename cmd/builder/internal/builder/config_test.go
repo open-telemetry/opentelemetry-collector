@@ -291,7 +291,9 @@ func TestNewDefaultConfig(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 	assert.False(t, cfg.Distribution.DebugCompilation)
 	assert.Empty(t, cfg.Distribution.BuildTags)
+	assert.False(t, cfg.LDSet)
 	assert.Empty(t, cfg.LDFlags)
+	assert.False(t, cfg.GCSet)
 	assert.Empty(t, cfg.GCFlags)
 }
 

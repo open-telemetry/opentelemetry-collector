@@ -150,10 +150,12 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	errs = multierr.Append(errs, err)
 
 	if flags.Changed(ldflagsFlag) {
+		cfg.LDSet = true
 		cfg.LDFlags, err = flags.GetString(ldflagsFlag)
 		errs = multierr.Append(errs, err)
 	}
 	if flags.Changed(gcflagsFlag) {
+		cfg.GCSet = true
 		cfg.GCFlags, err = flags.GetString(gcflagsFlag)
 		errs = multierr.Append(errs, err)
 	}

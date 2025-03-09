@@ -36,7 +36,9 @@ type Config struct {
 	SkipGetModules       bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
+	LDSet                bool   `mapstructure:"-"`
 	GCFlags              string `mapstructure:"-"`
+	GCSet                bool   `mapstructure:"-"`
 	GoBuildFlags         string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
@@ -227,11 +229,11 @@ func (c *Config) getGoBuildArgs() []string {
 		ldflags = c.LDFlags
 		gcflags = "all=-N -l"
 	} else {
-		if c.LDFlags != "" {
+		if c.LDSet {
 			c.Logger.Info("Using custom ldflags", zap.String("ldflags", c.LDFlags))
 			ldflags = c.LDFlags
 		}
-		if c.GCFlags != "" {
+		if c.GCSet {
 			c.Logger.Info("Using custom gcflags", zap.String("gcflags", c.GCFlags))
 			gcflags = c.GCFlags
 		}
