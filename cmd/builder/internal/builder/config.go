@@ -36,9 +36,9 @@ type Config struct {
 	SkipGetModules       bool   `mapstructure:"-"`
 	SkipStrictVersioning bool   `mapstructure:"-"`
 	LDFlags              string `mapstructure:"-"`
-	LDSet                bool   `mapstructure:"-"`
+	LDSet                bool   `mapstructure:"-"` // true if ldflags is set from cli flag
 	GCFlags              string `mapstructure:"-"`
-	GCSet                bool   `mapstructure:"-"`
+	GCSet                bool   `mapstructure:"-"` // true if gcflags is set from cli flag
 	GoBuildFlags         string `mapstructure:"-"`
 	Verbose              bool   `mapstructure:"-"`
 
