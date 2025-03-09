@@ -58,6 +58,12 @@ func TestCheckConfigStruct(t *testing.T) {
 			}{},
 		},
 		{
+			name: "remain_with_interface_type",
+			config: struct {
+				AdditionalProperties any `mapstructure:",remain"`
+			}{},
+		},
+		{
 			name: "omitempty_mapstructure_tag",
 			config: struct {
 				MyPublicString string `mapstructure:",omitempty"`
@@ -86,9 +92,9 @@ func TestCheckConfigStruct(t *testing.T) {
 		{
 			name: "remain_on_non_map",
 			config: struct {
-				AdditionalProperties any `mapstructure:",remain"`
+				AdditionalProperties string `mapstructure:",remain"`
 			}{},
-			wantErrMsgSubStr: `attempt to use "remain" on non-map type field "AdditionalProperties"`,
+			wantErrMsgSubStr: `attempt to use "remain" on non-map or interface type field "AdditionalProperties"`,
 		},
 		{
 			name: "bad_custom_field_name",

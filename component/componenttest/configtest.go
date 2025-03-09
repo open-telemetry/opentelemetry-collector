@@ -105,8 +105,8 @@ func checkStructFieldTags(f reflect.StructField) error {
 					"attempt to squash non-struct type on field %q", f.Name)
 			}
 		case "remain":
-			if f.Type.Kind() != reflect.Map {
-				return fmt.Errorf(`attempt to use "remain" on non-map type field %q`, f.Name)
+			if f.Type.Kind() != reflect.Map && f.Type.Kind() != reflect.Interface {
+				return fmt.Errorf(`attempt to use "remain" on non-map or interface type field %q`, f.Name)
 			}
 		}
 	}
