@@ -1,0 +1,13 @@
+type: admission_limiter
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+
+tests:
+  config:
+    request_limit_mib: 10
+    waiting_limit_mib: 5
