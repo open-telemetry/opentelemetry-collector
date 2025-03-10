@@ -1,0 +1,10 @@
+type: xextension
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: extension
+  codeowners:
+    active:
+      - jmacd
+  stability:
+    development: [traces, metrcs, logs, profiles]
