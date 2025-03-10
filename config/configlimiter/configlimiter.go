@@ -32,7 +32,7 @@ type Limitation struct {
 // name. If an authenticator is not found, an error is returned.
 func (l Limitation) GetLimiter(ctx context.Context, extensions map[component.ID]component.Component, kind component.Kind, id component.ID) (limiter.Limiter, error) {
 	if ext, found := extensions[l.LimiterID]; found {
-		if ext, ok := ext.(limiter.Extension); ok {
+		if ext, ok := ext.(limiter.Extension); ok && ext != nil {
 			return ext.GetLimiter(ctx, kind, id)
 		}
 		return nil, errNotLimiter
