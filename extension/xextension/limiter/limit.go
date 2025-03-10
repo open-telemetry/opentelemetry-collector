@@ -6,7 +6,6 @@ package limiter // import "go.opentelemetry.io/collector/extension/xextension/li
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -14,10 +13,10 @@ import (
 type Extension interface {
 	extension.Extension
 
-	// GetLimiter will create a client for use by the specified
-	// component.  The component can use the client to limit
-	// admission to the pipeline.
-	GetLimiter(ctx context.Context, kind component.Kind, id component.ID) (Limiter, error)
+	// GetLimiter will create a limiter for use by a component.
+	// The component can use the limiter to limit admission to the
+	// pipeline.
+	GetLimiter(ctx context.Context) (Limiter, error)
 }
 
 // Limiter implements a limiter for byte-weighted request admission.

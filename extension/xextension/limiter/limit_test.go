@@ -8,14 +8,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 )
 
 func TestNopLimiter(t *testing.T) {
 	ctx := context.Background()
 	nop := NewNop()
 
-	lim, err := nop.GetLimiter(ctx, component.KindReceiver, component.MustNewID("testing"))
+	lim, err := nop.GetLimiter(ctx)
 	require.NoError(t, err)
 
 	rel, err := lim.Acquire(ctx, 1000)

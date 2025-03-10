@@ -6,7 +6,6 @@ package limiter // import "go.opentelemetry.io/collector/extension/xextension/li
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -26,7 +25,7 @@ func NewNop() Extension {
 }
 
 // Acquire implements Limiter.
-func (nopExtension) GetLimiter(_ context.Context, _ component.Kind, _ component.ID) (Limiter, error) {
+func (nopExtension) GetLimiter(_ context.Context) (Limiter, error) {
 	return nopLimiterInstance, nil
 }
 

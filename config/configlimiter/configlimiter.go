@@ -1,10 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package configauth implements the configuration settings to
-// ensure authentication on incoming requests, and allows
-// exporters to add authentication on outgoing requests.
-package configauth // import "go.opentelemetry.io/collector/config/configauth"
+// Package configlimiter implements the configuration settings to
+// perform admission control on byte-weighted requests.
+package configlimiter // import "go.opentelemetry.io/collector/config/configlimiter"
 
 import (
 	"context"
@@ -30,10 +29,10 @@ type Limitation struct {
 // GetLimiter attempts to select the appropriate extensionauth.Server
 // from the list of extensions, based on the requested extension
 // name. If an authenticator is not found, an error is returned.
-func (l Limitation) GetLimiter(ctx context.Context, extensions map[component.ID]component.Component, kind component.Kind, id component.ID) (limiter.Limiter, error) {
+func (l Limitation) GetLimiter(ctx context.Context, extensions map[component.ID]component.Component) (limiter.Limiter, error) {
 	if ext, found := extensions[l.LimiterID]; found {
 		if ext, ok := ext.(limiter.Extension); ok && ext != nil {
-			return ext.GetLimiter(ctx, kind, id)
+			return ext.GetLimiter(ctx)
 		}
 		return nil, errNotLimiter
 	}

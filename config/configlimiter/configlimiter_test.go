@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package configauth
+package configlimiter
 
 import (
 	"context"
@@ -51,7 +51,7 @@ func TestGetLimiter(t *testing.T) {
 				otherID: nil,
 			}
 
-			limExt, err := tt.cfg.GetLimiter(context.Background(), ext, component.KindReceiver, component.MustNewID("testing"))
+			limExt, err := tt.cfg.GetLimiter(context.Background(), ext)
 
 			// verify
 			if tt.expected != nil {
