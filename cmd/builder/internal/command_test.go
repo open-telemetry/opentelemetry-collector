@@ -80,7 +80,7 @@ func TestApplyFlags(t *testing.T) {
 				SkipStrictVersioning: true,
 				LDFlags:              "-s -w",
 				LDSet:                true,
-				GCFlags:              "-all",
+				GCFlags:              "-asan",
 				GCSet:                true,
 				GoBuildFlags:         "-buildvcs=false",
 				Verbose:              true,
