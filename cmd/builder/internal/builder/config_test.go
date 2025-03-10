@@ -408,11 +408,11 @@ func TestGetGoBuildArgs(t *testing.T) {
 			cfg: &Config{
 				Distribution: distribution,
 				LDSet:        true,
-				LDFlags:      "-B test",
+				LDFlags:      "-msan -f",
 			},
 			expectedArgs: []string{
 				"build", "-trimpath", "-o", distribution.Name,
-				"-ldflags=-B test", "-gcflags=", "-tags", distribution.BuildTags,
+				"-ldflags=-msan -f", "-gcflags=", "-tags", distribution.BuildTags,
 			},
 		},
 		{

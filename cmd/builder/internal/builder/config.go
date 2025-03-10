@@ -242,7 +242,8 @@ func (c *Config) getGoBuildArgs() []string {
 	// Typically the -ldflags values are quoted i.e. -ldflags="<flags>".
 	// However since these args are used as exec.Cmd args, adding quotes
 	// will break the exec.Cmd argument parser. So they are instead provided
-	// as -ldflags=<flags>.
+	// as -ldflags=<flags>, and when it is applied to the go build command
+	// it will effectively be `go build "-ldflags=<flags>"`.
 	args = append(args, "-ldflags="+ldflags)
 	args = append(args, "-gcflags="+gcflags)
 

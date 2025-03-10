@@ -348,6 +348,25 @@ func TestGenerateAndCompile(t *testing.T) {
 	}
 }
 
+func TestGenerateAndCompile_CompileError(t *testing.T) {
+	// This test forces a compile failure by providing
+	// purposely malformed ldflag.
+	cfg := newTestConfig(t)
+	cfg.ConfResolver = ConfResolver{
+		DefaultURIScheme: "env",
+	}
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
+	if testing.Verbose() {
+		cfg.Verbose = true
+	}
+	cfg.LDSet = true
+	cfg.LDFlags = "-B otelrocks"
+	assert.NoError(t, cfg.SetGoPath())
+	assert.NoError(t, cfg.ParseModules())
+	require.ErrorIs(t, GenerateAndCompile(cfg), errCompileFailed)
+}
+
 // Test that the go.mod files that other tests in this file
 // may generate have all their modules covered by our
 // "replace" statements created in `generateReplaces`.

@@ -68,15 +68,21 @@ func TestApplyFlags(t *testing.T) {
 			},
 		},
 		{
-			name:  "All flag values",
-			flags: []string{"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true", "--ldflags=test", "--gcflags=test", "--verbose=true"},
+			name: "All flag values",
+			flags: []string{
+				"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true",
+				"--ldflags=-s -w", "--gcflags=-asan", "--verbose=true", "--go-build-flags='-buildvcs=false'",
+			},
 			want: &builder.Config{
 				SkipGenerate:         true,
 				SkipCompilation:      true,
 				SkipGetModules:       true,
 				SkipStrictVersioning: true,
-				LDFlags:              "test",
-				GCFlags:              "test",
+				LDFlags:              "-s -w",
+				LDSet:                true,
+				GCFlags:              "-all",
+				GCSet:                true,
+				GoBuildFlags:         "-buildvcs=false",
 				Verbose:              true,
 			},
 		},
@@ -93,7 +99,10 @@ func TestApplyFlags(t *testing.T) {
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
 			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
 			assert.Equal(t, tt.want.SkipStrictVersioning, cfg.SkipStrictVersioning)
+			assert.Equal(t, tt.want.LDSet, cfg.LDSet)
 			assert.Equal(t, tt.want.LDFlags, cfg.LDFlags)
+			assert.Equal(t, tt.want.GCSet, cfg.GCSet)
+			assert.Equal(t, tt.want.GCFlags, cfg.GCFlags)
 			assert.Equal(t, tt.want.Verbose, cfg.Verbose)
 		})
 	}
