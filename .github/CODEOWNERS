@@ -18,11 +18,17 @@
 
 # Start components list
 
+cmd/builder/                             @open-telemetry/collector-approvers
 cmd/mdatagen/                            @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/sampleprocessor/   @open-telemetry/collector-approvers
 cmd/mdatagen/internal/samplereceiver/    @open-telemetry/collector-approvers @dmitryax
 cmd/mdatagen/internal/samplescraper/     @open-telemetry/collector-approvers @dmitryax
 confmap/                                 @open-telemetry/collector-approvers @mx-psi @evan-bradley
+confmap/provider/envprovider/            @open-telemetry/collector-approvers
+confmap/provider/fileprovider/           @open-telemetry/collector-approvers
+confmap/provider/httpprovider/           @open-telemetry/collector-approvers
+confmap/provider/httpsprovider/          @open-telemetry/collector-approvers
+confmap/provider/yamlprovider/           @open-telemetry/collector-approvers
 connector/forwardconnector/              @open-telemetry/collector-approvers
 connector/xconnector/                    @open-telemetry/collector-approvers @mx-psi @dmathieu
 consumer/xconsumer/                      @open-telemetry/collector-approvers @mx-psi @dmathieu
