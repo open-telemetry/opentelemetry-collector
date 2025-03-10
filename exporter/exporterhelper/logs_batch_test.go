@@ -371,3 +371,20 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 		assert.Len(b, merged, 10)
 	}
 }
+
+func TestLogsRequest_MergeSplit_UnknownSizerType(t *testing.T) {
+	// Create a logs request
+	req := newLogsRequest(plog.NewLogs(), nil)
+
+	// Create config with invalid sizer type by using zero value
+	cfg := exporterbatcher.SizeConfig{
+		Sizer: exporterbatcher.SizerType{}, // Empty struct will have empty string as val
+	}
+
+	// Call MergeSplit with invalid sizer
+	result, err := req.MergeSplit(context.Background(), cfg, nil)
+
+	// Verify results
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "unknown sizer type")
+}
