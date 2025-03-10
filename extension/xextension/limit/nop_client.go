@@ -16,9 +16,5 @@ func NewNopClient() Client {
 
 // Acquire implements Client.
 func (nopClient) Acquire(_ context.Context, _ uint64) (ReleaseFunc, error) {
-	return noopRelease, nil
-}
-
-// noopRelease is returned by nopClient.Acquire.
-func noopRelease() {
+	return func() {}, nil
 }
