@@ -68,24 +68,23 @@ jobs:
           COSIGN_YES: false
           SKIP_SIGNS: true
 
+      - name: File an issue if the workflow failed
+        if: failure()
+        run: |
+          template=$(cat <<'END'
+          [Link to job log](%s)
 
-#      - name: File an issue if the workflow failed
-#        if: failure()
-#        run: |
-#          template=$(cat <<'END'
-#          [Link to job log](%s)
-#
-#          <details>
-#          <summary>Last 100 lines of log</summary>
-#
-#          ```
-#          %s
-#          ```
-#          </details>
-#          END
-#          )
-#          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "snapshot") | .url')"
-#          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
-#          gh issue create -R ${{ github.repository }} -t 'ocb snapshot workflow failed' -b "$body" -l 'ci-cd'
-#        env:
-#          GH_TOKEN: ${{ github.token }}
+          <details>
+          <summary>Last 100 lines of log</summary>
+
+          ```
+          %s
+          ```
+          </details>
+          END
+          )
+          job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "snapshot") | .url')"
+          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
+          gh issue create -R ${{ github.repository }} -t 'OCB snapshot workflow failed' -b "$body" -l 'ci-cd' -l 'area:builder'
+        env:
+          GH_TOKEN: ${{ github.token }}
