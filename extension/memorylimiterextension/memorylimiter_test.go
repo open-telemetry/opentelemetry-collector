@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
@@ -88,16 +89,24 @@ func TestMemoryPressureResponse(t *testing.T) {
 			mustRefuse := ml.MustRefuse()
 			if tt.expectError {
 				assert.True(t, mustRefuse)
-				nf, err := ml.Acquire(ctx, 1)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Use the limit extension API.
+			lclient, err := ml.GetClient(ctx, component.KindReceiver, component.MustNewID("testing"))
+			assert.NoError(t, err)
+			nf, err := lclient.Acquire(ctx, 1)
+
+			if tt.expectError {
 				assert.Error(t, err)
 				assert.Nil(t, nf)
 			} else {
-				require.NoError(t, err)
-				nf, err := ml.Acquire(ctx, 1)
 				assert.NoError(t, err)
 				assert.NotNil(t, nf)
 				nf()
 			}
+
 			assert.NoError(t, ml.Shutdown(ctx))
 		})
 	}

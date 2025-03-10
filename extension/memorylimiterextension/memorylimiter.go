@@ -17,7 +17,7 @@ type memoryLimiterExtension struct {
 	memLimiter *memorylimiter.MemoryLimiter
 }
 
-var _ limit.Client
+var _ limit.Extension = &memoryLimiterExtension{}
 
 // newMemoryLimiter returns a new memorylimiter extension.
 func newMemoryLimiter(cfg *Config, logger *zap.Logger) (*memoryLimiterExtension, error) {
@@ -45,9 +45,20 @@ func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
 }
 
+// client implements Client. Note that the component Kind and ID are
+// not used, so this struct is identical to *memoryLimiterExtension.
+type client struct {
+	ml *memoryLimiterExtension
+}
+
+// GetClient implements limit.Extension.
+func (ml *memoryLimiterExtension) GetClient(_ context.Context, _ component.Kind, _ component.ID) (limit.Client, error) {
+	return &client{ml}, nil
+}
+
 // Acquire implements limit.Client.
-func (ml *memoryLimiterExtension) Acquire(_ context.Context, _ uint64) (limit.ReleaseFunc, error) {
-	if ml.memLimiter.MustRefuse() {
+func (c *client) Acquire(_ context.Context, _ uint64) (limit.ReleaseFunc, error) {
+	if c.ml.memLimiter.MustRefuse() {
 		return nil, memorylimiter.ErrDataRefused
 	}
 	return func() {}, nil
