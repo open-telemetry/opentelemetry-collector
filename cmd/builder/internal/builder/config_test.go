@@ -5,6 +5,7 @@ package builder
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -388,6 +389,10 @@ func TestValidateDeprecatedOtelColVersion(t *testing.T) {
 
 func TestGetGoBuildArgs(t *testing.T) {
 	distribution := Distribution{Name: "default", BuildTags: "default"}
+	oFlagValue := distribution.Name
+	if runtime.GOOS == "windows" {
+		oFlagValue += ".exe"
+	}
 	testCases := []struct {
 		name         string
 		cfg          *Config
@@ -399,7 +404,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				Distribution: distribution,
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
 			},
 		},
@@ -411,7 +416,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				LDFlags:      "-msan -f",
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-msan -f", "-gcflags=", "-tags", distribution.BuildTags,
 			},
 		},
@@ -423,7 +428,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				GCFlags:      "-asan",
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-s -w", "-gcflags=-asan", "-tags", distribution.BuildTags,
 			},
 		},
@@ -434,7 +439,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				GoBuildFlags: "-buildvcs=false -p 32",
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
 				"-buildvcs=false", "-p", "32",
 			},
@@ -449,7 +454,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				}(),
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-s -w", "-gcflags=",
 			},
 		},
@@ -460,7 +465,7 @@ func TestGetGoBuildArgs(t *testing.T) {
 				GoBuildFlags: "-tags alternate,tags",
 			},
 			expectedArgs: []string{
-				"build", "-trimpath", "-o", distribution.Name,
+				"build", "-trimpath", "-o", oFlagValue,
 				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
 				"-tags", "alternate,tags",
 			},
