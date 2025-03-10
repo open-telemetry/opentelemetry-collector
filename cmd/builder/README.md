@@ -225,3 +225,22 @@ file for the following things after `go get`ing all components and calling
 The `--skip-strict-versioning` flag disables these versioning checks.
 This flag is available temporarily and
 **will be removed in a future minor version**.
+
+## Customize Go Build
+
+By default, the builder will set a number of default arguments for the `go build` command it runs to build the collector. This includes: 
+
+* `-o` matching `dist::name`
+* `-trimpath` 
+* Default or provided `-ldflags`
+* Provided `-gcflags`
+* `-tags` configured from `dist::build_tags`
+
+You can provide additional flags to `go build` with the builder flag `--go-build-flags`:
+```console
+ocb --config=config.yaml --go-build-flags="-p 32 -buildvcs=false"
+```
+If you provide any flags in `--go-build-flags` that are already configured by the builder automatically, **they will be overridden**:
+```console
+ocb --config=config.yaml --go-build-flags="-o alt-bin-name" # The binary will be called "alt-bin-name" instead of dist::name
+```
