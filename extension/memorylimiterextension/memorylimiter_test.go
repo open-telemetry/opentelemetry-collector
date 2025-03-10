@@ -88,8 +88,15 @@ func TestMemoryPressureResponse(t *testing.T) {
 			mustRefuse := ml.MustRefuse()
 			if tt.expectError {
 				assert.True(t, mustRefuse)
+				nf, err := ml.Acquire(ctx, 1)
+				assert.Error(t, err)
+				assert.Nil(t, nf)
 			} else {
 				require.NoError(t, err)
+				nf, err := ml.Acquire(ctx, 1)
+				assert.NoError(t, err)
+				assert.NotNil(t, nf)
+				nf()
 			}
 			assert.NoError(t, ml.Shutdown(ctx))
 		})

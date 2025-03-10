@@ -9,12 +9,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/xextension/limit"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 )
 
 type memoryLimiterExtension struct {
 	memLimiter *memorylimiter.MemoryLimiter
 }
+
+var _ limit.Client
 
 // newMemoryLimiter returns a new memorylimiter extension.
 func newMemoryLimiter(cfg *Config, logger *zap.Logger) (*memoryLimiterExtension, error) {
@@ -35,6 +38,17 @@ func (ml *memoryLimiterExtension) Shutdown(ctx context.Context) error {
 }
 
 // MustRefuse returns if the caller should deny because memory has reached it's configured limits
+//
+// It's not clear that this is used anywhere, but as a legacy exported
+// function some component could observe it disappear, so it has to stay.
 func (ml *memoryLimiterExtension) MustRefuse() bool {
 	return ml.memLimiter.MustRefuse()
+}
+
+// Acquire implements limit.Client.
+func (ml *memoryLimiterExtension) Acquire(_ context.Context, _ uint64) (limit.ReleaseFunc, error) {
+	if ml.memLimiter.MustRefuse() {
+		return nil, memorylimiter.ErrDataRefused
+	}
+	return func() {}, nil
 }
