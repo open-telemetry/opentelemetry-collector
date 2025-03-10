@@ -68,8 +68,9 @@ jobs:
           COSIGN_YES: false
           SKIP_SIGNS: true
 
+        # Only create an issue if the workflows fails on push to main branch
       - name: File an issue if the workflow failed
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/main'
         run: |
           template=$(cat <<'END'
           [Link to job log](%s)
