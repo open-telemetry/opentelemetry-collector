@@ -42,7 +42,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeCo
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.Size(sz) + req.Size(sz))
+		dst.setCachedSize(dst.size(sz) + req.size(sz))
 		req.setCachedSize(0)
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
@@ -50,9 +50,9 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
 	var res []Request
-	for req.Size(sz) > maxSize {
+	for req.size(sz) > maxSize {
 		ld, rmSize := extractLogs(req.ld, maxSize, sz)
-		req.setCachedSize(req.Size(sz) - rmSize)
+		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newLogsRequest(ld, req.pusher))
 	}
 	res = append(res, req)
