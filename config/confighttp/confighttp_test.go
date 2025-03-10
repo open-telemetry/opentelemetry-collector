@@ -21,6 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/client"
@@ -1525,4 +1527,75 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
+}
+
+func TestServerTelemetry(t *testing.T) {
+	hss := ServerConfig{Endpoint: "localhost:0"}
+	exporter := tracetest.NewInMemoryExporter()
+	telemetry := componenttest.NewNopTelemetrySettings()
+	telemetry.TracerProvider = trace.NewTracerProvider(trace.WithSyncer(exporter))
+
+	nopHandler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
+	muxHandler := http.NewServeMux()
+	muxHandler.Handle("/a/{pattern}", nopHandler)
+	sendRequest := func(t *testing.T, url string, expectedCode int) {
+		t.Helper()
+		resp, err := http.Get(url) //nolint:gosec
+		require.NoError(t, err)
+		require.NoError(t, resp.Body.Close())
+		assert.Equal(t, expectedCode, resp.StatusCode)
+	}
+
+	t.Run("plain_handler", func(t *testing.T) {
+		withServer(t, hss, telemetry, nopHandler, func(_ *http.Server, url string) {
+			sendRequest(t, url+"/plain", http.StatusOK)
+			sendRequest(t, url+"/", http.StatusOK)
+		})
+		spans := exporter.GetSpans()
+		assert.Len(t, spans, 2)
+		assert.Equal(t, "/plain", spans[0].Name)
+		assert.Equal(t, "/", spans[1].Name)
+		exporter.Reset()
+	})
+	t.Run("mux", func(t *testing.T) {
+		withServer(t, hss, telemetry, muxHandler, func(_ *http.Server, url string) {
+			sendRequest(t, url+"/a/bc123", http.StatusOK)
+			sendRequest(t, url+"/", http.StatusNotFound)
+		})
+		spans := exporter.GetSpans()
+		assert.Len(t, spans, 2)
+		assert.Equal(t, "GET /a/{pattern}", spans[0].Name)
+		assert.Equal(t, "GET unknown route", spans[1].Name)
+		exporter.Reset()
+	})
+}
+
+func withServer(
+	t *testing.T,
+	cfg ServerConfig,
+	set component.TelemetrySettings,
+	h http.Handler,
+	f func(srv *http.Server, url string),
+) {
+	srv, err := cfg.ToServer(context.Background(), componenttest.NewNopHost(), set, h)
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, srv.Close())
+	}()
+
+	lis, err := cfg.ToListener(context.Background())
+	require.NoError(t, err)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = srv.Serve(lis)
+	}()
+	defer func() {
+		err := srv.Shutdown(context.Background())
+		assert.NoError(t, err)
+		<-done
+	}()
+
+	u := &url.URL{Scheme: "http", Host: lis.Addr().String()}
+	f(srv, u.String())
 }
