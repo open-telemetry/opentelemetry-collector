@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -21,10 +22,14 @@ import (
 	"go.opentelemetry.io/collector/internal/memorylimiter/iruntime"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
+	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -50,11 +55,11 @@ func TestNoDataLoss(t *testing.T) {
 	runtime.ReadMemStats(&ms)
 
 	// Set the limit to current usage plus expected increase. This means initially we will not be limited.
-	// nolint:gosec
+	//nolint:gosec
 	cfg.MemoryLimitMiB = uint32(ms.Alloc/(1024*1024) + expectedMemoryIncreaseMiB)
 	cfg.MemorySpikeLimitMiB = 1
 
-	set := processortest.NewNopSettings()
+	set := processortest.NewNopSettings(metadata.Type)
 
 	limiter, err := newMemoryLimiterProcessor(set, cfg)
 	require.NoError(t, err)
@@ -177,11 +182,11 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			mp, err := processorhelper.NewMetrics(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processMetrics,
@@ -208,13 +213,13 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 }
 
 func TestMetricsTelemetry(t *testing.T) {
-	tel := setupTestTelemetry()
+	tel := componenttest.NewTelemetry()
 	cfg := &Config{
 		CheckInterval:         time.Second,
 		MemoryLimitPercentage: 50,
 		MemorySpikePercentage: 10,
 	}
-	metrics, err := NewFactory().CreateMetrics(context.Background(), tel.NewSettings(), cfg, consumertest.NewNop())
+	metrics, err := NewFactory().CreateMetrics(context.Background(), metadatatest.NewSettings(tel), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, metrics.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -225,53 +230,14 @@ func TestMetricsTelemetry(t *testing.T) {
 	}
 	require.NoError(t, metrics.Shutdown(context.Background()))
 
-	tel.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_accepted_metric_points",
-			Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
-			Unit:        "{datapoints}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
-					},
-				},
+	metadatatest.AssertEqualProcessorAcceptedMetricPoints(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      10,
+				Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      10,
-						Attributes: attribute.NewSet(attribute.String("processor", "memory_limiter"), attribute.String("otel.signal", "metrics")),
-					},
-				},
-			},
-		},
-	})
+		}, metricdatatest.IgnoreTimestamp())
+
 	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
@@ -335,11 +301,11 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewTraces(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processTraces,
@@ -425,11 +391,11 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 				ms.Alloc = tt.memAlloc
 			}
 
-			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(), tt.mlCfg)
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewLogs(
 				context.Background(),
-				processortest.NewNopSettings(),
+				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processLogs,
@@ -441,6 +407,96 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			assert.NoError(t, tp.Start(ctx, &host{}))
 			ml.memlimiter.CheckMemLimits()
 			err = tp.ConsumeLogs(ctx, ld)
+			if tt.expectError {
+				assert.Equal(t, memorylimiter.ErrDataRefused, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.NoError(t, tp.Shutdown(ctx))
+		})
+	}
+	t.Cleanup(func() {
+		memorylimiter.GetMemoryFn = iruntime.TotalMemory
+		memorylimiter.ReadMemStatsFn = runtime.ReadMemStats
+	})
+}
+
+// TestProfileMemoryPressureResponse manipulates results from querying memory and
+// check expected side effects.
+func TestProfileMemoryPressureResponse(t *testing.T) {
+	pd := pprofile.NewProfiles()
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		mlCfg       *Config
+		memAlloc    uint64
+		expectError bool
+	}{
+		{
+			name: "Below memAllocLimit",
+			mlCfg: &Config{
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memAllocLimit",
+			mlCfg: &Config{
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 1,
+			},
+			memAlloc:    1800,
+			expectError: true,
+		},
+		{
+			name: "Below memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 10,
+			},
+			memAlloc:    800,
+			expectError: false,
+		},
+		{
+			name: "Above memSpikeLimit",
+			mlCfg: &Config{
+				CheckInterval:         time.Second,
+				MemoryLimitPercentage: 50,
+				MemorySpikePercentage: 11,
+			},
+			memAlloc:    800,
+			expectError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			memorylimiter.GetMemoryFn = totalMemory
+			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
+				ms.Alloc = tt.memAlloc
+			}
+
+			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
+			require.NoError(t, err)
+			tp, err := xprocessorhelper.NewProfiles(
+				context.Background(),
+				processortest.NewNopSettings(metadata.Type),
+				tt.mlCfg,
+				consumertest.NewNop(),
+				ml.processProfiles,
+				xprocessorhelper.WithCapabilities(processorCapabilities),
+				xprocessorhelper.WithStart(ml.start),
+				xprocessorhelper.WithShutdown(ml.shutdown))
+			require.NoError(t, err)
+
+			assert.NoError(t, tp.Start(ctx, &host{}))
+			ml.memlimiter.CheckMemLimits()
+			err = tp.ConsumeProfiles(ctx, pd)
 			if tt.expectError {
 				assert.Equal(t, memorylimiter.ErrDataRefused, err)
 			} else {

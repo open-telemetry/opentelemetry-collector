@@ -10,15 +10,13 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-var (
-	// supportedLevels in this exporter's configuration.
-	// configtelemetry.LevelNone and other future values are not supported.
-	supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
-		configtelemetry.LevelBasic:    {},
-		configtelemetry.LevelNormal:   {},
-		configtelemetry.LevelDetailed: {},
-	}
-)
+// supportedLevels in this exporter's configuration.
+// configtelemetry.LevelNone and other future values are not supported.
+var supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
+	configtelemetry.LevelBasic:    {},
+	configtelemetry.LevelNormal:   {},
+	configtelemetry.LevelDetailed: {},
+}
 
 // Config defines configuration for debug exporter.
 type Config struct {

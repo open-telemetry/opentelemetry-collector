@@ -65,7 +65,6 @@ func NewTraces(
 		obs.recordInOut(ctx, spansIn, spansOut)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
-
 	if err != nil {
 		return nil, err
 	}

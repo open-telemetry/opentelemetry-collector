@@ -27,6 +27,7 @@ const (
 	skipGetModulesFlag         = "skip-get-modules"
 	skipStrictVersioningFlag   = "skip-strict-versioning"
 	ldflagsFlag                = "ldflags"
+	gcflagsFlag                = "gcflags"
 	distributionOutputPathFlag = "output-path"
 	verboseFlag                = "verbose"
 )
@@ -84,6 +85,7 @@ func initFlags(flags *flag.FlagSet) error {
 	flags.Bool(skipStrictVersioningFlag, true, "Whether builder should skip strictly checking the calculated versions following dependency resolution")
 	flags.Bool(verboseFlag, false, "Whether builder should print verbose output (default false)")
 	flags.String(ldflagsFlag, "", `ldflags to include in the "go build" command`)
+	flags.String(gcflagsFlag, "", `gcflags to include in the "go build" command`)
 	flags.String(distributionOutputPathFlag, "", "Where to write the resulting files")
 	return flags.MarkDeprecated(distributionOutputPathFlag, "use config distribution::output_path")
 }
@@ -145,8 +147,17 @@ func applyFlags(flags *flag.FlagSet, cfg *builder.Config) error {
 	cfg.SkipStrictVersioning, err = flags.GetBool(skipStrictVersioningFlag)
 	errs = multierr.Append(errs, err)
 
-	cfg.LDFlags, err = flags.GetString(ldflagsFlag)
-	errs = multierr.Append(errs, err)
+	if flags.Changed(ldflagsFlag) {
+		cfg.LDSet = true
+		cfg.LDFlags, err = flags.GetString(ldflagsFlag)
+		errs = multierr.Append(errs, err)
+	}
+	if flags.Changed(gcflagsFlag) {
+		cfg.GCSet = true
+		cfg.GCFlags, err = flags.GetString(gcflagsFlag)
+		errs = multierr.Append(errs, err)
+	}
+
 	cfg.Verbose, err = flags.GetBool(verboseFlag)
 	errs = multierr.Append(errs, err)
 

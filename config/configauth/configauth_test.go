@@ -12,15 +12,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 var mockID = component.MustNewID("mock")
 
-func TestNewDefaultAuthentication(t *testing.T) {
-	auth := NewDefaultAuthentication()
-	assert.NotNil(t, auth)
-	assert.Empty(t, auth)
+func must[T any](t *testing.T, builder func() (T, error)) T {
+	t.Helper()
+	thing, err := builder()
+	require.NoError(t, err)
+	return thing
 }
 
 func TestGetServer(t *testing.T) {
@@ -30,14 +31,18 @@ func TestGetServer(t *testing.T) {
 		expected      error
 	}{
 		{
-			name:          "obtain server authenticator",
-			authenticator: auth.NewServer(),
-			expected:      nil,
+			name: "obtain server authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewServer()
+			}),
+			expected: nil,
 		},
 		{
-			name:          "not a server authenticator",
-			authenticator: auth.NewClient(),
-			expected:      errNotServer,
+			name: "not a server authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewClient()
+			}),
+			expected: errNotServer,
 		},
 	}
 	for _, tt := range testCases {
@@ -81,14 +86,18 @@ func TestGetClient(t *testing.T) {
 		expected      error
 	}{
 		{
-			name:          "obtain client authenticator",
-			authenticator: auth.NewClient(),
-			expected:      nil,
+			name: "obtain client authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewClient()
+			}),
+			expected: nil,
 		},
 		{
-			name:          "not a client authenticator",
-			authenticator: auth.NewServer(),
-			expected:      errNotClient,
+			name: "not a client authenticator",
+			authenticator: must(t, func() (extension.Extension, error) {
+				return extensionauth.NewServer()
+			}),
+			expected: errNotClient,
 		},
 	}
 	for _, tt := range testCases {

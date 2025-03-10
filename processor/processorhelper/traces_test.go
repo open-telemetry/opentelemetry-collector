@@ -13,19 +13,21 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 var testTracesCfg = struct{}{}
 
 func TestNewTraces(t *testing.T) {
-	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil))
 	require.NoError(t, err)
 
 	assert.True(t, tp.Capabilities().MutatesData)
@@ -36,7 +38,7 @@ func TestNewTraces(t *testing.T) {
 
 func TestNewTraces_WithOptions(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(nil),
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithCapabilities(consumer.Capabilities{MutatesData: false}))
@@ -48,19 +50,19 @@ func TestNewTraces_WithOptions(t *testing.T) {
 }
 
 func TestNewTraces_NilRequiredFields(t *testing.T) {
-	_, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), nil)
+	_, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testTracesCfg, consumertest.NewNop(), nil)
 	assert.Error(t, err)
 }
 
 func TestNewTraces_ProcessTraceError(t *testing.T) {
 	want := errors.New("my_error")
-	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(want))
 	require.NoError(t, err)
 	assert.Equal(t, want, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
 
 func TestNewTraces_ProcessTracesErrSkipProcessingData(t *testing.T) {
-	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
+	tp, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testTracesCfg, consumertest.NewNop(), newTestTProcessor(ErrSkipProcessingData))
 	require.NoError(t, err)
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), ptrace.NewTraces()))
 }
@@ -85,7 +87,7 @@ func TestTracesConcurrency(t *testing.T) {
 	incomingSpans.AppendEmpty()
 	incomingSpans.AppendEmpty()
 
-	mp, err := NewTraces(context.Background(), processortest.NewNopSettings(), &testLogsCfg, consumertest.NewNop(), tracesFunc)
+	mp, err := NewTraces(context.Background(), processortest.NewNopSettings(processortest.NopType), &testLogsCfg, consumertest.NewNop(), tracesFunc)
 	require.NoError(t, err)
 	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -120,46 +122,28 @@ func TestTraces_RecordInOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 	incomingSpans.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
-	tp, err := NewTraces(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	tel := componenttest.NewTelemetry()
+	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
 	require.NoError(t, err)
 
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), incomingTraces))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      4,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
-					},
-				},
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      4,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      1,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      1,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
-		},
-	})
+		}, metricdatatest.IgnoreTimestamp())
 }
 
 func TestTraces_RecordIn_ErrorOut(t *testing.T) {
@@ -177,44 +161,26 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 	incomingSpans.AppendEmpty()
 	incomingSpans.AppendEmpty()
 
-	testTelemetry := setupTestTelemetry()
-	tp, err := NewTraces(context.Background(), testTelemetry.NewSettings(), &testLogsCfg, consumertest.NewNop(), mockErr)
+	tel := componenttest.NewTelemetry()
+	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockErr)
 	require.NoError(t, err)
 
 	require.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, tp.ConsumeTraces(context.Background(), incomingTraces))
 	require.NoError(t, tp.Shutdown(context.Background()))
 
-	testTelemetry.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_incoming_items",
-			Description: "Number of items passed to the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      4,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
-					},
-				},
+	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      4,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
-		},
-		{
-			Name:        "otelcol_processor_outgoing_items",
-			Description: "Number of items emitted from the processor. [alpha]",
-			Unit:        "{items}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{
-						Value:      0,
-						Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
-					},
-				},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      0,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
-		},
-	})
+		}, metricdatatest.IgnoreTimestamp())
 }

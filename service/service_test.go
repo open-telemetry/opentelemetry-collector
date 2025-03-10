@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
@@ -58,10 +58,12 @@ type ownMetricsTestCase struct {
 	expectedLabels      map[string]labelValue
 }
 
-var testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
-var testInstanceID = "test_instance_id"
-var testServiceVersion = "2022-05-20"
-var testServiceName = "test name"
+var (
+	testResourceAttrValue = "resource_attr_test_value"
+	testInstanceID        = "test_instance_id"
+	testServiceVersion    = "2022-05-20"
+	testServiceName       = "test name"
+)
 
 // prometheusToOtelConv is used to check that the expected resource labels exist as
 // part of the otel resource attributes.
@@ -71,25 +73,28 @@ var prometheusToOtelConv = map[string]string{
 	"service_version":     "service.version",
 }
 
-const metricsVersion = "test version"
-const otelCommand = "otelcoltest"
+const (
+	metricsVersion = "test version"
+	otelCommand    = "otelcoltest"
+)
 
 func ownMetricsTestCases() []ownMetricsTestCase {
-	return []ownMetricsTestCase{{
-		name:                "no resource",
-		userDefinedResource: nil,
-		// All labels added to all collector metrics by default are listed below.
-		// These labels are hard coded here in order to avoid inadvertent changes:
-		// at this point changing labels should be treated as a breaking changing
-		// and requires a good justification. The reason is that changes to metric
-		// names or labels can break alerting, dashboards, etc that are used to
-		// monitor the Collector in production deployments.
-		expectedLabels: map[string]labelValue{
-			"service_instance_id": {state: labelAnyValue},
-			"service_name":        {label: otelCommand, state: labelSpecificValue},
-			"service_version":     {label: metricsVersion, state: labelSpecificValue},
+	return []ownMetricsTestCase{
+		{
+			name:                "no resource",
+			userDefinedResource: nil,
+			// All labels added to all collector metrics by default are listed below.
+			// These labels are hard coded here in order to avoid inadvertent changes:
+			// at this point changing labels should be treated as a breaking changing
+			// and requires a good justification. The reason is that changes to metric
+			// names or labels can break alerting, dashboards, etc that are used to
+			// monitor the Collector in production deployments.
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+			},
 		},
-	},
 		{
 			name: "resource with custom attr",
 			userDefinedResource: map[string]*string{
@@ -167,7 +172,8 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {state: labelNotPresent},
 			},
-		}}
+		},
+	}
 }
 
 var (
@@ -201,7 +207,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
 
 	// Try retrieve non existing component.Kind.
-	assert.Nil(t, srv.host.GetFactory(42, nopType))
+	assert.Nil(t, srv.host.GetFactory(component.Kind{}, nopType))
 }
 
 func TestServiceGetExtensions(t *testing.T) {
@@ -228,7 +234,7 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	// nolint
+	//nolint:staticcheck
 	expMap := srv.host.GetExporters()
 
 	v, ok := expMap[pipeline.SignalTraces]
@@ -242,8 +248,8 @@ func TestServiceGetExporters(t *testing.T) {
 	assert.Contains(t, expMap[pipeline.SignalMetrics], component.NewID(nopType))
 	assert.Len(t, expMap[pipeline.SignalLogs], 1)
 	assert.Contains(t, expMap[pipeline.SignalLogs], component.NewID(nopType))
-	assert.Len(t, expMap[pipelineprofiles.SignalProfiles], 1)
-	assert.Contains(t, expMap[pipelineprofiles.SignalProfiles], component.NewID(nopType))
+	assert.Len(t, expMap[xpipeline.SignalProfiles], 1)
+	assert.Contains(t, expMap[xpipeline.SignalProfiles], component.NewID(nopType))
 }
 
 // TestServiceTelemetryCleanupOnError tests that if newService errors due to an invalid config telemetry is cleaned up
@@ -312,7 +318,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: metricsAddr,
 				},
 			},
@@ -397,7 +403,7 @@ func TestExtensionNotificationFailure(t *testing.T) {
 	set := newNopSettings()
 	cfg := newNopConfig()
 
-	var extName = component.MustNewType("configWatcher")
+	extName := component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
 	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
@@ -419,7 +425,7 @@ func TestNilCollectorEffectiveConfig(t *testing.T) {
 	set.CollectorConf = nil
 	cfg := newNopConfig()
 
-	var extName = component.MustNewType("configWatcher")
+	extName := component.MustNewType("configWatcher")
 	configWatcherExtensionFactory := newConfigWatcherExtensionFactory(extName)
 	set.ExtensionsConfigs = map[component.ID]component.Config{component.NewID(extName): configWatcherExtensionFactory.CreateDefaultConfig()}
 	set.ExtensionsFactories = map[component.Type]extension.Factory{extName: configWatcherExtensionFactory}
@@ -491,7 +497,7 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errors.New("unsupported protocol \"\""),
+			wantErr: errors.New("no valid log exporter"),
 		},
 	}
 	for _, tt := range tests {
@@ -550,12 +556,16 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		"otelcol_process_runtime_heap_alloc_bytes":       false,
 		"otelcol_process_runtime_total_alloc_bytes":      false,
 		"otelcol_process_uptime":                         false,
+		"promhttp_metric_handler_errors_total":           false,
 	}
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; !ok {
 			require.True(t, ok, "unexpected metric: %s", metricName)
 		}
 		expectedMetrics[metricName] = true
+		if metricName == "promhttp_metric_handler_errors_total" {
+			continue
+		}
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
 			require.True(
@@ -652,7 +662,7 @@ func newNopConfig() Config {
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
 		},
-		pipeline.NewID(pipelineprofiles.SignalProfiles): {
+		pipeline.NewID(xpipeline.SignalProfiles): {
 			Receivers:  []component.ID{component.NewID(nopType)},
 			Processors: []component.ID{component.NewID(nopType)},
 			Exporters:  []component.ID{component.NewID(nopType)},
@@ -683,11 +693,13 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-						Host: newPtr("localhost"),
-						Port: newPtr(8888),
-					}}}},
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("localhost"),
+							Port: newPtr(8888),
+						}}},
+					},
 				},
 			},
 		},

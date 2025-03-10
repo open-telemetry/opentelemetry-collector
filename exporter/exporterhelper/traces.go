@@ -14,38 +14,42 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var tracesMarshaler = &ptrace.ProtoMarshaler{}
-var tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+var (
+	tracesMarshaler   = &ptrace.ProtoMarshaler{}
+	tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
+)
 
 type tracesRequest struct {
-	td     ptrace.Traces
-	pusher consumer.ConsumeTracesFunc
+	td               ptrace.Traces
+	pusher           consumer.ConsumeTracesFunc
+	cachedItemsCount int
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		td:     td,
-		pusher: pusher,
+		td:               td,
+		pusher:           pusher,
+		cachedItemsCount: td.SpanCount(),
 	}
 }
 
-func newTraceRequestUnmarshalerFunc(pusher consumer.ConsumeTracesFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
-		traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newTracesRequest(traces, pusher), nil
-	}
+type tracesEncoding struct {
+	pusher consumer.ConsumeTracesFunc
 }
 
-func tracesRequestMarshaler(req Request) ([]byte, error) {
+func (te *tracesEncoding) Unmarshal(bytes []byte) (Request, error) {
+	traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newTracesRequest(traces, te.pusher), nil
+}
+
+func (te *tracesEncoding) Marshal(req Request) ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
@@ -62,7 +66,11 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	return req.cachedItemsCount
+}
+
+func (req *tracesRequest) setCachedItemsCount(count int) {
+	req.cachedItemsCount = count
 }
 
 type tracesExporter struct {
@@ -84,10 +92,7 @@ func NewTraces(
 	if pusher == nil {
 		return nil, errNilPushTraceData
 	}
-	tracesOpts := []Option{
-		internal.WithMarshaler(tracesRequestMarshaler), internal.WithUnmarshaler(newTraceRequestUnmarshalerFunc(pusher)),
-	}
-	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append(tracesOpts, options...)...)
+	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append([]Option{internal.WithEncoding(&tracesEncoding{pusher: pusher})}, options...)...)
 }
 
 // RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
@@ -102,7 +107,7 @@ func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc 
 	}
 }
 
-// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and RequestSender.
+// NewTracesRequest creates a new traces exporter based on a custom TracesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesRequest(
@@ -119,46 +124,28 @@ func NewTracesRequest(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, newTracesWithObservability, options...)
+	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	tc, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		req, cErr := converter(ctx, td)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert traces. Dropping data.",
+	tc, err := consumer.NewTraces(newConsumeTraces(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tracesExporter{BaseExporter: be, Traces: tc}, nil
+}
+
+func newConsumeTraces(converter RequestFromTracesFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeTracesFunc {
+	return func(ctx context.Context, td ptrace.Traces) error {
+		req, err := converter(ctx, td)
+		if err != nil {
+			logger.Error("Failed to convert traces. Dropping data.",
 				zap.Int("dropped_spans", td.SpanCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
-		sErr := be.Send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.Obsrep.RecordEnqueueFailure(ctx, pipeline.SignalTraces, int64(req.ItemsCount()))
-		}
-		return sErr
-	}, be.ConsumerOptions...)
-
-	return &tracesExporter{
-		BaseExporter: be,
-		Traces:       tc,
-	}, err
-}
-
-type tracesWithObservability struct {
-	internal.BaseRequestSender
-	obsrep *internal.ObsReport
-}
-
-func newTracesWithObservability(obsrep *internal.ObsReport) internal.RequestSender {
-	return &tracesWithObservability{obsrep: obsrep}
-}
-
-func (tewo *tracesWithObservability) Send(ctx context.Context, req Request) error {
-	c := tewo.obsrep.StartTracesOp(ctx)
-	numTraceSpans := req.ItemsCount()
-	// Forward the data to the next consumer (this pusher is the next).
-	err := tewo.NextSender.Send(c, req)
-	tewo.obsrep.EndTracesOp(c, numTraceSpans, err)
-	return err
+		return be.Send(ctx, req)
+	}
 }

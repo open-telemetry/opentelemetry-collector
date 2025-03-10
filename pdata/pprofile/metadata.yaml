@@ -1,0 +1,11 @@
+type: pprofile
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: pdata
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

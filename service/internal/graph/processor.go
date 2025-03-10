@@ -9,22 +9,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
 )
-
-const processorSeed = "processor"
 
 var _ consumerNode = (*processorNode)(nil)
 
 // Every processor instance is unique to one pipeline.
 // Therefore, nodeID is derived from "pipeline ID" and "component ID".
 type processorNode struct {
-	nodeID
+	attribute.Attributes
 	componentID component.ID
 	pipelineID  pipeline.ID
 	component.Component
@@ -32,7 +31,7 @@ type processorNode struct {
 
 func newProcessorNode(pipelineID pipeline.ID, procID component.ID) *processorNode {
 	return &processorNode{
-		nodeID:      newNodeID(processorSeed, pipelineID.String(), procID.String()),
+		Attributes:  attribute.Processor(pipelineID, procID),
 		componentID: procID,
 		pipelineID:  pipelineID,
 	}
@@ -48,7 +47,7 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	tel.Logger = components.ProcessorLogger(tel.Logger, n.componentID, n.pipelineID)
+	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineID.Signal() {
@@ -58,8 +57,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 		n.Component, err = builder.CreateMetrics(ctx, set, next.(consumer.Metrics))
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set, next.(consumer.Logs))
-	case pipelineprofiles.SignalProfiles:
-		n.Component, err = builder.CreateProfiles(ctx, set, next.(consumerprofiles.Profiles))
+	case xpipeline.SignalProfiles:
+		n.Component, err = builder.CreateProfiles(ctx, set, next.(xconsumer.Profiles))
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}

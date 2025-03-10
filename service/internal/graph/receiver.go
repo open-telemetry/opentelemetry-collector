@@ -9,21 +9,20 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
 )
-
-const receiverSeed = "receiver"
 
 // A receiver instance can be shared by multiple pipelines of the same type.
 // Therefore, nodeID is derived from "pipeline type" and "component ID".
 type receiverNode struct {
-	nodeID
+	attribute.Attributes
 	componentID  component.ID
 	pipelineType pipeline.Signal
 	component.Component
@@ -31,7 +30,7 @@ type receiverNode struct {
 
 func newReceiverNode(pipelineType pipeline.Signal, recvID component.ID) *receiverNode {
 	return &receiverNode{
-		nodeID:       newNodeID(receiverSeed, pipelineType.String(), recvID.String()),
+		Attributes:   attribute.Receiver(pipelineType, recvID),
 		componentID:  recvID,
 		pipelineType: pipelineType,
 	}
@@ -43,7 +42,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = components.ReceiverLogger(tel.Logger, n.componentID, n.pipelineType)
+	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
 	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	var err error
 	switch n.pipelineType {
@@ -65,10 +64,10 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 			consumers = append(consumers, next.(consumer.Logs))
 		}
 		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
-	case pipelineprofiles.SignalProfiles:
-		var consumers []consumerprofiles.Profiles
+	case xpipeline.SignalProfiles:
+		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
-			consumers = append(consumers, next.(consumerprofiles.Profiles))
+			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
 		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
 	default:

@@ -11,65 +11,39 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// Merge merges the provided traces request into the current request and returns the merged request.
-func (req *tracesRequest) Merge(_ context.Context, r2 Request) (Request, error) {
-	tr2, ok2 := r2.(*tracesRequest)
-	if !ok2 {
-		return nil, errors.New("invalid input type")
-	}
-	tr2.td.ResourceSpans().MoveAndAppendTo(req.td.ResourceSpans())
-	return req, nil
-}
-
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r2 Request) ([]Request, error) {
-	var (
-		res          []Request
-		destReq      *tracesRequest
-		capacityLeft = cfg.MaxSizeItems
-	)
-	for _, req := range []Request{req, r2} {
-		if req == nil {
-			continue
-		}
-		srcReq, ok := req.(*tracesRequest)
+func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
+	if r2 != nil {
+		req2, ok := r2.(*tracesRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		if srcReq.td.SpanCount() <= capacityLeft {
-			if destReq == nil {
-				destReq = srcReq
-			} else {
-				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-			capacityLeft -= destReq.td.SpanCount()
-			continue
-		}
-
-		for {
-			extractedTraces := extractTraces(srcReq.td, capacityLeft)
-			if extractedTraces.SpanCount() == 0 {
-				break
-			}
-			capacityLeft -= extractedTraces.SpanCount()
-			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher}
-			} else {
-				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-			// Create new batch once capacity is reached.
-			if capacityLeft == 0 {
-				res = append(res, destReq)
-				destReq = nil
-				capacityLeft = cfg.MaxSizeItems
-			}
-		}
+		req2.mergeTo(req)
 	}
 
-	if destReq != nil {
-		res = append(res, destReq)
+	// If no limit we can simply merge the new request into the current and return.
+	if cfg.MaxSize == 0 {
+		return []Request{req}, nil
 	}
+	return req.split(cfg)
+}
+
+func (req *tracesRequest) mergeTo(dst *tracesRequest) {
+	dst.setCachedItemsCount(dst.ItemsCount() + req.ItemsCount())
+	req.setCachedItemsCount(0)
+	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
+}
+
+func (req *tracesRequest) split(cfg exporterbatcher.SizeConfig) ([]Request, error) {
+	var res []Request
+	for req.ItemsCount() > cfg.MaxSize {
+		td := extractTraces(req.td, cfg.MaxSize)
+		size := td.SpanCount()
+		req.setCachedItemsCount(req.ItemsCount() - size)
+		res = append(res, &tracesRequest{td: td, pusher: req.pusher, cachedItemsCount: size})
+	}
+	res = append(res, req)
 	return res, nil
 }
 

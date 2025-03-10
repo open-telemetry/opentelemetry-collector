@@ -5,6 +5,7 @@ package proctelemetry // import "go.opentelemetry.io/collector/service/internal/
 
 import (
 	"context"
+	"errors"
 	"os"
 	"runtime"
 	"sync"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/process"
+	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/internal/metadata"
@@ -68,69 +70,78 @@ func RegisterProcessMetrics(cfg component.TelemetrySettings, opts ...RegisterOpt
 		ctx = context.WithValue(ctx, common.EnvKey, common.EnvMap{common.HostProcEnvKey: set.hostProc})
 	}
 	pm.context = ctx
-	// nolint:gosec
+	//nolint:gosec
 	pm.proc, err = process.NewProcessWithContext(pm.context, int32(os.Getpid()))
 	if err != nil {
 		return err
 	}
 
-	_, err = metadata.NewTelemetryBuilder(cfg,
-		metadata.WithProcessUptimeCallback(pm.updateProcessUptime),
-		metadata.WithProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
-		metadata.WithProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
-		metadata.WithProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
-		metadata.WithProcessCPUSecondsCallback(pm.updateCPUSeconds),
-		metadata.WithProcessMemoryRssCallback(pm.updateRSSMemory),
+	tb, err := metadata.NewTelemetryBuilder(cfg)
+	if err != nil {
+		return err
+	}
+	return errors.Join(
+		tb.RegisterProcessUptimeCallback(pm.updateProcessUptime),
+		tb.RegisterProcessRuntimeHeapAllocBytesCallback(pm.updateAllocMem),
+		tb.RegisterProcessRuntimeTotalAllocBytesCallback(pm.updateTotalAllocMem),
+		tb.RegisterProcessRuntimeTotalSysMemoryBytesCallback(pm.updateSysMem),
+		tb.RegisterProcessCPUSecondsCallback(pm.updateCPUSeconds),
+		tb.RegisterProcessMemoryRssCallback(pm.updateRSSMemory),
 	)
-	return err
 }
 
-func (pm *processMetrics) updateProcessUptime() float64 {
+func (pm *processMetrics) updateProcessUptime(_ context.Context, obs metric.Float64Observer) error {
 	now := time.Now().UnixNano()
-	return float64(now-pm.startTimeUnixNano) / 1e9
+	obs.Observe(float64(now-pm.startTimeUnixNano) / 1e9)
+	return nil
 }
 
-func (pm *processMetrics) updateAllocMem() int64 {
+func (pm *processMetrics) updateAllocMem(_ context.Context, obs metric.Int64Observer) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	// nolint:gosec
-	return int64(pm.ms.Alloc)
+	//nolint:gosec
+	obs.Observe(int64(pm.ms.Alloc))
+	return nil
 }
 
-func (pm *processMetrics) updateTotalAllocMem() int64 {
+func (pm *processMetrics) updateTotalAllocMem(_ context.Context, obs metric.Int64Observer) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	// nolint:gosec
-	return int64(pm.ms.TotalAlloc)
+	//nolint:gosec
+	obs.Observe(int64(pm.ms.TotalAlloc))
+	return nil
 }
 
-func (pm *processMetrics) updateSysMem() int64 {
+func (pm *processMetrics) updateSysMem(_ context.Context, obs metric.Int64Observer) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 	pm.readMemStatsIfNeeded()
-	// nolint:gosec
-	return int64(pm.ms.Sys)
+	//nolint:gosec
+	obs.Observe(int64(pm.ms.Sys))
+	return nil
 }
 
-func (pm *processMetrics) updateCPUSeconds() float64 {
+func (pm *processMetrics) updateCPUSeconds(_ context.Context, obs metric.Float64Observer) error {
 	times, err := pm.proc.TimesWithContext(pm.context)
 	if err != nil {
-		return 0
+		return err
 	}
 
-	return times.User + times.System + times.Idle + times.Nice +
-		times.Iowait + times.Irq + times.Softirq + times.Steal
+	obs.Observe(times.User + times.System + times.Idle + times.Nice +
+		times.Iowait + times.Irq + times.Softirq + times.Steal)
+	return nil
 }
 
-func (pm *processMetrics) updateRSSMemory() int64 {
+func (pm *processMetrics) updateRSSMemory(_ context.Context, obs metric.Int64Observer) error {
 	mem, err := pm.proc.MemoryInfoWithContext(pm.context)
 	if err != nil {
-		return 0
+		return err
 	}
-	// nolint:gosec
-	return int64(mem.RSS)
+	//nolint:gosec
+	obs.Observe(int64(mem.RSS))
+	return nil
 }
 
 func (pm *processMetrics) readMemStatsIfNeeded() {

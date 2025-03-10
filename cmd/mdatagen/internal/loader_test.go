@@ -32,8 +32,15 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelDevelopment: {"logs"},
 						component.StabilityLevelBeta:        {"traces"},
 						component.StabilityLevelStable:      {"metrics"},
+						component.StabilityLevelDeprecated:  {"profiles"},
 					},
 					Distributions: []string{},
+					Deprecation: DeprecationMap{
+						"profiles": DeprecationInfo{
+							Date:      "2025-02-05",
+							Migration: "no migration needed",
+						},
+					},
 					Codeowners: &Codeowners{
 						Active: []string{"dmitryax"},
 					},
@@ -277,6 +284,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						"queue_length": {
 							Enabled:               true,
+							Stability:             Stability{Level: "alpha"},
 							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							Unit:                  strPtr("{items}"),
@@ -286,6 +294,16 @@ func TestLoadMetadata(t *testing.T) {
 									ValueType: pmetric.NumberDataPointValueTypeInt,
 								},
 								Async: true,
+							},
+						},
+						"queue_capacity": {
+							Enabled:     true,
+							Description: "Queue capacity - sync gauge example.",
+							Unit:        strPtr("{items}"),
+							Gauge: &Gauge{
+								MetricValueType: MetricValueType{
+									ValueType: pmetric.NumberDataPointValueTypeInt,
+								},
 							},
 						},
 					},

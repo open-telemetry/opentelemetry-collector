@@ -6,46 +6,37 @@
 package proctelemetry
 
 import (
-	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	io_prometheus_client "github.com/prometheus/client_model/go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/service/internal/metadatatest"
 )
 
 func TestProcessTelemetryWithHostProc(t *testing.T) {
-	tel := setupTelemetry(t)
 	// Make the sure the environment variable value is not used.
 	t.Setenv("HOST_PROC", "foo/bar")
+	tel := componenttest.NewTelemetry()
+	require.NoError(t, RegisterProcessMetrics(tel.NewTelemetrySettings(), WithHostProc("/proc")))
 
-	require.NoError(t, RegisterProcessMetrics(tel.TelemetrySettings, WithHostProc("/proc")))
+	metadatatest.AssertEqualProcessUptime(t, tel,
+		[]metricdata.DataPoint[float64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
-	// Check that the metrics are actually filled.
-	time.Sleep(200 * time.Millisecond)
+	metadatatest.AssertEqualProcessRuntimeHeapAllocBytes(t, tel,
+		[]metricdata.DataPoint[int64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
-	mp, err := fetchPrometheusMetrics(tel.promHandler)
-	require.NoError(t, err)
+	metadatatest.AssertEqualProcessRuntimeTotalAllocBytes(t, tel,
+		[]metricdata.DataPoint[int64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
-	for _, metricName := range expectedMetrics {
-		metric, ok := mp[metricName]
-		require.True(t, ok)
-		require.Len(t, metric.Metric, 1)
-		var metricValue float64
-		if metric.GetType() == io_prometheus_client.MetricType_COUNTER {
-			metricValue = metric.Metric[0].GetCounter().GetValue()
-		} else {
-			metricValue = metric.Metric[0].GetGauge().GetValue()
-		}
-		if strings.HasPrefix(metricName, "otelcol_process_uptime") || strings.HasPrefix(metricName, "otelcol_process_cpu_seconds") {
-			// This likely will still be zero when running the test.
-			assert.GreaterOrEqual(t, metricValue, float64(0), metricName)
-			continue
-		}
+	metadatatest.AssertEqualProcessRuntimeTotalSysMemoryBytes(t, tel,
+		[]metricdata.DataPoint[int64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 
-		fmt.Println(metricName)
-		assert.Greater(t, metricValue, float64(0), metricName)
-	}
+	metadatatest.AssertEqualProcessCPUSeconds(t, tel,
+		[]metricdata.DataPoint[float64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+
+	metadatatest.AssertEqualProcessMemoryRss(t, tel,
+		[]metricdata.DataPoint[int64]{{}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 }

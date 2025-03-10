@@ -9,26 +9,25 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/exporterhelperprofiles"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
-	return exporterprofiles.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporterprofiles.WithTraces(createTraces, metadata.TracesStability),
-		exporterprofiles.WithMetrics(createMetrics, metadata.MetricsStability),
-		exporterprofiles.WithLogs(createLogs, metadata.LogsStability),
-		exporterprofiles.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
+		xexporter.WithTraces(createTraces, metadata.TracesStability),
+		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		xexporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -36,18 +35,21 @@ func createDefaultConfig() component.Config {
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.Enabled = false
 
+	clientCfg := *configgrpc.NewDefaultClientConfig()
+	// Default to gzip compression
+	clientCfg.Compression = configcompression.TypeGzip
+	// We almost read 0 bytes, so no need to tune ReadBufferSize.
+	clientCfg.WriteBufferSize = 512 * 1024
+	// For backward compatibility:
+	clientCfg.Keepalive = nil
+	clientCfg.BalancerName = ""
+
 	return &Config{
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
 		BatcherConfig: batcherCfg,
-		ClientConfig: configgrpc.ClientConfig{
-			Headers: map[string]configopaque.String{},
-			// Default to gzip compression
-			Compression: configcompression.TypeGzip,
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
+		ClientConfig:  clientCfg,
 	}
 }
 
@@ -112,10 +114,10 @@ func createProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
-) (exporterprofiles.Profiles, error) {
+) (xexporter.Profiles, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return exporterhelperprofiles.NewProfilesExporter(ctx, set, cfg,
+	return xexporterhelper.NewProfilesExporter(ctx, set, cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),

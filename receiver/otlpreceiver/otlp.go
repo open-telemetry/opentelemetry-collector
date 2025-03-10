@@ -17,7 +17,9 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
@@ -39,7 +41,7 @@ type otlpReceiver struct {
 	nextTraces   consumer.Traces
 	nextMetrics  consumer.Metrics
 	nextLogs     consumer.Logs
-	nextProfiles consumerprofiles.Profiles
+	nextProfiles xconsumer.Profiles
 	shutdownWG   sync.WaitGroup
 
 	obsrepGRPC *receiverhelper.ObsReport
@@ -52,6 +54,8 @@ type otlpReceiver struct {
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
 func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error) {
+	set.Logger = telemetry.LoggerWithout(set.TelemetrySettings, componentattribute.SignalKey)
+	set.Logger.Debug("created signal-agnostic logger")
 	r := &otlpReceiver{
 		cfg:          cfg,
 		nextTraces:   nil,
@@ -227,6 +231,6 @@ func (r *otlpReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.nextLogs = lc
 }
 
-func (r *otlpReceiver) registerProfilesConsumer(tc consumerprofiles.Profiles) {
+func (r *otlpReceiver) registerProfilesConsumer(tc xconsumer.Profiles) {
 	r.nextProfiles = tc
 }

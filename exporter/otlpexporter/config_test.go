@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -36,6 +37,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
+	require.NoError(t, xconfmap.Validate(&cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutConfig: exporterhelper.TimeoutConfig{
@@ -57,11 +59,10 @@ func TestUnmarshalConfig(t *testing.T) {
 			BatcherConfig: exporterbatcher.Config{
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				MinSizeConfig: exporterbatcher.MinSizeConfig{
-					MinSizeItems: 1000,
-				},
-				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-					MaxSizeItems: 10000,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: 1000,
+					MaxSize: 10000,
 				},
 			},
 			ClientConfig: configgrpc.ClientConfig{
@@ -136,7 +137,7 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.name)
 			require.NoError(t, err)
 			assert.NoError(t, sub.Unmarshal(&cfg))
-			assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMsg)
+			assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMsg)
 		})
 	}
 }

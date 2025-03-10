@@ -12,11 +12,11 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -51,7 +51,7 @@ func TestTracesRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Traces: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateTracesToTraces(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 
@@ -90,7 +90,7 @@ func TestMetricsRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Metrics: &LeftRightConfig{Left: leftID, Right: rightID}}
 	mr, err := ExampleRouterFactory.CreateMetricsToMetrics(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, mr.Capabilities().MutatesData)
 
@@ -129,7 +129,7 @@ func TestLogsRouter(t *testing.T) {
 
 	cfg := ExampleRouterConfig{Logs: &LeftRightConfig{Left: leftID, Right: rightID}}
 	lr, err := ExampleRouterFactory.CreateLogsToLogs(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, lr.Capabilities().MutatesData)
 
@@ -160,15 +160,15 @@ func TestProfilesRouter(t *testing.T) {
 	// The service will build a router to give to every connector.
 	// Many connectors will just call router.ConsumeProfiles,
 	// but some implementation will call RouteProfiles instead.
-	router := connectorprofiles.NewProfilesRouter(
-		map[pipeline.ID]consumerprofiles.Profiles{
+	router := xconnector.NewProfilesRouter(
+		map[pipeline.ID]xconsumer.Profiles{
 			leftID:  sinkLeft,
 			rightID: sinkRight,
 		})
 
 	cfg := ExampleRouterConfig{Profiles: &LeftRightConfig{Left: leftID, Right: rightID}}
 	tr, err := ExampleRouterFactory.CreateProfilesToProfiles(
-		context.Background(), connectortest.NewNopSettings(), cfg, router)
+		context.Background(), connectortest.NewNopSettings(ExampleRouterFactory.Type()), cfg, router)
 	require.NoError(t, err)
 	assert.False(t, tr.Capabilities().MutatesData)
 

@@ -382,12 +382,12 @@ func TestMarshaler(t *testing.T) {
 }
 
 // newConfFromFile creates a new Conf by reading the given file.
-func newConfFromFile(t testing.TB, fileName string) map[string]any {
+func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	content, err := os.ReadFile(filepath.Clean(fileName))
-	require.NoErrorf(t, err, "unable to read the file %v", fileName)
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
 
 	var data map[string]any
-	require.NoError(t, yaml.Unmarshal(content, &data), "unable to parse yaml")
+	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
 }
@@ -449,15 +449,13 @@ func (ec *EmbeddedConfig2) Unmarshal(component *Conf) error {
 	return nil
 }
 
-type EmbeddedConfigWithError struct {
-}
+type EmbeddedConfigWithError struct{}
 
 func (ecwe *EmbeddedConfigWithError) Unmarshal(_ *Conf) error {
 	return errors.New("embedded error")
 }
 
-type EmbeddedConfigWithMarshalError struct {
-}
+type EmbeddedConfigWithMarshalError struct{}
 
 func (ecwe EmbeddedConfigWithMarshalError) Marshal(_ *Conf) error {
 	return errors.New("marshaling error")
@@ -908,7 +906,8 @@ func TestExpandedValue(t *testing.T) {
 		"key": expandedValue{
 			Value:    0xdeadbeef,
 			Original: "original",
-		}})
+		},
+	})
 	assert.Equal(t, 0xdeadbeef, cm.Get("key"))
 	assert.Equal(t, map[string]any{"key": 0xdeadbeef}, cm.ToStringMap())
 

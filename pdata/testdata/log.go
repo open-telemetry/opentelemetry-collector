@@ -10,9 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var (
-	logTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
-)
+var logTimestamp = pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC))
 
 func GenerateLogs(count int) plog.Logs {
 	ld := plog.NewLogs()

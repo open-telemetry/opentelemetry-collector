@@ -21,6 +21,12 @@ func TestNewBuildSubCommand(t *testing.T) {
 		BuildInfo:              component.NewDefaultBuildInfo(),
 		Factories:              nopFactories,
 		ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-nop.yaml")}),
+		ProviderModules: map[string]string{
+			"nop": "go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3",
+		},
+		ConverterModules: []string{
+			"go.opentelemetry.io/collector/converter/testconverter v1.2.3",
+		},
 	}
 	cmd := NewCommand(set)
 	cmd.SetArgs([]string{"components"})

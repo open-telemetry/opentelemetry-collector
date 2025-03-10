@@ -204,8 +204,8 @@ var profile = &messageValueStruct{
 			},
 		},
 		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: mapStruct,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 		droppedAttributesCount,
 		&primitiveField{
@@ -283,11 +283,14 @@ var valueType = &messageValueStruct{
 			defaultVal: "int32(0)",
 			testVal:    "int32(1)",
 		},
-		&primitiveField{
-			fieldName:  "AggregationTemporality",
-			returnType: "otlpprofiles.AggregationTemporality",
-			defaultVal: "otlpprofiles.AggregationTemporality(0)",
-			testVal:    "otlpprofiles.AggregationTemporality(1)",
+		&primitiveTypedField{
+			fieldName: "AggregationTemporality",
+			returnType: &primitiveType{
+				structName: "AggregationTemporality",
+				rawType:    "otlpprofiles.AggregationTemporality",
+				defaultVal: "otlpprofiles.AggregationTemporality(0)",
+				testVal:    "otlpprofiles.AggregationTemporality(1)",
+			},
 		},
 	},
 }
@@ -321,6 +324,12 @@ var sample = &messageValueStruct{
 		&sliceField{
 			fieldName:   "AttributeIndices",
 			returnSlice: int32Slice,
+		},
+		&optionalPrimitiveValue{
+			fieldName:  "LinkIndex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&sliceField{
 			fieldName:   "TimestampsUnixNano",
@@ -398,6 +407,7 @@ var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
+
 var location = &messageValueStruct{
 	structName:     "Location",
 	description:    "// Location describes function and line table debug information.",

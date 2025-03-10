@@ -4,6 +4,11 @@
 package otelcol
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
@@ -11,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/collector/receiver"
@@ -22,7 +26,7 @@ func nopFactories() (Factories, error) {
 	var factories Factories
 	var err error
 
-	if factories.Connectors, err = connector.MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
+	if factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
 	factories.ConnectorModules = make(map[component.Type]string, len(factories.Connectors))
@@ -30,7 +34,7 @@ func nopFactories() (Factories, error) {
 		factories.ConnectorModules[con.Type()] = "go.opentelemetry.io/collector/connector/connectortest v1.2.3"
 	}
 
-	if factories.Extensions, err = extension.MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
+	if factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
 	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
@@ -38,7 +42,7 @@ func nopFactories() (Factories, error) {
 		factories.ExtensionModules[ext.Type()] = "go.opentelemetry.io/collector/extension/extensiontest v1.2.3"
 	}
 
-	if factories.Receivers, err = receiver.MakeFactoryMap(receivertest.NewNopFactory(), receivertest.NewNopFactoryForType(pipeline.SignalLogs)); err != nil {
+	if factories.Receivers, err = MakeFactoryMap(receivertest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
 	factories.ReceiverModules = make(map[component.Type]string, len(factories.Receivers))
@@ -46,7 +50,7 @@ func nopFactories() (Factories, error) {
 		factories.ReceiverModules[rec.Type()] = "go.opentelemetry.io/collector/receiver/receivertest v1.2.3"
 	}
 
-	if factories.Exporters, err = exporter.MakeFactoryMap(exportertest.NewNopFactory()); err != nil {
+	if factories.Exporters, err = MakeFactoryMap(exportertest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
 	factories.ExporterModules = make(map[component.Type]string, len(factories.Exporters))
@@ -54,7 +58,7 @@ func nopFactories() (Factories, error) {
 		factories.ExporterModules[exp.Type()] = "go.opentelemetry.io/collector/exporter/exportertest v1.2.3"
 	}
 
-	if factories.Processors, err = processor.MakeFactoryMap(processortest.NewNopFactory()); err != nil {
+	if factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory()); err != nil {
 		return Factories{}, err
 	}
 	factories.ProcessorModules = make(map[component.Type]string, len(factories.Processors))
@@ -63,4 +67,48 @@ func nopFactories() (Factories, error) {
 	}
 
 	return factories, err
+}
+
+func TestMakeFactoryMap(t *testing.T) {
+	type testCase struct {
+		name string
+		in   []component.Factory
+		out  map[component.Type]component.Factory
+	}
+
+	fRec := receiver.NewFactory(component.MustNewType("rec"), nil)
+	fRec2 := receiver.NewFactory(component.MustNewType("rec"), nil)
+	fPro := processor.NewFactory(component.MustNewType("pro"), nil)
+	fCon := connector.NewFactory(component.MustNewType("con"), nil)
+	fExp := exporter.NewFactory(component.MustNewType("exp"), nil)
+	fExt := extension.NewFactory(component.MustNewType("ext"), nil, nil, component.StabilityLevelUndefined)
+	testCases := []testCase{
+		{
+			name: "different names",
+			in:   []component.Factory{fRec, fPro, fCon, fExp, fExt},
+			out: map[component.Type]component.Factory{
+				fRec.Type(): fRec,
+				fPro.Type(): fPro,
+				fCon.Type(): fCon,
+				fExp.Type(): fExp,
+				fExt.Type(): fExt,
+			},
+		},
+		{
+			name: "same name",
+			in:   []component.Factory{fRec, fPro, fCon, fExp, fExt, fRec2},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := MakeFactoryMap(tt.in...)
+			if tt.out == nil {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.out, out)
+		})
+	}
 }

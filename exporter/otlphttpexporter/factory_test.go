@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -45,7 +45,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
@@ -164,7 +164,7 @@ func TestCreateTraces(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(factory.Type())
 			consumer, err := factory.CreateTraces(context.Background(), set, tt.config)
 
 			if tt.mustFailOnCreate {
@@ -193,7 +193,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
@@ -204,8 +204,8 @@ func TestCreateProfiles(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "http://" + testutil.GetAvailableLocalAddress(t)
 
-	set := exportertest.NewNopSettings()
-	oexp, err := factory.(exporterprofiles.Factory).CreateProfiles(context.Background(), set, cfg)
+	set := exportertest.NewNopSettings(factory.Type())
+	oexp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, oexp)
 }

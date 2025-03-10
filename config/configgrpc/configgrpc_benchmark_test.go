@@ -11,6 +11,7 @@ import (
 
 	"github.com/mostynb/go-grpc-compression/nonclobbering/snappy"
 	"github.com/mostynb/go-grpc-compression/nonclobbering/zstd"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/encoding"
 	"google.golang.org/grpc/encoding/gzip"
@@ -34,27 +35,19 @@ func BenchmarkCompressors(b *testing.B) {
 		for _, compressor := range compressors {
 			fmt.Println(payload.name)
 			messageBytes, err := payload.marshaler.marshal(payload.message)
-			if err != nil {
-				b.Errorf("marshal(_) returned an error")
-			}
+			require.NoError(b, err, "marshal(_) returned an error")
 
 			compressedBytes, err := compress(compressor, messageBytes)
-			if err != nil {
-				b.Errorf("Compressor.Compress(_) returned an error")
-			}
+			require.NoError(b, err, "Compressor.Compress(_) returned an error")
 
 			name := fmt.Sprintf("%v/raw_bytes_%v/compressed_bytes_%v/compressor_%v", payload.name, len(messageBytes), len(compressedBytes), compressor.Name())
 
 			b.Run(name, func(b *testing.B) {
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					if err != nil {
-						b.Errorf("marshal(_) returned an error")
-					}
+					require.NoError(b, err, "marshal(_) returned an error")
 					_, err := compress(compressor, messageBytes)
-					if err != nil {
-						b.Errorf("compress(_) returned an error")
-					}
+					require.NoError(b, err, "compress(_) returned an error")
 				}
 			})
 		}
@@ -124,45 +117,54 @@ func setupTestPayloads() []testPayload {
 	payloads = append(payloads, testPayload{
 		name:      "sm_log_request",
 		message:   testdata.GenerateLogs(1),
-		marshaler: logMarshaler})
+		marshaler: logMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "md_log_request",
 		message:   testdata.GenerateLogs(2),
-		marshaler: logMarshaler})
+		marshaler: logMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "lg_log_request",
 		message:   testdata.GenerateLogs(50),
-		marshaler: logMarshaler})
+		marshaler: logMarshaler,
+	})
 
 	// trace payloads
 	tracesMarshaler := &traceMarshaler{Marshaler: &ptrace.ProtoMarshaler{}}
 	payloads = append(payloads, testPayload{
 		name:      "sm_trace_request",
 		message:   testdata.GenerateTraces(1),
-		marshaler: tracesMarshaler})
+		marshaler: tracesMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "md_trace_request",
 		message:   testdata.GenerateTraces(2),
-		marshaler: tracesMarshaler})
+		marshaler: tracesMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "lg_trace_request",
 		message:   testdata.GenerateTraces(50),
-		marshaler: tracesMarshaler})
+		marshaler: tracesMarshaler,
+	})
 
 	// metric payloads
 	metricsMarshaler := &metricsMarshaler{Marshaler: &pmetric.ProtoMarshaler{}}
 	payloads = append(payloads, testPayload{
 		name:      "sm_metric_request",
 		message:   testdata.GenerateMetrics(1),
-		marshaler: metricsMarshaler})
+		marshaler: metricsMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "md_metric_request",
 		message:   testdata.GenerateMetrics(2),
-		marshaler: metricsMarshaler})
+		marshaler: metricsMarshaler,
+	})
 	payloads = append(payloads, testPayload{
 		name:      "lg_metric_request",
 		message:   testdata.GenerateMetrics(50),
-		marshaler: metricsMarshaler})
+		marshaler: metricsMarshaler,
+	})
 
 	return payloads
 }

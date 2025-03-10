@@ -24,6 +24,11 @@ type componentWithStability struct {
 	Stability map[string]string
 }
 
+type componentWithoutStability struct {
+	Scheme string `yaml:",omitempty"`
+	Module string
+}
+
 type componentsOutput struct {
 	BuildInfo  component.BuildInfo
 	Receivers  []componentWithStability
@@ -31,6 +36,8 @@ type componentsOutput struct {
 	Exporters  []componentWithStability
 	Connectors []componentWithStability
 	Extensions []componentWithStability
+	Providers  []componentWithoutStability
+	Converters []componentWithoutStability `yaml:",omitempty"`
 }
 
 // newComponentsCommand constructs a new components command using the given CollectorSettings.
@@ -109,6 +116,20 @@ func newComponentsCommand(set CollectorSettings) *cobra.Command {
 				})
 			}
 			components.BuildInfo = set.BuildInfo
+
+			for providerScheme, providerModuleModule := range set.ProviderModules {
+				components.Providers = append(components.Providers, componentWithoutStability{
+					Scheme: providerScheme,
+					Module: providerModuleModule,
+				})
+			}
+
+			for _, converterModule := range set.ConverterModules {
+				components.Converters = append(components.Converters, componentWithoutStability{
+					Module: converterModule,
+				})
+			}
+
 			yamlData, err := yaml.Marshal(components)
 			if err != nil {
 				return err

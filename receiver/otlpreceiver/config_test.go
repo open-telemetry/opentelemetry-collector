@@ -16,9 +16,11 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -134,6 +136,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
 						},
+						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
@@ -158,10 +161,13 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
+					Keepalive:      configgrpc.NewDefaultKeepaliveServerConfig(),
 				},
 				HTTP: &HTTPConfig{
 					ServerConfig: &confighttp.ServerConfig{
-						Endpoint: "/tmp/http_otlp.sock",
+						Endpoint:        "/tmp/http_otlp.sock",
+						CORS:            confighttp.NewDefaultCORSConfig(),
+						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
@@ -193,7 +199,7 @@ func TestUnmarshalConfigEmptyProtocols(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.EqualError(t, component.ValidateConfig(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, xconfmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }
 
 func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
@@ -230,5 +236,5 @@ func TestUnmarshalConfigEmpty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
-	assert.EqualError(t, component.ValidateConfig(cfg), "must specify at least one protocol when using the OTLP receiver")
+	assert.EqualError(t, xconfmap.Validate(cfg), "must specify at least one protocol when using the OTLP receiver")
 }

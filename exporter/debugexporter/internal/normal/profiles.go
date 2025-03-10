@@ -5,6 +5,7 @@ package normal // import "go.opentelemetry.io/collector/exporter/debugexporter/i
 
 import (
 	"bytes"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -35,10 +36,15 @@ func (normalProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, er
 				buffer.WriteString(" samples=")
 				buffer.WriteString(strconv.Itoa(profile.Sample().Len()))
 
-				if profile.Attributes().Len() > 0 {
-					profileAttributes := writeAttributes(profile.Attributes())
+				if profile.AttributeIndices().Len() > 0 {
+					attrs := []string{}
+					for _, i := range profile.AttributeIndices().AsRaw() {
+						a := profile.AttributeTable().At(int(i))
+						attrs = append(attrs, fmt.Sprintf("%s=%s", a.Key(), a.Value().AsString()))
+					}
+
 					buffer.WriteString(" ")
-					buffer.WriteString(strings.Join(profileAttributes, " "))
+					buffer.WriteString(strings.Join(attrs, " "))
 				}
 
 				buffer.WriteString("\n")

@@ -11,24 +11,21 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/moduleinfo"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
-// TODO: remove as part of https://github.com/open-telemetry/opentelemetry-collector/issues/7370 for service 1.0
-//
-// nolint
-type getExporters interface {
-	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
-}
-
-var _ getExporters = (*Host)(nil)
-var _ component.Host = (*Host)(nil)
+var (
+	_ component.Host                   = (*Host)(nil)
+	_ hostcapabilities.ModuleInfo      = (*Host)(nil)
+	_ hostcapabilities.ExposeExporters = (*Host)(nil)
+)
 
 type Host struct {
 	AsyncErrorChannel chan error
@@ -38,8 +35,8 @@ type Host struct {
 	Connectors        *builders.ConnectorBuilder
 	Extensions        *builders.ExtensionBuilder
 
-	ModuleInfo extension.ModuleInfo
-	BuildInfo  component.BuildInfo
+	ModuleInfos moduleinfo.ModuleInfos
+	BuildInfo   component.BuildInfo
 
 	Pipelines         *Graph
 	ServiceExtensions *extensions.Extensions
@@ -67,6 +64,10 @@ func (host *Host) GetExtensions() map[component.ID]component.Component {
 	return host.ServiceExtensions.GetExtensions()
 }
 
+func (host *Host) GetModuleInfos() moduleinfo.ModuleInfos {
+	return host.ModuleInfos
+}
+
 // Deprecated: [0.79.0] This function will be removed in the future.
 // Several components in the contrib repository use this function so it cannot be removed
 // before those cases are removed. In most cases, use of this function can be replaced by a
@@ -92,10 +93,8 @@ const (
 	zFeaturePath   = "featurez"
 )
 
-var (
-	// InfoVar is a singleton instance of the Info struct.
-	runtimeInfoVar [][2]string
-)
+// InfoVar is a singleton instance of the Info struct.
+var runtimeInfoVar [][2]string
 
 func init() {
 	runtimeInfoVar = [][2]string{

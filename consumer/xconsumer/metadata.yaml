@@ -1,0 +1,11 @@
+type: xconsumer
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: consumer
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

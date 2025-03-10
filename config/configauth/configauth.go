@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 var (
@@ -24,19 +24,14 @@ var (
 // Authentication defines the auth settings for the receiver.
 type Authentication struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
-	AuthenticatorID component.ID `mapstructure:"authenticator"`
+	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
 }
 
-// NewDefaultAuthentication returns a default authentication configuration.
-func NewDefaultAuthentication() *Authentication {
-	return &Authentication{}
-}
-
-// GetServerAuthenticator attempts to select the appropriate auth.Server from the list of extensions,
+// GetServerAuthenticator attempts to select the appropriate extensionauth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Server, error) {
+func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Server, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if server, ok := ext.(auth.Server); ok {
+		if server, ok := ext.(extensionauth.Server); ok {
 			return server, nil
 		}
 		return nil, errNotServer
@@ -45,12 +40,12 @@ func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// GetClientAuthenticator attempts to select the appropriate auth.Client from the list of extensions,
+// GetClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Authentication) GetClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (auth.Client, error) {
+func (a Authentication) GetClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Client, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if client, ok := ext.(auth.Client); ok {
+		if client, ok := ext.(extensionauth.Client); ok {
 			return client, nil
 		}
 		return nil, errNotClient

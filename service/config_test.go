@@ -5,15 +5,18 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/contrib/config"
+	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -21,7 +24,7 @@ import (
 )
 
 func TestConfigValidate(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name     string // test case name (also file name containing config yaml)
 		cfgFn    func() *Config
 		expected error
@@ -48,7 +51,7 @@ func TestConfigValidate(t *testing.T) {
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, fmt.Errorf(`pipeline "traces": %w`, errors.New(`references processor "nop" multiple times`))),
+			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
 			name: "invalid-service-pipeline-type",
@@ -61,7 +64,7 @@ func TestConfigValidate(t *testing.T) {
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`)),
+			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
@@ -71,16 +74,69 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Telemetry.Metrics.Readers = nil
 				return cfg
 			},
-			expected: nil,
+			expected: errors.New("collector telemetry metrics reader should exist when metric level is not none"),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			assert.Equal(t, tt.expected, cfg.Validate())
+			err := xconfmap.Validate(cfg)
+			if tt.expected != nil {
+				assert.ErrorContains(t, err, tt.expected.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
+}
+
+func TestConfmapMarshalConfig(t *testing.T) {
+	telFactory := telemetry.NewFactory()
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+	conf := confmap.New()
+
+	require.NoError(t, conf.Marshal(Config{
+		Telemetry: defaultTelConfig,
+	}))
+	assert.Equal(t, map[string]any{
+		"pipelines": map[string]any{},
+		"telemetry": map[string]any{
+			"logs": map[string]any{
+				"encoding":           "console",
+				"level":              "info",
+				"error_output_paths": []any{"stderr"},
+				"output_paths":       []any{"stderr"},
+				"sampling": map[string]any{
+					"enabled":    true,
+					"initial":    10,
+					"thereafter": 100,
+					"tick":       10 * time.Second,
+				},
+			},
+			"metrics": map[string]any{
+				"level": "Normal",
+				"readers": []any{
+					map[string]any{
+						"pull": map[string]any{
+							"exporter": map[string]any{
+								"prometheus": map[string]any{
+									"host": "localhost",
+									"port": 8888,
+									"with_resource_constant_labels": map[string]any{
+										"included": []any(nil),
+									},
+									"without_scope_info":  true,
+									"without_type_suffix": true,
+									"without_units":       true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, conf.ToStringMap())
 }
 
 func generateConfig() *Config {
@@ -98,11 +154,13 @@ func generateConfig() *Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelNormal,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-						Host: newPtr("localhost"),
-						Port: newPtr(8080),
-					}}}},
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							Host: newPtr("localhost"),
+							Port: newPtr(8080),
+						}}},
+					},
 				},
 			},
 		},

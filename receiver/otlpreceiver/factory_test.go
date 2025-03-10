@@ -9,17 +9,23 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/internal/testutil"
-	"go.opentelemetry.io/collector/receiver/receiverprofiles"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -35,7 +41,13 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := receivertest.NewNopSettings()
+	core, observer := observer.New(zapcore.DebugLevel)
+	attrs := attribute.NewSet(
+		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
+		attribute.String(componentattribute.ComponentIDKey, "otlp"),
+	)
+	creationSet := receivertest.NewNopSettings(factory.Type())
+	creationSet.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -48,13 +60,24 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.NotNil(t, lReceiver)
 	require.NoError(t, err)
 
-	pReceiver, err := factory.(receiverprofiles.Factory).CreateProfiles(context.Background(), creationSet, cfg, consumertest.NewNop())
+	pReceiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, pReceiver)
 	require.NoError(t, err)
 
 	assert.Same(t, tReceiver, mReceiver)
 	assert.Same(t, tReceiver, lReceiver)
 	assert.Same(t, tReceiver, pReceiver)
+
+	var createLoggerCount int
+	for _, log := range observer.All() {
+		if log.Message == "created signal-agnostic logger" {
+			createLoggerCount++
+			require.Len(t, log.Context, 1)
+			assert.Equal(t, componentattribute.ComponentIDKey, log.Context[0].Key)
+			assert.Equal(t, "otlp", log.Context[0].String)
+		}
+	}
+	assert.Equal(t, 1, createLoggerCount)
 }
 
 func TestCreateTraces(t *testing.T) {
@@ -132,7 +155,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := factory.CreateTraces(ctx, creationSet, tt.cfg, tt.sink)
@@ -226,7 +249,7 @@ func TestCreateMetric(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateMetrics(ctx, creationSet, tt.cfg, tt.sink)
@@ -320,7 +343,7 @@ func TestCreateLogs(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
@@ -361,7 +384,7 @@ func TestCreateProfiles(t *testing.T) {
 		cfg          *Config
 		wantStartErr bool
 		wantErr      bool
-		sink         consumerprofiles.Profiles
+		sink         xconsumer.Profiles
 	}{
 		{
 			name: "default",
@@ -413,10 +436,10 @@ func TestCreateProfiles(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tr, err := factory.(receiverprofiles.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
+			tr, err := factory.(xreceiver.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
-	"go.opentelemetry.io/collector/pipeline/pipelineprofiles"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
 var (
@@ -38,11 +38,11 @@ func (cfg Config) Validate() error {
 
 	// Check that all pipelines have at least one receiver and one exporter, and they reference
 	// only configured components.
-	for pipelineID, p := range cfg {
+	for pipelineID := range cfg {
 		switch pipelineID.Signal() {
 		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs:
 			// Continue
-		case pipelineprofiles.SignalProfiles:
+		case xpipeline.SignalProfiles:
 			if !serviceProfileSupportGate.IsEnabled() {
 				return fmt.Errorf(
 					"pipeline %q: profiling signal support is at alpha level, gated under the %q feature gate",
@@ -52,11 +52,6 @@ func (cfg Config) Validate() error {
 			}
 		default:
 			return fmt.Errorf("pipeline %q: unknown signal %q", pipelineID.String(), pipelineID.Signal())
-		}
-
-		// Validate pipeline has at least one receiver.
-		if err := p.Validate(); err != nil {
-			return fmt.Errorf("pipeline %q: %w", pipelineID.String(), err)
 		}
 	}
 
