@@ -25,7 +25,7 @@ func NewFactory() extension.Factory {
 // CreateDefaultConfig creates the default configuration for extension. Notice
 // that the default configuration is expected to fail for this extension.
 func createDefaultConfig() component.Config {
-	return Config{
+	return &Config{
 		RequestLimitMiB: 0,
 		WaitingLimitMiB: 0,
 	}

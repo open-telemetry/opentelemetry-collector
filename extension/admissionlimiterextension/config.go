@@ -3,6 +3,10 @@
 
 package admissionlimiterextension // import "go.opentelemetry.io/collector/extension/admissionlimiterextension"
 
+import "errors"
+
+var errLimitOutOfRange = errors.New("request_limit_mib is out of range: must be > 0")
+
 // Config is the basis of a memory limiter that counts the
 // number of bytes pending and in the pipeline.
 type Config struct {
@@ -16,4 +20,12 @@ type Config struct {
 	// This is a dimension of memory limiting to ensure waiters are not consuming an
 	// unexpectedly large amount of memory in receivers that use it.
 	WaitingLimitMiB uint64 `mapstructure:"waiting_limit_mib"`
+}
+
+// Validate checks if the limiter configuration is valid.
+func (cfg *Config) Validate() error {
+	if cfg.RequestLimitMiB == 0 {
+		return errLimitOutOfRange
+	}
+	return nil
 }

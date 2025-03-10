@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("admission_limiter")
-	ScopeName = "go.opentelemetry.io/collector/extension/memorylimiterextension"
+	ScopeName = "go.opentelemetry.io/collector/extension/admissionlimiterextension"
 )
 
 const (

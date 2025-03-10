@@ -17,8 +17,8 @@ type admissionLimiterExtension struct {
 
 var _ limit.Extension = &admissionLimiterExtension{}
 
-// newAdmissionlimiter returns a new admissionlimiter extension.
-func newAdmissionlimiter(cfg *Config, logger *zap.Logger) (*admissionLimiterExtension, error) {
+// newAdmissionLimiter returns a new admissionlimiter extension.
+func newAdmissionLimiter(cfg *Config, logger *zap.Logger) (*admissionLimiterExtension, error) {
 	// This will allocate an instance of the BoundedQueue logic in
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/otelarrow/admission2
 
@@ -34,5 +34,5 @@ func (al *admissionLimiterExtension) Shutdown(ctx context.Context) error {
 }
 
 func (al *admissionLimiterExtension) GetClient(ctx context.Context, kind component.Kind, id component.ID) (limit.Client, error) {
-
+	return limit.NewNopClient(), nil
 }

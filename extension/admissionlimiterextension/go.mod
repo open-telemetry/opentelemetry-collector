@@ -9,6 +9,7 @@ require (
 	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/extension v1.27.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.121.0
+	go.opentelemetry.io/collector/extension/xextension v0.0.0-00010101000000-000000000000
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -53,7 +54,7 @@ replace go.opentelemetry.io/collector/confmap => ../../confmap
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
-replace go.opentelemetry.io/collector/extension/xextension/limit => ../xextension/limit
+replace go.opentelemetry.io/collector/extension/xextension => ../xextension
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
