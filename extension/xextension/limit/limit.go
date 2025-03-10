@@ -14,11 +14,10 @@ import (
 type Extension interface {
 	extension.Extension
 
-	// GetClient will create a client for use by the specified component.
-	// Each component can have multiple limiters (e.g. one for each signal),
-	// which can be identified using the limitName parameter.
-	// The component can use the client to limit admission to the pipeline.
-	GetClient(ctx context.Context, kind component.Kind, id component.ID, limitName string) (Client, error)
+	// GetClient will create a client for use by the specified
+	// component.  The component can use the client to limit
+	// admission to the pipeline.
+	GetClient(ctx context.Context, kind component.Kind, id component.ID) (Client, error)
 }
 
 // Client implements a limiter for byte-weighted request admission.
