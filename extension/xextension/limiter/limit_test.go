@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package limit
+package limiter
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 func TestNopLimiter(t *testing.T) {
 	ctx := context.Background()
-	nop := NewNopClient()
+	nop := NewNop()
 	rel, err := nop.Acquire(ctx, 1000)
 	require.NoError(t, err)
 	rel()

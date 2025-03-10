@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package limit // import "go.opentelemetry.io/collector/extension/xextension/limit"
+package limiter // import "go.opentelemetry.io/collector/extension/xextension/limiter"
 
 import (
 	"context"
@@ -14,14 +14,14 @@ import (
 type Extension interface {
 	extension.Extension
 
-	// GetClient will create a client for use by the specified
+	// GetLimiter will create a client for use by the specified
 	// component.  The component can use the client to limit
 	// admission to the pipeline.
-	GetClient(ctx context.Context, kind component.Kind, id component.ID) (Client, error)
+	GetLimiter(ctx context.Context, kind component.Kind, id component.ID) (Limiter, error)
 }
 
-// Client implements a limiter for byte-weighted request admission.
-type Client interface {
+// Limiter implements a limiter for byte-weighted request admission.
+type Limiter interface {
 	// Acquire asks the controller to admit the caller.
 	//
 	// The weight parameter specifies how large of an request to
