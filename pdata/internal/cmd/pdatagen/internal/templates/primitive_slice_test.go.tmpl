@@ -111,3 +111,29 @@ func Test{{ .structName }}EnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func Test{{ .structName }}Equal(t *testing.T) {
+	ms := New{{ .structName }}()
+	ms2 := New{{ .structName }}()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append({{ .testOrigVal }})
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append({{ .testOrigVal }})
+	assert.True(t, ms.Equal(ms2))
+}
+
+func Benchmark{{ .structName }}Equal(b *testing.B) {
+	ms := New{{ .structName }}()
+	ms.Append({{ .testOrigVal }})
+	cmp := New{{ .structName }}()
+	cmp.Append({{ .testOrigVal }})
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}

@@ -104,6 +104,11 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	*dest.getOrig() = copy{{ .structName }}(*dest.getOrig(), *ms.getOrig())
 }
 
+// Equal checks equality with another {{ .structName }}
+func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
+	return slices.Equal(*ms.getOrig(), *val.getOrig())
+}
+
 func copy{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
 	dst = dst[:0]
 	return append(dst, src...)

@@ -564,3 +564,29 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.AsRaw() })
 	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
 }
+
+func TestMapEqual(t *testing.T) {
+	m := NewMap()
+	m2 := NewMap()
+	assert.True(t, m.Equal(m2))
+
+	m.PutStr("hello", "world")
+	assert.False(t, m.Equal(m2))
+
+	m2.PutStr("hello", "world")
+	assert.True(t, m.Equal(m2))
+}
+
+func BenchmarkMapEqual(b *testing.B) {
+	m := NewMap()
+	m.PutStr("hello", "world")
+	cmp := NewMap()
+	cmp.PutStr("hello", "world")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = m.Equal(cmp)
+	}
+}
