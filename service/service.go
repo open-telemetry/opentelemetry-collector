@@ -197,8 +197,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
-
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         logger,
 		MeterProvider:  mp,
@@ -229,6 +227,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}
+
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 
 	return srv, nil
 }
