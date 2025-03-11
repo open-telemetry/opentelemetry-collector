@@ -30,7 +30,7 @@ type HTTPClient interface {
 	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
 }
 
-// GRPCClient is an optional Extension interface that can be used as an HTTP authenticator for the configauth.Authentication option.
+// GRPCClient is an optional Extension interface that can be used as a gRPC authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration.
 type GRPCClient interface {
@@ -137,7 +137,7 @@ func WithClientPerRPCCredentials(perRPCCredentialsFunc ClientPerRPCCredentialsFu
 
 // NewClient returns a Client configured with the provided options.
 // Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
-// Manually implement the [HTTPClient] and/or [GRPCClient] extensions instead.
+// Manually implement the [HTTPClient] and/or [GRPCClient] interfaces instead.
 func NewClient(options ...ClientOption) (Client, error) {
 	bc := &defaultClient{}
 
