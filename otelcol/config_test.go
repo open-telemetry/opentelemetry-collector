@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
@@ -245,9 +245,9 @@ func TestConfigValidate(t *testing.T) {
 			cfg := tt.cfgFn()
 			err := xconfmap.Validate(cfg)
 			if tt.expected != nil {
-				assert.EqualError(t, err, tt.expected.Error())
+				require.EqualError(t, err, tt.expected.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -259,15 +259,15 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 	cfg.Exporters = nil
 	cfg.Service.Pipelines = pipelines.Config{}
 
-	assert.Error(t, xconfmap.Validate(cfg))
+	require.Error(t, xconfmap.Validate(cfg))
 
 	gate := pipelines.AllowNoPipelines
-	assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
 	defer func() {
-		assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
 	}()
 
-	assert.NoError(t, xconfmap.Validate(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func generateConfig() *Config {
