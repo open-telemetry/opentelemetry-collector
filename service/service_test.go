@@ -349,12 +349,23 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
+	metricsAddr := promtest.GetAvailableLocalAddressPrometheus(t)
+	cfg := newNopConfig()
+	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
+		{
+			Pull: &config.PullMetricReader{
+				Exporter: config.PullMetricExporter{
+					Prometheus: metricsAddr,
+				},
+			},
+		},
+	}
 	// Create a service
-	srvOne, err := New(context.Background(), newNopSettings(), newNopConfig())
+	srvOne, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// URL of the telemetry service metrics endpoint
-	telemetryURL := "http://localhost:8888/metrics"
+	telemetryURL := fmt.Sprintf("http://%s:%d/metrics", *metricsAddr.Host, *metricsAddr.Port)
 
 	// Start the service
 	require.NoError(t, srvOne.Start(context.Background()))
@@ -375,7 +386,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvOne.Shutdown(context.Background()))
 
 	// Create a new service with the same telemetry
-	srvTwo, err := New(context.Background(), newNopSettings(), newNopConfig())
+	srvTwo, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// Start the new service
@@ -693,14 +704,6 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
-				Readers: []config.MetricReader{
-					{
-						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-							Host: newPtr("localhost"),
-							Port: newPtr(8888),
-						}}},
-					},
-				},
 			},
 		},
 	}
