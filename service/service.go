@@ -224,8 +224,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-		return nil, fmt.Errorf("failed to register process metrics: %w", err)
+	if cfg.Level == configtelemetry.LevelNone || (cfg.Address == "" && len(cfg.Readers) == 0) {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+		}
 	}
 
 	return srv, nil
