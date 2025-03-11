@@ -1168,7 +1168,7 @@ func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse,
 
 // tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "sock")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

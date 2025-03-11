@@ -162,7 +162,7 @@ func TestGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	require.EqualError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), "foo")
+	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()), "bar")
 }
 
@@ -432,7 +432,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}
 			pg.componentGraph.SetEdge(simple.Edge{F: e0, T: e1})
 
-			assert.Equal(t, tt.startupErr, pg.StartAll(context.Background(), &Host{Reporter: rep}))
+			require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: rep}), tt.startupErr)
 			assert.Equal(t, tt.shutdownErr, pg.ShutdownAll(context.Background(), rep))
 			assertEqualStatuses(t, tt.expectedStatuses, actualStatuses)
 		})

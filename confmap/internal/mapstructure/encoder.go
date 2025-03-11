@@ -141,6 +141,9 @@ func (e *Encoder) encodeSlice(value reflect.Value) (any, error) {
 			Kind:   value.Kind(),
 		}
 	}
+	if value.IsNil() {
+		return []any(nil), nil
+	}
 	result := make([]any, value.Len())
 	for i := 0; i < value.Len(); i++ {
 		var err error
