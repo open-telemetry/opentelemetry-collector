@@ -31,10 +31,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configlimiter"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/xextension/limiter"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -186,6 +188,11 @@ type ServerConfig struct {
 
 	// Auth for this receiver
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+
+	// Limiters are a collection of limiter extensions.  Each
+	// Limitation names an extension that is expected to implement
+	// limiter.Extension.  They are called in order.
+	Limiters []configlimiter.Limitation `mapreduce:"limiters"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
@@ -478,6 +485,8 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var uInterceptors []grpc.UnaryServerInterceptor
 	var sInterceptors []grpc.StreamServerInterceptor
 
+	// Initialize the auth extension first.
+
 	if gss.Auth != nil {
 		authenticator, err := gss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
@@ -492,18 +501,46 @@ func (gss *ServerConfig) getGrpcServerOptions(
 		})
 	}
 
+	// Apply client metadata.
+
+	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
+
+	// Apply limiter extensions (which see client metadata).
+
+	var limitExts []limiter.Limiter
+	for _, named := range gss.Limiters {
+		lim, err := named.GetLimiter(context.Background(), host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+		limitExts = append(limitExts, lim)
+	}
+	if limitExts != nil {
+		uInterceptors = append(uInterceptors, func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+			return applyUnaryLimiters(ctx, req, info, handler, limitExts)
+		})
+		sInterceptors = append(sInterceptors, func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			return applyStreamLimiters(srv, ss, info, handler, limitExts)
+		})
+	}
+
+	// Enable OpenTelemetry observability plugin.
+
 	otelOpts := []otelgrpc.Option{
 		otelgrpc.WithTracerProvider(settings.TracerProvider),
 		otelgrpc.WithPropagators(otel.GetTextMapPropagator()),
 		otelgrpc.WithMeterProvider(settings.MeterProvider),
 	}
 
-	// Enable OpenTelemetry observability plugin.
+	// Combine the interceptors, the observability plugin, with
+	// user-provided gRPC options.
 
-	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
-
-	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
+	opts = append(opts,
+		grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)),
+		grpc.ChainUnaryInterceptor(uInterceptors...),
+		grpc.ChainStreamInterceptor(sInterceptors...),
+	)
 
 	for _, opt := range extraOpts {
 		if wrapper, ok := opt.(grpcServerOptionWrapper); ok {
@@ -588,4 +625,62 @@ func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.Stre
 	}
 
 	return handler(srv, wrapServerStream(ctx, stream))
+}
+
+func applyUnaryLimiters(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, limiters []limiter.Limiter) (any, error) {
+	sz, err := sizeReq(req)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, lim := range limiters {
+		rel, err := lim.Acquire(ctx, sz)
+		if err != nil {
+			return nil, err
+		}
+		defer rel()
+	}
+
+	return handler(ctx, req)
+}
+
+func applyStreamLimiters(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, limiters []limiter.Limiter) error {
+	return handler(srv, limitServerStream(stream, limiters))
+}
+
+func sizeReq(req any) (uint64, error) {
+	switch treq := req.(type) {
+	case []byte:
+		return uint64(len(treq)), nil
+	default:
+		return 0, fmt.Errorf("limiter cannot determine size: %T", treq)
+	}
+}
+
+// limitedServerStream is a thin wrapper around grpc.ServerStream that calls limiters.
+type limitedServerStream struct {
+	grpc.ServerStream
+
+	limiters []limiter.Limiter
+}
+
+// limitServerStream returns a ServerStream that will call limiters.
+func limitServerStream(stream grpc.ServerStream, limiters []limiter.Limiter) *limitedServerStream {
+	return &limitedServerStream{ServerStream: stream, limiters: limiters}
+}
+
+func (ls *limitedServerStream) RecvMsg(req any) error {
+	sz, err := sizeReq(req)
+	if err != nil {
+		return err
+	}
+	for _, lim := range ls.limiters {
+		rel, err := lim.Acquire(ls.Context(), sz)
+		if err != nil {
+			return err
+		}
+		defer rel()
+	}
+
+	return ls.ServerStream.RecvMsg(req)
 }
