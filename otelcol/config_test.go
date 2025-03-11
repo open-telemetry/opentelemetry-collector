@@ -263,7 +263,9 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 
 	gate := pipelines.AllowNoPipelines
 	assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
-	defer assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	defer func() {
+		assert.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	}()
 
 	assert.NoError(t, xconfmap.Validate(cfg))
 }
