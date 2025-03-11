@@ -61,7 +61,6 @@ func (of serverOptionFunc) apply(e *defaultServer) {
 // on the given sources map. See Server.Authenticate.
 type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
 
-// Deprecated: [v0.121.0] No longer used, will be removed.
 func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
 	if f == nil {
 		return ctx, nil
