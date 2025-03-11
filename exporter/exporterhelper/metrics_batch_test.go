@@ -11,9 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
+
+var metricsBytesSizer = &sizer.MetricsBytesSizer{}
 
 func TestMergeMetrics(t *testing.T) {
 	mr1 := newMetricsRequest(testdata.GenerateMetrics(2), nil)
@@ -32,6 +35,7 @@ func TestMergeMetricsInvalidInput(t *testing.T) {
 }
 
 func TestMergeSplitMetrics(t *testing.T) {
+	s := sizer.MetricsCountSizer{}
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.SizeConfig
@@ -124,7 +128,9 @@ func TestMergeSplitMetrics(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i := range res {
-				assert.Equal(t, tt.expected[i], res[i])
+				expected := tt.expected[i].(*metricsRequest)
+				actual := res[i].(*metricsRequest)
+				assert.Equal(t, expected.size(&s), actual.size(&s))
 			}
 		})
 	}
@@ -148,7 +154,7 @@ func TestMergeSplitMetricsInvalidInput(t *testing.T) {
 func TestExtractMetrics(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		md := testdata.GenerateMetrics(10)
-		extractedMetrics := extractMetrics(md, i)
+		extractedMetrics, _ := extractMetrics(md, i, &sizer.MetricsCountSizer{})
 		assert.Equal(t, i, extractedMetrics.DataPointCount())
 		assert.Equal(t, 20-i, md.DataPointCount())
 	}
@@ -156,7 +162,7 @@ func TestExtractMetrics(t *testing.T) {
 
 func TestExtractMetricsInvalidMetric(t *testing.T) {
 	md := testdata.GenerateMetricsMetricTypeInvalid()
-	extractedMetrics := extractMetrics(md, 10)
+	extractedMetrics, _ := extractMetrics(md, 10, &sizer.MetricsCountSizer{})
 	assert.Equal(t, testdata.GenerateMetricsMetricTypeInvalid(), extractedMetrics)
 	assert.Equal(t, 0, md.ResourceMetrics().Len())
 }
@@ -214,4 +220,383 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
+}
+
+func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
+	s := sizer.MetricsBytesSizer{}
+	tests := []struct {
+		name          string
+		cfg           exporterbatcher.SizeConfig
+		mr1           Request
+		mr2           Request
+		expectedSizes []int
+	}{
+		{
+			name:          "both_requests_empty",
+			cfg:           exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))},
+			mr1:           newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:           newMetricsRequest(pmetric.NewMetrics(), nil),
+			expectedSizes: []int{0},
+		},
+		{
+			name:          "first_request_empty",
+			cfg:           exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))},
+			mr1:           newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(5), nil),
+			expectedSizes: []int{1035},
+		},
+		{
+			name:          "first_empty_second_nil",
+			cfg:           exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))},
+			mr1:           newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:           nil,
+			expectedSizes: []int{0},
+		},
+		{
+			name:          "merge_only",
+			cfg:           exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11))},
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(4), nil),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(6), nil),
+			expectedSizes: []int{2102},
+		},
+		{
+			name:          "split_only",
+			cfg:           exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: s.MetricsSize(testdata.GenerateMetrics(4))},
+			mr1:           newMetricsRequest(pmetric.NewMetrics(), nil),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(10), nil),
+			expectedSizes: []int{706, 504, 625, 378},
+		},
+		{
+			name: "merge_and_split",
+			cfg: exporterbatcher.SizeConfig{
+				Sizer:   exporterbatcher.SizerTypeBytes,
+				MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))/2 + metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11))/2,
+			},
+			mr1:           newMetricsRequest(testdata.GenerateMetrics(8), nil),
+			mr2:           newMetricsRequest(testdata.GenerateMetrics(20), nil),
+			expectedSizes: []int{2107, 2022, 1954, 290},
+		},
+		{
+			name: "scope_metrics_split",
+			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(4))},
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(4)
+				extraScopeMetrics := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
+				testdata.GenerateMetrics(4).ResourceMetrics().At(0).ScopeMetrics().At(0).MoveTo(extraScopeMetrics)
+				extraScopeMetrics.Scope().SetName("extra scope")
+				return md
+			}(), nil),
+			mr2:           nil,
+			expectedSizes: []int{706, 700, 85},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.cfg, tt.mr2)
+			require.NoError(t, err)
+			assert.Equal(t, len(tt.expectedSizes), len(res))
+			for i := range res {
+				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+			}
+		})
+	}
+}
+
+func TestMetricsRequest_MergeSplit_UnknownSizerType(t *testing.T) {
+	// Create a logs request
+	req := newMetricsRequest(pmetric.NewMetrics(), nil)
+
+	// Create config with invalid sizer type by using zero value
+	cfg := exporterbatcher.SizeConfig{
+		Sizer: exporterbatcher.SizerType{}, // Empty struct will have empty string as val
+	}
+
+	// Call MergeSplit with invalid sizer
+	result, err := req.MergeSplit(context.Background(), cfg, nil)
+
+	// Verify results
+	assert.Nil(t, result)
+	assert.EqualError(t, err, "unknown sizer type")
+}
+
+func TestExtractGaugeDataPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		capacity       int
+		numDataPoints  int
+		expectedPoints int
+	}{
+		{
+			name:           "extract_all_points",
+			capacity:       100,
+			numDataPoints:  2,
+			expectedPoints: 2,
+		},
+		{
+			name:           "extract_partial_points",
+			capacity:       1,
+			numDataPoints:  2,
+			expectedPoints: 1,
+		},
+		{
+			name:           "no_capacity",
+			capacity:       0,
+			numDataPoints:  2,
+			expectedPoints: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcMetric := pmetric.NewMetric()
+			gauge := srcMetric.SetEmptyGauge()
+			for i := 0; i < tt.numDataPoints; i++ {
+				dp := gauge.DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(i))
+			}
+
+			sz := &mockMetricsSizer{dpSize: 1}
+
+			destMetric, removedSize := extractGaugeDataPoints(gauge, tt.capacity, sz)
+
+			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
+			if tt.expectedPoints > 0 {
+				assert.Equal(t, tt.expectedPoints, removedSize)
+			}
+		})
+	}
+}
+
+func TestExtractSumDataPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		capacity       int
+		numDataPoints  int
+		expectedPoints int
+	}{
+		{
+			name:           "extract_all_points",
+			capacity:       100,
+			numDataPoints:  2,
+			expectedPoints: 2,
+		},
+		{
+			name:           "extract_partial_points",
+			capacity:       1,
+			numDataPoints:  2,
+			expectedPoints: 1,
+		},
+		{
+			name:           "no_capacity",
+			capacity:       0,
+			numDataPoints:  2,
+			expectedPoints: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcMetric := pmetric.NewMetric()
+			sum := srcMetric.SetEmptySum()
+			for i := 0; i < tt.numDataPoints; i++ {
+				dp := sum.DataPoints().AppendEmpty()
+				dp.SetIntValue(int64(i))
+			}
+
+			sz := &mockMetricsSizer{dpSize: 1}
+
+			destMetric, removedSize := extractSumDataPoints(sum, tt.capacity, sz)
+
+			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
+			if tt.expectedPoints > 0 {
+				assert.Equal(t, tt.expectedPoints, removedSize)
+			}
+		})
+	}
+}
+
+func TestExtractHistogramDataPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		capacity       int
+		numDataPoints  int
+		expectedPoints int
+	}{
+		{
+			name:           "extract_all_points",
+			capacity:       100,
+			numDataPoints:  2,
+			expectedPoints: 2,
+		},
+		{
+			name:           "extract_partial_points",
+			capacity:       1,
+			numDataPoints:  2,
+			expectedPoints: 1,
+		},
+		{
+			name:           "no_capacity",
+			capacity:       0,
+			numDataPoints:  2,
+			expectedPoints: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcMetric := pmetric.NewMetric()
+			histogram := srcMetric.SetEmptyHistogram()
+
+			for i := 0; i < tt.numDataPoints; i++ {
+				dp := histogram.DataPoints().AppendEmpty()
+				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+			}
+
+			sz := &mockMetricsSizer{dpSize: 1}
+
+			destMetric, removedSize := extractHistogramDataPoints(histogram, tt.capacity, sz)
+
+			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
+			if tt.expectedPoints > 0 {
+				assert.Equal(t, tt.expectedPoints, removedSize)
+			}
+		})
+	}
+}
+
+func TestExtractExponentialHistogramDataPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		capacity       int
+		numDataPoints  int
+		expectedPoints int
+	}{
+		{
+			name:           "extract_all_points",
+			capacity:       100,
+			numDataPoints:  2,
+			expectedPoints: 2,
+		},
+		{
+			name:           "extract_partial_points",
+			capacity:       1,
+			numDataPoints:  2,
+			expectedPoints: 1,
+		},
+		{
+			name:           "no_capacity",
+			capacity:       0,
+			numDataPoints:  2,
+			expectedPoints: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcMetric := pmetric.NewMetric()
+			expHistogram := srcMetric.SetEmptyExponentialHistogram()
+			for i := 0; i < tt.numDataPoints; i++ {
+				dp := expHistogram.DataPoints().AppendEmpty()
+				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+			}
+
+			sz := &mockMetricsSizer{dpSize: 1}
+
+			destMetric, removedSize := extractExponentialHistogramDataPoints(expHistogram, tt.capacity, sz)
+
+			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
+			if tt.expectedPoints > 0 {
+				assert.Equal(t, tt.expectedPoints, removedSize)
+			}
+		})
+	}
+}
+
+func TestExtractSummaryDataPoints(t *testing.T) {
+	tests := []struct {
+		name           string
+		capacity       int
+		numDataPoints  int
+		expectedPoints int
+	}{
+		{
+			name:           "extract_all_points",
+			capacity:       100,
+			numDataPoints:  2,
+			expectedPoints: 2,
+		},
+		{
+			name:           "extract_partial_points",
+			capacity:       1,
+			numDataPoints:  2,
+			expectedPoints: 1,
+		},
+		{
+			name:           "no_capacity",
+			capacity:       0,
+			numDataPoints:  2,
+			expectedPoints: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srcMetric := pmetric.NewMetric()
+			summary := srcMetric.SetEmptySummary()
+			for i := 0; i < tt.numDataPoints; i++ {
+				dp := summary.DataPoints().AppendEmpty()
+				dp.SetCount(uint64(i)) //nolint:gosec // disable G115
+			}
+
+			sz := &mockMetricsSizer{dpSize: 1}
+
+			destMetric, removedSize := extractSummaryDataPoints(summary, tt.capacity, sz)
+
+			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
+			if tt.expectedPoints > 0 {
+				assert.Equal(t, tt.expectedPoints, removedSize)
+			}
+		})
+	}
+}
+
+// mockMetricsSizer implements sizer.MetricsSizer interface for testing
+type mockMetricsSizer struct {
+	dpSize int
+}
+
+func (m *mockMetricsSizer) MetricsSize(_ pmetric.Metrics) int {
+	return 0
+}
+
+func (m *mockMetricsSizer) MetricSize(_ pmetric.Metric) int {
+	return 0
+}
+
+func (m *mockMetricsSizer) NumberDataPointSize(_ pmetric.NumberDataPoint) int {
+	return m.dpSize
+}
+
+func (m *mockMetricsSizer) HistogramDataPointSize(_ pmetric.HistogramDataPoint) int {
+	return m.dpSize
+}
+
+func (m *mockMetricsSizer) ExponentialHistogramDataPointSize(_ pmetric.ExponentialHistogramDataPoint) int {
+	return m.dpSize
+}
+
+func (m *mockMetricsSizer) SummaryDataPointSize(_ pmetric.SummaryDataPoint) int {
+	return m.dpSize
+}
+
+func (m *mockMetricsSizer) ResourceMetricsSize(_ pmetric.ResourceMetrics) int {
+	return 0
+}
+
+func (m *mockMetricsSizer) ScopeMetricsSize(_ pmetric.ScopeMetrics) int {
+	return 0
+}
+
+func (m *mockMetricsSizer) DeltaSize(size int) int {
+	return size
 }
