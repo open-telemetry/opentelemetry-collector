@@ -459,7 +459,7 @@ func (v Value) Equal(c Value) bool {
 
 	switch v.Type() {
 	case ValueTypeEmpty:
-		return v.Type() == c.Type()
+		return true
 	case ValueTypeStr:
 		return v.Str() == c.Str()
 	case ValueTypeBool:
