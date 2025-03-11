@@ -70,7 +70,7 @@ func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) Size(sizer sizer.LogsSizer) int {
+func (req *logsRequest) size(sizer sizer.LogsSizer) int {
 	if req.cachedSize == -1 {
 		req.cachedSize = sizer.LogsSize(req.ld)
 	}
