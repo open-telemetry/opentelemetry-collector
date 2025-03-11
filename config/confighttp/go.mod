@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/config/confighttp
 go 1.23.0
 
 require (
-	github.com/golang/snappy v0.0.4
+	github.com/golang/snappy v1.0.0
 	github.com/klauspost/compress v1.18.0
 	github.com/pierrec/lz4/v4 v4.1.22
 	github.com/rs/cors v1.11.1
