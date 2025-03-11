@@ -29,7 +29,7 @@ type errorClient struct {
 // NewErrorClient returns a new [extension.Extension] that implements the [extensionauth.HTTPClient] and [extensionauth.GRPCClient] and always returns an error on both methods.
 func NewErrorClient(err error) extension.Extension {
 	return &errorClient{
-		ClientRoundTripperFunc: func(base http.RoundTripper) (http.RoundTripper, error) {
+		ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
 			return nil, err
 		},
 		ClientPerRPCCredentialsFunc: func() (credentials.PerRPCCredentials, error) {
