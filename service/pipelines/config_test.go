@@ -120,6 +120,18 @@ func TestConfigValidate(t *testing.T) {
 	}
 }
 
+func TestNoPipelinesFeatureGate(t *testing.T) {
+	cfg := Config{}
+
+	require.Error(t, xconfmap.Validate(cfg))
+
+	gate := AllowNoPipelines
+	featuregate.GlobalRegistry().Set(gate.ID(), true)
+	defer featuregate.GlobalRegistry().Set(gate.ID(), false)
+
+	require.NoError(t, xconfmap.Validate(cfg))
+}
+
 func generateConfig(t *testing.T) Config {
 	t.Helper()
 

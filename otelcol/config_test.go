@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -250,6 +251,21 @@ func TestConfigValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNoPipelinesFeatureGate(t *testing.T) {
+	cfg := generateConfig()
+	cfg.Receivers = nil
+	cfg.Exporters = nil
+	cfg.Service.Pipelines = pipelines.Config{}
+
+	assert.Error(t, xconfmap.Validate(cfg))
+
+	gate := pipelines.AllowNoPipelines
+	featuregate.GlobalRegistry().Set(gate.ID(), true)
+	defer featuregate.GlobalRegistry().Set(gate.ID(), false)
+
+	assert.NoError(t, xconfmap.Validate(cfg))
 }
 
 func generateConfig() *Config {
