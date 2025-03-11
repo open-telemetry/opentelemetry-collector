@@ -31,6 +31,9 @@ drawbacks:
    on the resulting config struct, and additional logic must be done to unset
    the default if the user has not specified a value.
 4. The potential for null pointer exceptions is created.
+5. Config structs are generally intended to be immutable and may be passed
+   around a lot, which makes the mutability property of pointer fields
+   an undesirable property.
 
 ## Optional types
 
@@ -114,6 +117,93 @@ func createDefaultConfig() component.Config {
 }
 ```
 
+For something like `confighttp.ServerConfig`, using an `Optional[T]` type for
+optional fields would look like this:
+
+```golang
+type ServerConfig struct {
+	TLSSetting Optional[configtls.ServerConfig] `mapstructure:"tls"`
+
+	CORS Optional[CORSConfig] `mapstructure:"cors"`
+
+	Auth Optional[AuthConfig] `mapstructure:"auth,omitempty"`
+
+	ResponseHeaders Optional[map[string]configopaque.String] `mapstructure:"response_headers"`
+}
+
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		TLSSetting:        WithDefault(configtls.NewDefaultServerConfig()),
+		CORS:              WithDefault(NewDefaultCORSConfig()),
+		WriteTimeout:      30 * time.Second,
+		ReadHeaderTimeout: 1 * time.Minute,
+		IdleTimeout:       1 * time.Minute,
+	}
+}
+
+func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+	listener, err := net.Listen("tcp", hss.Endpoint)
+	if err != nil {
+		return nil, err
+	}
+
+	if hss.TLSSetting.HasValue() {
+		var tlsCfg *tls.Config
+		tlsCfg, err = hss.TLSSetting.Value().LoadTLSConfig(ctx)
+		if err != nil {
+			return nil, err
+		}
+		tlsCfg.NextProtos = []string{http2.NextProtoTLS, "http/1.1"}
+		listener = tls.NewListener(listener, tlsCfg)
+	}
+
+	return listener, nil
+}
+
+func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+	// ...
+
+	handler = httpContentDecompressor(
+		handler,
+		hss.MaxRequestBodySize,
+		serverOpts.ErrHandler,
+		hss.CompressionAlgorithms,
+		serverOpts.Decoders,
+	)
+
+	// ...
+
+	if hss.Auth.HasValue() {
+		server, err := hss.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
+		if err != nil {
+			return nil, err
+		}
+
+		handler = authInterceptor(handler, server, hss.Auth.Value().RequestParameters)
+	}
+
+	corsValue := hss.CORS.Value()
+	if hss.CORS.HasValue() && len(hss.CORS.AllowedOrigins) > 0 {
+		co := cors.Options{
+			AllowedOrigins:   corsValue.AllowedOrigins,
+			AllowCredentials: true,
+			AllowedHeaders:   corsValue.AllowedHeaders,
+			MaxAge:           corsValue.MaxAge,
+		}
+		handler = cors.New(co).Handler(handler)
+	}
+	if hss.CORS.HasValue() && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
+	}
+
+	if hss.ResponseHeaders.HasValue() {
+		handler = responseHeadersHandler(handler, hss.ResponseHeaders.Value())
+	}
+
+	// ...
+}
+```
+
 ### Proper unmarshaling of empty values when a default is set
 
 Currently, the OTLP receiver requires a workaround to make enabling each
@@ -178,7 +268,9 @@ implement similar config structures.
 There are two noteworthy disadvantages of introducing an Optional type:
 
 1. Since the type isn't standard, external packages working with config may
-   require additional adaptations to work with our config structs.
-2. It will still be possible to use pointer types for optional config fields,
-   and as a result there may be some fragmentation in which type is used to
-   represent an optional field.
+   require additional adaptations to work with our config structs. For example,
+   if we wanted to generate our types from a JSON schema using a package like
+   [github.com/atombender/go-jsonschema][go-jsonschema], we would need some way
+   to ensure compatibility with an Optional type.
+
+[go-jsonschema]: https://github.com/omissis/go-jsonschema
