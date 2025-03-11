@@ -166,7 +166,7 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 With an Optional type, the checks in `Unmarshal` become unnecessary, and it's
 possible the entire `Unmarshal` function may no longer be needed. Instead, when
-the the config is unmarshaled, no value would be put into the default Optional
+the config is unmarshaled, no value would be put into the default Optional
 values and `HasValue` would return false when using this config object.
 
 This situation is something of an edge case with our current unmarshaling
