@@ -13,7 +13,7 @@
 // accepted. This error should be handled as documented in the consumererror package.
 //
 // Depending on the error type, the receiver must indicate to the source from which it received the
-// data the type of error in a protocol-dependent way, if that is supported by the receiving protocol..
+// data the type of error in a protocol-dependent way, if that is supported by the receiving protocol.
 // For example, a receiver for the OTLP/HTTP protocol would use the HTTP status codes as defined in
 // the OTLP specification.
 //
