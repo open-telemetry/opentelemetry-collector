@@ -37,23 +37,34 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		return nil, nil, err
 	}
 
+	fields := []zap.Field{}
+	for k, v := range cfg.Resource {
+		if v != nil {
+			f := zap.Field{Key: k, Type: zapcore.StringType, String: *v}
+			fields = append(fields, f)
+		}
+	}
+
 	var lp log.LoggerProvider
 
 	if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
 		lp = set.SDK.LoggerProvider()
 
-		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
-				c,
-				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
-					otelzap.WithLoggerProvider(lp),
-				),
-			), zap.NewAtomicLevelAt(cfg.Logs.Level))
-			if err != nil {
-				panic(err)
-			}
-			return core
-		}))
+		logger = logger.WithOptions(
+			zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+				core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
+					c,
+					otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
+						otelzap.WithLoggerProvider(lp),
+					),
+				), zap.NewAtomicLevelAt(cfg.Logs.Level))
+				if err != nil {
+					panic(err)
+				}
+				return core
+			}),
+			zap.Fields(fields...),
+		)
 	}
 
 	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
