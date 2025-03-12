@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.27.0
 	go.opentelemetry.io/collector/config/configopaque v1.27.0
 	go.opentelemetry.io/collector/config/configtls v1.27.0
+	go.opentelemetry.io/collector/extension v1.27.0
 	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
@@ -34,7 +35,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/extension v1.27.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
