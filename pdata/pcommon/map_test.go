@@ -566,15 +566,97 @@ func TestInvalidMap(t *testing.T) {
 }
 
 func TestMapEqual(t *testing.T) {
-	m := NewMap()
-	m2 := NewMap()
-	assert.True(t, m.Equal(m2))
-
-	m.PutStr("hello", "world")
-	assert.False(t, m.Equal(m2))
-
-	m2.PutStr("hello", "world")
-	assert.True(t, m.Equal(m2))
+	for _, tt := range []struct {
+		name       string
+		val        Map
+		comparison Map
+		expected   bool
+	}{
+		{
+			name:       "with two empty maps",
+			val:        NewMap(),
+			comparison: NewMap(),
+			expected:   true,
+		},
+		{
+			name: "with two equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with multiple equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with two different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with the same key and different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with multiple different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("question", "unknown")
+				m.PutStr("answer", "42")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.val.Equal(tt.comparison))
+		})
+	}
 }
 
 func BenchmarkMapEqual(b *testing.B) {
