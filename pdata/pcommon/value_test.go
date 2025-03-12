@@ -586,6 +586,12 @@ func TestValueEqual(t *testing.T) {
 		expected   bool
 	}{
 		{
+			name:       "different types",
+			value:      NewValueEmpty(),
+			comparison: NewValueStr("test"),
+			expected:   false,
+		},
+		{
 			name:       "same empty",
 			value:      NewValueEmpty(),
 			comparison: NewValueEmpty(),
