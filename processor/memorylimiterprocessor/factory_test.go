@@ -11,9 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/log/logtest"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -45,14 +44,15 @@ func TestCreateProcessor(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	core, observer := observer.New(zapcore.DebugLevel)
 	attrs := attribute.NewSet(
 		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
 		attribute.String(componentattribute.ComponentIDKey, "memorylimiter"),
 		attribute.String(componentattribute.PipelineIDKey, "logs/foo"),
 	)
 	set := processortest.NewNopSettings(factory.Type())
-	set.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
+	recorder := logtest.NewRecorder()
+	set.Logger = zap.New(componentattribute.NewServiceZapCore(recorder, "testinstr", nil, attribute.NewSet()))
+	set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, attrs)
 
 	tp, err := factory.CreateTraces(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
@@ -90,10 +90,12 @@ func TestCreateProcessor(t *testing.T) {
 	require.ErrorIs(t, lp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 
 	var createLoggerCount int
-	for _, log := range observer.All() {
-		if log.Message == "created singleton logger" {
-			createLoggerCount++
-			assert.Empty(t, observer.All()[0].Context)
+	for _, scope := range recorder.Result() {
+		for _, record := range scope.Records {
+			if record.Body().String() == "created singleton logger" {
+				createLoggerCount++
+				assert.Empty(t, scope.Attributes.ToSlice())
+			}
 		}
 	}
 	assert.Equal(t, 1, createLoggerCount)

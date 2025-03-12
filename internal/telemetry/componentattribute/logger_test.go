@@ -54,12 +54,12 @@ func TestCore(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "filelog"),
 	)
 
-	assert.Equal(t, "test parent before child", observedLogs[0].r.Body().AsString())
+	assert.Equal(t, "test parent before child", observedLogs[0].r.Body().String())
 	assert.Equal(t, attrs, observedLogs[0].s.Attributes)
 
-	assert.Equal(t, "test child", observedLogs[1].r.Body().AsString())
+	assert.Equal(t, "test child", observedLogs[1].r.Body().String())
 	assert.Equal(t, childAttrs, observedLogs[1].s.Attributes)
 
-	assert.Equal(t, "test parent after child", observedLogs[2].r.Body().AsString())
+	assert.Equal(t, "test parent after child", observedLogs[2].r.Body().String())
 	assert.Equal(t, attrs, observedLogs[2].s.Attributes)
 }
