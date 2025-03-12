@@ -111,3 +111,61 @@ func Test{{ .structName }}EnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+{{- if ne .itemType "string" }}
+
+func Test{{ .structName }}TryIncrementFrom(t *testing.T) {
+	ms := New{{ .structName }}()
+	ms.FromRaw([]{{ .itemType }}{10, 9})
+
+	ms2 := New{{ .structName }}()
+	ms2.FromRaw([]{{ .itemType }}{1, 10})
+
+	assert.False(t, ms.TryIncrementFrom(ms2, 1))
+	ms.EnsureCapacity(4)
+	assert.True(t, ms.TryIncrementFrom(ms2, 1))
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}(10), ms.At(0), 0.01)
+	assert.InDelta(t, {{ .itemType }}(10), ms.At(1), 0.01)
+	assert.InDelta(t, {{ .itemType }}(10), ms.At(2), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}(10), ms.At(0))
+	assert.Equal(t, {{ .itemType }}(10), ms.At(1))
+	assert.Equal(t, {{ .itemType }}(10), ms.At(2))
+	{{- end }}
+}
+
+func Test{{ .structName }}Collapse(t *testing.T) {
+	ms := New{{ .structName }}()
+	ms.FromRaw([]{{ .itemType }}{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 0)
+
+	assert.Equal(t, 2, ms.Len())
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}(4), ms.At(0), 0.01)
+	assert.InDelta(t, {{ .itemType }}(2), ms.At(1), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}(4), ms.At(0))
+	assert.Equal(t, {{ .itemType }}(2), ms.At(1))
+	{{- end }}
+}
+
+func Test{{ .structName }}CollapseOffset(t *testing.T) {
+	ms := New{{ .structName }}()
+	ms.FromRaw([]{{ .itemType }}{1, 1, 1, 1, 1, 1})
+
+	ms.Collapse(4, 3)
+
+	assert.Equal(t, 3, ms.Len())
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}(1), ms.At(0), 0.01)
+	assert.InDelta(t, {{ .itemType }}(4), ms.At(1), 0.01)
+	assert.InDelta(t, {{ .itemType }}(1), ms.At(2), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}(1), ms.At(0))
+	assert.Equal(t, {{ .itemType }}(4), ms.At(1))
+	assert.Equal(t, {{ .itemType }}(1), ms.At(2))
+	{{- end }}
+}
+{{- end }}
