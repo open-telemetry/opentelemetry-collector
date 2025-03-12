@@ -5,6 +5,7 @@ package componentattribute_test
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,10 +33,10 @@ func TestCore(t *testing.T) {
 	)
 
 	parent := componentattribute.ZapLoggerWithAttributes(logger, attrs)
-	parent.Info("test parent before child")
+	parent.Info("1. test parent before child")
 	child := componentattribute.ZapLoggerWithAttributes(parent, componentattribute.RemoveAttributes(attrs, componentattribute.SignalKey))
-	child.Info("test child")
-	parent.Info("test parent after child")
+	child.Info("2. test child")
+	parent.Info("3. test parent after child")
 
 	observedScopes := lp.Result()
 	var observedLogs []scopedRecord
@@ -46,7 +47,7 @@ func TestCore(t *testing.T) {
 		}
 	}
 	slices.SortFunc(observedLogs, func(r1 scopedRecord, r2 scopedRecord) int {
-		return r1.r.Timestamp().Compare(r2.r.Timestamp())
+		return strings.Compare(r1.r.Body().String(), r2.r.Body().String())
 	})
 	require.Len(t, observedLogs, 3)
 
@@ -54,12 +55,12 @@ func TestCore(t *testing.T) {
 		attribute.String(componentattribute.ComponentIDKey, "filelog"),
 	)
 
-	assert.Equal(t, "test parent before child", observedLogs[0].r.Body().String())
+	assert.Equal(t, "1. test parent before child", observedLogs[0].r.Body().String())
 	assert.Equal(t, attrs, observedLogs[0].s.Attributes)
 
-	assert.Equal(t, "test child", observedLogs[1].r.Body().String())
+	assert.Equal(t, "2. test child", observedLogs[1].r.Body().String())
 	assert.Equal(t, childAttrs, observedLogs[1].s.Attributes)
 
-	assert.Equal(t, "test parent after child", observedLogs[2].r.Body().String())
+	assert.Equal(t, "3. test parent after child", observedLogs[2].r.Body().String())
 	assert.Equal(t, attrs, observedLogs[2].s.Attributes)
 }
