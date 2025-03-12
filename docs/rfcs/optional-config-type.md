@@ -265,7 +265,7 @@ implement similar config structures.
 
 ## Disadvantages of an Optional type
 
-There are two noteworthy disadvantages of introducing an Optional type:
+There is one noteworthy disadvantage of introducing an Optional type:
 
 1. Since the type isn't standard, external packages working with config may
    require additional adaptations to work with our config structs. For example,
