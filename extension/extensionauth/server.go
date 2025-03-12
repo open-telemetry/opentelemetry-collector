@@ -10,12 +10,13 @@ import (
 	"go.opentelemetry.io/collector/extension"
 )
 
-// Server is an Extension that can be used as an authenticator for the configauth.Authentication option.
+// Server is an optional Extension interface that can be used as an authenticator for the configauth.Authentication option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration. Each Server is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
 type Server interface {
+	// Deprecated: will be removed in the next release.
 	extension.Extension
 
 	// Authenticate checks whether the given map contains valid auth data. Successfully authenticated calls will always return a nil error.
@@ -60,7 +61,6 @@ func (of serverOptionFunc) apply(e *defaultServer) {
 // on the given sources map. See Server.Authenticate.
 type ServerAuthenticateFunc func(ctx context.Context, sources map[string][]string) (context.Context, error)
 
-// Deprecated: [v0.121.0] No longer used, will be removed.
 func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
 	if f == nil {
 		return ctx, nil
@@ -69,6 +69,7 @@ func (f ServerAuthenticateFunc) Authenticate(ctx context.Context, sources map[st
 }
 
 // WithServerAuthenticate specifies which function to use to perform the authentication.
+// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
 	return serverOptionFunc(func(o *defaultServer) {
 		o.serverAuthenticateFunc = authFunc
@@ -77,6 +78,7 @@ func WithServerAuthenticate(authFunc ServerAuthenticateFunc) ServerOption {
 
 // WithServerStart overrides the default `Start` function for a component.Component.
 // The default always returns nil.
+// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 func WithServerStart(startFunc component.StartFunc) ServerOption {
 	return serverOptionFunc(func(o *defaultServer) {
 		o.StartFunc = startFunc
@@ -85,6 +87,7 @@ func WithServerStart(startFunc component.StartFunc) ServerOption {
 
 // WithServerShutdown overrides the default `Shutdown` function for a component.Component.
 // The default always returns nil.
+// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
 func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
 	return serverOptionFunc(func(o *defaultServer) {
 		o.ShutdownFunc = shutdownFunc
@@ -92,6 +95,8 @@ func WithServerShutdown(shutdownFunc component.ShutdownFunc) ServerOption {
 }
 
 // NewServer returns a Server configured with the provided options.
+// Deprecated: [v0.122.0] This type is deprecated and will be removed in the next release.
+// Manually implement the [Server] interface instead.
 func NewServer(options ...ServerOption) (Server, error) {
 	bc := &defaultServer{}
 
