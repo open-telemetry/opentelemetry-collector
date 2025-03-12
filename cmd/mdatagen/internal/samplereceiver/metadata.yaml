@@ -12,6 +12,11 @@ status:
     development: [logs]
     beta: [traces]
     stable: [metrics]
+    deprecated: [profiles]
+  deprecation:
+    profiles:
+      migration: "no migration needed"
+      date: "2025-02-05"
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:

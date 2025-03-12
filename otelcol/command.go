@@ -42,6 +42,7 @@ func NewCommand(set CollectorSettings) *cobra.Command {
 	rootCmd.AddCommand(newFeatureGateCommand())
 	rootCmd.AddCommand(newComponentsCommand(set))
 	rootCmd.AddCommand(newValidateSubCommand(set, flagSet))
+	rootCmd.AddCommand(newConfigPrintSubCommand(set, flagSet))
 	rootCmd.Flags().AddGoFlagSet(flagSet)
 	return rootCmd
 }
@@ -65,6 +66,7 @@ func updateSettingsUsingFlags(set *CollectorSettings, flags *flag.FlagSet) error
 	if len(resolverSet.ProviderFactories) == 0 {
 		return errors.New("at least one Provider must be supplied")
 	}
+
 	return nil
 }
 

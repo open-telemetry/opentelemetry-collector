@@ -12,6 +12,7 @@ import (
 
 var (
 	errCheckIntervalOutOfRange        = errors.New("'check_interval' must be greater than zero")
+	errInconsistentGCMinInterval      = errors.New("'min_gc_interval_when_soft_limited' should be larger than 'min_gc_interval_when_hard_limited'")
 	errLimitOutOfRange                = errors.New("'limit_mib' or 'limit_percentage' must be greater than zero")
 	errSpikeLimitOutOfRange           = errors.New("'spike_limit_mib' must be smaller than 'limit_mib'")
 	errSpikeLimitPercentageOutOfRange = errors.New("'spike_limit_percentage' must be smaller than 'limit_percentage'")
@@ -25,6 +26,16 @@ type Config struct {
 	// purposes of avoiding going over the limits. Defaults to zero, so no
 	// checks will be performed.
 	CheckInterval time.Duration `mapstructure:"check_interval"`
+
+	// MinGCIntervalWhenSoftLimited minimum interval between forced GC when in soft (=limit_mib - spike_limit_mib) limited mode.
+	// Zero value means no minimum interval.
+	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
+	MinGCIntervalWhenSoftLimited time.Duration `mapstructure:"min_gc_interval_when_soft_limited"`
+
+	// MinGCIntervalWhenHardLimited minimum interval between forced GC when in hard (=limit_mib) limited mode.
+	// Zero value means no minimum interval.
+	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
+	MinGCIntervalWhenHardLimited time.Duration `mapstructure:"min_gc_interval_when_hard_limited"`
 
 	// MemoryLimitMiB is the maximum amount of memory, in MiB, targeted to be
 	// allocated by the process.
@@ -45,10 +56,19 @@ type Config struct {
 
 var _ component.Config = (*Config)(nil)
 
+func NewDefaultConfig() *Config {
+	return &Config{
+		MinGCIntervalWhenSoftLimited: 10 * time.Second,
+	}
+}
+
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
 	if cfg.CheckInterval <= 0 {
 		return errCheckIntervalOutOfRange
+	}
+	if cfg.MinGCIntervalWhenSoftLimited < cfg.MinGCIntervalWhenHardLimited {
+		return errInconsistentGCMinInterval
 	}
 	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {
 		return errLimitOutOfRange

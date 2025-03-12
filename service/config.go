@@ -15,7 +15,7 @@ type Config struct {
 	Telemetry telemetry.Config `mapstructure:"telemetry"`
 
 	// Extensions are the ordered list of extensions configured for the service.
-	Extensions extensions.Config `mapstructure:"extensions"`
+	Extensions extensions.Config `mapstructure:"extensions,omitempty"`
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines pipelines.Config `mapstructure:"pipelines"`

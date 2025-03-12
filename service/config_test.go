@@ -6,13 +6,16 @@ package service
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
@@ -86,6 +89,54 @@ func TestConfigValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfmapMarshalConfig(t *testing.T) {
+	telFactory := telemetry.NewFactory()
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+	conf := confmap.New()
+
+	require.NoError(t, conf.Marshal(Config{
+		Telemetry: defaultTelConfig,
+	}))
+	assert.Equal(t, map[string]any{
+		"pipelines": map[string]any{},
+		"telemetry": map[string]any{
+			"logs": map[string]any{
+				"encoding":           "console",
+				"level":              "info",
+				"error_output_paths": []any{"stderr"},
+				"output_paths":       []any{"stderr"},
+				"sampling": map[string]any{
+					"enabled":    true,
+					"initial":    10,
+					"thereafter": 100,
+					"tick":       10 * time.Second,
+				},
+			},
+			"metrics": map[string]any{
+				"level": "Normal",
+				"readers": []any{
+					map[string]any{
+						"pull": map[string]any{
+							"exporter": map[string]any{
+								"prometheus": map[string]any{
+									"host": "localhost",
+									"port": 8888,
+									"with_resource_constant_labels": map[string]any{
+										"included": []any{},
+									},
+									"without_scope_info":  true,
+									"without_type_suffix": true,
+									"without_units":       true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, conf.ToStringMap())
 }
 
 func generateConfig() *Config {

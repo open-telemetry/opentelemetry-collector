@@ -18,14 +18,8 @@ import (
 
 var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create*Receiver functions.
-// Deprecated: [v0.120.0] Use NewNopSettingsWithType instead.
-func NewNopSettings() receiver.Settings {
-	return NewNopSettingsWithType(NopType)
-}
-
-// NewNopSettingsWithType returns a new nop settings for Create*Receiver functions with the given type.
-func NewNopSettingsWithType(typ component.Type) receiver.Settings {
+// NewNopSettings returns a new nop settings for Create*Receiver functions with the given type.
+func NewNopSettings(typ component.Type) receiver.Settings {
 	return receiver.Settings{
 		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),

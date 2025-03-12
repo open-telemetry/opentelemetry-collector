@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -25,30 +25,32 @@ var (
 )
 
 type metricsRequest struct {
-	md               pmetric.Metrics
-	pusher           consumer.ConsumeMetricsFunc
-	cachedItemsCount int
+	md         pmetric.Metrics
+	pusher     consumer.ConsumeMetricsFunc
+	cachedSize int
 }
 
 func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
 	return &metricsRequest{
-		md:               md,
-		pusher:           pusher,
-		cachedItemsCount: md.DataPointCount(),
+		md:         md,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
-		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newMetricsRequest(metrics, pusher), nil
-	}
+type metricsEncoding struct {
+	pusher consumer.ConsumeMetricsFunc
 }
 
-func metricsRequestMarshaler(req Request) ([]byte, error) {
+func (me *metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
+	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
+	if err != nil {
+		return nil, err
+	}
+	return newMetricsRequest(metrics, me.pusher), nil
+}
+
+func (me *metricsEncoding) Marshal(req Request) ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
 }
 
@@ -65,11 +67,18 @@ func (req *metricsRequest) Export(ctx context.Context) error {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.md.DataPointCount()
 }
 
-func (req *metricsRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.MetricsSize(req.md)
+	}
+	return req.cachedSize
+}
+
+func (req *metricsRequest) setCachedSize(count int) {
+	req.cachedSize = count
 }
 
 type metricsExporter struct {
@@ -91,10 +100,7 @@ func NewMetrics(
 	if pusher == nil {
 		return nil, errNilPushMetricsData
 	}
-	metricsOpts := []Option{
-		internal.WithMarshaler(metricsRequestMarshaler), internal.WithUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-	}
-	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append([]Option{internal.WithEncoding(&metricsEncoding{pusher: pusher})}, options...)...)
 }
 
 // RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
@@ -131,19 +137,23 @@ func NewMetricsRequest(
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
-		req, cErr := converter(ctx, md)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert metrics. Dropping data.",
+	mc, err := consumer.NewMetrics(newConsumeMetrics(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsExporter{BaseExporter: be, Metrics: mc}, nil
+}
+
+func newConsumeMetrics(converter RequestFromMetricsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
+	return func(ctx context.Context, md pmetric.Metrics) error {
+		req, err := converter(ctx, md)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_data_points", md.DataPointCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
 		return be.Send(ctx, req)
-	}, be.ConsumerOptions...)
-
-	return &metricsExporter{
-		BaseExporter: be,
-		Metrics:      mc,
-	}, err
+	}
 }

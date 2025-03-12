@@ -13,14 +13,8 @@ import (
 
 var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop scraper.Settings.
-// Deprecated: [v0.120.0] Use NewNopSettingsWithType(NopType) instead.
-func NewNopSettings() scraper.Settings {
-	return NewNopSettingsWithType(NopType)
-}
-
 // NewNopSettings returns a new nop scraper.Settings with the given type.
-func NewNopSettingsWithType(typ component.Type) scraper.Settings {
+func NewNopSettings(typ component.Type) scraper.Settings {
 	return scraper.Settings{
 		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),

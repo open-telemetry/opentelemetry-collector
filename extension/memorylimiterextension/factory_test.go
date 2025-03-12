@@ -38,7 +38,7 @@ func TestCreate(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(factory.Type())
 
 	tp, err := factory.Create(context.Background(), set, cfg)

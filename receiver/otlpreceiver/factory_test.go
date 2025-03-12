@@ -47,9 +47,8 @@ func TestCreateSameReceiver(t *testing.T) {
 		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
-	creationSet := receivertest.NewNopSettingsWithType(factory.Type())
-	creationSet.Logger = zap.New(core)
-	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
+	creationSet := receivertest.NewNopSettings(factory.Type())
+	creationSet.Logger = componentattribute.NewLogger(zap.New(core), &attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	require.NoError(t, err)
@@ -157,7 +156,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := factory.CreateTraces(ctx, creationSet, tt.cfg, tt.sink)
@@ -251,7 +250,7 @@ func TestCreateMetric(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateMetrics(ctx, creationSet, tt.cfg, tt.sink)
@@ -345,7 +344,7 @@ func TestCreateLogs(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
@@ -438,7 +437,7 @@ func TestCreateProfiles(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := factory.(xreceiver.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
