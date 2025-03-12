@@ -4,15 +4,9 @@ package {{ .Package }}
 
 import (
     {{- if .Telemetry.Metrics }}
-    {{- range $_, $metric := .Telemetry.Metrics }}
-    {{- if $metric.Data.Async }}
     "context"
-    "sync"
-
-{{- break}}
-    {{- end }}
-    {{- end }}
     "errors"
+    "sync"
     {{- end }}
 
 	"go.opentelemetry.io/otel/metric"
@@ -142,4 +136,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
     return &builder, errs
 }
 
+{{- end }}
+
+{{- range $name, $metric := .Telemetry.Metrics }}
+{{- if not $metric.Data.Async }}
+
+func (builder *TelemetryBuilder) Record{{ $name.Render }}(ctx context.Context, val {{ $metric.Data.BasicType }}, opts ...metric.{{- if eq $metric.Data.Type "Sum" -}}Add{{- else -}}Record{{- end -}}Option) {
+    builder.{{ $name.Render }}.{{- if eq $metric.Data.Type "Sum" -}}Add{{- else -}}Record{{- end -}}(ctx, val, opts...)
+}
+
+{{- end }}
 {{- end }}
