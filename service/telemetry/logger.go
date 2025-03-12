@@ -4,11 +4,12 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
