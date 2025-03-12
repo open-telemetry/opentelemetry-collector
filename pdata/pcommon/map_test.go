@@ -564,3 +564,111 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.AsRaw() })
 	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
 }
+
+func TestMapEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		val        Map
+		comparison Map
+		expected   bool
+	}{
+		{
+			name:       "with two empty maps",
+			val:        NewMap(),
+			comparison: NewMap(),
+			expected:   true,
+		},
+		{
+			name: "with two equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with multiple equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with two different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with the same key and different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with multiple different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("question", "unknown")
+				m.PutStr("answer", "42")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.val.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkMapEqual(b *testing.B) {
+	m := NewMap()
+	m.PutStr("hello", "world")
+	cmp := NewMap()
+	cmp.PutStr("hello", "world")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = m.Equal(cmp)
+	}
+}
