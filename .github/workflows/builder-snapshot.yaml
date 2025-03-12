@@ -1,6 +1,5 @@
 name: Builder - Snapshot build
 on:
-  # on changes to the main branch touching the builder
   push:
     branches: [main]
 
