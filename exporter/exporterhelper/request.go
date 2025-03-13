@@ -4,6 +4,8 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -19,3 +21,8 @@ type Request = request.Request
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestErrorHandler = request.ErrorHandler
+
+// RequestConverterFunc converts pdata telemetry into a user-defined Request.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type RequestConverterFunc[K any] func(context.Context, K) (Request, error)
