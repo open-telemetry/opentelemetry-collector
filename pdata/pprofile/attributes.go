@@ -34,11 +34,11 @@ func FromAttributeIndices(table AttributeTableSlice, record attributable) pcommo
 // AddAttribute updates an AttributeTable and a record's AttributeIndices to
 // add a new attribute.
 // The record can by any struct that implements an `AttributeIndices` method.
-func AddAttribute(table AttributeTableSlice, record attributable, key string, value any) error {
+func AddAttribute(table AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
 	for i := range table.Len() {
 		a := table.At(i)
 
-		if a.Key() == key && value == a.Value().AsRaw() {
+		if a.Key() == key && a.Value().Equal(value) {
 			if i >= math.MaxInt32 {
 				return fmt.Errorf("Attribute %s=%#v has too high an index to be added to AttributeIndices", key, value)
 			}
@@ -61,9 +61,7 @@ func AddAttribute(table AttributeTableSlice, record attributable, key string, va
 	table.EnsureCapacity(table.Len() + 1)
 	entry := table.AppendEmpty()
 	entry.SetKey(key)
-	if err := entry.Value().FromRaw(value); err != nil {
-		return err
-	}
+	value.CopyTo(entry.Value())
 	record.AttributeIndices().Append(int32(table.Len()) - 1) //nolint:gosec // overflow checked
 
 	return nil
