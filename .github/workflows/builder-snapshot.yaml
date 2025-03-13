@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "cmd/builder"
+      - "cmd/builder/**"
 
 env:
   # renovate: datasource=github-tags depName=goreleaser-pro packageName=goreleaser/goreleaser-pro
@@ -32,6 +32,7 @@ jobs:
         run: cp -R ./opentelemetry-collector-releases/cmd/builder/. ./.core/cmd/builder/
 
       - uses: sigstore/cosign-installer@d7d6bc7722e3daa8354c50bcb52f4837da5e9b6a # v3.8.1
+
       - uses: anchore/sbom-action/download-syft@f325610c9f50a54015d37c8d16cb3b0e2c8f4de0 # v0.18.0
 
       - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
@@ -73,18 +74,10 @@ jobs:
         run: |
           template=$(cat <<'END'
           [Link to job log](%s)
-
-          <details>
-          <summary>Last 100 lines of log</summary>
-
-          ```
-          %s
-          ```
-          </details>
           END
           )
           job_url="$(gh run view ${{ github.run_id }} -R ${{ github.repository }} --json jobs -q '.jobs[] | select(.name == "snapshot") | .url')"
-          body="$(printf "$template" "$job_url" "$(tail -n100 log.out | tail -c63K)")"
+          body="$(printf "$template" "$job_url")"
           gh issue create -R ${{ github.repository }} -t 'OCB snapshot workflow failed' -b "$body" -l 'ci-cd' -l 'area:builder'
         env:
           GH_TOKEN: ${{ github.token }}
