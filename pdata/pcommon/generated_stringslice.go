@@ -8,6 +8,7 @@ package pcommon
 
 import (
 	"iter"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 )
@@ -113,6 +114,11 @@ func (ms StringSlice) MoveTo(dest StringSlice) {
 func (ms StringSlice) CopyTo(dest StringSlice) {
 	dest.getState().AssertMutable()
 	*dest.getOrig() = copyStringSlice(*dest.getOrig(), *ms.getOrig())
+}
+
+// Equal checks equality with another StringSlice
+func (ms StringSlice) Equal(val StringSlice) bool {
+	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }
 
 func copyStringSlice(dst, src []string) []string {

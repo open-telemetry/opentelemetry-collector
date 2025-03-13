@@ -6,7 +6,7 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/int
 import (
 	"time"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -68,7 +68,7 @@ type MetricsConfigV030 struct {
 	Level configtelemetry.Level `mapstructure:"level"`
 
 	// Deprecated: [v0.111.0] use readers configuration.
-	Address string `mapstructure:"address"`
+	Address string `mapstructure:"address,omitempty"`
 
 	// Readers allow configuration of metric readers to emit metrics to
 	// any number of supported backends.
@@ -110,7 +110,7 @@ type LogsConfigV030 struct {
 	// Development puts the logger in development mode, which changes the
 	// behavior of DPanicLevel and takes stacktraces more liberally.
 	// (default = false)
-	Development bool `mapstructure:"development"`
+	Development bool `mapstructure:"development,omitempty"`
 
 	// Encoding sets the logger's encoding.
 	// Example values are "json", "console".
@@ -119,13 +119,13 @@ type LogsConfigV030 struct {
 	// DisableCaller stops annotating logs with the calling function's file
 	// name and line number. By default, all logs are annotated.
 	// (default = false)
-	DisableCaller bool `mapstructure:"disable_caller"`
+	DisableCaller bool `mapstructure:"disable_caller,omitempty"`
 
 	// DisableStacktrace completely disables automatic stacktrace capturing. By
 	// default, stacktraces are captured for WarnLevel and above logs in
 	// development and ErrorLevel and above in production.
 	// (default = false)
-	DisableStacktrace bool `mapstructure:"disable_stacktrace"`
+	DisableStacktrace bool `mapstructure:"disable_stacktrace,omitempty"`
 
 	// Sampling sets a sampling policy.
 	// Default:
@@ -164,11 +164,11 @@ type LogsConfigV030 struct {
 	//	   		foo: "bar"
 	//
 	// By default, there is no initial field.
-	InitialFields map[string]any `mapstructure:"initial_fields"`
+	InitialFields map[string]any `mapstructure:"initial_fields,omitempty"`
 
 	// Processors allow configuration of log record processors to emit logs to
-	// any number of suported backends.
-	Processors []config.LogRecordProcessor `mapstructure:"processors"`
+	// any number of supported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
 }
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the

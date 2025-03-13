@@ -94,3 +94,29 @@ func TestStringSliceAll(t *testing.T) {
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
+
+func TestStringSliceEqual(t *testing.T) {
+	ms := NewStringSlice()
+	ms2 := NewStringSlice()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append("a", "b", "c")
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append("a", "b", "c")
+	assert.True(t, ms.Equal(ms2))
+}
+
+func BenchmarkStringSliceEqual(b *testing.B) {
+	ms := NewStringSlice()
+	ms.Append("a", "b", "c")
+	cmp := NewStringSlice()
+	cmp.Append("a", "b", "c")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}

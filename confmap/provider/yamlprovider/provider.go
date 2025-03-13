@@ -3,6 +3,8 @@
 
 package yamlprovider // import "go.opentelemetry.io/collector/confmap/provider/yamlprovider"
 
+//go:generate mdatagen metadata.yaml
+
 import (
 	"context"
 	"fmt"

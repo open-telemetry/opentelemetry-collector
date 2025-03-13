@@ -97,7 +97,7 @@ func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		if errReq, ok := req.(request.RequestErrorHandler); ok {
+		if errReq, ok := req.(request.ErrorHandler); ok {
 			req = errReq.OnError(err)
 		}
 

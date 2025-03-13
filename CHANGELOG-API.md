@@ -7,6 +7,59 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.27.0/v0.121.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterqueue`: Remove exporterqueue.Factory in favor of the NewQueue function, and merge configs for memory and persistent. (#12509)
+  As a side effect of this change, no alternative implementation of the queue are supported and the Queue interface will be hidden.
+- `exporterhelper`: Update MergeSplit function signature to use the new SizeConfig (#12486)
+- `extension, connector, processor, receiver, exporter, scraper`: Remove deprecated `Create*` methods from `Create*Func` types. (#12305)
+  The `xconnector.CreateMetricsToProfilesFunc.CreateMetricsToProfiles` method has been removed without a deprecation.
+  
+- `component`: Remove deprecated function and interface `ConfigValidator` and `ValidateConfig`. (#11524)
+  - Use `xconfmap.Validator` and `xconfmap.Validate` instead.
+  
+- `receiver, scraper, processor, exporter, extension`: Remove deprecated MakeFactoryMap functions in favor of generic implementation (#12222)
+- `exporterhelper`: Change the signature of the exporterhelper.WithQueueRequest to accept Encoding instead of the Factory. (#12509)
+- `component/componenttest`: Removing the deprecated `CheckReceiverMetrics` and `CheckReceiverTraces` functions. (#12185)
+
+### 🚩 Deprecations 🚩
+
+- `componenttest`: Deprecated componenttest.TestTelemetry in favor of componenttest.Telemetry (#12419)
+- `connector, exporter, extension, processor, receiver, scraper`: Add type parameter to `NewNopSettings` and deprecate `NewNopSettingsWithType` (#12305)
+- `exporterhelper`: Deprecate MinSizeConfig and MaxSizeItems. (#12486)
+- `extension/extensionauth`: Deprecate methods on `*Func` types. (#12480)
+- `extension/auth, extension/auth/authtest`: Deprecate extension/auth and the related test module in favor of extension/extensionauth (#12478)
+
+### 🚀 New components 🚀
+
+- `service/hostcapabilities`: create `service/hostcapabilities` module (#12296, #12375)
+  Removes getExporters interface in service/internal/graph.
+  Removes getModuleInfos interface in service/internal/graph.
+  Creates interface ExposeExporters in service/hostcapabilities to expose GetExporters function.
+  Creates interface ModuleInfo in service/hostcapabilities to expose GetModuleInfos function.
+  
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Adds the config API to support serialized bytes based batching (#3262)
+- `configauth`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `confighttp`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `otelcol`: Converters are now available in the `components` command. (#11900, #12385)
+- `extension`: Mark module as stable (#11005)
+- `pcommon.Map`: preallocate go map in Map.AsRaw() (#12406)
+- `exporterhelper`: Stabilize exporter.UsePullingBasedExporterQueueBatcher and remove old batch sender (#12425)
+- `service`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix broken imports in the generated files. (#12298)
+- `processor, connector, exporter, receiver`: Explicitly error out at component creation time if there is a type mismatch. (#12305)
+
 ## v1.26.0/v0.120.0
 
 ### 🛑 Breaking changes 🛑

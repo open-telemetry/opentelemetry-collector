@@ -30,16 +30,24 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
-type customRoundTripper struct{}
+var (
+	_ extension.Extension  = (*mockAuthServer)(nil)
+	_ extensionauth.Server = (*mockAuthServer)(nil)
+)
 
-var _ http.RoundTripper = (*customRoundTripper)(nil)
+type mockAuthServer struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ServerAuthenticateFunc
+}
 
-func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
-	return nil, nil
+func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
+	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 
 var (
@@ -54,7 +62,7 @@ var (
 func TestAllHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			testAuthID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+			testAuthID: extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -180,7 +188,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 func TestPartialHTTPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			testAuthID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+			testAuthID: extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -332,6 +340,29 @@ func TestHTTPClientSettingsError(t *testing.T) {
 	}
 }
 
+var _ http.RoundTripper = &customRoundTripper{}
+
+type customRoundTripper struct{}
+
+func (c *customRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, nil
+}
+
+var (
+	_ extensionauth.HTTPClient = (*mockClient)(nil)
+	_ extension.Extension      = (*mockClient)(nil)
+)
+
+type mockClient struct {
+	component.StartFunc
+	component.ShutdownFunc
+}
+
+// RoundTripper implements extensionauth.HTTPClient.
+func (m *mockClient) RoundTripper(http.RoundTripper) (http.RoundTripper, error) {
+	return &customRoundTripper{}, nil
+}
+
 func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -348,9 +379,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{},
-					},
+					mockID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -363,7 +392,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -385,7 +414,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: &mockClient{},
 				},
 			},
 		},
@@ -399,7 +428,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: &mockClient{},
 				},
 			},
 		},
@@ -413,7 +442,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: false,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{ResultRoundTripper: &customRoundTripper{}},
+					mockID: &mockClient{},
 				},
 			},
 		},
@@ -426,9 +455,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: &extensionauthtest.MockClient{
-						ResultRoundTripper: &customRoundTripper{}, MustError: true,
-					},
+					mockID: extensionauthtest.NewErrorClient(errors.New("error")),
 				},
 			},
 		},
@@ -825,11 +852,9 @@ func TestHttpCorsWithSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
-				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
-				}),
-			),
+			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, errors.New("Settings failed")
+			}),
 		},
 	}
 
@@ -1137,12 +1162,10 @@ func TestServerAuth(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
-				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-					authCalled = true
-					return ctx, nil
-				}),
-			),
+			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				authCalled = true
+				return ctx, nil
+			}),
 		},
 	}
 
@@ -1188,11 +1211,9 @@ func TestFailedServerAuth(t *testing.T) {
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
-				extensionauth.WithServerAuthenticate(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-					return ctx, errors.New("Settings failed")
-				}),
-			),
+			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, errors.New("Settings failed")
+			}),
 		},
 	}
 
@@ -1369,14 +1390,12 @@ func TestAuthWithQueryParams(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: extensionauth.NewServer(
-				extensionauth.WithServerAuthenticate(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
-					require.Len(t, sources, 1)
-					assert.Equal(t, "1", sources["auth"][0])
-					authCalled = true
-					return ctx, nil
-				}),
-			),
+			mockID: newMockAuthServer(func(ctx context.Context, sources map[string][]string) (context.Context, error) {
+				require.Len(t, sources, 1)
+				assert.Equal(t, "1", sources["auth"][0])
+				authCalled = true
+				return ctx, nil
+			}),
 		},
 	}
 

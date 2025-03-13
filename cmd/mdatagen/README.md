@@ -17,7 +17,7 @@ Examples of this metadata about a component are:
 * its stability level
 * the distributions containing it
 * the types of pipelines it supports
-* metrics emitted in the case of a scraping receiver
+* metrics emitted in the case of a scraping receiver, a scraper, or a connector
 
 The metadata generator defines a schema for specifying this information to ensure it is complete and well-formed.
 The metadata generator is then able to ingest the metadata, validate it against the schema and produce documentation in a standardized format.

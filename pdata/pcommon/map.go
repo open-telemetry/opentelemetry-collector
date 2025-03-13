@@ -310,3 +310,26 @@ func (m Map) FromRaw(rawMap map[string]any) error {
 	*m.getOrig() = origs
 	return errs
 }
+
+// Equal checks equality with another Map
+func (m Map) Equal(val Map) bool {
+	if m.Len() != val.Len() {
+		return false
+	}
+
+	fullEqual := true
+
+	m.Range(func(k string, v Value) bool {
+		vv, ok := val.Get(k)
+		if !ok {
+			fullEqual = false
+			return fullEqual
+		}
+
+		if !v.Equal(vv) {
+			fullEqual = false
+		}
+		return fullEqual
+	})
+	return fullEqual
+}

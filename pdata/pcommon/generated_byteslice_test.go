@@ -94,3 +94,29 @@ func TestByteSliceAll(t *testing.T) {
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
+
+func TestByteSliceEqual(t *testing.T) {
+	ms := NewByteSlice()
+	ms2 := NewByteSlice()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append(1, 2, 3)
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2))
+}
+
+func BenchmarkByteSliceEqual(b *testing.B) {
+	ms := NewByteSlice()
+	ms.Append(1, 2, 3)
+	cmp := NewByteSlice()
+	cmp.Append(1, 2, 3)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}
