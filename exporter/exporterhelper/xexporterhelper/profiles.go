@@ -99,13 +99,11 @@ func NewProfilesExporter(
 	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(opts, options...)...)
 }
 
-// RequestFromProfilesFunc converts pprofile.Profiles into a user-defined Request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromProfilesFunc func(context.Context, pprofile.Profiles) (exporterhelper.Request, error)
+// Deprecated: [v0.122.0] use exporterhelper.RequestConverterFunc[pprofile.Profiles].
+type RequestFromProfilesFunc = exporterhelper.RequestConverterFunc[pprofile.Profiles]
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
-func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestFromProfilesFunc {
+func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConverterFunc[pprofile.Profiles] {
 	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
 		return newProfilesRequest(profiles, pusher), nil
 	}
@@ -117,7 +115,7 @@ func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestFromProfil
 func NewProfilesRequestExporter(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromProfilesFunc,
+	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],
 	options ...exporterhelper.Option,
 ) (xexporter.Profiles, error) {
 	if set.Logger == nil {
@@ -141,7 +139,7 @@ func NewProfilesRequestExporter(
 	return &profileExporter{BaseExporter: be, Profiles: tc}, nil
 }
 
-func newConsumeProfiles(converter RequestFromProfilesFunc, be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
+func newConsumeProfiles(converter exporterhelper.RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {

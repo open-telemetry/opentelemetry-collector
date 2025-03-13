@@ -103,13 +103,11 @@ func NewMetrics(
 	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append([]Option{internal.WithEncoding(&metricsEncoding{pusher: pusher})}, options...)...)
 }
 
-// RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
+// Deprecated: [v0.122.0] use RequestConverterFunc[pmetric.Metrics].
+type RequestFromMetricsFunc = RequestConverterFunc[pmetric.Metrics]
 
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
-func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFunc {
+func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConverterFunc[pmetric.Metrics] {
 	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
 		return newMetricsRequest(md, pusher), nil
 	}
@@ -121,7 +119,7 @@ func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFu
 func NewMetricsRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromMetricsFunc,
+	converter RequestConverterFunc[pmetric.Metrics],
 	options ...Option,
 ) (exporter.Metrics, error) {
 	if set.Logger == nil {
@@ -145,7 +143,7 @@ func NewMetricsRequest(
 	return &metricsExporter{BaseExporter: be, Metrics: mc}, nil
 }
 
-func newConsumeMetrics(converter RequestFromMetricsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
+func newConsumeMetrics(converter RequestConverterFunc[pmetric.Metrics], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
 	return func(ctx context.Context, md pmetric.Metrics) error {
 		req, err := converter(ctx, md)
 		if err != nil {

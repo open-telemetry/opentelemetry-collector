@@ -103,13 +103,11 @@ func NewLogs(
 	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append([]Option{internal.WithEncoding(&logsEncoding{pusher: pusher})}, options...)...)
 }
 
-// RequestFromLogsFunc converts plog.Logs data into a user-defined request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
+// Deprecated: [v0.122.0] use RequestConverterFunc[plog.Logs].
+type RequestFromLogsFunc = RequestConverterFunc[plog.Logs]
 
 // requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
-func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
+func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestConverterFunc[plog.Logs] {
 	return func(_ context.Context, ld plog.Logs) (Request, error) {
 		return newLogsRequest(ld, pusher), nil
 	}
@@ -121,7 +119,7 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 func NewLogsRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromLogsFunc,
+	converter RequestConverterFunc[plog.Logs],
 	options ...Option,
 ) (exporter.Logs, error) {
 	if set.Logger == nil {
@@ -145,7 +143,7 @@ func NewLogsRequest(
 	return &logsExporter{BaseExporter: be, Logs: lc}, nil
 }
 
-func newConsumeLogs(converter RequestFromLogsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
+func newConsumeLogs(converter RequestConverterFunc[plog.Logs], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
 	return func(ctx context.Context, ld plog.Logs) error {
 		req, err := converter(ctx, ld)
 		if err != nil {
