@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -24,16 +25,16 @@ var (
 )
 
 type tracesRequest struct {
-	td               ptrace.Traces
-	pusher           consumer.ConsumeTracesFunc
-	cachedItemsCount int
+	td         ptrace.Traces
+	pusher     consumer.ConsumeTracesFunc
+	cachedSize int
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		td:               td,
-		pusher:           pusher,
-		cachedItemsCount: td.SpanCount(),
+		td:         td,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -66,11 +67,18 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.td.SpanCount()
 }
 
-func (req *tracesRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.TracesSize(req.td)
+	}
+	return req.cachedSize
+}
+
+func (req *tracesRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type tracesExporter struct {
