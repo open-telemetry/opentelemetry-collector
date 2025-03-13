@@ -1,7 +1,6 @@
 # OpenTelemetry Collector Builder (ocb)
 
 This program generates a custom OpenTelemetry Collector binary based on a given configuration.
-test
 
 ## TL;DR
 
