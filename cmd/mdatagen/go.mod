@@ -10,10 +10,13 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.121.0
 	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.27.0
+	go.opentelemetry.io/collector/connector v0.121.0
+	go.opentelemetry.io/collector/connector/connectortest v0.121.0
 	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
 	go.opentelemetry.io/collector/filter v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/pipeline v0.121.0
 	go.opentelemetry.io/collector/processor v0.121.0
 	go.opentelemetry.io/collector/processor/processortest v0.121.0
 	go.opentelemetry.io/collector/receiver v0.121.0
@@ -50,12 +53,14 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.121.0 // indirect
+	go.opentelemetry.io/collector/connector/xconnector v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
+	go.opentelemetry.io/collector/internal/fanoutconsumer v0.121.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.121.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
@@ -122,3 +127,13 @@ replace go.opentelemetry.io/collector/scraper => ../../scraper
 replace go.opentelemetry.io/collector/scraper/scrapertest => ../../scraper/scrapertest
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/connector => ../../connector
+
+replace go.opentelemetry.io/collector/connector/connectortest => ../../connector/connectortest
+
+replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
+
+replace go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
