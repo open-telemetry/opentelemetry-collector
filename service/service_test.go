@@ -63,6 +63,7 @@ var (
 	testInstanceID        = "test_instance_id"
 	testServiceVersion    = "2022-05-20"
 	testServiceName       = "test name"
+	testServiceNamespace  = "test namespace"
 )
 
 // prometheusToOtelConv is used to check that the expected resource labels exist as
@@ -71,11 +72,13 @@ var prometheusToOtelConv = map[string]string{
 	"service_instance_id": "service.instance.id",
 	"service_name":        "service.name",
 	"service_version":     "service.version",
+	"service_namespace":   "service.namespace",
 }
 
 const (
 	metricsVersion = "test version"
 	otelCommand    = "otelcoltest"
+	otelNamespace  = "opentelemetry"
 )
 
 func ownMetricsTestCases() []ownMetricsTestCase {
@@ -93,6 +96,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -104,6 +108,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id":  {state: labelAnyValue},
 				"service_name":         {label: otelCommand, state: labelSpecificValue},
 				"service_version":      {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":    {label: otelNamespace, state: labelSpecificValue},
 				"custom_resource_attr": {label: "resource_attr_test_value", state: labelSpecificValue},
 			},
 		},
@@ -116,6 +121,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_name":        {label: testServiceName, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -127,6 +133,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_name":        {state: labelNotPresent},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -138,6 +145,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {label: "test_instance_id", state: labelSpecificValue},
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -149,6 +157,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelNotPresent},
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -160,6 +169,7 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {label: "2022-05-20", state: labelSpecificValue},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
 			},
 		},
 		{
@@ -171,6 +181,31 @@ func ownMetricsTestCases() []ownMetricsTestCase {
 				"service_instance_id": {state: labelAnyValue},
 				"service_name":        {label: otelCommand, state: labelSpecificValue},
 				"service_version":     {state: labelNotPresent},
+				"service_namespace":   {label: otelNamespace, state: labelSpecificValue},
+			},
+		},
+		{
+			name: "override service.namespace",
+			userDefinedResource: map[string]*string{
+				"service.namespace": &testServiceNamespace,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {label: "test namespace", state: labelSpecificValue},
+			},
+		},
+		{
+			name: "suppress service.namespace",
+			userDefinedResource: map[string]*string{
+				"service.namespace": nil,
+			},
+			expectedLabels: map[string]labelValue{
+				"service_instance_id": {state: labelAnyValue},
+				"service_name":        {label: otelCommand, state: labelSpecificValue},
+				"service_version":     {label: metricsVersion, state: labelSpecificValue},
+				"service_namespace":   {state: labelNotPresent},
 			},
 		},
 	}
@@ -304,7 +339,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	require.NotZero(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
 
 	set := newNopSettings()
-	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand, Namespace: otelNamespace}
 	set.ExtensionsConfigs = map[component.ID]component.Config{
 		component.MustNewID("zpages"): &zpagesextension.Config{
 			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
