@@ -123,6 +123,18 @@ func TestResourceProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestResourceProfilesSliceAll(t *testing.T) {
+	ms := generateTestResourceProfilesSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestResourceProfilesSlice_Sort(t *testing.T) {
 	es := generateTestResourceProfilesSlice()
 	es.Sort(func(a, b ResourceProfiles) bool {

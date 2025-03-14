@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -24,16 +25,16 @@ var (
 )
 
 type tracesRequest struct {
-	td               ptrace.Traces
-	pusher           consumer.ConsumeTracesFunc
-	cachedItemsCount int
+	td         ptrace.Traces
+	pusher     consumer.ConsumeTracesFunc
+	cachedSize int
 }
 
 func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
 	return &tracesRequest{
-		td:               td,
-		pusher:           pusher,
-		cachedItemsCount: td.SpanCount(),
+		td:         td,
+		pusher:     pusher,
+		cachedSize: -1,
 	}
 }
 
@@ -66,11 +67,18 @@ func (req *tracesRequest) Export(ctx context.Context) error {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.td.SpanCount()
 }
 
-func (req *tracesRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.TracesSize(req.td)
+	}
+	return req.cachedSize
+}
+
+func (req *tracesRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type tracesExporter struct {
@@ -95,13 +103,11 @@ func NewTraces(
 	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append([]Option{internal.WithEncoding(&tracesEncoding{pusher: pusher})}, options...)...)
 }
 
-// RequestFromTracesFunc converts ptrace.Traces into a user-defined Request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromTracesFunc func(context.Context, ptrace.Traces) (Request, error)
+// Deprecated: [v0.122.0] use RequestConverterFunc[ptrace.Traces].
+type RequestFromTracesFunc = RequestConverterFunc[ptrace.Traces]
 
-// requestFromTraces returns a RequestFromTracesFunc that converts ptrace.Traces into a Request.
-func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc {
+// requestFromTraces returns a RequestConverterFunc that converts ptrace.Traces into a Request.
+func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestConverterFunc[ptrace.Traces] {
 	return func(_ context.Context, traces ptrace.Traces) (Request, error) {
 		return newTracesRequest(traces, pusher), nil
 	}
@@ -113,7 +119,7 @@ func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestFromTracesFunc 
 func NewTracesRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromTracesFunc,
+	converter RequestConverterFunc[ptrace.Traces],
 	options ...Option,
 ) (exporter.Traces, error) {
 	if set.Logger == nil {
@@ -137,7 +143,7 @@ func NewTracesRequest(
 	return &tracesExporter{BaseExporter: be, Traces: tc}, nil
 }
 
-func newConsumeTraces(converter RequestFromTracesFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeTracesFunc {
+func newConsumeTraces(converter RequestConverterFunc[ptrace.Traces], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeTracesFunc {
 	return func(ctx context.Context, td ptrace.Traces) error {
 		req, err := converter(ctx, td)
 		if err != nil {

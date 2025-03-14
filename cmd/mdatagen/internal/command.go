@@ -92,6 +92,17 @@ func run(ymlPath string) error {
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
 			}
+		} else {
+			if _, err = os.Stat(filepath.Join(codeDir, "generated_status.go")); err == nil {
+				if err = os.Remove(filepath.Join(codeDir, "generated_status.go")); err != nil {
+					return err
+				}
+			}
+			if _, err = os.Stat(filepath.Join(ymlDir, "generated_component_test.go")); err == nil {
+				if err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go")); err != nil {
+					return err
+				}
+			}
 		}
 
 		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
@@ -124,6 +135,27 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
+	} else {
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry_test.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them

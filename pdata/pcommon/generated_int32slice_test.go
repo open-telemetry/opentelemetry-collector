@@ -81,3 +81,42 @@ func TestInt32SliceEnsureCapacity(t *testing.T) {
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
+
+func TestInt32SliceAll(t *testing.T) {
+	ms := NewInt32Slice()
+	ms.FromRaw([]int32{1, 2, 3})
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestInt32SliceEqual(t *testing.T) {
+	ms := NewInt32Slice()
+	ms2 := NewInt32Slice()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append(1, 2, 3)
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2))
+}
+
+func BenchmarkInt32SliceEqual(b *testing.B) {
+	ms := NewInt32Slice()
+	ms.Append(1, 2, 3)
+	cmp := NewInt32Slice()
+	cmp.Append(1, 2, 3)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
+}

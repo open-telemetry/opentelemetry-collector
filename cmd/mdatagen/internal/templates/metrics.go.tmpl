@@ -164,9 +164,8 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 
-{{- if or isReceiver isScraper }}
+{{- if or isReceiver isScraper isConnector }}
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Settings, options ...MetricBuilderOption) *MetricsBuilder {
-{{- end }}
 	{{- range $name, $metric := .Metrics }}
 	{{- if $metric.Warnings.IfEnabled }}
 	if mbc.Metrics.{{ $name.Render }}.Enabled {
@@ -228,6 +227,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 	}
 	return mb
 }
+{{- end }}
 
 {{- if .ResourceAttributes }}
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.

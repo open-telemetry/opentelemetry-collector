@@ -578,6 +578,246 @@ func TestInvalidValue(t *testing.T) {
 	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
 }
 
+func TestValueEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		value      Value
+		comparison Value
+		expected   bool
+	}{
+		{
+			name:       "different types",
+			value:      NewValueEmpty(),
+			comparison: NewValueStr("test"),
+			expected:   false,
+		},
+		{
+			name:       "same empty",
+			value:      NewValueEmpty(),
+			comparison: NewValueEmpty(),
+			expected:   true,
+		},
+		{
+			name:       "same strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("test"),
+			expected:   true,
+		},
+		{
+			name:       "different strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("non-test"),
+			expected:   false,
+		},
+		{
+			name:       "same booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(true),
+			expected:   true,
+		},
+		{
+			name:       "different booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(false),
+			expected:   false,
+		},
+		{
+			name:       "same int",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(1701),
+			expected:   false,
+		},
+		{
+			name:       "same double",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(13.37),
+			expected:   true,
+		},
+		{
+			name:       "different doubles",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(17.01),
+			expected:   false,
+		},
+		{
+			name: "same byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 7, 0, 1})
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "same slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1701}))
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "same map",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different maps",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkValueEqual(b *testing.B) {
+	for _, bb := range []struct {
+		name       string
+		value      Value
+		comparison Value
+	}{
+		{
+			name:       "nil",
+			value:      NewValueEmpty(),
+			comparison: NewValueEmpty(),
+		},
+		{
+			name:       "strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("test"),
+		},
+		{
+			name:       "booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(true),
+		},
+		{
+			name:       "ints",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(42),
+		},
+		{
+			name:       "doubles",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(13.37),
+		},
+		{
+			name: "byte slices",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+		},
+		{
+			name: "slices",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(b, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(b, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+		},
+		{
+			name: "maps",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+		},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for n := 0; n < b.N; n++ {
+				_ = bb.value.Equal(bb.comparison)
+			}
+		})
+	}
+}
+
 func generateTestValueMap() Value {
 	ret := NewValueMap()
 	attrMap := ret.Map()
