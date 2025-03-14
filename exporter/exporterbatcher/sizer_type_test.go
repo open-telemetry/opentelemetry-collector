@@ -24,6 +24,14 @@ func TestSizeTypeUnmarshaler(t *testing.T) {
 	require.NoError(t, confmap.NewFromStringMap(rawConf).Unmarshal(&cfg))
 	require.NoError(t, cfg.Validate())
 
+	require.NoError(t, yaml.Unmarshal([]byte(`sizer: bytes`), &rawConf))
+	require.NoError(t, confmap.NewFromStringMap(rawConf).Unmarshal(&cfg))
+	require.NoError(t, cfg.Validate())
+
+	require.NoError(t, yaml.Unmarshal([]byte(`sizer: 'bytes'`), &rawConf))
+	require.NoError(t, confmap.NewFromStringMap(rawConf).Unmarshal(&cfg))
+	require.NoError(t, cfg.Validate())
+
 	require.NoError(t, yaml.Unmarshal([]byte(`sizer: invalid`), &rawConf))
 	require.ErrorContains(t,
 		confmap.NewFromStringMap(rawConf).Unmarshal(&cfg),
