@@ -26,7 +26,8 @@ func (s *SizerType) UnmarshalText(text []byte) error {
 	switch str := string(text); str {
 	case sizerTypeItems:
 		*s = SizerTypeItems
-	// TODO support setting sizer to SizerTypeBytes when all logs, traces, and metrics batching support it
+	case sizerTypeBytes:
+		*s = SizerTypeBytes
 	default:
 		return fmt.Errorf("invalid sizer: %q", str)
 	}
