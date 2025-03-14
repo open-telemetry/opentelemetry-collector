@@ -137,6 +137,18 @@ func TestSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSliceAll(t *testing.T) {
+	es := Slice(internal.GenerateTestSlice())
+	assert.NotEmpty(t, es.Len())
+
+	var c int
+	for i, v := range es.All() {
+		assert.Equal(t, es.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, es.Len(), c, "All elements should have been visited")
+}
+
 func TestInvalidSlice(t *testing.T) {
 	es := Slice{}
 

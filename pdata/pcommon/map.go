@@ -4,6 +4,8 @@
 package pcommon // import "go.opentelemetry.io/collector/pdata/pcommon"
 
 import (
+	"iter"
+
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/pdata/internal"
@@ -216,11 +218,29 @@ func (m Map) Len() int {
 //	sm.Range(func(k string, v Value) bool {
 //	    ...
 //	})
+//
+// Deprecated: [v0.122.0] use the iterator returned by All instead.
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.getOrig() {
 		kv := &(*m.getOrig())[i]
 		if !f(kv.Key, Value(internal.NewValue(&kv.Value, m.getState()))) {
 			break
+		}
+	}
+}
+
+// All returns an iterator over key-value pairs in the Map.
+//
+//	for k, v := range es.All() {
+//	    ... // Do something with key-value pair
+//	}
+func (m Map) All() iter.Seq2[string, Value] {
+	return func(yield func(string, Value) bool) {
+		for i := range *m.getOrig() {
+			kv := &(*m.getOrig())[i]
+			if !yield(kv.Key, Value(internal.NewValue(&kv.Value, m.getState()))) {
+				return
+			}
 		}
 	}
 }

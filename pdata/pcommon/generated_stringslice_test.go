@@ -82,6 +82,19 @@ func TestStringSliceEnsureCapacity(t *testing.T) {
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 }
 
+func TestStringSliceAll(t *testing.T) {
+	ms := NewStringSlice()
+	ms.FromRaw([]string{"a", "b", "c"})
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestStringSliceEqual(t *testing.T) {
 	ms := NewStringSlice()
 	ms2 := NewStringSlice()

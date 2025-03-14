@@ -123,6 +123,18 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
+	ms := generateTestSummaryDataPointValueAtQuantileSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointValueAtQuantileSlice()
 	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {
