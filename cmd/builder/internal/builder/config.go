@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"golang.org/x/mod/modfile"
 )
 
 const (
@@ -205,6 +206,12 @@ func (c *Config) ParseModules() error {
 	if err != nil {
 		return err
 	}
+
+	c.Replaces, err = parseReplaces(c.Replaces)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -248,16 +255,11 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 		}
 		usedNames[originalModName] = 1
 
-		// Check if path is empty, otherwise filepath.Abs replaces it with current path ".".
 		if mod.Path != "" {
 			var err error
-			mod.Path, err = filepath.Abs(mod.Path)
+			mod.Path, err = preparePath(mod.Path)
 			if err != nil {
-				return mods, fmt.Errorf("module has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
-			}
-			// Check if the path exists
-			if _, err := os.Stat(mod.Path); os.IsNotExist(err) {
-				return mods, fmt.Errorf("filepath does not exist: %s", mod.Path)
+				return mods, err
 			}
 		}
 
@@ -265,4 +267,69 @@ func parseModules(mods []Module, usedNames map[string]int) ([]Module, error) {
 	}
 
 	return parsedModules, nil
+}
+
+// preparePath ensures paths (e.g. for `replace` directives) exist and are re-written to be absolute.
+//
+// This ensures the generated code path does not have be adjacent to the builder config YAML.
+func preparePath(path string) (string, error) {
+	p, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("replace has a relative \"path\" element, but we couldn't resolve the current working dir: %w", err)
+	}
+	// Check if the path exists
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", fmt.Errorf("filepath does not exist: %s", path)
+	}
+	return p, nil
+}
+
+// parseReplaces rewrites `replace` directives for the generated `go.mod`.
+//
+// Currently, this consists of converting any relative paths in `ModulePath [ Version ] => FilePath` replacements
+// to absolute paths. This is required because the `output_path` can be at an arbitrary location (such as in `/tmp`),
+// so paths relative to the builder config will not necessarily be valid.
+//
+// From https://go.dev/ref/mod#go-mod-file-replace, there are two valid formats for a `ReplaceSpec`:
+//   - ModulePath [ Version ] "=>" FilePath
+//   - ModulePath [ Version ] "=>" ModulePath Version
+//
+// ModulePath => FilePath are 3 or 4 tokens long depending on the presence of Version, and there is
+// always a single token (the path) after the `=>` divider token.
+//
+// ModulePath => ModulePath can also be 4 tokens long, but there are always two tokens after the `=>` divider
+// token.
+func parseReplaces(replaces []string) ([]string, error) {
+	// Unfortunately the modfile library does not fully parse these fragments, but it handles lexing the entries.
+	mf, err := modfile.ParseLax("replace-go-mod", []byte(strings.Join(replaces, "\n")), nil)
+	if err != nil {
+		return replaces, err
+	}
+	var parsedReplaces []string
+	for i, stmt := range mf.Syntax.Stmt {
+		line, ok := stmt.(*modfile.Line)
+		if !ok || len(line.Token) < 3 || len(line.Token) > 4 {
+			parsedReplaces = append(parsedReplaces, replaces[i])
+			continue
+		}
+
+		dividerIndex := slices.Index(line.Token, "=>")
+		if dividerIndex < 0 || dividerIndex != len(line.Token)-2 {
+			// If the divider is not the second-to-last token, then this is a ModulePath => ModulePath replacement,
+			// so there is nothing that needs replacing.
+			parsedReplaces = append(parsedReplaces, replaces[i])
+			continue
+		}
+
+		// This is a ModulePath => FilePath replacement, so ensure it exists & make it absolute.
+		p, err := preparePath(strings.Trim(line.Token[dividerIndex+1], `"`))
+		if err != nil {
+			return replaces, err
+		}
+		// It's possible that the absolute path needs to be quoted to be safe to use in the go.mod file.
+		line.Token[dividerIndex+1] = modfile.AutoQuote(p)
+
+		parsedReplaces = append(parsedReplaces, strings.Join(line.Token, " "))
+	}
+	return parsedReplaces, nil
 }
