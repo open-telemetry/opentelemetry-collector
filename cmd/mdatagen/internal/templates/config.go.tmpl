@@ -12,7 +12,8 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool   `mapstructure:"enabled"`
+	Name    string `mapstructure:"name"`
 
 	enabledSetByUser bool
 }
@@ -41,6 +42,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+			Name:    "{{ $name }}",
 		},
 		{{- end }}
 	}
