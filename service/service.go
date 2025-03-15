@@ -137,7 +137,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	sch := semconv.SchemaURL
 
-	views := configureViews(cfg.Telemetry.Metrics.Level)
+	var views []config.View
+	if cfg.Telemetry.Metrics.Views != nil {
+		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
+		}
+		views = cfg.Telemetry.Metrics.Views
+	} else {
+		views = configureViews(cfg.Telemetry.Metrics.Level)
+	}
 
 	readers := cfg.Telemetry.Metrics.Readers
 	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
@@ -406,6 +414,21 @@ func dropViewOption(selector *config.ViewSelector) config.View {
 func configureViews(level configtelemetry.Level) []config.View {
 	views := []config.View{}
 
+	if level < configtelemetry.LevelDetailed {
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+			}),
+		)
+	}
+
+	// Make sure to add the AttributeKeys view after the AggregationDrop view:
+	// Only the first view outputting a given metric identity is actually used, so placing the
+	// AttributeKeys view first would never drop the metrics regadless of level.
 	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
 		views = append(views, []config.View{
 			{
@@ -436,18 +459,6 @@ func configureViews(level configtelemetry.Level) []config.View {
 				},
 			},
 		}...)
-	}
-
-	if level < configtelemetry.LevelDetailed {
-		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
-			}),
-		)
 	}
 
 	// otel-arrow library metrics
