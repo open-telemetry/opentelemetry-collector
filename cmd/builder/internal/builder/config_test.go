@@ -5,6 +5,7 @@ package builder
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -384,4 +385,98 @@ func TestValidateDeprecatedOtelColVersion(t *testing.T) {
 	require.NoError(t, err)
 	cfg.Distribution.OtelColVersion = "test"
 	assert.Error(t, cfg.Validate())
+}
+
+func TestGetGoBuildArgs(t *testing.T) {
+	distribution := Distribution{Name: "default", BuildTags: "default"}
+	oFlagValue := distribution.Name
+	if runtime.GOOS == "windows" {
+		oFlagValue += ".exe"
+	}
+	testCases := []struct {
+		name         string
+		cfg          *Config
+		expectedArgs []string
+	}{
+		{
+			name: "default no overrides",
+			cfg: &Config{
+				Distribution: distribution,
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
+			},
+		},
+		{
+			name: "override ldflags",
+			cfg: &Config{
+				Distribution: distribution,
+				LDSet:        true,
+				LDFlags:      "-msan -f",
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-msan -f", "-gcflags=", "-tags", distribution.BuildTags,
+			},
+		},
+		{
+			name: "override gcflags",
+			cfg: &Config{
+				Distribution: distribution,
+				GCSet:        true,
+				GCFlags:      "-asan",
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-s -w", "-gcflags=-asan", "-tags", distribution.BuildTags,
+			},
+		},
+		{
+			name: "add build flags",
+			cfg: &Config{
+				Distribution: distribution,
+				GoBuildFlags: "-buildvcs=false -p 32",
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
+				"-buildvcs=false", "-p", "32",
+			},
+		},
+		{
+			name: "no build tags in distribution",
+			cfg: &Config{
+				Distribution: func() Distribution {
+					d := distribution
+					d.BuildTags = ""
+					return d
+				}(),
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-s -w", "-gcflags=",
+			},
+		},
+		{
+			name: "tags in go build flags",
+			cfg: &Config{
+				Distribution: distribution,
+				GoBuildFlags: "-tags alternate,tags",
+			},
+			expectedArgs: []string{
+				"build", "-trimpath", "-o", oFlagValue,
+				"-ldflags=-s -w", "-gcflags=", "-tags", distribution.BuildTags,
+				"-tags", "alternate,tags",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.cfg.Logger = zap.NewNop()
+			assert.Equal(t, tc.expectedArgs, tc.cfg.getGoBuildArgs())
+		})
+	}
 }
