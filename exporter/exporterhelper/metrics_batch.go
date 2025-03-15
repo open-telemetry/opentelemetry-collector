@@ -53,7 +53,7 @@ func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) []Request {
 	for req.size(sz) > maxSize {
 		md, rmSize := extractMetrics(req.md, maxSize, sz)
 		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newMetricsRequest(md, req.pusher))
+		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)
 	return res

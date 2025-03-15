@@ -26,3 +26,7 @@ type RequestErrorHandler = request.ErrorHandler
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type RequestConverterFunc[K any] func(context.Context, K) (Request, error)
+
+// RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
+// and accessing it is considered undefined behavior.
+type RequestConsumeFunc = func(context.Context, Request) error

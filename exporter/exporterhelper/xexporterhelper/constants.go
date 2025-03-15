@@ -12,6 +12,8 @@ var (
 	errNilConfig = errors.New("nil config")
 	// errNilLogger is returned when a logger is nil
 	errNilLogger = errors.New("nil logger")
+	// errNilConsumeRequest is returned when a nil PushTraces is given.
+	errNilConsumeRequest = errors.New("nil RequestConsumeFunc")
 	// errNilPushProfileData is returned when a nil PushProfiles is given.
 	errNilPushProfileData = errors.New("nil PushProfiles")
 	// errNilProfilesConverter is returned when a nil RequestFromProfilesFunc is given.
