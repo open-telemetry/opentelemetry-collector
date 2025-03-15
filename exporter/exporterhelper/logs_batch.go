@@ -53,7 +53,7 @@ func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
 	for req.size(sz) > maxSize {
 		ld, rmSize := extractLogs(req.ld, maxSize, sz)
 		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newLogsRequest(ld, req.pusher))
+		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
 	return res
