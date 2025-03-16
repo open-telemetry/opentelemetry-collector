@@ -17,18 +17,11 @@ import (
 )
 
 func TestMergeLogs(t *testing.T) {
-	lr1 := newLogsRequest(testdata.GenerateLogs(2), nil)
-	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
+	lr1 := newLogsRequest(testdata.GenerateLogs(2))
+	lr2 := newLogsRequest(testdata.GenerateLogs(3))
 	res, err := lr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, lr2)
 	require.NoError(t, err)
 	require.Equal(t, 5, res[0].ItemsCount())
-}
-
-func TestMergeLogsInvalidInput(t *testing.T) {
-	lr1 := newTracesRequest(testdata.GenerateTraces(2), nil)
-	lr2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	_, err := lr1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems}, lr2)
-	require.Error(t, err)
 }
 
 func TestMergeSplitLogs(t *testing.T) {
@@ -42,59 +35,59 @@ func TestMergeSplitLogs(t *testing.T) {
 		{
 			name:     "both_requests_empty",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
-			lr2:      newLogsRequest(plog.NewLogs(), nil),
-			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
+			lr1:      newLogsRequest(plog.NewLogs()),
+			lr2:      newLogsRequest(plog.NewLogs()),
+			expected: []Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
-			lr2:      newLogsRequest(testdata.GenerateLogs(5), nil),
-			expected: []Request{newLogsRequest(testdata.GenerateLogs(5), nil)},
+			lr1:      newLogsRequest(plog.NewLogs()),
+			lr2:      newLogsRequest(testdata.GenerateLogs(5)),
+			expected: []Request{newLogsRequest(testdata.GenerateLogs(5))},
 		},
 		{
 			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
+			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      nil,
-			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
+			expected: []Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name: "merge_only",
 			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
-			lr1:  newLogsRequest(testdata.GenerateLogs(4), nil),
-			lr2:  newLogsRequest(testdata.GenerateLogs(6), nil),
+			lr1:  newLogsRequest(testdata.GenerateLogs(4)),
+			lr2:  newLogsRequest(testdata.GenerateLogs(6)),
 			expected: []Request{newLogsRequest(func() plog.Logs {
 				logs := testdata.GenerateLogs(4)
 				testdata.GenerateLogs(6).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 				return logs
-			}(), nil)},
+			}())},
 		},
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 4},
-			lr1:  newLogsRequest(plog.NewLogs(), nil),
-			lr2:  newLogsRequest(testdata.GenerateLogs(10), nil),
+			lr1:  newLogsRequest(plog.NewLogs()),
+			lr2:  newLogsRequest(testdata.GenerateLogs(10)),
 			expected: []Request{
-				newLogsRequest(testdata.GenerateLogs(4), nil),
-				newLogsRequest(testdata.GenerateLogs(4), nil),
-				newLogsRequest(testdata.GenerateLogs(2), nil),
+				newLogsRequest(testdata.GenerateLogs(4)),
+				newLogsRequest(testdata.GenerateLogs(4)),
+				newLogsRequest(testdata.GenerateLogs(2)),
 			},
 		},
 		{
 			name: "merge_and_split",
 			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10},
-			lr1:  newLogsRequest(testdata.GenerateLogs(8), nil),
-			lr2:  newLogsRequest(testdata.GenerateLogs(20), nil),
+			lr1:  newLogsRequest(testdata.GenerateLogs(8)),
+			lr2:  newLogsRequest(testdata.GenerateLogs(20)),
 			expected: []Request{
 				newLogsRequest(func() plog.Logs {
 					logs := testdata.GenerateLogs(8)
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 					return logs
-				}(), nil),
-				newLogsRequest(testdata.GenerateLogs(10), nil),
-				newLogsRequest(testdata.GenerateLogs(8), nil),
+				}()),
+				newLogsRequest(testdata.GenerateLogs(10)),
+				newLogsRequest(testdata.GenerateLogs(8)),
 			},
 		},
 		{
@@ -104,16 +97,16 @@ func TestMergeSplitLogs(t *testing.T) {
 				ld := testdata.GenerateLogs(4)
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("extra log")
 				return ld
-			}(), nil),
-			lr2: newLogsRequest(testdata.GenerateLogs(2), nil),
+			}()),
+			lr2: newLogsRequest(testdata.GenerateLogs(2)),
 			expected: []Request{
-				newLogsRequest(testdata.GenerateLogs(4), nil),
+				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(func() plog.Logs {
 					ld := testdata.GenerateLogs(0)
 					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty().Body().SetStr("extra log")
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
 					return ld
-				}(), nil),
+				}()),
 			},
 		},
 	}
@@ -140,44 +133,44 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		{
 			name:     "both_requests_empty",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10))},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
-			lr2:      newLogsRequest(plog.NewLogs(), nil),
-			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
+			lr1:      newLogsRequest(plog.NewLogs()),
+			lr2:      newLogsRequest(plog.NewLogs()),
+			expected: []Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name:     "first_request_empty",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10))},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
-			lr2:      newLogsRequest(testdata.GenerateLogs(5), nil),
-			expected: []Request{newLogsRequest(testdata.GenerateLogs(5), nil)},
+			lr1:      newLogsRequest(plog.NewLogs()),
+			lr2:      newLogsRequest(testdata.GenerateLogs(5)),
+			expected: []Request{newLogsRequest(testdata.GenerateLogs(5))},
 		},
 		{
 			name:     "first_empty_second_nil",
 			cfg:      exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10))},
-			lr1:      newLogsRequest(plog.NewLogs(), nil),
+			lr1:      newLogsRequest(plog.NewLogs()),
 			lr2:      nil,
-			expected: []Request{newLogsRequest(plog.NewLogs(), nil)},
+			expected: []Request{newLogsRequest(plog.NewLogs())},
 		},
 		{
 			name: "merge_only",
 			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(11))},
-			lr1:  newLogsRequest(testdata.GenerateLogs(4), nil),
-			lr2:  newLogsRequest(testdata.GenerateLogs(6), nil),
+			lr1:  newLogsRequest(testdata.GenerateLogs(4)),
+			lr2:  newLogsRequest(testdata.GenerateLogs(6)),
 			expected: []Request{newLogsRequest(func() plog.Logs {
 				logs := testdata.GenerateLogs(4)
 				testdata.GenerateLogs(6).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 				return logs
-			}(), nil)},
+			}())},
 		},
 		{
 			name: "split_only",
 			cfg:  exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(4))},
-			lr1:  newLogsRequest(plog.NewLogs(), nil),
-			lr2:  newLogsRequest(testdata.GenerateLogs(10), nil),
+			lr1:  newLogsRequest(plog.NewLogs()),
+			lr2:  newLogsRequest(testdata.GenerateLogs(10)),
 			expected: []Request{
-				newLogsRequest(testdata.GenerateLogs(4), nil),
-				newLogsRequest(testdata.GenerateLogs(4), nil),
-				newLogsRequest(testdata.GenerateLogs(2), nil),
+				newLogsRequest(testdata.GenerateLogs(4)),
+				newLogsRequest(testdata.GenerateLogs(4)),
+				newLogsRequest(testdata.GenerateLogs(2)),
 			},
 		},
 		{
@@ -186,16 +179,16 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				Sizer:   exporterbatcher.SizerTypeBytes,
 				MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10))/2 + logsMarshaler.LogsSize(testdata.GenerateLogs(11))/2,
 			},
-			lr1: newLogsRequest(testdata.GenerateLogs(8), nil),
-			lr2: newLogsRequest(testdata.GenerateLogs(20), nil),
+			lr1: newLogsRequest(testdata.GenerateLogs(8)),
+			lr2: newLogsRequest(testdata.GenerateLogs(20)),
 			expected: []Request{
 				newLogsRequest(func() plog.Logs {
 					logs := testdata.GenerateLogs(8)
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 					return logs
-				}(), nil),
-				newLogsRequest(testdata.GenerateLogs(10), nil),
-				newLogsRequest(testdata.GenerateLogs(8), nil),
+				}()),
+				newLogsRequest(testdata.GenerateLogs(10)),
+				newLogsRequest(testdata.GenerateLogs(8)),
 			},
 		},
 		{
@@ -205,16 +198,16 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				ld := testdata.GenerateLogs(4)
 				ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("extra log")
 				return ld
-			}(), nil),
-			lr2: newLogsRequest(testdata.GenerateLogs(2), nil),
+			}()),
+			lr2: newLogsRequest(testdata.GenerateLogs(2)),
 			expected: []Request{
-				newLogsRequest(testdata.GenerateLogs(4), nil),
+				newLogsRequest(testdata.GenerateLogs(4)),
 				newLogsRequest(func() plog.Logs {
 					ld := testdata.GenerateLogs(0)
 					ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty().Body().SetStr("extra log")
 					testdata.GenerateLogs(2).ResourceLogs().MoveAndAppendTo(ld.ResourceLogs())
 					return ld
-				}(), nil),
+				}()),
 			},
 		},
 	}
@@ -231,18 +224,11 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 }
 
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
-	r1 := newLogsRequest(testdata.GenerateLogs(18), nil)
-	r2 := newTracesRequest(testdata.GenerateTraces(3), nil)
+	r1 := newLogsRequest(testdata.GenerateLogs(18))
+	r2 := newTracesRequest(testdata.GenerateTraces(3))
 	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10}, r2)
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
-}
-
-func TestMergeSplitLogsInvalidInput(t *testing.T) {
-	r1 := newTracesRequest(testdata.GenerateTraces(2), nil)
-	r2 := newLogsRequest(testdata.GenerateLogs(3), nil)
-	_, err := r1.MergeSplit(context.Background(), exporterbatcher.SizeConfig{}, r2)
-	require.Error(t, err)
 }
 
 func TestExtractLogs(t *testing.T) {
@@ -257,9 +243,9 @@ func TestExtractLogs(t *testing.T) {
 func TestMergeSplitManySmallLogs(t *testing.T) {
 	// All requests merge into a single batch.
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
-	merged := []Request{newLogsRequest(testdata.GenerateLogs(1), nil)}
+	merged := []Request{newLogsRequest(testdata.GenerateLogs(1))}
 	for j := 0; j < 1000; j++ {
-		lr2 := newLogsRequest(testdata.GenerateLogs(10), nil)
+		lr2 := newLogsRequest(testdata.GenerateLogs(10))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
@@ -270,7 +256,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 	pb := plog.ProtoMarshaler{}
 	// Set max size off by 1, so forces every log to be it's own batch.
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: pb.LogsSize(testdata.GenerateLogs(2)) - 1}
-	lr := newLogsRequest(testdata.GenerateLogs(4), nil)
+	lr := newLogsRequest(testdata.GenerateLogs(4))
 	merged, err := lr.MergeSplit(context.Background(), cfg, nil)
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
@@ -279,7 +265,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 func TestLogsMergeSplitExactItems(t *testing.T) {
 	// Set max size off by 1, so forces every log to be it's own batch.
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 1}
-	lr := newLogsRequest(testdata.GenerateLogs(4), nil)
+	lr := newLogsRequest(testdata.GenerateLogs(4))
 	merged, err := lr.MergeSplit(context.Background(), cfg, nil)
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
@@ -290,9 +276,9 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10010}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(10), nil)}
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
-			lr2 := newLogsRequest(testdata.GenerateLogs(10), nil)
+			lr2 := newLogsRequest(testdata.GenerateLogs(10))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -305,9 +291,9 @@ func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(11000))}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(10), nil)}
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
-			lr2 := newLogsRequest(testdata.GenerateLogs(10), nil)
+			lr2 := newLogsRequest(testdata.GenerateLogs(10))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -320,9 +306,9 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
-			lr2 := newLogsRequest(testdata.GenerateLogs(10001), nil)
+			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -335,9 +321,9 @@ func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10000))}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
-			lr2 := newLogsRequest(testdata.GenerateLogs(10001), nil)
+			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
 			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 			assert.Len(b, res, 2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -351,8 +337,8 @@ func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeItems, MaxSize: 10000}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
-		lr2 := newLogsRequest(testdata.GenerateLogs(100000), nil)
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
@@ -364,8 +350,8 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 	cfg := exporterbatcher.SizeConfig{Sizer: exporterbatcher.SizerTypeBytes, MaxSize: logsMarshaler.LogsSize(testdata.GenerateLogs(10010))}
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		merged := []Request{newLogsRequest(testdata.GenerateLogs(0), nil)}
-		lr2 := newLogsRequest(testdata.GenerateLogs(100000), nil)
+		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
+		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
 		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), cfg, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
@@ -374,7 +360,7 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 
 func TestLogsRequest_MergeSplit_UnknownSizerType(t *testing.T) {
 	// Create a logs request
-	req := newLogsRequest(plog.NewLogs(), nil)
+	req := newLogsRequest(plog.NewLogs())
 
 	// Create config with invalid sizer type by using zero value
 	cfg := exporterbatcher.SizeConfig{

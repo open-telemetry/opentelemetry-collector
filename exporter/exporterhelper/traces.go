@@ -26,44 +26,36 @@ var (
 
 type tracesRequest struct {
 	td         ptrace.Traces
-	pusher     consumer.ConsumeTracesFunc
 	cachedSize int
 }
 
-func newTracesRequest(td ptrace.Traces, pusher consumer.ConsumeTracesFunc) Request {
+func newTracesRequest(td ptrace.Traces) Request {
 	return &tracesRequest{
 		td:         td,
-		pusher:     pusher,
 		cachedSize: -1,
 	}
 }
 
-type tracesEncoding struct {
-	pusher consumer.ConsumeTracesFunc
-}
+type tracesEncoding struct{}
 
-func (te *tracesEncoding) Unmarshal(bytes []byte) (Request, error) {
+func (tracesEncoding) Unmarshal(bytes []byte) (Request, error) {
 	traces, err := tracesUnmarshaler.UnmarshalTraces(bytes)
 	if err != nil {
 		return nil, err
 	}
-	return newTracesRequest(traces, te.pusher), nil
+	return newTracesRequest(traces), nil
 }
 
-func (te *tracesEncoding) Marshal(req Request) ([]byte, error) {
+func (tracesEncoding) Marshal(req Request) ([]byte, error) {
 	return tracesMarshaler.MarshalTraces(req.(*tracesRequest).td)
 }
 
 func (req *tracesRequest) OnError(err error) Request {
 	var traceError consumererror.Traces
 	if errors.As(err, &traceError) {
-		return newTracesRequest(traceError.Data(), req.pusher)
+		return newTracesRequest(traceError.Data())
 	}
 	return req
-}
-
-func (req *tracesRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.td)
 }
 
 func (req *tracesRequest) ItemsCount() int {
@@ -98,18 +90,25 @@ func NewTraces(
 		return nil, errNilConfig
 	}
 	if pusher == nil {
-		return nil, errNilPushTraceData
+		return nil, errNilPushTraces
 	}
-	return NewTracesRequest(ctx, set, requestFromTraces(pusher), append([]Option{internal.WithEncoding(&tracesEncoding{pusher: pusher})}, options...)...)
+	return NewTracesRequest(ctx, set, requestFromTraces(), requestConsumeFromTraces(pusher), append([]Option{internal.WithEncoding(tracesEncoding{})}, options...)...)
 }
 
 // Deprecated: [v0.122.0] use RequestConverterFunc[ptrace.Traces].
 type RequestFromTracesFunc = RequestConverterFunc[ptrace.Traces]
 
+// requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
+func requestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) RequestConsumeFunc {
+	return func(ctx context.Context, request Request) error {
+		return pusher.ConsumeTraces(ctx, request.(*tracesRequest).td)
+	}
+}
+
 // requestFromTraces returns a RequestConverterFunc that converts ptrace.Traces into a Request.
-func requestFromTraces(pusher consumer.ConsumeTracesFunc) RequestConverterFunc[ptrace.Traces] {
+func requestFromTraces() RequestConverterFunc[ptrace.Traces] {
 	return func(_ context.Context, traces ptrace.Traces) (Request, error) {
-		return newTracesRequest(traces, pusher), nil
+		return newTracesRequest(traces), nil
 	}
 }
 
@@ -120,6 +119,7 @@ func NewTracesRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestConverterFunc[ptrace.Traces],
+	pusher RequestConsumeFunc,
 	options ...Option,
 ) (exporter.Traces, error) {
 	if set.Logger == nil {
@@ -130,7 +130,11 @@ func NewTracesRequest(
 		return nil, errNilTracesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, options...)
+	if pusher == nil {
+		return nil, errNilConsumeRequest
+	}
+
+	be, err := internal.NewBaseExporter(set, pipeline.SignalTraces, pusher, options...)
 	if err != nil {
 		return nil, err
 	}

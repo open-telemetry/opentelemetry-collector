@@ -26,44 +26,36 @@ var (
 
 type metricsRequest struct {
 	md         pmetric.Metrics
-	pusher     consumer.ConsumeMetricsFunc
 	cachedSize int
 }
 
-func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
+func newMetricsRequest(md pmetric.Metrics) Request {
 	return &metricsRequest{
 		md:         md,
-		pusher:     pusher,
 		cachedSize: -1,
 	}
 }
 
-type metricsEncoding struct {
-	pusher consumer.ConsumeMetricsFunc
-}
+type metricsEncoding struct{}
 
-func (me *metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
+func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 	if err != nil {
 		return nil, err
 	}
-	return newMetricsRequest(metrics, me.pusher), nil
+	return newMetricsRequest(metrics), nil
 }
 
-func (me *metricsEncoding) Marshal(req Request) ([]byte, error) {
+func (metricsEncoding) Marshal(req Request) ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
 }
 
 func (req *metricsRequest) OnError(err error) Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
-		return newMetricsRequest(metricsError.Data(), req.pusher)
+		return newMetricsRequest(metricsError.Data())
 	}
 	return req
-}
-
-func (req *metricsRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.md)
 }
 
 func (req *metricsRequest) ItemsCount() int {
@@ -98,18 +90,25 @@ func NewMetrics(
 		return nil, errNilConfig
 	}
 	if pusher == nil {
-		return nil, errNilPushMetricsData
+		return nil, errNilPushMetrics
 	}
-	return NewMetricsRequest(ctx, set, requestFromMetrics(pusher), append([]Option{internal.WithEncoding(&metricsEncoding{pusher: pusher})}, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher), append([]Option{internal.WithEncoding(metricsEncoding{})}, options...)...)
 }
 
 // Deprecated: [v0.122.0] use RequestConverterFunc[pmetric.Metrics].
 type RequestFromMetricsFunc = RequestConverterFunc[pmetric.Metrics]
 
+// requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
+func requestConsumeFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConsumeFunc {
+	return func(ctx context.Context, request Request) error {
+		return pusher.ConsumeMetrics(ctx, request.(*metricsRequest).md)
+	}
+}
+
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
-func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConverterFunc[pmetric.Metrics] {
+func requestFromMetrics() RequestConverterFunc[pmetric.Metrics] {
 	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
-		return newMetricsRequest(md, pusher), nil
+		return newMetricsRequest(md), nil
 	}
 }
 
@@ -120,6 +119,7 @@ func NewMetricsRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter RequestConverterFunc[pmetric.Metrics],
+	pusher RequestConsumeFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
 	if set.Logger == nil {
@@ -130,7 +130,11 @@ func NewMetricsRequest(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, options...)
+	if pusher == nil {
+		return nil, errNilConsumeRequest
+	}
+
+	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, pusher, options...)
 	if err != nil {
 		return nil, err
 	}
