@@ -63,7 +63,7 @@ Before the release, make sure there are no open release blockers in [core](https
    
 6. Wait for the new tag build to pass successfully.
 
-7. A new `v0.85.0` source code release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md and CHANGELOG-API.md as the release's description.
+7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
 ## Releasing opentelemetry-collector-contrib
 
