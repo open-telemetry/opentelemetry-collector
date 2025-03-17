@@ -6,6 +6,7 @@ package exporterqueue
 import (
 	"context"
 	"errors"
+	"math"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -17,20 +18,37 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func TestDisabledPassErrorBack(t *testing.T) {
+func TestWaitingQueuePassErrorBack(t *testing.T) {
 	myErr := errors.New("test error")
-	q := newDisabledQueue[int64](func(_ context.Context, _ int64, done Done) {
+	q := newWaitingQueue[int64](&requestSizer[int64]{}, math.MaxInt64, true, func(_ context.Context, _ int64, done Done) {
 		done.OnDone(myErr)
 	})
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
-	require.ErrorIs(t, q.Offer(context.Background(), int64(1)), myErr)
+	require.ErrorIs(t, q.Offer(context.Background(), 1), myErr)
 	require.NoError(t, q.Shutdown(context.Background()))
 }
 
-func TestDisabledCancelIncomingRequest(t *testing.T) {
+func TestWaitingQueueBlockingCancelled(t *testing.T) {
+	q := newWaitingQueue[int64](sizerInt64{}, 1, true, func(_ context.Context, _ int64, done Done) {
+		done.OnDone(nil)
+	})
+	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.ErrorIs(t, q.Offer(ctx, 3), context.Canceled)
+	}()
+	wg.Wait()
+	require.NoError(t, q.Shutdown(context.Background()))
+}
+
+func TestWaitingQueueCancelIncomingRequest(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newDisabledQueue[int64](func(_ context.Context, _ int64, done Done) {
+	q := newWaitingQueue[int64](&requestSizer[int64]{}, math.MaxInt64, true, func(_ context.Context, _ int64, done Done) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -52,10 +70,10 @@ func TestDisabledCancelIncomingRequest(t *testing.T) {
 	wg.Wait()
 }
 
-func TestDisabledSizeAndCapacity(t *testing.T) {
+func TestWaitingQueueSizeAndCapacity(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newDisabledQueue[int64](func(_ context.Context, _ int64, done Done) {
+	q := newWaitingQueue[int64](&requestSizer[int64]{}, math.MaxInt64, true, func(_ context.Context, _ int64, done Done) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -65,23 +83,23 @@ func TestDisabledSizeAndCapacity(t *testing.T) {
 	})
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	assert.EqualValues(t, 0, q.Size())
-	assert.EqualValues(t, 0, q.Capacity())
+	assert.EqualValues(t, math.MaxInt64, q.Capacity())
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		assert.NoError(t, q.Offer(context.Background(), int64(1)))
 	}()
 	assert.Eventually(t, func() bool { return q.Size() == 1 }, 1*time.Second, 10*time.Millisecond)
-	assert.EqualValues(t, 0, q.Capacity())
+	assert.EqualValues(t, math.MaxInt64, q.Capacity())
 	close(stop)
 	require.NoError(t, q.Shutdown(context.Background()))
 	wg.Wait()
 }
 
-func TestDisabledQueueMultiThread(t *testing.T) {
+func TestWaitingQueueMultiThread(t *testing.T) {
 	buf := newBuffer()
 	buf.start()
-	q := newDisabledQueue[int64](buf.consume)
+	q := newWaitingQueue[int64](&requestSizer[int64]{}, math.MaxInt64, true, buf.consume)
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	wg := sync.WaitGroup{}
 	for i := 0; i < 10; i++ {
@@ -99,9 +117,9 @@ func TestDisabledQueueMultiThread(t *testing.T) {
 	assert.Equal(t, int64(10*10_000), buf.consumed())
 }
 
-func BenchmarkDisabledQueueOffer(b *testing.B) {
+func BenchmarkWaitingQueueOffer(b *testing.B) {
 	consumed := &atomic.Int64{}
-	q := newDisabledQueue[int64](func(_ context.Context, _ int64, done Done) {
+	q := newWaitingQueue[int64](&requestSizer[int64]{}, math.MaxInt64, true, func(_ context.Context, _ int64, done Done) {
 		consumed.Add(1)
 		done.OnDone(nil)
 	})

@@ -6,6 +6,7 @@ package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporter
 import (
 	"context"
 	"errors"
+	"math"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -75,7 +76,7 @@ type Encoding[T any] interface {
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewQueue[T any](_ context.Context, set Settings[T], cfg Config, consume ConsumeFunc[T]) Queue[T] {
 	if !cfg.Enabled {
-		return newDisabledQueue(consume)
+		return newWaitingQueue(&requestSizer[T]{}, math.MaxInt64, true, consume)
 	}
 	if cfg.StorageID != nil {
 		q := newPersistentQueue[T](persistentQueueSettings[T]{
