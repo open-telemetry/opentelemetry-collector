@@ -218,8 +218,6 @@ func (m Map) Len() int {
 //	sm.Range(func(k string, v Value) bool {
 //	    ...
 //	})
-//
-// Deprecated: [v0.122.0] use the iterator returned by All instead.
 func (m Map) Range(f func(k string, v Value) bool) {
 	for i := range *m.getOrig() {
 		kv := &(*m.getOrig())[i]
