@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -119,7 +120,11 @@ func TestMergeSplitProfiles(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expected), len(res))
 			for i, r := range res {
-				assert.Equal(t, tt.expected[i], r)
+				expected := tt.expected[i].(*profilesRequest)
+				actual := r.(*profilesRequest)
+
+				assert.Equal(t, expected.size(&sizer.ProfilesCountSizer{}), actual.size(&sizer.ProfilesCountSizer{}))
+				assert.Equal(t, expected.ItemsCount(), actual.ItemsCount())
 			}
 		})
 	}
@@ -128,7 +133,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 func TestExtractProfiles(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		ld := testdata.GenerateProfiles(10)
-		extractedProfiles := extractProfiles(ld, i)
+		extractedProfiles, _ := extractProfiles(ld, i, &sizer.ProfilesCountSizer{})
 		assert.Equal(t, i, extractedProfiles.SampleCount())
 		assert.Equal(t, 10-i, ld.SampleCount())
 	}
