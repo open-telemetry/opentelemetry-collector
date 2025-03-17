@@ -272,6 +272,11 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
+	err = service.ValidateConnectors(cfg.Connectors, cfg.Service.Pipelines, factories.Connectors)
+	if err != nil {
+		return err
+	}
+
 	return xconfmap.Validate(cfg)
 }
 

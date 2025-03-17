@@ -37,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/proctelemetry"
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
@@ -523,6 +524,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 		}))
 	}
 	return views
+}
+
+// ValidateConnectors is a wrapper around the internal graph.ValidateConnectors function.
+func ValidateConnectors(connectorCfg map[component.ID]component.Config, pipelines pipelines.Config, factories map[component.Type]connector.Factory) error {
+	connectorBuilder := builders.NewConnector(connectorCfg, factories)
+	connectors, connectorsAsExporter, connectorsAsReceiver := graph.ExtractConnectors(pipelines, connectorBuilder)
+
+	// Validate connectors using the internal graph package.
+	return graph.ValidateConnectors(connectors, connectorsAsExporter, connectorsAsReceiver, connectorBuilder)
 }
 
 func ptr[T any](v T) *T {
