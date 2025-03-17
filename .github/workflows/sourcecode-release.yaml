@@ -13,9 +13,18 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+
+      - name: Prepare release notes
+        run: |
+          touch release-notes.md
+          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}" >> release-notes.md
+
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md >> release-notes.md
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md >> release-notes.md
+
       - name: Create Github Release
         run: |
-          gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -n "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}"
+          gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -F release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
