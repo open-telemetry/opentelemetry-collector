@@ -4,14 +4,14 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.27.0
+	go.opentelemetry.io/collector/component v1.28.0
 	go.opentelemetry.io/collector/component/componenttest v0.121.0
-	go.opentelemetry.io/collector/consumer v1.27.0
+	go.opentelemetry.io/collector/consumer v1.28.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
-	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/pdata v1.28.0
 	go.opentelemetry.io/collector/pdata/testdata v0.121.0
 	go.opentelemetry.io/collector/pipeline v0.121.0
-	go.opentelemetry.io/collector/receiver v0.121.0
+	go.opentelemetry.io/collector/receiver v1.28.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250306210537-36eaf6a917b5
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0
 	go.opentelemetry.io/collector/scraper v0.121.0
