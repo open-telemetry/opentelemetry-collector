@@ -23,7 +23,8 @@ jobs:
           awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md # select changelog of latest version only
           sed '1,3d' tmp-chlog.md >> release-notes.md # delete first 3 lines of file
 
-          echo "\n## API Changelog" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## API Changelog" >> release-notes.md
 
           awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md # select changelog of latest version only
           sed '1,3d' tmp-chlog-api.md >> release-notes.md # delete first 3 lines of file
