@@ -243,7 +243,7 @@ func TestExtractTraces(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		td := testdata.GenerateTraces(10)
 		extractedTraces, removedSize := extractTraces(td, i, &sizer.TracesCountSizer{})
-		assert.Equal(t, i, extractedTraces.SpanCount())
+		assert.Equal(t, i, extractedTraces.ItemsCount())
 		assert.Equal(t, 10-i, td.SpanCount())
 		assert.Equal(t, i, removedSize)
 	}

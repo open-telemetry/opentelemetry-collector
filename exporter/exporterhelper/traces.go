@@ -25,14 +25,16 @@ var (
 )
 
 type tracesRequest struct {
-	td         ptrace.Traces
-	cachedSize int
+	td          ptrace.Traces
+	cachedItems int
+	cachedBytes int
 }
 
 func newTracesRequest(td ptrace.Traces) Request {
 	return &tracesRequest{
-		td:         td,
-		cachedSize: -1,
+		td:          td,
+		cachedItems: td.SpanCount(),
+		cachedBytes: -1,
 	}
 }
 
@@ -59,18 +61,15 @@ func (req *tracesRequest) OnError(err error) Request {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	return req.cachedItems
 }
 
-func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.TracesSize(req.td)
+func (req *tracesRequest) getBytes() int {
+	if req.cachedBytes == -1 {
+		sz := sizer.TracesBytesSizer{}
+		req.cachedBytes = sz.TracesSize(req.td)
 	}
-	return req.cachedSize
-}
-
-func (req *tracesRequest) setCachedSize(size int) {
-	req.cachedSize = size
+	return req.cachedBytes
 }
 
 type tracesExporter struct {

@@ -15,13 +15,7 @@ import (
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
 func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
-	var sz sizer.TracesSizer
-	switch cfg.Sizer {
-	case exporterbatcher.SizerTypeItems:
-		sz = &sizer.TracesCountSizer{}
-	case exporterbatcher.SizerTypeBytes:
-		sz = &sizer.TracesBytesSizer{}
-	default:
+	if cfg.Sizer != exporterbatcher.SizerTypeItems && cfg.Sizer != exporterbatcher.SizerTypeBytes {
 		return nil, errors.New("unknown sizer type")
 	}
 
@@ -30,37 +24,55 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Size
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		req2.mergeTo(req)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
 	if cfg.MaxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(cfg.MaxSize, sz), nil
+	return req.split(cfg), nil
 }
 
-func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
-	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+func (req *tracesRequest) mergeTo(dst *tracesRequest) {
+	dst.cachedItems += req.cachedItems
+	// If bytes size is calculated, then use it.
+	if dst.cachedBytes != -1 {
+		dst.cachedBytes += req.getBytes()
 	}
+	// Reset initial request cache sizes.
+	req.cachedItems = 0
+	req.cachedBytes = -1
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
+func (req *tracesRequest) split(cfg exporterbatcher.SizeConfig) []Request {
 	var res []Request
-	for req.size(sz) > maxSize {
-		td, rmSize := extractTraces(req.td, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newTracesRequest(td))
+	switch cfg.Sizer {
+	case exporterbatcher.SizerTypeItems:
+		sz := &sizer.TracesCountSizer{}
+		for req.cachedItems > cfg.MaxSize {
+			eReq, _ := extractTraces(req.td, cfg.MaxSize, sz)
+			req.cachedItems -= eReq.ItemsCount()
+			req.cachedBytes = -1
+			res = append(res, eReq)
+		}
+	case exporterbatcher.SizerTypeBytes:
+		sz := &sizer.TracesBytesSizer{}
+		for req.getBytes() > cfg.MaxSize {
+			eReq, removedBytes := extractTraces(req.td, cfg.MaxSize, sz)
+			req.cachedItems -= eReq.ItemsCount()
+			req.cachedBytes -= removedBytes
+			res = append(res, eReq)
+		}
 	}
+
 	res = append(res, req)
 	return res
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.
-func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) (ptrace.Traces, int) {
+func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) (Request, int) {
 	destTraces := ptrace.NewTraces()
 	capacityLeft := capacity - sz.TracesSize(destTraces)
 	removedSize := 0
@@ -93,7 +105,7 @@ func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) 
 		srcRS.MoveTo(destTraces.ResourceSpans().AppendEmpty())
 		return true
 	})
-	return destTraces, removedSize
+	return newTracesRequest(destTraces), removedSize
 }
 
 // extractResourceSpans extracts spans and returns a new resource spans with the specified number of spans.
