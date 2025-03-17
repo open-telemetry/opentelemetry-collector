@@ -17,10 +17,16 @@ jobs:
       - name: Prepare release notes
         run: |
           touch release-notes.md
-          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}" >> release-notes.md
+          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}\n" >> release-notes.md
+          echo "## End User Changelog" >> release-notes.md
 
-          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md >> release-notes.md
-          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md >> release-notes.md
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md
+          sed '1,3d' tmp-chlog.md >> release-notes.md # delete first 3 lines of file
+
+          echo "\n## API Changelog" >> release-notes.md
+
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md
+          sed '1,3d' tmp-chlog-api.md >> release-notes.md # delete first 3 lines of file
 
       - name: Create Github Release
         run: |
