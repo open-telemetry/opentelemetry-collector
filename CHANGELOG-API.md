@@ -7,6 +7,47 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.28.0/v0.122.0
+
+### 🛑 Breaking changes 🛑
+
+- `auth, authtest`: Remove deprecated modules extension/auth and extension/auth/authtest (#12543)
+  Use extension/extensionauth and extension/extensionauth/extensionauthtest instead.
+  
+- `extensionauth`: Remove deprecated methods from the `Func` types. (#12547)
+- `extensiontest, connectortest, processortest, receivertest, scrapertest, exportertest`: Remove deprecated `NewNopSettingsWithType` functions, use `NewNopSettings` instead. (#12221)
+- `extensionauthtest`: Remove the `extensionauthtest.MockClient` struct. (#12567)
+  - Use `extensionauthtest.NewNopClient` to create a client with a noop implementation. 
+  - Use `extensionauthtest.NewErrorClient` to create a client that always returns an error.
+  - Implement the `extensionauth` interfaces for custom mock client implementations.
+  
+- `component/componenttest`: Remove the deprecated componenttest.TestTelemetry in favor of componenttest.Telemetry (#12419)
+- `exporterhelper`: Remove the Request.Export function in favor of an equivalent request consume func in the New[Traces|Metrics|Logs|Profiles]Request (#12637)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate per signal converter in favor of generic version (#12631)
+- `extensionauth`: Deprecate `extensionauth.NewClient` and `extensionauth.NewServer`. (#12574)
+  - Manually implement the interfaces instead.
+  
+- `configauth`: Deprecate `configauth.Authenticator.GetClientAuthenticator`. (#12574)
+  - Use the per-protocol methods instead.
+  
+
+### 🚀 New components 🚀
+
+- `receiverhelper`: Split `receiverhelper` into a separate module (#28328)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add `supportsSignal` func for `Metadata` type in `mdatagen`. (#12640)
+- `receiver`: Mark module as stable (#12513)
+- `pdata/pcommon`: Introduce `Equal()` method for comparison equality to `Value`, `ByteSlice`, `Float64Slice`, `Int32Slice`, `Int64Slice`, `StringSlice`, `Uint64Slice`, `Map` and `Slice` (#12594)
+- `pdata`: Add iterator All method to pdata slices and map types. (#11982)
+- `pdata/pprofile`: Introduce AddAttribute helper method to modify the content of attributable records (#12206)
+
+<!-- previous-version -->
+
 ## v1.27.0/v0.121.0
 
 ### 🛑 Breaking changes 🛑
