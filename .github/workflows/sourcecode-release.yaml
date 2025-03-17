@@ -17,7 +17,8 @@ jobs:
       - name: Prepare release notes
         run: |
           touch release-notes.md
-          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}\n" >> release-notes.md
+          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}" >> release-notes.md
+          echo "" >> release-notes.md
           echo "## End User Changelog" >> release-notes.md
 
           awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md # select changelog of latest version only
