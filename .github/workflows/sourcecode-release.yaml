@@ -20,12 +20,12 @@ jobs:
           echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}\n" >> release-notes.md
           echo "## End User Changelog" >> release-notes.md
 
-          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md # select changelog of latest version only
           sed '1,3d' tmp-chlog.md >> release-notes.md # delete first 3 lines of file
 
           echo "\n## API Changelog" >> release-notes.md
 
-          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md # select changelog of latest version only
           sed '1,3d' tmp-chlog-api.md >> release-notes.md # delete first 3 lines of file
 
       - name: Create Github Release
