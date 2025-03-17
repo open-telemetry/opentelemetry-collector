@@ -5,22 +5,22 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.0
 	go.opentelemetry.io/collector/confmap v1.28.0
 	go.opentelemetry.io/collector/consumer v1.28.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.121.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0
-	go.opentelemetry.io/collector/internal/memorylimiter v0.121.0
-	go.opentelemetry.io/collector/internal/telemetry v0.121.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.122.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.122.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.122.0
+	go.opentelemetry.io/collector/internal/memorylimiter v0.122.0
+	go.opentelemetry.io/collector/internal/telemetry v0.122.0
 	go.opentelemetry.io/collector/pdata v1.28.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.121.0
-	go.opentelemetry.io/collector/pipeline v0.121.0
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.0
-	go.opentelemetry.io/collector/processor v0.121.0
-	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.121.0
-	go.opentelemetry.io/collector/processor/processortest v0.121.0
-	go.opentelemetry.io/collector/processor/xprocessor v0.121.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.122.0
+	go.opentelemetry.io/collector/pipeline v0.122.0
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.0
+	go.opentelemetry.io/collector/processor v0.122.0
+	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.122.0
+	go.opentelemetry.io/collector/processor/processortest v0.122.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
@@ -55,9 +55,9 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component/componentstatus v0.121.0 // indirect
+	go.opentelemetry.io/collector/component/componentstatus v0.122.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.28.0 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.121.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.122.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.37.0 // indirect

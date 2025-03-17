@@ -5,11 +5,11 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.0
 	go.opentelemetry.io/collector/confmap v1.28.0
 	go.opentelemetry.io/collector/extension v1.28.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.121.0
-	go.opentelemetry.io/collector/internal/memorylimiter v0.121.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.122.0
+	go.opentelemetry.io/collector/internal/memorylimiter v0.122.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
