@@ -75,7 +75,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 			component.MustNewType("watcher"): newExtensionFactory(),
 		},
 	}
-	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest", Namespace: "opentelemetry"}
 
 	cfg := service.Config{
 		Telemetry: telemetry.Config{
