@@ -25,15 +25,15 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.28.0 // indirect
-	go.opentelemetry.io/collector/component v1.28.0 // indirect
+	go.opentelemetry.io/collector/client v1.28.1 // indirect
+	go.opentelemetry.io/collector/component v1.28.1 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.122.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.28.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.28.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.28.0 // indirect
-	go.opentelemetry.io/collector/extension v1.28.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.28.1 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.28.1 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.28.1 // indirect
+	go.opentelemetry.io/collector/extension v1.28.1 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v0.122.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.28.1 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect

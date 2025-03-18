@@ -4,12 +4,12 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/confmap v1.28.0
-	go.opentelemetry.io/collector/confmap/provider/envprovider v1.28.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.28.0
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.28.0
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.28.0
+	go.opentelemetry.io/collector/component v1.28.1
+	go.opentelemetry.io/collector/confmap v1.28.1
+	go.opentelemetry.io/collector/confmap/provider/envprovider v1.28.1
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.28.1
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v1.28.1
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.28.1
 	go.opentelemetry.io/collector/confmap/xconfmap v0.122.0
 	go.opentelemetry.io/collector/connector/connectortest v0.122.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.122.0
@@ -66,24 +66,24 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.122.0 // indirect
 	go.opentelemetry.io/collector/connector v0.122.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.122.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.28.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.28.1 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.122.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.122.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.122.0 // indirect
-	go.opentelemetry.io/collector/extension v1.28.0 // indirect
+	go.opentelemetry.io/collector/extension v1.28.1 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.122.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.122.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.122.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.28.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.122.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.0 // indirect
 	go.opentelemetry.io/collector/processor v0.122.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.122.0 // indirect
-	go.opentelemetry.io/collector/receiver v1.28.0 // indirect
+	go.opentelemetry.io/collector/receiver v1.28.1 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.122.0 // indirect
 	go.opentelemetry.io/collector/service/hostcapabilities v0.122.0 // indirect
