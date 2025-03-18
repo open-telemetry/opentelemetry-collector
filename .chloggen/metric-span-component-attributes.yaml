@@ -24,10 +24,7 @@ subtext: |
   - `otelcol.signal.output`
   These attributes are defined in the [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md#attributes),
   and identify the component instance from which the telemetry originates.
-  These attributes are added automatically without changes to component code by wrapping the
-  `MeterProvider`, `TracerProvider`, and `Logger` provided to them.
-  Components will be able to opt out of one or more of these attributes, but that API is not yet
-  publicly available.
+  These attributes are added automatically without changes to component code.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
