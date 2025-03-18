@@ -1,0 +1,40 @@
+# {{ .BuildInfo.Command }} {{ .BuildInfo.Version }}
+
+{{ .BuildInfo.Description }}
+
+| Connectors                                     | Version       | Traces To Traces | Traces To Metrics | Traces To Logs | Metrics To Traces |	Metrics To Logs | Logs To Traces | Logs To Metrics | Logs To Logs |
+|:---------------------------------------------------------------|:-----------------|:------------------|:---------------|:------------------|:-----------------|:---------------|:----------------|:-------------|
+{{- range .Connectors }}
+| [{{ .Factory.Type }}]({{ .URL }})              | {{.Version}}  | {{ if .Factory.TracesToTracesStability }}[{{.Factory.TracesToTracesStability}}]{{ end }} | {{ if .Factory.TracesToMetricsStability }}[{{.Factory.TracesToMetricsStability}}]{{ end }} | {{ if .Factory.TracesToLogsStability }}[{{.Factory.TracesToLogsStability}}]{{ end }} | {{ if .Factory.MetricsToTracesStability }}[{{.Factory.MetricsToTracesStability}}]{{ end }} | {{ if .Factory.MetricsToMetricsStability }}[{{.Factory.MetricsToMetricsStability}}]{{ end }} | {{ if .Factory.MetricsToLogsStability }}[{{.Factory.MetricsToLogsStability}}]{{ end }} | {{ if .Factory.LogsToTracesStability }}[{{.Factory.LogsToTracesStability}}]{{ end }} | {{ if .Factory.LogsToMetricsStability }}[{{.Factory.LogsToMetricsStability}}]{{ end }} | {{ if .Factory.LogsToLogsStability }}[{{.Factory.LogsToLogsStability}}]{{ end }} |
+{{- end }}
+
+| Exporters                                      | Version       | Logs           | Metrics        | Traces         |
+|:---------------------------------------------------------------|:---------------|:---------------|:---------------|
+{{- range .Exporters }}
+| [{{ .Factory.Type }}]({{ .URL }})              | {{.Version}}  | {{ if .Factory.LogsStability }}[{{.Factory.LogsStability}}]{{ end }} | {{ if .Factory.MetricsStability }}[{{.Factory.MetricsStability}}]{{ end }} | {{ if .Factory.TracesStability }}[{{.Factory.TracesStability}}]{{ end }} |
+{{- end }}
+
+| Extensions                                     | Version       | Stability         |
+|:---------------------------------------------------------------|:---------------|
+{{- range .Extensions }}
+| [{{ .Factory.Type }}]({{ .URL }})              | {{.Version}}  | {{ if .Factory.Stability }}[{{.Factory.Stability}}]{{ end }} |
+{{- end }}
+
+| Processors                                     | Version       | Logs           | Metrics        | Traces         |
+|:---------------------------------------------------------------|:---------------|:---------------|:---------------|
+{{- range .Processors }}
+| [{{ .Factory.Type }}]({{ .URL }})              | {{.Version}}  | {{ if .Factory.LogsStability }}[{{.Factory.LogsStability}}]{{ end }} | {{ if .Factory.MetricsStability }}[{{.Factory.MetricsStability}}]{{ end }} | {{ if .Factory.TracesStability }}[{{.Factory.TracesStability}}]{{ end }} |
+{{- end }}
+
+| Receivers                                      | Version       | Logs           | Metrics        | Traces         |
+|:---------------------------------------------------------------|:---------------|:---------------|:---------------|
+{{- range .Receivers }}
+| [{{ .Factory.Type }}]({{ .URL }})              | {{.Version}}  | {{ if .Factory.LogsStability }}[{{.Factory.LogsStability}}]{{ end }} | {{ if .Factory.MetricsStability }}[{{.Factory.MetricsStability}}]{{ end }} | {{ if .Factory.TracesStability }}[{{.Factory.TracesStability}}]{{ end }} |
+{{- end }}
+
+[Development]: https://github.com/open-telemetry/opentelemetry-collector#development
+[Alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[Beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[Stable]: https://github.com/open-telemetry/opentelemetry-collector#stable
+[Deprecated]: https://github.com/open-telemetry/opentelemetry-collector#deprecated
+[Unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
