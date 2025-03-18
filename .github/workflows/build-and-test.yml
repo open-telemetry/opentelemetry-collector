@@ -234,8 +234,9 @@ jobs:
           # on macOS: https://go.dev/doc/go1.15
           #- goos: darwin
           #  goarch: 386
-          - goos: aix
-            goarch: ppc64
+          # disabling this test until https://github.com/open-telemetry/opentelemetry-collector/issues/12668 is addressed
+          # - goos: aix
+          #   goarch: ppc64
           - goos: darwin
             goarch: amd64
           - goos: darwin
