@@ -13,8 +13,6 @@ import (
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Request interface {
-	// Export exports the request to an external endpoint.
-	Export(ctx context.Context) error
 	// ItemsCount returns a number of basic items in the request where item is the smallest piece of data that can be
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.

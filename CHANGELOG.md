@@ -7,6 +7,45 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.28.0/v0.122.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Batch processor telemetry is no longer emitted at "basic" verbosity level (#7890)
+  According to the guidelines, basic-level telemetry should be reserved for core Collector APIs.
+  Components such as the batch processor should emit telemetry starting from the "normal" level
+  (which is also the default level).
+  
+  Migration: If your Collector telemetry was set to `level: basic` and you want to keep seeing
+  batch processor-related metrics, consider switching to `level: normal` instead.
+  
+
+### 💡 Enhancements 💡
+
+- `service`: Add `service.AllowNoPipelines` feature gate to allow starting the Collector without pipelines. (#12613)
+  This can be used to start with only extensions.
+- `mdatagen`: Delete generated_status.go if the component type doesn't require it. (#12346)
+- `componenttest`: Improve config struct mapstructure field tag checks (#12590)
+  `remain` tags and `omitempty` tags without a custom field name will now pass validation.
+- `service`: include component id/type in start error (#10426)
+- `mdatagen`: Add deprecation date and migration guide fields as part of component metadata (#12359)
+- `confmap`: Introduce a new feature flag to allow for merging lists instead of discarding the existing ones. (#8394, #8754, #10370)
+  You can enable this option via the command line by running following command:
+  otelcol --config=main.yaml --config=extra_config.yaml --feature-gates=-confmap.enableMergeAppendOption
+  
+- `zpagesextension`: Add expvar handler to zpages extension. (#11081)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Maintain nil values when marshaling or unmarshaling nil slices (#11882)
+  Previously, nil slices were converted to empty lists, which are semantically different
+  than a nil slice. This change makes this conversion more consistent when encoding
+  or decoding config, and these values are now maintained.
+  
+- `service`: do not attempt to register process metrics if they are disabled (#12098)
+
+<!-- previous-version -->
+
 ## v1.27.0/v0.121.0
 
 ### 🛑 Breaking changes 🛑
