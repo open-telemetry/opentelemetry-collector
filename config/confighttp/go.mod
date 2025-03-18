@@ -10,14 +10,14 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.28.1
 	go.opentelemetry.io/collector/component v1.28.1
-	go.opentelemetry.io/collector/component/componenttest v0.122.0
-	go.opentelemetry.io/collector/config/configauth v0.122.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.1
+	go.opentelemetry.io/collector/config/configauth v0.122.1
 	go.opentelemetry.io/collector/config/configcompression v1.28.1
 	go.opentelemetry.io/collector/config/configopaque v1.28.1
 	go.opentelemetry.io/collector/config/configtls v1.28.1
 	go.opentelemetry.io/collector/extension v1.28.1
-	go.opentelemetry.io/collector/extension/extensionauth v0.122.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.122.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.122.1
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.122.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
 	go.opentelemetry.io/otel v1.35.0
 	go.uber.org/goleak v1.3.0
