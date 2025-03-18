@@ -70,11 +70,13 @@ type Distribution struct {
 	Go          string `mapstructure:"go"`
 	Description string `mapstructure:"description"`
 	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.
-	OtelColVersion   string `mapstructure:"otelcol_version"`
-	OutputPath       string `mapstructure:"output_path"`
-	Version          string `mapstructure:"version"`
-	BuildTags        string `mapstructure:"build_tags"`
-	DebugCompilation bool   `mapstructure:"debug_compilation"`
+	OtelColVersion string `mapstructure:"otelcol_version"`
+	OutputPath     string `mapstructure:"output_path"`
+	Version        string `mapstructure:"version"`
+	BuildTags      string `mapstructure:"build_tags"`
+	// Deprecated: [v0.120.0] Manually override the ldflags and gcflags instead.
+	// ref: https://github.com/open-telemetry/opentelemetry-collector/pull/11996
+	DebugCompilation bool `mapstructure:"debug_compilation"`
 }
 
 // Module represents a receiver, exporter, processor or extension for the distribution
