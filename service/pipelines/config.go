@@ -25,14 +25,20 @@ var (
 		featuregate.WithRegisterFromVersion("v0.112.0"),
 		featuregate.WithRegisterDescription("Controls whether profiles support can be enabled"),
 	)
+	AllowNoPipelines = featuregate.GlobalRegistry().MustRegister(
+		"service.AllowNoPipelines",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterFromVersion("v0.122.0"),
+		featuregate.WithRegisterDescription("Allow starting the Collector without starting any pipelines."),
+	)
 )
 
 // Config defines the configurable settings for service telemetry.
 type Config map[pipeline.ID]*PipelineConfig
 
 func (cfg Config) Validate() error {
-	// Must have at least one pipeline.
-	if len(cfg) == 0 {
+	// Must have at least one pipeline unless explicitly disabled.
+	if !AllowNoPipelines.IsEnabled() && len(cfg) == 0 {
 		return errMissingServicePipelines
 	}
 

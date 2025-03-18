@@ -50,7 +50,7 @@ type BaseExporter struct {
 	batcherCfg exporterbatcher.Config
 }
 
-func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...Option) (*BaseExporter, error) {
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher func(context.Context, request.Request) error, options ...Option) (*BaseExporter, error) {
 	be := &BaseExporter{
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
@@ -62,15 +62,13 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 		}
 	}
 
-	//nolint: staticcheck
+	//nolint:staticcheck
 	if be.batcherCfg.MinSizeItems != nil || be.batcherCfg.MaxSizeItems != nil {
 		set.Logger.Warn("Using of deprecated fields `min_size_items` and `max_size_items`")
 	}
 
 	// Consumer Sender is always initialized.
-	be.firstSender = newSender(func(ctx context.Context, req request.Request) error {
-		return req.Export(ctx)
-	})
+	be.firstSender = newSender(pusher)
 
 	// Next setup the timeout Sender since we want the timeout to control only the export functionality.
 	// Only initialize if not explicitly disabled.

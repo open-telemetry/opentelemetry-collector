@@ -53,7 +53,7 @@ func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
 	for req.size(sz) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
 		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newTracesRequest(td, req.pusher))
+		res = append(res, newTracesRequest(td))
 	}
 	res = append(res, req)
 	return res

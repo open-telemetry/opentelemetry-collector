@@ -40,9 +40,8 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			cfg := exporterbatcher.NewDefaultConfig()
 			cfg.Enabled = false
 
-			ba, err := NewBatcher(cfg,
-				func(ctx context.Context, req request.Request) error { return req.Export(ctx) },
-				tt.maxWorkers)
+			sink := requesttest.NewSink()
+			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, err)
 
 			q := exporterqueue.NewQueue[request.Request](
@@ -61,17 +60,16 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 				require.NoError(t, ba.Shutdown(context.Background()))
 			})
 
-			sink := requesttest.NewSink()
-
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8, ExportErr: errors.New("transient error"), Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35, Sink: sink}))
-			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8}))
+			sink.SetExportErr(errors.New("transient error"))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 8}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 17}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 13}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 35}))
+			require.NoError(t, q.Offer(context.Background(), &requesttest.FakeRequest{Items: 2}))
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && sink.ItemsCount() == 75
-			}, 30*time.Millisecond, 10*time.Millisecond)
+			}, 1*time.Second, 10*time.Millisecond)
 		})
 	}
 }
