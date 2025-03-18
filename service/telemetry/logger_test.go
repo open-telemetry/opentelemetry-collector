@@ -39,7 +39,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*zapcore.ioCore",
+			wantCoreType: "componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -62,7 +62,7 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "componentattribute.serviceCore",
+			wantCoreType: "componentattribute.otelTeeCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {

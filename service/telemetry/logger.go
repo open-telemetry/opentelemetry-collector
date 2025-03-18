@@ -41,30 +41,29 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	var lp log.LoggerProvider
 
-	if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
-		lp = set.SDK.LoggerProvider()
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
-		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			return componentattribute.NewServiceZapCore(lp, "go.opentelemetry.io/collector/service/telemetry", func(otelCore zapcore.Core, _ attribute.Set) zapcore.Core {
-				// TODO: Add component attributes to the console output as well?
-				core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
-					c,
-					otelCore,
-				), zap.NewAtomicLevelAt(cfg.Logs.Level))
-				if err != nil {
-					panic(err)
-				}
-				if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-					core = newSampledCore(core, cfg.Logs.Sampling)
-				}
-				return core
-			}, attribute.NewSet())
-		}))
-	} else if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			return newSampledCore(c, cfg.Logs.Sampling)
-		}))
-	}
+		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
+			lp = set.SDK.LoggerProvider()
+
+			core = componentattribute.NewOTelTeeCoreWithAttributes(
+				core,
+				lp,
+				"go.opentelemetry.io/collector/service/telemetry",
+				cfg.Logs.Level,
+				attribute.NewSet(),
+			)
+		}
+
+		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+			core = componentattribute.NewWrapperCoreWithAttributes(core, func(c zapcore.Core) zapcore.Core {
+				return newSampledCore(c, cfg.Logs.Sampling)
+			})
+		}
+
+		return core
+	}))
 
 	return logger, lp, nil
 }
