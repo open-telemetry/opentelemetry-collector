@@ -5,7 +5,12 @@ package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporter
 
 import (
 	"context"
-	"errors"
+	"time"
+
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -16,7 +21,16 @@ import (
 // not block.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-var ErrQueueIsFull = errors.New("sending queue is full")
+var ErrQueueIsFull = func() error {
+	st := status.New(codes.ResourceExhausted, "sending queue is full")
+	dt, err := st.WithDetails(&errdetails.RetryInfo{
+		RetryDelay: durationpb.New(1 * time.Second),
+	})
+	if err != nil {
+		panic(err)
+	}
+	return dt.Err()
+}()
 
 // Done represents the callback that will be called when the read request is completely processed by the
 // downstream components.
