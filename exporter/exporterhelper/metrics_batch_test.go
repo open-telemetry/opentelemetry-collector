@@ -28,7 +28,6 @@ func TestMergeMetrics(t *testing.T) {
 }
 
 func TestMergeSplitMetrics(t *testing.T) {
-	s := sizer.MetricsCountSizer{}
 	tests := []struct {
 		name     string
 		cfg      exporterbatcher.SizeConfig
@@ -123,7 +122,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 			for i := range res {
 				expected := tt.expected[i].(*metricsRequest)
 				actual := res[i].(*metricsRequest)
-				assert.Equal(t, expected.size(&s), actual.size(&s))
+				assert.Equal(t, expected.ItemsCount(), actual.ItemsCount())
 			}
 		})
 	}
@@ -282,7 +281,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, len(tt.expectedSizes), len(res))
 			for i := range res {
-				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).ByteSize())
 			}
 		})
 	}
