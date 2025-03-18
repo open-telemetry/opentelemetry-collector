@@ -64,7 +64,9 @@ require (
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.0 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.122.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
@@ -138,3 +140,5 @@ replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipe
 replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
 
 replace go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
