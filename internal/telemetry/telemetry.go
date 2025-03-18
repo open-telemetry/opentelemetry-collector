@@ -13,6 +13,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+// IMPORTANT: This struct is reexported as part of the public API of
+// go.opentelemetry.io/collector/component, a stable module.
+// DO NOT MAKE BREAKING CHANGES TO EXPORTED FIELDS.
 type TelemetrySettings struct {
 	// Logger that the factory can use during creation and can pass to the created
 	// component to be used later as well.
