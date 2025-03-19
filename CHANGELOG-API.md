@@ -128,9 +128,9 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 🚩 Deprecations 🚩
 
-- `component/componenttest`: Deprecate CheckReceiverMetrics in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverMetrics in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetrics`
-- `component/componenttest`: Deprecate CheckReceiverTraces in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverTraces in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverTraces`
 - `component`: Deprecate `ConfigValidator` and `ValidateConfig` (#11524)
   Please use `Validator` and `Validate` respectively from `xconfmap`.
@@ -188,17 +188,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   metadatatest.Telemetry.NewSettings -> metadatatest.NewSettings |
   metadatatest.Telemetry.AssertMetrics -> metadatatest.AssertEqual* |
   
-- `component/componenttest`: Deprecate `CheckExporterEnqueue*` functions in componenenttest (#12185)
+- `component/componenttest`: Deprecate `CheckExporterEnqueue*` functions in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterEnqueue*` functions.
-- `component/componenttest`: Deprecate CheckExporterLogs in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterLogs in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterLogs`
-- `component/componenttest`: Deprecate CheckExporterMetricGauge in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterMetricGauge in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetricGauge`
-- `component/componenttest`: Deprecate CheckExporterMetrics in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterMetrics in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterMetrics`
-- `component/componenttest`: Deprecate CheckExporterTraces in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterTraces in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterTraces`
-- `component/componenttest`: Deprecate CheckReceiverLogs in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverLogs in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverLogs`
 - `mdatagen`: Make registration of callback for async metric always optional. (#12204)
   Deprecate `metadata.TelemetryBuilder.Init*` and `metadata.With*Callback` in favor of `metadata.TelemetryBuilder.Register*Callback`
@@ -220,7 +220,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🧰 Bug fixes 🧰
 
 - `mdatagen`: All register callbacks to async instruments can now be unregistered by calling `metadata.TelemetryBuilder.Shutdown()` (#12204)
-- `mdatagen`: Fix bug where Histograms were marked as not supporting temporaly aggregation (#12168)
+- `mdatagen`: Fix bug where Histograms were marked as not supporting temporal aggregation (#12168)
 
 ## v1.24.0/v0.118.0
 
@@ -228,14 +228,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 - `exporterqueue`: Change Queue Size and Capacity to return explicit int64. (#12076)
 - `receiver/scraperhelper`: Removing the deprecated receiver/scraperhelper package (#12054)
-- `processorteset`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
+- `processortest`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
 - `experimental/storage`: Remove deprecated package/module experimental/storage (#12109)
 - `mdatagen`: Remove deprecated generated_component_telemetry_test file from being generated and delete it. (#12068)
 - `receivertest`: Remove deprecated receivertest.NewNopFactoryForType (#12110)
 
 ### 🚩 Deprecations 🚩
 
-- `componenttest`: Deprecate CheckScraperMetrics in componenenttest (#12105)
+- `componenttest`: Deprecate CheckScraperMetrics in componenttest (#12105)
   Use `metadatatest.AssertMetrics` instead of `obsreporttest.CheckScraperMetrics`
 - `scraperhelper`: Deprecate `scraperhelper.NewScraperControllerReceiver` and `scraperhelper.ScraperControllerOption`. (#12103)
   Use `scraperhelper.NewMetricsController` instead of `scraperhelper.NewScraperControllerReceiver` | Use `scraperhelper.ScraperControllerOption` instead of `scraperhelper.ControllerOption`
@@ -327,7 +327,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `component`: Make componenttest into its own module (#11464)
 - `expandconverter`: Remove deprecated expandvar converter (#11672)
 - `exporter`: Remove deprecated funcs Create[*]Exporter and [*]ExporterStability (#11662)
-- `exporterhelper`: Remove derprecated NewLogs[Request]Exporter funcs (#11661)
+- `exporterhelper`: Remove deprecated NewLogs[Request]Exporter funcs (#11661)
 - `extension`: Remove deprecated funcs CreateExtension and ExtensionStability (#11663)
 - `processortest`: Remove deprecated func NewUnhealthyProcessorCreateSettings (#11665)
 
