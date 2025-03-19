@@ -13,6 +13,4 @@ jobs:
         uses: streetsidesoftware/cspell-action@v6
         with:
           files: |
-            **/*.md
-            **/*.yaml
-            **/*.yml
+            **/*.{md,yaml,yml}
