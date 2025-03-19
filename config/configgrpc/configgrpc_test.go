@@ -1168,6 +1168,7 @@ func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse,
 
 // tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
+	// The socket path length limit on macOS is 104 characters. Using `os.TempDir` to produce a shorter file path (#12639)
 	tmpfile, err := os.CreateTemp(os.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
