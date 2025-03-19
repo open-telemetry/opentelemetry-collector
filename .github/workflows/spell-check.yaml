@@ -10,7 +10,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run cSpell
-        uses: streetsidesoftware/cspell-action@v6
+        uses: streetsidesoftware/cspell-action@8485bb4b688c68384c2f6db7ad931f5e3e63f21c #v6.10.1
         with:
           files: |
             **/*.{md,yaml,yml}
+          config: '.github/workflows/utils'
