@@ -68,7 +68,7 @@ func TestGetServerFails(t *testing.T) {
 	assert.Nil(t, authenticator)
 }
 
-func TestGetClient(t *testing.T) {
+func TestGetHTTPClient(t *testing.T) {
 	testCases := []struct {
 		name          string
 		authenticator extension.Extension
@@ -109,7 +109,7 @@ func TestGetClient(t *testing.T) {
 	}
 }
 
-func TestGetClientFails(t *testing.T) {
+func TestGetGRPCClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
