@@ -45,6 +45,7 @@ fi
 set -ex
 
 # Create temp dir for generated files.
+# Source: https://unix.stackexchange.com/a/84980
 tmp_dir=$(mktemp -d 2>/dev/null || mktemp -d -t 'apidiff')
 clean_up() {
     ARG=$?
