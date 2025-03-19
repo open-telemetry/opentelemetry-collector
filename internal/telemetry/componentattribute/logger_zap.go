@@ -28,20 +28,20 @@ type consoleCoreWithAttributes struct {
 	from zapcore.Core
 }
 
-var _ coreWithAttributes = consoleCoreWithAttributes{}
+var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
 
 func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	var fields []zap.Field
 	for _, kv := range attrs.ToSlice() {
 		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
 	}
-	return consoleCoreWithAttributes{
+	return &consoleCoreWithAttributes{
 		Core: c.With(fields),
 		from: c,
 	}
 }
 
-func (ccwa consoleCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
+func (ccwa *consoleCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewConsoleCoreWithAttributes(ccwa.from, attrs)
 }
 
@@ -53,7 +53,7 @@ type otelTeeCoreWithAttributes struct {
 	level       zapcore.Level
 }
 
-var _ coreWithAttributes = otelTeeCoreWithAttributes{}
+var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 
 func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
 	// TODO: Use `otelzap.WithAttributes` and remove `LoggerProviderWithAttributes`
@@ -67,7 +67,7 @@ func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvide
 		panic(err)
 	}
 
-	return otelTeeCoreWithAttributes{
+	return &otelTeeCoreWithAttributes{
 		Core:        zapcore.NewTee(consoleCore, otelCore),
 		consoleCore: consoleCore,
 		lp:          lp,
@@ -76,7 +76,7 @@ func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvide
 	}
 }
 
-func (ocwa otelTeeCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
+func (ocwa *otelTeeCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewOTelTeeCoreWithAttributes(
 		tryWithAttributeSet(ocwa.consoleCore, attrs),
 		ocwa.lp, ocwa.scopeName, ocwa.level,
@@ -90,17 +90,17 @@ type wrapperCoreWithAttributes struct {
 	wrapper func(zapcore.Core) zapcore.Core
 }
 
-var _ coreWithAttributes = wrapperCoreWithAttributes{}
+var _ coreWithAttributes = (*wrapperCoreWithAttributes)(nil)
 
 func NewWrapperCoreWithAttributes(from zapcore.Core, wrapper func(zapcore.Core) zapcore.Core) zapcore.Core {
-	return wrapperCoreWithAttributes{
+	return &wrapperCoreWithAttributes{
 		Core:    wrapper(from),
 		from:    from,
 		wrapper: wrapper,
 	}
 }
 
-func (wcwa wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
+func (wcwa *wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewWrapperCoreWithAttributes(tryWithAttributeSet(wcwa.from, attrs), wcwa.wrapper)
 }
 

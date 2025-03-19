@@ -40,7 +40,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "componentattribute.consoleCoreWithAttributes",
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -63,7 +63,7 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "componentattribute.otelTeeCoreWithAttributes",
+			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
 		},
 		{
 			name: "log config with sampling",
@@ -85,7 +85,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "componentattribute.wrapperCoreWithAttributes",
+			wantCoreType: "*componentattribute.wrapperCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
