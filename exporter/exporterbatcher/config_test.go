@@ -22,6 +22,13 @@ func TestValidateConfig(t *testing.T) {
 
 func TestValidateSizeConfig(t *testing.T) {
 	cfg := SizeConfig{
+		Sizer:   SizerTypeBytes,
+		MaxSize: 10,
+		MinSize: 100,
+	}
+	require.EqualError(t, cfg.Validate(), "unsupported sizer type: {\"bytes\"}")
+
+	cfg = SizeConfig{
 		Sizer:   SizerTypeItems,
 		MaxSize: -100,
 		MinSize: 100,

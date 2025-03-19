@@ -42,10 +42,9 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 		attrPrefix = headerParts[0] + attrPrefix
 	}
 
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
-		return true
-	})
+	}
 }
 
 func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, indentVal int) {
@@ -64,10 +63,9 @@ func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, 
 		attrPrefix = headerParts[0] + attrPrefix
 	}
 
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
-		return true
-	})
+	}
 }
 
 func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope) {

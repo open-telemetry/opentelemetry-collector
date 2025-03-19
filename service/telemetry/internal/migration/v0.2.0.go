@@ -4,8 +4,8 @@
 package migration // import "go.opentelemetry.io/collector/service/telemetry/internal/migration"
 
 import (
-	configv02 "go.opentelemetry.io/contrib/config/v0.2.0"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	configv02 "go.opentelemetry.io/contrib/otelconf/v0.2.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"

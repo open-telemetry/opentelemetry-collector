@@ -37,7 +37,9 @@ func TestRunContents(t *testing.T) {
 		wantConfigGenerated             bool
 		wantTelemetryGenerated          bool
 		wantResourceAttributesGenerated bool
+		wantReadmeGenerated             bool
 		wantStatusGenerated             bool
+		wantComponentTestGenerated      bool
 		wantGoleakIgnore                bool
 		wantGoleakSkip                  bool
 		wantGoleakSetup                 bool
@@ -49,89 +51,131 @@ func TestRunContents(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			yml:                 "basic_connector.yaml",
-			wantErr:             false,
-			wantStatusGenerated: true,
+			yml:                        "basic_connector.yaml",
+			wantErr:                    false,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "basic_receiver.yaml",
-			wantErr:             false,
-			wantStatusGenerated: true,
+			yml:                        "basic_receiver.yaml",
+			wantErr:                    false,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                  "metrics_and_type.yaml",
-			wantMetricsGenerated: true,
-			wantConfigGenerated:  true,
-			wantStatusGenerated:  true,
+			yml:                 "basic_pkg.yaml",
+			wantErr:             false,
+			wantStatusGenerated: false,
+			wantReadmeGenerated: true,
+		},
+		{
+			yml:                        "metrics_and_type.yaml",
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
 			wantConfigGenerated:             true,
 			wantStatusGenerated:             true,
 			wantResourceAttributesGenerated: true,
+			wantReadmeGenerated:             true,
+			wantComponentTestGenerated:      true,
 		},
 		{
-			yml:                 "status_only.yaml",
-			wantStatusGenerated: true,
+			yml:                        "status_only.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_tests_receiver.yaml",
-			wantStatusGenerated: true,
+			yml:                        "with_tests_receiver.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_tests_exporter.yaml",
-			wantStatusGenerated: true,
+			yml:                        "with_tests_exporter.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_tests_processor.yaml",
-			wantStatusGenerated: true,
+			yml:                        "with_tests_processor.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_tests_extension.yaml",
-			wantStatusGenerated: true,
+			yml:                        "with_tests_extension.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_tests_connector.yaml",
-			wantStatusGenerated: true,
+			yml:                        "with_tests_connector.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_goleak_ignores.yaml",
-			wantStatusGenerated: true,
-			wantGoleakIgnore:    true,
+			yml:                        "with_goleak_ignores.yaml",
+			wantStatusGenerated:        true,
+			wantGoleakIgnore:           true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_goleak_skip.yaml",
-			wantStatusGenerated: true,
-			wantGoleakSkip:      true,
+			yml:                        "with_goleak_skip.yaml",
+			wantStatusGenerated:        true,
+			wantGoleakSkip:             true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_goleak_setup.yaml",
-			wantStatusGenerated: true,
-			wantGoleakSetup:     true,
+			yml:                        "with_goleak_setup.yaml",
+			wantStatusGenerated:        true,
+			wantGoleakSetup:            true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "with_goleak_teardown.yaml",
-			wantStatusGenerated: true,
-			wantGoleakTeardown:  true,
+			yml:                        "with_goleak_teardown.yaml",
+			wantStatusGenerated:        true,
+			wantGoleakTeardown:         true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                    "with_telemetry.yaml",
-			wantStatusGenerated:    true,
-			wantTelemetryGenerated: true,
+			yml:                        "with_telemetry.yaml",
+			wantStatusGenerated:        true,
+			wantTelemetryGenerated:     true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:     "invalid_telemetry_missing_value_type_for_histogram.yaml",
-			wantErr: true,
+			yml:                        "invalid_telemetry_missing_value_type_for_histogram.yaml",
+			wantErr:                    true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                  "async_metric.yaml",
-			wantMetricsGenerated: true,
-			wantConfigGenerated:  true,
-			wantStatusGenerated:  true,
+			yml:                        "async_metric.yaml",
+			wantMetricsGenerated:       true,
+			wantConfigGenerated:        true,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 		{
-			yml:                 "custom_generated_package_name.yaml",
-			wantStatusGenerated: true,
+			yml:                        "custom_generated_package_name.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
 		},
 	}
 	for _, tt := range tests {
@@ -147,17 +191,20 @@ func TestRunContents(t *testing.T) {
 <!-- status autogenerated section -->
 foo
 <!-- end autogenerated section -->`), 0o600))
-
-			err = run(metadataFile)
+			md, err := LoadMetadata(metadataFile)
 			if tt.wantErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-
-			md, err := LoadMetadata(metadataFile)
-			require.NoError(t, err)
 			generatedPackageDir := filepath.Join("internal", md.GeneratedPackageName)
+			require.NoError(t, os.MkdirAll(filepath.Join(tmpdir, generatedPackageDir), 0o700))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"), []byte("status"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"), []byte("test"), 0o600))
+			require.NoError(t, os.WriteFile(filepath.Join(tmpdir, generatedPackageDir, "generated_component_test.go"), []byte("test"), 0o600))
+
+			err = run(metadataFile)
+			require.NoError(t, err)
 
 			var contents []byte
 			if tt.wantMetricsGenerated {
@@ -197,7 +244,6 @@ foo
 				}
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
-				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry_test.go"))
 			}
 
 			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated {
@@ -206,22 +252,28 @@ foo
 
 			if tt.wantStatusGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
-				require.NoError(t, err)
-				require.NotContains(t, string(contents), "foo")
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_status.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
-				require.NoError(t, err)
+			}
+
+			contents, err = os.ReadFile(filepath.Join(tmpdir, "README.md")) //nolint:gosec
+			require.NoError(t, err)
+			if tt.wantReadmeGenerated {
+				require.NotContains(t, string(contents), "foo")
+			} else {
 				require.Contains(t, string(contents), "foo")
 			}
 
-			require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
-			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) //nolint:gosec
-			require.NoError(t, err)
-			require.Contains(t, string(contents), "func Test")
-			_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
-			require.NoError(t, err)
+			if tt.wantComponentTestGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+				contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_component_test.go")) //nolint:gosec
+				require.NoError(t, err)
+				require.Contains(t, string(contents), "func Test")
+				_, err = parser.ParseFile(token.NewFileSet(), "", contents, parser.DeclarationErrors)
+				require.NoError(t, err)
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, "generated_component_test.go"))
+			}
 
 			require.FileExists(t, filepath.Join(tmpdir, "generated_package_test.go"))
 			contents, err = os.ReadFile(filepath.Join(tmpdir, "generated_package_test.go")) //nolint:gosec
@@ -299,6 +351,7 @@ func TestInlineReplace(t *testing.T) {
 		componentClass string
 		warnings       []string
 		stability      map[component.StabilityLevel][]string
+		deprecation    map[string]DeprecationInfo
 		distros        []string
 		codeowners     *Codeowners
 		githubProject  string
@@ -463,6 +516,29 @@ Some info about a component
 			distros: []string{"contrib"},
 		},
 		{
+			name: "readme with multiple signals and deprecation",
+			markdown: `# Some component
+
+<!-- status autogenerated section -->
+<!-- end autogenerated section -->
+
+Some info about a component
+`,
+			outputFile: "readme_with_multiple_signals_and_deprecation.md",
+			stability: map[component.StabilityLevel][]string{
+				component.StabilityLevelBeta:       {"metrics"},
+				component.StabilityLevelAlpha:      {"logs"},
+				component.StabilityLevelDeprecated: {"traces"},
+			},
+			deprecation: DeprecationMap{
+				"traces": DeprecationInfo{
+					Date:      "2025-02-05",
+					Migration: "no migration needed",
+				},
+			},
+			distros: []string{"contrib"},
+		},
+		{
 			name: "readme with cmd class",
 			markdown: `# Some component
 
@@ -496,6 +572,7 @@ Some info about a component
 					Class:         tt.componentClass,
 					Warnings:      tt.warnings,
 					Codeowners:    tt.codeowners,
+					Deprecation:   tt.deprecation,
 				},
 			}
 			tmpdir := t.TempDir()
