@@ -7,6 +7,15 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.28.1/v0.122.1
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Ensure slices with defaults containing struct values are correctly set. (#12661)
+  This reverts the changes made in https://github.com/open-telemetry/opentelemetry-collector/pull/11882.
+
+<!-- previous-version -->
+
 ## v1.28.0/v0.122.0
 
 ### 🛑 Breaking changes 🛑

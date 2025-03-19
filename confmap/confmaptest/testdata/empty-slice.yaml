@@ -1,1 +1,1 @@
-slice: []
+slice: [] # empty slices are sanitized to nil in ToStringMap
