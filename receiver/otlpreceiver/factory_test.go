@@ -10,8 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/log/logtest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -41,13 +42,13 @@ func TestCreateSameReceiver(t *testing.T) {
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP.Endpoint = testutil.GetAvailableLocalAddress(t)
 
+	core, observer := observer.New(zapcore.DebugLevel)
 	attrs := attribute.NewSet(
 		attribute.String(componentattribute.SignalKey, "traces"), // should be removed
 		attribute.String(componentattribute.ComponentIDKey, "otlp"),
 	)
 	creationSet := receivertest.NewNopSettings(factory.Type())
-	recorder := logtest.NewRecorder()
-	creationSet.Logger = zap.New(componentattribute.NewServiceZapCore(recorder, "testinstr", nil, attribute.NewSet()))
+	creationSet.Logger = zap.New(componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet()))
 	creationSet.TelemetrySettings = telemetry.WithAttributeSet(creationSet.TelemetrySettings, attrs)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
@@ -70,15 +71,12 @@ func TestCreateSameReceiver(t *testing.T) {
 	assert.Same(t, tReceiver, pReceiver)
 
 	var createLoggerCount int
-	for _, scope := range recorder.Result() {
-		for _, record := range scope.Records {
-			if record.Body().String() == "created signal-agnostic logger" {
-				createLoggerCount++
-				attrs := scope.Attributes.ToSlice()
-				require.Len(t, attrs, 1)
-				assert.Equal(t, componentattribute.ComponentIDKey, string(attrs[0].Key))
-				assert.Equal(t, "otlp", attrs[0].Value.AsString())
-			}
+	for _, log := range observer.All() {
+		if log.Message == "created signal-agnostic logger" {
+			createLoggerCount++
+			require.Len(t, log.Context, 1)
+			assert.Equal(t, componentattribute.ComponentIDKey, log.Context[0].Key)
+			assert.Equal(t, "otlp", log.Context[0].String)
 		}
 	}
 	assert.Equal(t, 1, createLoggerCount)

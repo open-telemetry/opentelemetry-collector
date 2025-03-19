@@ -13,15 +13,14 @@ import (
 
 type coreWithAttributes interface {
 	zapcore.Core
-	withAttributeSet(attribute.Set) coreWithAttributes
+	withAttributeSet(attribute.Set) zapcore.Core
 }
 
 func tryWithAttributeSet(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	if cwa, ok := c.(coreWithAttributes); ok {
 		return cwa.withAttributeSet(attrs)
-	} else {
-		return c
 	}
+	return c
 }
 
 type consoleCoreWithAttributes struct {
@@ -31,7 +30,7 @@ type consoleCoreWithAttributes struct {
 
 var _ coreWithAttributes = consoleCoreWithAttributes{}
 
-func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) coreWithAttributes {
+func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	var fields []zap.Field
 	for _, kv := range attrs.ToSlice() {
 		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
@@ -42,7 +41,7 @@ func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) coreWithA
 	}
 }
 
-func (ccwa consoleCoreWithAttributes) withAttributeSet(attrs attribute.Set) coreWithAttributes {
+func (ccwa consoleCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewConsoleCoreWithAttributes(ccwa.from, attrs)
 }
 
@@ -56,7 +55,7 @@ type otelTeeCoreWithAttributes struct {
 
 var _ coreWithAttributes = otelTeeCoreWithAttributes{}
 
-func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) otelTeeCoreWithAttributes {
+func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
 	// TODO: Use otelzap.WithScopeAttributes when it becomes a thing that exists
 	lpwa := LoggerProviderWithAttributes(lp, attrs)
 	otelCore, err := zapcore.NewIncreaseLevelCore(otelzap.NewCore(
@@ -76,7 +75,7 @@ func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvide
 	}
 }
 
-func (ocwa otelTeeCoreWithAttributes) withAttributeSet(attrs attribute.Set) coreWithAttributes {
+func (ocwa otelTeeCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewOTelTeeCoreWithAttributes(
 		tryWithAttributeSet(ocwa.consoleCore, attrs),
 		ocwa.lp, ocwa.scopeName, ocwa.level,
@@ -92,7 +91,7 @@ type wrapperCoreWithAttributes struct {
 
 var _ coreWithAttributes = wrapperCoreWithAttributes{}
 
-func NewWrapperCoreWithAttributes(from zapcore.Core, wrapper func(zapcore.Core) zapcore.Core) coreWithAttributes {
+func NewWrapperCoreWithAttributes(from zapcore.Core, wrapper func(zapcore.Core) zapcore.Core) zapcore.Core {
 	return wrapperCoreWithAttributes{
 		Core:    wrapper(from),
 		from:    from,
@@ -100,7 +99,7 @@ func NewWrapperCoreWithAttributes(from zapcore.Core, wrapper func(zapcore.Core) 
 	}
 }
 
-func (wcwa wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) coreWithAttributes {
+func (wcwa wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	return NewWrapperCoreWithAttributes(tryWithAttributeSet(wcwa.from, attrs), wcwa.wrapper)
 }
 
