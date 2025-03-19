@@ -5,6 +5,7 @@ package exporterbatcher // import "go.opentelemetry.io/collector/exporter/export
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -76,6 +77,9 @@ func (c *Config) Validate() error {
 }
 
 func (c SizeConfig) Validate() error {
+	if c.Sizer != SizerTypeItems {
+		return fmt.Errorf("unsupported sizer type: %q", c.Sizer)
+	}
 	if c.MinSize < 0 {
 		return errors.New("`min_size` must be greater than or equal to zero")
 	}

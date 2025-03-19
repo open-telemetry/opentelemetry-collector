@@ -135,6 +135,18 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	return errs
 }
 
+func (md *Metadata) supportsSignal(signal string) bool {
+	for _, signals := range md.Status.Stability {
+		for _, s := range signals {
+			if s == signal {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
 	var errs error
 	for mn, m := range metrics {

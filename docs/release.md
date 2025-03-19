@@ -63,27 +63,15 @@ Before the release, make sure there are no open release blockers in [core](https
    
 6. Wait for the new tag build to pass successfully.
 
-7. A new `v0.85.0` source code release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md and CHANGELOG-API.md as the release's description.
+7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
 ## Releasing opentelemetry-collector-contrib
 
-1. Open a PR to Contrib to use the newly released Core version by doing the following:
-   - Manually update `dist.version` and core collector module versions in `cmd/otelcontribcol/builder-config.yaml`
-   - Manually update `dist.version` and core collector module versions in `cmd/oteltestbedcol/builder-config.yaml`
-   - Run `make genotelcontribcol genoteltestbedcol`
-   - Commit the changes
-   - Run `make update-otel OTEL_VERSION=v0.85.0 OTEL_STABLE_VERSION=v1.1.0`
-     - If there is no new stable version released in core collector, use the current stable module version in contrib as `OTEL_STABLE_VERSION`.
-   - If you were unable to run `make update-otel` before releasing core, fix any errors from breaking changes.
-   - Commit the changes
-   - Open the PR
-   -  🛑 **Do not move forward until this PR is merged.** 🛑
-
-2. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers determined in Step 1, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
+1. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/prepare-release.yml). When prompted, enter the version numbers of the current and new beta versions, but do not include a leading `v`. This action will create a pull request to update the changelog and version numbers in the repo. **While this PR is open all merging in Contrib should be halted**.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-3. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Prepare release" commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-contrib`. Use this commit to create a
    branch named `release/<release-series>` (e.g. `release/v0.85.x`). Push the
@@ -93,15 +81,15 @@ Before the release, make sure there are no open release blockers in [core](https
    - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
    - `git push -u upstream release/<release series>`
 
-4. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
+3. Make sure you are on `release/<release-series>`. Tag all the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector-contrib.git` in each command. ⚠️
 
    - `make push-tags MODSET=contrib-base`
 
-5. Wait for the new tag build to pass successfully.
+4. Wait for the new tag build to pass successfully.
 
-6. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release notes add a section listing the unmaintained components ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)).
+5. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release notes add a section listing the unmaintained components ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)).
 
 ## Producing the artifacts
 

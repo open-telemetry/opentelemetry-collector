@@ -52,6 +52,30 @@ func TestCheckConfigStruct(t *testing.T) {
 			}{},
 		},
 		{
+			name: "remain_mapstructure_tag",
+			config: struct {
+				AdditionalProperties map[string]any `mapstructure:",remain"`
+			}{},
+		},
+		{
+			name: "remain_with_interface_type",
+			config: struct {
+				AdditionalProperties any `mapstructure:",remain"`
+			}{},
+		},
+		{
+			name: "omitempty_mapstructure_tag",
+			config: struct {
+				MyPublicString string `mapstructure:",omitempty"`
+			}{},
+		},
+		{
+			name: "named_omitempty_mapstructure_tag",
+			config: struct {
+				MyPublicString string `mapstructure:"my_public_string,omitempty"`
+			}{},
+		},
+		{
 			name: "not_struct_nor_pointer",
 			config: func(x int) int {
 				return x * x
@@ -66,6 +90,20 @@ func TestCheckConfigStruct(t *testing.T) {
 			wantErrMsgSubStr: "attempt to squash non-struct type on field \"MyInt\"",
 		},
 		{
+			name: "remain_on_non_map",
+			config: struct {
+				AdditionalProperties string `mapstructure:",remain"`
+			}{},
+			wantErrMsgSubStr: `attempt to use "remain" on non-map or interface type field "AdditionalProperties"`,
+		},
+		{
+			name: "bad_custom_field_name",
+			config: struct {
+				AdditionalProperties any `mapstructure:"Additional_Properties"`
+			}{},
+			wantErrMsgSubStr: `field "AdditionalProperties" has config tag "Additional_Properties" which doesn't satisfy "^[a-z0-9][a-z0-9_]*$"`,
+		},
+		{
 			name:             "invalid_tag_detected",
 			config:           BadConfigTag{},
 			wantErrMsgSubStr: "field \"BadTagField\" has config tag \"test-dash\" which doesn't satisfy",
@@ -76,6 +114,13 @@ func TestCheckConfigStruct(t *testing.T) {
 				PublicFieldWithoutMapstructureTag string
 			}{},
 			wantErrMsgSubStr: "mapstructure tag not present on field \"PublicFieldWithoutMapstructureTag\"",
+		},
+		{
+			name: "public_field_must_have_nonempty_tag",
+			config: struct {
+				PublicFieldWithoutMapstructureTag string `mapstructure:""`
+			}{},
+			wantErrMsgSubStr: "mapstructure tag on field \"PublicFieldWithoutMapstructureTag\" is empty",
 		},
 		{
 			name: "invalid_map_item",

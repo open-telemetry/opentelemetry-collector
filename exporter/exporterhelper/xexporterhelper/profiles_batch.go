@@ -41,7 +41,7 @@ func (req *profilesRequest) split(cfg exporterbatcher.SizeConfig) ([]exporterhel
 		pd := extractProfiles(req.pd, cfg.MaxSize)
 		size := pd.SampleCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
-		res = append(res, &profilesRequest{pd: pd, pusher: req.pusher, cachedItemsCount: size})
+		res = append(res, &profilesRequest{pd: pd, cachedItemsCount: size})
 	}
 	res = append(res, req)
 	return res, nil

@@ -64,10 +64,8 @@ func (qb *defaultBatcher) resetTimer() {
 func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done exporterqueue.Done) {
 	qb.currentBatchMu.Lock()
 
-	var reqList []request.Request
-	var mergeSplitErr error
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.SizeConfig, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, qb.batchCfg.SizeConfig, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -101,7 +99,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.SizeConfig, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.SizeConfig, req)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)

@@ -28,44 +28,36 @@ var (
 
 type profilesRequest struct {
 	pd               pprofile.Profiles
-	pusher           xconsumer.ConsumeProfilesFunc
 	cachedItemsCount int
 }
 
-func newProfilesRequest(pd pprofile.Profiles, pusher xconsumer.ConsumeProfilesFunc) exporterhelper.Request {
+func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
 	return &profilesRequest{
 		pd:               pd,
-		pusher:           pusher,
 		cachedItemsCount: pd.SampleCount(),
 	}
 }
 
-type profilesEncoding struct {
-	pusher xconsumer.ConsumeProfilesFunc
-}
+type profilesEncoding struct{}
 
-func (le *profilesEncoding) Unmarshal(bytes []byte) (exporterhelper.Request, error) {
+func (profilesEncoding) Unmarshal(bytes []byte) (exporterhelper.Request, error) {
 	profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
 	if err != nil {
 		return nil, err
 	}
-	return newProfilesRequest(profiles, le.pusher), nil
+	return newProfilesRequest(profiles), nil
 }
 
-func (le *profilesEncoding) Marshal(req exporterhelper.Request) ([]byte, error) {
+func (profilesEncoding) Marshal(req exporterhelper.Request) ([]byte, error) {
 	return profilesMarshaler.MarshalProfiles(req.(*profilesRequest).pd)
 }
 
 func (req *profilesRequest) OnError(err error) exporterhelper.Request {
 	var profileError xconsumererror.Profiles
 	if errors.As(err, &profileError) {
-		return newProfilesRequest(profileError.Data(), req.pusher)
+		return newProfilesRequest(profileError.Data())
 	}
 	return req
-}
-
-func (req *profilesRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.pd)
 }
 
 func (req *profilesRequest) ItemsCount() int {
@@ -95,19 +87,24 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	opts := []exporterhelper.Option{internal.WithEncoding(&profilesEncoding{pusher: pusher})}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(pusher), append(opts, options...)...)
+	opts := []exporterhelper.Option{internal.WithEncoding(profilesEncoding{})}
+	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher), append(opts, options...)...)
 }
 
-// RequestFromProfilesFunc converts pprofile.Profiles into a user-defined Request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromProfilesFunc func(context.Context, pprofile.Profiles) (exporterhelper.Request, error)
+// Deprecated: [v0.122.0] use exporterhelper.RequestConverterFunc[pprofile.Profiles].
+type RequestFromProfilesFunc = exporterhelper.RequestConverterFunc[pprofile.Profiles]
+
+// requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
+func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
+	return func(ctx context.Context, request exporterhelper.Request) error {
+		return pusher.ConsumeProfiles(ctx, request.(*profilesRequest).pd)
+	}
+}
 
 // requestFromProfiles returns a RequestFromProfilesFunc that converts pprofile.Profiles into a Request.
-func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestFromProfilesFunc {
+func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles] {
 	return func(_ context.Context, profiles pprofile.Profiles) (exporterhelper.Request, error) {
-		return newProfilesRequest(profiles, pusher), nil
+		return newProfilesRequest(profiles), nil
 	}
 }
 
@@ -117,7 +114,8 @@ func requestFromProfiles(pusher xconsumer.ConsumeProfilesFunc) RequestFromProfil
 func NewProfilesRequestExporter(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromProfilesFunc,
+	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],
+	pusher exporterhelper.RequestConsumeFunc,
 	options ...exporterhelper.Option,
 ) (xexporter.Profiles, error) {
 	if set.Logger == nil {
@@ -128,7 +126,11 @@ func NewProfilesRequestExporter(
 		return nil, errNilProfilesConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, options...)
+	if pusher == nil {
+		return nil, errNilConsumeRequest
+	}
+
+	be, err := internal.NewBaseExporter(set, xpipeline.SignalProfiles, pusher, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +143,7 @@ func NewProfilesRequestExporter(
 	return &profileExporter{BaseExporter: be, Profiles: tc}, nil
 }
 
-func newConsumeProfiles(converter RequestFromProfilesFunc, be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
+func newConsumeProfiles(converter exporterhelper.RequestConverterFunc[pprofile.Profiles], be *internal.BaseExporter, logger *zap.Logger) xconsumer.ConsumeProfilesFunc {
 	return func(ctx context.Context, pd pprofile.Profiles) error {
 		req, err := converter(ctx, pd)
 		if err != nil {

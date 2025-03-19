@@ -4,25 +4,36 @@
 package extensionauthtest // import "go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 
 import (
-	"errors"
 	"net/http"
 
 	"google.golang.org/grpc/credentials"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
-var errMockError = errors.New("mock Error")
+var (
+	_ extension.Extension      = (*errorClient)(nil)
+	_ extensionauth.HTTPClient = (*errorClient)(nil)
+	_ extensionauth.GRPCClient = (*errorClient)(nil)
+)
 
-// NewErrorClient returns a new extensionauth.Client that always returns an error on any of the client methods.
-func NewErrorClient(opts ...extensionauth.ClientOption) (extensionauth.Client, error) {
-	errorOpts := []extensionauth.ClientOption{
-		extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
-			return nil, errMockError
-		}),
-		extensionauth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
-			return nil, errMockError
-		}),
+type errorClient struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ClientPerRPCCredentialsFunc
+	extensionauth.ClientRoundTripperFunc
+}
+
+// NewErrorClient returns a new [extension.Extension] that implements the [extensionauth.HTTPClient] and [extensionauth.GRPCClient] and always returns an error on both methods.
+func NewErrorClient(err error) extension.Extension {
+	return &errorClient{
+		ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
+			return nil, err
+		},
+		ClientPerRPCCredentialsFunc: func() (credentials.PerRPCCredentials, error) {
+			return nil, err
+		},
 	}
-	return extensionauth.NewClient(append(errorOpts, opts...)...)
 }

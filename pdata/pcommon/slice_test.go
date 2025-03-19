@@ -137,6 +137,18 @@ func TestSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSliceAll(t *testing.T) {
+	es := Slice(internal.GenerateTestSlice())
+	assert.NotEmpty(t, es.Len())
+
+	var c int
+	for i, v := range es.All() {
+		assert.Equal(t, es.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, es.Len(), c, "All elements should have been visited")
+}
+
 func TestInvalidSlice(t *testing.T) {
 	es := Slice{}
 
@@ -149,4 +161,34 @@ func TestInvalidSlice(t *testing.T) {
 	assert.Panics(t, func() { es.RemoveIf(func(Value) bool { return false }) })
 	assert.Panics(t, func() { es.AsRaw() })
 	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
+}
+
+func TestSliceEqual(t *testing.T) {
+	es := NewSlice()
+	es2 := NewSlice()
+	assert.True(t, es.Equal(es2))
+
+	v := es.AppendEmpty()
+	v.SetStr("test")
+	assert.False(t, es.Equal(es2))
+
+	v = es2.AppendEmpty()
+	v.SetStr("test")
+	assert.True(t, es.Equal(es2))
+}
+
+func BenchmarkSliceEqual(b *testing.B) {
+	es := NewSlice()
+	v := es.AppendEmpty()
+	v.SetStr("test")
+	cmp := NewSlice()
+	v = cmp.AppendEmpty()
+	v.SetStr("test")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = es.Equal(cmp)
+	}
 }
