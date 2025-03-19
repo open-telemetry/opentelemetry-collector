@@ -14,4 +14,4 @@ jobs:
         with:
           files: |
             **/*.{md,yaml,yml}
-          config: '.github/workflows/utils'
+          config: '.github/workflows/utils/cspell.json'
