@@ -56,7 +56,8 @@ type otelTeeCoreWithAttributes struct {
 var _ coreWithAttributes = otelTeeCoreWithAttributes{}
 
 func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
-	// TODO: Use otelzap.WithScopeAttributes when it becomes a thing that exists
+	// TODO: Use `otelzap.WithAttributes` and remove `LoggerProviderWithAttributes`
+	// once https://github.com/open-telemetry/opentelemetry-go-contrib/issues/6954 is implemented.
 	lpwa := LoggerProviderWithAttributes(lp, attrs)
 	otelCore, err := zapcore.NewIncreaseLevelCore(otelzap.NewCore(
 		scopeName,
