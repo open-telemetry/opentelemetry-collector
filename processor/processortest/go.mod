@@ -4,18 +4,18 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/component/componentstatus v0.122.0
-	go.opentelemetry.io/collector/component/componenttest v0.122.0
-	go.opentelemetry.io/collector/consumer v1.28.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.122.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.122.0
-	go.opentelemetry.io/collector/pdata v1.28.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.122.0
-	go.opentelemetry.io/collector/pdata/testdata v0.122.0
-	go.opentelemetry.io/collector/pipeline v0.122.0
-	go.opentelemetry.io/collector/processor v0.122.0
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.0
+	go.opentelemetry.io/collector/component v1.28.1
+	go.opentelemetry.io/collector/component/componentstatus v0.122.1
+	go.opentelemetry.io/collector/component/componenttest v0.122.1
+	go.opentelemetry.io/collector/consumer v1.28.1
+	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
+	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1
+	go.opentelemetry.io/collector/pdata v1.28.1
+	go.opentelemetry.io/collector/pdata/pprofile v0.122.1
+	go.opentelemetry.io/collector/pdata/testdata v0.122.1
+	go.opentelemetry.io/collector/pipeline v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.1
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.1
 	go.uber.org/goleak v1.3.0
 )
 
@@ -30,7 +30,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.122.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.122.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
