@@ -10,7 +10,7 @@ import (
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled bool   `mapstructure:"enabled"`
-	Name    string `mapstructure:"name"`
+	Name    string `mapstructure:"-"`
 
 	enabledSetByUser bool
 }
