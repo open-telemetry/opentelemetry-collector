@@ -1,4 +1,4 @@
-module go.opentelemetry.io/collector/config/configlimiter
+module go.opentelemetry.io/collector/config/configlimiterg
 
 go 1.23.0
 
@@ -28,5 +28,3 @@ require (
 replace go.opentelemetry.io/collector/component => ../../component
 
 replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
-
-//replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest

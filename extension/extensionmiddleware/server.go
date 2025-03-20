@@ -12,14 +12,14 @@ import (
 // HTTPServer defines the interface for HTTP server middleware extensions.
 type HTTPServer interface {
 	// Handler wraps the provided base http.Handler.
-	Handler(base http.Handler) (http.Handler, error)
+	ServerHandler(base http.Handler) (http.Handler, error)
 }
 
 // GRPCServer defines the interface for gRPC server middleware extensions.
 type GRPCServer interface {
-	// UnaryInterceptor returns a gRPC unary server interceptor.
-	UnaryInterceptor() (grpc.UnaryServerInterceptor, error)
+	// ServerUnaryInterceptor returns a gRPC unary server interceptor.
+	ServerUnaryInterceptor() (grpc.UnaryServerInterceptor, error)
 
-	// StreamInterceptor returns a gRPC stream server interceptor.
-	StreamInterceptor() (grpc.StreamServerInterceptor, error)
+	// ServerStreamInterceptor returns a gRPC stream server interceptor.
+	ServerStreamInterceptor() (grpc.StreamServerInterceptor, error)
 }

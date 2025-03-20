@@ -11,14 +11,14 @@ import (
 
 // HTTPClient is an interface for HTTP client middleware extensions.
 type HTTPClient interface {
-	// RoundTripper wraps the provided base RoundTripper.
-	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
+	// ClientRoundTripper wraps the provided client RoundTripper.
+	ClientRoundTripper(http.RoundTripper) (http.RoundTripper, error)
 }
 
 // GRPCClient is an interface for gRPC client middleware extensions.
 type GRPCClient interface {
-	// UnaryInterceptor returns a gRPC unary client interceptor.
-	UnaryInterceptor() (grpc.UnaryClientInterceptor, error)
-	// StreamInterceptor returns a gRPC stream client interceptor.
-	StreamInterceptor() (grpc.StreamClientInterceptor, error)
+	// ClientUnaryInterceptor returns a gRPC unary client interceptor.
+	ClientUnaryInterceptor() (grpc.UnaryClientInterceptor, error)
+	// ClientStreamInterceptor returns a gRPC stream client interceptor.
+	ClientStreamInterceptor() (grpc.StreamClientInterceptor, error)
 }
