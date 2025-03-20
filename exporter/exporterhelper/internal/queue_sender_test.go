@@ -139,10 +139,9 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 	require.NoError(t, err)
 
-	extensions := map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
-	}
-	host := &hosttest.MockHost{Ext: extensions}
+	})
 
 	// we start correctly with a file storage extension
 	require.NoError(t, be.Start(context.Background(), host))
@@ -163,10 +162,9 @@ func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
 	require.NoError(t, err)
 
-	extensions := map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(storageError),
-	}
-	host := &hosttest.MockHost{Ext: extensions}
+	})
 
 	// we fail to start if we get an error creating the storage client
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
@@ -193,10 +191,9 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", rs)
 	require.NoError(t, err)
 
-	extensions := map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
-	}
-	host := &hosttest.MockHost{Ext: extensions}
+	})
 
 	require.NoError(t, be.Start(context.Background(), host))
 

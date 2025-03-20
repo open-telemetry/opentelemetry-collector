@@ -21,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -49,15 +50,6 @@ func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
 		return 0, errInvalidValue
 	}
 	return binary.LittleEndian.Uint64(bytes), nil
-}
-
-type mockHost struct {
-	component.Host
-	ext map[component.ID]component.Component
-}
-
-func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.ext
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -233,9 +225,9 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
 	})
-	host := &mockHost{ext: map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		{}: storagetest.NewMockStorageExtension(nil),
-	}}
+	})
 	require.NoError(t, ac.Start(context.Background(), host))
 	t.Cleanup(func() {
 		assert.NoError(t, ac.Shutdown(context.Background()))
@@ -275,7 +267,7 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		encoding:  uint64Encoding{},
 		set:       exportertest.NewNopSettings(exportertest.NopType),
 	}).(*persistentQueue[uint64])
-	require.NoError(tb, pq.Start(context.Background(), &mockHost{ext: map[component.ID]component.Component{{}: ext}}))
+	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
 	return pq
 }
 
@@ -427,9 +419,9 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				consumed.Add(1)
 				done.OnDone(nil)
 			})
-			host := &mockHost{ext: map[component.ID]component.Component{
+			host := hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
-			}}
+			})
 			require.NoError(t, ac.Start(context.Background(), host))
 
 			td := uint64(10)
@@ -498,7 +490,7 @@ func TestToStorageClient(t *testing.T) {
 			for i := 0; i < tt.numStorages; i++ {
 				extensions[component.MustNewIDWithName("file_storage", strconv.Itoa(i))] = storagetest.NewMockStorageExtension(tt.getClientError)
 			}
-			host := &mockHost{ext: extensions}
+			host := hosttest.NewHost(extensions)
 			ownerID := component.MustNewID("foo_exporter")
 
 			// execute
@@ -528,7 +520,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 	extensions := map[component.ID]component.Component{
 		storageID: extension,
 	}
-	host := &mockHost{ext: extensions}
+	host := hosttest.NewHost(extensions)
 	ownerID := component.MustNewID("foo_exporter")
 
 	// execute
