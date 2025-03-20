@@ -14,17 +14,14 @@ import (
 )
 
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
-type Batcher interface {
+type Batcher[K any] interface {
 	component.Component
-	Consume(context.Context, request.Request, queuebatch.Done)
+	Consume(context.Context, K, queuebatch.Done)
 }
 
-func NewBatcher(batchCfg exporterbatcher.Config,
-	exportFunc sender.SendFunc[request.Request],
-	maxWorkers int,
-) (Batcher, error) {
+func NewBatcher(batchCfg exporterbatcher.Config, exportFunc sender.SendFunc[request.Request], maxWorkers int) (Batcher[request.Request], error) {
 	if !batchCfg.Enabled {
-		return newDisabledBatcher(exportFunc), nil
+		return newDisabledBatcher[request.Request](exportFunc), nil
 	}
 	return newDefaultBatcher(batchCfg, exportFunc, maxWorkers), nil
 }
