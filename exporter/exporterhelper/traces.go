@@ -97,9 +97,6 @@ func NewTraces(
 		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: tracesEncoding{}})}, options...)...)
 }
 
-// Deprecated: [v0.122.0] use RequestConverterFunc[ptrace.Traces].
-type RequestFromTracesFunc = RequestConverterFunc[ptrace.Traces]
-
 // requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
 func requestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request Request) error {
