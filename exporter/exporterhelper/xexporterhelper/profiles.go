@@ -28,14 +28,14 @@ var (
 )
 
 type profilesRequest struct {
-	pd               pprofile.Profiles
-	cachedItemsCount int
+	pd          pprofile.Profiles
+	cachedItems int
 }
 
 func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
 	return &profilesRequest{
-		pd:               pd,
-		cachedItemsCount: pd.SampleCount(),
+		pd:          pd,
+		cachedItems: pd.SampleCount(),
 	}
 }
 
@@ -62,11 +62,16 @@ func (req *profilesRequest) OnError(err error) exporterhelper.Request {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.cachedItems
+}
+
+func (req *profilesRequest) ByteSize() int {
+	// TODO: Not implemented
+	return 0
 }
 
 func (req *profilesRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+	req.cachedItems = count
 }
 
 type profileExporter struct {

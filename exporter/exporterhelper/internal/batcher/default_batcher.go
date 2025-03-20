@@ -61,6 +61,17 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
+// batchReachedFlushingThreshold returns whether the request has reached the flushing threshold based on the sizer.
+func batchReachedFlushingThreshold(req request.Request, batchConfig exporterbatcher.Config) bool {
+	switch batchConfig.SizeConfig.Sizer {
+	case exporterbatcher.SizerTypeItems:
+		return req.ItemsCount() >= batchConfig.MinSize
+	case exporterbatcher.SizerTypeBytes:
+		return req.ByteSize() >= batchConfig.MinSize
+	}
+	return true
+}
+
 func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done exporterqueue.Done) {
 	qb.currentBatchMu.Lock()
 
@@ -80,7 +91,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		// We have at least one result in the reqList. Last in the list may not have enough data to be flushed.
 		// Find if it has at least MinSize, and if it does then move that as the current batch.
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
+		if !batchReachedFlushingThreshold(lastReq, qb.batchCfg) {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
@@ -125,7 +136,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
 	// Need to check the currentBatch if more than 1 result returned or if 1 result return but larger than MinSize.
-	if len(reqList) > 1 || qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSize {
+	if len(reqList) > 1 || batchReachedFlushingThreshold(qb.currentBatch.req, qb.batchCfg) {
 		firstBatch = qb.currentBatch
 		qb.currentBatch = nil
 	}
@@ -135,7 +146,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// If we still have results to process, then we need to check if the last result has enough data to flush, or we add it to the currentBatch.
 	if len(reqList) > 0 {
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
+		if !batchReachedFlushingThreshold(lastReq, qb.batchCfg) {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
