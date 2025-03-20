@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/internal/experr"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
@@ -50,7 +51,7 @@ type persistentQueueSettings[T any] struct {
 	blocking  bool
 	signal    pipeline.Signal
 	storageID component.ID
-	encoding  Encoding[T]
+	encoding  exporterqueue.Encoding[T]
 	set       exporter.Settings
 }
 

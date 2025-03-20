@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -56,24 +57,16 @@ type readableQueue[T any] interface {
 }
 
 // Settings defines settings for creating a queue.
-type Settings[T any] struct {
+type QueueSettings[T any] struct {
 	Signal           pipeline.Signal
 	ExporterSettings exporter.Settings
-	Encoding         Encoding[T]
-}
-
-type Encoding[T any] interface {
-	// Marshal is a function that can marshal a request into bytes.
-	Marshal(T) ([]byte, error)
-
-	// Unmarshal is a function that can unmarshal bytes into a request.
-	Unmarshal([]byte) (T, error)
+	Encoding         exporterqueue.Encoding[T]
 }
 
 // NewQueue returns a queue
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewQueue[T any](_ context.Context, set Settings[T], cfg Config, consume ConsumeFunc[T]) Queue[T] {
+func NewQueue[T any](_ context.Context, set QueueSettings[T], cfg exporterqueue.Config, consume ConsumeFunc[T]) Queue[T] {
 	if !cfg.Enabled {
 		return newDisabledQueue(consume)
 	}
