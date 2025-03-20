@@ -63,11 +63,6 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher func(
 		}
 	}
 
-	//nolint:staticcheck
-	if be.batcherCfg.MinSizeItems != nil || be.batcherCfg.MaxSizeItems != nil {
-		set.Logger.Warn("Using of deprecated fields `min_size_items` and `max_size_items`")
-	}
-
 	// Consumer Sender is always initialized.
 	be.firstSender = newSender(pusher)
 
