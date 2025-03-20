@@ -18,31 +18,39 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
-type QueueSender struct {
-	queue   queuebatch.Queue[request.Request]
-	batcher batcher.Batcher[request.Request]
-}
-
 func NewQueueSender(
 	qSet queuebatch.QueueSettings[request.Request],
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
-) (*QueueSender, error) {
+) (sender.Sender[request.Request], error) {
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
-		err := next.Send(ctx, req)
-		if err != nil {
+		if errSend := next.Send(ctx, req); errSend != nil {
 			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-				zap.Error(err), zap.Int("dropped_items", itemsCount))
+				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			return errSend
 		}
-		return err
+		return nil
 	}
+	return NewQueueBatch(qSet, qCfg, bCfg, exportFunc)
+}
 
-	b, err := batcher.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
+type QueueBatch struct {
+	queue   queuebatch.Queue[request.Request]
+	batcher batcher.Batcher[request.Request]
+}
+
+func NewQueueBatch(
+	qSet queuebatch.QueueSettings[request.Request],
+	qCfg exporterqueue.Config,
+	bCfg exporterbatcher.Config,
+	next sender.SendFunc[request.Request],
+) (*QueueBatch, error) {
+	b, err := batcher.NewBatcher(bCfg, next, qCfg.NumConsumers)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +63,11 @@ func NewQueueSender(
 		return nil, err
 	}
 
-	return &QueueSender{queue: q, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
-func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
+func (qs *QueueBatch) Start(ctx context.Context, host component.Host) error {
 	if err := qs.queue.Start(ctx, host); err != nil {
 		return err
 	}
@@ -68,13 +76,13 @@ func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown.
-func (qs *QueueSender) Shutdown(ctx context.Context) error {
+func (qs *QueueBatch) Shutdown(ctx context.Context) error {
 	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
 	// try once every request.
 	return errors.Join(qs.queue.Shutdown(ctx), qs.batcher.Shutdown(ctx))
 }
 
 // Send implements the requestSender interface. It puts the request in the queue.
-func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
+func (qs *QueueBatch) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
 }

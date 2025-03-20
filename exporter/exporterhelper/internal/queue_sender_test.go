@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
@@ -50,12 +51,12 @@ var defaultQueueSettings = queuebatch.QueueSettings[request.Request]{
 	ExporterSettings: defaultSettings,
 }
 
-func TestQueueBatcherStopWhileWaiting(t *testing.T) {
+func TestQueueBatchStopWhileWaiting(t *testing.T) {
 	sink := requesttest.NewSink()
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.NumConsumers = 1
-	be, err := NewQueueSender(
-		defaultQueueSettings, qCfg, exporterbatcher.Config{}, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(
+		defaultQueueSettings, qCfg, exporterbatcher.Config{}, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	sink.SetExportErr(errors.New("transient error"))
@@ -70,11 +71,11 @@ func TestQueueBatcherStopWhileWaiting(t *testing.T) {
 	require.Zero(t, be.queue.Size())
 }
 
-func TestQueueBatcherDoNotPreserveCancellation(t *testing.T) {
+func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	sink := requesttest.NewSink()
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.NumConsumers = 1
-	be, err := NewQueueSender(defaultQueueSettings, qCfg, exporterbatcher.Config{}, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, qCfg, exporterbatcher.Config{}, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -89,14 +90,14 @@ func TestQueueBatcherDoNotPreserveCancellation(t *testing.T) {
 	require.Zero(t, be.queue.Size())
 }
 
-func TestQueueBatcherHappyPath(t *testing.T) {
+func TestQueueBatchHappyPath(t *testing.T) {
 	qCfg := exporterqueue.Config{
 		Enabled:      true,
 		QueueSize:    10,
 		NumConsumers: 1,
 	}
 	sink := requesttest.NewSink()
-	be, err := NewQueueSender(defaultQueueSettings, qCfg, exporterbatcher.Config{}, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, qCfg, exporterbatcher.Config{}, sink.Export)
 	require.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
@@ -113,7 +114,7 @@ func TestQueueBatcherHappyPath(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueFailedRequestDropped(t *testing.T) {
+func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet := defaultQueueSettings
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.ExporterSettings.Logger = zap.New(logger)
@@ -128,7 +129,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
 }
 
-func TestQueueBatcherPersistenceEnabled(t *testing.T) {
+func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	qSet := queuebatch.QueueSettings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
@@ -137,7 +138,7 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
+	be, err := NewQueueBatch(qSet, qCfg, exporterbatcher.Config{}, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -149,7 +150,7 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
+func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 
 	qSet := queuebatch.QueueSettings[request.Request]{
@@ -160,7 +161,7 @@ func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", newNoopExportSender())
+	be, err := NewQueueBatch(qSet, qCfg, exporterbatcher.Config{}, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -171,7 +172,7 @@ func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
 }
 
-func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
+func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.NumConsumers = 1
 	storageID := component.MustNewIDWithName("file_storage", "storage")
@@ -189,7 +190,7 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 		ExporterSettings: defaultSettings,
 		Encoding:         newFakeEncoding(mockReq),
 	}
-	be, err := NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", rs)
+	be, err := NewQueueBatch(qSet, qCfg, exporterbatcher.Config{}, rs.Send)
 	require.NoError(t, err)
 
 	host := hosttest.NewHost(map[component.ID]component.Component{
@@ -214,7 +215,7 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	sink := requesttest.NewSink()
 	replacedReq := &requesttest.FakeRequest{Items: 7}
 	qSet.Encoding = newFakeEncoding(replacedReq)
-	be, err = NewQueueSender(qSet, qCfg, exporterbatcher.Config{}, "", sender.NewSender(sink.Export))
+	be, err = NewQueueBatch(qSet, qCfg, exporterbatcher.Config{}, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), host))
 
@@ -224,13 +225,13 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueBatcherNoStartShutdown(t *testing.T) {
-	qs, err := NewQueueSender(defaultQueueSettings, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
+func TestQueueBatchNoStartShutdown(t *testing.T) {
+	qs, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	assert.NoError(t, qs.Shutdown(context.Background()))
 }
 
-func TestQueueBatcher_Merge(t *testing.T) {
+func TestQueueBatch_Merge(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10758")
 	}
@@ -263,7 +264,7 @@ func TestQueueBatcher_Merge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := requesttest.NewSink()
-			be, err := NewQueueSender(defaultQueueSettings, exporterqueue.NewDefaultConfig(), tt.batchCfg, "", sender.NewSender(sink.Export))
+			be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), tt.batchCfg, sink.Export)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -299,7 +300,7 @@ func TestQueueBatcher_Merge(t *testing.T) {
 	}
 }
 
-func TestQueueBatcher_BatchExportError(t *testing.T) {
+func TestQueueBatch_BatchExportError(t *testing.T) {
 	tests := []struct {
 		name             string
 		batchCfg         exporterbatcher.Config
@@ -342,7 +343,7 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
 			}
-			be, err := NewQueueSender(qSet, exporterqueue.NewDefaultConfig(), tt.batchCfg, "", sender.NewSender(sink.Export))
+			be, err := NewQueueBatch(qSet, exporterqueue.NewDefaultConfig(), tt.batchCfg, sink.Export)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -370,13 +371,13 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 	}
 }
 
-func TestQueueBatcher_MergeOrSplit(t *testing.T) {
+func TestQueueBatch_MergeOrSplit(t *testing.T) {
 	sink := requesttest.NewSink()
 	batchCfg := exporterbatcher.NewDefaultConfig()
 	batchCfg.MinSize = 5
 	batchCfg.MaxSize = 10
 	batchCfg.FlushTimeout = 100 * time.Millisecond
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.NewDefaultConfig(), batchCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), batchCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -406,11 +407,11 @@ func TestQueueBatcher_MergeOrSplit(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueBatcher_Shutdown(t *testing.T) {
+func TestQueueBatch_Shutdown(t *testing.T) {
 	sink := requesttest.NewSink()
 	batchCfg := exporterbatcher.NewDefaultConfig()
 	batchCfg.MinSize = 10
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.NewDefaultConfig(), batchCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), batchCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -426,11 +427,11 @@ func TestQueueBatcher_Shutdown(t *testing.T) {
 	assert.Equal(t, 3, sink.ItemsCount())
 }
 
-func TestQueueBatcher_BatchBlocking(t *testing.T) {
+func TestQueueBatch_BatchBlocking(t *testing.T) {
 	sink := requesttest.NewSink()
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 3
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -453,11 +454,11 @@ func TestQueueBatcher_BatchBlocking(t *testing.T) {
 }
 
 // Validate that the batch is cancelled once the first request in the request is cancelled
-func TestQueueBatcher_BatchCancelled(t *testing.T) {
+func TestQueueBatch_BatchCancelled(t *testing.T) {
 	sink := requesttest.NewSink()
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 2
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -485,12 +486,11 @@ func TestQueueBatcher_BatchCancelled(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueBatcher_DrainActiveRequests(t *testing.T) {
+func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	sink := requesttest.NewSink()
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 2
-
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -516,19 +516,18 @@ func TestQueueBatcher_DrainActiveRequests(t *testing.T) {
 	assert.Equal(t, 3, sink.ItemsCount())
 }
 
-func TestQueueBatcherUnstartedShutdown(t *testing.T) {
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), "", newNoopExportSender())
+func TestQueueBatchUnstartedShutdown(t *testing.T) {
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), exporterbatcher.NewDefaultConfig(), sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 	err = be.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
-func TestQueueBatcherWithTimeout(t *testing.T) {
+func TestQueueBatchWithTimeout(t *testing.T) {
 	sink := requesttest.NewSink()
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 10
-
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -564,12 +563,12 @@ func TestQueueBatcherWithTimeout(t *testing.T) {
 	assert.EqualValues(t, 12, sink.ItemsCount())
 }
 
-func TestQueueBatcherTimerResetNoConflict(t *testing.T) {
+func TestQueueBatchTimerResetNoConflict(t *testing.T) {
 	sink := requesttest.NewSink()
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -591,7 +590,7 @@ func TestQueueBatcherTimerResetNoConflict(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 }
 
-func TestQueueBatcherTimerFlush(t *testing.T) {
+func TestQueueBatchTimerFlush(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
 	}
@@ -599,7 +598,7 @@ func TestQueueBatcherTimerFlush(t *testing.T) {
 	bCfg := exporterbatcher.NewDefaultConfig()
 	bCfg.MinSize = 8
 	bCfg.FlushTimeout = 100 * time.Millisecond
-	be, err := NewQueueSender(defaultQueueSettings, exporterqueue.Config{}, bCfg, "", sender.NewSender(sink.Export))
+	be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.Config{}, bCfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	time.Sleep(50 * time.Millisecond)
@@ -631,15 +630,4 @@ func TestQueueBatcherTimerFlush(t *testing.T) {
 	assert.LessOrEqual(t, 2, sink.RequestsCount())
 	assert.Equal(t, 12, sink.ItemsCount())
 	require.NoError(t, be.Shutdown(context.Background()))
-}
-
-func newNoopExportSender() sender.Sender[request.Request] {
-	return sender.NewSender(func(ctx context.Context, _ request.Request) error {
-		select {
-		case <-ctx.Done():
-			return ctx.Err() // Returns the cancellation error
-		default:
-			return nil
-		}
-	})
 }
