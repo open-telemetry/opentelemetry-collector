@@ -92,6 +92,17 @@ func run(ymlPath string) error {
 				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
 				return err
 			}
+		} else {
+			if _, err = os.Stat(filepath.Join(codeDir, "generated_status.go")); err == nil {
+				if err = os.Remove(filepath.Join(codeDir, "generated_status.go")); err != nil {
+					return err
+				}
+			}
+			if _, err = os.Stat(filepath.Join(ymlDir, "generated_component_test.go")); err == nil {
+				if err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go")); err != nil {
+					return err
+				}
+			}
 		}
 
 		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
@@ -124,6 +135,27 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetry_test.go.tmpl")] = filepath.Join(codeDir, "generated_telemetry_test.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest.go")
 		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
+	} else {
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry_test.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go")); err != nil {
+				return err
+			}
+		}
+		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err == nil {
+			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err != nil {
+				return err
+			}
+		}
 	}
 
 	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
@@ -240,126 +272,18 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
-				"supportsLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
+				"supportsLogs":             func() bool { return md.supportsSignal("logs") },
+				"supportsMetrics":          func() bool { return md.supportsSignal("metrics") },
+				"supportsTraces":           func() bool { return md.supportsSignal("traces") },
+				"supportsLogsToLogs":       func() bool { return md.supportsSignal("logs_to_logs") },
+				"supportsLogsToMetrics":    func() bool { return md.supportsSignal("logs_to_metrics") },
+				"supportsLogsToTraces":     func() bool { return md.supportsSignal("logs_to_traces") },
+				"supportsMetricsToLogs":    func() bool { return md.supportsSignal("metrics_to_logs") },
+				"supportsMetricsToMetrics": func() bool { return md.supportsSignal("metrics_to_metrics") },
+				"supportsMetricsToTraces":  func() bool { return md.supportsSignal("metrics_to_traces") },
+				"supportsTracesToLogs":     func() bool { return md.supportsSignal("traces_to_logs") },
+				"supportsTracesToMetrics":  func() bool { return md.supportsSignal("traces_to_metrics") },
+				"supportsTracesToTraces":   func() bool { return md.supportsSignal("traces_to_traces") },
 				"expectConsumerError": func() bool {
 					return md.Tests.ExpectConsumerError
 				},

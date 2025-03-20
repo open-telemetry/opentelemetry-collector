@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -36,19 +37,8 @@ var (
 	}()
 )
 
-func newNoopExportSender() Sender[request.Request] {
-	return newSender(func(ctx context.Context, req request.Request) error {
-		select {
-		case <-ctx.Done():
-			return ctx.Err() // Returns the cancellation error
-		default:
-			return req.Export(ctx)
-		}
-	})
-}
-
 func TestBaseExporter(t *testing.T) {
-	be, err := NewBaseExporter(defaultSettings, defaultSignal)
+	be, err := NewBaseExporter(defaultSettings, defaultSignal, noopExport)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -57,7 +47,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := NewBaseExporter(
-		defaultSettings, defaultSignal,
+		defaultSettings, defaultSignal, noopExport,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutConfig()),
@@ -68,21 +58,21 @@ func TestBaseExporterWithOptions(t *testing.T) {
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
-	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
+	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.NoError(t, err)
-	require.Nil(t, bs.encoding)
-	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
+	require.Nil(t, bs.queueBatchSettings.Encoding)
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
 		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(exporterqueue.NewDefaultConfig()))
 	require.Error(t, err)
 
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.NewID(component.MustNewType("test"))
 	qCfg.StorageID = &storageID
-	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal,
-		WithEncoding(newFakeEncoding(&requesttest.FakeRequest{Items: 1})),
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
+		WithQueueBatchSettings(newFakeQueueBatch(&requesttest.FakeRequest{Items: 1})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithRequestQueue(qCfg, nil))
+		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
 	require.Error(t, err)
 }
 
@@ -94,14 +84,13 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg.Enabled = false
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.Enabled = false
-	bs, err := NewBaseExporter(set, defaultSignal,
-		WithRequestQueue(qCfg, newFakeEncoding(&requesttest.FakeRequest{})),
+	bs, err := NewBaseExporter(set, defaultSignal, errExport,
+		WithQueueBatch(qCfg, newFakeQueueBatch(&requesttest.FakeRequest{})),
 		WithBatcher(exporterbatcher.NewDefaultConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
-	sink := requesttest.NewSink()
-	sendErr := bs.Send(context.Background(), &requesttest.FakeRequest{Items: 2, Sink: sink, ExportErr: errors.New("my error")})
+	sendErr := bs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
 	require.Error(t, sendErr)
 
 	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 2)
@@ -120,7 +109,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		{
 			name: "WithQueue",
 			queueOptions: []Option{
-				WithEncoding(newFakeEncoding(&requesttest.FakeRequest{Items: 1})),
+				WithQueueBatchSettings(newFakeQueueBatch(&requesttest.FakeRequest{Items: 1})),
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
@@ -139,7 +128,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
-					return WithRequestQueue(qs, newFakeEncoding(&requesttest.FakeRequest{Items: 1}))
+					return WithQueueBatch(qs, newFakeQueueBatch(&requesttest.FakeRequest{Items: 1}))
 				}(),
 				func() Option {
 					bs := exporterbatcher.NewDefaultConfig()
@@ -155,16 +144,26 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			set := exportertest.NewNopSettings(exportertest.NopType)
 			logger, observed := observer.New(zap.ErrorLevel)
 			set.Logger = zap.New(logger)
-			be, err := NewBaseExporter(set, pipeline.SignalLogs, tt.queueOptions...)
+			be, err := NewBaseExporter(set, pipeline.SignalLogs, errExport, tt.queueOptions...)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
-			sink := requesttest.NewSink()
-			mockR := &requesttest.FakeRequest{Items: 2, Sink: sink, ExportErr: errors.New("some error")}
+			mockR := &requesttest.FakeRequest{Items: 2}
 			require.Error(t, be.Send(context.Background(), mockR))
 			assert.Len(t, observed.All(), 1)
 			assert.Equal(t, "Exporting failed. Rejecting data. Try enabling sending_queue to survive temporary failures.", observed.All()[0].Message)
 			require.NoError(t, be.Shutdown(context.Background()))
-			assert.Empty(t, 0, sink.RequestsCount())
 		})
 	}
+}
+
+func errExport(context.Context, request.Request) error {
+	return errors.New("my error")
+}
+
+func noopExport(context.Context, request.Request) error {
+	return nil
+}
+
+func newFakeQueueBatch(mr request.Request) queuebatch.Settings[request.Request] {
+	return queuebatch.Settings[request.Request]{Encoding: &fakeEncoding{mr: mr}}
 }

@@ -4,7 +4,13 @@
 package exporterbatcher // import "go.opentelemetry.io/collector/exporter/exporterbatcher"
 
 import (
+	"encoding"
 	"fmt"
+)
+
+var (
+	_ encoding.TextMarshaler   = (*SizerType)(nil)
+	_ encoding.TextUnmarshaler = (*SizerType)(nil)
 )
 
 type SizerType struct {
@@ -12,13 +18,15 @@ type SizerType struct {
 }
 
 const (
-	sizerTypeItems = "items"
-	sizerTypeBytes = "bytes"
+	sizerTypeBytes    = "bytes"
+	sizerTypeItems    = "items"
+	sizerTypeRequests = "requests"
 )
 
 var (
-	SizerTypeItems = SizerType{val: sizerTypeItems}
-	SizerTypeBytes = SizerType{val: sizerTypeBytes}
+	SizerTypeBytes    = SizerType{val: sizerTypeBytes}
+	SizerTypeItems    = SizerType{val: sizerTypeItems}
+	SizerTypeRequests = SizerType{val: sizerTypeRequests}
 )
 
 // UnmarshalText implements TextUnmarshaler interface.
@@ -26,9 +34,16 @@ func (s *SizerType) UnmarshalText(text []byte) error {
 	switch str := string(text); str {
 	case sizerTypeItems:
 		*s = SizerTypeItems
-	// TODO support setting sizer to SizerTypeBytes when all logs, traces, and metrics batching support it
+	case sizerTypeBytes:
+		*s = SizerTypeBytes
+	case sizerTypeRequests:
+		*s = SizerTypeRequests
 	default:
 		return fmt.Errorf("invalid sizer: %q", str)
 	}
 	return nil
+}
+
+func (s *SizerType) MarshalText() ([]byte, error) {
+	return []byte(s.val), nil
 }

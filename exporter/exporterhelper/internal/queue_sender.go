@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/featuregate"
@@ -26,12 +27,12 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 )
 
 type QueueSender struct {
-	queue   exporterqueue.Queue[request.Request]
+	queue   queuebatch.Queue[request.Request]
 	batcher component.Component
 }
 
 func NewQueueSender(
-	qSet exporterqueue.Settings[request.Request],
+	qSet queuebatch.QueueSettings[request.Request],
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
@@ -57,7 +58,7 @@ func NewQueueSender(
 	if bCfg.Enabled {
 		qCfg.NumConsumers = 1
 	}
-	q, err := newObsQueue(qSet, exporterqueue.NewQueue(context.Background(), qSet, qCfg, b.Consume))
+	q, err := newObsQueue(qSet, queuebatch.NewQueue(context.Background(), qSet, qCfg, b.Consume))
 	if err != nil {
 		return nil, err
 	}

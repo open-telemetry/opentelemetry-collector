@@ -8,14 +8,14 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
 type Batcher interface {
 	component.Component
-	Consume(context.Context, request.Request, exporterqueue.Done)
+	Consume(context.Context, request.Request, queuebatch.Done)
 }
 
 func NewBatcher(batchCfg exporterbatcher.Config,

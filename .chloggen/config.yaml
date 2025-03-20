@@ -12,6 +12,8 @@ entries_dir: .chloggen
 # (Optional) Default: .chloggen/TEMPLATE.yaml
 template_yaml: .chloggen/TEMPLATE.yaml
 
+summary_template: .chloggen/summary.tmpl
+
 # The CHANGELOG file or files to which 'chloggen update' will write new entries
 # (Optional) Default filename: CHANGELOG.md
 change_logs:

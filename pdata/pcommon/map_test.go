@@ -324,6 +324,31 @@ func TestMap_Range(t *testing.T) {
 	assert.Empty(t, rawMap)
 }
 
+func TestMap_All(t *testing.T) {
+	rawMap := map[string]any{
+		"k_string": "123",
+		"k_int":    int64(123),
+		"k_double": float64(1.23),
+		"k_bool":   true,
+		"k_empty":  nil,
+	}
+	am := NewMap()
+	require.NoError(t, am.FromRaw(rawMap))
+	assert.Equal(t, 5, am.Len())
+
+	calls := 0
+	for range am.All() {
+		calls++
+	}
+	assert.Equal(t, am.Len(), calls)
+
+	for k, v := range am.All() {
+		assert.Equal(t, rawMap[k], v.AsRaw())
+		delete(rawMap, k)
+	}
+	assert.Empty(t, rawMap)
+}
+
 func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
 	require.NoError(t, am.FromRaw(map[string]any{}))
@@ -563,4 +588,112 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.CopyTo(NewMap()) })
 	assert.Panics(t, func() { v.AsRaw() })
 	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
+}
+
+func TestMapEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		val        Map
+		comparison Map
+		expected   bool
+	}{
+		{
+			name:       "with two empty maps",
+			val:        NewMap(),
+			comparison: NewMap(),
+			expected:   true,
+		},
+		{
+			name: "with two equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with multiple equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with two different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with the same key and different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with multiple different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("question", "unknown")
+				m.PutStr("answer", "42")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.val.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkMapEqual(b *testing.B) {
+	m := NewMap()
+	m.PutStr("hello", "world")
+	cmp := NewMap()
+	cmp.PutStr("hello", "world")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = m.Equal(cmp)
+	}
 }

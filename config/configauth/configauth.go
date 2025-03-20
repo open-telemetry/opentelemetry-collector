@@ -17,7 +17,8 @@ import (
 
 var (
 	errAuthenticatorNotFound = errors.New("authenticator not found")
-	errNotClient             = errors.New("requested authenticator is not a client authenticator")
+	errNotHTTPClient         = errors.New("requested authenticator is not a HTTP client authenticator")
+	errNotGRPCClient         = errors.New("requested authenticator is not a gRPC client authenticator")
 	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
 
@@ -40,15 +41,28 @@ func (a Authentication) GetServerAuthenticator(_ context.Context, extensions map
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
 
-// GetClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
+// GetHTTPClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Authentication) GetClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Client, error) {
+func (a Authentication) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.HTTPClient, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if client, ok := ext.(extensionauth.Client); ok {
+		if client, ok := ext.(extensionauth.HTTPClient); ok {
 			return client, nil
 		}
-		return nil, errNotClient
+		return nil, errNotHTTPClient
+	}
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
+}
+
+// GetGRPCClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
+// based on the component id of the extension. If an authenticator is not found, an error is returned.
+// This should be only used by gRPC clients.
+func (a Authentication) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
+	if ext, found := extensions[a.AuthenticatorID]; found {
+		if client, ok := ext.(extensionauth.GRPCClient); ok {
+			return client, nil
+		}
+		return nil, errNotGRPCClient
 	}
 	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", a.AuthenticatorID, errAuthenticatorNotFound)
 }
