@@ -712,32 +712,68 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 }
 
 func TestValidateConnectors_InvalidConnectorUse(t *testing.T) {
-	connectorCfg := map[component.ID]component.Config{
-		component.NewIDWithName(nopType, "connector1"): &struct{}{},
-	}
-	pipelinesCfg := pipelines.Config{
-		pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
-			Receivers:  []component.ID{component.NewID(nopType)},
-			Processors: []component.ID{},
-			Exporters:  []component.ID{component.NewID(nopType)},
+	testCases := map[string]struct {
+		connectorCfg  map[component.ID]component.Config
+		pipelinesCfg  pipelines.Config
+		expectedError string
+	}{
+		"Connector used as exporter but not as receiver": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in2"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewIDWithName(nopType, "connector1")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: "connector \"nop/connector1\" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline",
 		},
-		pipeline.NewIDWithName(pipeline.SignalLogs, "in2"): {
-			Receivers:  []component.ID{component.NewID(nopType)},
-			Processors: []component.ID{},
-			Exporters:  []component.ID{component.NewIDWithName(nopType, "connector1")},
-		},
-		pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
-			Receivers:  []component.ID{component.NewID(nopType)},
-			Processors: []component.ID{},
-			Exporters:  []component.ID{component.NewID(nopType)},
+		"Connector used as receiver but not as exporter": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in2"): {
+					Receivers:  []component.ID{component.NewIDWithName(nopType, "connector1")}, // Connector used as receiver
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: "connector \"nop/connector1\" used as receiver in [logs/in2] pipeline but not used in any supported exporter pipeline",
 		},
 	}
 
 	_, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
 
-	err := ValidateConnectors(connectorCfg, pipelinesCfg, connectorsFactories)
-	require.Error(t, err)
-	assert.Equal(t, "connector \"nop/connector1\" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline", err.Error())
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := ValidateConnectors(tc.connectorCfg, tc.pipelinesCfg, connectorsFactories)
+			require.Error(t, err)
+			assert.Equal(t, tc.expectedError, err.Error())
+		})
+	}
 }
 
 type configWatcherExtension struct{}
