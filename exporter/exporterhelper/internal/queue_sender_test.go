@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -141,7 +142,7 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 	extensions := map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	}
-	host := &MockHost{Ext: extensions}
+	host := &hosttest.MockHost{Ext: extensions}
 
 	// we start correctly with a file storage extension
 	require.NoError(t, be.Start(context.Background(), host))
@@ -165,7 +166,7 @@ func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	extensions := map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(storageError),
 	}
-	host := &MockHost{Ext: extensions}
+	host := &hosttest.MockHost{Ext: extensions}
 
 	// we fail to start if we get an error creating the storage client
 	require.Error(t, be.Start(context.Background(), host), "could not get storage client")
@@ -195,7 +196,7 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	extensions := map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	}
-	host := &MockHost{Ext: extensions}
+	host := &hosttest.MockHost{Ext: extensions}
 
 	require.NoError(t, be.Start(context.Background(), host))
 
