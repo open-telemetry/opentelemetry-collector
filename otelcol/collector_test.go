@@ -462,6 +462,14 @@ func TestCollectorDryRun(t *testing.T) {
 			},
 			expectedErr: `service::pipelines::traces: references processor "invalid" which is not configured`,
 		},
+		"invalid_connector_use": {
+			settings: CollectorSettings{
+				BuildInfo:              component.NewDefaultBuildInfo(),
+				Factories:              nopFactories,
+				ConfigProviderSettings: newDefaultConfigProviderSettings(t, []string{filepath.Join("testdata", "otelcol-invalid-connector-use.yaml")}),
+			},
+			expectedErr: `connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
 	}
 
 	for name, test := range tests {
