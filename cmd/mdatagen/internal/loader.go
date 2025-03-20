@@ -4,7 +4,9 @@
 package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -81,10 +83,13 @@ func shortFolderName(filePath string) string {
 }
 
 func packageName() (string, error) {
-	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
+	cmdArgs := []string{"go", "list", "-f", "{{.ImportPath}}"}
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to run %s command: %w: %s", strings.Join(cmdArgs, " "), err, stderr.String())
 	}
 	return strings.TrimSpace(string(output)), nil
 }
