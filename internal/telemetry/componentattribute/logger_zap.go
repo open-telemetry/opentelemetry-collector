@@ -64,7 +64,7 @@ var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 // Data sent through OTel will have component attributes set as instrumentation scope attributes.
 func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
 	// TODO: Use `otelzap.WithAttributes` and remove `LoggerProviderWithAttributes`
-	// once https://github.com/open-telemetry/opentelemetry-go-contrib/issues/6954 is implemented.
+	// once we've upgraded to otelzap v0.11.0.
 	lpwa := LoggerProviderWithAttributes(lp, attrs)
 	otelCore, err := zapcore.NewIncreaseLevelCore(otelzap.NewCore(
 		scopeName,
