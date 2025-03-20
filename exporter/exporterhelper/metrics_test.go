@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -177,7 +178,7 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	host := &internal.MockHost{Ext: map[component.ID]component.Component{
+	host := &hosttest.MockHost{Ext: map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	}}
 	require.NoError(t, te.Start(context.Background(), host))

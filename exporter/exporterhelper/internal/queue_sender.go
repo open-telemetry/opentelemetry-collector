@@ -86,12 +86,3 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
 }
-
-type MockHost struct {
-	component.Host
-	Ext map[component.ID]component.Component
-}
-
-func (nh *MockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.Ext
-}
