@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -41,7 +42,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
-		newSender(func(context.Context, request.Request) error { return exporterErr }),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -109,7 +110,7 @@ func TestExportMetricsOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
-		newSender(func(context.Context, request.Request) error { return exporterErr }),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -177,7 +178,7 @@ func TestExportLogsOp(t *testing.T) {
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
-		newSender(func(context.Context, request.Request) error { return exporterErr }),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -237,15 +238,4 @@ func TestExportLogsOp(t *testing.T) {
 type testParams struct {
 	items int
 	err   error
-}
-
-func newNoopExportSender() Sender[request.Request] {
-	return newSender(func(ctx context.Context, _ request.Request) error {
-		select {
-		case <-ctx.Done():
-			return ctx.Err() // Returns the cancellation error
-		default:
-			return nil
-		}
-	})
 }

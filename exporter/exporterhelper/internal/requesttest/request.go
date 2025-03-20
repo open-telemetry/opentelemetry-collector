@@ -100,16 +100,6 @@ func (r *FakeRequest) mergeTo(dst *FakeRequest) {
 	dst.Delay += r.Delay
 }
 
-func NoopPusherFunc(context.Context, request.Request) error {
-	return nil
-}
-
-func NewErrPusherFunc(err error) func(context.Context, request.Request) error {
-	return func(context.Context, request.Request) error {
-		return err
-	}
-}
-
 func RequestFromMetricsFunc(err error) func(context.Context, pmetric.Metrics) (request.Request, error) {
 	return func(_ context.Context, md pmetric.Metrics) (request.Request, error) {
 		return &FakeRequest{Items: md.DataPointCount()}, err
