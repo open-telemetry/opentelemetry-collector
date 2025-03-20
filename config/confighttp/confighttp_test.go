@@ -46,7 +46,7 @@ type mockAuthServer struct {
 	extensionauth.ServerAuthenticateFunc
 }
 
-func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
+func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extension.Extension {
 	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 

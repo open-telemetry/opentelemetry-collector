@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -92,7 +93,8 @@ func NewLogs(
 	if pusher == nil {
 		return nil, errNilPushLogs
 	}
-	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher), append([]Option{internal.WithEncoding(logsEncoding{})}, options...)...)
+	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
+		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: logsEncoding{}})}, options...)...)
 }
 
 // Deprecated: [v0.122.0] use RequestConverterFunc[plog.Logs].
