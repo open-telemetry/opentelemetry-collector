@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -42,7 +43,7 @@ func newFakeEncoding(mr request.Request) exporterqueue.Encoding[request.Request]
 	return &fakeEncoding{mr: mr}
 }
 
-var defaultQueueSettings = exporterqueue.Settings[request.Request]{
+var defaultQueueSettings = queuebatch.QueueSettings[request.Request]{
 	Signal:           defaultSignal,
 	ExporterSettings: defaultSettings,
 }
@@ -126,7 +127,7 @@ func TestQueueFailedRequestDropped(t *testing.T) {
 }
 
 func TestQueueBatcherPersistenceEnabled(t *testing.T) {
-	qSet := exporterqueue.Settings[request.Request]{
+	qSet := queuebatch.QueueSettings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
@@ -150,7 +151,7 @@ func TestQueueBatcherPersistenceEnabled(t *testing.T) {
 func TestQueueBatcherPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 
-	qSet := exporterqueue.Settings[request.Request]{
+	qSet := queuebatch.QueueSettings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
@@ -183,7 +184,7 @@ func TestQueueBatcherPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	require.NoError(t, rs.Start(context.Background(), componenttest.NewNopHost()))
 
 	mockReq := &requesttest.FakeRequest{Items: 2}
-	qSet := exporterqueue.Settings[request.Request]{
+	qSet := queuebatch.QueueSettings[request.Request]{
 		Signal:           defaultSignal,
 		ExporterSettings: defaultSettings,
 		Encoding:         newFakeEncoding(mockReq),
@@ -338,7 +339,7 @@ func TestQueueBatcher_BatchExportError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := requesttest.NewSink()
-			qSet := exporterqueue.Settings[request.Request]{
+			qSet := queuebatch.QueueSettings[request.Request]{
 				Signal:           defaultSignal,
 				ExporterSettings: defaultSettings,
 			}

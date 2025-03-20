@@ -1,4 +1,4 @@
-type: exporterqueue
+type: queuebatch
 github_project: open-telemetry/opentelemetry-collector
 
 status:

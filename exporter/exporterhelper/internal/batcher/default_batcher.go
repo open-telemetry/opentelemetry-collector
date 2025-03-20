@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 type batch struct {
@@ -61,7 +61,7 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
-func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done exporterqueue.Done) {
+func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done queuebatch.Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -199,7 +199,7 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done exporterqueue.Done) {
+func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done queuebatch.Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool
@@ -222,7 +222,7 @@ func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	return nil
 }
 
-type multiDone []exporterqueue.Done
+type multiDone []queuebatch.Done
 
 func (mdc multiDone) OnDone(err error) {
 	for _, d := range mdc {
@@ -231,13 +231,13 @@ func (mdc multiDone) OnDone(err error) {
 }
 
 type refCountDone struct {
-	done     exporterqueue.Done
+	done     queuebatch.Done
 	mu       sync.Mutex
 	refCount int64
 	err      error
 }
 
-func newRefCountDone(done exporterqueue.Done, refCount int64) exporterqueue.Done {
+func newRefCountDone(done queuebatch.Done, refCount int64) queuebatch.Done {
 	return &refCountDone{
 		done:     done,
 		refCount: refCount,

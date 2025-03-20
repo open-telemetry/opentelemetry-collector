@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 // sizer is an interface that returns the size of the given element.
 type sizer[T any] interface {

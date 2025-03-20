@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
@@ -44,9 +45,9 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, err)
 
-			q := exporterqueue.NewQueue[request.Request](
+			q := queuebatch.NewQueue[request.Request](
 				context.Background(),
-				exporterqueue.Settings[request.Request]{
+				queuebatch.QueueSettings[request.Request]{
 					Signal:           pipeline.SignalTraces,
 					ExporterSettings: exportertest.NewNopSettings(exportertest.NopType),
 				},

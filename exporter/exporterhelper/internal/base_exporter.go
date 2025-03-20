@@ -94,7 +94,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher func(
 	}
 
 	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
-		qSet := exporterqueue.Settings[request.Request]{
+		qSet := queuebatch.QueueSettings[request.Request]{
 			Signal:           signal,
 			ExporterSettings: set,
 			Encoding:         be.queueBatchSettings.Encoding,
