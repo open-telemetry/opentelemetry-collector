@@ -70,7 +70,7 @@ exporters for the same pipeline):
 * exporters with the Capabilities to mutate the data will receive a copy of the data
 
 Exporters access export data when `ConsumeTraces`/`ConsumeMetrics`/`ConsumeLogs`
-function is called. Unless exporter's capabalities include mutation, the exporter MUST NOT modify the `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` argument of
+function is called. Unless exporter's capabilities include mutation, the exporter MUST NOT modify the `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` argument of
 these functions. Any approach that does not mutate the original `pdata.Traces`/`pdata.Metrics`/`pdata.Logs` is allowed without the mutation capability.
 
 ## Proxy Support
