@@ -173,7 +173,7 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *defaultBatcher) Start(context.Context, component.Host) error {
 	if qb.batchCfg.FlushTimeout != 0 {
 		qb.timer = time.NewTimer(qb.batchCfg.FlushTimeout)
 		qb.startTimeBasedFlushingGoroutine()
