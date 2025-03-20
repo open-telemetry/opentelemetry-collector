@@ -92,9 +92,6 @@ func NewProfilesExporter(
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(queuebatch.Settings[exporterhelper.Request]{Encoding: profilesEncoding{}})}, options...)...)
 }
 
-// Deprecated: [v0.122.0] use exporterhelper.RequestConverterFunc[pprofile.Profiles].
-type RequestFromProfilesFunc = exporterhelper.RequestConverterFunc[pprofile.Profiles]
-
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
 	return func(ctx context.Context, request exporterhelper.Request) error {

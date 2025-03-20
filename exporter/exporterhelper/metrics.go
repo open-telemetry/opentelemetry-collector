@@ -97,9 +97,6 @@ func NewMetrics(
 		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: metricsEncoding{}})}, options...)...)
 }
 
-// Deprecated: [v0.122.0] use RequestConverterFunc[pmetric.Metrics].
-type RequestFromMetricsFunc = RequestConverterFunc[pmetric.Metrics]
-
 // requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
 func requestConsumeFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request Request) error {
