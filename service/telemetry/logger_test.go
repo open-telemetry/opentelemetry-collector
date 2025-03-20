@@ -8,6 +8,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -39,7 +40,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*zapcore.ioCore",
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -62,7 +63,29 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "*zapcore.levelFilterCore",
+			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
+		},
+		{
+			name: "log config with sampling",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:       zapcore.InfoLevel,
+					Development: false,
+					Encoding:    "console",
+					Sampling: &LogsSamplingConfig{
+						Enabled:    true,
+						Tick:       10 * time.Second,
+						Initial:    10,
+						Thereafter: 100,
+					},
+					OutputPaths:       []string{"stderr"},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					InitialFields:     map[string]any(nil),
+				},
+			},
+			wantCoreType: "*componentattribute.wrapperCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {

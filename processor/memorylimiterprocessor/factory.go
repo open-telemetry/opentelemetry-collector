@@ -135,7 +135,7 @@ func (f *factory) getMemoryLimiter(set processor.Settings, cfg component.Config)
 		return memLimiter, nil
 	}
 
-	set.Logger = telemetry.LoggerWithout(
+	set.TelemetrySettings = telemetry.WithoutAttributes(
 		set.TelemetrySettings,
 		componentattribute.SignalKey,
 		componentattribute.PipelineIDKey,
