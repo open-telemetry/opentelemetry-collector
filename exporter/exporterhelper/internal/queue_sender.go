@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -41,7 +40,7 @@ func NewQueueSender(
 
 type QueueBatch struct {
 	queue   queuebatch.Queue[request.Request]
-	batcher batcher.Batcher[request.Request]
+	batcher queuebatch.Batcher[request.Request]
 }
 
 func NewQueueBatch(
@@ -50,7 +49,7 @@ func NewQueueBatch(
 	bCfg exporterbatcher.Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	b, err := batcher.NewBatcher(bCfg, next, qCfg.NumConsumers)
+	b, err := queuebatch.NewBatcher(bCfg, next, qCfg.NumConsumers)
 	if err != nil {
 		return nil, err
 	}
