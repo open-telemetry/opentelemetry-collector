@@ -5,8 +5,6 @@ package extensionlimiter // import "go.opentelemetry.io/collector/extension/exte
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Predefined weight keys for common rate limits
@@ -25,12 +23,6 @@ type Weight struct {
 	Value uint64
 }
 
-// Settings contains configuration for the limiter behavior.
-type Settings struct {
-	// Signal identifies the pipeline signal type being limited
-	Signal pipeline.Signal
-}
-
 // ReleaseFunc is called when resources should be released after limiting.
 type ReleaseFunc func()
 
@@ -42,16 +34,16 @@ type Limiter interface {
 	// It may block until resources are available or return an error if the limit
 	// cannot be satisfied. On success, it returns a ReleaseFunc that should be called
 	// when the resources are no longer needed.
-	Acquire(ctx context.Context, settings Settings, weights []Weight) (ReleaseFunc, error)
+	Acquire(ctx context.Context, weights []Weight) (ReleaseFunc, error)
 }
 
 var _ Limiter = LimiterFunc(nil)
 
-type LimiterFunc func(ctx context.Context, settings Settings, weights []Weight) (ReleaseFunc, error)
+type LimiterFunc func(ctx context.Context, weights []Weight) (ReleaseFunc, error)
 
-func (f LimiterFunc) Acquire(ctx context.Context, settings Settings, weights []Weight) (ReleaseFunc, error) {
+func (f LimiterFunc) Acquire(ctx context.Context, weights []Weight) (ReleaseFunc, error) {
 	if f == nil {
 		return func() {}, nil
 	}
-	return f(ctx, settings, weights)
+	return f(ctx, weights)
 }
