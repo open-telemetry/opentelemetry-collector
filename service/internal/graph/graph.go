@@ -94,13 +94,11 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 // Creates a node for each instance of a component and adds it to the graph.
 // Validates that connectors are configured to export and receive correctly.
 func (g *Graph) createNodes(set Settings) error {
-	// Build a list of all connectors for easy reference.
-	connectors := make(map[component.ID]struct{})
-
-	// Keep track of connectors and where they are used. (map[connectorID][]pipelineID).
-	connectorsAsExporter := make(map[component.ID][]pipeline.ID)
-	connectorsAsReceiver := make(map[component.ID][]pipeline.ID)
-
+	connectors, connectorsAsExporter, connectorsAsReceiver := ExtractConnectors(set.PipelineConfigs, set.ConnectorBuilder)
+	// Validate connectors.
+	if err := ValidateConnectors(connectors, connectorsAsExporter, connectorsAsReceiver, set.ConnectorBuilder); err != nil {
+		return err
+	}
 	// Build each pipelineNodes struct for each pipeline by parsing the pipelineCfg.
 	// Also populates the connectors, connectorsAsExporter and connectorsAsReceiver maps.
 	for pipelineID, pipelineCfg := range set.PipelineConfigs {
@@ -108,8 +106,6 @@ func (g *Graph) createNodes(set Settings) error {
 		for _, recvID := range pipelineCfg.Receivers {
 			// Checks if this receiver is a connector or a regular receiver.
 			if set.ConnectorBuilder.IsConfigured(recvID) {
-				connectors[recvID] = struct{}{}
-				connectorsAsReceiver[recvID] = append(connectorsAsReceiver[recvID], pipelineID)
 				continue
 			}
 			rcvrNode := g.createReceiver(pipelineID, recvID)
@@ -127,8 +123,6 @@ func (g *Graph) createNodes(set Settings) error {
 
 		for _, exprID := range pipelineCfg.Exporters {
 			if set.ConnectorBuilder.IsConfigured(exprID) {
-				connectors[exprID] = struct{}{}
-				connectorsAsExporter[exprID] = append(connectorsAsExporter[exprID], pipelineID)
 				continue
 			}
 			expNode := g.createExporter(pipelineID, exprID)
@@ -138,6 +132,36 @@ func (g *Graph) createNodes(set Settings) error {
 
 	for connID := range connectors {
 		factory := set.ConnectorBuilder.Factory(connID.Type())
+		if factory == nil {
+			return fmt.Errorf("connector factory not available for: %q", connID.Type())
+		}
+		connFactory := factory.(connector.Factory)
+
+		for _, eID := range connectorsAsExporter[connID] {
+			for _, rID := range connectorsAsReceiver[connID] {
+				if connectorStability(connFactory, eID.Signal(), rID.Signal()) == component.StabilityLevelUndefined {
+					// Connector is not supported for this combination, but we know it is used correctly elsewhere
+					continue
+				}
+				connNode := g.createConnector(eID, rID, connID)
+
+				g.pipelines[eID].exporters[connNode.ID()] = connNode
+				g.pipelines[rID].receivers[connNode.ID()] = connNode
+			}
+		}
+	}
+	return nil
+}
+
+// ValidateConnectors validates the usage of connectors in the pipelines.
+func ValidateConnectors(
+	connectors map[component.ID]struct{},
+	connectorsAsExporter map[component.ID][]pipeline.ID,
+	connectorsAsReceiver map[component.ID][]pipeline.ID,
+	connectorBuilder *builders.ConnectorBuilder,
+) error {
+	for connID := range connectors {
+		factory := connectorBuilder.Factory(connID.Type())
 		if factory == nil {
 			return fmt.Errorf("connector factory not available for: %q", connID.Type())
 		}
@@ -169,32 +193,52 @@ func (g *Graph) createNodes(set Settings) error {
 		}
 
 		for expType, supportedUse := range expTypes {
-			if supportedUse {
-				continue
+			if !supportedUse {
+				return fmt.Errorf("connector %q used as exporter in %v pipeline but not used in any supported receiver pipeline", connID, formatPipelineNamesWithSignal(connectorsAsExporter[connID], expType))
 			}
-			return fmt.Errorf("connector %q used as exporter in %v pipeline but not used in any supported receiver pipeline", connID, formatPipelineNamesWithSignal(connectorsAsExporter[connID], expType))
 		}
 		for recType, supportedUse := range recTypes {
-			if supportedUse {
-				continue
-			}
-			return fmt.Errorf("connector %q used as receiver in %v pipeline but not used in any supported exporter pipeline", connID, formatPipelineNamesWithSignal(connectorsAsReceiver[connID], recType))
-		}
-
-		for _, eID := range connectorsAsExporter[connID] {
-			for _, rID := range connectorsAsReceiver[connID] {
-				if connectorStability(connFactory, eID.Signal(), rID.Signal()) == component.StabilityLevelUndefined {
-					// Connector is not supported for this combination, but we know it is used correctly elsewhere
-					continue
-				}
-				connNode := g.createConnector(eID, rID, connID)
-
-				g.pipelines[eID].exporters[connNode.ID()] = connNode
-				g.pipelines[rID].receivers[connNode.ID()] = connNode
+			if !supportedUse {
+				return fmt.Errorf("connector %q used as receiver in %v pipeline but not used in any supported exporter pipeline", connID, formatPipelineNamesWithSignal(connectorsAsReceiver[connID], recType))
 			}
 		}
 	}
+
 	return nil
+}
+
+// ExtractConnectors extracts connector information from pipeline configurations.
+func ExtractConnectors(
+	pipelineConfigs pipelines.Config,
+	connectorBuilder *builders.ConnectorBuilder,
+) (
+	connectors map[component.ID]struct{},
+	connectorsAsExporter map[component.ID][]pipeline.ID,
+	connectorsAsReceiver map[component.ID][]pipeline.ID,
+) {
+	connectors = make(map[component.ID]struct{})
+	connectorsAsExporter = make(map[component.ID][]pipeline.ID)
+	connectorsAsReceiver = make(map[component.ID][]pipeline.ID)
+
+	for pipelineID, pipelineCfg := range pipelineConfigs {
+		// Track connectors used as exporters.
+		for _, exporter := range pipelineCfg.Exporters {
+			if connectorBuilder.IsConfigured(exporter) {
+				connectors[exporter] = struct{}{}
+				connectorsAsExporter[exporter] = append(connectorsAsExporter[exporter], pipelineID)
+			}
+		}
+
+		// Track connectors used as receivers.
+		for _, receiver := range pipelineCfg.Receivers {
+			if connectorBuilder.IsConfigured(receiver) {
+				connectors[receiver] = struct{}{}
+				connectorsAsReceiver[receiver] = append(connectorsAsReceiver[receiver], pipelineID)
+			}
+		}
+	}
+
+	return connectors, connectorsAsExporter, connectorsAsReceiver
 }
 
 // formatPipelineNamesWithSignal formats pipeline name with signal as "signal[/name]" format.
