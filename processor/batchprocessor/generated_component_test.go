@@ -4,6 +4,7 @@ package batchprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -67,6 +68,12 @@ func TestComponentLifecycle(t *testing.T) {
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
+
+	envMap, err := cm.Sub("tests::env")
+	require.NoError(t, err)
+	for key, value := range envMap.ToStringMap() {
+		t.Setenv(key, fmt.Sprintf("%v", value))
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
