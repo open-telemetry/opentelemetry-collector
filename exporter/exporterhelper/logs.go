@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -24,6 +26,22 @@ var (
 	logsMarshaler   = &plog.ProtoMarshaler{}
 	logsUnmarshaler = &plog.ProtoUnmarshaler{}
 )
+
+// NewTLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
+func NewTLogsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: logsEncoding{},
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[Request]{
+			exporterbatcher.SizerTypeRequests: NewRequestsSizer(),
+			exporterbatcher.SizerTypeItems:    itemsSizer,
+			exporterbatcher.SizerTypeBytes: requestSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
+				},
+			},
+		},
+	}
+}
 
 type logsRequest struct {
 	ld         plog.Logs
@@ -94,7 +112,7 @@ func NewLogs(
 		return nil, errNilPushLogs
 	}
 	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
-		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: logsEncoding{}})}, options...)...)
+		append([]Option{internal.WithQueueBatchSettings(NewTLogsQueueBatchSettings())}, options...)...)
 }
 
 // requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.

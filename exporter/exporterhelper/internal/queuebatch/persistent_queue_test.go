@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -211,7 +212,7 @@ func (m *fakeStorageClientWithErrors) Reset() {
 }
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capacity int64, numConsumers int,
+func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[uint64], capacity int64, numConsumers int,
 	consumeFunc func(_ context.Context, item uint64) error,
 ) Queue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
@@ -220,7 +221,8 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
-		set:       exportertest.NewNopSettings(exportertest.NopType),
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
 	})
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
@@ -237,26 +239,27 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer sizer[uint64], capaci
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     &requestSizer[uint64]{},
+		sizer:     RequestsSizer[uint64]{},
 		capacity:  1000,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
-		set:       exportertest.NewNopSettings(exportertest.NopType),
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
 	pq.initClient(context.Background(), client)
 	return pq
 }
 
 func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
-	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &requestSizer[uint64]{}, capacity)
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, RequestsSizer[uint64]{}, capacity)
 }
 
 func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
 	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer sizer[uint64],
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer Sizer[uint64],
 	capacity int64,
 ) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
@@ -265,7 +268,8 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
-		set:       exportertest.NewNopSettings(exportertest.NopType),
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
 	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
 	return pq
@@ -274,13 +278,13 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	tests := []struct {
 		name           string
-		sizer          sizer[uint64]
+		sizer          Sizer[uint64]
 		capacity       int64
 		sizeMultiplier int64
 	}{
 		{
 			name:           "requests_capacity",
-			sizer:          &requestSizer[uint64]{},
+			sizer:          RequestsSizer[uint64]{},
 			capacity:       5,
 			sizeMultiplier: 1,
 		},
@@ -326,7 +330,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createAndStartTestPersistentQueue(t,
-		&requestSizer[uint64]{}, 1001, 1,
+		RequestsSizer[uint64]{}, 1001, 1,
 		func(context.Context, uint64) error {
 			return nil
 		})
@@ -370,7 +374,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 			consumed := &atomic.Int64{}
 			pq := createAndStartTestPersistentQueue(t,
-				&requestSizer[uint64]{}, 1000, c.numConsumers,
+				RequestsSizer[uint64]{}, 1000, c.numConsumers,
 				func(context.Context, uint64) error {
 					consumed.Add(int64(1))
 					return nil
@@ -391,11 +395,11 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 func TestPersistentBlockingQueue(t *testing.T) {
 	tests := []struct {
 		name  string
-		sizer sizer[uint64]
+		sizer Sizer[uint64]
 	}{
 		{
 			name:  "requests_based",
-			sizer: &requestSizer[uint64]{},
+			sizer: RequestsSizer[uint64]{},
 		},
 		{
 			name:  "items_based",
@@ -412,7 +416,8 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				signal:    pipeline.SignalTraces,
 				storageID: component.ID{},
 				encoding:  uint64Encoding{},
-				set:       exportertest.NewNopSettings(exportertest.NopType),
+				id:        component.NewID(exportertest.NopType),
+				telemetry: componenttest.NewNopTelemetrySettings(),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {

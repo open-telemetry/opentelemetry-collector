@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 )
 
 type fakeEncoding struct {
@@ -47,8 +48,14 @@ func newFakeEncoding(mr request.Request) exporterqueue.Encoding[request.Request]
 }
 
 var defaultQueueSettings = queuebatch.QueueSettings[request.Request]{
-	Signal:           defaultSignal,
-	ExporterSettings: defaultSettings,
+	Signal:    defaultSignal,
+	ID:        component.NewID(exportertest.NopType),
+	Telemetry: componenttest.NewNopTelemetrySettings(),
+	Settings: queuebatch.Settings[request.Request]{
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+		},
+	},
 }
 
 func TestQueueBatchStopWhileWaiting(t *testing.T) {
@@ -117,7 +124,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	qSet := defaultQueueSettings
 	logger, observed := observer.New(zap.ErrorLevel)
-	qSet.ExporterSettings.Logger = zap.New(logger)
+	qSet.Telemetry.Logger = zap.New(logger)
 	be, err := NewQueueSender(
 		qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
 
@@ -131,9 +138,15 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	qSet := queuebatch.QueueSettings[request.Request]{
-		Signal:           defaultSignal,
-		ExporterSettings: defaultSettings,
-		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
+		Signal:    defaultSignal,
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Settings: queuebatch.Settings[request.Request]{
+			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
+			Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+				exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+			},
+		},
 	}
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
@@ -154,9 +167,15 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 
 	qSet := queuebatch.QueueSettings[request.Request]{
-		Signal:           defaultSignal,
-		ExporterSettings: defaultSettings,
-		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
+		Signal:    defaultSignal,
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Settings: queuebatch.Settings[request.Request]{
+			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
+			Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+				exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+			},
+		},
 	}
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
@@ -186,9 +205,15 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 	mockReq := &requesttest.FakeRequest{Items: 2}
 	qSet := queuebatch.QueueSettings[request.Request]{
-		Signal:           defaultSignal,
-		ExporterSettings: defaultSettings,
-		Encoding:         newFakeEncoding(mockReq),
+		Signal:    defaultSignal,
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Settings: queuebatch.Settings[request.Request]{
+			Encoding: newFakeEncoding(&requesttest.FakeRequest{}),
+			Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+				exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+			},
+		},
 	}
 	be, err := NewQueueBatch(qSet, qCfg, exporterbatcher.Config{}, rs.Send)
 	require.NoError(t, err)
@@ -339,11 +364,7 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := requesttest.NewSink()
-			qSet := queuebatch.QueueSettings[request.Request]{
-				Signal:           defaultSignal,
-				ExporterSettings: defaultSettings,
-			}
-			be, err := NewQueueBatch(qSet, exporterqueue.NewDefaultConfig(), tt.batchCfg, sink.Export)
+			be, err := NewQueueBatch(defaultQueueSettings, exporterqueue.NewDefaultConfig(), tt.batchCfg, sink.Export)
 			require.NoError(t, err)
 			require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 

@@ -21,7 +21,7 @@ var errInvalidSize = errors.New("invalid element size")
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
 type memoryQueueSettings[T any] struct {
-	sizer    sizer[T]
+	sizer    Sizer[T]
 	capacity int64
 	blocking bool
 }
@@ -29,7 +29,7 @@ type memoryQueueSettings[T any] struct {
 // memoryQueue is an in-memory implementation of a Queue.
 type memoryQueue[T any] struct {
 	component.StartFunc
-	sizer sizer[T]
+	sizer Sizer[T]
 	cap   int64
 
 	mu              sync.Mutex

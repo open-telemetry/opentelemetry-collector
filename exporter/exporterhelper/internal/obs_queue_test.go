@@ -13,9 +13,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -51,8 +49,9 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalLogs,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalLogs,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](nil, 7, 9))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2}))
@@ -81,8 +80,9 @@ func TestObsQueueLogsFailure(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalLogs,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalLogs,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](errors.New("my error"), 7, 9))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 2}))
@@ -101,8 +101,9 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalTraces,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalTraces,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](nil, 17, 19))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12}))
@@ -131,8 +132,9 @@ func TestObsQueueTracesFailure(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalTraces,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalTraces,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 12}))
@@ -151,8 +153,9 @@ func TestObsQueueMetrics(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalMetrics,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalMetrics,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](nil, 27, 29))
 	require.NoError(t, err)
 	require.NoError(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
@@ -181,8 +184,9 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
-		Signal:           pipeline.SignalMetrics,
-		ExporterSettings: exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		Signal:    pipeline.SignalMetrics,
+		ID:        exporterID,
+		Telemetry: tt.NewTelemetrySettings(),
 	}, newFakeQueue[request.Request](errors.New("my error"), 0, 0))
 	require.NoError(t, err)
 	require.Error(t, te.Offer(context.Background(), &requesttest.FakeRequest{Items: 22}))
