@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 func TestNewDefaultTimeoutConfig(t *testing.T) {
@@ -29,7 +30,7 @@ func TestInvalidTimeout(t *testing.T) {
 
 func TestNewTimeoutSender(t *testing.T) {
 	cfg := TimeoutConfig{Timeout: 5 * time.Second}
-	ts := newTimeoutSender(cfg, newSender(func(ctx context.Context, data int64) error {
+	ts := newTimeoutSender(cfg, sender.NewSender(func(ctx context.Context, data int64) error {
 		deadline, ok := ctx.Deadline()
 		assert.True(t, ok)
 		timeout := time.Since(deadline)

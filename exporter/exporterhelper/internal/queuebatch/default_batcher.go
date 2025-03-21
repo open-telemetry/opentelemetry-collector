@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package batcher // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 type batch struct {
@@ -26,7 +26,7 @@ type batch struct {
 type defaultBatcher struct {
 	batchCfg       exporterbatcher.Config
 	workerPool     chan struct{}
-	exportFunc     func(ctx context.Context, req request.Request) error
+	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
@@ -35,7 +35,7 @@ type defaultBatcher struct {
 }
 
 func newDefaultBatcher(batchCfg exporterbatcher.Config,
-	exportFunc func(ctx context.Context, req request.Request) error,
+	consumeFunc sender.SendFunc[request.Request],
 	maxWorkers int,
 ) *defaultBatcher {
 	// TODO: Determine what is the right behavior for this in combination with async queue.
@@ -47,11 +47,11 @@ func newDefaultBatcher(batchCfg exporterbatcher.Config,
 		}
 	}
 	return &defaultBatcher{
-		batchCfg:   batchCfg,
-		workerPool: workerPool,
-		exportFunc: exportFunc,
-		stopWG:     sync.WaitGroup{},
-		shutdownCh: make(chan struct{}, 1),
+		batchCfg:    batchCfg,
+		workerPool:  workerPool,
+		consumeFunc: consumeFunc,
+		stopWG:      sync.WaitGroup{},
+		shutdownCh:  make(chan struct{}, 1),
 	}
 }
 
@@ -61,7 +61,7 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
-func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done queuebatch.Done) {
+func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -198,15 +198,15 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.resetTimer()
 }
 
-// flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done queuebatch.Done) {
+// flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
+func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool
 	}
 	go func() {
 		defer qb.stopWG.Done()
-		done.OnDone(qb.exportFunc(ctx, req))
+		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
 			qb.workerPool <- struct{}{}
 		}
@@ -222,7 +222,7 @@ func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	return nil
 }
 
-type multiDone []queuebatch.Done
+type multiDone []Done
 
 func (mdc multiDone) OnDone(err error) {
 	for _, d := range mdc {
@@ -231,13 +231,13 @@ func (mdc multiDone) OnDone(err error) {
 }
 
 type refCountDone struct {
-	done     queuebatch.Done
+	done     Done
 	mu       sync.Mutex
 	refCount int64
 	err      error
 }
 
-func newRefCountDone(done queuebatch.Done, refCount int64) queuebatch.Done {
+func newRefCountDone(done Done, refCount int64) Done {
 	return &refCountDone{
 		done:     done,
 		refCount: refCount,

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package storagetest // import "go.opentelemetry.io/collector/exporter/internal/storagetest"
+package storagetest // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 
 import (
 	"context"

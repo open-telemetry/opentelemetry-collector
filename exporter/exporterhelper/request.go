@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // Request represents a single request that can be sent to an external endpoint.
@@ -29,4 +30,4 @@ type RequestConverterFunc[K any] func(context.Context, K) (Request, error)
 
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
-type RequestConsumeFunc = func(context.Context, Request) error
+type RequestConsumeFunc = sender.SendFunc[request.Request]

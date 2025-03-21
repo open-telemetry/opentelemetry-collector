@@ -18,8 +18,9 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
@@ -49,10 +50,10 @@ type retrySender struct {
 	cfg    configretry.BackOffConfig
 	stopCh chan struct{}
 	logger *zap.Logger
-	next   Sender[request.Request]
+	next   sender.Sender[request.Request]
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next Sender[request.Request]) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next sender.Sender[request.Request]) *retrySender {
 	return &retrySender{
 		cfg:    config,
 		stopCh: make(chan struct{}),
