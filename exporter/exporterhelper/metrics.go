@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
@@ -92,11 +93,9 @@ func NewMetrics(
 	if pusher == nil {
 		return nil, errNilPushMetrics
 	}
-	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher), append([]Option{internal.WithEncoding(metricsEncoding{})}, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher),
+		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: metricsEncoding{}})}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use RequestConverterFunc[pmetric.Metrics].
-type RequestFromMetricsFunc = RequestConverterFunc[pmetric.Metrics]
 
 // requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
 func requestConsumeFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConsumeFunc {

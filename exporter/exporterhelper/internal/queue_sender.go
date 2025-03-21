@@ -12,7 +12,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/featuregate"
 )
@@ -26,16 +28,16 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 )
 
 type QueueSender struct {
-	queue   exporterqueue.Queue[request.Request]
+	queue   queuebatch.Queue[request.Request]
 	batcher component.Component
 }
 
 func NewQueueSender(
-	qSet exporterqueue.Settings[request.Request],
+	qSet queuebatch.QueueSettings[request.Request],
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	next Sender[request.Request],
+	next sender.Sender[request.Request],
 ) (*QueueSender, error) {
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
@@ -57,7 +59,7 @@ func NewQueueSender(
 	if bCfg.Enabled {
 		qCfg.NumConsumers = 1
 	}
-	q, err := newObsQueue(qSet, exporterqueue.NewQueue(context.Background(), qSet, qCfg, b.Consume))
+	q, err := newObsQueue(qSet, queuebatch.NewQueue(context.Background(), qSet, qCfg, b.Consume))
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +86,4 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 // Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
-}
-
-type MockHost struct {
-	component.Host
-	Ext map[component.ID]component.Component
-}
-
-func (nh *MockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.Ext
 }

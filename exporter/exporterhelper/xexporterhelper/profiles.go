@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -87,12 +88,9 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	opts := []exporterhelper.Option{internal.WithEncoding(profilesEncoding{})}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher), append(opts, options...)...)
+	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
+		append([]exporterhelper.Option{internal.WithQueueBatchSettings(queuebatch.Settings[exporterhelper.Request]{Encoding: profilesEncoding{}})}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use exporterhelper.RequestConverterFunc[pprofile.Profiles].
-type RequestFromProfilesFunc = exporterhelper.RequestConverterFunc[pprofile.Profiles]
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {

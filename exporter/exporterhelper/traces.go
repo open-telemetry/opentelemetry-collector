@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
@@ -92,11 +93,9 @@ func NewTraces(
 	if pusher == nil {
 		return nil, errNilPushTraces
 	}
-	return NewTracesRequest(ctx, set, requestFromTraces(), requestConsumeFromTraces(pusher), append([]Option{internal.WithEncoding(tracesEncoding{})}, options...)...)
+	return NewTracesRequest(ctx, set, requestFromTraces(), requestConsumeFromTraces(pusher),
+		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: tracesEncoding{}})}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use RequestConverterFunc[ptrace.Traces].
-type RequestFromTracesFunc = RequestConverterFunc[ptrace.Traces]
 
 // requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
 func requestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) RequestConsumeFunc {
