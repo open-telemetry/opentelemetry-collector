@@ -28,8 +28,9 @@ var oneRequestWeights = [1]extensionlimiter.Weight{
 }
 
 // networkByteWeights represents the weights to apply for network bytes
-var networkByteWeights = func(bytes int) [1]extensionlimiter.Weight {
-	return [1]extensionlimiter.Weight{
+var networkByteWeights = func(bytes int) [2]extensionlimiter.Weight {
+	return [2]extensionlimiter.Weight{
+		{Key: extensionlimiter.WeightKeyRequestCount, Value: 1},
 		{Key: extensionlimiter.WeightKeyNetworkBytes, Value: uint64(bytes)},
 	}
 }
@@ -103,6 +104,7 @@ func (lm *limiterMiddleware) ClientRoundTripper(base http.RoundTripper) (http.Ro
 
 // RoundTrip implements http.RoundTripper with rate limiting.
 func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	// TODO: note that the HTTP round tripper does not acquire network-bytes
 	rel, err := lrt.resourceLimiter.Acquire(req.Context(), oneRequestWeights[:])
 	if err != nil {
 		return limitExceeded(req), nil
@@ -116,6 +118,7 @@ func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 // ServerHandler wraps an HTTP handler with rate limiting.
 func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO: note that the HTTP handler does not acquire network-bytes
 		rel, err := lm.resourceLimiter.Acquire(r.Context(), oneRequestWeights[:])
 		if err != nil {
 			http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
