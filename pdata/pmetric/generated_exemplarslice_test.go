@@ -122,6 +122,18 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExemplarSliceAll(t *testing.T) {
+	ms := generateTestExemplarSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func generateTestExemplarSlice() ExemplarSlice {
 	es := NewExemplarSlice()
 	fillTestExemplarSlice(es)

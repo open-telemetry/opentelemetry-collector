@@ -25,7 +25,7 @@ import (
 func TestTracesNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lte, err := createTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), tc.config)
+			lte, err := createTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), tc.config)
 			require.NotNil(t, lte)
 			assert.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestTracesNoErrors(t *testing.T) {
 func TestMetricsNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lme, err := createMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), tc.config)
+			lme, err := createMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), tc.config)
 			require.NotNil(t, lme)
 			assert.NoError(t, err)
 
@@ -58,7 +58,7 @@ func TestMetricsNoErrors(t *testing.T) {
 func TestLogsNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lle, err := createLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), createDefaultConfig())
+			lle, err := createLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), createDefaultConfig())
 			require.NotNil(t, lle)
 			assert.NoError(t, err)
 
@@ -73,7 +73,7 @@ func TestLogsNoErrors(t *testing.T) {
 func TestProfilesNoErrors(t *testing.T) {
 	for _, tc := range createTestCases() {
 		t.Run(tc.name, func(t *testing.T) {
-			lle, err := createProfiles(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), createDefaultConfig())
+			lle, err := createProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), createDefaultConfig())
 			require.NotNil(t, lle)
 			assert.NoError(t, err)
 

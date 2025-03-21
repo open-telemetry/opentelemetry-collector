@@ -6,11 +6,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/codes"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -19,7 +15,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -31,9 +29,6 @@ type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	Marshaler   exporterqueue.Marshaler[request.Request]
-	Unmarshaler exporterqueue.Unmarshaler[request.Request]
-
 	Set exporter.Settings
 
 	// Message for the user to be added with an export failure message.
@@ -42,26 +37,25 @@ type BaseExporter struct {
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
 	// The data is handled by each sender in the respective order starting from the queueSender.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
-	QueueSender  Sender[request.Request]
-	ObsrepSender Sender[request.Request]
-	RetrySender  Sender[request.Request]
+	QueueSender sender.Sender[request.Request]
+	RetrySender sender.Sender[request.Request]
 
-	firstSender Sender[request.Request]
+	firstSender sender.Sender[request.Request]
 
 	ConsumerOptions []consumer.Option
 
-	timeoutCfg   TimeoutConfig
-	retryCfg     configretry.BackOffConfig
-	queueFactory exporterqueue.Factory[request.Request]
-	queueCfg     exporterqueue.Config
-	batcherCfg   exporterbatcher.Config
+	timeoutCfg TimeoutConfig
+	retryCfg   configretry.BackOffConfig
+
+	queueBatchSettings queuebatch.Settings[request.Request]
+	queueCfg           exporterqueue.Config
+	batcherCfg         exporterbatcher.Config
 }
 
-func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...Option) (*BaseExporter, error) {
+func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
 	be := &BaseExporter{
-		Set:          set,
-		timeoutCfg:   NewDefaultTimeoutConfig(),
-		queueFactory: exporterqueue.NewMemoryQueueFactory[request.Request](),
+		Set:        set,
+		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
 
 	for _, op := range options {
@@ -71,9 +65,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	// Consumer Sender is always initialized.
-	be.firstSender = newSender(func(ctx context.Context, req request.Request) error {
-		return req.Export(ctx)
-	})
+	be.firstSender = sender.NewSender(pusher)
 
 	// Next setup the timeout Sender since we want the timeout to control only the export functionality.
 	// Only initialize if not explicitly disabled.
@@ -87,11 +79,10 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	var err error
-	be.ObsrepSender, err = newObsReportSender(set, signal, be.firstSender)
+	be.firstSender, err = newObsReportSender(set, signal, be.firstSender)
 	if err != nil {
 		return nil, err
 	}
-	be.firstSender = be.ObsrepSender
 
 	if be.batcherCfg.Enabled {
 		// Batcher mutates the data.
@@ -99,11 +90,12 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, options ...O
 	}
 
 	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
-		qSet := exporterqueue.Settings{
+		qSet := queuebatch.QueueSettings[request.Request]{
 			Signal:           signal,
 			ExporterSettings: set,
+			Encoding:         be.queueBatchSettings.Encoding,
 		}
-		be.QueueSender, err = NewQueueSender(be.queueFactory, qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
+		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {
 			return nil, err
 		}
@@ -200,44 +192,30 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueConfig) Option {
+func WithQueue(cfg exporterqueue.Config) Option {
 	return func(o *BaseExporter) error {
-		if o.Marshaler == nil || o.Unmarshaler == nil {
-			return errors.New("WithQueue option is not available for the new request exporters, use WithRequestQueue instead")
+		if o.queueBatchSettings.Encoding == nil {
+			return errors.New("WithQueue option is not available for the new request exporters, use WithQueueBatch instead")
 		}
-		if !config.Enabled {
-			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
-			return nil
-		}
-		o.queueCfg = exporterqueue.Config{
-			Enabled:      config.Enabled,
-			NumConsumers: config.NumConsumers,
-			QueueSize:    config.QueueSize,
-			Blocking:     config.Blocking,
-		}
-		o.queueFactory = exporterqueue.NewPersistentQueueFactory[request.Request](config.StorageID, exporterqueue.PersistentQueueSettings[request.Request]{
-			Marshaler:   o.Marshaler,
-			Unmarshaler: o.Unmarshaler,
-		})
-		return nil
+		return WithQueueBatch(cfg, o.queueBatchSettings)(o)
 	}
 }
 
-// WithRequestQueue enables queueing for an exporter.
+// WithQueueBatch enables queueing for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[request.Request]) Option {
+func WithQueueBatch(cfg exporterqueue.Config, set queuebatch.Settings[request.Request]) Option {
 	return func(o *BaseExporter) error {
-		if o.Marshaler != nil || o.Unmarshaler != nil {
-			return errors.New("WithRequestQueue option must be used with the new request exporters only, use WithQueue instead")
-		}
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
+		if cfg.StorageID != nil && set.Encoding == nil {
+			return errors.New("`QueueBatchSettings.Encoding` must not be nil when persistent queue is enabled")
+		}
+		o.queueBatchSettings = set
 		o.queueCfg = cfg
-		o.queueFactory = queueFactory
 		return nil
 	}
 }
@@ -264,29 +242,11 @@ func WithBatcher(cfg exporterbatcher.Config) Option {
 	}
 }
 
-// WithMarshaler is used to set the request marshaler for the new exporter helper.
+// WithQueueBatchSettings is used to set the queuebatch.Settings for the new request based exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
-func WithMarshaler(marshaler exporterqueue.Marshaler[request.Request]) Option {
+func WithQueueBatchSettings(set queuebatch.Settings[request.Request]) Option {
 	return func(o *BaseExporter) error {
-		o.Marshaler = marshaler
+		o.queueBatchSettings = set
 		return nil
-	}
-}
-
-// WithUnmarshaler is used to set the request unmarshaler for the new exporter helper.
-// It must be provided as the first option when creating a new exporter helper.
-func WithUnmarshaler(unmarshaler exporterqueue.Unmarshaler[request.Request]) Option {
-	return func(o *BaseExporter) error {
-		o.Unmarshaler = unmarshaler
-		return nil
-	}
-}
-
-func CheckStatus(t *testing.T, sd sdktrace.ReadOnlySpan, err error) {
-	if err != nil {
-		require.Equal(t, codes.Error, sd.Status().Code, "SpanData %v", sd)
-		require.EqualError(t, err, sd.Status().Description, "SpanData %v", sd)
-	} else {
-		require.Equal(t, codes.Unset, sd.Status().Code, "SpanData %v", sd)
 	}
 }

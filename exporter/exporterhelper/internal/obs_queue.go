@@ -10,20 +10,20 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
-	exporterqueue.Queue[T]
+	queuebatch.Queue[T]
 	tb                *metadata.TelemetryBuilder
 	metricAttr        metric.MeasurementOption
 	enqueueFailedInst metric.Int64Counter
 }
 
-func newObsQueue[T request.Request](set exporterqueue.Settings, delegate exporterqueue.Queue[T]) (exporterqueue.Queue[T], error) {
+func newObsQueue[T request.Request](set queuebatch.QueueSettings[T], delegate queuebatch.Queue[T]) (queuebatch.Queue[T], error) {
 	tb, err := metadata.NewTelemetryBuilder(set.ExporterSettings.TelemetrySettings)
 	if err != nil {
 		return nil, err

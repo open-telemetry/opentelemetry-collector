@@ -123,6 +123,18 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLogRecordSliceAll(t *testing.T) {
+	ms := generateTestLogRecordSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestLogRecordSlice_Sort(t *testing.T) {
 	es := generateTestLogRecordSlice()
 	es.Sort(func(a, b LogRecord) bool {

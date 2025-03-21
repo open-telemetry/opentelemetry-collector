@@ -123,6 +123,18 @@ func TestLineSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLineSliceAll(t *testing.T) {
+	ms := generateTestLineSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestLineSlice_Sort(t *testing.T) {
 	es := generateTestLineSlice()
 	es.Sort(func(a, b Line) bool {

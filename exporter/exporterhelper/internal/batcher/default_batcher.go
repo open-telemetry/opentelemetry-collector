@@ -12,8 +12,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 type batch struct {
@@ -26,7 +27,7 @@ type batch struct {
 type defaultBatcher struct {
 	batchCfg       exporterbatcher.Config
 	workerPool     chan struct{}
-	exportFunc     func(ctx context.Context, req request.Request) error
+	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
@@ -35,7 +36,7 @@ type defaultBatcher struct {
 }
 
 func newDefaultBatcher(batchCfg exporterbatcher.Config,
-	exportFunc func(ctx context.Context, req request.Request) error,
+	consumeFunc sender.SendFunc[request.Request],
 	maxWorkers int,
 ) *defaultBatcher {
 	// TODO: Determine what is the right behavior for this in combination with async queue.
@@ -47,11 +48,11 @@ func newDefaultBatcher(batchCfg exporterbatcher.Config,
 		}
 	}
 	return &defaultBatcher{
-		batchCfg:   batchCfg,
-		workerPool: workerPool,
-		exportFunc: exportFunc,
-		stopWG:     sync.WaitGroup{},
-		shutdownCh: make(chan struct{}, 1),
+		batchCfg:    batchCfg,
+		workerPool:  workerPool,
+		consumeFunc: consumeFunc,
+		stopWG:      sync.WaitGroup{},
+		shutdownCh:  make(chan struct{}, 1),
 	}
 }
 
@@ -61,13 +62,11 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
-func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done exporterqueue.Done) {
+func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done queuebatch.Done) {
 	qb.currentBatchMu.Lock()
 
-	var reqList []request.Request
-	var mergeSplitErr error
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr = req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, qb.batchCfg.SizeConfig, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -80,9 +79,9 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		}
 
 		// We have at least one result in the reqList. Last in the list may not have enough data to be flushed.
-		// Find if it has at least MinSizeItems, and if it does then move that as the current batch.
+		// Find if it has at least MinSize, and if it does then move that as the current batch.
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSizeItems {
+		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
@@ -101,7 +100,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr = qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSizeConfig, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.SizeConfig, req)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
@@ -127,7 +126,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
 	// Need to check the currentBatch if more than 1 result returned or if 1 result return but larger than MinSize.
-	if len(reqList) > 1 || qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSizeItems {
+	if len(reqList) > 1 || qb.currentBatch.req.ItemsCount() >= qb.batchCfg.MinSize {
 		firstBatch = qb.currentBatch
 		qb.currentBatch = nil
 	}
@@ -137,7 +136,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// If we still have results to process, then we need to check if the last result has enough data to flush, or we add it to the currentBatch.
 	if len(reqList) > 0 {
 		lastReq := reqList[len(reqList)-1]
-		if lastReq.ItemsCount() < qb.batchCfg.MinSizeItems {
+		if lastReq.ItemsCount() < qb.batchCfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
@@ -200,15 +199,15 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.resetTimer()
 }
 
-// flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
-func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done exporterqueue.Done) {
+// flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
+func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done queuebatch.Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool
 	}
 	go func() {
 		defer qb.stopWG.Done()
-		done.OnDone(qb.exportFunc(ctx, req))
+		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
 			qb.workerPool <- struct{}{}
 		}
@@ -224,7 +223,7 @@ func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	return nil
 }
 
-type multiDone []exporterqueue.Done
+type multiDone []queuebatch.Done
 
 func (mdc multiDone) OnDone(err error) {
 	for _, d := range mdc {
@@ -233,13 +232,13 @@ func (mdc multiDone) OnDone(err error) {
 }
 
 type refCountDone struct {
-	done     exporterqueue.Done
+	done     queuebatch.Done
 	mu       sync.Mutex
 	refCount int64
 	err      error
 }
 
-func newRefCountDone(done exporterqueue.Done, refCount int64) exporterqueue.Done {
+func newRefCountDone(done queuebatch.Done, refCount int64) queuebatch.Done {
 	return &refCountDone{
 		done:     done,
 		refCount: refCount,

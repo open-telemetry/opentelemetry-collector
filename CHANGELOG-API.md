@@ -7,6 +7,104 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.28.1/v0.122.1
+
+<!-- previous-version -->
+
+## v1.28.0/v0.122.0
+
+### 🛑 Breaking changes 🛑
+
+- `auth, authtest`: Remove deprecated modules extension/auth and extension/auth/authtest (#12543)
+  Use extension/extensionauth and extension/extensionauth/extensionauthtest instead.
+  
+- `extensionauth`: Remove deprecated methods from the `Func` types. (#12547)
+- `extensiontest, connectortest, processortest, receivertest, scrapertest, exportertest`: Remove deprecated `NewNopSettingsWithType` functions, use `NewNopSettings` instead. (#12221)
+- `extensionauthtest`: Remove the `extensionauthtest.MockClient` struct. (#12567)
+  - Use `extensionauthtest.NewNopClient` to create a client with a noop implementation. 
+  - Use `extensionauthtest.NewErrorClient` to create a client that always returns an error.
+  - Implement the `extensionauth` interfaces for custom mock client implementations.
+  
+- `component/componenttest`: Remove the deprecated componenttest.TestTelemetry in favor of componenttest.Telemetry (#12419)
+- `exporterhelper`: Remove the Request.Export function in favor of an equivalent request consume func in the New[Traces|Metrics|Logs|Profiles]Request (#12637)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate per signal converter in favor of generic version (#12631)
+- `extensionauth`: Deprecate `extensionauth.NewClient` and `extensionauth.NewServer`. (#12574)
+  - Manually implement the interfaces instead.
+  
+- `configauth`: Deprecate `configauth.Authenticator.GetClientAuthenticator`. (#12574)
+  - Use the per-protocol methods instead.
+  
+
+### 🚀 New components 🚀
+
+- `receiverhelper`: Split `receiverhelper` into a separate module (#28328)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add `supportsSignal` func for `Metadata` type in `mdatagen`. (#12640)
+- `receiver`: Mark module as stable (#12513)
+- `pdata/pcommon`: Introduce `Equal()` method for comparison equality to `Value`, `ByteSlice`, `Float64Slice`, `Int32Slice`, `Int64Slice`, `StringSlice`, `Uint64Slice`, `Map` and `Slice` (#12594)
+- `pdata`: Add iterator All method to pdata slices and map types. (#11982)
+- `pdata/pprofile`: Introduce AddAttribute helper method to modify the content of attributable records (#12206)
+
+<!-- previous-version -->
+
+## v1.27.0/v0.121.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterqueue`: Remove exporterqueue.Factory in favor of the NewQueue function, and merge configs for memory and persistent. (#12509)
+  As a side effect of this change, no alternative implementation of the queue are supported and the Queue interface will be hidden.
+- `exporterhelper`: Update MergeSplit function signature to use the new SizeConfig (#12486)
+- `extension, connector, processor, receiver, exporter, scraper`: Remove deprecated `Create*` methods from `Create*Func` types. (#12305)
+  The `xconnector.CreateMetricsToProfilesFunc.CreateMetricsToProfiles` method has been removed without a deprecation.
+  
+- `component`: Remove deprecated function and interface `ConfigValidator` and `ValidateConfig`. (#11524)
+  - Use `xconfmap.Validator` and `xconfmap.Validate` instead.
+  
+- `receiver, scraper, processor, exporter, extension`: Remove deprecated MakeFactoryMap functions in favor of generic implementation (#12222)
+- `exporterhelper`: Change the signature of the exporterhelper.WithQueueRequest to accept Encoding instead of the Factory. (#12509)
+- `component/componenttest`: Removing the deprecated `CheckReceiverMetrics` and `CheckReceiverTraces` functions. (#12185)
+
+### 🚩 Deprecations 🚩
+
+- `componenttest`: Deprecated componenttest.TestTelemetry in favor of componenttest.Telemetry (#12419)
+- `connector, exporter, extension, processor, receiver, scraper`: Add type parameter to `NewNopSettings` and deprecate `NewNopSettingsWithType` (#12305)
+- `exporterhelper`: Deprecate MinSizeConfig and MaxSizeItems. (#12486)
+- `extension/extensionauth`: Deprecate methods on `*Func` types. (#12480)
+- `extension/auth, extension/auth/authtest`: Deprecate extension/auth and the related test module in favor of extension/extensionauth (#12478)
+
+### 🚀 New components 🚀
+
+- `service/hostcapabilities`: create `service/hostcapabilities` module (#12296, #12375)
+  Removes getExporters interface in service/internal/graph.
+  Removes getModuleInfos interface in service/internal/graph.
+  Creates interface ExposeExporters in service/hostcapabilities to expose GetExporters function.
+  Creates interface ModuleInfo in service/hostcapabilities to expose GetModuleInfos function.
+  
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Adds the config API to support serialized bytes based batching (#3262)
+- `configauth`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `confighttp`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+- `otelcol`: Converters are now available in the `components` command. (#11900, #12385)
+- `extension`: Mark module as stable (#11005)
+- `pcommon.Map`: preallocate go map in Map.AsRaw() (#12406)
+- `exporterhelper`: Stabilize exporter.UsePullingBasedExporterQueueBatcher and remove old batch sender (#12425)
+- `service`: Add the `omitempty` mapstructure tag to struct fields (#12191)
+  This results in unset fields not being rendered when marshaling.
+
+### 🧰 Bug fixes 🧰
+
+- `mdatagen`: Fix broken imports in the generated files. (#12298)
+- `processor, connector, exporter, receiver`: Explicitly error out at component creation time if there is a type mismatch. (#12305)
+
 ## v1.26.0/v0.120.0
 
 ### 🛑 Breaking changes 🛑
@@ -30,9 +128,9 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 🚩 Deprecations 🚩
 
-- `component/componenttest`: Deprecate CheckReceiverMetrics in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverMetrics in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetrics`
-- `component/componenttest`: Deprecate CheckReceiverTraces in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverTraces in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverTraces`
 - `component`: Deprecate `ConfigValidator` and `ValidateConfig` (#11524)
   Please use `Validator` and `Validate` respectively from `xconfmap`.
@@ -90,17 +188,17 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   metadatatest.Telemetry.NewSettings -> metadatatest.NewSettings |
   metadatatest.Telemetry.AssertMetrics -> metadatatest.AssertEqual* |
   
-- `component/componenttest`: Deprecate `CheckExporterEnqueue*` functions in componenenttest (#12185)
+- `component/componenttest`: Deprecate `CheckExporterEnqueue*` functions in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterEnqueue*` functions.
-- `component/componenttest`: Deprecate CheckExporterLogs in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterLogs in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterLogs`
-- `component/componenttest`: Deprecate CheckExporterMetricGauge in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterMetricGauge in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverMetricGauge`
-- `component/componenttest`: Deprecate CheckExporterMetrics in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterMetrics in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterMetrics`
-- `component/componenttest`: Deprecate CheckExporterTraces in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckExporterTraces in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckExporterTraces`
-- `component/componenttest`: Deprecate CheckReceiverLogs in componenenttest (#12185)
+- `component/componenttest`: Deprecate CheckReceiverLogs in componenttest (#12185)
   Use the `metadatatest.AssertEqualMetric` series of functions instead of `obsreporttest.CheckReceiverLogs`
 - `mdatagen`: Make registration of callback for async metric always optional. (#12204)
   Deprecate `metadata.TelemetryBuilder.Init*` and `metadata.With*Callback` in favor of `metadata.TelemetryBuilder.Register*Callback`
@@ -122,7 +220,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 ### 🧰 Bug fixes 🧰
 
 - `mdatagen`: All register callbacks to async instruments can now be unregistered by calling `metadata.TelemetryBuilder.Shutdown()` (#12204)
-- `mdatagen`: Fix bug where Histograms were marked as not supporting temporaly aggregation (#12168)
+- `mdatagen`: Fix bug where Histograms were marked as not supporting temporal aggregation (#12168)
 
 ## v1.24.0/v0.118.0
 
@@ -130,14 +228,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 - `exporterqueue`: Change Queue Size and Capacity to return explicit int64. (#12076)
 - `receiver/scraperhelper`: Removing the deprecated receiver/scraperhelper package (#12054)
-- `processorteset`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
+- `processortest`: Revert the nop_processor.NewNopSettings change, as it is no longer needed (#11433)
 - `experimental/storage`: Remove deprecated package/module experimental/storage (#12109)
 - `mdatagen`: Remove deprecated generated_component_telemetry_test file from being generated and delete it. (#12068)
 - `receivertest`: Remove deprecated receivertest.NewNopFactoryForType (#12110)
 
 ### 🚩 Deprecations 🚩
 
-- `componenttest`: Deprecate CheckScraperMetrics in componenenttest (#12105)
+- `componenttest`: Deprecate CheckScraperMetrics in componenttest (#12105)
   Use `metadatatest.AssertMetrics` instead of `obsreporttest.CheckScraperMetrics`
 - `scraperhelper`: Deprecate `scraperhelper.NewScraperControllerReceiver` and `scraperhelper.ScraperControllerOption`. (#12103)
   Use `scraperhelper.NewMetricsController` instead of `scraperhelper.NewScraperControllerReceiver` | Use `scraperhelper.ScraperControllerOption` instead of `scraperhelper.ControllerOption`
@@ -229,7 +327,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `component`: Make componenttest into its own module (#11464)
 - `expandconverter`: Remove deprecated expandvar converter (#11672)
 - `exporter`: Remove deprecated funcs Create[*]Exporter and [*]ExporterStability (#11662)
-- `exporterhelper`: Remove derprecated NewLogs[Request]Exporter funcs (#11661)
+- `exporterhelper`: Remove deprecated NewLogs[Request]Exporter funcs (#11661)
 - `extension`: Remove deprecated funcs CreateExtension and ExtensionStability (#11663)
 - `processortest`: Remove deprecated func NewUnhealthyProcessorCreateSettings (#11665)
 

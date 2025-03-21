@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
 var mockID = component.MustNewID("mock")
@@ -25,12 +25,12 @@ func TestGetServer(t *testing.T) {
 	}{
 		{
 			name:          "obtain server authenticator",
-			authenticator: auth.NewServer(),
+			authenticator: extensionauthtest.NewNopServer(),
 			expected:      nil,
 		},
 		{
 			name:          "not a server authenticator",
-			authenticator: auth.NewClient(),
+			authenticator: extensionauthtest.NewNopClient(),
 			expected:      errNotServer,
 		},
 	}
@@ -68,7 +68,7 @@ func TestGetServerFails(t *testing.T) {
 	assert.Nil(t, authenticator)
 }
 
-func TestGetClient(t *testing.T) {
+func TestGetHTTPClient(t *testing.T) {
 	testCases := []struct {
 		name          string
 		authenticator extension.Extension
@@ -76,13 +76,13 @@ func TestGetClient(t *testing.T) {
 	}{
 		{
 			name:          "obtain client authenticator",
-			authenticator: auth.NewClient(),
+			authenticator: extensionauthtest.NewNopClient(),
 			expected:      nil,
 		},
 		{
 			name:          "not a client authenticator",
-			authenticator: auth.NewServer(),
-			expected:      errNotClient,
+			authenticator: extensionauthtest.NewNopServer(),
+			expected:      errNotHTTPClient,
 		},
 	}
 	for _, tt := range testCases {
@@ -95,7 +95,7 @@ func TestGetClient(t *testing.T) {
 				mockID: tt.authenticator,
 			}
 
-			authenticator, err := cfg.GetClientAuthenticator(context.Background(), ext)
+			authenticator, err := cfg.GetHTTPClientAuthenticator(context.Background(), ext)
 
 			// verify
 			if tt.expected != nil {
@@ -109,11 +109,11 @@ func TestGetClient(t *testing.T) {
 	}
 }
 
-func TestGetClientFails(t *testing.T) {
+func TestGetGRPCClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
-	authenticator, err := cfg.GetClientAuthenticator(context.Background(), map[component.ID]component.Component{})
+	authenticator, err := cfg.GetGRPCClientAuthenticator(context.Background(), map[component.ID]component.Component{})
 	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
