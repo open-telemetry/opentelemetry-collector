@@ -19,15 +19,26 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
+// tooManyRequestsMsg is the standard text for 429 status code
+var tooManyRequestsMsg = http.StatusText(http.StatusTooManyRequests)
+
 // oneRequestWeights represents the weights to apply for each request
-var oneRequestWeights = []extensionlimiter.Weight{
-	{extensionlimiter.WeightKeyRequestCount, 1},
+var oneRequestWeights = [1]extensionlimiter.Weight{
+	{Key: extensionlimiter.WeightKeyRequestCount, Value: 1},
+}
+
+// networkByteWeights represents the weights to apply for network bytes
+var networkByteWeights = func(bytes int) [1]extensionlimiter.Weight {
+	return [1]extensionlimiter.Weight{
+		{Key: extensionlimiter.WeightKeyNetworkBytes, Value: uint64(bytes)},
+	}
 }
 
 // limiterMiddleware implements rate limiting across various transports.
 type limiterMiddleware struct {
-	id      configlimiter.Limiter
-	limiter extensionlimiter.Limiter
+	id              configlimiter.Limiter
+	resourceLimiter extensionlimiter.ResourceLimiter
+	rateLimiter     extensionlimiter.RateLimiter
 }
 
 // newLimiterMiddleware creates a new limiter middleware instance.
@@ -46,11 +57,18 @@ var _ component.Component = &limiterMiddleware{}
 
 // Start initializes the limiter by getting it from host extensions.
 func (lm *limiterMiddleware) Start(ctx context.Context, host component.Host) error {
-	limiter, err := lm.id.GetLimiter(ctx, host.GetExtensions())
+	resourceLimiter, err := lm.id.GetResourceLimiter(ctx, host.GetExtensions())
 	if err != nil {
 		return err
 	}
-	lm.limiter = limiter
+	lm.resourceLimiter = resourceLimiter
+
+	rateLimiter, err := lm.id.GetRateLimiter(ctx, host.GetExtensions())
+	if err != nil {
+		return err
+	}
+	lm.rateLimiter = rateLimiter
+
 	return nil
 }
 
@@ -60,15 +78,15 @@ func (lm *limiterMiddleware) Shutdown(_ context.Context) error {
 }
 
 type limiterRoundTripper struct {
-	base    http.RoundTripper
-	limiter extensionlimiter.Limiter
+	base            http.RoundTripper
+	resourceLimiter extensionlimiter.ResourceLimiter
 }
 
 // limitExceeded creates an HTTP 429 (Too Many Requests) response from the client.
 func limitExceeded(req *http.Request) *http.Response {
 	return &http.Response{
 		StatusCode:    http.StatusTooManyRequests,
-		Status:        http.StatusText(http.StatusTooManyRequests),
+		Status:        tooManyRequestsMsg,
 		Request:       req,
 		ContentLength: 0,
 		Body:          http.NoBody,
@@ -78,32 +96,34 @@ func limitExceeded(req *http.Request) *http.Response {
 // ClientRoundTripper returns an HTTP roundtripper that applies rate limiting.
 func (lm *limiterMiddleware) ClientRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &limiterRoundTripper{
-		base:    base,
-		limiter: lm.limiter,
+		base:            base,
+		resourceLimiter: lm.resourceLimiter,
 	}, nil
 }
 
 // RoundTrip implements http.RoundTripper with rate limiting.
 func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	rel, err := lrt.limiter.Acquire(req.Context(), oneRequestWeights)
+	rel, err := lrt.resourceLimiter.Acquire(req.Context(), oneRequestWeights[:])
 	if err != nil {
-		// Return HTTP 429 Too Many Requests status from the server
 		return limitExceeded(req), nil
 	}
-	defer rel()
+	if rel != nil {
+		defer rel()
+	}
 	return lrt.base.RoundTrip(req)
 }
 
 // ServerHandler wraps an HTTP handler with rate limiting.
 func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rel, err := lm.limiter.Acquire(r.Context(), oneRequestWeights)
+		rel, err := lm.resourceLimiter.Acquire(r.Context(), oneRequestWeights[:])
 		if err != nil {
-			// Return HTTP 429 Too Many Requests status
-			http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+			http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
 			return
 		}
-		defer rel()
+		if rel != nil {
+			defer rel()
+		}
 		base.ServeHTTP(w, r)
 	}), nil
 }
@@ -118,11 +138,13 @@ func (lm *limiterMiddleware) ClientUnaryInterceptor() (grpc.UnaryClientIntercept
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		rel, err := lm.limiter.Acquire(ctx, oneRequestWeights)
+		rel, err := lm.resourceLimiter.Acquire(ctx, oneRequestWeights[:])
 		if err != nil {
 			return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 		}
-		defer rel()
+		if rel != nil {
+			defer rel()
+		}
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}, nil
 }
@@ -148,8 +170,8 @@ func (lm *limiterMiddleware) ClientStreamInterceptor() (grpc.StreamClientInterce
 // ClientStatsHandler returns a gRPC stats handler for client-side operations.
 func (lm *limiterMiddleware) ClientStatsHandler() (stats.Handler, error) {
 	return &limiterStatsHandler{
-		limiter:  lm.limiter,
-		isClient: true,
+		rateLimiter: lm.rateLimiter,
+		isClient:    true,
 	}, nil
 }
 
@@ -161,11 +183,13 @@ func (lm *limiterMiddleware) ServerUnaryInterceptor() (grpc.UnaryServerIntercept
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		rel, err := lm.limiter.Acquire(ctx, oneRequestWeights)
+		rel, err := lm.resourceLimiter.Acquire(ctx, oneRequestWeights[:])
 		if err != nil {
 			return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 		}
-		defer rel()
+		if rel != nil {
+			defer rel()
+		}
 		return handler(ctx, req)
 	}, nil
 }
@@ -185,49 +209,69 @@ func (lm *limiterMiddleware) ServerStreamInterceptor() (grpc.StreamServerInterce
 // ServerStatsHandler returns a gRPC stats handler for server-side operations.
 func (lm *limiterMiddleware) ServerStatsHandler() (stats.Handler, error) {
 	return &limiterStatsHandler{
-		limiter:  lm.limiter,
-		isClient: false,
+		rateLimiter: lm.rateLimiter,
+		isClient:    false,
 	}, nil
 }
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
 type limiterStatsHandler struct {
-	limiter  extensionlimiter.Limiter
-	isClient bool
+	rateLimiter extensionlimiter.RateLimiter
+	isClient    bool
 }
 
-// TagRPC can attach context information to the given context.
 func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
 	return ctx
 }
 
-// HandleRPC processes the RPC stats.
-func (h *limiterStatsHandler) HandleRPC(ctx context.Context, _ stats.RPCStats) {
-	// Empty implementation for now
+func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
+	// Check for payload messages to apply network byte rate limiting
+	var wireBytes int
+	switch payload := s.(type) {
+	case *stats.InPayload:
+		// Server receiving payload (or client receiving response)
+		if !h.isClient {
+			wireBytes = payload.WireLength
+		}
+	case *stats.OutPayload:
+		// Client sending payload (or server sending response)
+		if h.isClient {
+			wireBytes = payload.WireLength
+		}
+	default:
+		// Not a payload message, no rate limiting to apply
+		return
+	}
+
+	if wireBytes == 0 {
+		return
+	}
+	// Apply rate limiting based on network bytes
+	weights := networkByteWeights(wireBytes)
+	h.rateLimiter.Limit(ctx, weights[:])
 }
 
-// TagConn can attach context information to the given context.
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
 	return ctx
 }
 
-// HandleConn processes the connection stats.
 func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats) {
-	// Empty implementation for now
 }
 
 type serverStream struct {
 	grpc.ServerStream
-	limiter extensionlimiter.Limiter
+	limiter extensionlimiter.ResourceLimiter
 }
 
 // RecvMsg applies rate limiting to server stream message receiving.
 func (s *serverStream) RecvMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights)
+	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights[:])
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 	}
-	defer rel()
+	if rel != nil {
+		defer rel()
+	}
 	return s.ServerStream.RecvMsg(m)
 }
 
@@ -235,22 +279,24 @@ func (s *serverStream) RecvMsg(m any) error {
 func (lm *limiterMiddleware) wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo) grpc.ServerStream {
 	return &serverStream{
 		ServerStream: ss,
-		limiter:      lm.limiter,
+		limiter:      lm.resourceLimiter,
 	}
 }
 
 type clientStream struct {
 	grpc.ClientStream
-	limiter extensionlimiter.Limiter
+	limiter extensionlimiter.ResourceLimiter
 }
 
 // SendMsg applies rate limiting to client stream message sending.
 func (s *clientStream) SendMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights)
+	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights[:])
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 	}
-	defer rel()
+	if rel != nil {
+		defer rel()
+	}
 	return s.ClientStream.SendMsg(m)
 }
 
@@ -258,6 +304,6 @@ func (s *clientStream) SendMsg(m any) error {
 func (lm *limiterMiddleware) wrapClientStream(cs grpc.ClientStream, _ string) grpc.ClientStream {
 	return &clientStream{
 		ClientStream: cs,
-		limiter:      lm.limiter,
+		limiter:      lm.resourceLimiter,
 	}
 }
