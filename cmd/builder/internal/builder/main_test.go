@@ -97,6 +97,7 @@ var replaceModules = []string{
 	"/processor/processortest",
 	"/processor/batchprocessor",
 	"/processor/memorylimiterprocessor",
+	"/processor/processorhelper",
 	"/processor/processorhelper/xprocessorhelper",
 	"/processor/xprocessor",
 	"/receiver",
