@@ -152,6 +152,7 @@ func TestRunContents(t *testing.T) {
 		},
 		{
 			yml:                        "with_telemetry.yaml",
+			wantMetricsContext:         true,
 			wantStatusGenerated:        true,
 			wantTelemetryGenerated:     true,
 			wantReadmeGenerated:        true,
