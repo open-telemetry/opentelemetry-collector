@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
@@ -45,14 +46,21 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, err)
 
-			q := queuebatch.NewQueue[request.Request](
+			q, err := queuebatch.NewQueue[request.Request](
 				context.Background(),
 				queuebatch.QueueSettings[request.Request]{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(exportertest.NopType),
+					Signal:    pipeline.SignalTraces,
+					ID:        component.NewID(exportertest.NopType),
+					Telemetry: componenttest.NewNopTelemetrySettings(),
+					Settings: queuebatch.Settings[request.Request]{
+						Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+							exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+						},
+					},
 				},
 				exporterqueue.NewDefaultConfig(),
 				ba.Consume)
+			require.NoError(t, err)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
