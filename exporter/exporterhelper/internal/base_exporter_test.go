@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -26,19 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 )
 
-var (
-	defaultType     = component.MustNewType("test")
-	defaultSignal   = pipeline.SignalMetrics
-	defaultID       = component.NewID(defaultType)
-	defaultSettings = func() exporter.Settings {
-		set := exportertest.NewNopSettings(exportertest.NopType)
-		set.ID = defaultID
-		return set
-	}()
-)
-
 func TestBaseExporter(t *testing.T) {
-	be, err := NewBaseExporter(defaultSettings, defaultSignal, noopExport)
+	be, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport)
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, be.Shutdown(context.Background()))
@@ -47,7 +35,7 @@ func TestBaseExporter(t *testing.T) {
 func TestBaseExporterWithOptions(t *testing.T) {
 	want := errors.New("my error")
 	be, err := NewBaseExporter(
-		defaultSettings, defaultSignal, noopExport,
+		exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithStart(func(context.Context, component.Host) error { return want }),
 		WithShutdown(func(context.Context) error { return want }),
 		WithTimeout(NewDefaultTimeoutConfig()),
@@ -58,18 +46,18 @@ func TestBaseExporterWithOptions(t *testing.T) {
 }
 
 func TestQueueOptionsWithRequestExporter(t *testing.T) {
-	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
+	bs, err := NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithRetry(configretry.NewDefaultBackOffConfig()))
 	require.NoError(t, err)
 	require.Nil(t, bs.queueBatchSettings.Encoding)
-	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(exporterqueue.NewDefaultConfig()))
 	require.Error(t, err)
 
 	qCfg := exporterqueue.NewDefaultConfig()
 	storageID := component.NewID(component.MustNewType("test"))
 	qCfg.StorageID = &storageID
-	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), defaultSignal, noopExport,
+	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch(&requesttest.FakeRequest{Items: 1})),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
 		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
@@ -84,7 +72,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg.Enabled = false
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.Enabled = false
-	bs, err := NewBaseExporter(set, defaultSignal, errExport,
+	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatch(qCfg, newFakeQueueBatch(&requesttest.FakeRequest{})),
 		WithBatcher(exporterbatcher.NewDefaultConfig()),
 		WithRetry(rCfg))
@@ -166,4 +154,16 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch(mr request.Request) queuebatch.Settings[request.Request] {
 	return queuebatch.Settings[request.Request]{Encoding: &fakeEncoding{mr: mr}}
+}
+
+type fakeEncoding struct {
+	mr request.Request
+}
+
+func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+	return []byte("mockRequest"), nil
+}
+
+func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
+	return f.mr, nil
 }
