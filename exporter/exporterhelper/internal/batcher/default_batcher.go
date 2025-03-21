@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 type batch struct {
@@ -26,7 +27,7 @@ type batch struct {
 type defaultBatcher struct {
 	batchCfg       exporterbatcher.Config
 	workerPool     chan struct{}
-	exportFunc     func(ctx context.Context, req request.Request) error
+	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
@@ -35,7 +36,7 @@ type defaultBatcher struct {
 }
 
 func newDefaultBatcher(batchCfg exporterbatcher.Config,
-	exportFunc func(ctx context.Context, req request.Request) error,
+	consumeFunc sender.SendFunc[request.Request],
 	maxWorkers int,
 ) *defaultBatcher {
 	// TODO: Determine what is the right behavior for this in combination with async queue.
@@ -47,11 +48,11 @@ func newDefaultBatcher(batchCfg exporterbatcher.Config,
 		}
 	}
 	return &defaultBatcher{
-		batchCfg:   batchCfg,
-		workerPool: workerPool,
-		exportFunc: exportFunc,
-		stopWG:     sync.WaitGroup{},
-		shutdownCh: make(chan struct{}, 1),
+		batchCfg:    batchCfg,
+		workerPool:  workerPool,
+		consumeFunc: consumeFunc,
+		stopWG:      sync.WaitGroup{},
+		shutdownCh:  make(chan struct{}, 1),
 	}
 }
 
@@ -198,7 +199,7 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 	qb.resetTimer()
 }
 
-// flush starts a goroutine that calls exportFunc. It blocks until a worker is available if necessary.
+// flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done queuebatch.Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
@@ -206,7 +207,7 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done q
 	}
 	go func() {
 		defer qb.stopWG.Done()
-		done.OnDone(qb.exportFunc(ctx, req))
+		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
 			qb.workerPool <- struct{}{}
 		}
