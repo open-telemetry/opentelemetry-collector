@@ -23,6 +23,6 @@ func TestMockHost(t *testing.T) {
 	ext := map[component.ID]component.Component{
 		component.MustNewID("test"): &nopExtension{},
 	}
-	host := &MockHost{Ext: ext}
-	assert.Equal(t, ext, host.Ext)
+	host := NewHost(ext)
+	assert.Equal(t, ext, host.GetExtensions())
 }

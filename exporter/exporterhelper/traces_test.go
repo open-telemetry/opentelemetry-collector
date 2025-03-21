@@ -177,9 +177,9 @@ func TestTraces_WithPersistentQueue(t *testing.T) {
 	te, err := NewTraces(context.Background(), set, &fakeTracesConfig, ts.ConsumeTraces, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	host := &hosttest.MockHost{Ext: map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
-	}}
+	})
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
 

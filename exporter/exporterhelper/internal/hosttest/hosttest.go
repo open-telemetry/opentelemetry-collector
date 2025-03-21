@@ -7,13 +7,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-var _ component.Host = (*MockHost)(nil)
-
-type MockHost struct {
-	component.Host
-	Ext map[component.ID]component.Component
+func NewHost(ext map[component.ID]component.Component) component.Host {
+	return &mockHost{ext: ext}
 }
 
-func (nh *MockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.Ext
+type mockHost struct {
+	ext map[component.ID]component.Component
+}
+
+func (nh *mockHost) GetExtensions() map[component.ID]component.Component {
+	return nh.ext
 }
