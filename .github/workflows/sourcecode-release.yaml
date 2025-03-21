@@ -14,6 +14,12 @@ jobs:
         with:
           fetch-depth: 0
 
+        # Extract title from latest version title in CHANGELOG.md
+      - name: Prepare release title
+        id: release-title
+        run: |
+          echo "title=$(grep -A 2 '<!-- next version -->' CHANGELOG.md | awk '/##/{print $2}')" >> $GITHUB_OUTPUT
+
       - name: Prepare release notes
         run: |
           touch release-notes.md
@@ -32,7 +38,7 @@ jobs:
 
       - name: Create Github Release
         run: |
-          gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -F release-notes.md
+          gh release create ${{ github.ref_name }} -t ${{ steps.release-title.outputs.title }} -F release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
