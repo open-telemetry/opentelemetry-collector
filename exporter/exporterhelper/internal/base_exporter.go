@@ -18,13 +18,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue" // BaseExporter contains common fields between different exporter types.
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Option apply changes to BaseExporter.
 type Option func(*BaseExporter) error
 
+// BaseExporter contains common fields between different exporter types.
 type BaseExporter struct {
 	component.StartFunc
 	component.ShutdownFunc
@@ -35,7 +36,7 @@ type BaseExporter struct {
 	ExportFailureMessage string
 
 	// Chain of senders that the exporter helper applies before passing the data to the actual exporter.
-	// The data is handled by each sender in the respective order starting from the queueSender.
+	// The data is handled by each sender in the respective order starting from the QueueBatch.
 	// Most of the senders are optional, and initialized with a no-op path-through sender.
 	QueueSender sender.Sender[request.Request]
 	RetrySender sender.Sender[request.Request]
@@ -124,7 +125,7 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	// Last start the queueSender.
+	// Last start the QueueBatch.
 	if be.QueueSender != nil {
 		return be.QueueSender.Start(ctx, host)
 	}
