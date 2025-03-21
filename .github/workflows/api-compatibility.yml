@@ -14,7 +14,7 @@ permissions: read-all
 
 jobs:
   Check-Compatibility:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     env:
       BASE_REF: ${{ github.base_ref }}
       HEAD_REF: ${{ github.head_ref }}
