@@ -84,7 +84,7 @@ func shortFolderName(filePath string) string {
 
 func packageName() (string, error) {
 	cmdArgs := []string{"go", "list", "-f", "{{.ImportPath}}"}
-	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...) //nolint: gosec
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	output, err := cmd.Output()

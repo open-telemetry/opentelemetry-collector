@@ -390,3 +390,20 @@ func TestLoadMetadata(t *testing.T) {
 func strPtr(s string) *string {
 	return &s
 }
+
+func Test_packageName(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		result, err := packageName()
+		require.NoError(t, err)
+		require.NotEmpty(t, result)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		// Temporarily set PATH to empty to make 'go' command fail
+		t.Setenv("PATH", "")
+		result, err := packageName()
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "failed to run go list")
+		require.Empty(t, result)
+	})
+}
