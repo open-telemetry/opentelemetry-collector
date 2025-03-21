@@ -24,12 +24,12 @@ type obsQueue[T request.Request] struct {
 }
 
 func newObsQueue[T request.Request](set queuebatch.QueueSettings[T], delegate queuebatch.Queue[T]) (queuebatch.Queue[T], error) {
-	tb, err := metadata.NewTelemetryBuilder(set.ExporterSettings.TelemetrySettings)
+	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	exporterAttr := attribute.String(ExporterKey, set.ExporterSettings.ID.String())
+	exporterAttr := attribute.String(ExporterKey, set.ID.String())
 	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, set.Signal.String())))
 	err = tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(delegate.Size(), asyncAttr)

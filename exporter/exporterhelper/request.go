@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -31,3 +32,11 @@ type RequestConverterFunc[K any] func(context.Context, K) (Request, error)
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
 type RequestConsumeFunc = sender.SendFunc[request.Request]
+
+// RequestSizer is an interface that returns the size of the given request.
+type RequestSizer = queuebatch.Sizer[request.Request]
+
+// NewRequestsSizer returns a RequestSizer that counts the requests by the number of requests, always returning 1.
+func NewRequestsSizer() RequestSizer {
+	return queuebatch.RequestsSizer[request.Request]{}
+}
