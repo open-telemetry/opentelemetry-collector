@@ -20,7 +20,7 @@ import (
 
 type QueueSender struct {
 	queue   queuebatch.Queue[request.Request]
-	batcher component.Component
+	batcher batcher.Batcher[request.Request]
 }
 
 func NewQueueSender(

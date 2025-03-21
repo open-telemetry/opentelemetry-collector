@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
@@ -24,6 +23,6 @@ func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done queuebatc
 	done.OnDone(db.consumeFunc(ctx, req))
 }
 
-func newDisabledBatcher(consumeFunc sender.SendFunc[request.Request]) Batcher {
-	return &disabledBatcher[request.Request]{consumeFunc: consumeFunc}
+func newDisabledBatcher[K any](consumeFunc sender.SendFunc[K]) Batcher[K] {
+	return &disabledBatcher[K]{consumeFunc: consumeFunc}
 }
