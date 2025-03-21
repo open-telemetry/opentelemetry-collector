@@ -9,6 +9,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/stats"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
@@ -144,6 +145,14 @@ func (lm *limiterMiddleware) ClientStreamInterceptor() (grpc.StreamClientInterce
 	}, nil
 }
 
+// ClientStatsHandler returns a gRPC stats handler for client-side operations.
+func (lm *limiterMiddleware) ClientStatsHandler() (stats.Handler, error) {
+	return &limiterStatsHandler{
+		limiter:  lm.limiter,
+		isClient: true,
+	}, nil
+}
+
 // ServerUnaryInterceptor returns a gRPC interceptor for unary server calls.
 func (lm *limiterMiddleware) ServerUnaryInterceptor() (grpc.UnaryServerInterceptor, error) {
 	return func(
@@ -171,6 +180,40 @@ func (lm *limiterMiddleware) ServerStreamInterceptor() (grpc.StreamServerInterce
 	) error {
 		return handler(srv, lm.wrapServerStream(ss, info))
 	}, nil
+}
+
+// ServerStatsHandler returns a gRPC stats handler for server-side operations.
+func (lm *limiterMiddleware) ServerStatsHandler() (stats.Handler, error) {
+	return &limiterStatsHandler{
+		limiter:  lm.limiter,
+		isClient: false,
+	}, nil
+}
+
+// limiterStatsHandler implements the stats.Handler interface for rate limiting.
+type limiterStatsHandler struct {
+	limiter  extensionlimiter.Limiter
+	isClient bool
+}
+
+// TagRPC can attach context information to the given context.
+func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
+	return ctx
+}
+
+// HandleRPC processes the RPC stats.
+func (h *limiterStatsHandler) HandleRPC(ctx context.Context, _ stats.RPCStats) {
+	// Empty implementation for now
+}
+
+// TagConn can attach context information to the given context.
+func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
+	return ctx
+}
+
+// HandleConn processes the connection stats.
+func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats) {
+	// Empty implementation for now
 }
 
 type serverStream struct {

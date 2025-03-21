@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/stats"
 )
 
 // HTTPServer defines the interface for HTTP server middleware extensions.
@@ -22,4 +23,7 @@ type GRPCServer interface {
 
 	// ServerStreamInterceptor returns a gRPC stream server interceptor.
 	ServerStreamInterceptor() (grpc.StreamServerInterceptor, error)
+
+	// ServerStatsHandler returns a gRPC stats handler for server-side operations.
+	ServerStatsHandler() (stats.Handler, error)
 }
