@@ -97,9 +97,6 @@ func NewLogs(
 		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: logsEncoding{}})}, options...)...)
 }
 
-// Deprecated: [v0.122.0] use RequestConverterFunc[plog.Logs].
-type RequestFromLogsFunc = RequestConverterFunc[plog.Logs]
-
 // requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
 func requestConsumeFromLogs(pusher consumer.ConsumeLogsFunc) RequestConsumeFunc {
 	return func(ctx context.Context, request Request) error {

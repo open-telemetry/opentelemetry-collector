@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package sender // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 
 import (
 	"context"
@@ -16,15 +16,15 @@ type Sender[K any] interface {
 
 type SendFunc[K any] func(ctx context.Context, data K) error
 
+func NewSender[K any](consFunc SendFunc[K]) Sender[K] {
+	return &sender[K]{consFunc: consFunc}
+}
+
 // sender is a Sender that emits the incoming request to the exporter consumer func.
 type sender[K any] struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consFunc SendFunc[K]
-}
-
-func newSender[K any](consFunc SendFunc[K]) Sender[K] {
-	return &sender[K]{consFunc: consFunc}
 }
 
 func (es *sender[K]) Send(ctx context.Context, req K) error {

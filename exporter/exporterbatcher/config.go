@@ -7,8 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"go.opentelemetry.io/collector/confmap"
 )
 
 // Config defines a configuration for batching requests based on a timeout and a minimum number of items.
@@ -23,11 +21,6 @@ type Config struct {
 
 	// SizeConfig sets the size limits for a batch.
 	SizeConfig `mapstructure:",squash"`
-
-	// Deprecated: [v0.121.0] Ignored if SizeConfig is set.
-	MinSizeConfig `mapstructure:",squash"`
-	// Deprecated: [v0.121.0] Ignored if SizeConfig is set.
-	MaxSizeConfig `mapstructure:",squash"`
 }
 
 // SizeConfig sets the size limits for a batch.
@@ -38,34 +31,6 @@ type SizeConfig struct {
 	MinSize int `mapstructure:"min_size"`
 	// MaxSize defines the configuration for the maximum size of a batch.
 	MaxSize int `mapstructure:"max_size"`
-}
-
-// Deprecated: [v0.121.0] use SizeConfig.
-type MinSizeConfig struct {
-	// Deprecated: [v0.121.0] use SizeConfig.MinSize.
-	MinSizeItems *int `mapstructure:"min_size_items"`
-}
-
-// Deprecated: [v0.121.0] use SizeConfig.
-type MaxSizeConfig struct {
-	// Deprecated: [v0.121.0] use SizeConfig.MaxSize.
-	MaxSizeItems *int `mapstructure:"max_size_items"`
-}
-
-func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c); err != nil {
-		return err
-	}
-
-	if c.MinSizeItems != nil && !conf.IsSet("min_size") {
-		c.SizeConfig.MinSize = *c.MinSizeItems
-	}
-
-	if c.MaxSizeItems != nil && !conf.IsSet("max_size") {
-		c.SizeConfig.MaxSize = *c.MaxSizeItems
-	}
-
-	return nil
 }
 
 func (c *Config) Validate() error {

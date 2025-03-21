@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package sender
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 func TestExportSenderRightArguments(t *testing.T) {
-	es := newSender[int64](func(_ context.Context, data int64) error {
+	es := NewSender[int64](func(_ context.Context, data int64) error {
 		assert.Equal(t, int64(1), data)
 		return nil
 	})
@@ -22,7 +22,7 @@ func TestExportSenderRightArguments(t *testing.T) {
 
 func TestExportSenderReturnsError(t *testing.T) {
 	err := errors.New("test error")
-	es := newSender[int64](func(_ context.Context, data int64) error {
+	es := NewSender[int64](func(_ context.Context, data int64) error {
 		assert.Equal(t, int64(1), data)
 		return err
 	})

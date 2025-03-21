@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // disabledBatcher is a special-case of Batcher that has no size limit for sending. Any items read from the queue will
@@ -16,13 +17,13 @@ import (
 type disabledBatcher[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
-	exportFunc func(context.Context, T) error
+	consumeFunc sender.SendFunc[T]
 }
 
 func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done queuebatch.Done) {
-	done.OnDone(db.exportFunc(ctx, req))
+	done.OnDone(db.consumeFunc(ctx, req))
 }
 
-func newDisabledBatcher(exportFunc func(ctx context.Context, req request.Request) error) Batcher {
-	return &disabledBatcher[request.Request]{exportFunc: exportFunc}
+func newDisabledBatcher(consumeFunc sender.SendFunc[request.Request]) Batcher {
+	return &disabledBatcher[request.Request]{consumeFunc: consumeFunc}
 }

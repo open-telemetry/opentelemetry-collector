@@ -14,16 +14,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/featuregate"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.UsePullingBasedExporterQueueBatcher",
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.115.0"),
-	featuregate.WithRegisterToVersion("v0.121.0"),
-	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
 )
 
 type QueueSender struct {
@@ -36,7 +28,7 @@ func NewQueueSender(
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
-	next Sender[request.Request],
+	next sender.Sender[request.Request],
 ) (*QueueSender, error) {
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
@@ -85,13 +77,4 @@ func (qs *QueueSender) Shutdown(ctx context.Context) error {
 // Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
-}
-
-type MockHost struct {
-	component.Host
-	Ext map[component.ID]component.Component
-}
-
-func (nh *MockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.Ext
 }
