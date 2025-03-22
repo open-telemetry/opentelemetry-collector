@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package queuebatch
 
 import (
 	"context"
@@ -13,16 +13,19 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+var exporterID = component.NewID(exportertest.NopType)
+
 type fakeQueue[T any] struct {
-	queuebatch.Queue[T]
+	Queue[T]
 	offerErr error
 	size     int64
 	capacity int64
@@ -40,7 +43,7 @@ func (fq *fakeQueue[T]) Offer(context.Context, T) error {
 	return fq.offerErr
 }
 
-func newFakeQueue[T request.Request](offerErr error, size, capacity int64) queuebatch.Queue[T] {
+func newFakeQueue[T request.Request](offerErr error, size, capacity int64) Queue[T] {
 	return &fakeQueue[T]{offerErr: offerErr, size: size, capacity: capacity}
 }
 
@@ -48,7 +51,7 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalLogs,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -59,8 +62,8 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalLogs.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalLogs.String())),
 				Value: int64(7),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -68,8 +71,8 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalLogs.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalLogs.String())),
 				Value: int64(9),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -79,7 +82,7 @@ func TestObsQueueLogsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalLogs,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -90,7 +93,7 @@ func TestObsQueueLogsFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String(exporterKey, exporterID.String())),
 				Value: int64(2),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -100,7 +103,7 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalTraces,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -111,8 +114,8 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalTraces.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalTraces.String())),
 				Value: int64(17),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -120,8 +123,8 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalTraces.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalTraces.String())),
 				Value: int64(19),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -131,7 +134,7 @@ func TestObsQueueTracesFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalTraces,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -142,7 +145,7 @@ func TestObsQueueTracesFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String(exporterKey, exporterID.String())),
 				Value: int64(12),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
@@ -152,7 +155,7 @@ func TestObsQueueMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -163,8 +166,8 @@ func TestObsQueueMetrics(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalMetrics.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalMetrics.String())),
 				Value: int64(27),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -172,8 +175,8 @@ func TestObsQueueMetrics(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String()),
-					attribute.String(DataTypeKey, pipeline.SignalMetrics.String())),
+					attribute.String(exporterKey, exporterID.String()),
+					attribute.String(dataTypeKey, pipeline.SignalMetrics.String())),
 				Value: int64(29),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -183,7 +186,7 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](queuebatch.QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -194,7 +197,7 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
-					attribute.String("exporter", exporterID.String())),
+					attribute.String(exporterKey, exporterID.String())),
 				Value: int64(22),
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
