@@ -30,7 +30,7 @@ type obsQueue[T request.Request] struct {
 	enqueueFailedInst metric.Int64Counter
 }
 
-func newObsQueue[T request.Request](set QueueSettings[T], delegate Queue[T]) (Queue[T], error) {
+func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
 	if err != nil {
 		return nil, err

@@ -15,8 +15,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
+// QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
+type QueueBatchSettings[K any] struct {
+	Encoding exporterqueue.Encoding[K]
+	Sizers   map[exporterbatcher.SizerType]queuebatch.Sizer[K]
+}
+
 func NewQueueSender(
-	qSet queuebatch.QueueSettings[request.Request],
+	qSet queuebatch.Settings[request.Request],
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,

@@ -26,14 +26,12 @@ import (
 )
 
 func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
-	qSet := queuebatch.QueueSettings[request.Request]{
+	qSet := queuebatch.Settings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
-		Settings: queuebatch.Settings[request.Request]{
-			Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
-				exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
-			},
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
 		},
 	}
 	logger, observed := observer.New(zap.ErrorLevel)

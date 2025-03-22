@@ -58,9 +58,9 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	storageID := component.NewID(component.MustNewType("test"))
 	qCfg.StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithQueueBatchSettings(newFakeQueueBatch(&requesttest.FakeRequest{Items: 1})),
+		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
-		WithQueueBatch(qCfg, queuebatch.Settings[request.Request]{}))
+		WithQueueBatch(qCfg, QueueBatchSettings[request.Request]{}))
 	require.Error(t, err)
 }
 
@@ -73,7 +73,8 @@ func TestBaseExporterLogging(t *testing.T) {
 	qCfg := exporterqueue.NewDefaultConfig()
 	qCfg.Enabled = false
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
-		WithQueueBatch(qCfg, newFakeQueueBatch(&requesttest.FakeRequest{})),
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueue(qCfg),
 		WithBatcher(exporterbatcher.NewDefaultConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
@@ -97,7 +98,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 		{
 			name: "WithQueue",
 			queueOptions: []Option{
-				WithQueueBatchSettings(newFakeQueueBatch(&requesttest.FakeRequest{Items: 1})),
+				WithQueueBatchSettings(newFakeQueueBatch()),
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
@@ -116,7 +117,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 				func() Option {
 					qs := exporterqueue.NewDefaultConfig()
 					qs.Enabled = false
-					return WithQueueBatch(qs, newFakeQueueBatch(&requesttest.FakeRequest{Items: 1}))
+					return WithQueueBatch(qs, newFakeQueueBatch())
 				}(),
 				func() Option {
 					bs := exporterbatcher.NewDefaultConfig()
@@ -152,18 +153,21 @@ func noopExport(context.Context, request.Request) error {
 	return nil
 }
 
-func newFakeQueueBatch(mr request.Request) queuebatch.Settings[request.Request] {
-	return queuebatch.Settings[request.Request]{Encoding: &fakeEncoding{mr: mr}}
+func newFakeQueueBatch() QueueBatchSettings[request.Request] {
+	return QueueBatchSettings[request.Request]{
+		Encoding: fakeEncoding{},
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
+			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+		},
+	}
 }
 
-type fakeEncoding struct {
-	mr request.Request
-}
+type fakeEncoding struct{}
 
 func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
 func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
-	return f.mr, nil
+	return &requesttest.FakeRequest{}, nil
 }

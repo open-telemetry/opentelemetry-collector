@@ -8,9 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
 // ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to
@@ -54,48 +51,4 @@ type readableQueue[T any] interface {
 	// The function blocks until an item is available or if the queue is stopped.
 	// If the queue is stopped returns false, otherwise true.
 	Read(context.Context) (context.Context, T, Done, bool)
-}
-
-// QueueSettings defines settings for creating a queue.
-type QueueSettings[K any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Settings[K]
-}
-
-// NewQueue returns a queue
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewQueue[T any](_ context.Context, set QueueSettings[T], cfg exporterqueue.Config, consume ConsumeFunc[T]) (Queue[T], error) {
-	if !cfg.Enabled {
-		return newDisabledQueue(consume), nil
-	}
-
-	sizer, ok := set.Sizers[exporterbatcher.SizerTypeRequests]
-	if !ok {
-		return nil, errors.New("unsupported queue_batch sizer")
-	}
-
-	if cfg.StorageID != nil {
-		q := newPersistentQueue[T](persistentQueueSettings[T]{
-			sizer:     sizer,
-			capacity:  int64(cfg.QueueSize),
-			blocking:  cfg.Blocking,
-			signal:    set.Signal,
-			storageID: *cfg.StorageID,
-			encoding:  set.Encoding,
-			id:        set.ID,
-			telemetry: set.Telemetry,
-		})
-		return newAsyncQueue(q, cfg.NumConsumers, consume), nil
-	}
-
-	q := newMemoryQueue[T](memoryQueueSettings[T]{
-		sizer:    sizer,
-		capacity: int64(cfg.QueueSize),
-		blocking: cfg.Blocking,
-	})
-
-	return newAsyncQueue(q, cfg.NumConsumers, consume), nil
 }
