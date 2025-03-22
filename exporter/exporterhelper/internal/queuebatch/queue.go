@@ -8,7 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -56,38 +56,46 @@ type readableQueue[T any] interface {
 	Read(context.Context) (context.Context, T, Done, bool)
 }
 
-// Settings defines settings for creating a queue.
-type QueueSettings[T any] struct {
-	Signal           pipeline.Signal
-	ExporterSettings exporter.Settings
-	Encoding         exporterqueue.Encoding[T]
+// QueueSettings defines settings for creating a queue.
+type QueueSettings[K any] struct {
+	Signal    pipeline.Signal
+	ID        component.ID
+	Telemetry component.TelemetrySettings
+	Settings[K]
 }
 
 // NewQueue returns a queue
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewQueue[T any](_ context.Context, set QueueSettings[T], cfg exporterqueue.Config, consume ConsumeFunc[T]) Queue[T] {
+func NewQueue[T any](_ context.Context, set QueueSettings[T], cfg exporterqueue.Config, consume ConsumeFunc[T]) (Queue[T], error) {
 	if !cfg.Enabled {
-		return newDisabledQueue(consume)
+		return newDisabledQueue(consume), nil
 	}
+
+	sizer, ok := set.Sizers[exporterbatcher.SizerTypeRequests]
+	if !ok {
+		return nil, errors.New("unsupported queue_batch sizer")
+	}
+
 	if cfg.StorageID != nil {
 		q := newPersistentQueue[T](persistentQueueSettings[T]{
-			sizer:     &requestSizer[T]{},
+			sizer:     sizer,
 			capacity:  int64(cfg.QueueSize),
 			blocking:  cfg.Blocking,
 			signal:    set.Signal,
 			storageID: *cfg.StorageID,
 			encoding:  set.Encoding,
-			set:       set.ExporterSettings,
+			id:        set.ID,
+			telemetry: set.Telemetry,
 		})
-		return newAsyncQueue(q, cfg.NumConsumers, consume)
+		return newAsyncQueue(q, cfg.NumConsumers, consume), nil
 	}
 
 	q := newMemoryQueue[T](memoryQueueSettings[T]{
-		sizer:    &requestSizer[T]{},
+		sizer:    sizer,
 		capacity: int64(cfg.QueueSize),
 		blocking: cfg.Blocking,
 	})
 
-	return newAsyncQueue(q, cfg.NumConsumers, consume)
+	return newAsyncQueue(q, cfg.NumConsumers, consume), nil
 }

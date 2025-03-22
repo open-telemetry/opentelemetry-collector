@@ -29,7 +29,7 @@ func NewQueueSender(
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
 		if errSend := next.Send(ctx, req); errSend != nil {
-			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
 				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
 			return errSend
 		}
@@ -57,12 +57,16 @@ func NewQueueBatch(
 	if bCfg.Enabled {
 		qCfg.NumConsumers = 1
 	}
-	q, err := newObsQueue(qSet, queuebatch.NewQueue(context.Background(), qSet, qCfg, b.Consume))
+	q, err := queuebatch.NewQueue(context.Background(), qSet, qCfg, b.Consume)
+	if err != nil {
+		return nil, err
+	}
+	oq, err := newObsQueue(qSet, q)
 	if err != nil {
 		return nil, err
 	}
 
-	return &QueueBatch{queue: q, batcher: b}, nil
+	return &QueueBatch{queue: oq, batcher: b}, nil
 }
 
 // Start is invoked during service startup.

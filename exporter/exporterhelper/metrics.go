@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
@@ -24,6 +26,24 @@ var (
 	metricsMarshaler   = &pmetric.ProtoMarshaler{}
 	metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
 )
+
+// NewMetricsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using pmetric.Metrics.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewMetricsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: metricsEncoding{},
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[Request]{
+			exporterbatcher.SizerTypeRequests: NewRequestsSizer(),
+			exporterbatcher.SizerTypeItems:    queuebatch.NewItemsSizer(),
+			exporterbatcher.SizerTypeBytes: queuebatch.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
+				},
+			},
+		},
+	}
+}
 
 type metricsRequest struct {
 	md         pmetric.Metrics
@@ -94,7 +114,7 @@ func NewMetrics(
 		return nil, errNilPushMetrics
 	}
 	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher),
-		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: metricsEncoding{}})}, options...)...)
+		append([]Option{internal.WithQueueBatchSettings(NewMetricsQueueBatchSettings())}, options...)...)
 }
 
 // requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
