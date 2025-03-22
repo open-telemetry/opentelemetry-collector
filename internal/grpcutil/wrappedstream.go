@@ -2,7 +2,7 @@
 // Copyright 2016 Michal Witkowski. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package configgrpc // import "go.opentelemetry.io/collector/config/configgrpc"
+package grpcutil // import "go.opentelemetry.io/collector/config/configgrpc"
 
 import (
 	"context"
@@ -24,8 +24,8 @@ func (w *wrappedServerStream) Context() context.Context {
 	return w.wrappedCtx
 }
 
-// wrapServerStream returns a ServerStream with the new context.
-func wrapServerStream(wrappedCtx context.Context, stream grpc.ServerStream) *wrappedServerStream {
+// WrapServerStream returns a ServerStream with the new context.
+func WrapServerStream(wrappedCtx context.Context, stream grpc.ServerStream) grpc.ServerStream {
 	if existing, ok := stream.(*wrappedServerStream); ok {
 		existing.wrappedCtx = wrappedCtx
 		return existing

@@ -29,7 +29,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 const (
@@ -203,14 +202,10 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetHTTPClientAuthenticator(ctx, ext)
+		var aerr error
+		clientTransport, aerr = hcs.Auth.GetHTTPRoundTripper(ctx, ext, clientTransport)
 		if aerr != nil {
 			return nil, aerr
-		}
-
-		clientTransport, err = httpCustomAuthRoundTripper.RoundTripper(clientTransport)
-		if err != nil {
-			return nil, err
 		}
 	}
 
@@ -436,12 +431,11 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
-		if err != nil {
-			return nil, err
+		var aErr error
+		handler, aErr = hss.Auth.GetHTTPHandler(context.Background(), host.GetExtensions(), handler, hss.Auth.RequestParameters)
+		if aErr != nil {
+			return nil, aErr
 		}
-
-		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -535,25 +529,6 @@ type CORSConfig struct {
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
 func NewDefaultCORSConfig() *CORSConfig {
 	return &CORSConfig{}
-}
-
-func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sources := r.Header
-		query := r.URL.Query()
-		for _, param := range requestParams {
-			if val, ok := query[param]; ok {
-				sources[param] = val
-			}
-		}
-		ctx, err := server.Authenticate(r.Context(), sources)
-		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
 
 func maxRequestBodySizeInterceptor(next http.Handler, maxRecvSize int64) http.Handler {
