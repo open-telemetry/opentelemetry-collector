@@ -12,11 +12,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
+// Settings defines settings for creating a QueueBatch.
 type Settings[K any] struct {
-	Encoding exporterqueue.Encoding[K]
-	Sizers   map[exporterbatcher.SizerType]Sizer[K]
+	Signal    pipeline.Signal
+	ID        component.ID
+	Telemetry component.TelemetrySettings
+	Encoding  exporterqueue.Encoding[K]
+	Sizers    map[exporterbatcher.SizerType]Sizer[K]
 }
 
 type QueueBatch struct {
@@ -25,23 +30,51 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	qSet QueueSettings[request.Request],
+	qSet Settings[request.Request],
 	qCfg exporterqueue.Config,
 	bCfg exporterbatcher.Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	b, err := NewBatcher(bCfg, next, qCfg.NumConsumers)
-	if err != nil {
-		return nil, err
+	var b Batcher[request.Request]
+	switch bCfg.Enabled {
+	case false:
+		b = newDisabledBatcher[request.Request](next)
+	default:
+		b = newDefaultBatcher(bCfg, next, qCfg.NumConsumers)
 	}
 	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
 	if bCfg.Enabled {
 		qCfg.NumConsumers = 1
 	}
-	q, err := NewQueue(context.Background(), qSet, qCfg, b.Consume)
-	if err != nil {
-		return nil, err
+
+	sizer, ok := qSet.Sizers[exporterbatcher.SizerTypeRequests]
+	if !ok {
+		return nil, errors.New("queue_batch: unsupported sizer")
 	}
+
+	var q Queue[request.Request]
+	switch {
+	case !qCfg.Enabled:
+		q = newDisabledQueue(b.Consume)
+	case qCfg.StorageID != nil:
+		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
+			sizer:     sizer,
+			capacity:  int64(qCfg.QueueSize),
+			blocking:  qCfg.Blocking,
+			signal:    qSet.Signal,
+			storageID: *qCfg.StorageID,
+			encoding:  qSet.Encoding,
+			id:        qSet.ID,
+			telemetry: qSet.Telemetry,
+		}), qCfg.NumConsumers, b.Consume)
+	default:
+		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+			sizer:    sizer,
+			capacity: int64(qCfg.QueueSize),
+			blocking: qCfg.Blocking,
+		}), qCfg.NumConsumers, b.Consume)
+	}
+
 	oq, err := newObsQueue(qSet, q)
 	if err != nil {
 		return nil, err

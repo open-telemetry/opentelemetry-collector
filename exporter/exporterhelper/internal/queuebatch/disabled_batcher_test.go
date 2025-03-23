@@ -12,17 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
-func TestDisabledBatcher_Basic(t *testing.T) {
+func TestDisabledBatcher(t *testing.T) {
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -38,28 +33,15 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = false
-
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDisabledBatcher(sink.Export)
 
-			q, err := NewQueue[request.Request](
-				context.Background(),
-				QueueSettings[request.Request]{
-					Signal:    pipeline.SignalTraces,
-					ID:        component.NewID(exportertest.NopType),
-					Telemetry: componenttest.NewNopTelemetrySettings(),
-					Settings: Settings[request.Request]{
-						Sizers: map[exporterbatcher.SizerType]Sizer[request.Request]{
-							exporterbatcher.SizerTypeRequests: RequestsSizer[request.Request]{},
-						},
-					},
-				},
-				exporterqueue.NewDefaultConfig(),
-				ba.Consume)
-			require.NoError(t, err)
+			mq := newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+				sizer:    RequestsSizer[request.Request]{},
+				capacity: 1000,
+				blocking: true,
+			})
+			q := newAsyncQueue(mq, tt.maxWorkers, ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))

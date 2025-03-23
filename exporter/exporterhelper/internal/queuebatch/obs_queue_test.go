@@ -51,7 +51,7 @@ func TestObsQueueLogsSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalLogs,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -82,7 +82,7 @@ func TestObsQueueLogsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalLogs,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -103,7 +103,7 @@ func TestObsQueueTracesSizeCapacity(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalTraces,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -134,7 +134,7 @@ func TestObsQueueTracesFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalTraces,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -155,7 +155,7 @@ func TestObsQueueMetrics(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),
@@ -186,7 +186,7 @@ func TestObsQueueMetricsFailure(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
-	te, err := newObsQueue[request.Request](QueueSettings[request.Request]{
+	te, err := newObsQueue[request.Request](Settings[request.Request]{
 		Signal:    pipeline.SignalMetrics,
 		ID:        exporterID,
 		Telemetry: tt.NewTelemetrySettings(),

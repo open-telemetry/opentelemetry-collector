@@ -48,7 +48,7 @@ type BaseExporter struct {
 	timeoutCfg TimeoutConfig
 	retryCfg   configretry.BackOffConfig
 
-	queueBatchSettings queuebatch.Settings[request.Request]
+	queueBatchSettings QueueBatchSettings[request.Request]
 	queueCfg           exporterqueue.Config
 	batcherCfg         exporterbatcher.Config
 }
@@ -91,11 +91,12 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 	}
 
 	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
-		qSet := queuebatch.QueueSettings[request.Request]{
+		qSet := queuebatch.Settings[request.Request]{
 			Signal:    signal,
 			ID:        set.ID,
 			Telemetry: set.TelemetrySettings,
-			Settings:  be.queueBatchSettings,
+			Encoding:  be.queueBatchSettings.Encoding,
+			Sizers:    be.queueBatchSettings.Sizers,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {
@@ -207,7 +208,7 @@ func WithQueue(cfg exporterqueue.Config) Option {
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg exporterqueue.Config, set queuebatch.Settings[request.Request]) Option {
+func WithQueueBatch(cfg exporterqueue.Config, set QueueBatchSettings[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
@@ -244,9 +245,9 @@ func WithBatcher(cfg exporterbatcher.Config) Option {
 	}
 }
 
-// WithQueueBatchSettings is used to set the queuebatch.Settings for the new request based exporter helper.
+// WithQueueBatchSettings is used to set the QueueBatchSettings for the new request based exporter helper.
 // It must be provided as the first option when creating a new exporter helper.
-func WithQueueBatchSettings(set queuebatch.Settings[request.Request]) Option {
+func WithQueueBatchSettings(set QueueBatchSettings[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		o.queueBatchSettings = set
 		return nil

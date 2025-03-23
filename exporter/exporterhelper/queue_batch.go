@@ -5,7 +5,6 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
@@ -22,7 +21,7 @@ type QueueBatchConfig = exporterqueue.Config
 
 // QueueBatchSettings are settings for the QueueBatch component.
 // They include things line Encoding to be used with persistent queue, or the available Sizers, etc.
-type QueueBatchSettings = queuebatch.Settings[Request]
+type QueueBatchSettings = internal.QueueBatchSettings[Request]
 
 // WithQueueBatch enables queueing and batching for an exporter.
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
