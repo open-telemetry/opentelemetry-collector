@@ -5,25 +5,73 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type QueueBatchSettings[K any] struct {
-	Encoding exporterqueue.Encoding[K]
+	Encoding queuebatch.Encoding[K]
 	Sizers   map[exporterbatcher.SizerType]queuebatch.Sizer[K]
+}
+
+// NewDefaultQueueConfig returns the default config for QueueConfig.
+// By default, the queue stores 1000 items of telemetry and is non-blocking when full.
+func NewDefaultQueueConfig() QueueConfig {
+	return QueueConfig{
+		Enabled:      true,
+		NumConsumers: 10,
+		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
+		// This can be estimated at 1-4 GB worth of maximum memory usage
+		// This default is probably still too high, and may be adjusted further down in a future release
+		QueueSize: 1_000,
+		Blocking:  false,
+	}
+}
+
+// QueueConfig defines configuration for queueing requests before exporting.
+// It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type QueueConfig struct {
+	// Enabled indicates whether to not enqueue batches before exporting.
+	Enabled bool `mapstructure:"enabled"`
+	// NumConsumers is the number of consumers from the queue.
+	NumConsumers int `mapstructure:"num_consumers"`
+	// QueueSize is the maximum number of requests allowed in queue at any given time.
+	QueueSize int `mapstructure:"queue_size"`
+	// Blocking controls the queue behavior when full.
+	// If true it blocks until enough space to add the new request to the queue.
+	Blocking bool `mapstructure:"blocking"`
+	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// as a storage extension for the persistent queue
+	StorageID *component.ID `mapstructure:"storage"`
+}
+
+// Validate checks if the Config is valid
+func (qCfg *QueueConfig) Validate() error {
+	if !qCfg.Enabled {
+		return nil
+	}
+	if qCfg.NumConsumers <= 0 {
+		return errors.New("`num_consumers` must be positive")
+	}
+	if qCfg.QueueSize <= 0 {
+		return errors.New("`queue_size` must be positive")
+	}
+	return nil
 }
 
 func NewQueueSender(
 	qSet queuebatch.Settings[request.Request],
-	qCfg exporterqueue.Config,
+	qCfg QueueConfig,
 	bCfg exporterbatcher.Config,
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
@@ -43,7 +91,7 @@ func NewQueueSender(
 	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 }
 
-func newQueueBatchConfig(qCfg exporterqueue.Config, bCfg exporterbatcher.Config) queuebatch.Config {
+func newQueueBatchConfig(qCfg QueueConfig, bCfg exporterbatcher.Config) queuebatch.Config {
 	qbCfg := queuebatch.Config{
 		Enabled:         true,
 		WaitForResult:   !qCfg.Enabled,

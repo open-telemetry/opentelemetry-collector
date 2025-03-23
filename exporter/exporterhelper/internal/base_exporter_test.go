@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -51,10 +50,10 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, bs.queueBatchSettings.Encoding)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(exporterqueue.NewDefaultConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 	require.Error(t, err)
 
-	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewID(component.MustNewType("test"))
 	qCfg.StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
@@ -70,7 +69,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.Enabled = false
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
@@ -100,7 +99,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			queueOptions: []Option{
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				func() Option {
-					qs := exporterqueue.NewDefaultConfig()
+					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
@@ -115,7 +114,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			name: "WithRequestQueue",
 			queueOptions: []Option{
 				func() Option {
-					qs := exporterqueue.NewDefaultConfig()
+					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueueBatch(qs, newFakeQueueBatch())
 				}(),

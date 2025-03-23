@@ -31,12 +31,12 @@ type RequestConverterFunc[K any] func(context.Context, K) (Request, error)
 
 // RequestConsumeFunc processes the request. After the function returns, the request is no longer accessible,
 // and accessing it is considered undefined behavior.
-type RequestConsumeFunc = sender.SendFunc[request.Request]
+type RequestConsumeFunc = sender.SendFunc[Request]
 
 // RequestSizer is an interface that returns the size of the given request.
-type RequestSizer = queuebatch.Sizer[request.Request]
+type RequestSizer = queuebatch.Sizer[Request]
 
 // NewRequestsSizer returns a RequestSizer that counts the requests by the number of requests, always returning 1.
 func NewRequestsSizer() RequestSizer {
-	return queuebatch.RequestsSizer[request.Request]{}
+	return queuebatch.RequestsSizer[Request]{}
 }

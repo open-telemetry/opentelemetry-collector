@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pipeline"
@@ -37,7 +36,7 @@ func NewMetricsQueueBatchSettings() QueueBatchSettings {
 			exporterbatcher.SizerTypeRequests: NewRequestsSizer(),
 			exporterbatcher.SizerTypeItems:    queuebatch.NewItemsSizer(),
 			exporterbatcher.SizerTypeBytes: queuebatch.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
+				SizeofFunc: func(req Request) int64 {
 					return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
 				},
 			},
