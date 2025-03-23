@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -56,11 +55,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
-			BatcherConfig: exporterbatcher.Config{
+			BatcherConfig: exporterhelper.BatcherConfig{
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				SizeConfig: exporterbatcher.SizeConfig{
-					Sizer:   exporterbatcher.SizerTypeItems,
+				SizeConfig: exporterhelper.SizeConfig{
+					Sizer:   exporterhelper.RequestSizerTypeItems,
 					MinSize: 1000,
 					MaxSize: 10000,
 				},

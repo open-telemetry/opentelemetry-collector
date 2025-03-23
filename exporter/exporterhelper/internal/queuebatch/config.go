@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 // Config defines configuration for queueing and batching incoming requests.
@@ -22,7 +22,7 @@ type Config struct {
 
 	// Sizer determines the type of size measurement used by this component.
 	// It accepts "requests", "items", or "bytes".
-	Sizer exporterbatcher.SizerType `mapstructure:"sizer"`
+	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
 	QueueSize int `mapstructure:"queue_size"`

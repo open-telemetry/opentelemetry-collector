@@ -14,10 +14,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -35,10 +33,10 @@ var (
 func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 	return exporterhelper.QueueBatchSettings{
 		Encoding: profilesEncoding{},
-		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[exporterhelper.Request]{
-			exporterbatcher.SizerTypeRequests: exporterhelper.NewRequestsSizer(),
-			exporterbatcher.SizerTypeItems:    queuebatch.NewItemsSizer(),
-			exporterbatcher.SizerTypeBytes: queuebatch.BaseSizer{
+		Sizers: map[exporterhelper.RequestSizerType]request.Sizer[exporterhelper.Request]{
+			exporterhelper.RequestSizerTypeRequests: exporterhelper.NewRequestsSizer(),
+			exporterhelper.RequestSizerTypeItems:    request.NewItemsSizer(),
+			exporterhelper.RequestSizerTypeBytes: request.BaseSizer{
 				SizeofFunc: func(req request.Request) int64 {
 					return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
 				},

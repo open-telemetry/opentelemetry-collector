@@ -13,9 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -32,11 +31,11 @@ var (
 func NewLogsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
 		Encoding: logsEncoding{},
-		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[Request]{
-			exporterbatcher.SizerTypeRequests: NewRequestsSizer(),
-			exporterbatcher.SizerTypeItems:    queuebatch.NewItemsSizer(),
-			exporterbatcher.SizerTypeBytes: queuebatch.BaseSizer{
-				SizeofFunc: func(req Request) int64 {
+		Sizers: map[RequestSizerType]request.Sizer[Request]{
+			RequestSizerTypeRequests: NewRequestsSizer(),
+			RequestSizerTypeItems:    request.NewItemsSizer(),
+			RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
 					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
 				},
 			},

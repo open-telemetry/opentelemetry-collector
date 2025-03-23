@@ -16,8 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -74,7 +72,7 @@ func TestBaseExporterLogging(t *testing.T) {
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(qCfg),
-		WithBatcher(exporterbatcher.NewDefaultConfig()),
+		WithBatcher(NewDefaultBatcherConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
@@ -104,7 +102,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					return WithQueue(qs)
 				}(),
 				func() Option {
-					bs := exporterbatcher.NewDefaultConfig()
+					bs := NewDefaultBatcherConfig()
 					bs.Enabled = false
 					return WithBatcher(bs)
 				}(),
@@ -119,7 +117,7 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					return WithQueueBatch(qs, newFakeQueueBatch())
 				}(),
 				func() Option {
-					bs := exporterbatcher.NewDefaultConfig()
+					bs := NewDefaultBatcherConfig()
 					bs.Enabled = false
 					return WithBatcher(bs)
 				}(),
@@ -155,8 +153,8 @@ func noopExport(context.Context, request.Request) error {
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
 		Encoding: fakeEncoding{},
-		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
-			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+		Sizers: map[request.SizerType]request.Sizer[request.Request]{
+			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
 		},
 	}
 }

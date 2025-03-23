@@ -7,19 +7,18 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterbatcher.SizerType, r2 Request) ([]Request, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
 	var sz sizer.TracesSizer
 	switch szt {
-	case exporterbatcher.SizerTypeItems:
+	case RequestSizerTypeItems:
 		sz = &sizer.TracesCountSizer{}
-	case exporterbatcher.SizerTypeBytes:
+	case RequestSizerTypeBytes:
 		sz = &sizer.TracesBytesSizer{}
 	default:
 		return nil, errors.New("unknown sizer type")

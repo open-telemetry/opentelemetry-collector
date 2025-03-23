@@ -37,7 +37,7 @@ func TestDisabledBatcher(t *testing.T) {
 			ba := newDisabledBatcher(sink.Export)
 
 			mq := newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-				sizer:    RequestsSizer[request.Request]{},
+				sizer:    request.RequestsSizer[request.Request]{},
 				capacity: 1000,
 				blocking: true,
 			})

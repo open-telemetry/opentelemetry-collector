@@ -6,11 +6,12 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -19,7 +20,7 @@ import (
 // QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type QueueBatchSettings[K any] struct {
 	Encoding queuebatch.Encoding[K]
-	Sizers   map[exporterbatcher.SizerType]queuebatch.Sizer[K]
+	Sizers   map[request.SizerType]request.Sizer[K]
 }
 
 // NewDefaultQueueConfig returns the default config for QueueConfig.
@@ -72,7 +73,7 @@ func (qCfg *QueueConfig) Validate() error {
 func NewQueueSender(
 	qSet queuebatch.Settings[request.Request],
 	qCfg QueueConfig,
-	bCfg exporterbatcher.Config,
+	bCfg BatcherConfig,
 	exportFailureMessage string,
 	next sender.Sender[request.Request],
 ) (sender.Sender[request.Request], error) {
@@ -91,11 +92,11 @@ func NewQueueSender(
 	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 }
 
-func newQueueBatchConfig(qCfg QueueConfig, bCfg exporterbatcher.Config) queuebatch.Config {
+func newQueueBatchConfig(qCfg QueueConfig, bCfg BatcherConfig) queuebatch.Config {
 	qbCfg := queuebatch.Config{
 		Enabled:         true,
 		WaitForResult:   !qCfg.Enabled,
-		Sizer:           exporterbatcher.SizerTypeRequests,
+		Sizer:           request.SizerTypeRequests,
 		QueueSize:       qCfg.QueueSize,
 		NumConsumers:    qCfg.NumConsumers,
 		BlockOnOverflow: qCfg.Blocking,
@@ -109,4 +110,63 @@ func newQueueBatchConfig(qCfg QueueConfig, bCfg exporterbatcher.Config) queuebat
 		}
 	}
 	return qbCfg
+}
+
+// BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type BatcherConfig struct {
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
+
+	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
+	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	// SizeConfig sets the size limits for a batch.
+	SizeConfig `mapstructure:",squash"`
+}
+
+// SizeConfig sets the size limits for a batch.
+type SizeConfig struct {
+	Sizer request.SizerType `mapstructure:"sizer"`
+
+	// MinSize defines the configuration for the minimum size of a batch.
+	MinSize int `mapstructure:"min_size"`
+	// MaxSize defines the configuration for the maximum size of a batch.
+	MaxSize int `mapstructure:"max_size"`
+}
+
+func (c *BatcherConfig) Validate() error {
+	if c.FlushTimeout <= 0 {
+		return errors.New("`flush_timeout` must be greater than zero")
+	}
+
+	return nil
+}
+
+func (c SizeConfig) Validate() error {
+	if c.Sizer != request.SizerTypeItems {
+		return fmt.Errorf("unsupported sizer type: %q", c.Sizer)
+	}
+	if c.MinSize < 0 {
+		return errors.New("`min_size` must be greater than or equal to zero")
+	}
+	if c.MaxSize < 0 {
+		return errors.New("`max_size` must be greater than or equal to zero")
+	}
+	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
+		return errors.New("`max_size` must be greater than or equal to mix_size")
+	}
+	return nil
+}
+
+func NewDefaultBatcherConfig() BatcherConfig {
+	return BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeItems,
+			MinSize: 8192,
+		},
+	}
 }
