@@ -40,5 +40,25 @@ func NewQueueSender(
 		return nil
 	}
 
-	return queuebatch.NewQueueBatch(qSet, qCfg, bCfg, exportFunc)
+	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
+}
+
+func newQueueBatchConfig(qCfg exporterqueue.Config, bCfg exporterbatcher.Config) queuebatch.Config {
+	qbCfg := queuebatch.Config{
+		Enabled:         true,
+		WaitForResult:   !qCfg.Enabled,
+		Sizer:           exporterbatcher.SizerTypeRequests,
+		QueueSize:       qCfg.QueueSize,
+		NumConsumers:    qCfg.NumConsumers,
+		BlockOnOverflow: qCfg.Blocking,
+		StorageID:       qCfg.StorageID,
+	}
+	if bCfg.Enabled {
+		qbCfg.Batch = &queuebatch.BatchConfig{
+			FlushTimeout: bCfg.FlushTimeout,
+			MinSize:      bCfg.MinSize,
+			MaxSize:      bCfg.MaxSize,
+		}
+	}
+	return qbCfg
 }
