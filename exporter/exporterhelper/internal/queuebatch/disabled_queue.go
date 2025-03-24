@@ -19,7 +19,7 @@ var donePool = sync.Pool{
 
 func newDisabledQueue[T any](consumeFunc ConsumeFunc[T]) Queue[T] {
 	return &disabledQueue[T]{
-		sizer:       &requestSizer[T]{},
+		sizer:       RequestsSizer[T]{},
 		consumeFunc: consumeFunc,
 		size:        &atomic.Int64{},
 	}
@@ -29,7 +29,7 @@ type disabledQueue[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumeFunc ConsumeFunc[T]
-	sizer       sizer[T]
+	sizer       Sizer[T]
 	size        *atomic.Int64
 }
 

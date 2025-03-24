@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
@@ -10,27 +10,34 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
+const (
+	// ExporterKey used to identify exporters in metrics and traces.
+	exporterKey = "exporter"
+
+	// DataTypeKey used to identify the data type in the queue size metric.
+	dataTypeKey = "data_type"
+)
+
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
-	queuebatch.Queue[T]
+	Queue[T]
 	tb                *metadata.TelemetryBuilder
 	metricAttr        metric.MeasurementOption
 	enqueueFailedInst metric.Int64Counter
 }
 
-func newObsQueue[T request.Request](set queuebatch.QueueSettings[T], delegate queuebatch.Queue[T]) (queuebatch.Queue[T], error) {
-	tb, err := metadata.NewTelemetryBuilder(set.ExporterSettings.TelemetrySettings)
+func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
+	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	exporterAttr := attribute.String(ExporterKey, set.ExporterSettings.ID.String())
-	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(DataTypeKey, set.Signal.String())))
+	exporterAttr := attribute.String(exporterKey, set.ID.String())
+	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(dataTypeKey, set.Signal.String())))
 	err = tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(delegate.Size(), asyncAttr)
 		return nil

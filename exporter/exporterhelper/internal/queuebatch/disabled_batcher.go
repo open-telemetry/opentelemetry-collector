@@ -1,14 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package batcher // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
@@ -20,10 +18,10 @@ type disabledBatcher[T any] struct {
 	consumeFunc sender.SendFunc[T]
 }
 
-func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done queuebatch.Done) {
+func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done Done) {
 	done.OnDone(db.consumeFunc(ctx, req))
 }
 
-func newDisabledBatcher(consumeFunc sender.SendFunc[request.Request]) Batcher {
-	return &disabledBatcher[request.Request]{consumeFunc: consumeFunc}
+func newDisabledBatcher[K any](consumeFunc sender.SendFunc[K]) Batcher[K] {
+	return &disabledBatcher[K]{consumeFunc: consumeFunc}
 }
