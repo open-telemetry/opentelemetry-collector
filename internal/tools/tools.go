@@ -20,6 +20,7 @@ import (
 	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"
+	_ "go.opentelemetry.io/build-tools/githubgen"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/build-tools/semconvgen"
 	_ "golang.org/x/exp/cmd/apidiff"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -119,7 +119,7 @@ func TestConfigValidate(t *testing.T) {
 					Level: configtelemetry.LevelBasic,
 					Readers: []config.MetricReader{
 						{
-							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
+							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
 								Host: newPtr("127.0.0.1"),
 								Port: newPtr(3333),
 							}}},

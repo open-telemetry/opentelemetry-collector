@@ -9,16 +9,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/internal"
-	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // TODO: Clean this by forcing all exporters to return an internal error type that always include the information about retries.
@@ -44,19 +46,19 @@ func NewThrottleRetry(err error, delay time.Duration) error {
 }
 
 type retrySender struct {
-	BaseSender[internal.Request]
-	traceAttribute attribute.KeyValue
-	cfg            configretry.BackOffConfig
-	stopCh         chan struct{}
-	logger         *zap.Logger
+	component.StartFunc
+	cfg    configretry.BackOffConfig
+	stopCh chan struct{}
+	logger *zap.Logger
+	next   sender.Sender[request.Request]
 }
 
-func newRetrySender(config configretry.BackOffConfig, set exporter.Settings) *retrySender {
+func newRetrySender(config configretry.BackOffConfig, set exporter.Settings, next sender.Sender[request.Request]) *retrySender {
 	return &retrySender{
-		traceAttribute: attribute.String(ExporterKey, set.ID.String()),
-		cfg:            config,
-		stopCh:         make(chan struct{}),
-		logger:         set.Logger,
+		cfg:    config,
+		stopCh: make(chan struct{}),
+		logger: set.Logger,
+		next:   next,
 	}
 }
 
@@ -66,7 +68,7 @@ func (rs *retrySender) Shutdown(context.Context) error {
 }
 
 // Send implements the requestSender interface
-func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
+func (rs *retrySender) Send(ctx context.Context, req request.Request) error {
 	// Do not use NewExponentialBackOff since it calls Reset and the code here must
 	// call Reset after changing the InitialInterval (this saves an unnecessary call to Now).
 	expBackoff := backoff.ExponentialBackOff{
@@ -74,19 +76,19 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		RandomizationFactor: rs.cfg.RandomizationFactor,
 		Multiplier:          rs.cfg.Multiplier,
 		MaxInterval:         rs.cfg.MaxInterval,
-		MaxElapsedTime:      rs.cfg.MaxElapsedTime,
-		Stop:                backoff.Stop,
-		Clock:               backoff.SystemClock,
 	}
-	expBackoff.Reset()
 	span := trace.SpanFromContext(ctx)
 	retryNum := int64(0)
+	var maxElapsedTime time.Time
+	if rs.cfg.MaxElapsedTime > 0 {
+		maxElapsedTime = time.Now().Add(rs.cfg.MaxElapsedTime)
+	}
 	for {
 		span.AddEvent(
 			"Sending request.",
-			trace.WithAttributes(rs.traceAttribute, attribute.Int64("retry_num", retryNum)))
+			trace.WithAttributes(attribute.Int64("retry_num", retryNum)))
 
-		err := rs.NextSender.Send(ctx, req)
+		err := rs.next.Send(ctx, req)
 		if err == nil {
 			return nil
 		}
@@ -96,7 +98,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			return fmt.Errorf("not retryable error: %w", err)
 		}
 
-		if errReq, ok := req.(internal.RequestErrorHandler); ok {
+		if errReq, ok := req.(request.ErrorHandler); ok {
 			req = errReq.OnError(err)
 		}
 
@@ -110,7 +112,13 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 			backoffDelay = max(backoffDelay, throttleErr.delay)
 		}
 
-		if deadline, has := ctx.Deadline(); has && time.Until(deadline) < backoffDelay {
+		nextRetryTime := time.Now().Add(backoffDelay)
+		if !maxElapsedTime.IsZero() && maxElapsedTime.Before(nextRetryTime) {
+			// The delay is longer than the maxElapsedTime.
+			return fmt.Errorf("no more retries left: %w", err)
+		}
+
+		if deadline, has := ctx.Deadline(); has && deadline.Before(nextRetryTime) {
 			// The delay is longer than the deadline.  There is no point in
 			// waiting for cancelation.
 			return fmt.Errorf("request will be cancelled before next retry: %w", err)
@@ -120,7 +128,6 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		span.AddEvent(
 			"Exporting failed. Will retry the request after interval.",
 			trace.WithAttributes(
-				rs.traceAttribute,
 				attribute.String("interval", backoffDelayStr),
 				attribute.String("error", err.Error())))
 		rs.logger.Info(
@@ -133,7 +140,7 @@ func (rs *retrySender) Send(ctx context.Context, req internal.Request) error {
 		// back-off, but get interrupted when shutting down or request is cancelled or timed out.
 		select {
 		case <-ctx.Done():
-			return fmt.Errorf("request is cancelled or timed out %w", err)
+			return fmt.Errorf("request is cancelled or timed out: %w", err)
 		case <-rs.stopCh:
 			return experr.NewShutdownErr(err)
 		case <-time.After(backoffDelay):

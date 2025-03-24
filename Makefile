@@ -261,15 +261,19 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 
 ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 
-# Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
-# against the current version of this repo.
-.PHONY: check-contrib
-check-contrib:
+.PHONY: prepare-contrib
+prepare-contrib:
 	@echo Setting contrib at $(CONTRIB_PATH) to use this core checkout
 	@$(MAKE) -j2 -C $(CONTRIB_PATH) for-all CMD="$(GOCMD) mod edit \
 		$(addprefix -replace ,$(join $(ALL_MOD_PATHS:%=go.opentelemetry.io/collector%=),$(ALL_MOD_PATHS:%=$(CURDIR)%)))"
 	@$(MAKE) -j2 -C $(CONTRIB_PATH) gotidy
 
+	@$(MAKE) generate-contrib
+
+# Checks that the HEAD of the contrib repo checked out in CONTRIB_PATH compiles
+# against the current version of this repo.
+.PHONY: check-contrib
+check-contrib:
 	@echo -e "\nRunning tests"
 	@$(MAKE) -C $(CONTRIB_PATH) gotest
 
@@ -444,4 +448,20 @@ builder-integration-test: $(ENVSUBST)
 mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
+	cd cmd/mdatagen && $(MAKE) fmt
 	cd cmd/mdatagen && $(GOCMD) test ./...
+
+.PHONY: generate-gh-issue-templates
+generate-gh-issue-templates: $(GITHUBGEN)
+	$(GITHUBGEN) issue-templates
+
+.PHONY: generate-codeowners
+generate-codeowners: $(GITHUBGEN)
+	$(GITHUBGEN) --default-codeowner "open-telemetry/collector-approvers" codeowners
+
+.PHONY: gengithub
+gengithub: $(GITHUBGEN) generate-codeowners generate-gh-issue-templates
+
+.PHONY: gendistributions
+gendistributions: $(GITHUBGEN)
+	$(GITHUBGEN) distributions

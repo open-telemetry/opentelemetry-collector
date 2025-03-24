@@ -12,17 +12,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
-var defaultComponentType = component.MustNewType("nop")
+var NopType = component.MustNewType("nop")
 
-// NewNopSettings returns a new nop settings for Create*Receiver functions.
-func NewNopSettings() receiver.Settings {
+// NewNopSettings returns a new nop settings for Create*Receiver functions with the given type.
+func NewNopSettings(typ component.Type) receiver.Settings {
 	return receiver.Settings{
-		ID:                component.NewIDWithName(defaultComponentType, uuid.NewString()),
+		ID:                component.NewIDWithName(typ, uuid.NewString()),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -31,31 +30,13 @@ func NewNopSettings() receiver.Settings {
 // NewNopFactory returns a receiver.Factory that constructs nop receivers supporting all data types.
 func NewNopFactory() receiver.Factory {
 	return xreceiver.NewFactory(
-		defaultComponentType,
+		NopType,
 		func() component.Config { return &nopConfig{} },
 		xreceiver.WithTraces(createTraces, component.StabilityLevelStable),
 		xreceiver.WithMetrics(createMetrics, component.StabilityLevelStable),
 		xreceiver.WithLogs(createLogs, component.StabilityLevelStable),
 		xreceiver.WithProfiles(createProfiles, component.StabilityLevelAlpha),
 	)
-}
-
-// Deprecated: [v0.117.0] use NewNopFactory or create own factory.
-func NewNopFactoryForType(signal pipeline.Signal) receiver.Factory {
-	var factoryOpt receiver.FactoryOption
-	switch signal {
-	case pipeline.SignalTraces:
-		factoryOpt = receiver.WithTraces(createTraces, component.StabilityLevelStable)
-	case pipeline.SignalMetrics:
-		factoryOpt = receiver.WithMetrics(createMetrics, component.StabilityLevelStable)
-	case pipeline.SignalLogs:
-		factoryOpt = receiver.WithLogs(createLogs, component.StabilityLevelStable)
-	default:
-		panic("unsupported data type for creating nop receiver factory: " + signal.String())
-	}
-
-	componentType := component.MustNewType(defaultComponentType.String() + "_" + signal.String())
-	return receiver.NewFactory(componentType, func() component.Config { return &nopConfig{} }, factoryOpt)
 }
 
 type nopConfig struct{}

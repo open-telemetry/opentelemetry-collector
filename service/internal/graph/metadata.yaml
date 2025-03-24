@@ -1,0 +1,8 @@
+type: graph
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: service
+  codeowners:
+    active:
+      - djaglowski

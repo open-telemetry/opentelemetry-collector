@@ -7,7 +7,7 @@ for coding advice). The code must adhere to the following robustness principles 
 are important for software that runs autonomously and continuously without direct
 interaction with a human (such as this Collector).
 
-### Naming convention
+## Naming convention
 
 To keep naming patterns consistent across the project, naming patterns are enforced to make intent clear by:
 
@@ -38,7 +38,7 @@ To keep naming patterns consistent across the project, naming patterns are enfor
   - `func CreateTracesExport(...) {...}`
   - `func CreateTracesToTracesFunc(...) {...}`
 
-#### Configuration structs
+### Configuration structs
 
 When naming configuration structs, use the following guidelines:
 
@@ -47,7 +47,7 @@ When naming configuration structs, use the following guidelines:
 - Use the `Settings` suffix for configuration structs that are set by developers in the code. For example, `component.TelemetrySettings` ends in `Settings` since it is set by developers in the code.
 - Avoid redundant prefixes that are already implied by the package name. For example, use`configgrpc.ClientConfig` instead of `configgrpc.GRPCClientConfig`.
 
-### Module organization
+## Module organization
 
 As usual in Go projects, organize your code into packages grouping related functionality. To ensure
 that we can evolve different parts of the API independently, you should also group related packages
@@ -61,6 +61,12 @@ We use the following rules for some common situations where we split into separa
 1. Consider splitting into separate modules if the API may evolve independently in separate groups
    of packages. For example, the configuration related to HTTP and gRPC evolve independently, so
    `config/configgrpc` and `config/confighttp` are separate modules.
+1. For component names, add the component kind as a suffix for the module name. For example, the
+   OTLP receiver is in the `receiver/otlpreceiver` module.
+1. Modules that add specific functionality related to a parent folder should have a prefix in the
+   name that relates to the parent module. For example, `configauth` has the `config` prefix since
+   it is part of the `config` folder, and `extensionauth` has `extension` as a prefix since it is
+   part of the `extension` module.
 1. Testing helpers should be in a separate submodule with the suffix `test`. For example, if you
    have a module `component`, the helpers should be in `component/componenttest`.
 1. Experimental packages that will later be added to another module should be in their own module,
@@ -82,7 +88,7 @@ When adding a new module remember to update the following:
 1. Open a follow up PR to update pseudo-versions in all go.mod files. See [this example
    PR](https://github.com/open-telemetry/opentelemetry-collector/pull/11668).
 
-### Enumerations
+## Enumerations
 
 To keep naming patterns consistent across the project, enumeration patterns are enforced to make intent clear:
 
@@ -96,7 +102,7 @@ To keep naming patterns consistent across the project, enumeration patterns are 
   - `pmetric.MetricTypeGauge` for `pmetric.MetricType`
 
 
-### Recommended Libraries / Defaults
+## Recommended Libraries / Defaults
 
 In order to simplify development within the project, we have made certain library recommendations that should be followed.
 
@@ -108,13 +114,13 @@ In order to simplify development within the project, we have made certain librar
 
 Within the project, there are some packages that have yet to follow the recommendations and are being addressed. However, any new code should adhere to the recommendations.
 
-### Default Configuration
+## Default Configuration
 
 To guarantee backward-compatible behavior, all configuration packages should supply a `NewDefault[config name]` functions that create a default version of the config. The package does not need to guarantee that `NewDefault[config name]` returns a usable configuration—only that default values will be set. For example, if the configuration requires that a field, such as `Endpoint` be set, but there is no valid default value, then `NewDefault[config name]` may set that value to `""` with the expectation that the user will set a valid value.
 
 Users should always initialize the config struct with this function and overwrite anything as needed.
 
-### Startup Error Handling
+## Startup Error Handling
 
 Verify configuration during startup and fail fast if the configuration is invalid.
 This will bring the attention of a human to the problem as it is more typical for humans
@@ -126,7 +132,7 @@ explain the problem and exit with a non-zero code. It is acceptable to crash the
 during startup if there is no good way to exit cleanly but do your best to log and
 exit cleanly with a process exit code.
 
-### Propagate Errors to the Caller
+## Propagate Errors to the Caller
 
 Do not crash or exit outside the `main()` function, e.g. via `log.Fatal` or `os.Exit`,
 even during startup. Instead, return detailed errors to be handled appropriately
@@ -134,7 +140,7 @@ by the caller. The code in packages other than `main` may be imported and used b
 third-party applications, and they should have full control over error handling
 and process termination.
 
-### Do not Crash after Startup
+## Do not Crash after Startup
 
 Do not crash or exit the Collector process after the startup sequence is finished.
 A running Collector typically contains data that is received but not yet exported further
@@ -143,7 +149,7 @@ process will result in losing this data since typically the receiver has
 already acknowledged the receipt for this data and the senders of the data will
 not send that data again.
 
-### Bad Input Handling
+## Bad Input Handling
 
 Do not crash on bad input in receivers or elsewhere in the pipeline.
 [Crash-only software](https://en.wikipedia.org/wiki/Crash-only_software)
@@ -160,7 +166,7 @@ sender. If it is elsewhere in the pipeline it may be too late to send a response
 to the sender (particularly in processors which are not synchronously processing
 data). In either case, it is recommended to keep a metric that counts bad input data.
 
-### Error Handling and Retries
+## Error Handling and Retries
 
 Be rigorous in error handling. Don't ignore errors. Think carefully about each
 error and decide if it is a fatal problem or a transient problem that may go away
@@ -173,7 +179,7 @@ your destination when the network is restored or the destination is recovered.
 [Exponential Backoff](https://github.com/cenkalti/backoff) is a good library that
 provides all this functionality.
 
-### Logging
+## Logging
 
 Log your component startup and shutdown, including successful outcomes (but don't
 overdo it, and keep the number of success messages to a minimum).
@@ -190,7 +196,7 @@ the event happens.
 Make log messages human readable and also include data that is needed for easier
 understanding of what happened and in what context.
 
-### Executing External Processes
+## Executing External Processes
 
 The components should avoid executing arbitrary external processes with arbitrary command
 line arguments based on user input, including input received from the network or input
@@ -208,7 +214,7 @@ The following limitations are recommended:
   if necessary, deriving the value from the user input. Limit as much as possible the
   size of the possible space of values for command line arguments.
 
-### Observability
+## Observability
 
 Out of the box, your users should be able to observe the state of your
 component. See [observability.md](observability.md) for more details.
@@ -293,7 +299,7 @@ builder:
 tsp.telemetry.ProcessorTailsamplingSamplingdecisionLatency.Record(ctx, ...)
 ```
 
-### Resource Usage
+## Resource Usage
 
 Limit usage of CPU, RAM, and other resources that the code can use. Do not write code
 that consumes resources in an uncontrolled manner. For example, if you have a queue
@@ -310,7 +316,7 @@ runs out of memory. Instead have protections for these situations, e.g. when hit
 resource limits drop the data and record the fact that it was dropped in a metric
 that is exposed to users.
 
-### Graceful Shutdown
+## Graceful Shutdown
 
 Collector does not yet support graceful shutdown but we plan to add it. All components
 must be ready to shutdown gracefully via `Shutdown()` function that all component
@@ -319,14 +325,14 @@ and export it out of the Collector before shutdown is completed. The shutdown pr
 will have a maximum allowed duration so put a limit on how long your shutdown
 operation can take.
 
-### Unit Tests
+## Unit Tests
 
 Cover important functionality with unit tests. We require that contributions
 do not decrease the overall code coverage of the codebase - this is aligned with our
 goal to increase coverage over time. Keep track of execution time for your unit
 tests and try to keep them as short as possible.
 
-#### Testing Library Recommendations
+### Testing Library Recommendations
 
 To keep testing practices consistent across the project, it is advised to use these libraries under
 these circumstances:
@@ -336,12 +342,12 @@ these circumstances:
 - For mocking external resources, use `"github.com/stretchr/testify/mock"`
 - For validating HTTP traffic interactions, `"net/http/httptest"`
 
-### Integration Testing
+## Integration Testing
 
 Integration testing is encouraged throughout the project, container images can be used in order to facilitate
 a local version. In their absence, it is strongly advised to mock the integration.
 
-### Using CGO
+## Using CGO
 
 Using CGO is prohibited due to the lack of portability and complexity
 that comes with managing external libraries with different operating systems and configurations.
@@ -350,13 +356,21 @@ with clear instructions on how to install the required libraries.
 Furthermore, if your package requires CGO, it MUST be able to compile and operate in a no-op mode
 or report a warning back to the collector with a clear error saying CGO is required to work.
 
-### Breaking changes
+## Breaking changes
 
 Whenever possible, we adhere to [semver](https://semver.org/) as our minimum standards. Even before v1, we strive not to break compatibility
-without a good reason. Hence, when a change is known to cause a breaking change, it MUST be clearly marked in the
-changelog and SHOULD include a line instructing users how to move forward.
+without a good reason. Hence, when a change is known to cause a breaking change, we intend to follow these principles:
 
-We also strive to perform breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
+- Breaking changes MUST have migration guidelines that clearly explain how to adapt to them.
+- Users SHOULD be able to adopt the breaking change at their own pace, independent of other Collector updates.
+- Users SHOULD be proactively notified about the breaking change before a migration is required.
+- Users SHOULD be able to easily tell whether they have completed the migration for a breaking change.
+
+Not all changes have the same effects on users, so some of the steps may be unnecessary for some changes.
+
+### API breaking changes
+
+We strive to perform API breaking changes in two stages, deprecating it first (`vM.N`) and breaking it in a subsequent
 version (`vM.N+1`).
 
 - when we need to remove something, we MUST mark a feature as deprecated in one version and MAY remove it in a
@@ -376,18 +390,6 @@ package test
 // Deprecated: [v0.45.0] Use MustDoFoo instead.
 func DoFoo() {}
 ```
-
-#### End-user impacting changes
-
-When deprecating a feature affecting end-users, consider first deprecating the feature in one version, then hiding it
-behind a [feature
-gate](https://github.com/open-telemetry/opentelemetry-collector/blob/6b5a3d08a96bfb41a5e121b34f592a1d5c6e0435/service/featuregate/)
-in a subsequent version, and eventually removing it after yet another version. This is how it would look like, considering
-that each of the following steps is done in a separate version:
-
-1. Mark the feature as deprecated, add a short-lived feature gate with the feature enabled by default
-1. Change the feature gate to disable the feature by default, deprecating the gate at the same time
-1. Remove the feature and the gate
 
 #### Example #1 - Renaming a function
 
@@ -429,11 +431,85 @@ for the following situations. Note that these changes should still be recorded a
   breaking change. For this reason, the deprecation process should only be skipped when it is not expected that
   the function is commonly passed as a value.
 
-#### Configuration changes
+### End-user impacting changes
 
-See [docs/component-stability.md](component-stability.md) for more information on how to handle configuration changes.
+For end user breaking changes, we follow the [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle)
+approach. This is a well-known approach in other projects such as Kubernetes. A feature gate has
+three stages: alpha, beta and stable. The intent of these stages is to decouple other software
+changes from the breaking change; some users may adopt the change early, while other users may delay
+its adoption.
 
-### Specification Tracking
+#### Feature gate IDs
+
+Feature gate IDs should be namespaced using dots to denote the hierarchy. The namespace should be as
+specific as possible; in particular, for feature gates specific to a certain component the ID should
+have the following structure: `<component kind>.<component type>.<base ID>`. The "base ID" should be
+written with a verb that describes what happens when the feature gate is enabled. For example, if
+you want to add a feature gate for the OTLP receiver that changes the default endpoint to bind to an
+unspecified host, you could name your feature gate `receiver.otlp.UseUnspecifiedHostAsDefaultHost`.
+
+#### Lifecycle of a breaking change
+
+##### Alpha stage
+
+At the alpha stage, the change is opt-in. At this stage we want to notify users that a change is
+coming, so they can start preparing for it and we have some early adopters that provide us with
+feedback. Consider the following items before the initial release of an alpha feature gate:
+
+* If **docs and examples** can be updated in a way that prevents the breaking change from affecting
+  users, this is the time to update them!
+* Provide users with tools to understand the breaking change
+  * (Optional) Create or update a **Github issue** to document what the change is about, who it
+    affects and what its effects are
+  * (Optional) Consider adding **telemetry** that allows users to track their migration. For
+    example, you can add a counter for the times that you see a payload that would be affected by
+    the breaking change.
+* Notify users about the upcoming change
+  * Add a **changelog entry** that describes the feature gate. It should include its name, when you
+    may want to use it, and what its effects are. The changelog entry can be given the `enhancement`
+    classification at this stage.
+  * (Optional but strongly recommended) Log a **warning** if the user is using the software in a way
+    that would be affected by the breaking change. Point the user to the feature gate and any
+    official docs.
+* (Optional) Try to **test this in a realistic setting.** If this solves an issue, ask the poster to
+  try to use it and check that everything works.
+
+##### Beta stage
+
+At the beta stage, the change is opt-out. At this stage we want to notify users that the change is
+happening, and help them understand how to revert back to the previous behavior temporarily if they
+need to do so. You may directly start from this stage for breaking changes that are less impactful
+or for changes that should not have a functional impact such as performance changes. Consider the
+following items before moving from alpha to beta:
+
+* Schedule the **docs and examples** update to align with the breaking change release if you
+  couldn’t do it before
+* Provide users with tools to understand the breaking change
+  * Update the **Github issue** with the new default behavior (or create one if starting from here)
+  * Update the feature gate to add the ‘to version’ to the feature gate
+* Notify users about the change
+  * Add a second **changelog entry** that describes the change one more time and is marked as
+    ‘breaking’.
+  * If applicable, add an **error message** that tells you this is the result of a breaking change
+    that can be temporarily reverted disabling the feature gate and points to any issue or docs
+    about it.
+
+##### Stable stage
+
+At the stable stage, the change cannot be reverted. In some cases, you may directly start here and
+just do the change, in which case you do not need a feature gate, but you should still follow the
+checklist below (notify, update docs and examples). Consider the following items before moving from
+beta to stable:
+
+* Remove the dead code
+* Provide users with tools to understand the breaking change
+  * Update the **documentation** **and examples** to remove any references to the feature gate and
+    the previous behavior. Close the **Github issue** if you opened one before.
+* Notify users about the change
+  * Add one last **changelog entry** so users know the range where the feature gate was in beta
+  * Amend the **error message** to remove any references to the feature gate.
+
+## Specification Tracking
 
 The [OpenTelemetry Specification](https://github.com/open-telemetry/opentelemetry-specification) can be a rapidly
 moving target at times.  While it may seem efficient to get an early start on implementing new features or

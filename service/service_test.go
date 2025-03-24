@@ -17,7 +17,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/contrib/config"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -59,7 +59,7 @@ type ownMetricsTestCase struct {
 }
 
 var (
-	testResourceAttrValue = "resource_attr_test_value" // #nosec G101: Potential hardcoded credentials
+	testResourceAttrValue = "resource_attr_test_value"
 	testInstanceID        = "test_instance_id"
 	testServiceVersion    = "2022-05-20"
 	testServiceName       = "test name"
@@ -207,7 +207,7 @@ func TestServiceGetFactory(t *testing.T) {
 	assert.Equal(t, srv.host.Extensions.Factory(nopType), srv.host.GetFactory(component.KindExtension, nopType))
 
 	// Try retrieve non existing component.Kind.
-	assert.Nil(t, srv.host.GetFactory(42, nopType))
+	assert.Nil(t, srv.host.GetFactory(component.Kind{}, nopType))
 }
 
 func TestServiceGetExtensions(t *testing.T) {
@@ -234,7 +234,7 @@ func TestServiceGetExporters(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	})
 
-	// nolint
+	//nolint:staticcheck
 	expMap := srv.host.GetExporters()
 
 	v, ok := expMap[pipeline.SignalTraces]
@@ -318,7 +318,7 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
-				Exporter: config.MetricExporter{
+				Exporter: config.PullMetricExporter{
 					Prometheus: metricsAddr,
 				},
 			},
@@ -349,12 +349,23 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
 func TestServiceTelemetryRestart(t *testing.T) {
+	metricsAddr := promtest.GetAvailableLocalAddressPrometheus(t)
+	cfg := newNopConfig()
+	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
+		{
+			Pull: &config.PullMetricReader{
+				Exporter: config.PullMetricExporter{
+					Prometheus: metricsAddr,
+				},
+			},
+		},
+	}
 	// Create a service
-	srvOne, err := New(context.Background(), newNopSettings(), newNopConfig())
+	srvOne, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// URL of the telemetry service metrics endpoint
-	telemetryURL := "http://localhost:8888/metrics"
+	telemetryURL := fmt.Sprintf("http://%s:%d/metrics", *metricsAddr.Host, *metricsAddr.Port)
 
 	// Start the service
 	require.NoError(t, srvOne.Start(context.Background()))
@@ -362,6 +373,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	// check telemetry server to ensure we get a response
 	var resp *http.Response
 
+	//nolint:gosec
 	resp, err = http.Get(telemetryURL)
 	assert.NoError(t, err)
 	assert.NoError(t, resp.Body.Close())
@@ -375,7 +387,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvOne.Shutdown(context.Background()))
 
 	// Create a new service with the same telemetry
-	srvTwo, err := New(context.Background(), newNopSettings(), newNopConfig())
+	srvTwo, err := New(context.Background(), newNopSettings(), cfg)
 	require.NoError(t, err)
 
 	// Start the new service
@@ -384,6 +396,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	// check telemetry server to ensure we get a response
 	require.Eventually(t,
 		func() bool {
+			//nolint:gosec
 			resp, err = http.Get(telemetryURL)
 			assert.NoError(t, resp.Body.Close())
 			return err == nil
@@ -497,7 +510,7 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errors.New("unsupported protocol \"\""),
+			wantErr: errors.New("no valid log exporter"),
 		},
 	}
 	for _, tt := range tests {
@@ -556,12 +569,16 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		"otelcol_process_runtime_heap_alloc_bytes":       false,
 		"otelcol_process_runtime_total_alloc_bytes":      false,
 		"otelcol_process_uptime":                         false,
+		"promhttp_metric_handler_errors_total":           false,
 	}
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; !ok {
 			require.True(t, ok, "unexpected metric: %s", metricName)
 		}
 		expectedMetrics[metricName] = true
+		if metricName == "promhttp_metric_handler_errors_total" {
+			continue
+		}
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
 			require.True(
@@ -689,14 +706,6 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 			},
 			Metrics: telemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
-				Readers: []config.MetricReader{
-					{
-						Pull: &config.PullMetricReader{Exporter: config.MetricExporter{Prometheus: &config.Prometheus{
-							Host: newPtr("localhost"),
-							Port: newPtr(8888),
-						}}},
-					},
-				},
 			},
 		},
 	}

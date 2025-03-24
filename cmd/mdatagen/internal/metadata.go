@@ -135,6 +135,18 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 	return errs
 }
 
+func (md *Metadata) supportsSignal(signal string) bool {
+	for _, signals := range md.Status.Stability {
+		for _, s := range signals {
+			if s == signal {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
 	var errs error
 	for mn, m := range metrics {
@@ -198,7 +210,7 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 
 // String returns capitalized name of the ValueType.
 func (mvt ValueType) String() string {
-	return strings.Title(strings.ToLower(mvt.ValueType.String())) // nolint SA1019
+	return strings.Title(strings.ToLower(mvt.ValueType.String())) //nolint:staticcheck // SA1019
 }
 
 // Primitive returns name of primitive type for the ValueType.

@@ -456,7 +456,7 @@ func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName str
 }
 
 func createTempClientCaFile(t *testing.T) string {
-	tmpCa, err := os.CreateTemp("", "ca-tmp.crt")
+	tmpCa, err := os.CreateTemp(t.TempDir(), "ca-tmp.crt")
 	require.NoError(t, err)
 	tmpCaPath, err := filepath.Abs(tmpCa.Name())
 	assert.NoError(t, err)
@@ -533,18 +533,20 @@ func TestCertificateReload(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			// Copy certs into a temp dir so we can safely modify them
-			certFile, err := os.CreateTemp("", "cert")
+			tempDir := t.TempDir()
+			certFile, err := os.CreateTemp(tempDir, "cert")
 			require.NoError(t, err)
-			defer os.Remove(certFile.Name())
+			defer certFile.Close()
 
-			keyFile, err := os.CreateTemp("", "key")
+			keyFile, err := os.CreateTemp(tempDir, "key")
 			require.NoError(t, err)
-			defer os.Remove(keyFile.Name())
+			defer keyFile.Close()
 
 			fdc, err := os.Open(filepath.Join("testdata", "client-1.crt"))
 			require.NoError(t, err)
 			_, err = io.Copy(certFile, fdc)
 			require.NoError(t, err)
+			require.NoError(t, fdc.Close())
 
 			fdk, err := os.Open(filepath.Join("testdata", "client-1.key"))
 			require.NoError(t, err)
@@ -869,5 +871,55 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 				assert.NotNil(t, certPool)
 			}
 		})
+	}
+}
+
+func TestCurvePreferences(t *testing.T) {
+	tests := []struct {
+		name             string
+		preferences      []string
+		expectedCurveIDs []tls.CurveID
+		expectedErr      string
+	}{
+		{
+			name:             "X25519",
+			preferences:      []string{"X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.X25519},
+		},
+		{
+			name:             "P521",
+			preferences:      []string{"P521"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP521},
+		},
+		{
+			name:             "P-256",
+			preferences:      []string{"P256"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP256},
+		},
+		{
+			name:             "multiple",
+			preferences:      []string{"P256", "P521", "X25519"},
+			expectedCurveIDs: []tls.CurveID{tls.CurveP256, tls.CurveP521, tls.X25519},
+		},
+		{
+			name:             "invalid-curve",
+			preferences:      []string{"P25223236"},
+			expectedCurveIDs: []tls.CurveID{},
+			expectedErr:      "invalid curve type",
+		},
+	}
+	for _, test := range tests {
+		tlsSetting := ClientConfig{
+			Config: Config{
+				CurvePreferences: test.preferences,
+			},
+		}
+		config, err := tlsSetting.LoadTLSConfig(context.Background())
+		if test.expectedErr == "" {
+			require.NoError(t, err)
+			require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
+		} else {
+			require.ErrorContains(t, err, test.expectedErr)
+		}
 	}
 }

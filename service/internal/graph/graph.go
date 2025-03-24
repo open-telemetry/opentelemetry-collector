@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/internal/fanoutconsumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/capabilityconsumer"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -171,13 +172,13 @@ func (g *Graph) createNodes(set Settings) error {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as exporter in %s pipeline but not used in any supported receiver pipeline", connID, expType)
+			return fmt.Errorf("connector %q used as exporter in %v pipeline but not used in any supported receiver pipeline", connID, formatPipelineNamesWithSignal(connectorsAsExporter[connID], expType))
 		}
 		for recType, supportedUse := range recTypes {
 			if supportedUse {
 				continue
 			}
-			return fmt.Errorf("connector %q used as receiver in %s pipeline but not used in any supported exporter pipeline", connID, recType)
+			return fmt.Errorf("connector %q used as receiver in %v pipeline but not used in any supported exporter pipeline", connID, formatPipelineNamesWithSignal(connectorsAsReceiver[connID], recType))
 		}
 
 		for _, eID := range connectorsAsExporter[connID] {
@@ -194,6 +195,17 @@ func (g *Graph) createNodes(set Settings) error {
 		}
 	}
 	return nil
+}
+
+// formatPipelineNamesWithSignal formats pipeline name with signal as "signal[/name]" format.
+func formatPipelineNamesWithSignal(pipelineIDs []pipeline.ID, signal pipeline.Signal) []string {
+	var formatted []string
+	for _, pid := range pipelineIDs {
+		if pid.Signal() == signal {
+			formatted = append(formatted, pid.String())
+		}
+	}
+	return formatted
 }
 
 func (g *Graph) createReceiver(pipelineID pipeline.ID, recvID component.ID) *receiverNode {
@@ -302,7 +314,7 @@ func (g *Graph) buildComponents(ctx context.Context, set Settings) error {
 				MutatesData: g.pipelines[n.pipelineID].fanOutNode.getConsumer().Capabilities().MutatesData,
 			}
 			for _, proc := range g.pipelines[n.pipelineID].processors {
-				capability.MutatesData = capability.MutatesData || proc.getConsumer().Capabilities().MutatesData
+				capability.MutatesData = capability.MutatesData || proc.(*processorNode).getConsumer().Capabilities().MutatesData
 			}
 			next := g.nextConsumers(n.ID())[0]
 			switch n.pipelineID.Signal() {
@@ -379,7 +391,7 @@ type pipelineNodes struct {
 	*capabilitiesNode
 
 	// The order of processors is very important. Therefore use a slice for processors.
-	processors []*processorNode
+	processors []graph.Node
 
 	// Emits to exporters.
 	*fanOutNode
@@ -428,7 +440,7 @@ func (g *Graph) StartAll(ctx context.Context, host *Host) error {
 					zap.String("type", instanceID.Kind().String()),
 					zap.String("id", instanceID.ComponentID().String()),
 				)
-			return compErr
+			return fmt.Errorf("failed to start %q %s: %w", instanceID.ComponentID().String(), strings.ToLower(instanceID.Kind().String()), compErr)
 		}
 
 		host.Reporter.ReportOKIfStarting(instanceID)
@@ -604,9 +616,9 @@ func connectorStability(f connector.Factory, expType, recType pipeline.Signal) c
 }
 
 var (
-	_ getExporters             = (*HostWrapper)(nil)
-	_ component.Host           = (*HostWrapper)(nil)
-	_ componentstatus.Reporter = (*HostWrapper)(nil)
+	_ component.Host                   = (*HostWrapper)(nil)
+	_ componentstatus.Reporter         = (*HostWrapper)(nil)
+	_ hostcapabilities.ExposeExporters = (*HostWrapper)(nil)
 )
 
 type HostWrapper struct {

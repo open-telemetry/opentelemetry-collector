@@ -65,8 +65,8 @@ func validateConfigDataType(t reflect.Type) error {
 
 // checkStructFieldTags inspects the tags of a struct field.
 func checkStructFieldTags(f reflect.StructField) error {
-	tagValue := f.Tag.Get("mapstructure")
-	if tagValue == "" {
+	tagValue, ok := f.Tag.Lookup("mapstructure")
+	if !ok {
 		// Ignore special types.
 		switch f.Type.Kind() {
 		case reflect.Interface, reflect.Chan, reflect.Func, reflect.Uintptr, reflect.UnsafePointer:
@@ -85,6 +85,10 @@ func checkStructFieldTags(f reflect.StructField) error {
 		return nil
 	}
 
+	if tagValue == "" {
+		return fmt.Errorf("mapstructure tag on field %q is empty", f.Name)
+	}
+
 	tagParts := strings.Split(tagValue, ",")
 	if tagParts[0] != "" {
 		if tagParts[0] == "-" {
@@ -93,20 +97,17 @@ func checkStructFieldTags(f reflect.StructField) error {
 		}
 	}
 
-	// Check if squash is specified.
-	squash := false
 	for _, tag := range tagParts[1:] {
-		if tag == "squash" {
-			squash = true
-			break
-		}
-	}
-
-	if squash {
-		// Field was squashed.
-		if (f.Type.Kind() != reflect.Struct) && (f.Type.Kind() != reflect.Ptr || f.Type.Elem().Kind() != reflect.Struct) {
-			return fmt.Errorf(
-				"attempt to squash non-struct type on field %q", f.Name)
+		switch tag {
+		case "squash":
+			if (f.Type.Kind() != reflect.Struct) && (f.Type.Kind() != reflect.Ptr || f.Type.Elem().Kind() != reflect.Struct) {
+				return fmt.Errorf(
+					"attempt to squash non-struct type on field %q", f.Name)
+			}
+		case "remain":
+			if f.Type.Kind() != reflect.Map && f.Type.Kind() != reflect.Interface {
+				return fmt.Errorf(`attempt to use "remain" on non-map or interface type field %q`, f.Name)
+			}
 		}
 	}
 
@@ -121,7 +122,7 @@ func checkStructFieldTags(f reflect.StructField) error {
 
 	default:
 		fieldTag := tagParts[0]
-		if !configFieldTagRegExp.MatchString(fieldTag) {
+		if fieldTag != "" && !configFieldTagRegExp.MatchString(fieldTag) {
 			return fmt.Errorf(
 				"field %q has config tag %q which doesn't satisfy %q",
 				f.Name,

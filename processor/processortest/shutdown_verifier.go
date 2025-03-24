@@ -22,7 +22,7 @@ import (
 func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
-	proc, err := factory.CreateTraces(context.Background(), NewNopSettings(), cfg, nextSink)
+	proc, err := factory.CreateTraces(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
 	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
@@ -46,7 +46,7 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.LogsSink)
-	proc, err := factory.CreateLogs(context.Background(), NewNopSettings(), cfg, nextSink)
+	proc, err := factory.CreateLogs(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
 	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
@@ -70,7 +70,7 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.MetricsSink)
-	proc, err := factory.CreateMetrics(context.Background(), NewNopSettings(), cfg, nextSink)
+	proc, err := factory.CreateMetrics(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
 	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}

@@ -283,11 +283,14 @@ var valueType = &messageValueStruct{
 			defaultVal: "int32(0)",
 			testVal:    "int32(1)",
 		},
-		&primitiveField{
-			fieldName:  "AggregationTemporality",
-			returnType: "otlpprofiles.AggregationTemporality",
-			defaultVal: "otlpprofiles.AggregationTemporality(0)",
-			testVal:    "otlpprofiles.AggregationTemporality(1)",
+		&primitiveTypedField{
+			fieldName: "AggregationTemporality",
+			returnType: &primitiveType{
+				structName: "AggregationTemporality",
+				rawType:    "otlpprofiles.AggregationTemporality",
+				defaultVal: "otlpprofiles.AggregationTemporality(0)",
+				testVal:    "otlpprofiles.AggregationTemporality(1)",
+			},
 		},
 	},
 }
@@ -321,6 +324,12 @@ var sample = &messageValueStruct{
 		&sliceField{
 			fieldName:   "AttributeIndices",
 			returnSlice: int32Slice,
+		},
+		&optionalPrimitiveValue{
+			fieldName:  "LinkIndex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&sliceField{
 			fieldName:   "TimestampsUnixNano",

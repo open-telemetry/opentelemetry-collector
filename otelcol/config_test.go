@@ -8,12 +8,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/contrib/config"
+	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -234,16 +236,38 @@ func TestConfigValidate(t *testing.T) {
 				cfg.Service.Pipelines = nil
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`service must have at least one pipeline`)),
+			expected: fmt.Errorf(`service::pipelines: %w`, errors.New(`service must have at least one pipeline`)),
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.cfgFn()
-			assert.Equal(t, tt.expected, cfg.Validate())
+			err := xconfmap.Validate(cfg)
+			if tt.expected != nil {
+				require.EqualError(t, err, tt.expected.Error())
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
+}
+
+func TestNoPipelinesFeatureGate(t *testing.T) {
+	cfg := generateConfig()
+	cfg.Receivers = nil
+	cfg.Exporters = nil
+	cfg.Service.Pipelines = pipelines.Config{}
+
+	require.Error(t, xconfmap.Validate(cfg))
+
+	gate := pipelines.AllowNoPipelines
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	}()
+
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func generateConfig() *Config {
@@ -279,7 +303,7 @@ func generateConfig() *Config {
 					Level: configtelemetry.LevelNormal,
 					Readers: []config.MetricReader{
 						{
-							Pull: &config.PullMetricReader{Exporter: config.MetricExporter{
+							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
 								Prometheus: &config.Prometheus{
 									Host: newPtr("localhost"),
 									Port: newPtr(8080),

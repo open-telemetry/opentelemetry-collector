@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // Option apply changes to BaseExporter.
@@ -42,16 +41,8 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config internal.QueueConfig) Option {
+func WithQueue(config QueueConfig) Option {
 	return internal.WithQueue(config)
-}
-
-// WithRequestQueue enables queueing for an exporter.
-// This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithRequestQueue(cfg exporterqueue.Config, queueFactory exporterqueue.Factory[Request]) Option {
-	return internal.WithRequestQueue(cfg, queueFactory)
 }
 
 // WithCapabilities overrides the default Capabilities() function for a Consumer.

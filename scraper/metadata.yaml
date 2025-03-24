@@ -1,4 +1,4 @@
-type: service
+type: scraper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
