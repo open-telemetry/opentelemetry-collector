@@ -148,7 +148,12 @@ func (rl *rateLimiterExtension) RateLimiter(key extensionlimiter.WeightKey) exte
 }
 
 // ResourceLimiter returns a ResourceLimiter for the specified weight key
-// This implementation doesn't support ResourceLimiter, so it always returns nil
 func (rl *rateLimiterExtension) ResourceLimiter(key extensionlimiter.WeightKey) extensionlimiter.ResourceLimiter {
-	return nil
+	rate := rl.RateLimiter(key)
+	if rate == nil {
+		return nil
+	}
+	return extensionlimiter.ResourceLimiterFunc(func(ctx context.Context, weight uint64) (extensionlimiter.ReleaseFunc, error) {
+		return nil, rate.Limit(ctx, weight)
+	})
 }

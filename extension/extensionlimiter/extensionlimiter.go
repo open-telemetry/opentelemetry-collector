@@ -18,7 +18,25 @@ const (
 	WeightKeyResidentMemory WeightKey = "resident_memory"
 )
 
+// Provider is an interface that provides access to different limiter types
+// for specific weight keys.
+type Provider interface {
+	// RateLimiter returns a RateLimiter for the specified weight key
+	RateLimiter(key WeightKey) RateLimiter
+
+	// ResourceLimiter returns a ResourceLimiter for the specified weight key.
+	//
+	// In cases where a component supports a rate limiter and does not use
+	// a release function, the component may return a ResourceLimiterFunc
+	// which calls the underlying rate limiter and returns a nil ReleaseFunc.
+	ResourceLimiter(key WeightKey) ResourceLimiter
+}
+
 // ReleaseFunc is called when resources should be released after limiting.
+//
+// Note that RelaseFunc values may be nil in cases where the implementation is
+// not concerned with releasing acquired resources, such as when a rate limiter
+// receives the Acquire() signal for requests.
 type ReleaseFunc func()
 
 // ResourceLimiter is an interface that components can use to apply rate limiting.
@@ -63,14 +81,4 @@ func (f RateLimiterFunc) Limit(ctx context.Context, value uint64) error {
 		return nil
 	}
 	return f(ctx, value)
-}
-
-// Provider is an interface that provides access to different limiter types
-// for specific weight keys.
-type Provider interface {
-	// RateLimiter returns a RateLimiter for the specified weight key
-	RateLimiter(key WeightKey) RateLimiter
-
-	// ResourceLimiter returns a ResourceLimiter for the specified weight key
-	ResourceLimiter(key WeightKey) ResourceLimiter
 }
