@@ -55,17 +55,17 @@ func (f ResourceLimiterFunc) Acquire(ctx context.Context, weights []Weight) (Rel
 type RateLimiter interface {
 	// Limit attempts to apply rate limiting based on the provided weights.
 	// Limit is expected to block the caller until the weights can be admitted.
-	Limit(ctx context.Context, weights []Weight)
+	Limit(ctx context.Context, weights []Weight) error
 }
 
 var _ RateLimiter = RateLimiterFunc(nil)
 
 // RateLimiterFunc is a function type that implements RateLimiter interface
-type RateLimiterFunc func(ctx context.Context, weights []Weight)
+type RateLimiterFunc func(ctx context.Context, weights []Weight) error
 
-func (f RateLimiterFunc) Limit(ctx context.Context, weights []Weight) {
+func (f RateLimiterFunc) Limit(ctx context.Context, weights []Weight) error {
 	if f == nil {
-		return
+		return nil
 	}
-	f(ctx, weights)
+	return f(ctx, weights)
 }

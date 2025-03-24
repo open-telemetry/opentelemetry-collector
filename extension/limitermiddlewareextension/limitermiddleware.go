@@ -5,6 +5,7 @@ package limitermiddlewareextension // import "go.opentelemetry.io/collector/exte
 
 import (
 	"context"
+	"io"
 	"net/http"
 
 	"google.golang.org/grpc"
@@ -28,9 +29,8 @@ var oneRequestWeights = [1]extensionlimiter.Weight{
 }
 
 // networkByteWeights represents the weights to apply for network bytes
-var networkByteWeights = func(bytes int) [2]extensionlimiter.Weight {
-	return [2]extensionlimiter.Weight{
-		{Key: extensionlimiter.WeightKeyRequestCount, Value: 1},
+var networkByteWeights = func(bytes int) [1]extensionlimiter.Weight {
+	return [1]extensionlimiter.Weight{
 		{Key: extensionlimiter.WeightKeyNetworkBytes, Value: uint64(bytes)},
 	}
 }
@@ -81,6 +81,7 @@ func (lm *limiterMiddleware) Shutdown(_ context.Context) error {
 type limiterRoundTripper struct {
 	base            http.RoundTripper
 	resourceLimiter extensionlimiter.ResourceLimiter
+	rateLimiter     extensionlimiter.RateLimiter
 }
 
 // limitExceeded creates an HTTP 429 (Too Many Requests) response from the client.
@@ -99,35 +100,87 @@ func (lm *limiterMiddleware) ClientRoundTripper(base http.RoundTripper) (http.Ro
 	return &limiterRoundTripper{
 		base:            base,
 		resourceLimiter: lm.resourceLimiter,
+		rateLimiter:     lm.rateLimiter,
 	}, nil
+}
+
+// rateLimitedBody wraps an http.Request.Body to track bytes and call the rate limiter
+type rateLimitedBody struct {
+	body        io.ReadCloser
+	rateLimiter extensionlimiter.RateLimiter
+	ctx         context.Context
+}
+
+// Read implements io.Reader interface, counting bytes as they are read
+func (rb *rateLimitedBody) Read(p []byte) (n int, err error) {
+	n, err = rb.body.Read(p)
+	if n > 0 {
+		// Apply rate limiting based on network bytes after they are read
+		weights := networkByteWeights(n)
+		limitErr := rb.rateLimiter.Limit(rb.ctx, weights[:])
+		if limitErr != nil {
+			// If the rate limiter rejects the bytes, return the error
+			return n, limitErr
+		}
+	}
+	return n, err
+}
+
+// Close implements io.Closer interface
+func (rb *rateLimitedBody) Close() error {
+	return rb.body.Close()
 }
 
 // RoundTrip implements http.RoundTripper with rate limiting.
 func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// TODO: note that the HTTP round tripper does not acquire network-bytes
+	// Apply resource limit check for request count
 	rel, err := lrt.resourceLimiter.Acquire(req.Context(), oneRequestWeights[:])
 	if err != nil {
 		return limitExceeded(req), nil
 	}
+
+	// Create a new request with a body that tracks network bytes
+	newReq := req.Clone(req.Context())
+	if req.Body != nil && req.Body != http.NoBody {
+		newReq.Body = &rateLimitedBody{
+			body:        req.Body,
+			rateLimiter: lrt.rateLimiter,
+			ctx:         req.Context(),
+		}
+	}
+
 	if rel != nil {
 		defer rel()
 	}
-	return lrt.base.RoundTrip(req)
+
+	return lrt.base.RoundTrip(newReq)
 }
 
 // ServerHandler wraps an HTTP handler with rate limiting.
 func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, error) {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: note that the HTTP handler does not acquire network-bytes
+		// Apply resource limit check for request count
 		rel, err := lm.resourceLimiter.Acquire(r.Context(), oneRequestWeights[:])
 		if err != nil {
 			http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
 			return
 		}
+
+		// Create a new request with a body that tracks network bytes
+		newReq := r.Clone(r.Context())
+		if r.Body != nil && r.Body != http.NoBody {
+			newReq.Body = &rateLimitedBody{
+				body:        r.Body,
+				rateLimiter: lm.rateLimiter,
+				ctx:         r.Context(),
+			}
+		}
+
 		if rel != nil {
 			defer rel()
 		}
-		base.ServeHTTP(w, r)
+
+		base.ServeHTTP(w, newReq)
 	}), nil
 }
 
