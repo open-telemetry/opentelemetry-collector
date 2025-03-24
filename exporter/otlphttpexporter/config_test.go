@@ -57,6 +57,15 @@ func TestUnmarshalConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
+			BatcherConfig: exporterhelper.BatcherConfig{
+				Enabled:      true,
+				FlushTimeout: 200 * time.Millisecond,
+				SizeConfig: exporterhelper.SizeConfig{
+					Sizer:   exporterhelper.RequestSizerTypeItems,
+					MinSize: 1000,
+					MaxSize: 10000,
+				},
+			},
 			Encoding: EncodingProto,
 			ClientConfig: confighttp.ClientConfig{
 				Headers: map[string]configopaque.String{

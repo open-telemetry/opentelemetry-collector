@@ -60,6 +60,10 @@ type Config struct {
 
 	// The encoding to export telemetry (default: "proto")
 	Encoding EncodingType `mapstructure:"encoding"`
+
+	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
+	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"`
 }
 
 var _ component.Config = (*Config)(nil)
