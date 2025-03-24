@@ -7,7 +7,7 @@ change_type: bug_fix
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Ensure http server authentication failures are handled by the provided error handler"
+note: "Ensure http authentication server failures are handled by the provided error handler"
 
 # One or more tracking issues or pull requests related to the change
 issues: [12666]
