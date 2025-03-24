@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -50,7 +49,7 @@ type persistentQueueSettings[T any] struct {
 	blocking  bool
 	signal    pipeline.Signal
 	storageID component.ID
-	encoding  exporterqueue.Encoding[T]
+	encoding  Encoding[T]
 	id        component.ID
 	telemetry component.TelemetrySettings
 }

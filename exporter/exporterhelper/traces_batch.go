@@ -14,9 +14,9 @@ import (
 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterbatcher.SizerType, r2 Request) ([]Request, error) {
 	var sz sizer.TracesSizer
-	switch cfg.Sizer {
+	switch szt {
 	case exporterbatcher.SizerTypeItems:
 		sz = &sizer.TracesCountSizer{}
 	case exporterbatcher.SizerTypeBytes:
@@ -34,10 +34,10 @@ func (req *tracesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Size
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSize == 0 {
+	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(cfg.MaxSize, sz), nil
+	return req.split(maxSize, sz), nil
 }
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
