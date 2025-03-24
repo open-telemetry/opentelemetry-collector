@@ -144,17 +144,17 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.NoError(t, cfg.Validate())
 }
 
 func TestSanitizeEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.Endpoint = "dns:///backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns:///backend.example.com:4317"
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.Endpoint = "dns:////backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns:////backend.example.com:4317"
 	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
 }
