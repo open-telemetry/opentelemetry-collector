@@ -134,6 +134,7 @@ func TestConfmapMarshalConfig(t *testing.T) {
 						},
 					},
 				},
+				"views": []any(nil),
 			},
 		},
 	}, conf.ToStringMap())
