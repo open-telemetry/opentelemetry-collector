@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/mostynb/go-grpc-compression v1.2.3
 	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector v0.122.1
 	go.opentelemetry.io/collector/client v1.28.1
 	go.opentelemetry.io/collector/component v1.28.1
 	go.opentelemetry.io/collector/component/componenttest v0.122.1
@@ -52,6 +53,8 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.opentelemetry.io/collector => ../../
 
 replace go.opentelemetry.io/collector/client => ../../client
 
