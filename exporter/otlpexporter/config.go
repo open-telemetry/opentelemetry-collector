@@ -26,6 +26,8 @@ type Config struct {
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
+	//
+	// Deprecated: [v0.123.0] batch configuration moving to queue configuration.
 	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"`
 }
 
