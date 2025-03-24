@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -20,7 +19,7 @@ type Settings[K any] struct {
 	Signal    pipeline.Signal
 	ID        component.ID
 	Telemetry component.TelemetrySettings
-	Encoding  exporterqueue.Encoding[K]
+	Encoding  Encoding[K]
 	Sizers    map[exporterbatcher.SizerType]Sizer[K]
 }
 
@@ -31,20 +30,17 @@ type QueueBatch struct {
 
 func NewQueueBatch(
 	qSet Settings[request.Request],
-	qCfg exporterqueue.Config,
-	bCfg exporterbatcher.Config,
+	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
 	var b Batcher[request.Request]
-	switch bCfg.Enabled {
-	case false:
+	switch {
+	case cfg.Batch == nil:
 		b = newDisabledBatcher[request.Request](next)
 	default:
-		b = newDefaultBatcher(bCfg, next, qCfg.NumConsumers)
-	}
-	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-	if bCfg.Enabled {
-		qCfg.NumConsumers = 1
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+		cfg.NumConsumers = 1
+		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
 	}
 
 	sizer, ok := qSet.Sizers[exporterbatcher.SizerTypeRequests]
@@ -54,25 +50,25 @@ func NewQueueBatch(
 
 	var q Queue[request.Request]
 	switch {
-	case !qCfg.Enabled:
+	case cfg.WaitForResult:
 		q = newDisabledQueue(b.Consume)
-	case qCfg.StorageID != nil:
+	case cfg.StorageID != nil:
 		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
 			sizer:     sizer,
-			capacity:  int64(qCfg.QueueSize),
-			blocking:  qCfg.Blocking,
+			capacity:  int64(cfg.QueueSize),
+			blocking:  cfg.BlockOnOverflow,
 			signal:    qSet.Signal,
-			storageID: *qCfg.StorageID,
+			storageID: *cfg.StorageID,
 			encoding:  qSet.Encoding,
 			id:        qSet.ID,
 			telemetry: qSet.Telemetry,
-		}), qCfg.NumConsumers, b.Consume)
+		}), cfg.NumConsumers, b.Consume)
 	default:
 		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
 			sizer:    sizer,
-			capacity: int64(qCfg.QueueSize),
-			blocking: qCfg.Blocking,
-		}), qCfg.NumConsumers, b.Consume)
+			capacity: int64(cfg.QueueSize),
+			blocking: cfg.BlockOnOverflow,
+		}), cfg.NumConsumers, b.Consume)
 	}
 
 	oq, err := newObsQueue(qSet, q)
@@ -85,11 +81,13 @@ func NewQueueBatch(
 
 // Start is invoked during service startup.
 func (qs *QueueBatch) Start(ctx context.Context, host component.Host) error {
-	if err := qs.queue.Start(ctx, host); err != nil {
+	if err := qs.batcher.Start(ctx, host); err != nil {
 		return err
 	}
-
-	return qs.batcher.Start(ctx, host)
+	if err := qs.queue.Start(ctx, host); err != nil {
+		return errors.Join(err, qs.batcher.Shutdown(ctx))
+	}
+	return nil
 }
 
 // Shutdown is invoked during service shutdown.

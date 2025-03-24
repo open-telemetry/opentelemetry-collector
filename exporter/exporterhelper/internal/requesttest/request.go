@@ -43,12 +43,12 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, _ exporterbatcher.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}
 
-	maxItems := cfg.MaxSize
+	maxItems := maxSize
 	if maxItems == 0 {
 		if r2 != nil {
 			fr2 := r2.(*FakeRequest)

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
@@ -35,12 +34,9 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = true
-			cfg.FlushTimeout = 0
-			cfg.SizeConfig = exporterbatcher.SizeConfig{
-				Sizer:   exporterbatcher.SizerTypeItems,
-				MinSize: 0,
+			cfg := BatchConfig{
+				FlushTimeout: 0,
+				MinSize:      0,
 			}
 
 			sink := requesttest.NewSink()
@@ -85,12 +81,9 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = true
-			cfg.FlushTimeout = 0
-			cfg.SizeConfig = exporterbatcher.SizeConfig{
-				Sizer:   exporterbatcher.SizerTypeItems,
-				MinSize: 10,
+			cfg := BatchConfig{
+				FlushTimeout: 0,
+				MinSize:      10,
 			}
 
 			sink := requesttest.NewSink()
@@ -150,12 +143,9 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = true
-			cfg.FlushTimeout = 50 * time.Millisecond
-			cfg.SizeConfig = exporterbatcher.SizeConfig{
-				Sizer:   exporterbatcher.SizerTypeItems,
-				MinSize: 100,
+			cfg := BatchConfig{
+				FlushTimeout: 50 * time.Millisecond,
+				MinSize:      100,
 			}
 
 			sink := requesttest.NewSink()
@@ -205,13 +195,10 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = true
-			cfg.FlushTimeout = 0
-			cfg.SizeConfig = exporterbatcher.SizeConfig{
-				Sizer:   exporterbatcher.SizerTypeItems,
-				MinSize: 100,
-				MaxSize: 100,
+			cfg := BatchConfig{
+				FlushTimeout: 0,
+				MinSize:      100,
+				MaxSize:      100,
 			}
 
 			sink := requesttest.NewSink()
@@ -256,12 +243,13 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 }
 
 func TestDefaultBatcher_Shutdown(t *testing.T) {
-	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSize = 10
-	batchCfg.FlushTimeout = 100 * time.Second
+	cfg := BatchConfig{
+		FlushTimeout: 100 * time.Second,
+		MinSize:      10,
+	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(batchCfg, sink.Export, 2)
+	ba := newDefaultBatcher(cfg, sink.Export, 2)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -282,12 +270,14 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 }
 
 func TestDefaultBatcher_MergeError(t *testing.T) {
-	batchCfg := exporterbatcher.NewDefaultConfig()
-	batchCfg.MinSize = 5
-	batchCfg.MaxSize = 7
+	cfg := BatchConfig{
+		FlushTimeout: 200 * time.Second,
+		MinSize:      5,
+		MaxSize:      7,
+	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(batchCfg, sink.Export, 2)
+	ba := newDefaultBatcher(cfg, sink.Export, 2)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
