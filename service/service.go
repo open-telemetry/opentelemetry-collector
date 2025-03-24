@@ -14,7 +14,9 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -538,7 +540,14 @@ func ptr[T any](v T) *T {
 
 // ValidateGraph verifies the graph by calling the internal graph.Build.
 func ValidateGraph(ctx context.Context, set Settings, cfg Config) error {
+	tel := component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: nooptrace.NewTracerProvider(),
+		MeterProvider:  noopmetric.NewMeterProvider(),
+		Resource:       pcommon.NewResource(),
+	}
 	_, err := graph.Build(ctx, graph.Settings{
+		Telemetry:        tel,
 		BuildInfo:        set.BuildInfo,
 		ReceiverBuilder:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
 		ProcessorBuilder: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),

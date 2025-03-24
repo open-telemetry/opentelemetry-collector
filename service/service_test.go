@@ -745,12 +745,65 @@ func newPtr[T int | string](str T) *T {
 func TestValidateGraph(t *testing.T) {
 	testCases := map[string]struct {
 		connectorCfg  map[component.ID]component.Config
+		receiverCfg   map[component.ID]component.Config
+		exporterCfg   map[component.ID]component.Config
 		pipelinesCfg  pipelines.Config
 		expectedError string
 	}{
+		"Valid connector usage": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			receiverCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			exporterCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewIDWithName(nopType, "connector1")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewIDWithName(nopType, "connector1")},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: "",
+		},
+		"Valid without Connector": {
+			receiverCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			exporterCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: "",
+		},
 		"Connector used as exporter but not as receiver": {
 			connectorCfg: map[component.ID]component.Config{
 				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			receiverCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			exporterCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
 			},
 			pipelinesCfg: pipelines.Config{
 				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
@@ -775,6 +828,12 @@ func TestValidateGraph(t *testing.T) {
 			connectorCfg: map[component.ID]component.Config{
 				component.NewIDWithName(nopType, "connector1"): &struct{}{},
 			},
+			receiverCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			exporterCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
 			pipelinesCfg: pipelines.Config{
 				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
 					Receivers:  []component.ID{component.NewID(nopType)},
@@ -794,23 +853,57 @@ func TestValidateGraph(t *testing.T) {
 			},
 			expectedError: `failed to build pipelines: connector "nop/connector1" used as receiver in [logs/in2] pipeline but not used in any supported exporter pipeline`,
 		},
+		"Connector creates direct cycle between pipelines": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "forward"): &struct{}{},
+			},
+			receiverCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			exporterCfg: map[component.ID]component.Config{
+				component.NewID(nopType): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalTraces, "in"): {
+					Receivers:  []component.ID{component.NewIDWithName(nopType, "forward")},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewIDWithName(nopType, "forward")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalTraces, "out"): {
+					Receivers:  []component.ID{component.NewIDWithName(nopType, "forward")},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewIDWithName(nopType, "forward")},
+				},
+			},
+			expectedError: `failed to build pipelines: cycle detected: connector "nop/forward" (traces to traces) -> connector "nop/forward" (traces to traces)`,
+		},
 	}
 
 	_, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
+	_, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
+	_, exportersFactories := builders.NewNopExporterConfigsAndFactories()
 
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
 			settings := Settings{
 				ConnectorsConfigs:   tc.connectorCfg,
 				ConnectorsFactories: connectorsFactories,
+				ReceiversConfigs:    tc.receiverCfg,
+				ReceiversFactories:  receiversFactories,
+				ExportersConfigs:    tc.exporterCfg,
+				ExportersFactories:  exportersFactories,
 			}
 			cfg := Config{
 				Pipelines: tc.pipelinesCfg,
 			}
 
 			err := ValidateGraph(context.Background(), settings, cfg)
-			require.Error(t, err)
-			assert.Equal(t, tc.expectedError, err.Error())
+			if tc.expectedError == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				assert.Equal(t, tc.expectedError, err.Error())
+			}
 		})
 	}
 }
