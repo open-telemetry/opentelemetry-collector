@@ -15,6 +15,7 @@ type Config = exporterhelper.QueueConfig
 func NewDefaultConfig() Config {
 	return Config{
 		Enabled:      true,
+		Sizer:        exporterhelper.RequestSizerTypeRequests,
 		NumConsumers: 10,
 		QueueSize:    1_000,
 		Blocking:     true,
