@@ -16,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -33,9 +32,9 @@ func newFakeRequestSettings() Settings[request.Request] {
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Encoding:  newFakeEncoding(&requesttest.FakeRequest{}),
-		Sizers: map[exporterbatcher.SizerType]Sizer[request.Request]{
-			exporterbatcher.SizerTypeRequests: RequestsSizer[request.Request]{},
-			exporterbatcher.SizerTypeItems:    NewItemsSizer(),
+		Sizers: map[request.SizerType]request.Sizer[request.Request]{
+			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
+			request.SizerTypeItems:    request.NewItemsSizer(),
 		},
 	}
 }
@@ -601,7 +600,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 func newTestConfig() Config {
 	return Config{
 		Enabled:         true,
-		Sizer:           exporterbatcher.SizerTypeItems,
+		Sizer:           request.SizerTypeItems,
 		NumConsumers:    runtime.NumCPU(),
 		QueueSize:       100_000,
 		BlockOnOverflow: true,

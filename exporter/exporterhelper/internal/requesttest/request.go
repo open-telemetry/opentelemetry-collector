@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,7 +42,7 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, _ exporterbatcher.SizerType, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, _ request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}

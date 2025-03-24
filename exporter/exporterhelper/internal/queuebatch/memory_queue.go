@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 var sizeDonePool = sync.Pool{
@@ -21,7 +22,7 @@ var errInvalidSize = errors.New("invalid element size")
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
 type memoryQueueSettings[T any] struct {
-	sizer    Sizer[T]
+	sizer    request.Sizer[T]
 	capacity int64
 	blocking bool
 }
@@ -29,7 +30,7 @@ type memoryQueueSettings[T any] struct {
 // memoryQueue is an in-memory implementation of a Queue.
 type memoryQueue[T any] struct {
 	component.StartFunc
-	sizer Sizer[T]
+	sizer request.Sizer[T]
 	cap   int64
 
 	mu              sync.Mutex

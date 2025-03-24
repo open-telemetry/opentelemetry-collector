@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
@@ -20,7 +19,7 @@ type Settings[K any] struct {
 	ID        component.ID
 	Telemetry component.TelemetrySettings
 	Encoding  Encoding[K]
-	Sizers    map[exporterbatcher.SizerType]Sizer[K]
+	Sizers    map[request.SizerType]request.Sizer[K]
 }
 
 type QueueBatch struct {
@@ -43,7 +42,7 @@ func NewQueueBatch(
 		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
 	}
 
-	sizer, ok := qSet.Sizers[exporterbatcher.SizerTypeRequests]
+	sizer, ok := qSet.Sizers[request.SizerTypeRequests]
 	if !ok {
 		return nil, errors.New("queue_batch: unsupported sizer")
 	}

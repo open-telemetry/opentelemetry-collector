@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -20,7 +19,7 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := newProfilesRequest(testdata.GenerateProfiles(2))
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	res, err := pr1.MergeSplit(context.Background(), 0, exporterbatcher.SizerTypeItems, pr2)
+	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
 	require.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, 5, res[0].ItemsCount())
@@ -28,14 +27,14 @@ func TestMergeProfiles(t *testing.T) {
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	_, err := pr2.MergeSplit(context.Background(), 0, exporterbatcher.SizerTypeItems, &requesttest.FakeRequest{Items: 1})
+	_, err := pr2.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, &requesttest.FakeRequest{Items: 1})
 	assert.Error(t, err)
 }
 
 func TestMergeSplitProfiles(t *testing.T) {
 	tests := []struct {
 		name     string
-		szt      exporterbatcher.SizerType
+		szt      exporterhelper.RequestSizerType
 		maxSize  int
 		pr1      exporterhelper.Request
 		pr2      exporterhelper.Request
@@ -43,7 +42,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}{
 		{
 			name:     "both_requests_empty",
-			szt:      exporterbatcher.SizerTypeItems,
+			szt:      exporterhelper.RequestSizerTypeItems,
 			maxSize:  10,
 			pr1:      newProfilesRequest(pprofile.NewProfiles()),
 			pr2:      newProfilesRequest(pprofile.NewProfiles()),
@@ -51,7 +50,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:     "first_request_empty",
-			szt:      exporterbatcher.SizerTypeItems,
+			szt:      exporterhelper.RequestSizerTypeItems,
 			maxSize:  10,
 			pr1:      newProfilesRequest(pprofile.NewProfiles()),
 			pr2:      newProfilesRequest(testdata.GenerateProfiles(5)),
@@ -59,7 +58,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:     "first_empty_second_nil",
-			szt:      exporterbatcher.SizerTypeItems,
+			szt:      exporterhelper.RequestSizerTypeItems,
 			maxSize:  10,
 			pr1:      newProfilesRequest(pprofile.NewProfiles()),
 			pr2:      nil,
@@ -67,7 +66,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:    "merge_only",
-			szt:     exporterbatcher.SizerTypeItems,
+			szt:     exporterhelper.RequestSizerTypeItems,
 			maxSize: 10,
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(4)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(6)),
@@ -79,7 +78,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:    "split_only",
-			szt:     exporterbatcher.SizerTypeItems,
+			szt:     exporterhelper.RequestSizerTypeItems,
 			maxSize: 4,
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(10)),
 			pr2:     nil,
@@ -91,7 +90,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:    "merge_and_split",
-			szt:     exporterbatcher.SizerTypeItems,
+			szt:     exporterhelper.RequestSizerTypeItems,
 			maxSize: 10,
 			pr1:     newProfilesRequest(testdata.GenerateProfiles(8)),
 			pr2:     newProfilesRequest(testdata.GenerateProfiles(20)),
@@ -107,7 +106,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		},
 		{
 			name:    "scope_profiles_split",
-			szt:     exporterbatcher.SizerTypeItems,
+			szt:     exporterhelper.RequestSizerTypeItems,
 			maxSize: 4,
 			pr1: newProfilesRequest(func() pprofile.Profiles {
 				return testdata.GenerateProfiles(6)
@@ -147,7 +146,7 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newProfilesRequest(testdata.GenerateProfiles(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterbatcher.SizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, lr2)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
