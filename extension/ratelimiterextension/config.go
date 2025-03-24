@@ -7,12 +7,14 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
 // LimitConfig defines parameters for a token bucket rate limiter
 type LimitConfig struct {
 	// Key specifies the weight key to limit (e.g. "network_bytes", "request_count", etc)
-	Key string `mapstructure:"key"`
+	Key extensionlimiter.WeightKey `mapstructure:"key"`
 	// Rate is the rate at which tokens are replenished (e.g. X tokens per second)
 	Rate float64 `mapstructure:"rate"`
 	// BurstSize is the maximum number of tokens that can be consumed in a single burst
@@ -36,7 +38,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("filling_interval must be positive, got %v", cfg.FillingInterval)
 	}
 
-	seenKeys := make(map[string]bool)
+	seenKeys := make(map[extensionlimiter.WeightKey]bool)
 	for i, limit := range cfg.Limits {
 		if limit.Key == "" {
 			return fmt.Errorf("limit[%d].key cannot be empty", i)

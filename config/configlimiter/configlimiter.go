@@ -26,28 +26,17 @@ type Limiter struct {
 	LimiterID component.ID `mapstructure:"limiter,omitempty"`
 }
 
-// GetLimiter attempts to select the appropriate extensionlimiter.Limiter from the list of extensions,
+// GetProvider attempts to select the appropriate extensionlimiter.Provider from the list of extensions,
 // based on the requested extension name. If a limiter is not found, an error is returned.
-func (l Limiter) GetRateLimiter(_ context.Context, extensions map[component.ID]component.Component) (extensionlimiter.RateLimiter, error) {
+// Callers will use the returned Provider to get access to the specific rate- and
+// resource-limiter weights they are capable of limiting.
+func (l Limiter) GetProvider(_ context.Context, extensions map[component.ID]component.Component) (extensionlimiter.Provider, error) {
 	if ext, found := extensions[l.LimiterID]; found {
-		if limiter, ok := ext.(extensionlimiter.RateLimiter); ok {
+		if limiter, ok := ext.(extensionlimiter.Provider); ok {
 			return limiter, nil
 		}
 		return nil, errNotLimiter
 	}
 
-	return nil, fmt.Errorf("failed to resolve limiter %q: %w", l.LimiterID, errLimiterNotFound)
-}
-
-// GetResourceLimiter attempts to select the appropriate extensionlimiter.ResourceLimiter from the list of extensions,
-// based on the requested extension name. If a limiter is not found, an error is returned.
-func (l Limiter) GetResourceLimiter(_ context.Context, extensions map[component.ID]component.Component) (extensionlimiter.ResourceLimiter, error) {
-	if ext, found := extensions[l.LimiterID]; found {
-		if limiter, ok := ext.(extensionlimiter.ResourceLimiter); ok {
-			return limiter, nil
-		}
-		return nil, errNotLimiter
-	}
-
-	return nil, fmt.Errorf("failed to resolve resource limiter %q: %w", l.LimiterID, errLimiterNotFound)
+	return nil, fmt.Errorf("failed to resolve limiter provider %q: %w", l.LimiterID, errLimiterNotFound)
 }

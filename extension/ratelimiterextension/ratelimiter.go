@@ -98,19 +98,19 @@ func (tb *tokenBucket) consume(ctx context.Context, count int64, interval time.D
 	}
 }
 
-// rateLimiterExtension implements a token bucket rate limiter
+// rateLimiterExtension implements a token bucket rate limiter and the Provider interface
 type rateLimiterExtension struct {
-	limiters        map[string]*tokenBucket
+	limiters        map[extensionlimiter.WeightKey]*tokenBucket
 	fillingInterval time.Duration
 	logger          *zap.Logger
 }
 
-// Ensure rateLimiterExtension implements the RateLimiter interface
-var _ extensionlimiter.RateLimiter = (*rateLimiterExtension)(nil)
+// Ensure rateLimiterExtension implements the Provider interface
+var _ extensionlimiter.Provider = (*rateLimiterExtension)(nil)
 
 // newRateLimiter creates a new rate limiter extension with the given config
 func newRateLimiter(_ context.Context, settings extension.Settings, cfg *Config) (*rateLimiterExtension, error) {
-	limiters := make(map[string]*tokenBucket)
+	limiters := make(map[extensionlimiter.WeightKey]*tokenBucket)
 
 	for _, limit := range cfg.Limits {
 		limiters[limit.Key] = newTokenBucket(limit.Rate, limit.BurstSize)
@@ -133,27 +133,22 @@ func (rl *rateLimiterExtension) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// Limit applies rate limiting to the provided weights
-func (rl *rateLimiterExtension) Limit(ctx context.Context, weights []extensionlimiter.Weight) {
-	// Process each weight against corresponding token bucket limiter
-	for _, weight := range weights {
-		// Check if we have a limiter for this weight key
-		limiter, ok := rl.limiters[weight.Key]
-		if !ok {
-			// No limiter configured for this weight key, skip it
-			continue
-		}
-
-		// Apply token bucket rate limiting for this weight
-		// Block until we can consume the tokens or context is canceled
-		err := limiter.consume(ctx, int64(weight.Value), rl.fillingInterval)
-		if err != nil {
-			// Context was canceled while waiting for tokens
-			rl.logger.Debug("Rate limiting interrupted due to context cancellation",
-				zap.String("weight_key", weight.Key),
-				zap.Uint64("weight_value", weight.Value),
-				zap.Error(err))
-			return
-		}
+// RateLimiter returns a RateLimiter for the specified weight key or nil if not configured
+func (rl *rateLimiterExtension) RateLimiter(key extensionlimiter.WeightKey) extensionlimiter.RateLimiter {
+	limiter, ok := rl.limiters[key]
+	if !ok {
+		// No limiter configured for this weight key
+		return nil
 	}
+
+	// Return a RateLimiterFunc that adapts our tokenBucket to the RateLimiter interface
+	return extensionlimiter.RateLimiterFunc(func(ctx context.Context, weight uint64) error {
+		return limiter.consume(ctx, int64(weight), rl.fillingInterval)
+	})
+}
+
+// ResourceLimiter returns a ResourceLimiter for the specified weight key
+// This implementation doesn't support ResourceLimiter, so it always returns nil
+func (rl *rateLimiterExtension) ResourceLimiter(key extensionlimiter.WeightKey) extensionlimiter.ResourceLimiter {
+	return nil
 }

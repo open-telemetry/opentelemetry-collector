@@ -23,23 +23,10 @@ import (
 // tooManyRequestsMsg is the standard text for 429 status code
 var tooManyRequestsMsg = http.StatusText(http.StatusTooManyRequests)
 
-// oneRequestWeights represents the weights to apply for each request
-var oneRequestWeights = [1]extensionlimiter.Weight{
-	{Key: extensionlimiter.WeightKeyRequestCount, Value: 1},
-}
-
-// networkByteWeights represents the weights to apply for network bytes
-var networkByteWeights = func(bytes int) [1]extensionlimiter.Weight {
-	return [1]extensionlimiter.Weight{
-		{Key: extensionlimiter.WeightKeyNetworkBytes, Value: uint64(bytes)},
-	}
-}
-
 // limiterMiddleware implements rate limiting across various transports.
 type limiterMiddleware struct {
-	id              configlimiter.Limiter
-	resourceLimiter extensionlimiter.ResourceLimiter
-	rateLimiter     extensionlimiter.RateLimiter
+	id       configlimiter.Limiter
+	provider extensionlimiter.Provider
 }
 
 // newLimiterMiddleware creates a new limiter middleware instance.
@@ -58,18 +45,11 @@ var _ component.Component = &limiterMiddleware{}
 
 // Start initializes the limiter by getting it from host extensions.
 func (lm *limiterMiddleware) Start(ctx context.Context, host component.Host) error {
-	resourceLimiter, err := lm.id.GetResourceLimiter(ctx, host.GetExtensions())
+	provider, err := lm.id.GetProvider(ctx, host.GetExtensions())
 	if err != nil {
 		return err
 	}
-	lm.resourceLimiter = resourceLimiter
-
-	rateLimiter, err := lm.id.GetRateLimiter(ctx, host.GetExtensions())
-	if err != nil {
-		return err
-	}
-	lm.rateLimiter = rateLimiter
-
+	lm.provider = provider
 	return nil
 }
 
@@ -97,10 +77,18 @@ func limitExceeded(req *http.Request) *http.Response {
 
 // ClientRoundTripper returns an HTTP roundtripper that applies rate limiting.
 func (lm *limiterMiddleware) ClientRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+
+	if resourceLimiter == nil && rateLimiter == nil {
+		// If no limiters are configured, return the base round tripper
+		return base, nil
+	}
+
 	return &limiterRoundTripper{
 		base:            base,
-		resourceLimiter: lm.resourceLimiter,
-		rateLimiter:     lm.rateLimiter,
+		resourceLimiter: resourceLimiter,
+		rateLimiter:     rateLimiter,
 	}, nil
 }
 
@@ -116,8 +104,7 @@ func (rb *rateLimitedBody) Read(p []byte) (n int, err error) {
 	n, err = rb.body.Read(p)
 	if n > 0 {
 		// Apply rate limiting based on network bytes after they are read
-		weights := networkByteWeights(n)
-		limitErr := rb.rateLimiter.Limit(rb.ctx, weights[:])
+		limitErr := rb.rateLimiter.Limit(rb.ctx, uint64(n))
 		if limitErr != nil {
 			// If the rate limiter rejects the bytes, return the error
 			return n, limitErr
@@ -134,14 +121,19 @@ func (rb *rateLimitedBody) Close() error {
 // RoundTrip implements http.RoundTripper with rate limiting.
 func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Apply resource limit check for request count
-	rel, err := lrt.resourceLimiter.Acquire(req.Context(), oneRequestWeights[:])
-	if err != nil {
-		return limitExceeded(req), nil
+	if lrt.resourceLimiter != nil {
+		rel, err := lrt.resourceLimiter.Acquire(req.Context(), 1)
+		if err != nil {
+			return limitExceeded(req), nil
+		}
+		if rel != nil {
+			defer rel()
+		}
 	}
 
 	// Create a new request with a body that tracks network bytes
 	newReq := req.Clone(req.Context())
-	if req.Body != nil && req.Body != http.NoBody {
+	if lrt.rateLimiter != nil && req.Body != nil && req.Body != http.NoBody {
 		newReq.Body = &rateLimitedBody{
 			body:        req.Body,
 			rateLimiter: lrt.rateLimiter,
@@ -149,43 +141,52 @@ func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 		}
 	}
 
-	if rel != nil {
-		defer rel()
-	}
-
 	return lrt.base.RoundTrip(newReq)
 }
 
 // ServerHandler wraps an HTTP handler with rate limiting.
 func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Apply resource limit check for request count
-		rel, err := lm.resourceLimiter.Acquire(r.Context(), oneRequestWeights[:])
-		if err != nil {
-			http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
-			return
-		}
+		if resourceLimiter != nil {
+			rel, err := resourceLimiter.Acquire(r.Context(), 1)
+			if err != nil {
+				http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
+				return
+			}
 
-		// Create a new request with a body that tracks network bytes
-		newReq := r.Clone(r.Context())
-		if r.Body != nil && r.Body != http.NoBody {
-			newReq.Body = &rateLimitedBody{
-				body:        r.Body,
-				rateLimiter: lm.rateLimiter,
-				ctx:         r.Context(),
+			if rel != nil {
+				defer rel()
 			}
 		}
 
-		if rel != nil {
-			defer rel()
+		if rateLimiter != nil {
+			// Create a new request with a body that tracks network bytes
+			newReq := r.Clone(r.Context())
+			if r.Body != nil && r.Body != http.NoBody {
+				newReq.Body = &rateLimitedBody{
+					body:        r.Body,
+					rateLimiter: rateLimiter,
+					ctx:         r.Context(),
+				}
+			}
+			r = newReq
 		}
 
-		base.ServeHTTP(w, newReq)
+		base.ServeHTTP(w, r)
 	}), nil
 }
 
 // ClientUnaryInterceptor returns a gRPC interceptor for unary client calls.
 func (lm *limiterMiddleware) ClientUnaryInterceptor() (grpc.UnaryClientInterceptor, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	if resourceLimiter == nil {
+		return nil, nil
+	}
+
 	return func(
 		ctx context.Context,
 		method string,
@@ -194,7 +195,7 @@ func (lm *limiterMiddleware) ClientUnaryInterceptor() (grpc.UnaryClientIntercept
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,
 	) error {
-		rel, err := lm.resourceLimiter.Acquire(ctx, oneRequestWeights[:])
+		rel, err := resourceLimiter.Acquire(ctx, 1)
 		if err != nil {
 			return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 		}
@@ -207,6 +208,10 @@ func (lm *limiterMiddleware) ClientUnaryInterceptor() (grpc.UnaryClientIntercept
 
 // ClientStreamInterceptor returns a gRPC interceptor for streaming client calls.
 func (lm *limiterMiddleware) ClientStreamInterceptor() (grpc.StreamClientInterceptor, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	if resourceLimiter == nil {
+		return nil, nil
+	}
 	return func(
 		ctx context.Context,
 		desc *grpc.StreamDesc,
@@ -219,27 +224,33 @@ func (lm *limiterMiddleware) ClientStreamInterceptor() (grpc.StreamClientInterce
 		if err != nil {
 			return nil, err
 		}
-		return lm.wrapClientStream(cstream, method), nil
+		return lm.wrapClientStream(cstream, method, resourceLimiter), nil
 	}, nil
 }
 
 // ClientStatsHandler returns a gRPC stats handler for client-side operations.
 func (lm *limiterMiddleware) ClientStatsHandler() (stats.Handler, error) {
+	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 	return &limiterStatsHandler{
-		rateLimiter: lm.rateLimiter,
+		rateLimiter: rateLimiter,
 		isClient:    true,
 	}, nil
 }
 
 // ServerUnaryInterceptor returns a gRPC interceptor for unary server calls.
 func (lm *limiterMiddleware) ServerUnaryInterceptor() (grpc.UnaryServerInterceptor, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	if resourceLimiter == nil {
+		return nil, nil
+	}
+
 	return func(
 		ctx context.Context,
 		req any,
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
-		rel, err := lm.resourceLimiter.Acquire(ctx, oneRequestWeights[:])
+		rel, err := resourceLimiter.Acquire(ctx, 1)
 		if err != nil {
 			return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 		}
@@ -252,20 +263,29 @@ func (lm *limiterMiddleware) ServerUnaryInterceptor() (grpc.UnaryServerIntercept
 
 // ServerStreamInterceptor returns a gRPC interceptor for streaming server calls.
 func (lm *limiterMiddleware) ServerStreamInterceptor() (grpc.StreamServerInterceptor, error) {
+	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
+	if resourceLimiter == nil {
+		return nil, nil
+	}
+
 	return func(
 		srv interface{},
 		ss grpc.ServerStream,
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		return handler(srv, lm.wrapServerStream(ss, info))
+		return handler(srv, lm.wrapServerStream(ss, info, resourceLimiter))
 	}, nil
 }
 
 // ServerStatsHandler returns a gRPC stats handler for server-side operations.
 func (lm *limiterMiddleware) ServerStatsHandler() (stats.Handler, error) {
+	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+	if rateLimiter == nil {
+		return nil, nil
+	}
 	return &limiterStatsHandler{
-		rateLimiter: lm.rateLimiter,
+		rateLimiter: rateLimiter,
 		isClient:    false,
 	}, nil
 }
@@ -303,8 +323,7 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 		return
 	}
 	// Apply rate limiting based on network bytes
-	weights := networkByteWeights(wireBytes)
-	h.rateLimiter.Limit(ctx, weights[:])
+	h.rateLimiter.Limit(ctx, uint64(wireBytes))
 }
 
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
@@ -321,7 +340,7 @@ type serverStream struct {
 
 // RecvMsg applies rate limiting to server stream message receiving.
 func (s *serverStream) RecvMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights[:])
+	rel, err := s.limiter.Acquire(s.Context(), 1)
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 	}
@@ -332,10 +351,10 @@ func (s *serverStream) RecvMsg(m any) error {
 }
 
 // wrapServerStream wraps a gRPC server stream with rate limiting.
-func (lm *limiterMiddleware) wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo) grpc.ServerStream {
+func (lm *limiterMiddleware) wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter extensionlimiter.ResourceLimiter) grpc.ServerStream {
 	return &serverStream{
 		ServerStream: ss,
-		limiter:      lm.resourceLimiter,
+		limiter:      limiter,
 	}
 }
 
@@ -346,7 +365,7 @@ type clientStream struct {
 
 // SendMsg applies rate limiting to client stream message sending.
 func (s *clientStream) SendMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), oneRequestWeights[:])
+	rel, err := s.limiter.Acquire(s.Context(), 1)
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
 	}
@@ -357,9 +376,9 @@ func (s *clientStream) SendMsg(m any) error {
 }
 
 // wrapClientStream wraps a gRPC client stream with rate limiting.
-func (lm *limiterMiddleware) wrapClientStream(cs grpc.ClientStream, _ string) grpc.ClientStream {
+func (lm *limiterMiddleware) wrapClientStream(cs grpc.ClientStream, _ string, limiter extensionlimiter.ResourceLimiter) grpc.ClientStream {
 	return &clientStream{
 		ClientStream: cs,
-		limiter:      lm.resourceLimiter,
+		limiter:      limiter,
 	}
 }
