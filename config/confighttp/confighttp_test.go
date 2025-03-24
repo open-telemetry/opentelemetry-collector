@@ -1226,7 +1226,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
-	assert.Equal(t, "invalid authorization", response.Result().Status)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
 }
 
 func TestFailedServerAuthWithErrorHandler(t *testing.T) {
@@ -1242,15 +1242,17 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("Unauthorized due to error")
+				return ctx, errors.New("invalid authorization")
 			}),
 		},
 	}
 
-	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
+	eh := func(w http.ResponseWriter, _ *http.Request, err string, statusCode int) {
 		assert.Equal(t, http.StatusUnauthorized, statusCode)
-		// custom error handler changes returned error message
-		http.Error(w, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), statusCode)
+		// custom error handler uses real error string
+		assert.Equal(t, "invalid authorization", err)
+		// custom error handler changes returned status code
+		http.Error(w, err, http.StatusInternalServerError)
 	}
 
 	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
@@ -1261,8 +1263,8 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// verify
-	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
-	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)), response.Result().Status)
 }
 
 func TestServerWithErrorHandler(t *testing.T) {

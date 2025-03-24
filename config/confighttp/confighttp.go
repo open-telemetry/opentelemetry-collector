@@ -549,9 +549,9 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
 			if serverOpts.ErrHandler != nil {
-				serverOpts.ErrHandler(w, r, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				serverOpts.ErrHandler(w, r, err.Error(), http.StatusUnauthorized)
 			} else {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+				http.Error(w, err.Error(), http.StatusUnauthorized)
 			}
 
 			return
