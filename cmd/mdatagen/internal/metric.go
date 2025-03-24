@@ -108,7 +108,7 @@ func (m *Metric) Unmarshal(parser *confmap.Conf) error {
 	return parser.Unmarshal(m)
 }
 
-func (m Metric) Data() MetricData {
+func (m *Metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
 	}
