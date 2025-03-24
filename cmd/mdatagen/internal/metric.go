@@ -76,7 +76,7 @@ func (s Stability) String() string {
 	return fmt.Sprintf(" [%s]", s.Level)
 }
 
-func (m *Metric) validate() error {
+func (m Metric) validate() error {
 	var errs error
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
@@ -101,7 +101,7 @@ func (m *Metric) validate() error {
 	return errs
 }
 
-func (m *Metric) Unmarshal(parser *confmap.Conf) error {
+func (m Metric) Unmarshal(parser *confmap.Conf) error {
 	if !parser.IsSet("enabled") {
 		return errors.New("missing required field: `enabled`")
 	}
