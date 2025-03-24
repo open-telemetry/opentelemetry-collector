@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package batcher
+package queuebatch
 
 import (
 	"context"
@@ -44,8 +44,7 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -95,8 +94,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -161,8 +159,7 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -218,8 +215,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -265,8 +261,7 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	batchCfg.FlushTimeout = 100 * time.Second
 
 	sink := requesttest.NewSink()
-	ba, err := NewBatcher(batchCfg, sink.Export, 2)
-	require.NoError(t, err)
+	ba := newDefaultBatcher(batchCfg, sink.Export, 2)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -292,8 +287,7 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	batchCfg.MaxSize = 7
 
 	sink := requesttest.NewSink()
-	ba, err := NewBatcher(batchCfg, sink.Export, 2)
-	require.NoError(t, err)
+	ba := newDefaultBatcher(batchCfg, sink.Export, 2)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {

@@ -13,8 +13,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -24,6 +26,24 @@ var (
 	logsMarshaler   = &plog.ProtoMarshaler{}
 	logsUnmarshaler = &plog.ProtoUnmarshaler{}
 )
+
+// NewLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: logsEncoding{},
+		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[Request]{
+			exporterbatcher.SizerTypeRequests: NewRequestsSizer(),
+			exporterbatcher.SizerTypeItems:    queuebatch.NewItemsSizer(),
+			exporterbatcher.SizerTypeBytes: queuebatch.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
+				},
+			},
+		},
+	}
+}
 
 type logsRequest struct {
 	ld         plog.Logs
@@ -94,7 +114,7 @@ func NewLogs(
 		return nil, errNilPushLogs
 	}
 	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
-		append([]Option{internal.WithQueueBatchSettings(queuebatch.Settings[Request]{Encoding: logsEncoding{}})}, options...)...)
+		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
 }
 
 // requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.

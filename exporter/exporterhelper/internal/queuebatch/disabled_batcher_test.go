@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package batcher
+package queuebatch
 
 import (
 	"context"
@@ -13,16 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pipeline"
 )
 
-func TestDisabledBatcher_Basic(t *testing.T) {
+func TestDisabledBatcher(t *testing.T) {
 	tests := []struct {
 		name       string
 		maxWorkers int
@@ -38,21 +33,15 @@ func TestDisabledBatcher_Basic(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := exporterbatcher.NewDefaultConfig()
-			cfg.Enabled = false
-
 			sink := requesttest.NewSink()
-			ba, err := NewBatcher(cfg, sink.Export, tt.maxWorkers)
-			require.NoError(t, err)
+			ba := newDisabledBatcher(sink.Export)
 
-			q := queuebatch.NewQueue[request.Request](
-				context.Background(),
-				queuebatch.QueueSettings[request.Request]{
-					Signal:           pipeline.SignalTraces,
-					ExporterSettings: exportertest.NewNopSettings(exportertest.NopType),
-				},
-				exporterqueue.NewDefaultConfig(),
-				ba.Consume)
+			mq := newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+				sizer:    RequestsSizer[request.Request]{},
+				capacity: 1000,
+				blocking: true,
+			})
+			q := newAsyncQueue(mq, tt.maxWorkers, ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
