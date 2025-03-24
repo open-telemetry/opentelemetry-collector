@@ -535,3 +535,19 @@ func configureViews(level configtelemetry.Level) []config.View {
 func ptr[T any](v T) *T {
 	return &v
 }
+
+// ValidateGraph verifies the graph by calling the internal graph.Build.
+func ValidateGraph(ctx context.Context, set Settings, cfg Config) error {
+	_, err := graph.Build(ctx, graph.Settings{
+		BuildInfo:        set.BuildInfo,
+		ReceiverBuilder:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+		ProcessorBuilder: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+		ExporterBuilder:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+		ConnectorBuilder: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
+		PipelineConfigs:  cfg.Pipelines,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to build pipelines: %w", err)
+	}
+	return nil
+}

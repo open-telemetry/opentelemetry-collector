@@ -741,3 +741,76 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 func newPtr[T int | string](str T) *T {
 	return &str
 }
+
+func TestValidateGraph(t *testing.T) {
+	testCases := map[string]struct {
+		connectorCfg  map[component.ID]component.Config
+		pipelinesCfg  pipelines.Config
+		expectedError string
+	}{
+		"Connector used as exporter but not as receiver": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in2"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewIDWithName(nopType, "connector1")},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: `failed to build pipelines: connector "nop/connector1" used as exporter in [logs/in2] pipeline but not used in any supported receiver pipeline`,
+		},
+		"Connector used as receiver but not as exporter": {
+			connectorCfg: map[component.ID]component.Config{
+				component.NewIDWithName(nopType, "connector1"): &struct{}{},
+			},
+			pipelinesCfg: pipelines.Config{
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in1"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "in2"): {
+					Receivers:  []component.ID{component.NewIDWithName(nopType, "connector1")},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+				pipeline.NewIDWithName(pipeline.SignalLogs, "out"): {
+					Receivers:  []component.ID{component.NewID(nopType)},
+					Processors: []component.ID{},
+					Exporters:  []component.ID{component.NewID(nopType)},
+				},
+			},
+			expectedError: `failed to build pipelines: connector "nop/connector1" used as receiver in [logs/in2] pipeline but not used in any supported exporter pipeline`,
+		},
+	}
+
+	_, connectorsFactories := builders.NewNopConnectorConfigsAndFactories()
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			settings := Settings{
+				ConnectorsConfigs:   tc.connectorCfg,
+				ConnectorsFactories: connectorsFactories,
+			}
+			cfg := Config{
+				Pipelines: tc.pipelinesCfg,
+			}
+
+			err := ValidateGraph(context.Background(), settings, cfg)
+			require.Error(t, err)
+			assert.Equal(t, tc.expectedError, err.Error())
+		})
+	}
+}
