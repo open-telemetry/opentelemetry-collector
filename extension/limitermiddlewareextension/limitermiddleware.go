@@ -75,8 +75,8 @@ func limitExceeded(req *http.Request) *http.Response {
 	}
 }
 
-// ClientRoundTripper returns an HTTP roundtripper that applies rate limiting.
-func (lm *limiterMiddleware) ClientRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+// MiddlewareRoundTripper returns an HTTP roundtripper that applies rate limiting.
+func (lm *limiterMiddleware) MiddlewareRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
 	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 
@@ -144,10 +144,14 @@ func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, er
 	return lrt.base.RoundTrip(newReq)
 }
 
-// ServerHandler wraps an HTTP handler with rate limiting.
-func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, error) {
+// GetHTTPHandler wraps an HTTP handler with rate limiting.
+func (lm *limiterMiddleware) GetHTTPHandler(base http.Handler) (http.Handler, error) {
 	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
 	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+
+	if resourceLimiter == nil && rateLimiter == nil {
+		return base, nil
+	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Apply resource limit check for request count
@@ -180,114 +184,93 @@ func (lm *limiterMiddleware) ServerHandler(base http.Handler) (http.Handler, err
 	}), nil
 }
 
-// ClientUnaryInterceptor returns a gRPC interceptor for unary client calls.
-func (lm *limiterMiddleware) ClientUnaryInterceptor() (grpc.UnaryClientInterceptor, error) {
-	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
-	if resourceLimiter == nil {
-		return nil, nil
+func (lm *limiterMiddleware) GetGRPCClientOptions() (options []grpc.DialOption, _ error) {
+	if resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount); resourceLimiter != nil {
+		options = append(options, grpc.WithUnaryInterceptor(
+			func(
+				ctx context.Context,
+				method string,
+				req, reply any,
+				cc *grpc.ClientConn,
+				invoker grpc.UnaryInvoker,
+				opts ...grpc.CallOption,
+			) error {
+				rel, err := resourceLimiter.Acquire(ctx, 1)
+				if err != nil {
+					return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
+				}
+				if rel != nil {
+					defer rel()
+				}
+				return invoker(ctx, method, req, reply, cc, opts...)
+			}),
+			grpc.WithStreamInterceptor(
+				func(
+					ctx context.Context,
+					desc *grpc.StreamDesc,
+					cc *grpc.ClientConn,
+					method string,
+					streamer grpc.Streamer,
+					opts ...grpc.CallOption,
+				) (grpc.ClientStream, error) {
+					cstream, err := streamer(ctx, desc, cc, method, opts...)
+					if err != nil {
+						return nil, err
+					}
+					return lm.wrapClientStream(cstream, method, resourceLimiter), nil
+				}),
+		)
 	}
-
-	return func(
-		ctx context.Context,
-		method string,
-		req, reply any,
-		cc *grpc.ClientConn,
-		invoker grpc.UnaryInvoker,
-		opts ...grpc.CallOption,
-	) error {
-		rel, err := resourceLimiter.Acquire(ctx, 1)
-		if err != nil {
-			return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-		}
-		if rel != nil {
-			defer rel()
-		}
-		return invoker(ctx, method, req, reply, cc, opts...)
-	}, nil
-}
-
-// ClientStreamInterceptor returns a gRPC interceptor for streaming client calls.
-func (lm *limiterMiddleware) ClientStreamInterceptor() (grpc.StreamClientInterceptor, error) {
-	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
-	if resourceLimiter == nil {
-		return nil, nil
+	if rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes); rateLimiter != nil {
+		options = append(options, grpc.WithStatsHandler(
+			&limiterStatsHandler{
+				rateLimiter: rateLimiter,
+				isClient:    true,
+			}))
 	}
-	return func(
-		ctx context.Context,
-		desc *grpc.StreamDesc,
-		cc *grpc.ClientConn,
-		method string,
-		streamer grpc.Streamer,
-		opts ...grpc.CallOption,
-	) (grpc.ClientStream, error) {
-		cstream, err := streamer(ctx, desc, cc, method, opts...)
-		if err != nil {
-			return nil, err
-		}
-		return lm.wrapClientStream(cstream, method, resourceLimiter), nil
-	}, nil
-}
-
-// ClientStatsHandler returns a gRPC stats handler for client-side operations.
-func (lm *limiterMiddleware) ClientStatsHandler() (stats.Handler, error) {
-	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
-	return &limiterStatsHandler{
-		rateLimiter: rateLimiter,
-		isClient:    true,
-	}, nil
+	return options, nil
 }
 
 // ServerUnaryInterceptor returns a gRPC interceptor for unary server calls.
-func (lm *limiterMiddleware) ServerUnaryInterceptor() (grpc.UnaryServerInterceptor, error) {
-	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
-	if resourceLimiter == nil {
-		return nil, nil
+func (lm *limiterMiddleware) GetGRPCServerOptions() (options []grpc.ServerOption, _ error) {
+	if resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount); resourceLimiter != nil {
+		options = append(options, grpc.ChainUnaryInterceptor(
+			// The unary resource case
+			func(
+				ctx context.Context,
+				req any,
+				info *grpc.UnaryServerInfo,
+				handler grpc.UnaryHandler,
+			) (any, error) {
+				rel, err := resourceLimiter.Acquire(ctx, 1)
+				if err != nil {
+					return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
+				}
+				if rel != nil {
+					defer rel()
+				}
+				return handler(ctx, req)
+			}), grpc.ChainStreamInterceptor(
+			// The stream resource case
+			func(
+				srv interface{},
+				ss grpc.ServerStream,
+				info *grpc.StreamServerInfo,
+				handler grpc.StreamHandler,
+			) error {
+				return handler(srv, lm.wrapServerStream(ss, info, resourceLimiter))
+			}),
+		)
+	}
+	if rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes); rateLimiter != nil {
+		options = append(options, grpc.StatsHandler(
+			&limiterStatsHandler{
+				rateLimiter: rateLimiter,
+				isClient:    false,
+			}))
 	}
 
-	return func(
-		ctx context.Context,
-		req any,
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (any, error) {
-		rel, err := resourceLimiter.Acquire(ctx, 1)
-		if err != nil {
-			return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-		}
-		if rel != nil {
-			defer rel()
-		}
-		return handler(ctx, req)
-	}, nil
-}
-
-// ServerStreamInterceptor returns a gRPC interceptor for streaming server calls.
-func (lm *limiterMiddleware) ServerStreamInterceptor() (grpc.StreamServerInterceptor, error) {
-	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
-	if resourceLimiter == nil {
-		return nil, nil
-	}
-
-	return func(
-		srv interface{},
-		ss grpc.ServerStream,
-		info *grpc.StreamServerInfo,
-		handler grpc.StreamHandler,
-	) error {
-		return handler(srv, lm.wrapServerStream(ss, info, resourceLimiter))
-	}, nil
-}
-
-// ServerStatsHandler returns a gRPC stats handler for server-side operations.
-func (lm *limiterMiddleware) ServerStatsHandler() (stats.Handler, error) {
-	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
-	if rateLimiter == nil {
-		return nil, nil
-	}
-	return &limiterStatsHandler{
-		rateLimiter: rateLimiter,
-		isClient:    false,
-	}, nil
+	return options, nil
 }
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
