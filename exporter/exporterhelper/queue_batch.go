@@ -61,17 +61,7 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 
 // NewDefaultQueueConfig returns the default config for QueueConfig.
 // By default, the queue stores 1000 items of telemetry and is non-blocking when full.
-func NewDefaultQueueConfig() QueueConfig {
-	return QueueConfig{
-		Enabled:      true,
-		NumConsumers: 10,
-		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
-		// This can be estimated at 1-4 GB worth of maximum memory usage
-		// This default is probably still too high, and may be adjusted further down in a future release
-		QueueSize: 1_000,
-		Blocking:  false,
-	}
-}
+var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 
 // BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
 // Experimental: This API is at the early stage of development and may change without backward compatibility

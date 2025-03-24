@@ -52,6 +52,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			},
 			QueueConfig: exporterhelper.QueueConfig{
 				Enabled:      true,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
 				NumConsumers: 2,
 				QueueSize:    10,
 			},

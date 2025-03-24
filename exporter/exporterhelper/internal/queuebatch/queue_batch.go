@@ -6,6 +6,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -42,32 +43,35 @@ func NewQueueBatch(
 		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
 	}
 
-	sizer, ok := qSet.Sizers[request.SizerTypeRequests]
-	if !ok {
-		return nil, errors.New("queue_batch: unsupported sizer")
-	}
-
 	var q Queue[request.Request]
 	switch {
 	case cfg.WaitForResult:
 		q = newDisabledQueue(b.Consume)
-	case cfg.StorageID != nil:
-		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-			sizer:     sizer,
-			capacity:  int64(cfg.QueueSize),
-			blocking:  cfg.BlockOnOverflow,
-			signal:    qSet.Signal,
-			storageID: *cfg.StorageID,
-			encoding:  qSet.Encoding,
-			id:        qSet.ID,
-			telemetry: qSet.Telemetry,
-		}), cfg.NumConsumers, b.Consume)
 	default:
-		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-			sizer:    sizer,
-			capacity: int64(cfg.QueueSize),
-			blocking: cfg.BlockOnOverflow,
-		}), cfg.NumConsumers, b.Consume)
+		sizer, ok := qSet.Sizers[cfg.Sizer]
+		if !ok {
+			return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
+		}
+
+		switch cfg.StorageID != nil {
+		case true:
+			q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
+				sizer:     sizer,
+				capacity:  int64(cfg.QueueSize),
+				blocking:  cfg.BlockOnOverflow,
+				signal:    qSet.Signal,
+				storageID: *cfg.StorageID,
+				encoding:  qSet.Encoding,
+				id:        qSet.ID,
+				telemetry: qSet.Telemetry,
+			}), cfg.NumConsumers, b.Consume)
+		default:
+			q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+				sizer:    sizer,
+				capacity: int64(cfg.QueueSize),
+				blocking: cfg.BlockOnOverflow,
+			}), cfg.NumConsumers, b.Consume)
+		}
 	}
 
 	oq, err := newObsQueue(qSet, q)

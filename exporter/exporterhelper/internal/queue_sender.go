@@ -28,6 +28,7 @@ type QueueBatchSettings[K any] struct {
 func NewDefaultQueueConfig() QueueConfig {
 	return QueueConfig{
 		Enabled:      true,
+		Sizer:        request.SizerTypeRequests,
 		NumConsumers: 10,
 		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
 		// This can be estimated at 1-4 GB worth of maximum memory usage
@@ -44,10 +45,16 @@ func NewDefaultQueueConfig() QueueConfig {
 type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before exporting.
 	Enabled bool `mapstructure:"enabled"`
+
+	// Sizer determines the type of size measurement used by this component.
+	// It accepts "requests", "items", or "bytes".
+	Sizer request.SizerType `mapstructure:"sizer"`
+
+	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
+	QueueSize int `mapstructure:"queue_size"`
+
 	// NumConsumers is the number of consumers from the queue.
 	NumConsumers int `mapstructure:"num_consumers"`
-	// QueueSize is the maximum number of requests allowed in queue at any given time.
-	QueueSize int `mapstructure:"queue_size"`
 	// Blocking controls the queue behavior when full.
 	// If true it blocks until enough space to add the new request to the queue.
 	Blocking bool `mapstructure:"blocking"`
@@ -61,12 +68,20 @@ func (qCfg *QueueConfig) Validate() error {
 	if !qCfg.Enabled {
 		return nil
 	}
+
 	if qCfg.NumConsumers <= 0 {
 		return errors.New("`num_consumers` must be positive")
 	}
+
 	if qCfg.QueueSize <= 0 {
 		return errors.New("`queue_size` must be positive")
 	}
+
+	// Only support request sizer for persistent queue at this moment.
+	if qCfg.StorageID != nil && qCfg.Sizer != request.SizerTypeRequests {
+		return errors.New("persistent queue only supports `requests` sizer")
+	}
+
 	return nil
 }
 
@@ -96,7 +111,7 @@ func newQueueBatchConfig(qCfg QueueConfig, bCfg BatcherConfig) queuebatch.Config
 	qbCfg := queuebatch.Config{
 		Enabled:         true,
 		WaitForResult:   !qCfg.Enabled,
-		Sizer:           request.SizerTypeRequests,
+		Sizer:           qCfg.Sizer,
 		QueueSize:       qCfg.QueueSize,
 		NumConsumers:    qCfg.NumConsumers,
 		BlockOnOverflow: qCfg.Blocking,
