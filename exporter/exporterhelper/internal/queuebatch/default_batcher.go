@@ -17,9 +17,10 @@ import (
 )
 
 type batch struct {
-	ctx  context.Context
-	req  request.Request
-	done multiDone
+	ctx     context.Context
+	req     request.Request
+	done    multiDone
+	created time.Time
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -30,7 +31,7 @@ type defaultBatcher struct {
 	stopWG         sync.WaitGroup
 	currentBatchMu sync.Mutex
 	currentBatch   *batch
-	timer          *time.Timer
+	ticker         *time.Ticker
 	shutdownCh     chan struct{}
 }
 
@@ -49,12 +50,6 @@ func newDefaultBatcher(batchCfg BatchConfig, consumeFunc sender.SendFunc[request
 		consumeFunc: consumeFunc,
 		stopWG:      sync.WaitGroup{},
 		shutdownCh:  make(chan struct{}, 1),
-	}
-}
-
-func (qb *defaultBatcher) resetTimer() {
-	if qb.batchCfg.FlushTimeout > 0 {
-		qb.timer.Reset(qb.batchCfg.FlushTimeout)
 	}
 }
 
@@ -81,11 +76,11 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
+				ctx:     ctx,
+				req:     lastReq,
+				done:    multiDone{done},
+				created: time.Now(),
 			}
-			qb.resetTimer()
 		}
 
 		qb.currentBatchMu.Unlock()
@@ -136,11 +131,11 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
 			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
+				ctx:     ctx,
+				req:     lastReq,
+				done:    multiDone{done},
+				created: time.Now(),
 			}
-			qb.resetTimer()
 		}
 	}
 
@@ -162,8 +157,8 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 			select {
 			case <-qb.shutdownCh:
 				return
-			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
+			case <-qb.ticker.C:
+				qb.flushCurrentBatchIfNecessary(false)
 			}
 		}
 	}()
@@ -172,7 +167,7 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
 	if qb.batchCfg.FlushTimeout > 0 {
-		qb.timer = time.NewTimer(qb.batchCfg.FlushTimeout)
+		qb.ticker = time.NewTicker(qb.batchCfg.FlushTimeout)
 		qb.startTimeBasedFlushingGoroutine()
 	}
 
@@ -180,9 +175,13 @@ func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
+func (qb *defaultBatcher) flushCurrentBatchIfNecessary(forceFlush bool) {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
+		qb.currentBatchMu.Unlock()
+		return
+	}
+	if !forceFlush && time.Since(qb.currentBatch.created) < qb.batchCfg.FlushTimeout {
 		qb.currentBatchMu.Unlock()
 		return
 	}
@@ -192,7 +191,6 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 
 	// flush() blocks until successfully started a goroutine for flushing.
 	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
-	qb.resetTimer()
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
@@ -214,7 +212,7 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done D
 func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNecessary()
+	qb.flushCurrentBatchIfNecessary(true)
 	qb.stopWG.Wait()
 	return nil
 }
