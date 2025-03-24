@@ -286,8 +286,6 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		ExportersFactories:  factories.Exporters,
 		ConnectorsConfigs:   cfg.Connectors,
 		ConnectorsFactories: factories.Connectors,
-		ExtensionsConfigs:   cfg.Extensions,
-		ExtensionsFactories: factories.Extensions,
 	}, service.Config{
 		Pipelines: cfg.Service.Pipelines,
 	})
