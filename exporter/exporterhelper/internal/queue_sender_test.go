@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -37,7 +36,7 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.Telemetry.Logger = zap.New(logger)
 	be, err := NewQueueSender(
-		qSet, exporterqueue.NewDefaultConfig(), exporterbatcher.Config{}, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, NewDefaultQueueConfig(), exporterbatcher.Config{}, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
 
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -45,4 +44,20 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+}
+
+func TestQueueConfig_Validate(t *testing.T) {
+	qCfg := NewDefaultQueueConfig()
+	require.NoError(t, qCfg.Validate())
+
+	qCfg.NumConsumers = 0
+	require.EqualError(t, qCfg.Validate(), "`num_consumers` must be positive")
+
+	qCfg = NewDefaultQueueConfig()
+	qCfg.QueueSize = 0
+	require.EqualError(t, qCfg.Validate(), "`queue_size` must be positive")
+
+	// Confirm Validate doesn't return error with invalid config when feature is disabled
+	qCfg.Enabled = false
+	assert.NoError(t, qCfg.Validate())
 }

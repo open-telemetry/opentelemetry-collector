@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -49,7 +48,7 @@ type BaseExporter struct {
 	retryCfg   configretry.BackOffConfig
 
 	queueBatchSettings QueueBatchSettings[request.Request]
-	queueCfg           exporterqueue.Config
+	queueCfg           QueueConfig
 	batcherCfg         exporterbatcher.Config
 }
 
@@ -195,7 +194,7 @@ func WithRetry(config configretry.BackOffConfig) Option {
 // WithQueue overrides the default QueueConfig for an exporter.
 // The default QueueConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(cfg exporterqueue.Config) Option {
+func WithQueue(cfg QueueConfig) Option {
 	return func(o *BaseExporter) error {
 		if o.queueBatchSettings.Encoding == nil {
 			return errors.New("WithQueue option is not available for the new request exporters, use WithQueueBatch instead")
@@ -208,7 +207,7 @@ func WithQueue(cfg exporterqueue.Config) Option {
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg exporterqueue.Config, set QueueBatchSettings[request.Request]) Option {
+func WithQueueBatch(cfg QueueConfig, set QueueBatchSettings[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
