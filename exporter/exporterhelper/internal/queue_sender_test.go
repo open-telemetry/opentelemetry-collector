@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -43,6 +44,21 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+}
+
+func TestQueueConfig_DeprecatedBlockingUnmarshal(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"enabled":       true,
+		"num_consumers": 2,
+		"queue_size":    100,
+		"blocking":      true,
+	})
+
+	qCfg := QueueConfig{}
+	assert.False(t, qCfg.BlockOnOverflow)
+	require.NoError(t, conf.Unmarshal(&qCfg))
+	assert.True(t, qCfg.BlockOnOverflow)
+	assert.True(t, qCfg.hasBlocking)
 }
 
 func TestQueueConfig_Validate(t *testing.T) {
