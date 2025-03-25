@@ -7,62 +7,97 @@ on:
     inputs:
       candidate-stable:
         description: Release candidate version (stable, like 1.3.0). Don't include a leading `v`.
-
-      current-stable:
-        required: true
-        description: Current version (stable, like 1.2.0). Don't include a leading `v`.
+        type: choice
+        options:
+          - minor
+          - patch
+        default: minor
 
       candidate-beta:
         description: Release candidate version (beta, like 0.96.0). Don't include `v`.
-
-      current-beta:
-        required: true
-        description: Current version (beta, like 0.95.1). Don't include `v`.
+        type: choice
+        options:
+          - minor
+          - patch
+        default: minor
 
 permissions: read-all
 
 jobs:
-  validate-versions-format:
+  extract-versions:
+    outputs:
+      current-beta: ${{ steps.current-version-core-beta.outputs.tags }}
+      current-stable: ${{ steps.current-version-core-stable-trimmed.outputs.tag }}
+      next-beta: ${{ steps.next-versions.outputs.next_beta }}
+      next-stable: ${{ steps.next-versions.outputs.next_stable }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate version format
-        shell: bash
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Get current tag for core beta
+        id: current-version-core-beta
+        uses: WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce # v1.4.0
+        with:
+          prefix: v0
+
+      - name: Get current tag for core stable
+        id: current-version-core-stable
+        uses: WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce # v1.4.0
+        with:
+          prefix: component/v1 # needs to be a tag of a stable component because major tags are not published
+
+      - name: Clean up core tag
+        id: current-version-core-stable-trimmed
         run: |
-          validate_beta_version() {
-            local regex_pattern_beta='^[0-9]+\.[0-9]+\.[0-9]+$'
-            if [[ ! "$1" =~ $regex_pattern_beta ]]; then
-              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher"
-              exit 1
-            fi
-          }
+          monorepo_tag=${{ steps.current-version-core-stable.outputs.tag }}
+          echo "tag=${monorepo_tag#component/}" >> $GITHUB_OUTPUT
 
-          validate_stable_version() {
-            local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+$'
-            if [[ ! "$1" =~ $regex_pattern_stable ]]; then
-              echo "Invalid stable version format for $2. Major version must be greater than 1."
-              exit 1
-            fi
-          }
+      - name: Get next versions - beta
+        id: semvers-beta
+        uses: WyriHaximus/github-action-next-semvers@18aa9ed4152808ab99b88d71f5481e41f8d89930 # v1.2.1
+        with:
+          version: ${{ steps.current-version-core-beta.outputs.tag }}
 
-          if [[ ! -z "${{ inputs.candidate-beta }}" ]]; then
-            validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
-          fi
-          validate_beta_version "${{ inputs.current-beta }}" "current-beta"
+      - name: Get next versions - stable
+        id: semvers-stable
+        uses: WyriHaximus/github-action-next-semvers@18aa9ed4152808ab99b88d71f5481e41f8d89930 # v1.2.1
+        with:
+          version: ${{ steps.current-version-core-stable-trimmed.outputs.tag }}
 
-          if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
-            validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
-          fi
-          validate_stable_version "${{ inputs.current-stable }}" "current-stable"
-
-          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
-            echo "Candidate version is not set for beta or stable. Please set a version to proceed."
+      - name: Select next versions
+        id: next-versions
+        run: |
+          # Candidate Beta
+          if [[ '${{ inputs.candidate-beta }}' == 'minor' ]]; then
+            echo "next_beta=${{ steps.semvers-beta.outputs.minor }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-beta }}' == 'patch' ]]; then
+            echo "next_beta=${{ steps.semvers-beta.outputs.patch }}" >> $GITHUB_OUTPUT
+          else
+            echo "Error: unsupported semver type for Candidate Beta"
             exit 1
           fi
 
+          # Candidate Stable
+          if [[ '${{ inputs.candidate-stable }}' == 'minor' ]]; then
+            echo "next_stable=${{ steps.semvers-stable.outputs.minor }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-stable }}' == 'patch' ]]; then
+            echo "next_stable=${{ steps.semvers-stable.outputs.patch }}" >> $GITHUB_OUTPUT
+          else
+            echo "Error: unsupported semver type Candidate Stable"
+            exit 1
+          fi
+
+      - name: Debugging
+        run: |
+          echo "next_beta_core: ${{ steps.next-versions.outputs.next_beta }}"
+          echo "next_stable_core: ${{ steps.next-versions.outputs.next_stable }}"
+
   check-blockers:
     needs:
-      - validate-versions-format
+      - extract-versions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
