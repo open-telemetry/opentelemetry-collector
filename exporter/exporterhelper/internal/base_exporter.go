@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -49,7 +48,7 @@ type BaseExporter struct {
 
 	queueBatchSettings QueueBatchSettings[request.Request]
 	queueCfg           QueueConfig
-	batcherCfg         exporterbatcher.Config
+	batcherCfg         BatcherConfig
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -237,7 +236,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config) Option {
+func WithBatcher(cfg BatcherConfig) Option {
 	return func(o *BaseExporter) error {
 		o.batcherCfg = cfg
 		return nil

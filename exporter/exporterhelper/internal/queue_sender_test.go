@@ -15,7 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -29,14 +29,14 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 		Signal:    pipeline.SignalMetrics,
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
-		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
-			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+		Sizers: map[request.SizerType]request.Sizer[request.Request]{
+			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
 		},
 	}
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.Telemetry.Logger = zap.New(logger)
 	be, err := NewQueueSender(
-		qSet, NewDefaultQueueConfig(), exporterbatcher.Config{}, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
+		qSet, NewDefaultQueueConfig(), BatcherConfig{}, "", sender.NewSender(func(context.Context, request.Request) error { return errors.New("some error") }))
 
 	require.NoError(t, err)
 	require.NoError(t, be.Start(context.Background(), componenttest.NewNopHost()))
@@ -44,6 +44,21 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 	require.NoError(t, be.Shutdown(context.Background()))
 	assert.Len(t, observed.All(), 1)
 	assert.Equal(t, "Exporting failed. Dropping data.", observed.All()[0].Message)
+}
+
+func TestQueueConfig_DeprecatedBlockingUnmarshal(t *testing.T) {
+	conf := confmap.NewFromStringMap(map[string]any{
+		"enabled":       true,
+		"num_consumers": 2,
+		"queue_size":    100,
+		"blocking":      true,
+	})
+
+	qCfg := QueueConfig{}
+	assert.False(t, qCfg.BlockOnOverflow)
+	require.NoError(t, conf.Unmarshal(&qCfg))
+	assert.True(t, qCfg.BlockOnOverflow)
+	assert.True(t, qCfg.hasBlocking)
 }
 
 func TestQueueConfig_Validate(t *testing.T) {
@@ -60,4 +75,43 @@ func TestQueueConfig_Validate(t *testing.T) {
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	qCfg.Enabled = false
 	assert.NoError(t, qCfg.Validate())
+}
+
+func TestBatcherConfig_Validate(t *testing.T) {
+	cfg := NewDefaultBatcherConfig()
+	require.NoError(t, cfg.Validate())
+
+	cfg = NewDefaultBatcherConfig()
+	cfg.FlushTimeout = 0
+	require.EqualError(t, cfg.Validate(), "`flush_timeout` must be greater than zero")
+}
+
+func TestSizeConfig_Validate(t *testing.T) {
+	cfg := SizeConfig{
+		Sizer:   request.SizerTypeBytes,
+		MaxSize: 10,
+		MinSize: 100,
+	}
+	require.EqualError(t, cfg.Validate(), "unsupported sizer type: {\"bytes\"}")
+
+	cfg = SizeConfig{
+		Sizer:   request.SizerTypeItems,
+		MaxSize: -100,
+		MinSize: 100,
+	}
+	require.EqualError(t, cfg.Validate(), "`max_size` must be greater than or equal to zero")
+
+	cfg = SizeConfig{
+		Sizer:   request.SizerTypeItems,
+		MaxSize: 100,
+		MinSize: -100,
+	}
+	require.EqualError(t, cfg.Validate(), "`min_size` must be greater than or equal to zero")
+
+	cfg = SizeConfig{
+		Sizer:   request.SizerTypeItems,
+		MaxSize: 100,
+		MinSize: 200,
+	}
+	require.EqualError(t, cfg.Validate(), "`max_size` must be greater than or equal to mix_size")
 }

@@ -16,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -33,9 +32,9 @@ func newFakeRequestSettings() Settings[request.Request] {
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
 		Encoding:  newFakeEncoding(&requesttest.FakeRequest{}),
-		Sizers: map[exporterbatcher.SizerType]Sizer[request.Request]{
-			exporterbatcher.SizerTypeRequests: RequestsSizer[request.Request]{},
-			exporterbatcher.SizerTypeItems:    NewItemsSizer(),
+		Sizers: map[request.SizerType]request.Sizer[request.Request]{
+			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
+			request.SizerTypeItems:    request.NewItemsSizer(),
 		},
 	}
 }
@@ -96,17 +95,15 @@ func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 }
 
 func TestQueueBatchHappyPath(t *testing.T) {
-	cfg := Config{
-		Enabled:      true,
-		QueueSize:    10,
-		NumConsumers: 1,
-	}
+	cfg := newTestConfig()
+	cfg.BlockOnOverflow = false
+	cfg.QueueSize = 56
 	sink := requesttest.NewSink()
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 
 	for i := 0; i < 10; i++ {
-		require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: i}))
+		require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: i + 1}))
 	}
 
 	// expect queue to be full
@@ -114,7 +111,9 @@ func TestQueueBatchHappyPath(t *testing.T) {
 
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
-		return sink.RequestsCount() == 10 && sink.ItemsCount() == 45
+		// Because batching is used, cannot guarantee that will be 1 batch or multiple because of the flush interval.
+		// Check only for total items count.
+		return sink.ItemsCount() == 55
 	}, 1*time.Second, 10*time.Millisecond)
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
@@ -601,7 +600,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 func newTestConfig() Config {
 	return Config{
 		Enabled:         true,
-		Sizer:           exporterbatcher.SizerTypeItems,
+		Sizer:           request.SizerTypeItems,
 		NumConsumers:    runtime.NumCPU(),
 		QueueSize:       100_000,
 		BlockOnOverflow: true,

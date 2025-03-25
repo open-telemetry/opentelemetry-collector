@@ -11,7 +11,6 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -57,7 +56,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, qb.batchCfg.MaxSize, exporterbatcher.SizerTypeItems, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, qb.batchCfg.MaxSize, request.SizerTypeItems, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -91,7 +90,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSize, exporterbatcher.SizerTypeItems, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, qb.batchCfg.MaxSize, request.SizerTypeItems, req)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)

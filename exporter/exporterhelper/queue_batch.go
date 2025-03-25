@@ -4,7 +4,6 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 )
@@ -29,7 +28,7 @@ func WithQueue(config QueueConfig) Option {
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config) Option {
+func WithBatcher(cfg BatcherConfig) Option {
 	return internal.WithBatcher(cfg)
 }
 
@@ -63,3 +62,15 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 // NewDefaultQueueConfig returns the default config for QueueConfig.
 // By default, the queue stores 1000 items of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
+
+// BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type BatcherConfig = internal.BatcherConfig
+
+// SizeConfig sets the size limits for a batch.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type SizeConfig = internal.SizeConfig
+
+var NewDefaultBatcherConfig = internal.NewDefaultBatcherConfig

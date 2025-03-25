@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 var donePool = sync.Pool{
@@ -19,7 +20,7 @@ var donePool = sync.Pool{
 
 func newDisabledQueue[T any](consumeFunc ConsumeFunc[T]) Queue[T] {
 	return &disabledQueue[T]{
-		sizer:       RequestsSizer[T]{},
+		sizer:       request.RequestsSizer[T]{},
 		consumeFunc: consumeFunc,
 		size:        &atomic.Int64{},
 	}
@@ -29,7 +30,7 @@ type disabledQueue[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumeFunc ConsumeFunc[T]
-	sizer       Sizer[T]
+	sizer       request.Sizer[T]
 	size        *atomic.Int64
 }
 

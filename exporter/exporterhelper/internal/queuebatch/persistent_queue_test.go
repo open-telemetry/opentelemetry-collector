@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
@@ -212,7 +213,7 @@ func (m *fakeStorageClientWithErrors) Reset() {
 }
 
 // createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[uint64], capacity int64, numConsumers int,
+func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64], capacity int64, numConsumers int,
 	consumeFunc func(_ context.Context, item uint64) error,
 ) Queue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
@@ -239,7 +240,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer Sizer[uint64], capaci
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     RequestsSizer[uint64]{},
+		sizer:     request.RequestsSizer[uint64]{},
 		capacity:  1000,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
@@ -252,14 +253,14 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 }
 
 func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
-	return createTestPersistentQueueWithCapacityLimiter(tb, ext, RequestsSizer[uint64]{}, capacity)
+	return createTestPersistentQueueWithCapacityLimiter(tb, ext, request.RequestsSizer[uint64]{}, capacity)
 }
 
 func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
 	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer Sizer[uint64],
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64],
 	capacity int64,
 ) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
@@ -278,13 +279,13 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	tests := []struct {
 		name           string
-		sizer          Sizer[uint64]
+		sizer          request.Sizer[uint64]
 		capacity       int64
 		sizeMultiplier int64
 	}{
 		{
 			name:           "requests_capacity",
-			sizer:          RequestsSizer[uint64]{},
+			sizer:          request.RequestsSizer[uint64]{},
 			capacity:       5,
 			sizeMultiplier: 1,
 		},
@@ -330,7 +331,7 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
 	pq := createAndStartTestPersistentQueue(t,
-		RequestsSizer[uint64]{}, 1001, 1,
+		request.RequestsSizer[uint64]{}, 1001, 1,
 		func(context.Context, uint64) error {
 			return nil
 		})
@@ -374,7 +375,7 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 			consumed := &atomic.Int64{}
 			pq := createAndStartTestPersistentQueue(t,
-				RequestsSizer[uint64]{}, 1000, c.numConsumers,
+				request.RequestsSizer[uint64]{}, 1000, c.numConsumers,
 				func(context.Context, uint64) error {
 					consumed.Add(int64(1))
 					return nil
@@ -395,11 +396,11 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 func TestPersistentBlockingQueue(t *testing.T) {
 	tests := []struct {
 		name  string
-		sizer Sizer[uint64]
+		sizer request.Sizer[uint64]
 	}{
 		{
 			name:  "requests_based",
-			sizer: RequestsSizer[uint64]{},
+			sizer: request.RequestsSizer[uint64]{},
 		},
 		{
 			name:  "items_based",
