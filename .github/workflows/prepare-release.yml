@@ -96,11 +96,6 @@ jobs:
             exit 1
           fi
 
-      - name: Debugging
-        run: |
-          echo "next_beta_core: ${{ steps.next-versions.outputs.next_beta }}"
-          echo "next_stable_core: ${{ steps.next-versions.outputs.next_stable }}"
-
   check-blockers:
     needs:
       - extract-versions
@@ -113,13 +108,13 @@ jobs:
       - name: Check blockers in core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: mowies/opentelemetry-collector
+          REPO: open-telemetry/opentelemetry-collector
         run: ./.github/workflows/scripts/release-check-blockers.sh
       # Make sure that there are no open issues with release:blocker label in Contrib. The release has to be delayed until they are resolved.
       - name: Check blockers in contrib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: mowies/opentelemetry-collector-contrib
+          REPO: open-telemetry/opentelemetry-collector-contrib
         run: ./.github/workflows/scripts/release-check-blockers.sh
       # Make sure the current main branch build successfully passes (Core).
       - name: Check build status in core
@@ -155,7 +150,7 @@ jobs:
           CANDIDATE_STABLE: ${{ needs.extract-versions.outputs.next-stable }}
           CURRENT_BETA: ${{ needs.extract-versions.outputs.current-beta }}
           CURRENT_STABLE: ${{ needs.extract-versions.outputs.current-stable }}
-          REPO: mowies/opentelemetry-collector
+          REPO: open-telemetry/opentelemetry-collector
         run: ./.github/workflows/scripts/release-create-tracking-issue.sh
 
   # Releasing opentelemetry-collector
@@ -181,7 +176,7 @@ jobs:
       - name: Prepare release for core
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          REPO: mowies/opentelemetry-collector
+          REPO: open-telemetry/opentelemetry-collector
           CANDIDATE_BETA: ${{ needs.extract-versions.outputs.next-beta }}
           CANDIDATE_STABLE: ${{ needs.extract-versions.outputs.next-stable }}
           CURRENT_BETA: ${{ needs.extract-versions.outputs.current-beta }}
