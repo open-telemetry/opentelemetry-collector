@@ -77,6 +77,8 @@ jobs:
             echo "next_beta=${{ steps.semvers-beta.outputs.minor }}" >> $GITHUB_OUTPUT
           elif [[ '${{ inputs.candidate-beta }}' == 'patch' ]]; then
             echo "next_beta=${{ steps.semvers-beta.outputs.patch }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-beta }}' == 'no bump' ]]; then
+            echo "next_beta=" >> $GITHUB_OUTPUT
           else
             echo "Error: unsupported semver type for Candidate Beta"
             exit 1
@@ -87,6 +89,8 @@ jobs:
             echo "next_stable=${{ steps.semvers-stable.outputs.minor }}" >> $GITHUB_OUTPUT
           elif [[ '${{ inputs.candidate-stable }}' == 'patch' ]]; then
             echo "next_stable=${{ steps.semvers-stable.outputs.patch }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-stable }}' == 'no bump' ]]; then
+            echo "next_stable=" >> $GITHUB_OUTPUT
           else
             echo "Error: unsupported semver type Candidate Stable"
             exit 1
