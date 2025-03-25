@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/exporter/exportertest v0.122.1
 	go.opentelemetry.io/collector/extension/extensiontest v0.122.1
 	go.opentelemetry.io/collector/extension/xextension v0.122.1
-	go.opentelemetry.io/collector/featuregate v1.28.1
 	go.opentelemetry.io/collector/pdata v1.28.1
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
@@ -50,6 +49,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.122.1 // indirect
 	go.opentelemetry.io/collector/extension v1.28.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1 // indirect
 	go.opentelemetry.io/collector/receiver v1.28.1 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.1 // indirect
@@ -59,7 +59,7 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -101,8 +101,8 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../consumer/cons
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../extension/extensiontest
 
-replace go.opentelemetry.io/collector/featuregate => ../featuregate
-
 replace go.opentelemetry.io/collector/extension/xextension => ../extension/xextension
+
+replace go.opentelemetry.io/collector/featuregate => ../featuregate
 
 replace go.opentelemetry.io/collector/confmap => ../confmap

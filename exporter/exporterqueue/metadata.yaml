@@ -1,7 +1,0 @@
-type: exporterqueue
-github_project: open-telemetry/opentelemetry-collector
-
-status:
-  class: pkg
-  stability:
-    beta: [traces, metrics, logs]

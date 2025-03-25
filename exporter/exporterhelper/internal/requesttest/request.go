@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,12 +42,12 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, _ request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}
 
-	maxItems := cfg.MaxSize
+	maxItems := maxSize
 	if maxItems == 0 {
 		if r2 != nil {
 			fr2 := r2.(*FakeRequest)
@@ -98,16 +97,6 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConf
 func (r *FakeRequest) mergeTo(dst *FakeRequest) {
 	dst.Items += r.Items
 	dst.Delay += r.Delay
-}
-
-func NoopPusherFunc(context.Context, request.Request) error {
-	return nil
-}
-
-func NewErrPusherFunc(err error) func(context.Context, request.Request) error {
-	return func(context.Context, request.Request) error {
-		return err
-	}
 }
 
 func RequestFromMetricsFunc(err error) func(context.Context, pmetric.Metrics) (request.Request, error) {

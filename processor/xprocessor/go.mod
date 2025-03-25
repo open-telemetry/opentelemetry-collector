@@ -31,7 +31,7 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -45,16 +45,10 @@ replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/component => ../../component
 
-replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
-
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
-replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
-
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
-
-replace go.opentelemetry.io/collector/processor/processortest => ../processortest
