@@ -58,9 +58,10 @@ var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data             pmetric.Metric   // data buffer for generated metric.
+	config           MetricConfig     // metric config provided by user.
+	capacity         int              // max observed number of data points added to the metric.
+	attributesConfig AttributesConfig // attributes configuration
 }
 
 // init fills {{ $name }} metric with initial data.
@@ -90,15 +91,17 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{- range $metric.Attributes }}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
-	{{- end }}
+	if m.attributesConfig.{{ .Render }}.Enabled {
+		{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
+		dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
+		dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+		{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
+		dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+		{{- else }}
+		dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+		{{- end }}
+	}
 	{{- end }}
 }
 

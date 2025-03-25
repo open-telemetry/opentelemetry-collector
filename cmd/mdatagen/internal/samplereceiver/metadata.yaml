@@ -105,6 +105,11 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+  disabled_attr:
+    description: Attribute which is not enabled.
+    type: string
+    enabled: false
+
 metrics:
   default.metric:
     enabled: true
@@ -115,7 +120,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr, disabled_attr]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 

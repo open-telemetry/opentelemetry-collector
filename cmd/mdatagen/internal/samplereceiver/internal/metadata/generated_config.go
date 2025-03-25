@@ -122,15 +122,77 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
+// AttributeConfig provides common config for a particular attribute.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *AttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AttributesConfig provides config for sample attributes.
+type AttributesConfig struct {
+	BooleanAttr       AttributeConfig `mapstructure:"boolean_attr"`
+	BooleanAttr2      AttributeConfig `mapstructure:"boolean_attr2"`
+	DisabledAttr      AttributeConfig `mapstructure:"disabled_attr"`
+	EnumAttr          AttributeConfig `mapstructure:"enum_attr"`
+	MapAttr           AttributeConfig `mapstructure:"map_attr"`
+	OverriddenIntAttr AttributeConfig `mapstructure:"overridden_int_attr"`
+	SliceAttr         AttributeConfig `mapstructure:"slice_attr"`
+	StringAttr        AttributeConfig `mapstructure:"string_attr"`
+}
+
+func DefaultAttributesConfig() AttributesConfig {
+	return AttributesConfig{
+		BooleanAttr: AttributeConfig{
+			Enabled: false,
+		},
+		BooleanAttr2: AttributeConfig{
+			Enabled: false,
+		},
+		DisabledAttr: AttributeConfig{
+			Enabled: false,
+		},
+		EnumAttr: AttributeConfig{
+			Enabled: false,
+		},
+		MapAttr: AttributeConfig{
+			Enabled: false,
+		},
+		OverriddenIntAttr: AttributeConfig{
+			Enabled: false,
+		},
+		SliceAttr: AttributeConfig{
+			Enabled: false,
+		},
+		StringAttr: AttributeConfig{
+			Enabled: false,
+		},
+	}
+}
+
 // MetricsBuilderConfig is a configuration for sample metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	Attributes         AttributesConfig         `mapstructure:"attributes"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
+		Attributes:         DefaultAttributesConfig(),
 	}
 }

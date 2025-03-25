@@ -31,6 +31,7 @@ The metric will be become optional soon.
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
+| disabled_attr | Attribute which is not enabled. | Any Str |
 
 ### default.metric.to_be_removed
 

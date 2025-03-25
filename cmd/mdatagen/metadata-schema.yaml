@@ -69,6 +69,8 @@ resource_attributes:
 # being described below.
 attributes:
   <attribute.name>:
+    # Required: whether the attribute is added to the emitted metrics by default.
+    enabled: bool
     # Optional: this field can be used to override the actual attribute name defined by the key.
     # It should be used if multiple metrics have different attributes with the same name.
     name_override:

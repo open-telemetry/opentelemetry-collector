@@ -94,6 +94,44 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 }
 {{- end }}
 
+{{ if .Attributes -}}
+// AttributeConfig provides common config for a particular attribute.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (rac *AttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// AttributesConfig provides config for {{ .Type }} attributes.
+type AttributesConfig struct {
+	{{- range $name, $attr := .Attributes }}
+	{{ $name.Render }} AttributeConfig `mapstructure:"{{ $name }}"`
+	{{- end }}
+}
+
+func DefaultAttributesConfig() AttributesConfig {
+	return AttributesConfig{
+		{{- range $name, $attr := .Attributes }}
+		{{ $name.Render }}: AttributeConfig {
+			Enabled: {{ $attr.Enabled }},
+		},
+		{{- end }}
+	}
+}
+{{- end }}
+
 {{ if .Metrics -}}
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
@@ -101,6 +139,9 @@ type MetricsBuilderConfig struct {
 	{{- if .ResourceAttributes }}
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 	{{- end }}
+	{{- if .Attributes }}
+  Attributes AttributesConfig `mapstructure:"attributes"`
+  {{- end }}
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
@@ -108,6 +149,9 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
+		{{- end }}
+		{{- if .Attributes }}
+		Attributes: DefaultAttributesConfig(),
 		{{- end }}
 	}
 }
