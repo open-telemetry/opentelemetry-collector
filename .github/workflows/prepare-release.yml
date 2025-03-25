@@ -20,7 +20,6 @@ on:
         options:
           - minor
           - patch
-          - "no bump"
         default: minor
 
 permissions: read-all
