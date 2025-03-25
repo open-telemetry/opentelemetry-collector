@@ -11,7 +11,7 @@ on:
         options:
           - minor
           - patch
-          - ""
+          - "no bump"
         default: minor
 
       candidate-beta:
@@ -20,6 +20,7 @@ on:
         options:
           - minor
           - patch
+          - "no bump"
         default: minor
 
 permissions: read-all
@@ -120,13 +121,13 @@ jobs:
       - name: Check build status in core
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: mowies/opentelemetry-collector
+          REPO: open-telemetry/opentelemetry-collector
         run: ./.github/workflows/scripts/release-check-build-status.sh
       # Make sure the current main branch build successfully passes (Contrib).
       - name: Check build status in contrib
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: mowies/opentelemetry-collector-contrib
+          REPO: open-telemetry/opentelemetry-collector-contrib
         run: ./.github/workflows/scripts/release-check-build-status.sh
 
   create-release-issue:
