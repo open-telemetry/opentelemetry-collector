@@ -22,7 +22,7 @@ var SizerTypeRequests = exporterhelper.RequestSizerTypeRequests
 // Deprecated: [v0.123.0] use exporterhelper.RequestSizerTypeItems
 var SizerTypeItems = exporterhelper.RequestSizerTypeItems
 
-// Deprecated: [v0.123.0] use exporterhelper.RequestSizerTypeRequests
+// Deprecated: [v0.123.0] use exporterhelper.RequestSizerTypeBytes
 var SizerTypeBytes = exporterhelper.RequestSizerTypeBytes
 
 // Deprecated: [v0.123.0] use exporterhelper.NewDefaultBatcherConfig
