@@ -47,7 +47,7 @@ jobs:
 
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@a99389aeff3c193ffb6f0741178e519569d3f404
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # v2.3.0
         with:
           args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"
           failIfEmpty: false
