@@ -369,6 +369,7 @@
       "protogen",
       "protos",
       "ptraceotlp",
+      "queuebatch",
       "receiverhelper",
       "receiverprofiles",
       "receivertest",
