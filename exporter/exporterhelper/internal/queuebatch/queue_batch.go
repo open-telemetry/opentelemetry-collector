@@ -44,34 +44,30 @@ func NewQueueBatch(
 	}
 
 	var q Queue[request.Request]
-	switch {
-	case cfg.WaitForResult:
-		q = newDisabledQueue(b.Consume)
-	default:
-		sizer, ok := qSet.Sizers[cfg.Sizer]
-		if !ok {
-			return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
-		}
+	sizer, ok := qSet.Sizers[cfg.Sizer]
+	if !ok {
+		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
+	}
 
-		switch cfg.StorageID != nil {
-		case true:
-			q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-				sizer:     sizer,
-				capacity:  int64(cfg.QueueSize),
-				blocking:  cfg.BlockOnOverflow,
-				signal:    qSet.Signal,
-				storageID: *cfg.StorageID,
-				encoding:  qSet.Encoding,
-				id:        qSet.ID,
-				telemetry: qSet.Telemetry,
-			}), cfg.NumConsumers, b.Consume)
-		default:
-			q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-				sizer:    sizer,
-				capacity: int64(cfg.QueueSize),
-				blocking: cfg.BlockOnOverflow,
-			}), cfg.NumConsumers, b.Consume)
-		}
+	// Configure memory queue or persistent based on the config.
+	if cfg.StorageID == nil {
+		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+			sizer:           sizer,
+			capacity:        int64(cfg.QueueSize),
+			waitForResult:   cfg.WaitForResult,
+			blockOnOverflow: cfg.BlockOnOverflow,
+		}), cfg.NumConsumers, b.Consume)
+	} else {
+		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
+			sizer:           sizer,
+			capacity:        int64(cfg.QueueSize),
+			blockOnOverflow: cfg.BlockOnOverflow,
+			signal:          qSet.Signal,
+			storageID:       *cfg.StorageID,
+			encoding:        qSet.Encoding,
+			id:              qSet.ID,
+			telemetry:       qSet.Telemetry,
+		}), cfg.NumConsumers, b.Consume)
 	}
 
 	oq, err := newObsQueue(qSet, q)

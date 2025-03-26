@@ -45,14 +45,14 @@ var indexDonePool = sync.Pool{
 }
 
 type persistentQueueSettings[T any] struct {
-	sizer     request.Sizer[T]
-	capacity  int64
-	blocking  bool
-	signal    pipeline.Signal
-	storageID component.ID
-	encoding  Encoding[T]
-	id        component.ID
-	telemetry component.TelemetrySettings
+	sizer           request.Sizer[T]
+	capacity        int64
+	blockOnOverflow bool
+	signal          pipeline.Signal
+	storageID       component.ID
+	encoding        Encoding[T]
+	id              component.ID
+	telemetry       component.TelemetrySettings
 }
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
@@ -242,7 +242,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	reqSize := pq.set.sizer.Sizeof(req)
 	for pq.queueSize+reqSize > pq.set.capacity {
-		if !pq.set.blocking {
+		if !pq.set.blockOnOverflow {
 			return ErrQueueIsFull
 		}
 		if err := pq.hasMoreSpace.Wait(ctx); err != nil {
