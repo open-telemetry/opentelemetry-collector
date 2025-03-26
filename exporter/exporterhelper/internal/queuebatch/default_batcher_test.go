@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
@@ -40,7 +41,12 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
+			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       sink.Export,
+				maxWorkers: tt.maxWorkers,
+			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -87,7 +93,12 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
+			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       sink.Export,
+				maxWorkers: tt.maxWorkers,
+			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -149,7 +160,12 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
+			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       sink.Export,
+				maxWorkers: tt.maxWorkers,
+			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -202,7 +218,12 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, sink.Export, tt.maxWorkers)
+			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       sink.Export,
+				maxWorkers: tt.maxWorkers,
+			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -249,7 +270,12 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(cfg, sink.Export, 2)
+	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+		sizerType:  request.SizerTypeItems,
+		sizer:      request.NewItemsSizer(),
+		next:       sink.Export,
+		maxWorkers: 2,
+	})
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -277,7 +303,12 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(cfg, sink.Export, 2)
+	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+		sizerType:  request.SizerTypeItems,
+		sizer:      request.NewItemsSizer(),
+		next:       sink.Export,
+		maxWorkers: 2,
+	})
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {

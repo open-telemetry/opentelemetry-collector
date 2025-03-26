@@ -34,7 +34,31 @@ func TestAsyncMemoryQueue(t *testing.T) {
 func TestAsyncMemoryQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
 	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, blocking: true}),
+		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, blockOnOverflow: true}),
+		4, func(_ context.Context, _ int64, done Done) {
+			consumed.Add(1)
+			done.OnDone(nil)
+		})
+	require.NoError(t, ac.Start(context.Background(), componenttest.NewNopHost()))
+	wg := &sync.WaitGroup{}
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100_000; j++ {
+				assert.NoError(t, ac.Offer(context.Background(), 10))
+			}
+		}()
+	}
+	wg.Wait()
+	require.NoError(t, ac.Shutdown(context.Background()))
+	assert.EqualValues(t, 1_000_000, consumed.Load())
+}
+
+func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
+	consumed := &atomic.Int64{}
+	ac := newAsyncQueue(
+		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true, blockOnOverflow: true}),
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -58,7 +82,7 @@ func TestAsyncMemoryQueueBlocking(t *testing.T) {
 func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 	stop := make(chan struct{})
 	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 10, blocking: true}),
+		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 10, blockOnOverflow: true}),
 		1, func(_ context.Context, _ int64, done Done) {
 			<-stop
 			done.OnDone(nil)
