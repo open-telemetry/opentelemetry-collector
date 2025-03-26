@@ -44,14 +44,16 @@ func NewMetricsQueueBatchSettings() QueueBatchSettings {
 }
 
 type metricsRequest struct {
-	md         pmetric.Metrics
-	cachedSize int
+	md          pmetric.Metrics
+	cachedItems int
+	cachedBytes int
 }
 
 func newMetricsRequest(md pmetric.Metrics) Request {
 	return &metricsRequest{
-		md:         md,
-		cachedSize: -1,
+		md:          md,
+		cachedItems: md.DataPointCount(),
+		cachedBytes: -1,
 	}
 }
 
@@ -78,18 +80,37 @@ func (req *metricsRequest) OnError(err error) Request {
 }
 
 func (req *metricsRequest) ItemsCount() int {
-	return req.md.DataPointCount()
+	return req.cachedItems
 }
 
-func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.MetricsSize(req.md)
+func (req *metricsRequest) ByteSize() int {
+	if req.cachedBytes == -1 {
+		sz := sizer.MetricsBytesSizer{}
+		req.cachedBytes = sz.MetricsSize(req.md)
 	}
-	return req.cachedSize
+	return req.cachedBytes
 }
 
-func (req *metricsRequest) setCachedSize(count int) {
-	req.cachedSize = count
+// sizeFromSizer returns the size of the request based on the sizer. If the size is unknown, it returns 0.
+func (req *metricsRequest) sizeFromSizer(sz sizer.MetricsSizer) int {
+	switch sz.(type) {
+	case *sizer.MetricsCountSizer:
+		return req.ItemsCount()
+	case *sizer.MetricsBytesSizer:
+		return req.ByteSize()
+	default:
+		return 0
+	}
+}
+
+func (req *metricsRequest) setCachedSize(sz sizer.MetricsSizer, size int) {
+	switch sz.(type) {
+	case *sizer.MetricsCountSizer:
+		req.cachedItems = size
+	case *sizer.MetricsBytesSizer:
+		req.cachedBytes = size
+	default:
+	}
 }
 
 type metricsExporter struct {

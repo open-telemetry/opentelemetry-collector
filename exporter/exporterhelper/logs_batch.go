@@ -41,17 +41,17 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSi
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(sz, dst.sizeFromSizer(sz)+req.sizeFromSizer(sz))
+		req.setCachedSize(sz, 0)
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
 	var res []Request
-	for req.size(sz) > maxSize {
+	for req.sizeFromSizer(sz) > maxSize {
 		ld, rmSize := extractLogs(req.ld, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(sz, req.sizeFromSizer(sz)-rmSize)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)

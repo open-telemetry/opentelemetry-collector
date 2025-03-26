@@ -44,14 +44,16 @@ func NewLogsQueueBatchSettings() QueueBatchSettings {
 }
 
 type logsRequest struct {
-	ld         plog.Logs
-	cachedSize int
+	ld          plog.Logs
+	cachedItems int
+	cachedBytes int
 }
 
 func newLogsRequest(ld plog.Logs) Request {
 	return &logsRequest{
-		ld:         ld,
-		cachedSize: -1,
+		ld:          ld,
+		cachedItems: ld.LogRecordCount(),
+		cachedBytes: -1,
 	}
 }
 
@@ -78,18 +80,37 @@ func (req *logsRequest) OnError(err error) Request {
 }
 
 func (req *logsRequest) ItemsCount() int {
-	return req.ld.LogRecordCount()
+	return req.cachedItems
 }
 
-func (req *logsRequest) size(sizer sizer.LogsSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.LogsSize(req.ld)
+func (req *logsRequest) ByteSize() int {
+	if req.cachedBytes == -1 {
+		sz := sizer.LogsBytesSizer{}
+		req.cachedBytes = sz.LogsSize(req.ld)
 	}
-	return req.cachedSize
+	return req.cachedBytes
 }
 
-func (req *logsRequest) setCachedSize(size int) {
-	req.cachedSize = size
+// sizeFromSizer returns the size of the request based on the sizer. If the size is unknown, it returns 0.
+func (req *logsRequest) sizeFromSizer(sz sizer.LogsSizer) int {
+	switch sz.(type) {
+	case *sizer.LogsCountSizer:
+		return req.ItemsCount()
+	case *sizer.LogsBytesSizer:
+		return req.ByteSize()
+	default:
+		return 0
+	}
+}
+
+func (req *logsRequest) setCachedSize(sz sizer.LogsSizer, size int) {
+	switch sz.(type) {
+	case *sizer.LogsCountSizer:
+		req.cachedItems = size
+	case *sizer.LogsBytesSizer:
+		req.cachedBytes = size
+	default:
+	}
 }
 
 type logsExporter struct {
