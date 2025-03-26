@@ -315,11 +315,11 @@ locally. Ensure that you execute these commands from the root of the repository:
 2. Run the Collector with a local configuration file:
 
   ```shell
-  ./bin/otelcorecol --config ./examples/local/otel-config.yaml
+  ./bin/otelcorecol_<os>_<arch> --config ./examples/local/otel-config.yaml
   ```
 
-  The actual name of the binary may be different depending on your platform, so
-  adjust accordingly (e.g., `./bin/otelcorecol_darwin_arm64`).
+  The actual name of the binary will depend on your platform, adjust accordingly
+  (e.g., `./bin/otelcorecol_darwin_arm64`).
   
   Replace `otel-config.yaml` with the appropriate configuration file as needed.
 
