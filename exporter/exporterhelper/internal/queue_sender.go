@@ -58,7 +58,7 @@ type QueueConfig struct {
 	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
-	QueueSize int `mapstructure:"queue_size"`
+	QueueSize int64 `mapstructure:"queue_size"`
 
 	// NumConsumers is the number of consumers from the queue.
 	NumConsumers int `mapstructure:"num_consumers"`
