@@ -79,10 +79,10 @@ type BatchConfig struct {
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
 	// MinSize defines the configuration for the minimum size of a batch.
-	MinSize int `mapstructure:"min_size"`
+	MinSize int64 `mapstructure:"min_size"`
 
 	// MaxSize defines the configuration for the maximum size of a batch.
-	MaxSize int `mapstructure:"max_size"`
+	MaxSize int64 `mapstructure:"max_size"`
 }
 
 func (cfg *BatchConfig) Validate() error {
