@@ -19,10 +19,10 @@ import (
 
 // Config defines configuration for OTLP exporter.
 type Config struct {
-	TimeoutConfig exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueConfig   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
-	RetryConfig   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
-	ClientConfig  configgrpc.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	TimeoutConfig exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	RetryConfig   configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
+	ClientConfig  configgrpc.ClientConfig         `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved

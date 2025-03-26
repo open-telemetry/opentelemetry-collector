@@ -7,8 +7,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Deprecated: [v0.123.0] Use exporterhelper.QueueConfig
-type Config = exporterhelper.QueueConfig
+// Deprecated: [v0.123.0] Use exporterhelper.QueueBatchConfigs
+type Config = exporterhelper.QueueBatchConfig
 
 // Deprecated: [v0.123.0] Use exporterhelper.NewDefaultQueueConfig.
 // Small difference that this is blocking vs the other one which is not blocking.
