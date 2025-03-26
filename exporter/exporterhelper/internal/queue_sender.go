@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
+	"runtime"
 	"time"
 
 	"go.uber.org/zap"
@@ -46,6 +48,10 @@ func NewDefaultQueueConfig() QueueConfig {
 type QueueConfig struct {
 	// Enabled indicates whether to not enqueue batches before exporting.
 	Enabled bool `mapstructure:"enabled"`
+
+	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
+	// Currently, this option is not available when persistent queue is configured using the storage configuration.
+	WaitForResult bool `mapstructure:"wait_for_result"`
 
 	// Sizer determines the type of size measurement used by this component.
 	// It accepts "requests", "items", or "bytes".
@@ -99,11 +105,14 @@ func (qCfg *QueueConfig) Validate() error {
 		return errors.New("`queue_size` must be positive")
 	}
 
-	// Only support request sizer for persistent queue at this moment.
-	if qCfg.StorageID != nil && qCfg.Sizer != request.SizerTypeRequests {
-		return errors.New("persistent queue only supports `requests` sizer")
+	if qCfg.StorageID != nil && qCfg.WaitForResult {
+		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
+	// Only support request sizer for persistent queue at this moment.
+	if qCfg.StorageID != nil && qCfg.Sizer != request.SizerTypeRequests {
+		return errors.New("persistent queue configured with `storage` only supports `requests` sizer")
+	}
 	return nil
 }
 
@@ -133,20 +142,43 @@ func NewQueueSender(
 }
 
 func newQueueBatchConfig(qCfg QueueConfig, bCfg BatcherConfig) queuebatch.Config {
-	qbCfg := queuebatch.Config{
-		Enabled:         true,
-		WaitForResult:   !qCfg.Enabled,
-		Sizer:           qCfg.Sizer,
-		QueueSize:       qCfg.QueueSize,
-		NumConsumers:    qCfg.NumConsumers,
-		BlockOnOverflow: qCfg.BlockOnOverflow,
-		StorageID:       qCfg.StorageID,
-	}
-	if bCfg.Enabled {
-		qbCfg.Batch = &queuebatch.BatchConfig{
-			FlushTimeout: bCfg.FlushTimeout,
-			MinSize:      bCfg.MinSize,
-			MaxSize:      bCfg.MaxSize,
+	var qbCfg queuebatch.Config
+	// User configured queueing, copy all config.
+	if qCfg.Enabled {
+		qbCfg = queuebatch.Config{
+			Enabled:         true,
+			WaitForResult:   qCfg.WaitForResult,
+			Sizer:           qCfg.Sizer,
+			QueueSize:       qCfg.QueueSize,
+			NumConsumers:    qCfg.NumConsumers,
+			BlockOnOverflow: qCfg.BlockOnOverflow,
+			StorageID:       qCfg.StorageID,
+			// TODO: Copy batching configuration as well when available.
+		}
+		// TODO: Remove this when WithBatcher is removed.
+		if bCfg.Enabled {
+			qbCfg.Batch = &queuebatch.BatchConfig{
+				FlushTimeout: bCfg.FlushTimeout,
+				MinSize:      bCfg.MinSize,
+				MaxSize:      bCfg.MaxSize,
+			}
+		}
+	} else {
+		// This can happen only if the deprecated way to configure batching is used with a "disabled" queue.
+		// TODO: Remove this when WithBatcher is removed.
+		qbCfg = queuebatch.Config{
+			Enabled:         true,
+			WaitForResult:   true,
+			Sizer:           request.SizerTypeRequests,
+			QueueSize:       math.MaxInt,
+			NumConsumers:    runtime.NumCPU(),
+			BlockOnOverflow: true,
+			StorageID:       nil,
+			Batch: &queuebatch.BatchConfig{
+				FlushTimeout: bCfg.FlushTimeout,
+				MinSize:      bCfg.MinSize,
+				MaxSize:      bCfg.MaxSize,
+			},
 		}
 	}
 	return qbCfg

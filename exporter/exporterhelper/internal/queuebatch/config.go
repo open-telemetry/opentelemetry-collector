@@ -37,7 +37,7 @@ type Config struct {
 	StorageID *component.ID `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
-	// This applies across all different optional configurations from above (e.g. wait_for_result, blocking, persistent, etc.).
+	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
 	// TODO: This will also control the maximum number of shards, when supported:
 	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12473.
 	NumConsumers int `mapstructure:"num_consumers"`
@@ -64,6 +64,12 @@ func (cfg *Config) Validate() error {
 	if cfg.StorageID != nil && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
+
+	// Only support request sizer for persistent queue at this moment.
+	if cfg.StorageID != nil && cfg.Sizer != request.SizerTypeRequests {
+		return errors.New("persistent queue configured with `storage` only supports `requests` sizer")
+	}
+
 	return nil
 }
 
