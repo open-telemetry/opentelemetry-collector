@@ -25,7 +25,7 @@ type Config struct {
 	Sizer request.SizerType `mapstructure:"sizer"`
 
 	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
-	QueueSize int `mapstructure:"queue_size"`
+	QueueSize int64 `mapstructure:"queue_size"`
 
 	// BlockOnOverflow determines the behavior when the component's TotalSize limit is reached.
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
