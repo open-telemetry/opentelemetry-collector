@@ -411,14 +411,14 @@ func TestPersistentBlockingQueue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-				sizer:     tt.sizer,
-				capacity:  100,
-				blocking:  true,
-				signal:    pipeline.SignalTraces,
-				storageID: component.ID{},
-				encoding:  uint64Encoding{},
-				id:        component.NewID(exportertest.NopType),
-				telemetry: componenttest.NewNopTelemetrySettings(),
+				sizer:           tt.sizer,
+				capacity:        100,
+				blockOnOverflow: true,
+				signal:          pipeline.SignalTraces,
+				storageID:       component.ID{},
+				encoding:        uint64Encoding{},
+				id:              component.NewID(exportertest.NopType),
+				telemetry:       componenttest.NewNopTelemetrySettings(),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {

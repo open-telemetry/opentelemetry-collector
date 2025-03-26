@@ -6,7 +6,7 @@ name: changelog
 
 on:
   pull_request:
-    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled, edited]
     branches:
       - main
   merge_group:
