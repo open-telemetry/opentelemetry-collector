@@ -272,126 +272,18 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
-				"supportsLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsLogsToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "logs_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsMetricsToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "metrics_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToLogs": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_logs" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToMetrics": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_metrics" {
-								return true
-							}
-						}
-					}
-					return false
-				},
-				"supportsTracesToTraces": func() bool {
-					for _, signals := range md.Status.Stability {
-						for _, s := range signals {
-							if s == "traces_to_traces" {
-								return true
-							}
-						}
-					}
-					return false
-				},
+				"supportsLogs":             func() bool { return md.supportsSignal("logs") },
+				"supportsMetrics":          func() bool { return md.supportsSignal("metrics") },
+				"supportsTraces":           func() bool { return md.supportsSignal("traces") },
+				"supportsLogsToLogs":       func() bool { return md.supportsSignal("logs_to_logs") },
+				"supportsLogsToMetrics":    func() bool { return md.supportsSignal("logs_to_metrics") },
+				"supportsLogsToTraces":     func() bool { return md.supportsSignal("logs_to_traces") },
+				"supportsMetricsToLogs":    func() bool { return md.supportsSignal("metrics_to_logs") },
+				"supportsMetricsToMetrics": func() bool { return md.supportsSignal("metrics_to_metrics") },
+				"supportsMetricsToTraces":  func() bool { return md.supportsSignal("metrics_to_traces") },
+				"supportsTracesToLogs":     func() bool { return md.supportsSignal("traces_to_logs") },
+				"supportsTracesToMetrics":  func() bool { return md.supportsSignal("traces_to_metrics") },
+				"supportsTracesToTraces":   func() bool { return md.supportsSignal("traces_to_traces") },
 				"expectConsumerError": func() bool {
 					return md.Tests.ExpectConsumerError
 				},

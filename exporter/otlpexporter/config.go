@@ -14,21 +14,19 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for OTLP exporter.
 type Config struct {
-	exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
-	RetryConfig                  configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	TimeoutConfig exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	RetryConfig   configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
+	ClientConfig  configgrpc.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
-	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
-
-	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"`
 }
 
 func (c *Config) Validate() error {
@@ -51,15 +49,15 @@ func (c *Config) Validate() error {
 
 func (c *Config) sanitizedEndpoint() string {
 	switch {
-	case strings.HasPrefix(c.Endpoint, "http://"):
-		return strings.TrimPrefix(c.Endpoint, "http://")
-	case strings.HasPrefix(c.Endpoint, "https://"):
-		return strings.TrimPrefix(c.Endpoint, "https://")
-	case strings.HasPrefix(c.Endpoint, "dns://"):
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "http://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "http://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "https://"):
+		return strings.TrimPrefix(c.ClientConfig.Endpoint, "https://")
+	case strings.HasPrefix(c.ClientConfig.Endpoint, "dns://"):
 		r := regexp.MustCompile("^dns://[/]?")
-		return r.ReplaceAllString(c.Endpoint, "")
+		return r.ReplaceAllString(c.ClientConfig.Endpoint, "")
 	default:
-		return c.Endpoint
+		return c.ClientConfig.Endpoint
 	}
 }
 

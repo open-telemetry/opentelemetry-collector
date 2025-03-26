@@ -5,16 +5,12 @@ package request // import "go.opentelemetry.io/collector/exporter/exporterhelper
 
 import (
 	"context"
-
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 )
 
 // Request represents a single request that can be sent to an external endpoint.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type Request interface {
-	// Export exports the request to an external endpoint.
-	Export(ctx context.Context) error
 	// ItemsCount returns a number of basic items in the request where item is the smallest piece of data that can be
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.
@@ -28,7 +24,7 @@ type Request interface {
 	// marked as not mutable. The length of the returned slice MUST not be 0.
 	// Experimental: This API is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-	MergeSplit(context.Context, exporterbatcher.SizeConfig, Request) ([]Request, error)
+	MergeSplit(context.Context, int, SizerType, Request) ([]Request, error)
 }
 
 // ErrorHandler is an optional interface that can be implemented by Request to provide a way handle partial

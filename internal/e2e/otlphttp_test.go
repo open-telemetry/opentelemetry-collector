@@ -319,7 +319,7 @@ func startLogs(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
 
 func createConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter.Config {
 	cfg := defaultCfg.(*otlphttpexporter.Config)
-	cfg.Endpoint = baseURL
+	cfg.ClientConfig.Endpoint = baseURL
 	cfg.QueueConfig.Enabled = false
 	cfg.RetryConfig.Enabled = false
 	return cfg
@@ -351,7 +351,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.Endpoint = addr
+	cfg.HTTP.ServerConfig.Endpoint = addr
 	cfg.GRPC = nil
 	return cfg
 }
