@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,6 +30,20 @@ type Config struct {
 	//
 	// Deprecated: [v0.123.0] batch configuration moving to queue configuration.
 	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"`
+	// remove at the same time as BatcherConfig
+	hasBatcher bool
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+
+	if conf.IsSet("batcher") {
+		fmt.Println("in here for sure")
+		c.hasBatcher = true
+	}
+	return nil
 }
 
 func (c *Config) Validate() error {
