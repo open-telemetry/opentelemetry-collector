@@ -40,7 +40,12 @@ func NewQueueBatch(
 	default:
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
 		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
+		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			next:       next,
+			maxWorkers: cfg.NumConsumers,
+		})
 	}
 
 	var q Queue[request.Request]
