@@ -6,63 +6,96 @@ on:
     # the minor version number and set the patch number to 0.
     inputs:
       candidate-stable:
-        description: Release candidate version (stable, like 1.3.0). Don't include a leading `v`.
-
-      current-stable:
-        required: true
-        description: Current version (stable, like 1.2.0). Don't include a leading `v`.
+        description: Release candidate version bump (stable).
+        type: choice
+        options:
+          - minor
+          - patch
+          - "no bump"
+        default: minor
 
       candidate-beta:
-        description: Release candidate version (beta, like 0.96.0). Don't include `v`.
-
-      current-beta:
-        required: true
-        description: Current version (beta, like 0.95.1). Don't include `v`.
+        description: Release candidate version bump (beta).
+        type: choice
+        options:
+          - minor
+          - patch
+        default: minor
 
 permissions: read-all
 
 jobs:
-  validate-versions-format:
+  extract-versions:
+    outputs:
+      current-beta: ${{ steps.current-version-core-beta.outputs.tags }}
+      current-stable: ${{ steps.current-version-core-stable-trimmed.outputs.tag }}
+      next-beta: ${{ steps.next-versions.outputs.next_beta }}
+      next-stable: ${{ steps.next-versions.outputs.next_stable }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate version format
-        shell: bash
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Get current tag for core beta
+        id: current-version-core-beta
+        uses: WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce # v1.4.0
+        with:
+          prefix: v0
+
+      - name: Get current tag for core stable
+        id: current-version-core-stable
+        uses: WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce # v1.4.0
+        with:
+          prefix: component/v1 # needs to be a tag of a stable component because major tags are not published
+
+      - name: Clean up core tag
+        id: current-version-core-stable-trimmed
         run: |
-          validate_beta_version() {
-            local regex_pattern_beta='^[0-9]+\.[0-9]+\.[0-9]+$'
-            if [[ ! "$1" =~ $regex_pattern_beta ]]; then
-              echo "Invalid $2 version format. For beta, it can be 0.1.0 or higher"
-              exit 1
-            fi
-          }
+          monorepo_tag=${{ steps.current-version-core-stable.outputs.tag }}
+          echo "tag=${monorepo_tag#component/}" >> $GITHUB_OUTPUT
 
-          validate_stable_version() {
-            local regex_pattern_stable='^[1-9][0-9]*\.[0-9]+\.[0-9]+$'
-            if [[ ! "$1" =~ $regex_pattern_stable ]]; then
-              echo "Invalid stable version format for $2. Major version must be greater than 1."
-              exit 1
-            fi
-          }
+      - name: Get next versions - beta
+        id: semvers-beta
+        uses: WyriHaximus/github-action-next-semvers@18aa9ed4152808ab99b88d71f5481e41f8d89930 # v1.2.1
+        with:
+          version: ${{ steps.current-version-core-beta.outputs.tag }}
 
-          if [[ ! -z "${{ inputs.candidate-beta }}" ]]; then
-            validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+      - name: Get next versions - stable
+        id: semvers-stable
+        uses: WyriHaximus/github-action-next-semvers@18aa9ed4152808ab99b88d71f5481e41f8d89930 # v1.2.1
+        with:
+          version: ${{ steps.current-version-core-stable-trimmed.outputs.tag }}
+
+      - name: Select next versions
+        id: next-versions
+        run: |
+          # Candidate Beta
+          if [[ '${{ inputs.candidate-beta }}' == 'minor' ]]; then
+            echo "next_beta=${{ steps.semvers-beta.outputs.minor }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-beta }}' == 'patch' ]]; then
+            echo "next_beta=${{ steps.semvers-beta.outputs.patch }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-beta }}' == 'no bump' ]]; then
+            echo "next_beta=" >> $GITHUB_OUTPUT
+          else
+            echo "Error: unsupported semver type for Candidate Beta"
+            exit 1
           fi
-          validate_beta_version "${{ inputs.current-beta }}" "current-beta"
 
-          if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
-            validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
-          fi
-          validate_stable_version "${{ inputs.current-stable }}" "current-stable"
-
-          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
-            echo "Candidate version is not set for beta or stable. Please set a version to proceed."
+          # Candidate Stable
+          if [[ '${{ inputs.candidate-stable }}' == 'minor' ]]; then
+            echo "next_stable=${{ steps.semvers-stable.outputs.minor }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-stable }}' == 'patch' ]]; then
+            echo "next_stable=${{ steps.semvers-stable.outputs.patch }}" >> $GITHUB_OUTPUT
+          elif [[ '${{ inputs.candidate-stable }}' == 'no bump' ]]; then
+            echo "next_stable=" >> $GITHUB_OUTPUT
+          else
+            echo "Error: unsupported semver type Candidate Stable"
             exit 1
           fi
 
   check-blockers:
-    needs:
-      - validate-versions-format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -96,6 +129,7 @@ jobs:
   create-release-issue:
     needs:
       - check-blockers
+      - extract-versions
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -109,10 +143,10 @@ jobs:
       - name: Create issue for tracking release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
-          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
-          CURRENT_BETA: ${{ inputs.current-beta }}
-          CURRENT_STABLE: ${{ inputs.current-stable }}
+          CANDIDATE_BETA: ${{ needs.extract-versions.outputs.next-beta }}
+          CANDIDATE_STABLE: ${{ needs.extract-versions.outputs.next-stable }}
+          CURRENT_BETA: ${{ needs.extract-versions.outputs.current-beta }}
+          CURRENT_STABLE: ${{ needs.extract-versions.outputs.current-stable }}
           REPO: open-telemetry/opentelemetry-collector
         run: ./.github/workflows/scripts/release-create-tracking-issue.sh
 
@@ -120,6 +154,7 @@ jobs:
   prepare-release:
     needs:
       - check-blockers
+      - extract-versions
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -139,8 +174,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector
-          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
-          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
-          CURRENT_BETA: ${{ inputs.current-beta }}
-          CURRENT_STABLE: ${{ inputs.current-stable }}
+          CANDIDATE_BETA: ${{ needs.extract-versions.outputs.next-beta }}
+          CANDIDATE_STABLE: ${{ needs.extract-versions.outputs.next-stable }}
+          CURRENT_BETA: ${{ needs.extract-versions.outputs.current-beta }}
+          CURRENT_STABLE: ${{ needs.extract-versions.outputs.current-stable }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
