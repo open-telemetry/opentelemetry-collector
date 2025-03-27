@@ -29,10 +29,14 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	qSet Settings[request.Request],
+	set Settings[request.Request],
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	if cfg.hasBlocking {
+		set.Telemetry.Logger.Error("using deprecated field `blocking`")
+	}
+
 	var b Batcher[request.Request]
 	switch {
 	case cfg.Batch == nil:
@@ -49,7 +53,7 @@ func NewQueueBatch(
 	}
 
 	var q Queue[request.Request]
-	sizer, ok := qSet.Sizers[cfg.Sizer]
+	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
@@ -67,15 +71,15 @@ func NewQueueBatch(
 			sizer:           sizer,
 			capacity:        cfg.QueueSize,
 			blockOnOverflow: cfg.BlockOnOverflow,
-			signal:          qSet.Signal,
+			signal:          set.Signal,
 			storageID:       *cfg.StorageID,
-			encoding:        qSet.Encoding,
-			id:              qSet.ID,
-			telemetry:       qSet.Telemetry,
+			encoding:        set.Encoding,
+			id:              set.ID,
+			telemetry:       set.Telemetry,
 		}), cfg.NumConsumers, b.Consume)
 	}
 
-	oq, err := newObsQueue(qSet, q)
+	oq, err := newObsQueue(set, q)
 	if err != nil {
 		return nil, err
 	}
