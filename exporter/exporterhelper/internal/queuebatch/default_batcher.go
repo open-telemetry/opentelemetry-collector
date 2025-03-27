@@ -15,31 +15,26 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-type batch struct {
-	ctx  context.Context
-	req  request.Request
-	done multiDone
-}
-
 type batcherSettings[T any] struct {
-	sizerType  request.SizerType
-	sizer      request.Sizer[T]
-	next       sender.SendFunc[T]
-	maxWorkers int
+	sizerType   request.SizerType
+	sizer       request.Sizer[T]
+	partitioner Partitioner[T]
+	next        sender.SendFunc[T]
+	maxWorkers  int
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type defaultBatcher struct {
-	cfg            BatchConfig
-	workerPool     chan struct{}
-	sizerType      request.SizerType
-	sizer          request.Sizer[request.Request]
-	consumeFunc    sender.SendFunc[request.Request]
-	stopWG         sync.WaitGroup
-	currentBatchMu sync.Mutex
-	currentBatch   *batch
-	timer          *time.Timer
-	shutdownCh     chan struct{}
+	cfg         BatchConfig
+	workerPool  chan struct{}
+	sizerType   request.SizerType
+	sizer       request.Sizer[request.Request]
+	consumeFunc sender.SendFunc[request.Request]
+	stopWG      sync.WaitGroup
+	ticker      *time.Ticker
+	shutdownCh  chan struct{}
+
+	partitionManager partitionManager
 }
 
 func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
@@ -52,30 +47,26 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 		}
 	}
 	return &defaultBatcher{
-		cfg:         bCfg,
-		workerPool:  workerPool,
-		sizerType:   bSet.sizerType,
-		sizer:       bSet.sizer,
-		consumeFunc: bSet.next,
-		stopWG:      sync.WaitGroup{},
-		shutdownCh:  make(chan struct{}, 1),
-	}
-}
-
-func (qb *defaultBatcher) resetTimer() {
-	if qb.cfg.FlushTimeout > 0 {
-		qb.timer.Reset(qb.cfg.FlushTimeout)
+		cfg:              bCfg,
+		workerPool:       workerPool,
+		sizerType:        bSet.sizerType,
+		sizer:            bSet.sizer,
+		consumeFunc:      bSet.next,
+		stopWG:           sync.WaitGroup{},
+		shutdownCh:       make(chan struct{}, 1),
+		partitionManager: newPartitionManager(bSet.partitioner),
 	}
 }
 
 func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done Done) {
-	qb.currentBatchMu.Lock()
+	shard := qb.partitionManager.getShard(ctx, req)
+	shard.Lock()
 
-	if qb.currentBatch == nil {
+	if shard.batch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
-			qb.currentBatchMu.Unlock()
+			shard.Unlock()
 			return
 		}
 
@@ -90,15 +81,15 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		if qb.sizer.Sizeof(lastReq) < qb.cfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
-			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
+			shard.batch = &batch{
+				ctx:     ctx,
+				req:     lastReq,
+				done:    multiDone{done},
+				created: time.Now(),
 			}
-			qb.resetTimer()
 		}
 
-		qb.currentBatchMu.Unlock()
+		shard.Unlock()
 		for i := 0; i < len(reqList); i++ {
 			qb.flush(ctx, reqList[i], done)
 		}
@@ -106,11 +97,11 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
+	reqList, mergeSplitErr := shard.batch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
-		qb.currentBatchMu.Unlock()
+		shard.Unlock()
 		return
 	}
 
@@ -126,15 +117,15 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 
 	// Logic on how to deal with the current batch:
 	// TODO: Deal with merging Context.
-	qb.currentBatch.req = reqList[0]
-	qb.currentBatch.done = append(qb.currentBatch.done, done)
+	shard.req = reqList[0]
+	shard.done = append(shard.done, done)
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch
 	// Need to check the currentBatch if more than 1 result returned or if 1 result return but larger than MinSize.
-	if len(reqList) > 1 || qb.sizer.Sizeof(qb.currentBatch.req) >= qb.cfg.MinSize {
-		firstBatch = qb.currentBatch
-		qb.currentBatch = nil
+	if len(reqList) > 1 || qb.sizer.Sizeof(shard.batch.req) >= qb.cfg.MinSize {
+		firstBatch = shard.batch
+		shard.batch = nil
 	}
 	// At this moment we dealt with the first result which is iter in the currentBatch or in the `firstBatch` we will flush.
 	reqList = reqList[1:]
@@ -145,16 +136,16 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		if qb.sizer.Sizeof(lastReq) < qb.cfg.MinSize {
 			// Do not flush the last item and add it to the current batch.
 			reqList = reqList[:len(reqList)-1]
-			qb.currentBatch = &batch{
-				ctx:  ctx,
-				req:  lastReq,
-				done: multiDone{done},
+			shard.batch = &batch{
+				ctx:     ctx,
+				req:     lastReq,
+				done:    multiDone{done},
+				created: time.Now(),
 			}
-			qb.resetTimer()
 		}
 	}
 
-	qb.currentBatchMu.Unlock()
+	shard.Unlock()
 	if firstBatch != nil {
 		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
 	}
@@ -172,8 +163,8 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 			select {
 			case <-qb.shutdownCh:
 				return
-			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
+			case <-qb.ticker.C:
+				qb.flushCurrentBatchIfNecessary(false)
 			}
 		}
 	}()
@@ -182,7 +173,7 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
 	if qb.cfg.FlushTimeout > 0 {
-		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
+		qb.ticker = time.NewTicker(qb.cfg.FlushTimeout)
 		qb.startTimeBasedFlushingGoroutine()
 	}
 
@@ -190,19 +181,24 @@ func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
-	qb.currentBatchMu.Lock()
-	if qb.currentBatch == nil {
-		qb.currentBatchMu.Unlock()
-		return
-	}
-	batchToFlush := qb.currentBatch
-	qb.currentBatch = nil
-	qb.currentBatchMu.Unlock()
+func (qb *defaultBatcher) flushCurrentBatchIfNecessary(forceFlush bool) {
+	qb.partitionManager.forEachShard(func(shard *shard) {
+		shard.Lock()
+		if shard.batch == nil {
+			shard.Unlock()
+			return
+		}
+		if !forceFlush && time.Since(shard.created) < qb.cfg.FlushTimeout {
+			shard.Unlock()
+			return
+		}
+		batchToFlush := shard.batch
+		shard.batch = nil
+		shard.Unlock()
 
-	// flush() blocks until successfully started a goroutine for flushing.
-	qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
-	qb.resetTimer()
+		// flush() blocks until successfully started a goroutine for flushing.
+		qb.flush(batchToFlush.ctx, batchToFlush.req, batchToFlush.done)
+	})
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
@@ -224,7 +220,7 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done D
 func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
-	qb.flushCurrentBatchIfNecessary()
+	qb.flushCurrentBatchIfNecessary(true)
 	qb.stopWG.Wait()
 	return nil
 }
