@@ -12,13 +12,31 @@ import (
 )
 
 // Interface for Zap cores that support setting and resetting a set of component attributes.
+//
+// There are three wrappers that implement this interface:
+//
+//   - [NewConsoleCoreWithAttributes] injects component attributes as Zap fields.
+//
+//     This is used for the Collector's console output.
+//
+//   - [NewOTelTeeCoreWithAttributes] copies logs to a [log.LoggerProvider] using [otelzap]. For the
+//     copied logs, component attributes are injected as instrumentation scope attributes.
+//
+//     This is used when service::telemetry::logs::processors is configured.
+//
+//   - [NewWrapperCoreWithAttributes] applies a wrapper function to a core, similar to
+//     [zap.WrapCore]. It allows setting component attributes on the inner core and reapplying the
+//     wrapper function when needed.
+//
+//     This is used when adding [zapcore.NewSamplerWithOptions] to our logger stack.
 type coreWithAttributes interface {
 	zapcore.Core
 	withAttributeSet(attribute.Set) zapcore.Core
 }
 
-// Tries setting the attribute set for a Zap core.
-// Does nothing if the core does not support setting component attributes.
+// Tries setting the component attribute set for a Zap core.
+//
+// Does nothing if the core does not implement [coreWithAttributes].
 func tryWithAttributeSet(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	if cwa, ok := c.(coreWithAttributes); ok {
 		return cwa.withAttributeSet(attrs)
@@ -33,8 +51,9 @@ type consoleCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
 
-// Wraps a Zap core to support adding component attributes as Zap fields.
-// Used for console output.
+// Wraps a Zap core in order to inject component attributes as Zap fields.
+//
+// This is used for the Collector's console output.
 func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	var fields []zap.Field
 	for _, kv := range attrs.ToSlice() {
@@ -60,8 +79,10 @@ type otelTeeCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 
-// Creates a Zap core which forwards its output to both a provided Zap `consoleCore` and to a `LoggerProvider`.
-// Data sent through OTel will have component attributes set as instrumentation scope attributes.
+// Wraps a Zap core in order to copy logs to a [log.LoggerProvider] using [otelzap]. For the copied
+// logs, component attributes are injected as instrumentation scope attributes.
+//
+// This is used when service::telemetry::logs::processors is configured.
 func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
 	// TODO: Use `otelzap.WithAttributes` and remove `LoggerProviderWithAttributes`
 	// once we've upgraded to otelzap v0.11.0.
@@ -99,9 +120,11 @@ type wrapperCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*wrapperCoreWithAttributes)(nil)
 
-// Applies a wrapper function to a Zap core similar to `logger.WithOption(zap.WrapCore(...))`,
-// but allows component attribute changes to be forwarded to the underlying core.
-// The wrapper function will be run again when the underlying core is recreated.
+// Applies a wrapper function to a core, similar to [zap.WrapCore]. The resulting wrapped core
+// allows setting component attributes on the inner core and reapplying the wrapper function when
+// needed.
+//
+// This is used when adding [zapcore.NewSamplerWithOptions] to our logger stack.
 func NewWrapperCoreWithAttributes(from zapcore.Core, wrapper func(zapcore.Core) zapcore.Core) zapcore.Core {
 	return &wrapperCoreWithAttributes{
 		Core:    wrapper(from),
@@ -114,6 +137,7 @@ func (wcwa *wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) zap
 	return NewWrapperCoreWithAttributes(tryWithAttributeSet(wcwa.from, attrs), wcwa.wrapper)
 }
 
+// Creates a Zap Logger with a new set of injected component attributes.
 func ZapLoggerWithAttributes(logger *zap.Logger, attrs attribute.Set) *zap.Logger {
 	return logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 		return tryWithAttributeSet(c, attrs)

@@ -15,6 +15,7 @@ type meterProviderWithAttributes struct {
 	attrs []attribute.KeyValue
 }
 
+// Creates a MeterProvider with a new set of injected instrumentation scope attributes.
 func MeterProviderWithAttributes(mp metric.MeterProvider, attrs attribute.Set) metric.MeterProvider {
 	if mpwa, ok := mp.(meterProviderWithAttributes); ok {
 		mp = mpwa.MeterProvider
