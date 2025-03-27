@@ -11,10 +11,11 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/internal/telemetry"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func setGate(t *testing.T, gate *featuregate.Gate, value bool) {

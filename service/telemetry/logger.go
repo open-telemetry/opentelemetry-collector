@@ -67,7 +67,6 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 			return core
 		}))
-
 	} else {
 		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
 			lp = set.SDK.LoggerProvider()
