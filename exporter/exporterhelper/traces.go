@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
@@ -23,6 +24,24 @@ var (
 	tracesMarshaler   = &ptrace.ProtoMarshaler{}
 	tracesUnmarshaler = &ptrace.ProtoUnmarshaler{}
 )
+
+// NewTracesQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using ptrace.Traces.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewTracesQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: tracesEncoding{},
+		Sizers: map[RequestSizerType]request.Sizer[Request]{
+			RequestSizerTypeRequests: NewRequestsSizer(),
+			RequestSizerTypeItems:    request.NewItemsSizer(),
+			RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(tracesMarshaler.TracesSize(req.(*tracesRequest).td))
+				},
+			},
+		},
+	}
+}
 
 type tracesRequest struct {
 	td         ptrace.Traces
@@ -92,11 +111,9 @@ func NewTraces(
 	if pusher == nil {
 		return nil, errNilPushTraces
 	}
-	return NewTracesRequest(ctx, set, requestFromTraces(), requestConsumeFromTraces(pusher), append([]Option{internal.WithEncoding(tracesEncoding{})}, options...)...)
+	return NewTracesRequest(ctx, set, requestFromTraces(), requestConsumeFromTraces(pusher),
+		append([]Option{internal.WithQueueBatchSettings(NewTracesQueueBatchSettings())}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use RequestConverterFunc[ptrace.Traces].
-type RequestFromTracesFunc = RequestConverterFunc[ptrace.Traces]
 
 // requestConsumeFromTraces returns a RequestConsumeFunc that consumes ptrace.Traces.
 func requestConsumeFromTraces(pusher consumer.ConsumeTracesFunc) RequestConsumeFunc {

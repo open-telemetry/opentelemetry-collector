@@ -41,7 +41,7 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -81,9 +81,9 @@ replace go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/re
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
-replace go.opentelemetry.io/collector/featuregate => ../../featuregate
-
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
 

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -23,6 +24,24 @@ var (
 	logsMarshaler   = &plog.ProtoMarshaler{}
 	logsUnmarshaler = &plog.ProtoUnmarshaler{}
 )
+
+// NewLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: logsEncoding{},
+		Sizers: map[RequestSizerType]request.Sizer[Request]{
+			RequestSizerTypeRequests: NewRequestsSizer(),
+			RequestSizerTypeItems:    request.NewItemsSizer(),
+			RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
+				},
+			},
+		},
+	}
+}
 
 type logsRequest struct {
 	ld         plog.Logs
@@ -92,11 +111,9 @@ func NewLogs(
 	if pusher == nil {
 		return nil, errNilPushLogs
 	}
-	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher), append([]Option{internal.WithEncoding(logsEncoding{})}, options...)...)
+	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
+		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use RequestConverterFunc[plog.Logs].
-type RequestFromLogsFunc = RequestConverterFunc[plog.Logs]
 
 // requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
 func requestConsumeFromLogs(pusher consumer.ConsumeLogsFunc) RequestConsumeFunc {

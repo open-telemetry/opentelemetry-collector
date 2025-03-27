@@ -38,8 +38,8 @@ Before the release, make sure there are no open release blockers in [core](https
    insignificant, consider not releasing a new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
-   - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
-   - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
+   - When prompted, enter the version bumps that are needed.
+   - If not intending to release stable modules, do not specify a version for `Release candidate version bump (stable)`.
    - While this PR is open all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
@@ -200,11 +200,12 @@ The following documents the procedure to release a bugfix
     2. Merge the `release/<release-series>` branch into the new branch.
     3. Resolve the conflicts.
     4. Create another pull request to the `main` branch from the new branch to replace the pull request from the `release/<release-series>` branch.
-5. Enable the **Merge pull request** setting in the repository's **Settings** tab.
-6. Make sure you are on `release/<release-series>`. Push the new release version tags for a target module set by running `make push-tags MODSET=<beta|stable>`. Wait for the new tag build to pass successfully.
-7. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
-8. If the pull request was created from the `release/<release-series>` branch, it will be auto-deleted. Restore the release branch via GitHub.
-9. Once the patch is released, disable the **Merge pull request** setting.
+5. Disable the merge queue. An admin of the repo needs to be available for this.
+6. Enable the **Merge pull request** setting in the repository's **Settings** tab.
+7. Make sure you are on `release/<release-series>`. Push the new release version tags for a target module set by running `make push-tags MODSET=<beta|stable>`. Wait for the new tag build to pass successfully.
+8. **IMPORTANT**: The pull request to bring the changes from the release branch *MUST* be merged using the **Merge pull request** method, and *NOT* squashed using “**Squash and merge**”. This is important as it allows us to ensure the commit SHA from the release branch is also on the main branch. **Not following this step will cause much go dependency sadness.**
+9. If the pull request was created from the `release/<release-series>` branch, it will be auto-deleted. Restore the release branch via GitHub.
+10. Once the patch is released, disable the **Merge pull request** setting and re-enable the merge queue.
 
 ## 1.0 release
 
@@ -216,7 +217,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                   |
 |------------|----------|---------------------------------------------------|
-| 2025-03-17 | v0.122.0 | [@evan-bradley](https://github.com/evan-bradley)  |
 | 2025-03-31 | v0.123.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
 | 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)            |
 | 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)            |
@@ -227,3 +227,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd)  |
 | 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                |
 | 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)              |
+| 2025-08-18 | v0.133.0 | [@evan-bradley](https://github.com/evan-bradley)  |

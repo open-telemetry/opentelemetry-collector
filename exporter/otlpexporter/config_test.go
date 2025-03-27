@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -51,18 +50,15 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueConfig: exporterhelper.QueueConfig{
+			QueueConfig: exporterhelper.QueueBatchConfig{
 				Enabled:      true,
+				Sizer:        exporterhelper.RequestSizerTypeItems,
 				NumConsumers: 2,
-				QueueSize:    10,
-			},
-			BatcherConfig: exporterbatcher.Config{
-				Enabled:      true,
-				FlushTimeout: 200 * time.Millisecond,
-				SizeConfig: exporterbatcher.SizeConfig{
-					Sizer:   exporterbatcher.SizerTypeItems,
-					MinSize: 1000,
-					MaxSize: 10000,
+				QueueSize:    100000,
+				Batch: &exporterhelper.BatchConfig{
+					FlushTimeout: 200 * time.Millisecond,
+					MinSize:      1000,
+					MaxSize:      10000,
 				},
 			},
 			ClientConfig: configgrpc.ClientConfig{
@@ -145,17 +141,17 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 func TestValidDNSEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.NoError(t, cfg.Validate())
 }
 
 func TestSanitizeEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Endpoint = "dns://authority/backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns://authority/backend.example.com:4317"
 	assert.Equal(t, "authority/backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.Endpoint = "dns:///backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns:///backend.example.com:4317"
 	assert.Equal(t, "backend.example.com:4317", cfg.sanitizedEndpoint())
-	cfg.Endpoint = "dns:////backend.example.com:4317"
+	cfg.ClientConfig.Endpoint = "dns:////backend.example.com:4317"
 	assert.Equal(t, "/backend.example.com:4317", cfg.sanitizedEndpoint())
 }
