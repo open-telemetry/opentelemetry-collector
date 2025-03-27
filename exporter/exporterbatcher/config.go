@@ -11,7 +11,7 @@ import (
 type Config = exporterhelper.BatcherConfig //nolint:staticcheck
 
 // Deprecated: [v0.123.0] use exporterhelper.SizeConfig
-type SizeConfig = exporterhelper.SizeConfig
+type SizeConfig = exporterhelper.SizeConfig //nolint:staticcheck
 
 // Deprecated: [v0.123.0] use exporterhelper.RequestSizerType
 type SizerType = exporterhelper.RequestSizerType

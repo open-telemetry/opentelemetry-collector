@@ -65,9 +65,7 @@ var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 // Deprecated: [v0.123.0] use WithQueueBatch.
 type BatcherConfig = internal.BatcherConfig
 
-// SizeConfig sets the size limits for a batch.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 type SizeConfig = internal.SizeConfig
 
 // Deprecated: [v0.123.0] use WithQueueBatch.
