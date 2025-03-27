@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -26,6 +26,24 @@ var (
 	profilesMarshaler   = &pprofile.ProtoMarshaler{}
 	profilesUnmarshaler = &pprofile.ProtoUnmarshaler{}
 )
+
+// NewProfilesQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using pprofile.Profiles.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
+	return exporterhelper.QueueBatchSettings{
+		Encoding: profilesEncoding{},
+		Sizers: map[exporterhelper.RequestSizerType]request.Sizer[exporterhelper.Request]{
+			exporterhelper.RequestSizerTypeRequests: exporterhelper.NewRequestsSizer(),
+			exporterhelper.RequestSizerTypeItems:    request.NewItemsSizer(),
+			exporterhelper.RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
+				},
+			},
+		},
+	}
+}
 
 type profilesRequest struct {
 	pd               pprofile.Profiles
@@ -89,11 +107,8 @@ func NewProfilesExporter(
 		return nil, errNilPushProfileData
 	}
 	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
-		append([]exporterhelper.Option{internal.WithQueueBatchSettings(queuebatch.Settings[exporterhelper.Request]{Encoding: profilesEncoding{}})}, options...)...)
+		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
-
-// Deprecated: [v0.122.0] use exporterhelper.RequestConverterFunc[pprofile.Profiles].
-type RequestFromProfilesFunc = exporterhelper.RequestConverterFunc[pprofile.Profiles]
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
