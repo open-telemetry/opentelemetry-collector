@@ -23,17 +23,16 @@ func WithQueue(config QueueBatchConfig) Option {
 	return internal.WithQueue(config)
 }
 
-// WithBatcher enables batching for an exporter based on custom request types.
-// For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
-// WithRequestBatchFuncs provided.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 func WithBatcher(cfg BatcherConfig) Option {
 	return internal.WithBatcher(cfg)
 }
 
 // QueueBatchConfig defines configuration for queueing and batching for the exporter.
 type QueueBatchConfig = queuebatch.Config
+
+// BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+type BatchConfig = queuebatch.BatchConfig
 
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
 // Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
@@ -63,9 +62,7 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 // By default, the queue stores 1000 items of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 
-// BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 type BatcherConfig = internal.BatcherConfig
 
 // SizeConfig sets the size limits for a batch.
@@ -73,4 +70,5 @@ type BatcherConfig = internal.BatcherConfig
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type SizeConfig = internal.SizeConfig
 
+// Deprecated: [v0.123.0] use WithQueueBatch.
 var NewDefaultBatcherConfig = internal.NewDefaultBatcherConfig

@@ -31,9 +31,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterhelper.NewDefaultBatcherConfig()
-	batcherCfg.Enabled = false
-
 	clientCfg := *configgrpc.NewDefaultClientConfig()
 	// Default to gzip compression
 	clientCfg.Compression = configcompression.TypeGzip
@@ -47,7 +44,6 @@ func createDefaultConfig() component.Config {
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
-		BatcherConfig: batcherCfg,
 		ClientConfig:  clientCfg,
 	}
 }
@@ -65,7 +61,7 @@ func createTraces(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -84,7 +80,7 @@ func createMetrics(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -103,7 +99,7 @@ func createLogs(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -122,7 +118,7 @@ func createProfilesExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)

@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,31 +72,47 @@ func TestBatcherConfig_Validate(t *testing.T) {
 }
 
 func TestSizeConfig_Validate(t *testing.T) {
-	cfg := SizeConfig{
-		Sizer:   request.SizerTypeBytes,
-		MaxSize: 10,
-		MinSize: 100,
+	cfg := BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeBytes,
+			MinSize: 100,
+			MaxSize: 1000,
+		},
 	}
 	require.EqualError(t, cfg.Validate(), "unsupported sizer type: {\"bytes\"}")
 
-	cfg = SizeConfig{
-		Sizer:   request.SizerTypeItems,
-		MaxSize: -100,
-		MinSize: 100,
+	cfg = BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeItems,
+			MinSize: 100,
+			MaxSize: -1000,
+		},
 	}
 	require.EqualError(t, cfg.Validate(), "`max_size` must be greater than or equal to zero")
 
-	cfg = SizeConfig{
-		Sizer:   request.SizerTypeItems,
-		MaxSize: 100,
-		MinSize: -100,
+	cfg = BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeItems,
+			MinSize: -100,
+			MaxSize: 1000,
+		},
 	}
 	require.EqualError(t, cfg.Validate(), "`min_size` must be greater than or equal to zero")
 
-	cfg = SizeConfig{
-		Sizer:   request.SizerTypeItems,
-		MaxSize: 100,
-		MinSize: 200,
+	cfg = BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeItems,
+			MinSize: 1000,
+			MaxSize: 100,
+		},
 	}
 	require.EqualError(t, cfg.Validate(), "`max_size` must be greater than or equal to mix_size")
 }
