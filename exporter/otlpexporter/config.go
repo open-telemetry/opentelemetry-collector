@@ -29,20 +29,23 @@ type Config struct {
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
 	//
 	// Deprecated: [v0.123.0] batch configuration moving to queue configuration.
-	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"`
+	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck
+
 	// remove at the same time as BatcherConfig
 	hasBatcher bool
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if conf.IsSet("batcher") {
+		c.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
+		c.BatcherConfig.Enabled = false
+		c.hasBatcher = true
+	}
+
 	if err := conf.Unmarshal(c); err != nil {
 		return err
 	}
 
-	if conf.IsSet("batcher") {
-		fmt.Println("in here for sure")
-		c.hasBatcher = true
-	}
 	return nil
 }
 
