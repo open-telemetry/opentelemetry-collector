@@ -49,10 +49,9 @@ func (n *connectorNode) buildComponent(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	set := connector.Settings{
-		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
-		BuildInfo:         info,
+	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	if telemetry.PipelineTelemetryRfcGate.IsEnabled() {
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
 	}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:

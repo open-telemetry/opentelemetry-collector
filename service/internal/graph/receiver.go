@@ -42,10 +42,9 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.Settings{
-		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
-		BuildInfo:         info,
+	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	if telemetry.PipelineTelemetryRfcGate.IsEnabled() {
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
 	}
 	var err error
 	switch n.pipelineType {

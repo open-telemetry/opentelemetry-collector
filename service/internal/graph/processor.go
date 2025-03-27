@@ -47,10 +47,9 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	builder *builders.ProcessorBuilder,
 	next baseConsumer,
 ) error {
-	set := processor.Settings{
-		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Attributes.Set()),
-		BuildInfo:         info,
+	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	if telemetry.PipelineTelemetryRfcGate.IsEnabled() {
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
 	}
 	var err error
 	switch n.pipelineID.Signal() {
