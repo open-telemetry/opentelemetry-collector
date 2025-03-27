@@ -53,6 +53,10 @@ type baseExporter struct {
 func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
 
+	if oCfg.hasBatcher {
+		set.TelemetrySettings.Logger.Warn("using deprecated field: batcher")
+	}
+
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 

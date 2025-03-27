@@ -402,7 +402,7 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 
-	// send 6 blocking requests
+	// send 6 blockOnOverflow requests
 	wg := sync.WaitGroup{}
 	for i := 0; i < 6; i++ {
 		wg.Add(1)
@@ -430,7 +430,7 @@ func TestQueueBatch_BatchCancelled(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 
-	// send 2 blocking requests
+	// send 2 blockOnOverflow requests
 	wg := sync.WaitGroup{}
 	ctx, cancel := context.WithCancel(context.Background())
 	wg.Add(1)
@@ -463,7 +463,7 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 
-	// send 3 blocking requests with a timeout
+	// send 3 blockOnOverflow requests with a timeout
 	go func() {
 		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Delay: 40 * time.Millisecond}))
 	}()
@@ -600,6 +600,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 func newTestConfig() Config {
 	return Config{
 		Enabled:         true,
+		WaitForResult:   false,
 		Sizer:           request.SizerTypeItems,
 		NumConsumers:    runtime.NumCPU(),
 		QueueSize:       100_000,

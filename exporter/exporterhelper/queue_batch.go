@@ -8,32 +8,31 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 )
 
-// QueueConfig defines configuration for queueing batches before sending to the consumerSender.
-type QueueConfig = internal.QueueConfig
+// Deprecated: [v0.123.0] use QueueBatchConfig.
+type QueueConfig = QueueBatchConfig
 
 // Deprecated: [v0.123.0] use WithQueueBatch.
-func WithRequestQueue(cfg QueueConfig, encoding QueueBatchEncoding[Request]) Option {
+func WithRequestQueue(cfg QueueBatchConfig, encoding QueueBatchEncoding[Request]) Option {
 	return WithQueueBatch(cfg, QueueBatchSettings{Encoding: encoding})
 }
 
-// WithQueue overrides the default QueueConfig for an exporter.
-// The default QueueConfig is to disable queueing.
+// WithQueue overrides the default QueueBatchConfig for an exporter.
+// The default QueueBatchConfig is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(config QueueConfig) Option {
+func WithQueue(config QueueBatchConfig) Option {
 	return internal.WithQueue(config)
 }
 
-// WithBatcher enables batching for an exporter based on custom request types.
-// For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
-// WithRequestBatchFuncs provided.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 func WithBatcher(cfg BatcherConfig) Option {
 	return internal.WithBatcher(cfg)
 }
 
 // QueueBatchConfig defines configuration for queueing and batching for the exporter.
-type QueueBatchConfig = internal.QueueConfig
+type QueueBatchConfig = queuebatch.Config
+
+// BatchConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+type BatchConfig = queuebatch.BatchConfig
 
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
 // Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
@@ -59,13 +58,11 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 	return internal.WithQueueBatch(cfg, set)
 }
 
-// NewDefaultQueueConfig returns the default config for QueueConfig.
+// NewDefaultQueueConfig returns the default config for QueueBatchConfig.
 // By default, the queue stores 1000 items of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 
-// BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 type BatcherConfig = internal.BatcherConfig
 
 // SizeConfig sets the size limits for a batch.
@@ -73,4 +70,5 @@ type BatcherConfig = internal.BatcherConfig
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 type SizeConfig = internal.SizeConfig
 
+// Deprecated: [v0.123.0] use WithQueueBatch.
 var NewDefaultBatcherConfig = internal.NewDefaultBatcherConfig

@@ -23,7 +23,7 @@ func testExporterConfig(endpoint string) component.Config {
 	retryConfig := configretry.NewDefaultBackOffConfig()
 	retryConfig.InitialInterval = time.Millisecond // interval is short for the test purposes
 	return &otlpexporter.Config{
-		QueueConfig: exporterhelper.QueueConfig{Enabled: false},
+		QueueConfig: exporterhelper.QueueBatchConfig{Enabled: false},
 		RetryConfig: retryConfig,
 		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: endpoint,

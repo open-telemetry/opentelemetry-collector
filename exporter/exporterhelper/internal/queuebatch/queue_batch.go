@@ -29,10 +29,14 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	qSet Settings[request.Request],
+	set Settings[request.Request],
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	if cfg.hasBlocking {
+		set.Telemetry.Logger.Error("using deprecated field `blocking`")
+	}
+
 	var b Batcher[request.Request]
 	switch {
 	case cfg.Batch == nil:
@@ -40,41 +44,42 @@ func NewQueueBatch(
 	default:
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
 		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
+		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			next:       next,
+			maxWorkers: cfg.NumConsumers,
+		})
 	}
 
 	var q Queue[request.Request]
-	switch {
-	case cfg.WaitForResult:
-		q = newDisabledQueue(b.Consume)
-	default:
-		sizer, ok := qSet.Sizers[cfg.Sizer]
-		if !ok {
-			return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
-		}
-
-		switch cfg.StorageID != nil {
-		case true:
-			q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-				sizer:     sizer,
-				capacity:  int64(cfg.QueueSize),
-				blocking:  cfg.BlockOnOverflow,
-				signal:    qSet.Signal,
-				storageID: *cfg.StorageID,
-				encoding:  qSet.Encoding,
-				id:        qSet.ID,
-				telemetry: qSet.Telemetry,
-			}), cfg.NumConsumers, b.Consume)
-		default:
-			q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-				sizer:    sizer,
-				capacity: int64(cfg.QueueSize),
-				blocking: cfg.BlockOnOverflow,
-			}), cfg.NumConsumers, b.Consume)
-		}
+	sizer, ok := set.Sizers[cfg.Sizer]
+	if !ok {
+		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
-	oq, err := newObsQueue(qSet, q)
+	// Configure memory queue or persistent based on the config.
+	if cfg.StorageID == nil {
+		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
+			sizer:           sizer,
+			capacity:        cfg.QueueSize,
+			waitForResult:   cfg.WaitForResult,
+			blockOnOverflow: cfg.BlockOnOverflow,
+		}), cfg.NumConsumers, b.Consume)
+	} else {
+		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
+			sizer:           sizer,
+			capacity:        cfg.QueueSize,
+			blockOnOverflow: cfg.BlockOnOverflow,
+			signal:          set.Signal,
+			storageID:       *cfg.StorageID,
+			encoding:        set.Encoding,
+			id:              set.ID,
+			telemetry:       set.Telemetry,
+		}), cfg.NumConsumers, b.Consume)
+	}
+
+	oq, err := newObsQueue(set, q)
 	if err != nil {
 		return nil, err
 	}
