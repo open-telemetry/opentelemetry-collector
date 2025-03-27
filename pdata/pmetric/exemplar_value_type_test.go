@@ -13,5 +13,5 @@ func TestExemplarValueTypeString(t *testing.T) {
 	assert.Equal(t, "Empty", ExemplarValueTypeEmpty.String())
 	assert.Equal(t, "Int", ExemplarValueTypeInt.String())
 	assert.Equal(t, "Double", ExemplarValueTypeDouble.String())
-	assert.Equal(t, "", (ExemplarValueTypeDouble + 1).String())
+	assert.Empty(t, (ExemplarValueTypeDouble + 1).String())
 }
