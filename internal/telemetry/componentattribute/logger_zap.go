@@ -41,6 +41,7 @@ func tryWithAttributeSet(c zapcore.Core, attrs attribute.Set) zapcore.Core {
 	if cwa, ok := c.(coreWithAttributes); ok {
 		return cwa.withAttributeSet(attrs)
 	}
+	zap.New(c).Debug("Logger core does not support injecting component attributes")
 	return c
 }
 
