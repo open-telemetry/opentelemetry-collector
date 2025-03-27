@@ -41,17 +41,17 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt Request
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.size(sz) + req.size(sz))
-		req.setCachedSize(0)
+		dst.setCachedSize(sz, dst.sizeFromSizer(sz)+req.sizeFromSizer(sz))
+		req.setCachedSize(sz, 0)
 	}
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
 	var res []Request
-	for req.size(sz) > maxSize {
+	for req.sizeFromSizer(sz) > maxSize {
 		td, rmSize := extractTraces(req.td, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
+		req.setCachedSize(sz, req.sizeFromSizer(sz)-rmSize)
 		res = append(res, newTracesRequest(td))
 	}
 	res = append(res, req)

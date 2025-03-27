@@ -44,14 +44,16 @@ func NewTracesQueueBatchSettings() QueueBatchSettings {
 }
 
 type tracesRequest struct {
-	td         ptrace.Traces
-	cachedSize int
+	td          ptrace.Traces
+	cachedItems int
+	cachedBytes int
 }
 
 func newTracesRequest(td ptrace.Traces) Request {
 	return &tracesRequest{
-		td:         td,
-		cachedSize: -1,
+		td:          td,
+		cachedItems: td.SpanCount(),
+		cachedBytes: -1,
 	}
 }
 
@@ -78,18 +80,37 @@ func (req *tracesRequest) OnError(err error) Request {
 }
 
 func (req *tracesRequest) ItemsCount() int {
-	return req.td.SpanCount()
+	return req.cachedItems
 }
 
-func (req *tracesRequest) size(sizer sizer.TracesSizer) int {
-	if req.cachedSize == -1 {
-		req.cachedSize = sizer.TracesSize(req.td)
+func (req *tracesRequest) ByteSize() int {
+	if req.cachedBytes == -1 {
+		sz := sizer.TracesBytesSizer{}
+		req.cachedBytes = sz.TracesSize(req.td)
 	}
-	return req.cachedSize
+	return req.cachedBytes
 }
 
-func (req *tracesRequest) setCachedSize(size int) {
-	req.cachedSize = size
+// sizeFromSizer returns the size of the request based on the sizer. If the size is unknown, it returns 0.
+func (req *tracesRequest) sizeFromSizer(sz sizer.TracesSizer) int {
+	switch sz.(type) {
+	case *sizer.TracesCountSizer:
+		return req.ItemsCount()
+	case *sizer.TracesBytesSizer:
+		return req.ByteSize()
+	default:
+		return 0
+	}
+}
+
+func (req *tracesRequest) setCachedSize(sz sizer.TracesSizer, size int) {
+	switch sz.(type) {
+	case *sizer.TracesCountSizer:
+		req.cachedItems = size
+	case *sizer.TracesBytesSizer:
+		req.cachedBytes = size
+	default:
+	}
 }
 
 type tracesExporter struct {

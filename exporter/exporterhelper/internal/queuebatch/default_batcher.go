@@ -68,6 +68,17 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
+// batchReachedFlushingThreshold returns whether the request has reached the flushing threshold based on the sizer.
+func batchReachedFlushingThreshold(req request.Request, batchConfig BatchConfig, sizerType request.SizerType) bool {
+	switch sizerType {
+	case request.SizerTypeItems:
+		return req.ItemsCount() >= batchConfig.MinSize
+	case request.SizerTypeBytes:
+		return req.ByteSize() >= batchConfig.MinSize
+	}
+	return true
+}
+
 func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done Done) {
 	qb.currentBatchMu.Lock()
 

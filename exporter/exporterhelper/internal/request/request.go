@@ -15,6 +15,8 @@ type Request interface {
 	// sent. For example, for OTLP exporter, this value represents the number of spans,
 	// metric data points or log records.
 	ItemsCount() int
+	// ByteSize returns the size of the request in bytes.
+	ByteSize() int
 	// MergeSplit is a function that merge and/or splits this request with another one into multiple requests based on the
 	// configured limit provided in MaxSizeConfig.
 	// MergeSplit does not split if all fields in MaxSizeConfig are not initialized (zero).

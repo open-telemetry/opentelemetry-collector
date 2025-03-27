@@ -40,7 +40,7 @@ func (req *profilesRequest) split(maxSize int) ([]exporterhelper.Request, error)
 		pd := extractProfiles(req.pd, maxSize)
 		size := pd.SampleCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
-		res = append(res, &profilesRequest{pd: pd, cachedItemsCount: size})
+		res = append(res, &profilesRequest{pd: pd, cachedItems: size})
 	}
 	res = append(res, req)
 	return res, nil
