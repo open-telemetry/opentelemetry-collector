@@ -14,9 +14,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var PipelineTelemetryRfcGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.pipelineTelemetryRfc",
-	featuregate.StageBeta,
+var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.newPipelineTelemetry",
+	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.123.0"),
 	featuregate.WithRegisterDescription("Instruments Collector pipelines and injects component-identifying attributes"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
@@ -46,14 +46,14 @@ type TelemetrySettings struct {
 // The publicization of this API is tracked in https://github.com/open-telemetry/opentelemetry-collector/issues/12405
 
 func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings {
-	if !PipelineTelemetryRfcGate.IsEnabled() {
+	if !NewPipelineTelemetryGate.IsEnabled() {
 		return ts
 	}
 	return WithAttributeSet(ts, componentattribute.RemoveAttributes(ts.extraAttributes, fields...))
 }
 
 func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettings {
-	if !PipelineTelemetryRfcGate.IsEnabled() {
+	if !NewPipelineTelemetryGate.IsEnabled() {
 		return ts
 	}
 	ts.extraAttributes = attrs

@@ -17,6 +17,14 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
+	initialValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), value))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+}
+
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
 		name            string
@@ -117,11 +125,11 @@ func TestNewLogger(t *testing.T) {
 			}
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			featuregate.GlobalRegistry().Set(telemetry.PipelineTelemetryRfcGate.ID(), false)
+			setGate(t, telemetry.NewPipelineTelemetryGate, false)
 			testCoreType(t, tt.wantCoreType)
 		})
 		t.Run(tt.name+" (pipeline telemetry on)", func(t *testing.T) {
-			featuregate.GlobalRegistry().Set(telemetry.PipelineTelemetryRfcGate.ID(), true)
+			setGate(t, telemetry.NewPipelineTelemetryGate, true)
 			testCoreType(t, tt.wantCoreTypeRfc)
 		})
 	}

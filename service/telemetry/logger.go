@@ -43,7 +43,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	var lp log.LoggerProvider
 
-	if telemetry.PipelineTelemetryRfcGate.IsEnabled() {
+	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 			core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 

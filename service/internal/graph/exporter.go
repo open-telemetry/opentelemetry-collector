@@ -46,7 +46,7 @@ func (n *exporterNode) buildComponent(
 	builder *builders.ExporterBuilder,
 ) error {
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	if telemetry.PipelineTelemetryRfcGate.IsEnabled() {
+	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
 	}
 	var err error

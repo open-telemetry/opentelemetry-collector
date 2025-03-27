@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
@@ -33,7 +34,17 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
+func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
+	initialValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), value))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+}
+
 func TestCreateProcessor(t *testing.T) {
+	setGate(t, telemetry.NewPipelineTelemetryGate, true)
+
 	factory := NewFactory()
 	require.NotNil(t, factory)
 

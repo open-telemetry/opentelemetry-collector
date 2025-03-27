@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.122.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1
+	go.opentelemetry.io/collector/featuregate v1.28.1
 	go.opentelemetry.io/collector/internal/memorylimiter v0.122.1
 	go.opentelemetry.io/collector/internal/telemetry v0.122.1
 	go.opentelemetry.io/collector/pdata v1.28.1
@@ -57,7 +58,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.122.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
