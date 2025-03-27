@@ -8,7 +8,7 @@ import (
 )
 
 // Deprecated: [v0.123.0] use exporterhelper.BatcherConfig
-type Config = exporterhelper.BatcherConfig
+type Config = exporterhelper.BatcherConfig //nolint:staticcheck
 
 // Deprecated: [v0.123.0] use exporterhelper.SizeConfig
 type SizeConfig = exporterhelper.SizeConfig
@@ -26,4 +26,4 @@ var SizerTypeItems = exporterhelper.RequestSizerTypeItems
 var SizerTypeBytes = exporterhelper.RequestSizerTypeBytes
 
 // Deprecated: [v0.123.0] use exporterhelper.NewDefaultBatcherConfig
-var NewDefaultConfig = exporterhelper.NewDefaultBatcherConfig
+var NewDefaultConfig = exporterhelper.NewDefaultBatcherConfig //nolint:staticcheck

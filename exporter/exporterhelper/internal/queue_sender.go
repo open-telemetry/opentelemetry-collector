@@ -125,14 +125,14 @@ type SizeConfig struct {
 }
 
 func (c *BatcherConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
 	if c.FlushTimeout <= 0 {
 		return errors.New("`flush_timeout` must be greater than zero")
 	}
 
-	return nil
-}
-
-func (c SizeConfig) Validate() error {
 	if c.Sizer != request.SizerTypeItems {
 		return fmt.Errorf("unsupported sizer type: %q", c.Sizer)
 	}
