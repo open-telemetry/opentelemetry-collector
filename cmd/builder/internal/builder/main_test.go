@@ -114,6 +114,7 @@ var replaceModules = []string{
 func newTestConfig(tb testing.TB) *Config {
 	cfg, err := NewDefaultConfig()
 	require.NoError(tb, err)
+	cfg.Distribution.Name = "test_distribution"
 	cfg.downloadModules.wait = 0
 	cfg.downloadModules.numRetries = 1
 	return cfg
@@ -252,7 +253,6 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.LDSet = true
 				cfg.LDFlags = `-X "test.gitVersion=0743dc6c6411272b98494a9b32a63378e84c34da" -X "test.gitTag=local-testing" -X "test.goVersion=go version go1.20.7 darwin/amd64"`
 				return cfg
 			},
@@ -263,7 +263,6 @@ func TestGenerateAndCompile(t *testing.T) {
 				cfg := newTestConfig(t)
 				cfg.Distribution.OutputPath = t.TempDir()
 				cfg.Replaces = append(cfg.Replaces, replaces...)
-				cfg.GCSet = true
 				cfg.GCFlags = `all=-N -l`
 				return cfg
 			},
@@ -321,6 +320,19 @@ func TestGenerateAndCompile(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			name: "Go Build Flags compilation",
+			cfgBuilder: func(t *testing.T) *Config {
+				cfg := newTestConfig(t)
+				cfg.ConfResolver = ConfResolver{
+					DefaultURIScheme: "env",
+				}
+				cfg.GoBuildFlags = "-p 16"
+				cfg.Distribution.OutputPath = t.TempDir()
+				cfg.Replaces = append(cfg.Replaces, replaces...)
+				return cfg
+			},
+		},
 	}
 
 	for _, tt := range testCases {
@@ -329,9 +341,31 @@ func TestGenerateAndCompile(t *testing.T) {
 			assert.NoError(t, cfg.Validate())
 			assert.NoError(t, cfg.SetGoPath())
 			assert.NoError(t, cfg.ParseModules())
+			if testing.Verbose() {
+				cfg.Verbose = true
+			}
 			require.NoError(t, GenerateAndCompile(cfg))
 		})
 	}
+}
+
+func TestGenerateAndCompile_CompileError(t *testing.T) {
+	// This test forces a compile failure by providing
+	// purposely malformed ldflag.
+	cfg := newTestConfig(t)
+	cfg.ConfResolver = ConfResolver{
+		DefaultURIScheme: "env",
+	}
+	cfg.Distribution.OutputPath = t.TempDir()
+	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
+	if testing.Verbose() {
+		cfg.Verbose = true
+	}
+	cfg.LDSet = true
+	cfg.LDFlags = "-B otelrocks"
+	assert.NoError(t, cfg.SetGoPath())
+	assert.NoError(t, cfg.ParseModules())
+	require.ErrorIs(t, GenerateAndCompile(cfg), errCompileFailed)
 }
 
 // Test that the go.mod files that other tests in this file
@@ -359,8 +393,7 @@ func TestReplaceStatementsAreComplete(t *testing.T) {
 
 	var err error
 	dir := t.TempDir()
-	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
+	cfg := newTestConfig(t)
 	cfg.Distribution.Go = "go"
 	cfg.Distribution.OutputPath = dir
 	cfg.Replaces = append(cfg.Replaces, generateReplaces()...)
