@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 )
@@ -15,12 +17,21 @@ import (
 type Receiver struct {
 	pprofileotlp.UnimplementedGRPCServer
 	nextConsumer xconsumer.Profiles
+	itemsLimiter extensionlimiter.ResourceLimiter
+	sizeLimiter  extensionlimiter.ResourceLimiter
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer xconsumer.Profiles) *Receiver {
+func New(nextConsumer xconsumer.Profiles, limiter extensionlimiter.Provider) *Receiver {
+	var itemsLimiter, sizeLimiter extensionlimiter.ResourceLimiter
+	if limiter != nil {
+		itemsLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
+		sizeLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
+	}
 	return &Receiver{
 		nextConsumer: nextConsumer,
+		itemsLimiter: itemsLimiter,
+		sizeLimiter:  sizeLimiter,
 	}
 }
 
@@ -31,6 +42,27 @@ func (r *Receiver) Export(ctx context.Context, req pprofileotlp.ExportRequest) (
 	numProfiles := td.SampleCount()
 	if numProfiles == 0 {
 		return pprofileotlp.NewExportResponse(), nil
+	}
+
+	// Apply the items limiter if available
+	if r.itemsLimiter != nil {
+		release, err := r.itemsLimiter.Acquire(ctx, uint64(numProfiles))
+		if err != nil {
+			return pprofileotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		}
+		defer release()
+	}
+
+	// Apply the memory size limiter if available
+	if r.sizeLimiter != nil {
+		// Get the marshaled size of the request as a proxy for memory size
+		var sizer pprofile.ProtoMarshaler
+		size := sizer.ProfilesSize(td)
+		release, err := r.sizeLimiter.Acquire(ctx, uint64(size))
+		if err != nil {
+			return pprofileotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		}
+		defer release()
 	}
 
 	err := r.nextConsumer.ConsumeProfiles(ctx, td)

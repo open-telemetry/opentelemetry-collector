@@ -7,6 +7,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -19,27 +21,57 @@ type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Logs
 	obsreport    *receiverhelper.ObsReport
+	itemsLimiter extensionlimiter.ResourceLimiter
+	sizeLimiter  extensionlimiter.ResourceLimiter
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Receiver {
+func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport, limiter extensionlimiter.Provider) *Receiver {
+	var itemsLimiter, sizeLimiter extensionlimiter.ResourceLimiter
+	if limiter != nil {
+		itemsLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
+		sizeLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
+	}
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,
+		itemsLimiter: itemsLimiter,
+		sizeLimiter:  sizeLimiter,
 	}
 }
 
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
-	numSpans := ld.LogRecordCount()
-	if numSpans == 0 {
+	numRecords := ld.LogRecordCount()
+	if numRecords == 0 {
 		return plogotlp.NewExportResponse(), nil
+	}
+
+	// Apply the items limiter if available
+	if r.itemsLimiter != nil {
+		release, err := r.itemsLimiter.Acquire(ctx, uint64(numRecords))
+		if err != nil {
+			return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		}
+		defer release()
+	}
+
+	// Apply the memory size limiter if available
+	if r.sizeLimiter != nil {
+		// Get the marshaled size of the request as a proxy for memory size
+		var sizer plog.ProtoMarshaler
+		size := sizer.LogsSize(ld)
+		release, err := r.sizeLimiter.Acquire(ctx, uint64(size))
+		if err != nil {
+			return plogotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		}
+		defer release()
 	}
 
 	ctx = r.obsreport.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numRecords, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown

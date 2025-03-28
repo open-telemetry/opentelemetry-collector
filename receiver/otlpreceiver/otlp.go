@@ -16,8 +16,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -86,6 +88,22 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 	return r, nil
 }
 
+// extractLimiterProvider returns a multi-provider that combines all middleware limiter providers.
+func extractLimiterProvider(host component.Host, middlewares []configmiddleware.Middleware) extensionlimiter.Provider {
+	var providers []extensionlimiter.Provider
+	exts := host.GetExtensions()
+	for _, middleware := range middlewares {
+		ext := exts[middleware.MiddlewareID]
+		if ext == nil {
+			continue
+		}
+		if provider, ok := ext.(extensionlimiter.Provider); ok {
+			providers = append(providers, provider)
+		}
+	}
+	return extensionlimiter.NewMultiProvider(providers...)
+}
+
 func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	// If GRPC is not enabled, nothing to start.
 	if r.cfg.GRPC == nil {
@@ -97,20 +115,22 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		return err
 	}
 
+	limiterProvider := extractLimiterProvider(host, r.cfg.GRPC.Middlewares)
+
 	if r.nextTraces != nil {
-		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
+		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC, limiterProvider))
 	}
 
 	if r.nextMetrics != nil {
-		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC))
+		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC, limiterProvider))
 	}
 
 	if r.nextLogs != nil {
-		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
+		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC, limiterProvider))
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles, limiterProvider))
 	}
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
@@ -136,30 +156,32 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
+	limiterProvider := extractLimiterProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
+
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
-		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
-		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
-		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
+		httpProfilesReceiver := profiles.New(r.nextProfiles, limiterProvider)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})
