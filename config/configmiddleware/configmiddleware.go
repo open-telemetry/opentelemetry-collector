@@ -10,9 +10,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -30,12 +32,12 @@ type Middleware struct {
 	MiddlewareID component.ID `mapstructure:"middleware,omitempty"`
 }
 
-// GetHTTPServerMiddleware attempts to select the appropriate extensionmiddleware.HTTPServer from the list of extensions,
-// based on the requested extension name. If a middleware is not found, an error is returned.
-func (m Middleware) GetHTTPServerMiddleware(_ context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.HTTPServer, error) {
+// GetHTTPServerHandler attempts to select the appropriate extensionmiddleware.HTTPServer from the list of extensions,
+// and returns the http.Handler wrapper function. If a middleware is not found, an error is returned.
+func (m Middleware) GetHTTPServerHandler(_ context.Context, extensions map[component.ID]component.Component) (func(http.Handler) (http.Handler, error), error) {
 	if ext, found := extensions[m.MiddlewareID]; found {
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
-			return server, nil
+			return server.GetHTTPHandler, nil
 		}
 		return nil, errNotHTTPServer
 	}
@@ -43,12 +45,12 @@ func (m Middleware) GetHTTPServerMiddleware(_ context.Context, extensions map[co
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.MiddlewareID, errMiddlewareNotFound)
 }
 
-// GetGRPCServerMiddleware attempts to select the appropriate extensionmiddleware.GRPCServer from the list of extensions,
-// based on the requested extension name. If a middleware is not found, an error is returned.
-func (m Middleware) GetGRPCServerMiddleware(_ context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.GRPCServer, error) {
+// GetGRPCServerOptions attempts to select the appropriate extensionmiddleware.GRPCServer from the list of extensions,
+// and returns the gRPC server options. If a middleware is not found, an error is returned.
+func (m Middleware) GetGRPCServerOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.ServerOption, error) {
 	if ext, found := extensions[m.MiddlewareID]; found {
 		if server, ok := ext.(extensionmiddleware.GRPCServer); ok {
-			return server, nil
+			return server.GetGRPCServerOptions()
 		}
 		return nil, errNotGRPCServer
 	}
@@ -56,26 +58,26 @@ func (m Middleware) GetGRPCServerMiddleware(_ context.Context, extensions map[co
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.MiddlewareID, errMiddlewareNotFound)
 }
 
-// GetHTTPClientMiddleware attempts to select the appropriate extensionmiddleware.HTTPClient from the list of extensions,
-// based on the component id of the extension. If a middleware is not found, an error is returned.
+// GetHTTPClientRoundTripper attempts to select the appropriate extensionmiddleware.HTTPClient from the list of extensions,
+// and returns the HTTP client transport options. If a middleware is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (m Middleware) GetHTTPClientMiddleware(_ context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.HTTPClient, error) {
+func (m Middleware) GetHTTPClientRoundTripper(_ context.Context, extensions map[component.ID]component.Component) (func(http.RoundTripper) (http.RoundTripper, error), error) {
 	if ext, found := extensions[m.MiddlewareID]; found {
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
-			return client, nil
+			return client.GetHTTPRoundTripper, nil
 		}
 		return nil, errNotHTTPClient
 	}
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.MiddlewareID, errMiddlewareNotFound)
 }
 
-// GetGRPCClientMiddleware attempts to select the appropriate extensionmiddleware.GRPCClient from the list of extensions,
-// based on the component id of the extension. If a middleware is not found, an error is returned.
+// GetGRPClientOptions attempts to select the appropriate extensionmiddleware.GRPCClient from the list of extensions,
+// and returns the gRPC dial options. If a middleware is not found, an error is returned.
 // This should be only used by gRPC clients.
-func (m Middleware) GetGRPCClientMiddleware(_ context.Context, extensions map[component.ID]component.Component) (extensionmiddleware.GRPCClient, error) {
+func (m Middleware) GetGRPClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
 	if ext, found := extensions[m.MiddlewareID]; found {
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
-			return client, nil
+			return client.GetGRPCClientOptions()
 		}
 		return nil, errNotGRPCClient
 	}
