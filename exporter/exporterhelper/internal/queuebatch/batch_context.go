@@ -21,12 +21,21 @@ func LinksFromContext(ctx context.Context) []trace.Link {
 	if links, ok := ctx.Value(batchSpanLinksKey).([]trace.Link); ok {
 		return links
 	}
-	return []trace.Link{trace.LinkFromContext(ctx)}
+	return []trace.Link{}
+}
+
+func parentsFromContext(ctx context.Context) []trace.Link {
+	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
+		return []trace.Link{{SpanContext: spanCtx}}
+	} else {
+		return LinksFromContext(ctx)
+	}
 }
 
 func contextWithMergedLinks(ctx1 context.Context, ctx2 context.Context) context.Context {
 	return context.WithValue(
 		context.Background(),
 		batchSpanLinksKey,
-		append(LinksFromContext(ctx1), LinksFromContext(ctx2)...))
+		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...),
+	)
 }
