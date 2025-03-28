@@ -59,7 +59,7 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 }
 
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
-// By default, the queue stores 1000 items of telemetry and is non-blocking when full.
+// By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 
 // Deprecated: [v0.123.0] use WithQueueBatch.
