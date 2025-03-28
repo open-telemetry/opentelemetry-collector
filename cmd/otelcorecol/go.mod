@@ -119,7 +119,7 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.1 // indirect
-	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-20250327205218-bf9fa311fa12 // indirect
 	go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.122.1 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.122.1 // indirect
 	go.opentelemetry.io/collector/processor/xprocessor v0.122.1 // indirect
@@ -159,11 +159,11 @@ require (
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	gonum.org/v1/gonum v0.15.1 // indirect
+	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

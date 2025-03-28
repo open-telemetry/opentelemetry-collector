@@ -10,6 +10,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+type Encoding[T any] interface {
+	// Marshal is a function that can marshal a request into bytes.
+	Marshal(T) ([]byte, error)
+
+	// Unmarshal is a function that can unmarshal bytes into a request.
+	Unmarshal([]byte) (T, error)
+}
+
 // ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to
 // not block.
 // Experimental: This API is at the early stage of development and may change without backward compatibility

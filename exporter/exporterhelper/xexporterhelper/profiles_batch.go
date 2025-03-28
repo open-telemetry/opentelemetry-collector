@@ -7,13 +7,12 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, _ exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	if r2 != nil {
 		req2, ok := r2.(*profilesRequest)
 		if !ok {
@@ -23,10 +22,10 @@ func (req *profilesRequest) MergeSplit(_ context.Context, cfg exporterbatcher.Si
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSize == 0 {
+	if maxSize == 0 {
 		return []exporterhelper.Request{req}, nil
 	}
-	return req.split(cfg)
+	return req.split(maxSize)
 }
 
 func (req *profilesRequest) mergeTo(dst *profilesRequest) {
@@ -35,10 +34,10 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest) {
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
 }
 
-func (req *profilesRequest) split(cfg exporterbatcher.SizeConfig) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) split(maxSize int) ([]exporterhelper.Request, error) {
 	var res []exporterhelper.Request
-	for req.ItemsCount() > cfg.MaxSize {
-		pd := extractProfiles(req.pd, cfg.MaxSize)
+	for req.ItemsCount() > maxSize {
+		pd := extractProfiles(req.pd, maxSize)
 		size := pd.SampleCount()
 		req.setCachedItemsCount(req.ItemsCount() - size)
 		res = append(res, &profilesRequest{pd: pd, cachedItemsCount: size})

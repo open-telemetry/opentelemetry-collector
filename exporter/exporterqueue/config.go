@@ -4,52 +4,20 @@
 package exporterqueue // import "go.opentelemetry.io/collector/exporter/exporterqueue"
 
 import (
-	"errors"
-
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-// Config defines configuration for queueing requests before exporting.
-// It's supposed to be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type Config struct {
-	// Enabled indicates whether to not enqueue batches before exporting.
-	Enabled bool `mapstructure:"enabled"`
-	// NumConsumers is the number of consumers from the queue.
-	NumConsumers int `mapstructure:"num_consumers"`
-	// QueueSize is the maximum number of requests allowed in queue at any given time.
-	QueueSize int `mapstructure:"queue_size"`
-	// Blocking controls the queue behavior when full.
-	// If true it blocks until enough space to add the new request to the queue.
-	Blocking bool `mapstructure:"blocking"`
-	// StorageID if not empty, enables the persistent storage and uses the component specified
-	// as a storage extension for the persistent queue
-	StorageID *component.ID `mapstructure:"storage"`
-}
+// Deprecated: [v0.123.0] Use exporterhelper.QueueBatchConfigs
+type Config = exporterhelper.QueueBatchConfig
 
-// NewDefaultConfig returns the default Config.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] Use exporterhelper.NewDefaultQueueConfig.
+// Small difference that this is blocking vs the other one which is not blocking.
 func NewDefaultConfig() Config {
 	return Config{
 		Enabled:      true,
+		Sizer:        exporterhelper.RequestSizerTypeRequests,
 		NumConsumers: 10,
 		QueueSize:    1_000,
 		Blocking:     true,
 	}
-}
-
-// Validate checks if the Config is valid
-func (qCfg *Config) Validate() error {
-	if !qCfg.Enabled {
-		return nil
-	}
-	if qCfg.NumConsumers <= 0 {
-		return errors.New("`num_consumers` must be positive")
-	}
-	if qCfg.QueueSize <= 0 {
-		return errors.New("`queue_size` must be positive")
-	}
-	return nil
 }
