@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp/internal"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
@@ -111,6 +112,11 @@ type ClientConfig struct {
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
+
+	// Middlewares are used to add custom functionality to the HTTP client.
+	// Middleware handlers are applied in the order they appear in this list,
+	// with the first middleware becoming the outermost handler.
+	Middlewares []configmiddleware.Middleware `mapstructure:"middleware,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -193,6 +199,21 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	clientTransport := (http.RoundTripper)(transport)
+
+	// Apply middlewares in reverse order so they are applied in
+	// order. The first middleware runs after authentication.
+	for i := len(hcs.Middlewares) - 1; i >= 0; i-- {
+		wrapper, err := hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		// If we failed to get the middleware
+		if err != nil {
+			return nil, err
+		}
+		clientTransport, err = wrapper(clientTransport)
+		// If we failed to construct a wrapper
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	// The Auth RoundTripper should always be the innermost to ensure that
 	// request signing-based auth mechanisms operate after compression
@@ -338,6 +359,11 @@ type ServerConfig struct {
 	// is zero, the value of ReadTimeout is used. If both are
 	// zero, there is no timeout.
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
+
+	// Middlewares are used to add custom functionality to the HTTP server.
+	// Middleware handlers are applied in the order they appear in this list,
+	// with the first middleware becoming the outermost handler.
+	Middlewares []configmiddleware.Middleware `mapstructure:"middleware,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -411,7 +437,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -421,6 +447,22 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 
 	if hss.CompressionAlgorithms == nil {
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
+	}
+
+	// Apply middlewares in reverse order so they are applied in
+	// order.  The first middleware runs after decompression,
+	// below, preceded by Auth, CORS, etc.
+	for i := len(hss.Middlewares) - 1; i >= 0; i-- {
+		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+		// If we failed to get the middleware
+		if err != nil {
+			return nil, err
+		}
+		handler, err = wrapper(handler)
+		// If we failed to construct a wrapper
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	handler = httpContentDecompressor(

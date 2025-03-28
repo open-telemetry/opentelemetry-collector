@@ -420,12 +420,12 @@ func (grpcServerOptionWrapper) isToServerOption() {}
 
 // ToServer returns a [grpc.Server] for the configuration.
 func (gss *ServerConfig) ToServer(
-	_ context.Context,
+	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
+	grpcOpts, err := gss.getGrpcServerOptions(ctx, host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -433,6 +433,7 @@ func (gss *ServerConfig) ToServer(
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(
+	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
@@ -523,7 +524,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range gss.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCServerOptions(context.TODO(), host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}

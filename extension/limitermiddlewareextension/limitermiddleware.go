@@ -75,8 +75,8 @@ func limitExceeded(req *http.Request) *http.Response {
 	}
 }
 
-// MiddlewareRoundTripper returns an HTTP roundtripper that applies rate limiting.
-func (lm *limiterMiddleware) MiddlewareRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+// GetHTTPRoundTripper returns an HTTP roundtripper that applies rate limiting.
+func (lm *limiterMiddleware) GetHTTPRoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
 	rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 
