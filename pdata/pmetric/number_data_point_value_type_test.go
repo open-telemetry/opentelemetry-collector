@@ -13,5 +13,5 @@ func TestNumberDataPointValueTypeString(t *testing.T) {
 	assert.Equal(t, "Empty", NumberDataPointValueTypeEmpty.String())
 	assert.Equal(t, "Int", NumberDataPointValueTypeInt.String())
 	assert.Equal(t, "Double", NumberDataPointValueTypeDouble.String())
-	assert.Equal(t, "", (NumberDataPointValueTypeDouble + 1).String())
+	assert.Empty(t, (NumberDataPointValueTypeDouble + 1).String())
 }

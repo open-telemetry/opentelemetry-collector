@@ -23,7 +23,7 @@ func TestNewSpanIDEmpty(t *testing.T) {
 
 func TestSpanIDString(t *testing.T) {
 	sid := SpanID([8]byte{})
-	assert.Equal(t, "", sid.String())
+	assert.Empty(t, sid.String())
 
 	sid = SpanID([8]byte{0x12, 0x23, 0xAD, 0x12, 0x23, 0xAD, 0x12, 0x23})
 	assert.Equal(t, "1223ad1223ad1223", sid.String())

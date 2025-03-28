@@ -560,7 +560,7 @@ func TestInvalidValue(t *testing.T) {
 	assert.False(t, v.Bool())
 	assert.Equal(t, int64(0), v.Int())
 	assert.InDelta(t, float64(0), v.Double(), 0.01)
-	assert.Equal(t, "", v.Str())
+	assert.Empty(t, v.Str())
 	assert.Equal(t, ByteSlice{}, v.Bytes())
 	assert.Equal(t, Map{}, v.Map())
 	assert.Equal(t, Slice{}, v.Slice())

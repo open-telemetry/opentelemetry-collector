@@ -37,27 +37,26 @@ func NewQueueBatch(
 		set.Telemetry.Logger.Error("using deprecated field `blocking`")
 	}
 
-	var b Batcher[request.Request]
-	switch {
-	case cfg.Batch == nil:
-		b = newDisabledBatcher[request.Request](next)
-	default:
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
-			next:       next,
-			maxWorkers: cfg.NumConsumers,
-		})
-	}
-
-	var q Queue[request.Request]
 	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
+	var b Batcher[request.Request]
+	if cfg.Batch != nil {
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+		cfg.NumConsumers = 1
+		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+			sizerType:  cfg.Sizer,
+			sizer:      sizer,
+			next:       next,
+			maxWorkers: cfg.NumConsumers,
+		})
+	} else {
+		b = newDisabledBatcher[request.Request](next)
+	}
+
+	var q Queue[request.Request]
 	// Configure memory queue or persistent based on the config.
 	if cfg.StorageID == nil {
 		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{

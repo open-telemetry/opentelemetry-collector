@@ -22,14 +22,32 @@ import (
 func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
+		sizerType  request.SizerType
+		sizer      request.Sizer[request.Request]
 		maxWorkers int
 	}{
 		{
-			name:       "one_worker",
+			name:       "items/one_worker",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
-			name:       "three_workers",
+			name:       "items/three_workers",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 3,
+		},
+		{
+			name:       "bytes/one_worker",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "bytes/three_workers",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -42,8 +60,8 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 
 			sink := requesttest.NewSink()
 			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
+				sizerType:  tt.sizerType,
+				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
 			})
@@ -53,16 +71,16 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			})
 
 			done := newFakeDone()
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
 			sink.SetExportErr(errors.New("transient error"))
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
 			<-time.After(10 * time.Millisecond)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Bytes: 17}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Bytes: 13}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 5 && sink.ItemsCount() == 75
+				return sink.RequestsCount() == 5 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
 			}, 1*time.Second, 10*time.Millisecond)
 			// Check that done callback is called for the right amount of times.
 			assert.EqualValues(t, 1, done.errors.Load())
@@ -74,14 +92,32 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
+		sizerType  request.SizerType
+		sizer      request.Sizer[request.Request]
 		maxWorkers int
 	}{
 		{
-			name:       "one_worker",
+			name:       "items/one_worker",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
-			name:       "three_workers",
+			name:       "items/three_workers",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 3,
+		},
+		{
+			name:       "bytes/one_worker",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "bytes/three_workers",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -94,8 +130,8 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 
 			sink := requesttest.NewSink()
 			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
+				sizerType:  tt.sizerType,
+				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
 			})
@@ -104,28 +140,28 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			done := newFakeDone()
 			// These two requests will be dropped because of export error.
 			sink.SetExportErr(errors.New("transient error"))
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
 			<-time.After(10 * time.Millisecond)
 
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 7}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 7, Bytes: 7}, done)
 			// This requests will be dropped because of merge error.
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error")}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8, MergeErr: errors.New("transient error")}, done)
 
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Bytes: 13}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 
 			// Only the requests with 7+13 and 35 will be flushed.
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 2 && sink.ItemsCount() == 55
+				return sink.RequestsCount() == 2 && (sink.ItemsCount() == 55 || sink.BytesCount() == 55)
 			}, 1*time.Second, 10*time.Millisecond)
 
 			require.NoError(t, ba.Shutdown(context.Background()))
 
 			// After shutdown the pending "current batch" is also flushed.
 			assert.EqualValues(t, 3, sink.RequestsCount())
-			assert.EqualValues(t, 57, sink.ItemsCount())
+			assert.True(t, sink.ItemsCount() == 57 || sink.BytesCount() == 57)
 
 			// Check that done callback is called for the right amount of times.
 			assert.EqualValues(t, 3, done.errors.Load())
@@ -141,14 +177,32 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		sizerType  request.SizerType
+		sizer      request.Sizer[request.Request]
 		maxWorkers int
 	}{
 		{
-			name:       "one_worker",
+			name:       "items/one_worker",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
-			name:       "three_workers",
+			name:       "items/three_workers",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 3,
+		},
+		{
+			name:       "bytes/one_worker",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "bytes/three_workers",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -161,8 +215,8 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 
 			sink := requesttest.NewSink()
 			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
+				sizerType:  tt.sizerType,
+				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
 			})
@@ -172,16 +226,16 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			})
 
 			done := newFakeDone()
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Bytes: 17}, done)
 			// This requests will be dropped because of merge error.
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error")}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8, MergeErr: errors.New("transient error")}, done)
 
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Bytes: 13}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 1 && sink.ItemsCount() == 75
+				return sink.RequestsCount() == 1 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
 			}, 1*time.Second, 10*time.Millisecond)
 
 			// Check that done callback is called for the right amount of times.
@@ -198,14 +252,32 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 
 	tests := []struct {
 		name       string
+		sizerType  request.SizerType
+		sizer      request.Sizer[request.Request]
 		maxWorkers int
 	}{
 		{
-			name:       "one_worker",
+			name:       "items/one_worker",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
 			maxWorkers: 1,
 		},
 		{
-			name:       "three_workers",
+			name:       "items/three_workers",
+			sizerType:  request.SizerTypeItems,
+			sizer:      request.NewItemsSizer(),
+			maxWorkers: 3,
+		},
+		{
+			name:       "bytes/one_worker",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
+			maxWorkers: 1,
+		},
+		{
+			name:       "bytes/three_workers",
+			sizerType:  request.SizerTypeBytes,
+			sizer:      newFakeBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -219,8 +291,8 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 
 			sink := requesttest.NewSink()
 			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
+				sizerType:  tt.sizerType,
+				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
 			})
@@ -228,23 +300,23 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 
 			done := newFakeDone()
 			// This requests will be dropped because of merge error.
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error")}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8, MergeErr: errors.New("transient error")}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 17, Bytes: 17}, done)
 			// This requests will be dropped because of merge error.
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, MergeErr: errors.New("transient error")}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8, MergeErr: errors.New("transient error")}, done)
 
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, done)
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 30}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 13, Bytes: 13}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 35, Bytes: 35}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 30, Bytes: 30}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 1 && sink.ItemsCount() == 100
+				return sink.RequestsCount() == 1 && (sink.ItemsCount() == 100 || sink.BytesCount() == 100)
 			}, 1*time.Second, 10*time.Millisecond)
 
-			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 900}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 900, Bytes: 900}, done)
 			assert.Eventually(t, func() bool {
-				return sink.RequestsCount() == 10 && sink.ItemsCount() == 1000
+				return sink.RequestsCount() == 10 && (sink.ItemsCount() == 1000 || sink.BytesCount() == 1000)
 			}, 1*time.Second, 10*time.Millisecond)
 
 			// At this point the 7th not failing request is still pending.
@@ -254,7 +326,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 
 			// After shutdown the pending "current batch" is also flushed.
 			assert.EqualValues(t, 11, sink.RequestsCount())
-			assert.EqualValues(t, 1005, sink.ItemsCount())
+			assert.True(t, sink.ItemsCount() == 1005 || sink.BytesCount() == 1005)
 
 			// Check that done callback is called for the right amount of times.
 			assert.EqualValues(t, 2, done.errors.Load())
@@ -279,8 +351,8 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
-	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1}, done)
-	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 
 	assert.EqualValues(t, 0, sink.RequestsCount())
 	assert.EqualValues(t, 0, sink.ItemsCount())
@@ -316,13 +388,13 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	})
 
 	done := newFakeDone()
-	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 9}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 9, Bytes: 9}, done)
 	assert.Eventually(t, func() bool {
 		return sink.RequestsCount() == 1 && sink.ItemsCount() == 7
 	}, 1*time.Second, 10*time.Millisecond)
 
 	sink.SetExportErr(errors.New("transient error"))
-	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4}, done)
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4, Bytes: 4}, done)
 	assert.Eventually(t, func() bool {
 		return 2 == done.errors.Load()
 	}, 1*time.Second, 10*time.Millisecond)
@@ -349,5 +421,13 @@ func (fd fakeDone) OnDone(err error) {
 		fd.errors.Add(1)
 	} else {
 		fd.success.Add(1)
+	}
+}
+
+func newFakeBytesSizer() request.Sizer[request.Request] {
+	return request.BaseSizer{
+		SizeofFunc: func(req request.Request) int64 {
+			return int64(req.(*requesttest.FakeRequest).Items)
+		},
 	}
 }

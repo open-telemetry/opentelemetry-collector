@@ -23,7 +23,7 @@ func TestNewTraceIDEmpty(t *testing.T) {
 
 func TestTraceIDString(t *testing.T) {
 	tid := TraceID([16]byte{})
-	assert.Equal(t, "", tid.String())
+	assert.Empty(t, tid.String())
 
 	tid = [16]byte{0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78, 0x12, 0x34, 0x56, 0x78}
 	assert.Equal(t, "12345678123456781234567812345678", tid.String())

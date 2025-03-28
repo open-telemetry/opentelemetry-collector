@@ -48,11 +48,11 @@ func TestConfig_Validate(t *testing.T) {
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeRequests
-	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` sizer")
+	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` or `bytes` sizer")
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
-	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` sizer")
+	require.NoError(t, cfg.Validate())
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	cfg.Enabled = false
