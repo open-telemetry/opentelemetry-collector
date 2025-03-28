@@ -32,6 +32,92 @@ type Provider interface {
 	ResourceLimiter(key WeightKey) ResourceLimiter
 }
 
+// releaseFuncs is a collection of release functions that can be called together
+type releaseFuncs []ReleaseFunc
+
+// release calls all non-nil release functions in the collection
+func (r releaseFuncs) release() {
+	for _, rf := range r {
+		if rf != nil {
+			rf()
+		}
+	}
+}
+
+// MultiProvider combines multiple Provider implementations into a single Provider.
+// When requesting a limiter, it returns a combined limiter that applies all
+// limits from the underlying providers.
+type MultiProvider struct {
+	providers []Provider
+}
+
+// NewMultiProvider creates a new MultiProvider from the given providers.
+func NewMultiProvider(providers ...Provider) *MultiProvider {
+	return &MultiProvider{providers: providers}
+}
+
+// RateLimiter returns a combined RateLimiter for the specified weight key.
+// The combined limiter will apply all limits from the underlying providers.
+func (mp *MultiProvider) RateLimiter(key WeightKey) RateLimiter {
+	limiters := make([]RateLimiter, 0, len(mp.providers))
+	for _, p := range mp.providers {
+		if limiter := p.RateLimiter(key); limiter != nil {
+			limiters = append(limiters, limiter)
+		}
+	}
+
+	if len(limiters) == 0 {
+		return nil
+	}
+
+	return RateLimiterFunc(func(ctx context.Context, value uint64) error {
+		for _, limiter := range limiters {
+			if err := limiter.Limit(ctx, value); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// ResourceLimiter returns a combined ResourceLimiter for the specified weight key.
+// The combined limiter will apply all limits from the underlying providers and
+// aggregate the release functions.
+func (mp *MultiProvider) ResourceLimiter(key WeightKey) ResourceLimiter {
+	limiters := make([]ResourceLimiter, 0, len(mp.providers))
+	for _, p := range mp.providers {
+		if limiter := p.ResourceLimiter(key); limiter != nil {
+			limiters = append(limiters, limiter)
+		}
+	}
+
+	if len(limiters) == 0 {
+		return nil
+	}
+
+	return ResourceLimiterFunc(func(ctx context.Context, value uint64) (ReleaseFunc, error) {
+		var funcs releaseFuncs
+
+		for _, limiter := range limiters {
+			releaseFunc, err := limiter.Acquire(ctx, value)
+			if err != nil {
+				// Release any already acquired resources
+				funcs.release()
+				return nil, err
+			}
+			if releaseFunc != nil {
+				funcs = append(funcs, releaseFunc)
+			}
+		}
+
+		if len(funcs) == 0 {
+			return nil, nil
+		}
+
+		return funcs.release, nil
+	})
+}
+
 // ReleaseFunc is called when resources should be released after limiting.
 //
 // Note that RelaseFunc values may be nil in cases where the implementation is
