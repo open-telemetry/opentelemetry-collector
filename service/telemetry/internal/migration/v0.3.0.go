@@ -70,9 +70,7 @@ type MetricsConfigV030 struct {
 	// Deprecated: [v0.111.0] use readers configuration.
 	Address string `mapstructure:"address,omitempty"`
 
-	// Readers allow configuration of metric readers to emit metrics to
-	// any number of supported backends.
-	Readers []config.MetricReader `mapstructure:"readers"`
+	config.MeterProvider `mapstructure:",squash"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
