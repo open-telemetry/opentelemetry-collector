@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1
 	go.opentelemetry.io/collector/processor v0.122.1
-	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-20250327205218-bf9fa311fa12
 	go.opentelemetry.io/collector/processor/processortest v0.122.1
 	go.opentelemetry.io/collector/processor/xprocessor v0.122.1
 )

@@ -31,7 +31,7 @@ func TestTraceState_CopyTo(t *testing.T) {
 
 func TestTraceState_FromRaw_AsRaw(t *testing.T) {
 	ms := NewTraceState()
-	assert.Equal(t, "", ms.AsRaw())
+	assert.Empty(t, ms.AsRaw())
 	ms.FromRaw("congo=t61rcWkgMzE")
 	assert.Equal(t, "congo=t61rcWkgMzE", ms.AsRaw())
 }

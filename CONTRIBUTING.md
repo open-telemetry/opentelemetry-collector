@@ -301,6 +301,31 @@ During the collector release process, all `./chloggen/*.yaml` files are transcri
 
 Alternatively, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Local Testing
+
+To manually test your changes, follow these steps to build and run the Collector
+locally. Ensure that you execute these commands from the root of the repository:
+
+1. Build the Collector:
+
+  ```shell
+  make otelcorecol
+  ```
+
+2. Run the Collector with a local configuration file:
+
+  ```shell
+  ./bin/otelcorecol_<os>_<arch> --config ./examples/local/otel-config.yaml
+  ```
+
+  The actual name of the binary will depend on your platform, adjust accordingly
+  (e.g., `./bin/otelcorecol_darwin_arm64`).
+  
+  Replace `otel-config.yaml` with the appropriate configuration file as needed.
+
+3. Verify that your changes are reflected in the Collector's behavior by testing
+   it against the provided configuration.
+
 ## Membership, Roles, and Responsibilities
 
 ### Membership levels

@@ -48,7 +48,7 @@ for COMPONENT in ${BODY_COMPONENTS}; do
 
   CODEOWNERS=$(COMPONENT="${COMPONENT}" "${CUR_DIRECTORY}/get-codeowners.sh" || true)
 
-  if [[ -n "${CODEOWNERS}" && ! ("${CODEOWNERS}" =~ ${OPENER}) ]]; then
+  if [[ -n "${CODEOWNERS}" ]]; then
     if [[ -v PINGED_COMPONENTS["${COMPONENT}"] ]]; then
       continue
     fi

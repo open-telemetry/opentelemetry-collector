@@ -25,7 +25,7 @@ type QueueBatchSettings[K any] struct {
 }
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
-// By default, the queue stores 1000 items of telemetry and is non-blocking when full.
+// By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 func NewDefaultQueueConfig() queuebatch.Config {
 	return queuebatch.Config{
 		Enabled:      true,

@@ -16,5 +16,5 @@ func TestMetricTypeString(t *testing.T) {
 	assert.Equal(t, "Histogram", MetricTypeHistogram.String())
 	assert.Equal(t, "ExponentialHistogram", MetricTypeExponentialHistogram.String())
 	assert.Equal(t, "Summary", MetricTypeSummary.String())
-	assert.Equal(t, "", (MetricTypeSummary + 1).String())
+	assert.Empty(t, (MetricTypeSummary + 1).String())
 }

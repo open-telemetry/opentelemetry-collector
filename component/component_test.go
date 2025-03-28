@@ -10,7 +10,7 @@ import (
 )
 
 func TestKindString(t *testing.T) {
-	assert.Equal(t, "", Kind{}.String())
+	assert.Empty(t, Kind{}.String())
 	assert.Equal(t, "Receiver", KindReceiver.String())
 	assert.Equal(t, "Processor", KindProcessor.String())
 	assert.Equal(t, "Exporter", KindExporter.String())
@@ -78,7 +78,7 @@ func TestStabilityLevelString(t *testing.T) {
 	assert.Equal(t, "Alpha", StabilityLevelAlpha.String())
 	assert.Equal(t, "Beta", StabilityLevelBeta.String())
 	assert.Equal(t, "Stable", StabilityLevelStable.String())
-	assert.Equal(t, "", StabilityLevel(100).String())
+	assert.Empty(t, StabilityLevel(100).String())
 }
 
 func TestStabilityLevelLogMessage(t *testing.T) {

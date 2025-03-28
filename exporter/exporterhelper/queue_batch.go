@@ -59,15 +59,13 @@ func WithQueueBatch(cfg QueueBatchConfig, set QueueBatchSettings) Option {
 }
 
 // NewDefaultQueueConfig returns the default config for QueueBatchConfig.
-// By default, the queue stores 1000 items of telemetry and is non-blocking when full.
+// By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
 var NewDefaultQueueConfig = internal.NewDefaultQueueConfig
 
 // Deprecated: [v0.123.0] use WithQueueBatch.
 type BatcherConfig = internal.BatcherConfig
 
-// SizeConfig sets the size limits for a batch.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+// Deprecated: [v0.123.0] use WithQueueBatch.
 type SizeConfig = internal.SizeConfig
 
 // Deprecated: [v0.123.0] use WithQueueBatch.
