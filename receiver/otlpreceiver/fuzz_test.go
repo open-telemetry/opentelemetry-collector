@@ -43,13 +43,13 @@ func FuzzReceiverHandlers(f *testing.F) {
 		resp := httptest.NewRecorder()
 		switch handler % 3 {
 		case 0:
-			httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+			httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP, nil)
 			handleTraces(resp, req, httpTracesReceiver)
 		case 1:
-			httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+			httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP, nil)
 			handleMetrics(resp, req, httpMetricsReceiver)
 		case 2:
-			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP, nil)
 			handleLogs(resp, req, httpLogsReceiver)
 		}
 	})

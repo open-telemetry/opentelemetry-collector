@@ -157,33 +157,31 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	limiterProvider := extractLimiterProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
-	itemLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
-	sizeLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
 
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
-		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
-		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
-		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP, limiterProvider)
 		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
+		httpProfilesReceiver := profiles.New(r.nextProfiles, limiterProvider)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})
