@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/filter v0.122.1
 	go.opentelemetry.io/collector/pdata v1.28.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
-	go.opentelemetry.io/collector/processor v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/processor/processortest v0.122.1
 	go.opentelemetry.io/collector/receiver v1.28.1
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.1
@@ -62,7 +62,7 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.1 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.1 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250328121525-54c13a921747 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.1 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

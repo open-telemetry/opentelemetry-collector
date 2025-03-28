@@ -22,9 +22,9 @@ require (
 	go.opentelemetry.io/collector/consumer v1.28.1
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1
-	go.opentelemetry.io/collector/exporter v0.122.1
+	go.opentelemetry.io/collector/exporter v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/exporter/exportertest v0.122.1
-	go.opentelemetry.io/collector/exporter/xexporter v0.122.1
+	go.opentelemetry.io/collector/exporter/xexporter v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/extension v1.28.1
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.122.1
 	go.opentelemetry.io/collector/extension/extensiontest v0.122.1
@@ -38,9 +38,9 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.1
-	go.opentelemetry.io/collector/processor v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/processor/processortest v0.122.1
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.1
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/receiver v1.28.1
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.1
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.1

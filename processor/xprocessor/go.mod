@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
-	go.opentelemetry.io/collector/processor v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250328121525-54c13a921747
 )
 
 require (

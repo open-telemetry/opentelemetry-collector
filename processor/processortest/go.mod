@@ -14,8 +14,8 @@ require (
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
-	go.opentelemetry.io/collector/processor v0.122.1
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250328121525-54c13a921747
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250328121525-54c13a921747
 	go.uber.org/goleak v1.3.0
 )
 
