@@ -22,6 +22,8 @@ module-sets:
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/extensionauth
+      - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
     version: v0.122.1
@@ -57,7 +59,6 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/exporter/xexporter
-      - go.opentelemetry.io/collector/extension/extensionauth
       - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest
       - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/extensiontest
@@ -70,8 +71,8 @@ module-sets:
       - go.opentelemetry.io/collector/pdata/testdata
       - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/pipeline/xpipeline
-      - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/processortest
+      - go.opentelemetry.io/collector/processor/processorhelper
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper

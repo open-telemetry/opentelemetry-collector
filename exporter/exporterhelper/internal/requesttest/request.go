@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -26,6 +25,7 @@ func (e errorPartial) Error() string {
 
 type FakeRequest struct {
 	Items    int
+	Bytes    int
 	Partial  int
 	MergeErr error
 	Delay    time.Duration
@@ -43,53 +43,45 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}
 
-	maxItems := cfg.MaxSize
-	if maxItems == 0 {
-		if r2 != nil {
-			fr2 := r2.(*FakeRequest)
-			if fr2.MergeErr != nil {
-				return nil, fr2.MergeErr
-			}
-			fr2.mergeTo(r)
+	if r2 != nil {
+		fr2 := r2.(*FakeRequest)
+		if fr2.MergeErr != nil {
+			return nil, fr2.MergeErr
 		}
-		return []request.Request{r}, nil
+		fr2.mergeTo(r)
 	}
 
-	var fr2 *FakeRequest
-	if r2 == nil {
-		fr2 = &FakeRequest{Delay: r.Delay}
-	} else {
-		if r2.(*FakeRequest).MergeErr != nil {
-			return nil, r2.(*FakeRequest).MergeErr
-		}
-		fr2 = r2.(*FakeRequest)
+	if maxSize == 0 {
+		return []request.Request{r}, nil
 	}
 
 	var res []request.Request
-	// No split, then just simple merge
-	if r.Items+fr2.Items <= maxItems {
-		fr2.mergeTo(r)
-		return []request.Request{r}, nil
-	}
-
-	// if split is needed, we don't propagate ExportErr from fr2 to fr1 to test more cases
-	fr2.Items -= maxItems - r.Items
-	r.Items = maxItems
-	res = append(res, r)
-
-	// split fr2 to maxItems
-	for {
-		if fr2.Items <= maxItems {
-			res = append(res, &FakeRequest{Items: fr2.Items, Delay: fr2.Delay})
-			break
+	switch szt {
+	case request.SizerTypeItems:
+		for r.Items != 0 {
+			if r.Items <= maxSize {
+				res = append(res, r)
+				break
+			}
+			res = append(res, &FakeRequest{Items: maxSize, Bytes: -1, Delay: r.Delay})
+			r.Items -= maxSize
+			r.Bytes = -1
 		}
-		res = append(res, &FakeRequest{Items: maxItems, Delay: fr2.Delay})
-		fr2.Items -= maxItems
+	case request.SizerTypeBytes:
+		for r.Bytes != 0 {
+			if r.Bytes <= maxSize {
+				res = append(res, r)
+				break
+			}
+			res = append(res, &FakeRequest{Items: -1, Bytes: maxSize, Delay: r.Delay})
+			r.Items = -1
+			r.Bytes -= maxSize
+		}
 	}
 
 	return res, nil
@@ -97,17 +89,8 @@ func (r *FakeRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConf
 
 func (r *FakeRequest) mergeTo(dst *FakeRequest) {
 	dst.Items += r.Items
+	dst.Bytes += r.Bytes
 	dst.Delay += r.Delay
-}
-
-func NoopPusherFunc(context.Context, request.Request) error {
-	return nil
-}
-
-func NewErrPusherFunc(err error) func(context.Context, request.Request) error {
-	return func(context.Context, request.Request) error {
-		return err
-	}
 }
 
 func RequestFromMetricsFunc(err error) func(context.Context, pmetric.Metrics) (request.Request, error) {

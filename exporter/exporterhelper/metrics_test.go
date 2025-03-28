@@ -28,11 +28,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/internal/storagetest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -70,7 +72,7 @@ func TestMetrics_NilLogger(t *testing.T) {
 }
 
 func TestMetricsRequest_NilLogger(t *testing.T) {
-	me, err := NewMetricsRequest(context.Background(), exporter.Settings{}, requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc)
+	me, err := NewMetricsRequest(context.Background(), exporter.Settings{}, requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
 	require.Nil(t, me)
 	require.Equal(t, errNilLogger, err)
 }
@@ -82,7 +84,7 @@ func TestMetrics_NilPushMetricsData(t *testing.T) {
 }
 
 func TestMetricsRequest_NilMetricsConverter(t *testing.T) {
-	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, requesttest.NoopPusherFunc)
+	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, sendertest.NewNopSenderFunc[Request]())
 	require.Nil(t, me)
 	require.Equal(t, errNilMetricsConverter, err)
 }
@@ -108,7 +110,7 @@ func TestMetrics_Default(t *testing.T) {
 func TestMetricsRequest_Default(t *testing.T) {
 	md := pmetric.NewMetrics()
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc)
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -130,7 +132,7 @@ func TestMetrics_WithCapabilities(t *testing.T) {
 func TestMetricsRequest_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc, WithCapabilities(capabilities))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request](), WithCapabilities(capabilities))
 	require.NoError(t, err)
 	assert.NotNil(t, me)
 
@@ -150,7 +152,7 @@ func TestMetricsRequest_Default_ConvertError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("convert_error")
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(want), requesttest.NoopPusherFunc)
+		requesttest.RequestFromMetricsFunc(want), sendertest.NewNopSenderFunc[Request]())
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, consumererror.NewPermanent(want), me.ConsumeMetrics(context.Background(), md))
@@ -160,7 +162,7 @@ func TestMetricsRequest_Default_ExportError(t *testing.T) {
 	md := pmetric.NewMetrics()
 	want := errors.New("export_error")
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NewErrPusherFunc(want))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	require.Equal(t, want, me.ConsumeMetrics(context.Background(), md))
@@ -177,9 +179,9 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithRetry(rCfg), WithQueue(qCfg))
 	require.NoError(t, err)
 
-	host := &internal.MockHost{Ext: map[component.ID]component.Component{
+	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
-	}}
+	})
 	require.NoError(t, te.Start(context.Background(), host))
 	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
 
@@ -229,7 +231,7 @@ func TestMetricsRequest_WithRecordMetrics(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc)
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -255,7 +257,7 @@ func TestMetricsRequest_WithRecordMetrics_ExportError(t *testing.T) {
 
 	me, err := NewMetricsRequest(context.Background(),
 		exporter.Settings{ID: fakeMetricsName, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NewErrPusherFunc(want))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 
@@ -282,7 +284,7 @@ func TestMetricsRequest_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc)
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request]())
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, nil)
@@ -310,7 +312,7 @@ func TestMetricsRequest_WithSpan_ExportError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), requesttest.NewErrPusherFunc(want))
+	me, err := NewMetricsRequest(context.Background(), set, requesttest.RequestFromMetricsFunc(nil), sendertest.NewErrSenderFunc[Request](want))
 	require.NoError(t, err)
 	require.NotNil(t, me)
 	checkWrapSpanForMetrics(t, sr, set.TracerProvider.Tracer("test"), me, want)
@@ -334,7 +336,7 @@ func TestMetricsRequest_WithShutdown(t *testing.T) {
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc, WithShutdown(shutdown))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request](), WithShutdown(shutdown))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 
@@ -360,7 +362,7 @@ func TestMetricsRequest_WithShutdown_ReturnError(t *testing.T) {
 	shutdownErr := func(context.Context) error { return want }
 
 	me, err := NewMetricsRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType),
-		requesttest.RequestFromMetricsFunc(nil), requesttest.NoopPusherFunc, WithShutdown(shutdownErr))
+		requesttest.RequestFromMetricsFunc(nil), sendertest.NewNopSenderFunc[Request](), WithShutdown(shutdownErr))
 	assert.NotNil(t, me)
 	assert.NoError(t, err)
 

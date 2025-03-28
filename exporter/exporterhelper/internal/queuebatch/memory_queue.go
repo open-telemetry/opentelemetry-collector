@@ -9,11 +9,14 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
-var sizeDonePool = sync.Pool{
+var blockingDonePool = sync.Pool{
 	New: func() any {
-		return &sizeDone{}
+		return &blockingDone{
+			ch: make(chan error, 1),
+		}
 	},
 }
 
@@ -21,15 +24,16 @@ var errInvalidSize = errors.New("invalid element size")
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
 type memoryQueueSettings[T any] struct {
-	sizer    sizer[T]
-	capacity int64
-	blocking bool
+	sizer           request.Sizer[T]
+	capacity        int64
+	waitForResult   bool
+	blockOnOverflow bool
 }
 
 // memoryQueue is an in-memory implementation of a Queue.
 type memoryQueue[T any] struct {
 	component.StartFunc
-	sizer sizer[T]
+	sizer request.Sizer[T]
 	cap   int64
 
 	mu              sync.Mutex
@@ -38,17 +42,19 @@ type memoryQueue[T any] struct {
 	items           *linkedQueue[T]
 	size            int64
 	stopped         bool
-	blocking        bool
+	waitForResult   bool
+	blockOnOverflow bool
 }
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
 func newMemoryQueue[T any](set memoryQueueSettings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		sizer:    set.sizer,
-		cap:      set.capacity,
-		items:    &linkedQueue[T]{},
-		blocking: set.blocking,
+		sizer:           set.sizer,
+		cap:             set.capacity,
+		items:           &linkedQueue[T]{},
+		waitForResult:   set.waitForResult,
+		blockOnOverflow: set.blockOnOverflow,
 	}
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)
@@ -57,8 +63,9 @@ func newMemoryQueue[T any](set memoryQueueSettings[T]) readableQueue[T] {
 
 // Offer puts the element into the queue with the given sized if there is enough capacity.
 // Returns an error if the queue is full.
-func (sq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
-	elSize := sq.sizer.Sizeof(el)
+func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
+	elSize := mq.sizer.Sizeof(el)
+	// Ignore empty requests, see https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#empty-telemetry-envelopes
 	if elSize == 0 {
 		return nil
 	}
@@ -67,84 +74,116 @@ func (sq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 		return errInvalidSize
 	}
 
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
+	done, err := mq.add(ctx, el, elSize)
+	if err != nil {
+		return err
+	}
 
-	for sq.size+elSize > sq.cap {
-		if !sq.blocking {
-			return ErrQueueIsFull
+	if mq.waitForResult {
+		// Only re-add the blockingDone instance back to the pool if successfully received the
+		// message from the consumer which guarantees consumer will not use that anymore,
+		// otherwise no guarantee about when the consumer will add the message to the channel so cannot reuse or close.
+		select {
+		case doneErr := <-done.ch:
+			blockingDonePool.Put(done)
+			return doneErr
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockingDone, error) {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+
+	for mq.size+elSize > mq.cap {
+		if !mq.blockOnOverflow {
+			return nil, ErrQueueIsFull
 		}
 		// Wait for more space or before the ctx is Done.
-		if err := sq.hasMoreSpace.Wait(ctx); err != nil {
-			return err
+		if err := mq.hasMoreSpace.Wait(ctx); err != nil {
+			return nil, err
 		}
 	}
 
-	sq.size += elSize
-	// Prevent cancellation and deadline to propagate to the context stored in the queue.
-	// The grpc/http based receivers will cancel the request context after this function returns.
-	sq.items.push(context.WithoutCancel(ctx), el, elSize)
+	mq.size += elSize
+	done := blockingDonePool.Get().(*blockingDone)
+	done.reset(elSize, mq)
+
+	if !mq.waitForResult {
+		// Prevent cancellation and deadline to propagate to the context stored in the queue.
+		// The grpc/http based receivers will cancel the request context after this function returns.
+		ctx = context.WithoutCancel(ctx)
+	}
+
+	mq.items.push(ctx, el, done)
 	// Signal one consumer if any.
-	sq.hasMoreElements.Signal()
-	return nil
+	mq.hasMoreElements.Signal()
+	return done, nil
 }
 
 // Read removes the element from the queue and returns it.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
-func (sq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool) {
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
+func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool) {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
 
 	for {
-		if sq.items.hasElements() {
-			elCtx, el, elSize := sq.items.pop()
-			sd := sizeDonePool.Get().(*sizeDone)
-			sd.reset(elSize, sq)
-			return elCtx, el, sd, true
+		if mq.items.hasElements() {
+			elCtx, el, done := mq.items.pop()
+			return elCtx, el, done, true
 		}
 
-		if sq.stopped {
+		if mq.stopped {
 			var el T
 			return context.Background(), el, nil, false
 		}
 
 		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
 		//  Until then use the sync.Cond.
-		sq.hasMoreElements.Wait()
+		mq.hasMoreElements.Wait()
 	}
 }
 
-func (sq *memoryQueue[T]) onDone(elSize int64) {
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
-	sq.size -= elSize
-	sq.hasMoreSpace.Signal()
+func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+	mq.size -= bd.elSize
+	mq.hasMoreSpace.Signal()
+	if mq.waitForResult {
+		// In this case the done will be added back to the queue by the waiter.
+		bd.ch <- err
+		return
+	}
+	blockingDonePool.Put(bd)
 }
 
 // Shutdown closes the queue channel to initiate draining of the queue.
-func (sq *memoryQueue[T]) Shutdown(context.Context) error {
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
-	sq.stopped = true
-	sq.hasMoreElements.Broadcast()
+func (mq *memoryQueue[T]) Shutdown(context.Context) error {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+	mq.stopped = true
+	mq.hasMoreElements.Broadcast()
 	return nil
 }
 
-func (sq *memoryQueue[T]) Size() int64 {
-	sq.mu.Lock()
-	defer sq.mu.Unlock()
-	return sq.size
+func (mq *memoryQueue[T]) Size() int64 {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
+	return mq.size
 }
 
-func (sq *memoryQueue[T]) Capacity() int64 {
-	return sq.cap
+func (mq *memoryQueue[T]) Capacity() int64 {
+	return mq.cap
 }
 
 type node[T any] struct {
 	ctx  context.Context
 	data T
-	size int64
+	done Done
 	next *node[T]
 }
 
@@ -153,8 +192,8 @@ type linkedQueue[T any] struct {
 	tail *node[T]
 }
 
-func (l *linkedQueue[T]) push(ctx context.Context, data T, size int64) {
-	n := &node[T]{ctx: ctx, data: data, size: size}
+func (l *linkedQueue[T]) push(ctx context.Context, data T, done Done) {
+	n := &node[T]{ctx: ctx, data: data, done: done}
 	// If tail is nil means list is empty so update both head and tail to point to same element.
 	if l.tail == nil {
 		l.head = n
@@ -169,7 +208,7 @@ func (l *linkedQueue[T]) hasElements() bool {
 	return l.head != nil
 }
 
-func (l *linkedQueue[T]) pop() (context.Context, T, int64) {
+func (l *linkedQueue[T]) pop() (context.Context, T, Done) {
 	n := l.head
 	l.head = n.next
 	// If it gets to the last element, then update tail as well.
@@ -177,22 +216,22 @@ func (l *linkedQueue[T]) pop() (context.Context, T, int64) {
 		l.tail = nil
 	}
 	n.next = nil
-	return n.ctx, n.data, n.size
+	return n.ctx, n.data, n.done
 }
 
-type sizeDone struct {
-	size  int64
+type blockingDone struct {
 	queue interface {
-		onDone(int64)
+		onDone(*blockingDone, error)
 	}
+	elSize int64
+	ch     chan error
 }
 
-func (sd *sizeDone) reset(size int64, queue interface{ onDone(int64) }) {
-	sd.size = size
-	sd.queue = queue
+func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDone, error) }) {
+	bd.elSize = elSize
+	bd.queue = queue
 }
 
-func (sd *sizeDone) OnDone(error) {
-	defer sizeDonePool.Put(sd)
-	sd.queue.onDone(sd.size)
+func (bd *blockingDone) OnDone(err error) {
+	bd.queue.onDone(bd, err)
 }

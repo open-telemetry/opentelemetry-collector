@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
 // TimeoutConfig for timeout. The timeout applies to individual attempts to send data to the backend.
@@ -34,18 +35,18 @@ func NewDefaultTimeoutConfig() TimeoutConfig {
 }
 
 // timeoutSender is a requestSender that adds a `timeout` to every request that passes this sender.
-type timeoutSender[K any] struct {
+type timeoutSender[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
 	cfg  TimeoutConfig
-	next Sender[K]
+	next sender.Sender[T]
 }
 
-func newTimeoutSender[K any](cfg TimeoutConfig, next Sender[K]) Sender[K] {
-	return &timeoutSender[K]{cfg: cfg, next: next}
+func newTimeoutSender[T any](cfg TimeoutConfig, next sender.Sender[T]) sender.Sender[T] {
+	return &timeoutSender[T]{cfg: cfg, next: next}
 }
 
-func (ts *timeoutSender[K]) Send(ctx context.Context, req K) error {
+func (ts *timeoutSender[T]) Send(ctx context.Context, req T) error {
 	// Intentionally don't overwrite the context inside the request, because in case of retries deadline will not be
 	// updated because this deadline most likely is before the next one.
 	tCtx, cancelFunc := context.WithTimeout(ctx, ts.cfg.Timeout)

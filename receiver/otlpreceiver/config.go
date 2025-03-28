@@ -22,7 +22,7 @@ const (
 )
 
 type HTTPConfig struct {
-	*confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
 	TracesURLPath string `mapstructure:"traces_url_path,omitempty"`

@@ -8,10 +8,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/pipeline"
 )
+
+type Encoding[T any] interface {
+	// Marshal is a function that can marshal a request into bytes.
+	Marshal(T) ([]byte, error)
+
+	// Unmarshal is a function that can unmarshal bytes into a request.
+	Unmarshal([]byte) (T, error)
+}
 
 // ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to
 // not block.
@@ -54,40 +59,4 @@ type readableQueue[T any] interface {
 	// The function blocks until an item is available or if the queue is stopped.
 	// If the queue is stopped returns false, otherwise true.
 	Read(context.Context) (context.Context, T, Done, bool)
-}
-
-// Settings defines settings for creating a queue.
-type QueueSettings[T any] struct {
-	Signal           pipeline.Signal
-	ExporterSettings exporter.Settings
-	Encoding         exporterqueue.Encoding[T]
-}
-
-// NewQueue returns a queue
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewQueue[T any](_ context.Context, set QueueSettings[T], cfg exporterqueue.Config, consume ConsumeFunc[T]) Queue[T] {
-	if !cfg.Enabled {
-		return newDisabledQueue(consume)
-	}
-	if cfg.StorageID != nil {
-		q := newPersistentQueue[T](persistentQueueSettings[T]{
-			sizer:     &requestSizer[T]{},
-			capacity:  int64(cfg.QueueSize),
-			blocking:  cfg.Blocking,
-			signal:    set.Signal,
-			storageID: *cfg.StorageID,
-			encoding:  set.Encoding,
-			set:       set.ExporterSettings,
-		})
-		return newAsyncQueue(q, cfg.NumConsumers, consume)
-	}
-
-	q := newMemoryQueue[T](memoryQueueSettings[T]{
-		sizer:    &requestSizer[T]{},
-		capacity: int64(cfg.QueueSize),
-		blocking: cfg.Blocking,
-	})
-
-	return newAsyncQueue(q, cfg.NumConsumers, consume)
 }

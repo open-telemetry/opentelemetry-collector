@@ -24,6 +24,7 @@ coverage/*
 coverage.txt
 
 # Benchmarks
+**/benchmark.txt
 benchmarks.txt
 
 # Wix
