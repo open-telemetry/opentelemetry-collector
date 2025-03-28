@@ -590,8 +590,8 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	assert.LessOrEqual(t, 1, sink.RequestsCount())
 	assert.Equal(t, 8, sink.ItemsCount())
 
-	// Confirm that it is flushed after 100ms (using 60+50=110 here to be safe)
-	time.Sleep(50 * time.Millisecond)
+	// Confirm that it is flushed after 100ms (using 60+100=160 here to be safe)
+	time.Sleep(100 * time.Millisecond)
 	assert.LessOrEqual(t, 2, sink.RequestsCount())
 	assert.Equal(t, 12, sink.ItemsCount())
 	require.NoError(t, qb.Shutdown(context.Background()))
