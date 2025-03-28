@@ -16,8 +16,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -86,6 +88,22 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 	return r, nil
 }
 
+// extractLimiterProvider returns a multi-provider that combines all middleware limiter providers.
+func extractLimiterProvider(host component.Host, middlewares []configmiddleware.Middleware) extensionlimiter.Provider {
+	var providers []extensionlimiter.Provider
+	exts := host.GetExtensions()
+	for _, middleware := range middlewares {
+		ext := exts[middleware.MiddlewareID]
+		if ext == nil {
+			continue
+		}
+		if provider, ok := ext.(extensionlimiter.Provider); ok {
+			providers = append(providers, provider)
+		}
+	}
+	return extensionlimiter.NewMultiProvider(providers...)
+}
+
 func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	// If GRPC is not enabled, nothing to start.
 	if r.cfg.GRPC == nil {
@@ -96,6 +114,10 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	if r.serverGRPC, err = r.cfg.GRPC.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
+
+	limiterProvider := extractLimiterProvider(host, r.cfg.GRPC.Middlewares)
+	itemLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
+	sizeLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
 
 	if r.nextTraces != nil {
 		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
@@ -135,6 +157,10 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	if r.cfg.HTTP == nil {
 		return nil
 	}
+
+	limiterProvider := extractLimiterProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
+	itemLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
+	sizeLimiter := limiterProvider.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
 
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {

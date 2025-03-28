@@ -36,12 +36,25 @@ func newLimiterMiddleware(_ context.Context, cfg *Config, _ extension.Settings) 
 	}, nil
 }
 
-// Ensure limiterMiddleware implements all required interfaces.
+// Ensure limiterMiddleware implements all required middleware interfaces.
 var _ extensionmiddleware.HTTPClient = &limiterMiddleware{}
 var _ extensionmiddleware.HTTPServer = &limiterMiddleware{}
 var _ extensionmiddleware.GRPCClient = &limiterMiddleware{}
 var _ extensionmiddleware.GRPCServer = &limiterMiddleware{}
 var _ component.Component = &limiterMiddleware{}
+
+// limiterMiddleware also implements the extensionlimiter interface.
+var _ extensionlimiter.Provider = &limiterMiddleware{}
+
+// RateLimiter implements extensionlimiter.Provider.
+func (lm *limiterMiddleware) RateLimiter(key extensionlimiter.WeightKey) extensionlimiter.RateLimiter {
+	return lm.provider.RateLimiter(key)
+}
+
+// ResourceLimiter implements extensionlimiter.Provider
+func (lm *limiterMiddleware) ResourceLimiter(key extensionlimiter.WeightKey) extensionlimiter.ResourceLimiter {
+	return lm.provider.ResourceLimiter(key)
+}
 
 // Start initializes the limiter by getting it from host extensions.
 func (lm *limiterMiddleware) Start(ctx context.Context, host component.Host) error {
