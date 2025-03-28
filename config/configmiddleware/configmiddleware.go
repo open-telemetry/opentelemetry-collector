@@ -19,7 +19,6 @@ import (
 
 var (
 	errMiddlewareNotFound = errors.New("middleware not found")
-	errNotMiddleware      = errors.New("requested extension is not a middleware")
 	errNotHTTPServer      = errors.New("requested extension is not an HTTP server middleware")
 	errNotGRPCServer      = errors.New("requested extension is not a gRPC server middleware")
 	errNotHTTPClient      = errors.New("requested extension is not an HTTP client middleware")
@@ -71,10 +70,10 @@ func (m Middleware) GetHTTPClientRoundTripper(_ context.Context, extensions map[
 	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.MiddlewareID, errMiddlewareNotFound)
 }
 
-// GetGRPClientOptions attempts to select the appropriate extensionmiddleware.GRPCClient from the list of extensions,
+// GetGRPCClientOptions attempts to select the appropriate extensionmiddleware.GRPCClient from the list of extensions,
 // and returns the gRPC dial options. If a middleware is not found, an error is returned.
 // This should be only used by gRPC clients.
-func (m Middleware) GetGRPClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
+func (m Middleware) GetGRPCClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
 	if ext, found := extensions[m.MiddlewareID]; found {
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
 			return client.GetGRPCClientOptions()

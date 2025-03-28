@@ -39,6 +39,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.122.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1 // indirect
@@ -93,3 +95,7 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telem
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
