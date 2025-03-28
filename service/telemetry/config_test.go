@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -117,12 +117,14 @@ func TestConfigValidate(t *testing.T) {
 			cfg: &Config{
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: []config.MetricReader{
-						{
-							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-								Host: newPtr("127.0.0.1"),
-								Port: newPtr(3333),
-							}}},
+					MeterProvider: config.MeterProvider{
+						Readers: []config.MetricReader{
+							{
+								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+									Host: newPtr("127.0.0.1"),
+									Port: newPtr(3333),
+								}}},
+							},
 						},
 					},
 				},
@@ -133,8 +135,7 @@ func TestConfigValidate(t *testing.T) {
 			name: "invalid metric telemetry",
 			cfg: &Config{
 				Metrics: MetricsConfig{
-					Level:   configtelemetry.LevelBasic,
-					Readers: nil,
+					Level: configtelemetry.LevelBasic,
 				},
 			},
 			success: false,

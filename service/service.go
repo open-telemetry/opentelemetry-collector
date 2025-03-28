@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"runtime"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -137,11 +137,18 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	sch := semconv.SchemaURL
 
-	views := configureViews(cfg.Telemetry.Metrics.Level)
+	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
 
-	readers := cfg.Telemetry.Metrics.Readers
+	if mpConfig.Views != nil {
+		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
+		}
+	} else {
+		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
+	}
+
 	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
-		readers = []config.MetricReader{}
+		mpConfig.Readers = []config.MetricReader{}
 	}
 
 	sdk, err := config.NewSDK(
@@ -151,10 +158,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				LoggerProvider: &config.LoggerProvider{
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
-				MeterProvider: &config.MeterProvider{
-					Readers: readers,
-					Views:   views,
-				},
+				MeterProvider: mpConfig,
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
 				},
@@ -197,8 +201,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
-
-	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 	srv.telemetrySettings = component.TelemetrySettings{
 		Logger:         logger,
 		MeterProvider:  mp,
@@ -224,9 +226,13 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
-		return nil, fmt.Errorf("failed to register process metrics: %w", err)
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(mpConfig.Readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
+		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+			return nil, fmt.Errorf("failed to register process metrics: %w", err)
+		}
 	}
+
+	logsAboutMeterProvider(logger, cfg.Telemetry.Metrics, mp)
 
 	return srv, nil
 }
@@ -404,6 +410,21 @@ func dropViewOption(selector *config.ViewSelector) config.View {
 func configureViews(level configtelemetry.Level) []config.View {
 	views := []config.View{}
 
+	if level < configtelemetry.LevelDetailed {
+		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+			}),
+		)
+	}
+
+	// Make sure to add the AttributeKeys view after the AggregationDrop view:
+	// Only the first view outputting a given metric identity is actually used, so placing the
+	// AttributeKeys view first would never drop the metrics regadless of level.
 	if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
 		views = append(views, []config.View{
 			{
@@ -434,18 +455,6 @@ func configureViews(level configtelemetry.Level) []config.View {
 				},
 			},
 		}...)
-	}
-
-	if level < configtelemetry.LevelDetailed {
-		// Drop all otelhttp and otelgrpc metrics if the level is not detailed.
-		views = append(views,
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"),
-			}),
-			dropViewOption(&config.ViewSelector{
-				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
-			}),
-		)
 	}
 
 	// otel-arrow library metrics

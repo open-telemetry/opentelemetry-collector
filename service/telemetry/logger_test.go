@@ -8,18 +8,31 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
+
+func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
+	initialValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), value))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+}
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
-		name         string
-		wantCoreType any
-		wantErr      error
-		cfg          Config
+		name            string
+		wantCoreType    any
+		wantCoreTypeRfc any
+		wantErr         error
+		cfg             Config
 	}{
 		{
 			name:         "no log config",
@@ -39,7 +52,8 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*zapcore.ioCore",
+			wantCoreType:    "*zapcore.ioCore",
+			wantCoreTypeRfc: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -62,11 +76,35 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "*zapcore.levelFilterCore",
+			wantCoreType:    "*zapcore.levelFilterCore",
+			wantCoreTypeRfc: "*componentattribute.otelTeeCoreWithAttributes",
+		},
+		{
+			name: "log config with sampling",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:       zapcore.InfoLevel,
+					Development: false,
+					Encoding:    "console",
+					Sampling: &LogsSamplingConfig{
+						Enabled:    true,
+						Tick:       10 * time.Second,
+						Initial:    10,
+						Thereafter: 100,
+					},
+					OutputPaths:       []string{"stderr"},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					InitialFields:     map[string]any(nil),
+				},
+			},
+			wantCoreType:    "*zapcore.sampler",
+			wantCoreTypeRfc: "*componentattribute.wrapperCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		testCoreType := func(t *testing.T, wantCoreType any) {
 			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
 				Processors: tt.cfg.Logs.Processors,
 			}}))
@@ -74,11 +112,11 @@ func TestNewLogger(t *testing.T) {
 			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
-				require.Nil(t, tt.wantCoreType)
+				require.Nil(t, wantCoreType)
 			} else {
 				require.NoError(t, err)
 				gotType := reflect.TypeOf(l.Core()).String()
-				require.Equal(t, tt.wantCoreType, gotType)
+				require.Equal(t, wantCoreType, gotType)
 				type shutdownable interface {
 					Shutdown(context.Context) error
 				}
@@ -86,6 +124,14 @@ func TestNewLogger(t *testing.T) {
 					require.NoError(t, prov.Shutdown(context.Background()))
 				}
 			}
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			setGate(t, telemetry.NewPipelineTelemetryGate, false)
+			testCoreType(t, tt.wantCoreType)
+		})
+		t.Run(tt.name+" (pipeline telemetry on)", func(t *testing.T) {
+			setGate(t, telemetry.NewPipelineTelemetryGate, true)
+			testCoreType(t, tt.wantCoreTypeRfc)
 		})
 	}
 }

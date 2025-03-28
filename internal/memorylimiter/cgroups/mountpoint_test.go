@@ -170,7 +170,7 @@ func TestMountPointTranslateError(t *testing.T) {
 			path:       path,
 		}
 
-		assert.Equal(t, "", translated, "inaccessiblePaths[%d] == %q", i, path)
+		assert.Empty(t, translated, "inaccessiblePaths[%d] == %q", i, path)
 		assert.Equal(t, errExpected, err, "inaccessiblePaths[%d] == %q", i, path)
 	}
 
@@ -183,7 +183,7 @@ func TestMountPointTranslateError(t *testing.T) {
 	for i, path := range relPaths {
 		translated, err := cgroupMountPoint.Translate(path)
 
-		assert.Equal(t, "", translated, "relPaths[%d] == %q", i, path)
+		assert.Empty(t, translated, "relPaths[%d] == %q", i, path)
 		assert.Error(t, err, path)
 	}
 }

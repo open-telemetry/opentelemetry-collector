@@ -9,7 +9,7 @@ import (
 	"net"
 	"strconv"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
@@ -109,6 +109,10 @@ func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics readers should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
 		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
+	}
+
+	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
+		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
 	}
 
 	return nil

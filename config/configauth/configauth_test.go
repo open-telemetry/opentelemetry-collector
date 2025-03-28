@@ -12,17 +12,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
 var mockID = component.MustNewID("mock")
-
-func must[T any](t *testing.T, builder func() (T, error)) T {
-	t.Helper()
-	thing, err := builder()
-	require.NoError(t, err)
-	return thing
-}
 
 func TestGetServer(t *testing.T) {
 	testCases := []struct {
@@ -31,18 +24,14 @@ func TestGetServer(t *testing.T) {
 		expected      error
 	}{
 		{
-			name: "obtain server authenticator",
-			authenticator: must(t, func() (extension.Extension, error) {
-				return extensionauth.NewServer()
-			}),
-			expected: nil,
+			name:          "obtain server authenticator",
+			authenticator: extensionauthtest.NewNopServer(),
+			expected:      nil,
 		},
 		{
-			name: "not a server authenticator",
-			authenticator: must(t, func() (extension.Extension, error) {
-				return extensionauth.NewClient()
-			}),
-			expected: errNotServer,
+			name:          "not a server authenticator",
+			authenticator: extensionauthtest.NewNopClient(),
+			expected:      errNotServer,
 		},
 	}
 	for _, tt := range testCases {
@@ -79,25 +68,21 @@ func TestGetServerFails(t *testing.T) {
 	assert.Nil(t, authenticator)
 }
 
-func TestGetClient(t *testing.T) {
+func TestGetHTTPClient(t *testing.T) {
 	testCases := []struct {
 		name          string
 		authenticator extension.Extension
 		expected      error
 	}{
 		{
-			name: "obtain client authenticator",
-			authenticator: must(t, func() (extension.Extension, error) {
-				return extensionauth.NewClient()
-			}),
-			expected: nil,
+			name:          "obtain client authenticator",
+			authenticator: extensionauthtest.NewNopClient(),
+			expected:      nil,
 		},
 		{
-			name: "not a client authenticator",
-			authenticator: must(t, func() (extension.Extension, error) {
-				return extensionauth.NewServer()
-			}),
-			expected: errNotClient,
+			name:          "not a client authenticator",
+			authenticator: extensionauthtest.NewNopServer(),
+			expected:      errNotHTTPClient,
 		},
 	}
 	for _, tt := range testCases {
@@ -110,7 +95,7 @@ func TestGetClient(t *testing.T) {
 				mockID: tt.authenticator,
 			}
 
-			authenticator, err := cfg.GetClientAuthenticator(context.Background(), ext)
+			authenticator, err := cfg.GetHTTPClientAuthenticator(context.Background(), ext)
 
 			// verify
 			if tt.expected != nil {
@@ -124,11 +109,11 @@ func TestGetClient(t *testing.T) {
 	}
 }
 
-func TestGetClientFails(t *testing.T) {
+func TestGetGRPCClientFails(t *testing.T) {
 	cfg := &Authentication{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
-	authenticator, err := cfg.GetClientAuthenticator(context.Background(), map[component.ID]component.Component{})
+	authenticator, err := cfg.GetGRPCClientAuthenticator(context.Background(), map[component.ID]component.Component{})
 	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }

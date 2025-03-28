@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -65,12 +65,14 @@ func TestTelemetryConfiguration(t *testing.T) {
 				},
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: []config.MetricReader{
-						{
-							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-								Host: newPtr("127.0.0.1"),
-								Port: newPtr(3333),
-							}}},
+					MeterProvider: config.MeterProvider{
+						Readers: []config.MetricReader{
+							{
+								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+									Host: newPtr("127.0.0.1"),
+									Port: newPtr(3333),
+								}}},
+							},
 						},
 					},
 				},
@@ -85,12 +87,14 @@ func TestTelemetryConfiguration(t *testing.T) {
 				},
 				Metrics: MetricsConfig{
 					Level: configtelemetry.LevelBasic,
-					Readers: []config.MetricReader{
-						{
-							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-								Host: newPtr("127.0.0.1"),
-								Port: newPtr(3333),
-							}}},
+					MeterProvider: config.MeterProvider{
+						Readers: []config.MetricReader{
+							{
+								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+									Host: newPtr("127.0.0.1"),
+									Port: newPtr(3333),
+								}}},
+							},
 						},
 					},
 				},

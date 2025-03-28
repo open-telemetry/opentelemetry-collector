@@ -6,7 +6,7 @@ package migration // import "go.opentelemetry.io/collector/service/telemetry/int
 import (
 	"time"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -70,9 +70,7 @@ type MetricsConfigV030 struct {
 	// Deprecated: [v0.111.0] use readers configuration.
 	Address string `mapstructure:"address,omitempty"`
 
-	// Readers allow configuration of metric readers to emit metrics to
-	// any number of supported backends.
-	Readers []config.MetricReader `mapstructure:"readers"`
+	config.MeterProvider `mapstructure:",squash"`
 }
 
 func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {

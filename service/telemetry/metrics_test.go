@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -97,11 +97,13 @@ func TestTelemetryInit(t *testing.T) {
 		cfg := Config{
 			Metrics: MetricsConfig{
 				Level: configtelemetry.LevelDetailed,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{
-						Exporter: config.PullMetricExporter{Prometheus: prom},
-					},
-				}},
+				MeterProvider: config.MeterProvider{
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{
+							Exporter: config.PullMetricExporter{Prometheus: prom},
+						},
+					}},
+				},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -217,9 +219,11 @@ func TestInstrumentEnabled(t *testing.T) {
 	cfg := Config{
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
-			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
-			}},
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
+				}},
+			},
 		},
 	}
 	sdk, err := config.NewSDK(

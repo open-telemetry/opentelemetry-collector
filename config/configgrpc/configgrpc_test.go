@@ -29,16 +29,25 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
-func mustNewServerAuth(t *testing.T, opts ...extensionauth.ServerOption) extensionauth.Server {
-	t.Helper()
-	srv, err := extensionauth.NewServer(opts...)
-	require.NoError(t, err)
-	return srv
+var (
+	_ extension.Extension  = (*mockAuthServer)(nil)
+	_ extensionauth.Server = (*mockAuthServer)(nil)
+)
+
+type mockAuthServer struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ServerAuthenticateFunc
+}
+
+func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
+	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
@@ -171,7 +180,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -200,7 +209,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -229,7 +238,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					testAuthID: &extensionauthtest.MockClient{},
+					testAuthID: extensionauthtest.NewNopClient(),
 				},
 			},
 		},
@@ -409,7 +418,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
-			mockID: mustNewServerAuth(t),
+			mockID: extensionauthtest.NewNopServer(),
 		},
 	}
 	srv, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings())
@@ -984,7 +993,7 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1008,7 +1017,7 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1029,7 +1038,7 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Nil(t, res)
@@ -1060,7 +1069,7 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	require.NoError(t, err)
@@ -1086,7 +1095,7 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	require.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
@@ -1109,7 +1118,7 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	}
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, mustNewServerAuth(t, extensionauth.WithServerAuthenticate(authFunc)))
+	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
@@ -1159,7 +1168,8 @@ func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse,
 
 // tempSocketName provides a temporary Unix socket name for testing.
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "sock")
+	// The socket path length limit on macOS is 104 characters. Using `os.TempDir` to produce a shorter file path (#12639)
+	tmpfile, err := os.CreateTemp(os.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

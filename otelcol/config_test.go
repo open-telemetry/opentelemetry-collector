@@ -8,13 +8,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
@@ -244,12 +245,29 @@ func TestConfigValidate(t *testing.T) {
 			cfg := tt.cfgFn()
 			err := xconfmap.Validate(cfg)
 			if tt.expected != nil {
-				assert.EqualError(t, err, tt.expected.Error())
+				require.EqualError(t, err, tt.expected.Error())
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
+}
+
+func TestNoPipelinesFeatureGate(t *testing.T) {
+	cfg := generateConfig()
+	cfg.Receivers = nil
+	cfg.Exporters = nil
+	cfg.Service.Pipelines = pipelines.Config{}
+
+	require.Error(t, xconfmap.Validate(cfg))
+
+	gate := pipelines.AllowNoPipelines
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
+	}()
+
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func generateConfig() *Config {
@@ -283,14 +301,16 @@ func generateConfig() *Config {
 				},
 				Metrics: telemetry.MetricsConfig{
 					Level: configtelemetry.LevelNormal,
-					Readers: []config.MetricReader{
-						{
-							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
-								Prometheus: &config.Prometheus{
-									Host: newPtr("localhost"),
-									Port: newPtr(8080),
-								},
-							}},
+					MeterProvider: config.MeterProvider{
+						Readers: []config.MetricReader{
+							{
+								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
+									Prometheus: &config.Prometheus{
+										Host: newPtr("localhost"),
+										Port: newPtr(8080),
+									},
+								}},
+							},
 						},
 					},
 				},

@@ -52,7 +52,7 @@ func TestAddAttribute(t *testing.T) {
 
 	// Add a brand new attribute
 	loc := NewLocation()
-	err := AddAttribute(table, loc, "bonjour", "monde")
+	err := AddAttribute(table, loc, "bonjour", pcommon.NewValueStr("monde"))
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, table.Len())
@@ -60,14 +60,14 @@ func TestAddAttribute(t *testing.T) {
 
 	// Add an already existing attribute
 	mapp := NewMapping()
-	err = AddAttribute(table, mapp, "hello", "world")
+	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
 
 	// Add a duplicate attribute
-	err = AddAttribute(table, mapp, "hello", "world")
+	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, table.Len())
@@ -98,19 +98,19 @@ func BenchmarkAddAttribute(b *testing.B) {
 	for _, bb := range []struct {
 		name  string
 		key   string
-		value any
+		value pcommon.Value
 
 		runBefore func(*testing.B, AttributeTableSlice, attributable)
 	}{
 		{
 			name:  "with a new string attribute",
 			key:   "attribute",
-			value: "test",
+			value: pcommon.NewValueStr("test"),
 		},
 		{
 			name:  "with an existing attribute",
 			key:   "attribute",
-			value: "test",
+			value: pcommon.NewValueStr("test"),
 
 			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
 				entry := table.AppendEmpty()
@@ -121,16 +121,16 @@ func BenchmarkAddAttribute(b *testing.B) {
 		{
 			name:  "with a duplicate attribute",
 			key:   "attribute",
-			value: "test",
+			value: pcommon.NewValueStr("test"),
 
 			runBefore: func(_ *testing.B, table AttributeTableSlice, obj attributable) {
-				require.NoError(b, AddAttribute(table, obj, "attribute", "test"))
+				require.NoError(b, AddAttribute(table, obj, "attribute", pcommon.NewValueStr("test")))
 			},
 		},
 		{
 			name:  "with a hundred attributes to loop through",
 			key:   "attribute",
-			value: "test",
+			value: pcommon.NewValueStr("test"),
 
 			runBefore: func(_ *testing.B, table AttributeTableSlice, _ attributable) {
 				for i := range 100 {

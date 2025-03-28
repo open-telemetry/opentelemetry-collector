@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	config "go.opentelemetry.io/contrib/config/v0.3.0"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -98,18 +98,20 @@ func createDefaultConfig() component.Config {
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
-			Readers: []config.MetricReader{
-				{
-					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-						WithoutScopeInfo:  newPtr(true),
-						WithoutUnits:      newPtr(true),
-						WithoutTypeSuffix: newPtr(true),
-						Host:              &metricsHost,
-						Port:              newPtr(8888),
-						WithResourceConstantLabels: &config.IncludeExclude{
-							Included: []string{},
-						},
-					}}},
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  newPtr(true),
+							WithoutUnits:      newPtr(true),
+							WithoutTypeSuffix: newPtr(true),
+							Host:              &metricsHost,
+							Port:              newPtr(8888),
+							WithResourceConstantLabels: &config.IncludeExclude{
+								Included: []string{},
+							},
+						}}},
+					},
 				},
 			},
 		},

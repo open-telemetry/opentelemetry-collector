@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.27.0
+    version: v1.28.1
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -22,8 +22,11 @@ module-sets:
       - go.opentelemetry.io/collector/config/confignet
       - go.opentelemetry.io/collector/consumer
       - go.opentelemetry.io/collector/extension
+      - go.opentelemetry.io/collector/extension/extensionauth
+      - go.opentelemetry.io/collector/processor
+      - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.121.0
+    version: v0.122.1
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
@@ -56,7 +59,6 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/otlpexporter
       - go.opentelemetry.io/collector/exporter/otlphttpexporter
       - go.opentelemetry.io/collector/exporter/xexporter
-      - go.opentelemetry.io/collector/extension/extensionauth
       - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest
       - go.opentelemetry.io/collector/extension/extensioncapabilities
       - go.opentelemetry.io/collector/extension/extensiontest
@@ -69,13 +71,12 @@ module-sets:
       - go.opentelemetry.io/collector/pdata/testdata
       - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/pipeline/xpipeline
-      - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/processor/processortest
+      - go.opentelemetry.io/collector/processor/processorhelper
       - go.opentelemetry.io/collector/processor/batchprocessor
       - go.opentelemetry.io/collector/processor/memorylimiterprocessor
       - go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper
       - go.opentelemetry.io/collector/processor/xprocessor
-      - go.opentelemetry.io/collector/receiver
       - go.opentelemetry.io/collector/receiver/receiverhelper
       - go.opentelemetry.io/collector/receiver/nopreceiver
       - go.opentelemetry.io/collector/receiver/otlpreceiver

@@ -7,19 +7,18 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // MergeSplit splits and/or merges the provided logs request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeConfig, r2 Request) ([]Request, error) {
+func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
 	var sz sizer.LogsSizer
-	switch cfg.Sizer {
-	case exporterbatcher.SizerTypeItems:
+	switch szt {
+	case RequestSizerTypeItems:
 		sz = &sizer.LogsCountSizer{}
-	case exporterbatcher.SizerTypeBytes:
+	case RequestSizerTypeBytes:
 		sz = &sizer.LogsBytesSizer{}
 	default:
 		return nil, errors.New("unknown sizer type")
@@ -33,16 +32,16 @@ func (req *logsRequest) MergeSplit(_ context.Context, cfg exporterbatcher.SizeCo
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
-	if cfg.MaxSize == 0 {
+	if maxSize == 0 {
 		return []Request{req}, nil
 	}
 
-	return req.split(cfg.MaxSize, sz), nil
+	return req.split(maxSize, sz), nil
 }
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	if sz != nil {
-		dst.setCachedSize(dst.Size(sz) + req.Size(sz))
+		dst.setCachedSize(dst.size(sz) + req.size(sz))
 		req.setCachedSize(0)
 	}
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
@@ -50,10 +49,10 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
 	var res []Request
-	for req.Size(sz) > maxSize {
+	for req.size(sz) > maxSize {
 		ld, rmSize := extractLogs(req.ld, maxSize, sz)
-		req.setCachedSize(req.Size(sz) - rmSize)
-		res = append(res, newLogsRequest(ld, req.pusher))
+		req.setCachedSize(req.size(sz) - rmSize)
+		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
 	return res

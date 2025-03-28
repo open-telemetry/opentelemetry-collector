@@ -13,9 +13,32 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+
+        # Extract title from latest version title in CHANGELOG.md
+      - name: Prepare release title
+        id: release-title
+        run: |
+          echo "title=$(grep -A 2 '<!-- next version -->' CHANGELOG.md | awk '/##/{print $2}')" >> $GITHUB_OUTPUT
+
+      - name: Prepare release notes
+        run: |
+          touch release-notes.md
+          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "## End User Changelog" >> release-notes.md
+
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG.md > tmp-chlog.md # select changelog of latest version only
+          sed '1,3d' tmp-chlog.md >> release-notes.md # delete first 3 lines of file
+
+          echo "" >> release-notes.md
+          echo "## API Changelog" >> release-notes.md
+
+          awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md # select changelog of latest version only
+          sed '1,3d' tmp-chlog-api.md >> release-notes.md # delete first 3 lines of file
+
       - name: Create Github Release
         run: |
-          gh release create ${{ github.ref_name }} -t ${{ github.ref_name }} -n "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}"
+          gh release create ${{ github.ref_name }} -t ${{ steps.release-title.outputs.title }} -F release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1

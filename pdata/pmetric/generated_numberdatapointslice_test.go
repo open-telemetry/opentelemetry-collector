@@ -123,6 +123,18 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestNumberDataPointSliceAll(t *testing.T) {
+	ms := generateTestNumberDataPointSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
 func TestNumberDataPointSlice_Sort(t *testing.T) {
 	es := generateTestNumberDataPointSlice()
 	es.Sort(func(a, b NumberDataPoint) bool {

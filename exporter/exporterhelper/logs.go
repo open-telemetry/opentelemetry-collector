@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
@@ -24,53 +25,63 @@ var (
 	logsUnmarshaler = &plog.ProtoUnmarshaler{}
 )
 
+// NewLogsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using plog.Logs.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewLogsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: logsEncoding{},
+		Sizers: map[RequestSizerType]request.Sizer[Request]{
+			RequestSizerTypeRequests: NewRequestsSizer(),
+			RequestSizerTypeItems:    request.NewItemsSizer(),
+			RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
+				},
+			},
+		},
+	}
+}
+
 type logsRequest struct {
 	ld         plog.Logs
-	pusher     consumer.ConsumeLogsFunc
 	cachedSize int
 }
 
-func newLogsRequest(ld plog.Logs, pusher consumer.ConsumeLogsFunc) Request {
+func newLogsRequest(ld plog.Logs) Request {
 	return &logsRequest{
 		ld:         ld,
-		pusher:     pusher,
 		cachedSize: -1,
 	}
 }
 
-type logsEncoding struct {
-	pusher consumer.ConsumeLogsFunc
-}
+type logsEncoding struct{}
 
-func (le *logsEncoding) Unmarshal(bytes []byte) (Request, error) {
+func (logsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 	if err != nil {
 		return nil, err
 	}
-	return newLogsRequest(logs, le.pusher), nil
+	return newLogsRequest(logs), nil
 }
 
-func (le *logsEncoding) Marshal(req Request) ([]byte, error) {
+func (logsEncoding) Marshal(req Request) ([]byte, error) {
 	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
 }
 
 func (req *logsRequest) OnError(err error) Request {
 	var logError consumererror.Logs
 	if errors.As(err, &logError) {
-		return newLogsRequest(logError.Data(), req.pusher)
+		return newLogsRequest(logError.Data())
 	}
 	return req
-}
-
-func (req *logsRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.ld)
 }
 
 func (req *logsRequest) ItemsCount() int {
 	return req.ld.LogRecordCount()
 }
 
-func (req *logsRequest) Size(sizer sizer.LogsSizer) int {
+func (req *logsRequest) size(sizer sizer.LogsSizer) int {
 	if req.cachedSize == -1 {
 		req.cachedSize = sizer.LogsSize(req.ld)
 	}
@@ -98,20 +109,23 @@ func NewLogs(
 		return nil, errNilConfig
 	}
 	if pusher == nil {
-		return nil, errNilPushLogsData
+		return nil, errNilPushLogs
 	}
-	return NewLogsRequest(ctx, set, requestFromLogs(pusher), append([]Option{internal.WithEncoding(&logsEncoding{pusher: pusher})}, options...)...)
+	return NewLogsRequest(ctx, set, requestFromLogs(), requestConsumeFromLogs(pusher),
+		append([]Option{internal.WithQueueBatchSettings(NewLogsQueueBatchSettings())}, options...)...)
 }
 
-// RequestFromLogsFunc converts plog.Logs data into a user-defined request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromLogsFunc func(context.Context, plog.Logs) (Request, error)
+// requestConsumeFromLogs returns a RequestConsumeFunc that consumes plog.Logs.
+func requestConsumeFromLogs(pusher consumer.ConsumeLogsFunc) RequestConsumeFunc {
+	return func(ctx context.Context, request Request) error {
+		return pusher.ConsumeLogs(ctx, request.(*logsRequest).ld)
+	}
+}
 
 // requestFromLogs returns a RequestFromLogsFunc that converts plog.Logs into a Request.
-func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
+func requestFromLogs() RequestConverterFunc[plog.Logs] {
 	return func(_ context.Context, ld plog.Logs) (Request, error) {
-		return newLogsRequest(ld, pusher), nil
+		return newLogsRequest(ld), nil
 	}
 }
 
@@ -121,7 +135,8 @@ func requestFromLogs(pusher consumer.ConsumeLogsFunc) RequestFromLogsFunc {
 func NewLogsRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromLogsFunc,
+	converter RequestConverterFunc[plog.Logs],
+	pusher RequestConsumeFunc,
 	options ...Option,
 ) (exporter.Logs, error) {
 	if set.Logger == nil {
@@ -132,7 +147,11 @@ func NewLogsRequest(
 		return nil, errNilLogsConverter
 	}
 
-	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, options...)
+	if pusher == nil {
+		return nil, errNilConsumeRequest
+	}
+
+	be, err := internal.NewBaseExporter(set, pipeline.SignalLogs, pusher, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +164,7 @@ func NewLogsRequest(
 	return &logsExporter{BaseExporter: be, Logs: lc}, nil
 }
 
-func newConsumeLogs(converter RequestFromLogsFunc, be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
+func newConsumeLogs(converter RequestConverterFunc[plog.Logs], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeLogsFunc {
 	return func(ctx context.Context, ld plog.Logs) error {
 		req, err := converter(ctx, ld)
 		if err != nil {

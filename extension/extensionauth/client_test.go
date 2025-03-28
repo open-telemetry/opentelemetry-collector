@@ -11,87 +11,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 )
 
-func TestClientDefaultValues(t *testing.T) {
-	// prepare
-	e, err := NewClient()
-	require.NoError(t, err)
-
-	// test
-	t.Run("start", func(t *testing.T) {
-		err := e.Start(context.Background(), componenttest.NewNopHost())
-		assert.NoError(t, err)
-	})
-
-	t.Run("roundtripper", func(t *testing.T) {
-		ctx, err := e.RoundTripper(http.DefaultTransport)
-		assert.NotNil(t, ctx)
-		assert.NoError(t, err)
-	})
-
-	t.Run("per-rpc-credentials", func(t *testing.T) {
-		p, err := e.PerRPCCredentials()
-		assert.Nil(t, p)
-		assert.NoError(t, err)
-	})
-
-	t.Run("shutdown", func(t *testing.T) {
-		err := e.Shutdown(context.Background())
-		assert.NoError(t, err)
-	})
-}
-
-func TestWithClientStart(t *testing.T) {
-	called := false
-	e, err := NewClient(WithClientStart(func(context.Context, component.Host) error {
-		called = true
-		return nil
-	}))
-	require.NoError(t, err)
-
-	// test
-	err = e.Start(context.Background(), componenttest.NewNopHost())
-
-	// verify
-	assert.True(t, called)
-	assert.NoError(t, err)
-}
-
-func TestWithClientShutdown(t *testing.T) {
-	called := false
-	e, err := NewClient(WithClientShutdown(func(context.Context) error {
-		called = true
-		return nil
-	}))
-	require.NoError(t, err)
-
-	// test
-	err = e.Shutdown(context.Background())
-
-	// verify
-	assert.True(t, called)
-	assert.NoError(t, err)
-}
-
-func TestWithClientRoundTripper(t *testing.T) {
-	called := false
-	e, err := NewClient(WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
+func TestRoundTripperFunc(t *testing.T) {
+	var called bool
+	var httpClient HTTPClient = ClientRoundTripperFunc(func(base http.RoundTripper) (http.RoundTripper, error) {
 		called = true
 		return base, nil
-	}))
+	})
+
+	rt, err := httpClient.RoundTripper(http.DefaultTransport)
 	require.NoError(t, err)
-
-	// test
-	rt, err := e.RoundTripper(http.DefaultTransport)
-
-	// verify
 	assert.True(t, called)
-	assert.NotNil(t, rt)
-	assert.NoError(t, err)
+	assert.Equal(t, http.DefaultTransport, rt)
 }
 
 type customPerRPCCredentials struct{}
@@ -106,19 +38,15 @@ func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
 	return true
 }
 
-func TestWithPerRPCCredentials(t *testing.T) {
-	called := false
-	e, err := NewClient(WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+func TestWithPerRPCCredentialsFunc(t *testing.T) {
+	var called bool
+	var grpcClient GRPCClient = ClientPerRPCCredentialsFunc(func() (credentials.PerRPCCredentials, error) {
 		called = true
 		return &customPerRPCCredentials{}, nil
-	}))
+	})
+
+	creds, err := grpcClient.PerRPCCredentials()
 	require.NoError(t, err)
-
-	// test
-	p, err := e.PerRPCCredentials()
-
-	// verify
 	assert.True(t, called)
-	assert.NotNil(t, p)
-	assert.NoError(t, err)
+	assert.NotNil(t, creds)
 }
