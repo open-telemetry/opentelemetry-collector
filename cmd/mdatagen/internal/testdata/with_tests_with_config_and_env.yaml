@@ -1,0 +1,13 @@
+type: metric
+
+status:
+  class: processor
+  stability:
+    beta: [traces, logs, metrics]
+
+tests:
+  config:
+    foo: bar
+  env:
+    FOO: BAR
+    FOOBAR: FOO_BAR
