@@ -22,6 +22,6 @@ func (db *disabledBatcher[T]) Consume(ctx context.Context, req T, done Done) {
 	done.OnDone(db.consumeFunc(ctx, req))
 }
 
-func newDisabledBatcher[K any](consumeFunc sender.SendFunc[K]) Batcher[K] {
-	return &disabledBatcher[K]{consumeFunc: consumeFunc}
+func newDisabledBatcher[T any](consumeFunc sender.SendFunc[T]) Batcher[T] {
+	return &disabledBatcher[T]{consumeFunc: consumeFunc}
 }

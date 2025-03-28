@@ -15,12 +15,12 @@ import (
 )
 
 // Settings defines settings for creating a QueueBatch.
-type Settings[K any] struct {
+type Settings[T any] struct {
 	Signal    pipeline.Signal
 	ID        component.ID
 	Telemetry component.TelemetrySettings
-	Encoding  Encoding[K]
-	Sizers    map[request.SizerType]request.Sizer[K]
+	Encoding  Encoding[T]
+	Sizers    map[request.SizerType]request.Sizer[T]
 }
 
 type QueueBatch struct {
