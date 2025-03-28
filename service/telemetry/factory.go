@@ -98,18 +98,20 @@ func createDefaultConfig() component.Config {
 		},
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelNormal,
-			Readers: []config.MetricReader{
-				{
-					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-						WithoutScopeInfo:  newPtr(true),
-						WithoutUnits:      newPtr(true),
-						WithoutTypeSuffix: newPtr(true),
-						Host:              &metricsHost,
-						Port:              newPtr(8888),
-						WithResourceConstantLabels: &config.IncludeExclude{
-							Included: []string{},
-						},
-					}}},
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{
+					{
+						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  newPtr(true),
+							WithoutUnits:      newPtr(true),
+							WithoutTypeSuffix: newPtr(true),
+							Host:              &metricsHost,
+							Port:              newPtr(8888),
+							WithResourceConstantLabels: &config.IncludeExclude{
+								Included: []string{},
+							},
+						}}},
+					},
 				},
 			},
 		},

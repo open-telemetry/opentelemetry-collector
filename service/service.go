@@ -137,19 +137,18 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	sch := semconv.SchemaURL
 
-	var views []config.View
-	if cfg.Telemetry.Metrics.Views != nil {
+	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
+
+	if mpConfig.Views != nil {
 		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
 			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
 		}
-		views = cfg.Telemetry.Metrics.Views
 	} else {
-		views = configureViews(cfg.Telemetry.Metrics.Level)
+		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
 	}
 
-	readers := cfg.Telemetry.Metrics.Readers
 	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
-		readers = []config.MetricReader{}
+		mpConfig.Readers = []config.MetricReader{}
 	}
 
 	sdk, err := config.NewSDK(
@@ -159,10 +158,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				LoggerProvider: &config.LoggerProvider{
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
-				MeterProvider: &config.MeterProvider{
-					Readers: readers,
-					Views:   views,
-				},
+				MeterProvider: mpConfig,
 				TracerProvider: &config.TracerProvider{
 					Processors: cfg.Telemetry.Traces.Processors,
 				},
@@ -230,7 +226,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(mpConfig.Readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
