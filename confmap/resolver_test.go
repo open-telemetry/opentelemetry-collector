@@ -280,8 +280,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "windows_C",
-			location:   `C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:       "windows_z",
@@ -290,8 +290,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "file_windows",
-			location:   `file:C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `file:c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:           "invalid_scheme",
