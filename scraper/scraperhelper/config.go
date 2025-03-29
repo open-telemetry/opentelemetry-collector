@@ -26,6 +26,8 @@ type ControllerConfig struct {
 	InitialDelay time.Duration `mapstructure:"initial_delay"`
 	// Timeout is an optional value used to set scraper's context deadline.
 	Timeout time.Duration `mapstructure:"timeout"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultControllerConfig returns default scraper controller
