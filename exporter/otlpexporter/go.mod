@@ -17,10 +17,10 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.122.1
 	go.opentelemetry.io/collector/consumer v1.28.1
 	go.opentelemetry.io/collector/consumer/consumererror v0.122.1
-	go.opentelemetry.io/collector/exporter v0.122.1
-	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.122.1
+	go.opentelemetry.io/collector/exporter v0.122.2-0.20250328121525-54c13a921747
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/exporter/exportertest v0.122.1
-	go.opentelemetry.io/collector/exporter/xexporter v0.122.1
+	go.opentelemetry.io/collector/exporter/xexporter v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/pdata v1.28.1
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
@@ -63,13 +63,16 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v0.122.1 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.122.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.122.1 // indirect
 	go.opentelemetry.io/collector/receiver v1.28.1 // indirect
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.1 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.1 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
@@ -157,3 +160,5 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
 replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry

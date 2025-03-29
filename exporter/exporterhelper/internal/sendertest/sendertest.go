@@ -9,14 +9,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-func NewNopSenderFunc[K any]() sender.SendFunc[K] {
-	return func(context.Context, K) error {
+func NewNopSenderFunc[T any]() sender.SendFunc[T] {
+	return func(context.Context, T) error {
 		return nil
 	}
 }
 
-func NewErrSenderFunc[K any](err error) sender.SendFunc[K] {
-	return func(context.Context, K) error {
+func NewErrSenderFunc[T any](err error) sender.SendFunc[T] {
+	return func(context.Context, T) error {
 		return err
 	}
 }
