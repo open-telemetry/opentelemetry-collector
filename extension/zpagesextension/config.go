@@ -15,6 +15,8 @@ type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
 
 	Expvar ExpvarConfig `mapstructure:"expvar"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ExpvarConfig has the configuration for the expvar service.
@@ -22,6 +24,8 @@ type ExpvarConfig struct {
 	// Enabled indicates whether to enable expvar service.
 	// (default = false)
 	Enabled bool `mapstructure:"enabled"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

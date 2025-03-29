@@ -60,6 +60,8 @@ type DialerConfig struct {
 	// Timeout is the maximum amount of time a dial will wait for
 	// a connect to complete. The default is no timeout.
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultDialerConfig creates a new DialerConfig with any default values set
@@ -82,6 +84,8 @@ type AddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultAddrConfig creates a new AddrConfig with any default values set
@@ -134,6 +138,8 @@ type TCPAddrConfig struct {
 
 	// DialerConfig contains options for connecting to an address.
 	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set

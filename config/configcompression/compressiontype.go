@@ -15,6 +15,8 @@ type Level int
 
 type CompressionParams struct {
 	Level Level `mapstructure:"level"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const (

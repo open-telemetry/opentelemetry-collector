@@ -19,6 +19,9 @@ type Settings struct {
 
 	// BuildInfo can be used by components for informational purposes.
 	BuildInfo component.BuildInfo
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Factory is factory interface for scrapers.
