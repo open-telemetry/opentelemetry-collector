@@ -16,11 +16,12 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Encoding  Encoding[T]
-	Sizers    map[request.SizerType]request.Sizer[T]
+	Signal      pipeline.Signal
+	ID          component.ID
+	Telemetry   component.TelemetrySettings
+	Encoding    Encoding[T]
+	Sizers      map[request.SizerType]request.Sizer[T]
+	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
@@ -46,12 +47,22 @@ func NewQueueBatch(
 	if cfg.Batch != nil {
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
 		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-			sizerType:  cfg.Sizer,
-			sizer:      sizer,
-			next:       next,
-			maxWorkers: cfg.NumConsumers,
-		})
+		if set.Partitioner == nil {
+			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:  cfg.Sizer,
+				sizer:      sizer,
+				next:       next,
+				maxWorkers: cfg.NumConsumers,
+			})
+		} else {
+			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:   cfg.Sizer,
+				sizer:       sizer,
+				partitioner: set.Partitioner,
+				next:        next,
+				maxWorkers:  cfg.NumConsumers,
+			})
+		}
 	} else {
 		b = newDisabledBatcher[request.Request](next)
 	}
