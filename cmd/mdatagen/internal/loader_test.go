@@ -246,6 +246,19 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
+					"metric.with_interval": {
+						Enabled:     true,
+						Interval:    15,
+						Description: "Monotonic cumulative sum int metric with string input_type enabled by default and contains a customized interval of 15 seconds.",
+						Unit:        strPtr("s"),
+						Sum: &Sum{
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							MetricInputType:        MetricInputType{InputType: "string"},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
 				},
 				Telemetry: Telemetry{
 					Metrics: map[MetricName]Metric{
