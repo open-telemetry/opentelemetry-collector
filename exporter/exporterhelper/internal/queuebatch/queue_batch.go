@@ -16,11 +16,12 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Encoding  Encoding[T]
-	Sizers    map[request.SizerType]request.Sizer[T]
+	Signal      pipeline.Signal
+	ID          component.ID
+	Telemetry   component.TelemetrySettings
+	Encoding    Encoding[T]
+	Sizers      map[request.SizerType]request.Sizer[T]
+	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
@@ -74,12 +75,23 @@ func newQueueBatch(
 				maxWorkers: cfg.NumConsumers,
 			})
 		} else {
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  cfg.Sizer,
-				sizer:      sizer,
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
-			})
+			// If partitioning is not enabled or if paritition is done at queue level, we can use the default batcher.
+			if set.Partitioner == nil || cfg.PerPartition {
+				b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+					sizerType:  cfg.Sizer,
+					sizer:      sizer,
+					next:       next,
+					maxWorkers: cfg.NumConsumers,
+				})
+			} else {
+				b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+					sizerType:   cfg.Sizer,
+					sizer:       sizer,
+					partitioner: set.Partitioner,
+					next:        next,
+					maxWorkers:  cfg.NumConsumers,
+				})
+			}
 		}
 	} else {
 		b = newDisabledBatcher[request.Request](next)
