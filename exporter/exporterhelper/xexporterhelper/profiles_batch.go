@@ -7,13 +7,12 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, _ exporterbatcher.SizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, _ exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	if r2 != nil {
 		req2, ok := r2.(*profilesRequest)
 		if !ok {

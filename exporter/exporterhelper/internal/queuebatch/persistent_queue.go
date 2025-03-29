@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -44,14 +45,14 @@ var indexDonePool = sync.Pool{
 }
 
 type persistentQueueSettings[T any] struct {
-	sizer     Sizer[T]
-	capacity  int64
-	blocking  bool
-	signal    pipeline.Signal
-	storageID component.ID
-	encoding  Encoding[T]
-	id        component.ID
-	telemetry component.TelemetrySettings
+	sizer           request.Sizer[T]
+	capacity        int64
+	blockOnOverflow bool
+	signal          pipeline.Signal
+	storageID       component.ID
+	encoding        Encoding[T]
+	id              component.ID
+	telemetry       component.TelemetrySettings
 }
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension
@@ -98,7 +99,7 @@ type persistentQueue[T any] struct {
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] {
-	_, isRequestSized := set.sizer.(RequestsSizer[T])
+	_, isRequestSized := set.sizer.(request.RequestsSizer[T])
 	pq := &persistentQueue[T]{
 		set:            set,
 		logger:         set.telemetry.Logger,
@@ -241,7 +242,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	reqSize := pq.set.sizer.Sizeof(req)
 	for pq.queueSize+reqSize > pq.set.capacity {
-		if !pq.set.blocking {
+		if !pq.set.blockOnOverflow {
 			return ErrQueueIsFull
 		}
 		if err := pq.hasMoreSpace.Wait(ctx); err != nil {

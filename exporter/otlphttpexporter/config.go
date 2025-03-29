@@ -45,9 +45,9 @@ func (e *EncodingType) UnmarshalText(text []byte) error {
 
 // Config defines configuration for OTLP/HTTP exporter.
 type Config struct {
-	confighttp.ClientConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-	RetryConfig                configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	ClientConfig confighttp.ClientConfig         `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueConfig  exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	RetryConfig  configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
 
 	// The URL to send traces to. If omitted the Endpoint + "/v1/traces" will be used.
 	TracesEndpoint string `mapstructure:"traces_endpoint"`
@@ -66,7 +66,7 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" {
+	if cfg.ClientConfig.Endpoint == "" && cfg.TracesEndpoint == "" && cfg.MetricsEndpoint == "" && cfg.LogsEndpoint == "" {
 		return errors.New("at least one endpoint must be specified")
 	}
 	return nil

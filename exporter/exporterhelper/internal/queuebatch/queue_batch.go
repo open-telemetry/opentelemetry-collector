@@ -6,21 +6,21 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
 // Settings defines settings for creating a QueueBatch.
-type Settings[K any] struct {
+type Settings[T any] struct {
 	Signal    pipeline.Signal
 	ID        component.ID
 	Telemetry component.TelemetrySettings
-	Encoding  Encoding[K]
-	Sizers    map[exporterbatcher.SizerType]Sizer[K]
+	Encoding  Encoding[T]
+	Sizers    map[request.SizerType]request.Sizer[T]
 }
 
 type QueueBatch struct {
@@ -29,49 +29,56 @@ type QueueBatch struct {
 }
 
 func NewQueueBatch(
-	qSet Settings[request.Request],
+	set Settings[request.Request],
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	var b Batcher[request.Request]
-	switch {
-	case cfg.Batch == nil:
-		b = newDisabledBatcher[request.Request](next)
-	default:
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, next, cfg.NumConsumers)
+	if cfg.hasBlocking {
+		set.Telemetry.Logger.Error("using deprecated field `blocking`")
 	}
 
-	sizer, ok := qSet.Sizers[exporterbatcher.SizerTypeRequests]
+	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
-		return nil, errors.New("queue_batch: unsupported sizer")
+		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
+	}
+
+	var b Batcher[request.Request]
+	if cfg.Batch != nil {
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+		cfg.NumConsumers = 1
+		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+			sizerType:  cfg.Sizer,
+			sizer:      sizer,
+			next:       next,
+			maxWorkers: cfg.NumConsumers,
+		})
+	} else {
+		b = newDisabledBatcher[request.Request](next)
 	}
 
 	var q Queue[request.Request]
-	switch {
-	case cfg.WaitForResult:
-		q = newDisabledQueue(b.Consume)
-	case cfg.StorageID != nil:
-		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-			sizer:     sizer,
-			capacity:  int64(cfg.QueueSize),
-			blocking:  cfg.BlockOnOverflow,
-			signal:    qSet.Signal,
-			storageID: *cfg.StorageID,
-			encoding:  qSet.Encoding,
-			id:        qSet.ID,
-			telemetry: qSet.Telemetry,
-		}), cfg.NumConsumers, b.Consume)
-	default:
+	// Configure memory queue or persistent based on the config.
+	if cfg.StorageID == nil {
 		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-			sizer:    sizer,
-			capacity: int64(cfg.QueueSize),
-			blocking: cfg.BlockOnOverflow,
+			sizer:           sizer,
+			capacity:        cfg.QueueSize,
+			waitForResult:   cfg.WaitForResult,
+			blockOnOverflow: cfg.BlockOnOverflow,
+		}), cfg.NumConsumers, b.Consume)
+	} else {
+		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
+			sizer:           sizer,
+			capacity:        cfg.QueueSize,
+			blockOnOverflow: cfg.BlockOnOverflow,
+			signal:          set.Signal,
+			storageID:       *cfg.StorageID,
+			encoding:        set.Encoding,
+			id:              set.ID,
+			telemetry:       set.Telemetry,
 		}), cfg.NumConsumers, b.Consume)
 	}
 
-	oq, err := newObsQueue(qSet, q)
+	oq, err := newObsQueue(set, q)
 	if err != nil {
 		return nil, err
 	}

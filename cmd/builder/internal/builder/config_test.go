@@ -378,10 +378,3 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
 }
-
-func TestValidateDeprecatedOtelColVersion(t *testing.T) {
-	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
-	cfg.Distribution.OtelColVersion = "test"
-	assert.Error(t, cfg.Validate())
-}

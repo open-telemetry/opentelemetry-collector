@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
 	go.opentelemetry.io/collector/pdata v1.28.1
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
-	go.opentelemetry.io/collector/processor v0.122.1
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250328121525-54c13a921747
 	go.opentelemetry.io/collector/processor/processortest v0.122.1
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
@@ -44,9 +44,12 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.122.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.122.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.122.1 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.1 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250328121525-54c13a921747 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
@@ -54,7 +57,7 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -96,3 +99,5 @@ replace go.opentelemetry.io/collector/processor/processortest => ../processortes
 replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/consumererror
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
