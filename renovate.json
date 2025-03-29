@@ -63,6 +63,16 @@
     },
     {
       "matchManagers": [
+        "github-actions"
+      ],
+      "matchPackageNames": [
+        "rhysd/actionlint"
+      ],
+      "groupName": "Actionlint docker image (GitHub Actions)",
+      "versioning": "docker"
+    },
+    {
+      "matchManagers": [
         "gomod"
       ],
       "matchSourceUrls": [

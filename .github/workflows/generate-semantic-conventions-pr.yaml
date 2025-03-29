@@ -105,5 +105,5 @@ jobs:
           url=$(gh pr create --title "$message" \
                              --body "$body" \
                              --base main)
-
+          # shellcheck disable=SC2034
           pull_request_number=${url//*\//}
