@@ -22,10 +22,11 @@ type batch struct {
 }
 
 type batcherSettings[T any] struct {
-	sizerType  request.SizerType
-	sizer      request.Sizer[T]
-	next       sender.SendFunc[T]
-	maxWorkers int
+	sizerType   request.SizerType
+	sizer       request.Sizer[T]
+	partitioner Partitioner[T]
+	next        sender.SendFunc[T]
+	maxWorkers  int
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
