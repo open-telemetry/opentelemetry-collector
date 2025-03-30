@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
-func setAttributesFullName(attrs map[AttributeName]Attribute) {
+func setAttributesFullName(attrs map[AttributeName]ResourceAttribute) {
 	for k, v := range attrs {
 		v.FullName = k
 		attrs[k] = v
@@ -58,7 +58,10 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return md, err
 	}
 
-	setAttributesFullName(md.Attributes)
+	for k, v := range md.Attributes {
+		v.FullName = k
+		md.Attributes[k] = v
+	}
 	setAttributesFullName(md.ResourceAttributes)
 
 	return md, nil
