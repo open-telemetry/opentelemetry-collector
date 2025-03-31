@@ -28,12 +28,12 @@ type Config struct {
 	CheckInterval time.Duration `mapstructure:"check_interval"`
 
 	// MinGCIntervalWhenSoftLimited minimum interval between forced GC when in soft (=limit_mib - spike_limit_mib) limited mode.
-	// Zero value means no minimum interval.
+	// Zero value means no minimum interval. If negative it disables GC when in soft limited mode.
 	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
 	MinGCIntervalWhenSoftLimited time.Duration `mapstructure:"min_gc_interval_when_soft_limited"`
 
 	// MinGCIntervalWhenHardLimited minimum interval between forced GC when in hard (=limit_mib) limited mode.
-	// Zero value means no minimum interval.
+	// Zero value means no minimum interval. If negative it disables GC when in soft limited mode.
 	// GCs is a CPU-heavy operation and executing it too frequently may affect the recovery capabilities of the collector.
 	MinGCIntervalWhenHardLimited time.Duration `mapstructure:"min_gc_interval_when_hard_limited"`
 
@@ -67,7 +67,7 @@ func (cfg *Config) Validate() error {
 	if cfg.CheckInterval <= 0 {
 		return errCheckIntervalOutOfRange
 	}
-	if cfg.MinGCIntervalWhenSoftLimited < cfg.MinGCIntervalWhenHardLimited {
+	if cfg.MinGCIntervalWhenSoftLimited >= 0 && cfg.MinGCIntervalWhenHardLimited >= 0 && cfg.MinGCIntervalWhenSoftLimited < cfg.MinGCIntervalWhenHardLimited {
 		return errInconsistentGCMinInterval
 	}
 	if cfg.MemoryLimitMiB == 0 && cfg.MemoryLimitPercentage == 0 {

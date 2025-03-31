@@ -191,7 +191,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	if ml.usageChecker.aboveHardLimit(ms) {
 		// We are above hard limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > ml.minGCIntervalWhenHardLimited {
+		if ml.minGCIntervalWhenHardLimited >= 0 && time.Since(ml.lastGCDone) > ml.minGCIntervalWhenHardLimited {
 			ml.logger.Warn("Memory usage is above hard limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
@@ -200,7 +200,7 @@ func (ml *MemoryLimiter) CheckMemLimits() {
 	} else {
 		// We are above soft limit, do a GC if it wasn't done recently and see if
 		// it brings memory usage below the soft limit.
-		if time.Since(ml.lastGCDone) > ml.minGCIntervalWhenSoftLimited {
+		if ml.minGCIntervalWhenSoftLimited >= 0 && time.Since(ml.lastGCDone) > ml.minGCIntervalWhenSoftLimited {
 			ml.logger.Info("Memory usage is above soft limit. Forcing a GC.", memstatToZapField(ms))
 			ms = ml.doGCandReadMemStats()
 			// Check the limit again to see if GC helped.
