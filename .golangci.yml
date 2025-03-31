@@ -1,33 +1,255 @@
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+
+  exclusions:
+    # which dirs to skip: issues from them won't be reported;
+    # can use regexp here: generated.*, regexp is applied on full path;
+    # default value is empty list, but default dirs are skipped independently
+    # from this option's value (see exclude-dirs-use-default).
+    paths:
+      - third_party
+
+  settings:
+    gofmt:
+      # simplify code: gofmt with `-s` option, true by default
+      simplify: true
+
+    goimports:
+      # put imports beginning with prefix after 3rd-party packages;
+      # it's a comma-separated list of prefixes
+      local-prefixes:
+        - go.opentelemetry.io/collector
+
+issues:
+  # Maximum issues count per one linter.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text.
+  max-same-issues: 0
+
+linters:
+  enable:
+    - copyloopvar
+    - depguard
+    - errcheck
+    - errorlint
+    - gocritic
+    - gosec
+    - govet
+    - misspell
+    - nolintlint
+    - perfsprint
+    - revive
+    - staticcheck
+    - testifylint
+    - thelper
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - usetesting
+    - whitespace
+
+  exclusions:
+    # which dirs to skip: issues from them won't be reported;
+    # can use regexp here: generated.*, regexp is applied on full path;
+    # default value is empty list, but default dirs are skipped independently
+    # from this option's value (see exclude-dirs-use-default).
+    paths:
+      - third_party
+
+    presets:
+      - std-error-handling
+
+    # Excluding configuration per-path, per-linter, per-text and per-source  
+    rules: []
+
+    # Log a warning if an exclusion rule is unused.
+    warn-unused: true
+
+  # all available settings of specific linters
+  settings:
+    depguard:
+      rules:
+        denied-deps:
+          deny:
+            - pkg: "go.uber.org/atomic"
+              desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
+            - pkg: "github.com/pkg/errors"
+              desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
+            - pkg: "github.com/hashicorp/go-multierror"
+              desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
+            - pkg: "math/rand$"
+              desc: "Use the newer 'math/rand/v2' instead of math/rand"
+        # Add a different guard rule so that we can ignore tests.
+        ignore-in-test:
+          # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
+          files:
+            - '!**/*_test.go'
+          deny:
+            - pkg: go.opentelemetry.io/proto
+              desc: Use go.opentelemetry.io/collector/pdata instead
+
+    gosec:
+      excludes:
+        - G104 # FIXME
+        - G402
+        - G404
+
+    govet:
+      disable:
+        # We want to order fields according to readability and grouping them by use cases.
+        # This linter does not offer a discernible performance improvement as the structs
+        # defined in this repository are not in the execution hot path.
+        # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
+        - fieldalignment
+      enable-all: true
+      # settings per analyzer
+      settings:
+        printf: # analyzer name, run `go tool vet help` to see all analyzers
+          funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Infof
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Warnf
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Errorf
+            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Fatalf
+
+    misspell:
+      # Correct spellings using locale preferences for US or UK.
+      # Default is to use a neutral variety of English.
+      # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+      locale: US
+      ignore-rules:
+        - cancelled
+
+    nolintlint:
+      require-specific: true
+
+    perfsprint:
+      # Optimizes even if it requires an int or uint type cast.
+      int-conversion: true
+      # Optimizes into `err.Error()` even if it is only equivalent for non-nil errors.
+      err-error: true
+      # Optimizes `fmt.Errorf`.
+      errorf: true
+      # Optimizes `fmt.Sprintf` with only one argument.
+      sprintf1: true
+      # Optimizes into strings concatenation.
+      strconcat: true
+
+    revive:
+      # minimal confidence for issues, default is 0.8
+      confidence: 0.8
+      rules:
+        # Blank import should be only in a main or test package, or have a comment justifying it.
+        - name: blank-imports
+        # context.Context() should be the first parameter of a function when provided as argument.
+        - name: context-as-argument
+        # Basic types should not be used as a key in `context.WithValue`
+        - name: context-keys-type
+        # Importing with `.` makes the programs much harder to understand
+        - name: dot-imports
+        - name: early-return
+          arguments:
+            - preserveScope
+        # Empty blocks make code less readable and could be a symptom of a bug or unfinished refactoring.
+        - name: empty-block
+        # for better readability, variables of type `error` must be named with the prefix `err`.
+        - name: error-naming
+        # for better readability, the errors should be last in the list of returned values by a function.
+        - name: error-return
+        # for better readability, error messages should not be capitalized or end with punctuation or a newline.
+        - name: error-strings
+        # report when replacing `errors.New(fmt.Sprintf())` with `fmt.Errorf()` is possible
+        - name: errorf
+        # incrementing an integer variable by 1 is recommended to be done using the `++` operator
+        - name: increment-decrement
+        # highlights redundant else-blocks that can be eliminated from the code
+        - name: indent-error-flow
+        # This rule suggests a shorter way of writing ranges that do not use the second value.
+        - name: range
+        # receiver names in a method should reflect the struct name (p for Person, for example)
+        - name: receiver-naming
+        # redefining built in names (true, false, append, make) can lead to bugs very difficult to detect.
+        - name: redefines-builtin-id
+        # redundant else-blocks that can be eliminated from the code.
+        - name: superfluous-else
+          arguments:
+            - preserveScope
+        # prevent confusing name for variables when using `time` package
+        - name: time-naming
+        # warns when an exported function or method returns a value of an un-exported type.
+        - name: unexported-return
+        - name: unnecessary-stmt
+        # spots and proposes to remove unreachable code. also helps to spot errors
+        - name: unreachable-code
+        # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
+        - name: unused-parameter
+        # Since Go 1.18, interface{} has an alias: any. This rule proposes to replace instances of interface{} with any.
+        - name: use-any
+        # report when a variable declaration can be simplified
+        - name: var-declaration
+        # warns when initialism, variable or package naming conventions are not followed.
+        - name: var-naming
+
+    staticcheck:
+      checks:
+        - all
+        - -QF1001 # FIXME
+        - -QF1003 # FIXME
+        - -QF1006 # FIXME
+        - -QF1008 # FIXME
+        - -ST1000 # FIXME
+        - -ST1016 # FIXME
+        - -ST1017 # FIXME
+        - -ST1020 # FIXME
+        - -ST1021 # FIXME
+        - -ST1022 # FIXME
+
+    testifylint:
+      disable:
+        - empty # FIXME
+        - equal-values # FIXME
+        - error-is-as # FIXME
+        - formatter # FIXME
+        - len # FIXME
+        - useless-assert # FIXME when golangci-lint > 2.0.2
+      enable-all: true
+
+    thelper:
+      benchmark:
+        begin: false
+      fuzz:
+        begin: false
+      tb:
+        begin: false
+      test:
+        begin: false
+
+# output configuration options
+output:
+  # The formats used to render issues.
+  formats:
+    # Prints issues in a text format with colors, line number, and linter name.
+    text:
+      # Output path can be either `stdout`, `stderr` or path to the file to write to.
+      path: stdout
+      # print linter name in the end of issue text, default is true
+      print-linter-name: true
+      # print lines of code with issue, default is true
+      print-issued-lines: true
+
+  # Show statistics per linter.
+  show-stats: false
+
 # options for analysis running
 run:
+  # Allow multiple parallel golangci-lint instances running.
+  # If false (default) - golangci-lint acquires file lock on start.
+  allow-parallel-runners: true
+
   # default concurrency is a available CPU number
   concurrency: 4
-
-  # timeout for analysis, e.g. 30s, 5m, default is 1m
-  timeout: 10m
-
-  # exit code when at least one issue was found, default is 1
-  issues-exit-code: 1
-
-  # include test files or not, default is true
-  tests: true
-
-  # which dirs to skip: issues from them won't be reported;
-  # can use regexp here: generated.*, regexp is applied on full path;
-  # default value is empty list, but default dirs are skipped independently
-  # from this option's value (see exclude-dirs-use-default).
-  exclude-dirs:
-    - third_party
-
-  # default is true. Enables skipping of directories:
-  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  exclude-dirs-use-default: false
-
-  # which files to skip: they will be analyzed, but issues from them
-  # won't be reported. Default value is empty list, but there is
-  # no need to include all autogenerated files, we confidently recognize
-  # autogenerated files. If it's not please let us know.
-  skip-files:
 
   # by default isn't set. If set we pass it to "go list -mod={option}". From "go help modules":
   # If invoked with -mod=readonly, the go command is disallowed from the implicit
@@ -39,208 +261,13 @@ run:
   # the dependency descriptions in go.mod.
   modules-download-mode: readonly
 
-  # Allow multiple parallel golangci-lint instances running.
-  # If false (default) - golangci-lint acquires file lock on start.
-  allow-parallel-runners: true
+  # exit code when at least one issue was found, default is 1
+  issues-exit-code: 1
 
-# output configuration options
-output:
-  # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
-  formats: colored-line-number
+  # include test files or not, default is true
+  tests: true
 
-  # print lines of code with issue, default is true
-  print-issued-lines: true
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 10m
 
-  # print linter name in the end of issue text, default is true
-  print-linter-name: true
-
-# all available settings of specific linters
-linters-settings:
-  govet:
-    # settings per analyzer
-    settings:
-      printf: # analyzer name, run `go tool vet help` to see all analyzers
-        funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-
-    enable-all: true
-    disable:
-      # We want to order fields according to readability and grouping them by use cases.
-      # This linter does not offer a discernible performance improvement as the structs
-      # defined in this repository are not in the execution hot path.
-      # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
-      - fieldalignment
-
-  gofmt:
-    # simplify code: gofmt with `-s` option, true by default
-    simplify: true
-
-  goimports:
-    # put imports beginning with prefix after 3rd-party packages;
-    # it's a comma-separated list of prefixes
-    local-prefixes: go.opentelemetry.io/collector
-
-  misspell:
-    # Correct spellings using locale preferences for US or UK.
-    # Default is to use a neutral variety of English.
-    # Setting locale to US will correct the British spelling of 'colour' to 'color'.
-    locale: US
-    ignore-words:
-      - cancelled
-
-  nolintlint:
-    require-specific: true
-
-  perfsprint:
-    # Optimizes even if it requires an int or uint type cast.
-    int-conversion: true
-    # Optimizes into `err.Error()` even if it is only equivalent for non-nil errors.
-    err-error: true
-    # Optimizes `fmt.Errorf`.
-    errorf: true
-    # Optimizes `fmt.Sprintf` with only one argument.
-    sprintf1: true
-    # Optimizes into strings concatenation.
-    strconcat: true
-
-  revive:
-    # minimal confidence for issues, default is 0.8
-    min-confidence: 0.8
-    rules:
-      # Blank import should be only in a main or test package, or have a comment justifying it.
-      - name: blank-imports
-      # context.Context() should be the first parameter of a function when provided as argument.
-      - name: context-as-argument
-      # Basic types should not be used as a key in `context.WithValue`
-      - name: context-keys-type
-      # Importing with `.` makes the programs much harder to understand
-      - name: dot-imports
-      - name: early-return
-        arguments:
-          - "preserveScope"
-      # Empty blocks make code less readable and could be a symptom of a bug or unfinished refactoring.
-      - name: empty-block
-      # for better readability, variables of type `error` must be named with the prefix `err`.
-      - name: error-naming
-      # for better readability, the errors should be last in the list of returned values by a function.
-      - name: error-return
-      # for better readability, error messages should not be capitalized or end with punctuation or a newline.
-      - name: error-strings
-      # report when replacing `errors.New(fmt.Sprintf())` with `fmt.Errorf()` is possible
-      - name: errorf
-      # incrementing an integer variable by 1 is recommended to be done using the `++` operator
-      - name: increment-decrement
-      # highlights redundant else-blocks that can be eliminated from the code
-      - name: indent-error-flow
-      # This rule suggests a shorter way of writing ranges that do not use the second value.
-      - name: range
-      # receiver names in a method should reflect the struct name (p for Person, for example)
-      - name: receiver-naming
-      # redefining built in names (true, false, append, make) can lead to bugs very difficult to detect.
-      - name: redefines-builtin-id
-      # redundant else-blocks that can be eliminated from the code.
-      - name: superfluous-else
-        arguments:
-          - "preserveScope"
-      # prevent confusing name for variables when using `time` package
-      - name: time-naming
-      # warns when an exported function or method returns a value of an un-exported type.
-      - name: unexported-return
-      - name: unnecessary-stmt
-      # spots and proposes to remove unreachable code. also helps to spot errors
-      - name: unreachable-code
-      # Functions or methods with unused parameters can be a symptom of an unfinished refactoring or a bug.
-      - name: unused-parameter
-      # Since Go 1.18, interface{} has an alias: any. This rule proposes to replace instances of interface{} with any.
-      - name: use-any
-      # report when a variable declaration can be simplified
-      - name: var-declaration
-      # warns when initialism, variable or package naming conventions are not followed.
-      - name: var-naming
-
-  depguard:
-    rules:
-      denied-deps:
-        deny:
-          - pkg: go.uber.org/atomic
-            desc: "Use 'sync/atomic' instead of go.uber.org/atomic"
-          - pkg: github.com/pkg/errors
-            desc: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
-          - pkg: github.com/hashicorp/go-multierror
-            desc: "Use go.uber.org/multierr instead of github.com/hashicorp/go-multierror"
-          - pkg: "math/rand$"
-            desc: "Use the newer 'math/rand/v2' instead of math/rand"
-        # Add a different guard rule so that we can ignore tests.
-      ignore-in-test:
-          deny:
-          - pkg: go.opentelemetry.io/proto
-            desc: "Use go.opentelemetry.io/collector/pdata instead"
-            # Allow in tests for testing pdata or other receivers/exporters that expect OTLP.
-          files:
-            - "!**/*_test.go"
-
-  testifylint:
-    enable-all: true
-
-  thelper:
-    test:
-      begin: false
-    benchmark:
-      begin: false
-    tb:
-      begin: false
-    fuzz:
-      begin: false
-
-linters:
-  enable:
-    - copyloopvar
-    - depguard
-    - errcheck
-    - errorlint
-    - gocritic
-    - gofumpt
-    - goimports
-    - gosec
-    - govet
-    - misspell
-    - nolintlint
-    - perfsprint
-    - revive
-    - staticcheck
-    - usetesting
-    - testifylint
-    - thelper
-    - unconvert
-    - unused
-    - unparam
-    - usestdlibvars
-    - whitespace
-
-issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    - text: "G404:"
-      linters:
-        - gosec
-    - text: "G402:"
-      linters:
-        - gosec
-
-  # The list of ids of default excludes to include or disable. By default it's empty.
-  # See the list of default excludes here https://golangci-lint.run/usage/configuration.
-  include:
-    # - EXC0001 - errcheck checks that are not usually checked
-    - EXC0002
-    - EXC0003
-    - EXC0004
-    - EXC0005
-    - EXC0006
-    - EXC0007
-    # - EXC0008 - Duplicated errcheck checks
-    - EXC0009
-    - EXC0010
-    - EXC0011
+version: "2"
