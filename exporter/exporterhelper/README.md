@@ -16,13 +16,17 @@ The following configuration options can be modified:
 - `sending_queue`
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `blocking` (default = false): If true, blocks the request until the queue has space otherwise returns immediately; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in memory before dropping; ignored if `enabled` is `false`. User should calculate this as `num_seconds * requests_per_second / requests_per_batch` where:
-    - `num_seconds` is the number of seconds to buffer in case of a backend outage
-    - `requests_per_second` is the average number of requests per seconds
-    - `requests_per_batch` is the average number of requests per batch (if 
-      [the batch processor](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor)
-      is used, the metric `send_batch_size` can be used for estimation)
+  - `wait_for_result` (default = false): determines if incoming requests are blocked until the request is processed or not.
+  - `block_on_overflow` (default = false): If true, blocks the request until the queue has space otherwise rejects the data immediately; ignored if `enabled` is `false`
+  - `sizer` (default = requests): How the queue and batching is measured. Available options: 
+    - `requests`: number of incoming batches of metrics, logs, traces (the most performant option);
+    - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
+    - `bytes`: the size of serialized data in bytes (the least performant option).
+  - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
+  - `batch` disabled by default if not defined
+    - `flush_timeout`: time after which a batch will be sent regardless of its size.
+    - `min_size`: the minimum size of a batch.
+    - `min_size`: the maximum size of a batch, enables batch splitting.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
