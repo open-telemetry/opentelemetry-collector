@@ -57,13 +57,11 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
+			require.NoError(t, c.Shutdown(context.Background()))
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
-			require.NoError(t, err)
 			host := componenttest.NewNopHost()
+			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))

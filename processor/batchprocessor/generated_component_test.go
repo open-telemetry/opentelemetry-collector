@@ -72,15 +72,13 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
+			require.NoError(t, c.Shutdown(context.Background()))
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
-			err = c.Start(context.Background(), host)
-			require.NoError(t, err)
+			require.NoError(t, c.Start(context.Background(), host))
 			require.NotPanics(t, func() {
 				switch tt.name {
 				case "logs":
@@ -90,7 +88,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
-					err = e.ConsumeLogs(context.Background(), logs)
+					require.NoError(t, e.ConsumeLogs(context.Background(), logs))
 				case "metrics":
 					e, ok := c.(processor.Metrics)
 					require.True(t, ok)
@@ -98,7 +96,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
-					err = e.ConsumeMetrics(context.Background(), metrics)
+					require.NoError(t, e.ConsumeMetrics(context.Background(), metrics))
 				case "traces":
 					e, ok := c.(processor.Traces)
 					require.True(t, ok)
@@ -106,12 +104,10 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
-					err = e.ConsumeTraces(context.Background(), traces)
+					require.NoError(t, e.ConsumeTraces(context.Background(), traces))
 				}
 			})
-			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
+			require.NoError(t, c.Shutdown(context.Background()))
 		})
 	}
 }
