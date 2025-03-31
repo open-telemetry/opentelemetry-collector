@@ -27,9 +27,8 @@ func LinksFromContext(ctx context.Context) []trace.Link {
 func parentsFromContext(ctx context.Context) []trace.Link {
 	if spanCtx := trace.SpanContextFromContext(ctx); spanCtx.IsValid() {
 		return []trace.Link{{SpanContext: spanCtx}}
-	} else {
-		return LinksFromContext(ctx)
 	}
+	return LinksFromContext(ctx)
 }
 
 func contextWithMergedLinks(ctx1 context.Context, ctx2 context.Context) context.Context {
