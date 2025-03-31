@@ -33,6 +33,23 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	return newQueueBatch(set, cfg, next, false)
+}
+
+func NewQueueBatchLegacyBatcher(
+	set Settings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+) (*QueueBatch, error) {
+	return newQueueBatch(set, cfg, next, true)
+}
+
+func newQueueBatch(
+	set Settings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+	oldBatcher bool,
+) (*QueueBatch, error) {
 	if cfg.hasBlocking {
 		set.Telemetry.Logger.Error("using deprecated field `blocking`")
 	}
@@ -46,12 +63,22 @@ func NewQueueBatch(
 	if cfg.Batch != nil {
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
 		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-			sizerType:  cfg.Sizer,
-			sizer:      sizer,
-			next:       next,
-			maxWorkers: cfg.NumConsumers,
-		})
+		if oldBatcher {
+			// If user configures the old batcher we only can support "items" sizer.
+			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       next,
+				maxWorkers: cfg.NumConsumers,
+			})
+		} else {
+			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:  cfg.Sizer,
+				sizer:      sizer,
+				next:       next,
+				maxWorkers: cfg.NumConsumers,
+			})
+		}
 	} else {
 		b = newDisabledBatcher[request.Request](next)
 	}
