@@ -4,14 +4,14 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.28.1
+	go.opentelemetry.io/collector/component v1.29.0
 	go.opentelemetry.io/collector/component/componenttest v0.122.1
-	go.opentelemetry.io/collector/consumer v1.28.1
+	go.opentelemetry.io/collector/consumer v1.29.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.1
-	go.opentelemetry.io/collector/pdata v1.28.1
+	go.opentelemetry.io/collector/pdata v1.29.0
 	go.opentelemetry.io/collector/pdata/testdata v0.122.1
 	go.opentelemetry.io/collector/pipeline v0.122.1
-	go.opentelemetry.io/collector/receiver v1.28.1
+	go.opentelemetry.io/collector/receiver v1.29.0
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.122.1
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.1
 	go.opentelemetry.io/collector/scraper v0.122.1
@@ -39,7 +39,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.122.1 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.122.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.1 // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.122.1 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.122.1 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.122.1 // indirect
