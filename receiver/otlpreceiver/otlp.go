@@ -115,6 +115,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		return err
 	}
 
+	// TODO@@@: This is where the limiter is initialized. This code will move into the helper.
+	// The helper will have access to the host; it will need a function passed in to be able to get the middleware.
 	limiterProvider := extractLimiterProvider(host, r.cfg.GRPC.Middlewares)
 
 	if r.nextTraces != nil {
@@ -156,6 +158,8 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
+	// TODO@@@: This is where the limiter is initialized. This code will move into the helper.
+	// The helper will have access to the host; it will need a function passed in to be able to get the middleware.
 	limiterProvider := extractLimiterProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
 
 	httpMux := http.NewServeMux()

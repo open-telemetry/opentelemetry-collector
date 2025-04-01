@@ -27,6 +27,10 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
+	// TODO@@@: There is already a wrapper around the receiver called xreceiver,
+	// but it is a transient helper package being used to introduce profiles to
+	// a semi-stable codebase. Here we will call layer on another helper to
+	// inje.
 	return xreceiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,

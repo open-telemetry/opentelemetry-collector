@@ -28,6 +28,7 @@ type Receiver struct {
 
 // New creates a new Receiver reference.
 func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport, limiter extensionlimiter.Provider) *Receiver {
+	// TODO@@@: Move this limiter logic to the receiverhelper package.
 	var itemsLimiter, sizeLimiter extensionlimiter.ResourceLimiter
 	if limiter != nil {
 		itemsLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
