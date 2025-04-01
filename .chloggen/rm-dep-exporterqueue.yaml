@@ -4,24 +4,18 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: extensionauth, configauth
+component: exporterqueue
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove deprecated types and functions from `extensionauth` and `configauth` packages.
+note: Remove deprecated package exporterqueue
 
 # One or more tracking issues or pull requests related to the change
-issues: [12672]
+issues: [12779]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  This includes:
-  - `extensionauth.NewClient`,
-  - `extensionauth.ClientOption` and all its implementations,
-  - `extensionauth.NewServer`,
-  - `extensionauth.ServerOption` and all its implementations and
-  - `configauth.Authenticator.GetClientAuthenticator`.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

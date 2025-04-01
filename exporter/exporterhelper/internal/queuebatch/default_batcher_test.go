@@ -427,7 +427,7 @@ func (fd fakeDone) OnDone(err error) {
 func newFakeBytesSizer() request.Sizer[request.Request] {
 	return request.BaseSizer{
 		SizeofFunc: func(req request.Request) int64 {
-			return int64(req.(*requesttest.FakeRequest).Items)
+			return int64(req.(*requesttest.FakeRequest).Bytes)
 		},
 	}
 }
