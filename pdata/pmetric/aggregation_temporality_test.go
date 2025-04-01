@@ -13,5 +13,5 @@ func TestAggregationTemporalityString(t *testing.T) {
 	assert.Equal(t, "Unspecified", AggregationTemporalityUnspecified.String())
 	assert.Equal(t, "Delta", AggregationTemporalityDelta.String())
 	assert.Equal(t, "Cumulative", AggregationTemporalityCumulative.String())
-	assert.Equal(t, "", (AggregationTemporalityCumulative + 1).String())
+	assert.Empty(t, (AggregationTemporalityCumulative + 1).String())
 }

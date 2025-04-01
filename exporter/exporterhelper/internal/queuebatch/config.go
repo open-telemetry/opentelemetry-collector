@@ -93,8 +93,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Only support items sizer for batch at this moment.
-	if cfg.Batch != nil && cfg.Sizer != request.SizerTypeItems {
-		return errors.New("`batch` supports only `items` sizer")
+	if cfg.Batch != nil && (cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes) {
+		return errors.New("`batch` supports only `items` or `bytes` sizer")
 	}
 
 	return nil

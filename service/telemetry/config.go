@@ -21,9 +21,9 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 var disableAddressFieldForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableAddressFieldForInternalTelemetry",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterFromVersion("v0.111.0"),
-	featuregate.WithRegisterToVersion("v0.114.0"),
+	featuregate.WithRegisterToVersion("v0.123.0"),
 	featuregate.WithRegisterDescription("controls whether the deprecated address field for internal telemetry is still supported"))
 
 // Config defines the configurable settings for service telemetry.
@@ -109,6 +109,10 @@ func (c *Config) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics readers should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
 		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
+	}
+
+	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
+		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
 	}
 
 	return nil

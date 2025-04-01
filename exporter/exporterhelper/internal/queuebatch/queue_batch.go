@@ -15,12 +15,12 @@ import (
 )
 
 // Settings defines settings for creating a QueueBatch.
-type Settings[K any] struct {
+type Settings[T any] struct {
 	Signal    pipeline.Signal
 	ID        component.ID
 	Telemetry component.TelemetrySettings
-	Encoding  Encoding[K]
-	Sizers    map[request.SizerType]request.Sizer[K]
+	Encoding  Encoding[T]
+	Sizers    map[request.SizerType]request.Sizer[T]
 }
 
 type QueueBatch struct {
@@ -33,31 +33,59 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	return newQueueBatch(set, cfg, next, false)
+}
+
+func NewQueueBatchLegacyBatcher(
+	set Settings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+) (*QueueBatch, error) {
+	set.Telemetry.Logger.Warn("Configuring the exporter batcher capability separately is now deprecated. " +
+		"Use sending_queue::batch instead.")
+	return newQueueBatch(set, cfg, next, true)
+}
+
+func newQueueBatch(
+	set Settings[request.Request],
+	cfg Config,
+	next sender.SendFunc[request.Request],
+	oldBatcher bool,
+) (*QueueBatch, error) {
 	if cfg.hasBlocking {
 		set.Telemetry.Logger.Error("using deprecated field `blocking`")
 	}
 
-	var b Batcher[request.Request]
-	switch {
-	case cfg.Batch == nil:
-		b = newDisabledBatcher[request.Request](next)
-	default:
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-		cfg.NumConsumers = 1
-		b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-			sizerType:  request.SizerTypeItems,
-			sizer:      request.NewItemsSizer(),
-			next:       next,
-			maxWorkers: cfg.NumConsumers,
-		})
-	}
-
-	var q Queue[request.Request]
 	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
+	var b Batcher[request.Request]
+	if cfg.Batch != nil {
+		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+		cfg.NumConsumers = 1
+		if oldBatcher {
+			// If user configures the old batcher we only can support "items" sizer.
+			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:  request.SizerTypeItems,
+				sizer:      request.NewItemsSizer(),
+				next:       next,
+				maxWorkers: cfg.NumConsumers,
+			})
+		} else {
+			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:  cfg.Sizer,
+				sizer:      sizer,
+				next:       next,
+				maxWorkers: cfg.NumConsumers,
+			})
+		}
+	} else {
+		b = newDisabledBatcher[request.Request](next)
+	}
+
+	var q Queue[request.Request]
 	// Configure memory queue or persistent based on the config.
 	if cfg.StorageID == nil {
 		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{

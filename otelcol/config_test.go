@@ -301,14 +301,16 @@ func generateConfig() *Config {
 				},
 				Metrics: telemetry.MetricsConfig{
 					Level: configtelemetry.LevelNormal,
-					Readers: []config.MetricReader{
-						{
-							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
-								Prometheus: &config.Prometheus{
-									Host: newPtr("localhost"),
-									Port: newPtr(8080),
-								},
-							}},
+					MeterProvider: config.MeterProvider{
+						Readers: []config.MetricReader{
+							{
+								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{
+									Prometheus: &config.Prometheus{
+										Host: newPtr("localhost"),
+										Port: newPtr(8080),
+									},
+								}},
+							},
 						},
 					},
 				},

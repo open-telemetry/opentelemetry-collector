@@ -29,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ocfg, ok := factory.CreateDefaultConfig().(*Config)
 	assert.True(t, ok)
-	assert.Equal(t, "", ocfg.ClientConfig.Endpoint)
+	assert.Empty(t, ocfg.ClientConfig.Endpoint)
 	assert.Equal(t, 30*time.Second, ocfg.ClientConfig.Timeout, "default timeout is 30 second")
 	assert.True(t, ocfg.RetryConfig.Enabled, "default retry is enabled")
 	assert.Equal(t, 300*time.Second, ocfg.RetryConfig.MaxElapsedTime, "default retry MaxElapsedTime")
