@@ -14,4 +14,4 @@
 // For stream gRPC clients, the type is grpc.StreamClientInterceptor
 // For unary gRPC servers, the type is grpc.UnaryServerInterceptor
 // For stream gRPC servers, the type is	grpc.StreamServerInterceptor
-package extensionmiddleware
+package extensionmiddleware // import "go.opentelemetry.io/collector/extension/extensionmiddleware"

@@ -3,7 +3,7 @@ module go.opentelemetry.io/collector/config/configlimiter
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v1.28.1
+	go.opentelemetry.io/collector/component v1.29.0
 	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000
 )
 

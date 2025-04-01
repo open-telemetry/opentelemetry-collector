@@ -86,7 +86,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	r := New(tc, nil)
+	r := New(tc)
 	// Now run it as a gRPC server
 	srv := grpc.NewServer()
 	pprofileotlp.RegisterGRPCServer(srv, r)

@@ -9,9 +9,7 @@ import (
 	"go.opentelemetry.io/collector/config/configlimiter"
 )
 
-var (
-	errNoLimiterSpecified = errors.New("no limiter extension specified")
-)
+var errNoLimiterSpecified = errors.New("no limiter extension specified")
 
 // Config defines configuration for the limiter middleware extension.
 type Config struct {

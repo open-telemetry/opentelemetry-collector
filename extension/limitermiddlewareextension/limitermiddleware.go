@@ -37,11 +37,13 @@ func newLimiterMiddleware(_ context.Context, cfg *Config, _ extension.Settings) 
 }
 
 // Ensure limiterMiddleware implements all required middleware interfaces.
-var _ extensionmiddleware.HTTPClient = &limiterMiddleware{}
-var _ extensionmiddleware.HTTPServer = &limiterMiddleware{}
-var _ extensionmiddleware.GRPCClient = &limiterMiddleware{}
-var _ extensionmiddleware.GRPCServer = &limiterMiddleware{}
-var _ component.Component = &limiterMiddleware{}
+var (
+	_ extensionmiddleware.HTTPClient = &limiterMiddleware{}
+	_ extensionmiddleware.HTTPServer = &limiterMiddleware{}
+	_ extensionmiddleware.GRPCClient = &limiterMiddleware{}
+	_ extensionmiddleware.GRPCServer = &limiterMiddleware{}
+	_ component.Component            = &limiterMiddleware{}
+)
 
 // limiterMiddleware also implements the extensionlimiter interface.
 var _ extensionlimiter.Provider = &limiterMiddleware{}

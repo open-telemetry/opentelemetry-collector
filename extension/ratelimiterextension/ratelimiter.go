@@ -1,17 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ratelimiterextension
+package ratelimiterextension // import "go.opentelemetry.io/collector/extension/ratelimiterextension"
 
 import (
 	"context"
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
-	"go.uber.org/zap"
 )
 
 // tokenBucket implements a token bucket rate limiter

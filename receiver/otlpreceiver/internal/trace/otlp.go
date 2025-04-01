@@ -7,8 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -21,24 +19,13 @@ type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
 	obsreport    *receiverhelper.ObsReport
-	itemsLimiter extensionlimiter.ResourceLimiter
-	sizeLimiter  extensionlimiter.ResourceLimiter
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport, limiter extensionlimiter.Provider) *Receiver {
-	// TODO@@@: Move this limiter logic to the receiverhelper package.
-	var itemsLimiter, sizeLimiter extensionlimiter.ResourceLimiter
-	if limiter != nil {
-		itemsLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
-		sizeLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
-	}
-
+func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,
-		itemsLimiter: itemsLimiter,
-		sizeLimiter:  sizeLimiter,
 	}
 }
 
@@ -49,27 +36,6 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
 		return ptraceotlp.NewExportResponse(), nil
-	}
-
-	// Apply the items limiter if available
-	if r.itemsLimiter != nil {
-		release, err := r.itemsLimiter.Acquire(ctx, uint64(numSpans))
-		if err != nil {
-			return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
-		}
-		defer release()
-	}
-
-	// Apply the memory size limiter if available
-	if r.sizeLimiter != nil {
-		// Get the marshaled size of the request as a proxy for memory size
-		var sizer ptrace.ProtoMarshaler
-		size := sizer.TracesSize(td)
-		release, err := r.sizeLimiter.Acquire(ctx, uint64(size))
-		if err != nil {
-			return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
-		}
-		defer release()
 	}
 
 	ctx = r.obsreport.StartTracesOp(ctx)

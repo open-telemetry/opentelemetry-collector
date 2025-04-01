@@ -7,8 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -21,24 +19,13 @@ type Receiver struct {
 	pmetricotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Metrics
 	obsreport    *receiverhelper.ObsReport
-
-	itemsLimiter extensionlimiter.ResourceLimiter
-	sizeLimiter  extensionlimiter.ResourceLimiter
 }
 
 // New creates a new Receiver reference.
-func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport, limiter extensionlimiter.Provider) *Receiver {
-	// TODO@@@: Move this limiter logic to the receiverhelper package.
-	var itemsLimiter, sizeLimiter extensionlimiter.ResourceLimiter
-	if limiter != nil {
-		itemsLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyRequestItems)
-		sizeLimiter = limiter.ResourceLimiter(extensionlimiter.WeightKeyResidentSize)
-	}
+func New(nextConsumer consumer.Metrics, obsreport *receiverhelper.ObsReport) *Receiver {
 	return &Receiver{
 		nextConsumer: nextConsumer,
 		obsreport:    obsreport,
-		itemsLimiter: itemsLimiter,
-		sizeLimiter:  sizeLimiter,
 	}
 }
 
@@ -48,26 +35,6 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	dataPointCount := md.DataPointCount()
 	if dataPointCount == 0 {
 		return pmetricotlp.NewExportResponse(), nil
-	}
-
-	// Acquire items limiter if available
-	if r.itemsLimiter != nil {
-		release, err := r.itemsLimiter.Acquire(ctx, uint64(dataPointCount))
-		if err != nil {
-			return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
-		}
-		defer release()
-	}
-
-	// Acquire size limiter if available
-	if r.sizeLimiter != nil {
-		var sizer pmetric.ProtoMarshaler
-		size := sizer.MetricsSize(md)
-		release, err := r.sizeLimiter.Acquire(ctx, uint64(size))
-		if err != nil {
-			return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
-		}
-		defer release()
 	}
 
 	ctx = r.obsreport.StartMetricsOp(ctx)
