@@ -319,7 +319,7 @@ func TestSendTraces(t *testing.T) {
 
 	// For testing the "Partial success" warning.
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -491,7 +491,7 @@ func TestSendMetrics(t *testing.T) {
 
 	// For testing the "Partial success" warning.
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -785,7 +785,7 @@ func TestSendLogData(t *testing.T) {
 
 	// For testing the "Partial success" warning.
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 
 	exp, err := factory.CreateLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -892,7 +892,7 @@ func TestSendProfiles(t *testing.T) {
 
 	// For testing the "Partial success" warning.
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 
 	exp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)

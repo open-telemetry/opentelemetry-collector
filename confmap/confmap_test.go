@@ -500,8 +500,8 @@ func TestUnmarshaler(t *testing.T) {
 	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
-	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
-	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+	assert.Equal(t, "make sure this is also called", tc.Some)
+	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
 func TestEmbeddedUnmarshaler(t *testing.T) {
@@ -518,8 +518,8 @@ func TestEmbeddedUnmarshaler(t *testing.T) {
 	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
-	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
-	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+	assert.Equal(t, "make sure this is also called", tc.Some)
+	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
 func TestEmbeddedUnmarshalerError(t *testing.T) {
@@ -808,8 +808,8 @@ func TestUnmarshalThroughEmbeddedStruct(t *testing.T) {
 	cfg := &topLevel{}
 	err := c.Unmarshal(cfg)
 	require.NoError(t, err)
-	require.Equal(t, "success", cfg.Cfg.embeddedStructWithUnmarshal.success)
-	require.Equal(t, "bar", cfg.Cfg.embeddedStructWithUnmarshal.Foo)
+	require.Equal(t, "success", cfg.Cfg.success)
+	require.Equal(t, "bar", cfg.Cfg.Foo)
 }
 
 type configWithOwnUnmarshalAndEmbeddedSquashedStruct struct {
@@ -830,8 +830,8 @@ func TestUnmarshalOwnThroughEmbeddedSquashedStruct(t *testing.T) {
 	cfg := &topLevelSquashedEmbedded{}
 	err := c.Unmarshal(cfg)
 	require.NoError(t, err)
-	require.Equal(t, "success", cfg.Cfg.embeddedStructWithUnmarshal.success)
-	require.Equal(t, "bar", cfg.Cfg.embeddedStructWithUnmarshal.Foo)
+	require.Equal(t, "success", cfg.Cfg.success)
+	require.Equal(t, "bar", cfg.Cfg.Foo)
 }
 
 type recursive struct {

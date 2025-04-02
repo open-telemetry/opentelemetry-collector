@@ -396,7 +396,7 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	sink.SetExportErr(errors.New("transient error"))
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4, Bytes: 4}, done)
 	assert.Eventually(t, func() bool {
-		return 2 == done.errors.Load()
+		return done.errors.Load() == 2
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// Check that done callback is called for the right amount of times.
