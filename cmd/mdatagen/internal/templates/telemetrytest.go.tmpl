@@ -3,20 +3,20 @@
 package {{ .Package }}test
 
 import (
-	"testing"
+    "testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+    "github.com/stretchr/testify/require"
+    "go.opentelemetry.io/otel/sdk/metric/metricdata"
+    "go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
-	"go.opentelemetry.io/collector/component"
-	{{- end }}
-	"go.opentelemetry.io/collector/component/componenttest"
-	{{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
-	"go.opentelemetry.io/collector/{{ .Status.Class }}"
-	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
-	{{- end }}
+    {{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+    "go.opentelemetry.io/collector/component"
+    {{- end }}
+    "go.opentelemetry.io/collector/component/componenttest"
+    {{- if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
+    "go.opentelemetry.io/collector/{{ .Status.Class }}"
+    "go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
+    {{- end }}
 )
 
 {{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
