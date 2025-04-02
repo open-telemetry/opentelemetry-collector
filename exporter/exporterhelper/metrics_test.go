@@ -52,7 +52,7 @@ func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(testdata.GenerateMetrics(1))
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
-	assert.EqualValues(
+	assert.Equal(
 		t,
 		newMetricsRequest(pmetric.NewMetrics()),
 		mr.(RequestErrorHandler).OnError(metricsErr),

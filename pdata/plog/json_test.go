@@ -54,7 +54,7 @@ func TestLogsJSON(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalLogs(jsonBuf)
 	require.NoError(t, err)
-	assert.EqualValues(t, logsOTLP, got)
+	assert.Equal(t, logsOTLP, got)
 }
 
 var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"droppedAttributesCount":1},"scopeLogs":[{"scope":{"name":"name","version":"version","droppedAttributesCount":1},"logRecords":[{"timeUnixNano":"1684617382541971000","observedTimeUnixNano":"1684623646539558000","severityNumber":17,"severityText":"Error","body":{"stringValue":"hello world"},"attributes":[{"key":"sdkVersion","value":{"stringValue":"1.0.1"}}],"droppedAttributesCount":1,"flags":1,"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"schemaUrl":"scope_schema"}],"schemaUrl":"resource_schema"}]}`
@@ -63,7 +63,7 @@ func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalLogs([]byte(logsJSON))
 	require.NoError(t, err)
-	assert.EqualValues(t, logsOTLP, got)
+	assert.Equal(t, logsOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {

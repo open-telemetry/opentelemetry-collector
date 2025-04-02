@@ -49,7 +49,7 @@ func TestSpanEvent_Timestamp(t *testing.T) {
 
 func TestSpanEvent_Name(t *testing.T) {
 	ms := NewSpanEvent()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly

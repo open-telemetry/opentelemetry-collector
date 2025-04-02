@@ -495,7 +495,7 @@ func runScenario(t *testing.T, path string) {
 				require.NoError(t, err)
 				n, err := file.Write(b)
 				require.NoError(t, err)
-				require.Positive(t, n, 0)
+				require.Positive(t, n)
 				configFiles = append(configFiles, file.Name())
 			}
 

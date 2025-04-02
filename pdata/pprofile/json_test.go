@@ -127,7 +127,7 @@ func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalProfiles([]byte(profilesJSON))
 	require.NoError(t, err)
-	assert.EqualValues(t, profilesOTLP, got)
+	assert.Equal(t, profilesOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {

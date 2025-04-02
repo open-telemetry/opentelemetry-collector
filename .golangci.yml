@@ -186,11 +186,6 @@ linters:
 
     testifylint:
       disable:
-        - empty # FIXME
-        - equal-values # FIXME
-        - error-is-as # FIXME
-        - formatter # FIXME
-        - len # FIXME
         - useless-assert # FIXME when golangci-lint > 2.0.2
       enable-all: true
 

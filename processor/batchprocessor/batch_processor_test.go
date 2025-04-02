@@ -116,7 +116,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				spans.At(spanIndex),
 				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
 		}
@@ -465,7 +465,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ms := sentResourceMetrics.At(requestNum).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				ms.At(metricIndex),
 				metricsReceivedByName[getTestMetricName(requestNum, metricIndex)])
 		}
@@ -812,7 +812,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		lrs := sentResourceLogs.At(requestNum).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				lrs.At(logIndex),
 				logsReceivedBySeverityText[getTestLogSeverityText(requestNum, logIndex)])
 		}
@@ -1105,14 +1105,14 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				spans.At(spanIndex),
 				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
 		}
 	}
 
 	// This test ensures each context had the expected number of spans.
-	require.Equal(t, len(callCtxs), len(sink.spanCountByToken12))
+	require.Len(t, sink.spanCountByToken12, len(callCtxs))
 	for idx, ctx := range callCtxs {
 		md := client.FromContext(ctx).Metadata
 		exp := formatTwo(md.Get("token1"), md.Get("token2"))

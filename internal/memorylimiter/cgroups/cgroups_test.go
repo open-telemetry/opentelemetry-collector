@@ -50,7 +50,7 @@ func TestNewCGroups(t *testing.T) {
 	}
 
 	cgroups, err := NewCGroups(cgroupsProcMountInfoPath, cgroupsProcCGroupPath)
-	assert.Equal(t, len(testTable), len(cgroups))
+	assert.Len(t, cgroups, len(testTable))
 	require.NoError(t, err)
 
 	for _, tt := range testTable {
