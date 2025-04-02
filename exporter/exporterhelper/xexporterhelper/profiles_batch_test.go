@@ -125,7 +125,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expected), len(res))
+			assert.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd, r.(*profilesRequest).pd)
 			}
@@ -290,7 +290,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expected), len(res))
+			assert.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)
 			}

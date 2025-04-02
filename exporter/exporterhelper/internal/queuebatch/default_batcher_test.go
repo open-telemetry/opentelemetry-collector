@@ -160,7 +160,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			require.NoError(t, ba.Shutdown(context.Background()))
 
 			// After shutdown the pending "current batch" is also flushed.
-			assert.EqualValues(t, 3, sink.RequestsCount())
+			assert.Equal(t, 3, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 57 || sink.BytesCount() == 57)
 
 			// Check that done callback is called for the right amount of times.
@@ -325,7 +325,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			require.NoError(t, ba.Shutdown(context.Background()))
 
 			// After shutdown the pending "current batch" is also flushed.
-			assert.EqualValues(t, 11, sink.RequestsCount())
+			assert.Equal(t, 11, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 1005 || sink.BytesCount() == 1005)
 
 			// Check that done callback is called for the right amount of times.
@@ -354,13 +354,13 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done)
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 
-	assert.EqualValues(t, 0, sink.RequestsCount())
-	assert.EqualValues(t, 0, sink.ItemsCount())
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, 0, sink.ItemsCount())
 
 	require.NoError(t, ba.Shutdown(context.Background()))
 
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 3, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 3, sink.ItemsCount())
 
 	// Check that done callback is called for the right amount of times.
 	assert.EqualValues(t, 0, done.errors.Load())

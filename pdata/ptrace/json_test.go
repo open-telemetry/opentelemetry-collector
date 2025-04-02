@@ -99,7 +99,7 @@ func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
 	got, err := decoder.UnmarshalTraces([]byte(tracesJSON))
 	require.NoError(t, err)
-	assert.EqualValues(t, tracesOTLP, got)
+	assert.Equal(t, tracesOTLP, got)
 }
 
 func TestJSONMarshal(t *testing.T) {

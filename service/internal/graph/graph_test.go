@@ -789,7 +789,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			pg, err := Build(context.Background(), set)
 			require.NoError(t, err)
 
-			assert.Equal(t, len(tt.pipelineConfigs), len(pg.pipelines))
+			assert.Len(t, pg.pipelines, len(tt.pipelineConfigs))
 
 			require.NoError(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 
@@ -818,7 +818,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 				expectedReceivers, expectedExporters := expectedInstances(tt.pipelineConfigs, pipelineID)
 				require.Len(t, pipeline.receivers, expectedReceivers)
-				require.Equal(t, len(pipelineCfg.Processors), len(pipeline.processors))
+				require.Len(t, pipeline.processors, len(pipelineCfg.Processors))
 				require.Len(t, pipeline.exporters, expectedExporters)
 
 				for _, n := range pipeline.exporters {
@@ -958,9 +958,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < tt.expectedPerExporter; i++ {
 					if tracesExporter.Traces[i].IsReadOnly() {
-						assert.EqualValues(t, expectedReadOnly, tracesExporter.Traces[i])
+						assert.Equal(t, expectedReadOnly, tracesExporter.Traces[i])
 					} else {
-						assert.EqualValues(t, expectedMutable, tracesExporter.Traces[i])
+						assert.Equal(t, expectedMutable, tracesExporter.Traces[i])
 					}
 				}
 			}
@@ -972,9 +972,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < tt.expectedPerExporter; i++ {
 					if metricsExporter.Metrics[i].IsReadOnly() {
-						assert.EqualValues(t, expectedReadOnly, metricsExporter.Metrics[i])
+						assert.Equal(t, expectedReadOnly, metricsExporter.Metrics[i])
 					} else {
-						assert.EqualValues(t, expectedMutable, metricsExporter.Metrics[i])
+						assert.Equal(t, expectedMutable, metricsExporter.Metrics[i])
 					}
 				}
 			}
@@ -986,9 +986,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < tt.expectedPerExporter; i++ {
 					if logsExporter.Logs[i].IsReadOnly() {
-						assert.EqualValues(t, expectedReadOnly, logsExporter.Logs[i])
+						assert.Equal(t, expectedReadOnly, logsExporter.Logs[i])
 					} else {
-						assert.EqualValues(t, expectedMutable, logsExporter.Logs[i])
+						assert.Equal(t, expectedMutable, logsExporter.Logs[i])
 					}
 				}
 			}
@@ -1000,9 +1000,9 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				expectedReadOnly.MarkReadOnly()
 				for i := 0; i < tt.expectedPerExporter; i++ {
 					if profilesExporter.Profiles[i].IsReadOnly() {
-						assert.EqualValues(t, expectedReadOnly, profilesExporter.Profiles[i])
+						assert.Equal(t, expectedReadOnly, profilesExporter.Profiles[i])
 					} else {
-						assert.EqualValues(t, expectedMutable, profilesExporter.Profiles[i])
+						assert.Equal(t, expectedMutable, profilesExporter.Profiles[i])
 					}
 				}
 			}
@@ -1134,7 +1134,7 @@ func TestInstances(t *testing.T) {
 			pg, err := Build(context.Background(), set)
 			require.NoError(t, err)
 
-			require.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
+			require.Len(t, pg.pipelines, len(set.PipelineConfigs))
 
 			// For each component id, build a map of the instances of that component.
 			// Use graph.Node.ID() as the key to determine uniqueness of instances.
@@ -1309,7 +1309,7 @@ func TestConnectorRouter(t *testing.T) {
 	allReceivers := pg.getReceivers()
 	allExporters := pg.GetExporters()
 
-	assert.Equal(t, len(set.PipelineConfigs), len(pg.pipelines))
+	assert.Len(t, pg.pipelines, len(set.PipelineConfigs))
 
 	// Get a handle for the traces receiver and both Exporters
 	tracesReceiver := allReceivers[pipeline.SignalTraces][rcvrID].(*testcomponents.ExampleReceiver)
