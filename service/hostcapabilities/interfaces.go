@@ -26,3 +26,11 @@ type ModuleInfo interface {
 type ExposeExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
+
+// ComponentFactory is an interface that may be implemented by the host to
+// provide a component's factory
+type ComponentFactory interface {
+	// GetFactory returns the component factory for the given
+	// component type
+	GetFactory(kind component.Kind, componentType component.Type) component.Factory
+}
