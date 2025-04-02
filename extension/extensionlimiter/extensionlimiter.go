@@ -11,38 +11,59 @@ import (
 type WeightKey string
 
 // Predefined weight keys for common rate limits.  This is not a closed set.
+//
 // Providers should return errors when they do not recognize a weight key.
 const (
+	// WeightKeyNetworkBytes is typically used with RateLimiters
+	// for limiting arrival rate.
 	WeightKeyNetworkBytes WeightKey = "network_bytes"
-	WeightKeyRequestItems WeightKey = "request_items"
+
+	// WeightKeyRequestCount can be used to limit the rate or
+	// total concurrent number of requests (i.e., pipeline data
+	// objects).
 	WeightKeyRequestCount WeightKey = "request_count"
-	WeightKeyMemorySize   WeightKey = "memory_size"
+
+	// WeightKeyRequestItems can be used to limit the rate or
+	// total concurrent number of items (log records, metric data
+	// points, spans, profiles).
+	WeightKeyRequestItems WeightKey = "request_items"
+
+	// WeightKeyMemorySize is typically used with ResourceLimiters
+	// for limiting active memory usage.
+	WeightKeyMemorySize WeightKey = "memory_size"
 )
 
 // Provider is an interface that provides access to different limiter types
 // for specific weight keys.
+//
+// Extensions implementing this interface can be referenced by their
+// names from component rate limiting configurations (e.g., limitermiddleware).
 type Provider interface {
-	// RateLimiter returns a RateLimiter for the specified weight key
+	// RateLimiter returns a RateLimiter for the specified weight key.
+	//
+	// Rate limiters are useful for limiting an amount of
+	// something per unit of time.  In the OpenTelemetry metrics
+	// data model, resource limiters would apply to value of an
+	// Counter, where the value is incremented on Limit().
 	RateLimiter(key WeightKey) RateLimiter
 
-	// ResourceLimiter returns a ResourceLimiter for the specified weight key.
+	// ResourceLimiter returns a ResourceLimiter for the specified
+	// weight key.
+	//
+	// Resource limiters are useful for limiting a total amount of
+	// something.  In the OpenTelemetry metrics data model,
+	// resource limiters would apply to value of an UpDownCounter,
+	// where the value is incremented on Acquire() and decremented
+	// in Release().
 	//
 	// In cases where a component supports a rate limiter and does not use
 	// a release function, the component may return a ResourceLimiterFunc
-	// which calls the underlying rate limiter and returns a nil ReleaseFunc.
+	// which calls the underlying rate limiter and returns a no-op ReleaseFunc.
 	ResourceLimiter(key WeightKey) ResourceLimiter
 }
 
-// ReleaseFunc is called when resources should be released after limiting.
-//
-// Note that RelaseFunc values may be nil in cases where the implementation is
-// not concerned with releasing acquired resources, such as when a rate limiter
-// receives the Acquire() signal for requests.
-type ReleaseFunc func()
-
-// ResourceLimiter is an interface that components can use to apply rate limiting.
-// Extensions implementing this interface can be referenced by their
-// names from component rate limiting configurations.
+// ResourceLimiter is an interface that components can use to apply
+// resource limiting (e.g., concurrent requests, memory in use).
 type ResourceLimiter interface {
 	// Acquire attempts to acquire resources based on the provided weight value.
 	//
@@ -56,16 +77,25 @@ type ResourceLimiter interface {
 
 var _ ResourceLimiter = ResourceLimiterFunc(nil)
 
+// ReleaseFunc is called when resources should be released after limiting.
+//
+// RelaseFunc values are never nil values, even in the error case, for
+// safety. Users should unconditionally defer these.
+type ReleaseFunc func()
+
+// ResourceLimiterFunc is an easy way to construct ResourceLimiters.
 type ResourceLimiterFunc func(ctx context.Context, value uint64) (ReleaseFunc, error)
 
+// Acquire implements ResourceLimiter.
 func (f ResourceLimiterFunc) Acquire(ctx context.Context, value uint64) (ReleaseFunc, error) {
 	if f == nil {
-		return nil, nil
+		return func() {}, nil
 	}
 	return f(ctx, value)
 }
 
-// RateLimiter is an interface for rate limiting without resource release.
+// RateLimiter is an interface that components can use to apply
+// rate limiting (e.g., network-bytes-per-second, requests-per-second).
 type RateLimiter interface {
 	// Limit attempts to apply rate limiting based on the provided weight value.
 	// Limit is expected to block the caller until the weight can be admitted.
@@ -74,9 +104,10 @@ type RateLimiter interface {
 
 var _ RateLimiter = RateLimiterFunc(nil)
 
-// RateLimiterFunc is a function type that implements RateLimiter interface
+// RateLimiterFunc is an easy way to construct RateLimiters.
 type RateLimiterFunc func(ctx context.Context, value uint64) error
 
+// Limit implements RateLimiter.
 func (f RateLimiterFunc) Limit(ctx context.Context, value uint64) error {
 	if f == nil {
 		return nil

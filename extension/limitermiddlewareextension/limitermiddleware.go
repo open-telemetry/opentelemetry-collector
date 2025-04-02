@@ -137,12 +137,10 @@ func (rb *rateLimitedBody) Close() error {
 func (lrt *limiterRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Apply resource limit check for request count
 	if lrt.resourceLimiter != nil {
-		rel, err := lrt.resourceLimiter.Acquire(req.Context(), 1)
+		release, err := lrt.resourceLimiter.Acquire(req.Context(), 1)
+		defer release()
 		if err != nil {
 			return limitExceeded(req), nil
-		}
-		if rel != nil {
-			defer rel()
 		}
 	}
 
@@ -171,14 +169,11 @@ func (lm *limiterMiddleware) GetHTTPHandler(base http.Handler) (http.Handler, er
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Apply resource limit check for request count
 		if resourceLimiter != nil {
-			rel, err := resourceLimiter.Acquire(r.Context(), 1)
+			release, err := resourceLimiter.Acquire(r.Context(), 1)
+			defer release()
 			if err != nil {
 				http.Error(w, tooManyRequestsMsg, http.StatusTooManyRequests)
 				return
-			}
-
-			if rel != nil {
-				defer rel()
 			}
 		}
 
@@ -210,12 +205,10 @@ func (lm *limiterMiddleware) GetGRPCClientOptions() (options []grpc.DialOption, 
 				invoker grpc.UnaryInvoker,
 				opts ...grpc.CallOption,
 			) error {
-				rel, err := resourceLimiter.Acquire(ctx, 1)
+				release, err := resourceLimiter.Acquire(ctx, 1)
+				defer release()
 				if err != nil {
 					return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-				}
-				if rel != nil {
-					defer rel()
 				}
 				return invoker(ctx, method, req, reply, cc, opts...)
 			}),
@@ -257,12 +250,10 @@ func (lm *limiterMiddleware) GetGRPCServerOptions() (options []grpc.ServerOption
 				info *grpc.UnaryServerInfo,
 				handler grpc.UnaryHandler,
 			) (any, error) {
-				rel, err := resourceLimiter.Acquire(ctx, 1)
+				release, err := resourceLimiter.Acquire(ctx, 1)
+				defer release()
 				if err != nil {
 					return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-				}
-				if rel != nil {
-					defer rel()
 				}
 				return handler(ctx, req)
 			}), grpc.ChainStreamInterceptor(
@@ -338,12 +329,10 @@ type serverStream struct {
 
 // RecvMsg applies rate limiting to server stream message receiving.
 func (s *serverStream) RecvMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), 1)
+	release, err := s.limiter.Acquire(s.Context(), 1)
+	defer release()
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-	}
-	if rel != nil {
-		defer rel()
 	}
 	return s.ServerStream.RecvMsg(m)
 }
@@ -363,12 +352,10 @@ type clientStream struct {
 
 // SendMsg applies rate limiting to client stream message sending.
 func (s *clientStream) SendMsg(m any) error {
-	rel, err := s.limiter.Acquire(s.Context(), 1)
+	release, err := s.limiter.Acquire(s.Context(), 1)
+	defer release()
 	if err != nil {
 		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-	}
-	if rel != nil {
-		defer rel()
 	}
 	return s.ClientStream.SendMsg(m)
 }

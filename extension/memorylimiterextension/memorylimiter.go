@@ -46,9 +46,9 @@ func (ml *memoryLimiterExtension) RateLimiter(_ extensionlimiter.WeightKey) exte
 func (ml *memoryLimiterExtension) ResourceLimiter(key extensionlimiter.WeightKey) extensionlimiter.ResourceLimiter {
 	return extensionlimiter.ResourceLimiterFunc(func(_ context.Context, _ uint64) (extensionlimiter.ReleaseFunc, error) {
 		if ml.memLimiter.MustRefuse() {
-			return nil, ErrMemoryLimitExceeded
+			return func() {}, ErrMemoryLimitExceeded
 		}
-		return nil, nil
+		return func() {}, nil
 	})
 }
 

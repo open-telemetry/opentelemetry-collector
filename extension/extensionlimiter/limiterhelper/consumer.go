@@ -141,19 +141,19 @@ func (tc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 	// Apply the request count limiter if available
 	if tc.requestCountLimiter != nil {
 		release, err := tc.requestCountLimiter.Acquire(ctx, 1)
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the items limiter if available
 	if tc.requestItemsLimiter != nil {
 		release, err := tc.requestItemsLimiter.Acquire(ctx, uint64(numSpans))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the memory size limiter if available
@@ -162,10 +162,10 @@ func (tc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 		var sizer ptrace.ProtoMarshaler
 		size := sizer.TracesSize(td)
 		release, err := tc.memorySizeLimiter.Acquire(ctx, uint64(size))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	return tc.nextConsumer.ConsumeTraces(ctx, td)
@@ -189,19 +189,19 @@ func (mc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	// Apply the request count limiter if available
 	if mc.requestCountLimiter != nil {
 		release, err := mc.requestCountLimiter.Acquire(ctx, 1)
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the items limiter if available
 	if mc.requestItemsLimiter != nil {
 		release, err := mc.requestItemsLimiter.Acquire(ctx, uint64(dataPointCount))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the memory size limiter if available
@@ -209,10 +209,10 @@ func (mc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		var sizer pmetric.ProtoMarshaler
 		size := sizer.MetricsSize(md)
 		release, err := mc.memorySizeLimiter.Acquire(ctx, uint64(size))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	return mc.nextConsumer.ConsumeMetrics(ctx, md)
@@ -236,19 +236,19 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// Apply the request count limiter if available
 	if lc.requestCountLimiter != nil {
 		release, err := lc.requestCountLimiter.Acquire(ctx, 1)
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the items limiter if available
 	if lc.requestItemsLimiter != nil {
 		release, err := lc.requestItemsLimiter.Acquire(ctx, uint64(numRecords))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the memory size limiter if available
@@ -256,10 +256,10 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		var sizer plog.ProtoMarshaler
 		size := sizer.LogsSize(ld)
 		release, err := lc.memorySizeLimiter.Acquire(ctx, uint64(size))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	return lc.nextConsumer.ConsumeLogs(ctx, ld)
@@ -279,19 +279,19 @@ func (pc *profilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Pro
 	// Apply the request count limiter if available
 	if pc.requestCountLimiter != nil {
 		release, err := pc.requestCountLimiter.Acquire(ctx, 1)
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the items limiter if available
 	if pc.requestItemsLimiter != nil {
 		release, err := pc.requestItemsLimiter.Acquire(ctx, uint64(numProfiles))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	// Apply the memory size limiter if available
@@ -299,10 +299,10 @@ func (pc *profilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Pro
 		var sizer pprofile.ProtoMarshaler
 		size := sizer.ProfilesSize(pd)
 		release, err := pc.memorySizeLimiter.Acquire(ctx, uint64(size))
+		defer release()
 		if err != nil {
 			return err
 		}
-		defer release()
 	}
 
 	return pc.nextConsumer.ConsumeProfiles(ctx, pd)

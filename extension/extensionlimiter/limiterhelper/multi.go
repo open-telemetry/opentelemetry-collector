@@ -86,7 +86,7 @@ func (mp *MultiProvider) ResourceLimiter(key extensionlimiter.WeightKey) extensi
 			if err != nil {
 				// Release any already acquired resources
 				funcs.release()
-				return nil, err
+				return func() {}, err
 			}
 			if releaseFunc != nil {
 				funcs = append(funcs, releaseFunc)
@@ -94,7 +94,7 @@ func (mp *MultiProvider) ResourceLimiter(key extensionlimiter.WeightKey) extensi
 		}
 
 		if len(funcs) == 0 {
-			return nil, nil
+			return func() {}, nil
 		}
 
 		return funcs.release, nil

@@ -155,6 +155,6 @@ func (rl *rateLimiterExtension) ResourceLimiter(key extensionlimiter.WeightKey) 
 		return nil
 	}
 	return extensionlimiter.ResourceLimiterFunc(func(ctx context.Context, weight uint64) (extensionlimiter.ReleaseFunc, error) {
-		return nil, rate.Limit(ctx, weight)
+		return func() {}, rate.Limit(ctx, weight)
 	})
 }
