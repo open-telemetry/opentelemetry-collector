@@ -550,7 +550,7 @@ func TestPartialSuccess_logs(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 
 	exp, err := createLogs(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -820,7 +820,7 @@ func TestPartialSuccess_longContentLengthHeader(t *testing.T) {
 				cfg := createDefaultConfig()
 				set := exportertest.NewNopSettings(metadata.Type)
 				logger, observed := observer.New(zap.DebugLevel)
-				set.TelemetrySettings.Logger = zap.New(logger)
+				set.Logger = zap.New(logger)
 				exp, err := newExporter(cfg, set)
 				require.NoError(t, err)
 
@@ -909,7 +909,7 @@ func TestPartialSuccess_traces(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 	exp, err := createTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -949,7 +949,7 @@ func TestPartialSuccess_metrics(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 	exp, err := createMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -990,7 +990,7 @@ func TestPartialSuccess_profiles(t *testing.T) {
 	}
 	set := exportertest.NewNopSettings(metadata.Type)
 	logger, observed := observer.New(zap.DebugLevel)
-	set.TelemetrySettings.Logger = zap.New(logger)
+	set.Logger = zap.New(logger)
 	exp, err := createProfiles(context.Background(), set, cfg)
 	require.NoError(t, err)
 

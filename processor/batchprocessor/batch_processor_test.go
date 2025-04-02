@@ -148,10 +148,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	require.NoError(t, traces.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
-	for {
-		if sink.SpanCount() == requestCount*spansPerRequest {
-			break
-		}
+	for sink.SpanCount() != requestCount*spansPerRequest {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -379,10 +376,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.SpanCount() != 0 {
-			break
-		}
+	for sink.SpanCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -615,10 +609,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.DataPointCount() != 0 {
-			break
-		}
+	for sink.DataPointCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -943,10 +934,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.LogRecordCount() != 0 {
-			break
-		}
+	for sink.LogRecordCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
