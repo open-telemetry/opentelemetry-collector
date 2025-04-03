@@ -20,6 +20,7 @@ var configFieldTagRegExp = regexp.MustCompile("^[a-z0-9][a-z0-9_]*$")
 // of components and extensions. It is recommended for implementers of components
 // to call this function on their tests passing the default configuration of the
 // component factory.
+// Deprecated: [v0.122.0] Use confmaptest.CheckConfigStruct instead.
 func CheckConfigStruct(config any) error {
 	t := reflect.TypeOf(config)
 	if t.Kind() == reflect.Ptr {
