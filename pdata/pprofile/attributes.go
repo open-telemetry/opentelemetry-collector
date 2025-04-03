@@ -66,3 +66,61 @@ func AddAttribute(table AttributeTableSlice, record attributable, key string, va
 
 	return nil
 }
+
+// PutAttribute updates an AttributeTable and a record's AttributeIndices to
+// add a new attribute.
+// The assumption is that attributes are a map as for other signals (metrics, logs, etc.), thus
+// the same key must not appear twice in a list of attributes / attribute indices.
+// The record can be any struct that implements an `AttributeIndices` method.
+func PutAttribute(table AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
+	for i := range record.AttributeIndices().Len() {
+		idx := record.AttributeIndices().At(i)
+		attr := table.At(int(idx))
+		if attr.Key() == key {
+			if attr.Value().Equal(value) {
+				// Attribute already exists, nothing to do.
+				return nil
+			}
+
+			// Attribute exists, but the value is different, so update it.
+
+			// If the attribute table already contains the key/value pair, just update the index.
+			for j := range table.Len() {
+				a := table.At(j)
+				if a.Key() == key && a.Value().Equal(value) {
+					if j >= math.MaxInt32 {
+						return fmt.Errorf("attribute %s=%#v has too high an index %d to be added to AttributeIndices", key, value, j)
+					}
+					record.AttributeIndices().SetAt(i, int32(j)) //nolint:gosec // overflow checked
+					return nil
+				}
+			}
+
+			// Add the key/value pair as a new attribute to the table...
+			entry := table.AppendEmpty()
+			entry.SetKey(key)
+			value.CopyTo(entry.Value())
+
+			if table.Len() >= math.MaxInt32 {
+				return errors.New("AttributeTable can't take more attributes")
+			}
+
+			// ...and update the index.
+			record.AttributeIndices().SetAt(i, int32(table.Len()-1)) //nolint:gosec // overflow checked
+			return nil
+		}
+	}
+
+	// Add the key/value pair as a new attribute to the table...
+	entry := table.AppendEmpty()
+	entry.SetKey(key)
+	value.CopyTo(entry.Value())
+
+	if table.Len() >= math.MaxInt32 {
+		return errors.New("AttributeTable can't take more attributes")
+	}
+
+	// ...and add to the index.
+	record.AttributeIndices().Append(int32(table.Len() - 1)) //nolint:gosec // overflow checked
+	return nil
+}
