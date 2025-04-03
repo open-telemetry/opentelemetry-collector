@@ -4,6 +4,7 @@ package zpagesextension
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,12 @@ func TestComponentLifecycle(t *testing.T) {
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
+
+	envMap, err := cm.Sub("tests::env")
+	require.NoError(t, err)
+	for key, value := range envMap.ToStringMap() {
+		t.Setenv(key, fmt.Sprintf("%v", value))
+	}
 	t.Run("shutdown", func(t *testing.T) {
 		e, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
