@@ -44,34 +44,46 @@ func TestFromAttributeIndices(t *testing.T) {
 	assert.Equal(t, attrs.AsRaw(), m)
 }
 
-func TestAddAttribute(t *testing.T) {
+func TestPutAttribute(t *testing.T) {
 	table := NewAttributeTableSlice()
-	att := table.AppendEmpty()
-	att.SetKey("hello")
-	att.Value().SetStr("world")
+	indices := NewProfile()
 
-	// Add a brand new attribute
-	loc := NewLocation()
-	err := AddAttribute(table, loc, "bonjour", pcommon.NewValueStr("monde"))
-	require.NoError(t, err)
+	// Put a first attribute.
+	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
+	assert.Equal(t, 1, table.Len())
+	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
 
+	// Put an attribute, same key, same value.
+	// This should be a no-op.
+	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
+	assert.Equal(t, 1, table.Len())
+	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
+
+	// Put an attribute, same key, different value.
+	// This updates the index and adds to the table.
+	fmt.Printf("test\n")
+	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world2")))
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{1}, loc.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{1}, indices.AttributeIndices().AsRaw())
 
-	// Add an already existing attribute
-	mapp := NewMapping()
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
-
+	// Put an attribute that already exists in the table.
+	// This updates the index and does not add to the table.
+	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
 
-	// Add a duplicate attribute
-	err = AddAttribute(table, mapp, "hello", pcommon.NewValueStr("world"))
-	require.NoError(t, err)
+	// Put a new attribute.
+	// This adds an index and adds to the table.
+	require.NoError(t, PutAttribute(table, indices, "good", pcommon.NewValueStr("day")))
+	assert.Equal(t, 3, table.Len())
+	assert.Equal(t, []int32{0, 2}, indices.AttributeIndices().AsRaw())
 
-	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, mapp.AttributeIndices().AsRaw())
+	// Add multiple distinct attributes.
+	for i := range 100 {
+		require.NoError(t, PutAttribute(table, indices, fmt.Sprintf("key_%d", i), pcommon.NewValueStr("day")))
+		assert.Equal(t, i+4, table.Len())
+		assert.Equal(t, i+3, indices.AttributeIndices().Len())
+	}
 }
 
 func BenchmarkFromAttributeIndices(b *testing.B) {
@@ -94,7 +106,7 @@ func BenchmarkFromAttributeIndices(b *testing.B) {
 	}
 }
 
-func BenchmarkAddAttribute(b *testing.B) {
+func BenchmarkPutAttribute(b *testing.B) {
 	for _, bb := range []struct {
 		name  string
 		key   string
@@ -124,7 +136,7 @@ func BenchmarkAddAttribute(b *testing.B) {
 			value: pcommon.NewValueStr("test"),
 
 			runBefore: func(_ *testing.B, table AttributeTableSlice, obj attributable) {
-				require.NoError(b, AddAttribute(table, obj, "attribute", pcommon.NewValueStr("test")))
+				require.NoError(b, PutAttribute(table, obj, "attribute", pcommon.NewValueStr("test")))
 			},
 		},
 		{
@@ -157,7 +169,7 @@ func BenchmarkAddAttribute(b *testing.B) {
 			b.ReportAllocs()
 
 			for n := 0; n < b.N; n++ {
-				_ = AddAttribute(table, obj, bb.key, bb.value)
+				_ = PutAttribute(table, obj, bb.key, bb.value)
 			}
 		})
 	}
