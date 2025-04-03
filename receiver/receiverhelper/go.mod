@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.29.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.123.0
 	go.opentelemetry.io/collector/pipeline v0.123.0
-	go.opentelemetry.io/collector/receiver v0.121.0
+	go.opentelemetry.io/collector/receiver v1.29.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/metric v1.35.0
 	go.opentelemetry.io/otel/sdk/metric v1.35.0
@@ -64,3 +64,7 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate

@@ -833,7 +833,7 @@ func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.Endpoint = endpoint
+	cfg.HTTP.ServerConfig.Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
@@ -1015,7 +1015,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.Endpoint = endpointHTTP
+	cfg.HTTP.ServerConfig.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
