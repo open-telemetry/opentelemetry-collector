@@ -42,12 +42,12 @@ func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	return td, nil
 }
 
-func (p Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		default:

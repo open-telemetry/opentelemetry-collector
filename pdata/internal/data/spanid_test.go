@@ -13,12 +13,12 @@ import (
 func TestSpanID(t *testing.T) {
 	sid := SpanID([8]byte{})
 	assert.EqualValues(t, [8]byte{}, sid)
-	assert.EqualValues(t, 0, sid.Size())
+	assert.Equal(t, 0, sid.Size())
 
 	b := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	sid = b
 	assert.EqualValues(t, b, sid)
-	assert.EqualValues(t, 8, sid.Size())
+	assert.Equal(t, 8, sid.Size())
 }
 
 func TestSpanIDMarshal(t *testing.T) {
@@ -26,14 +26,14 @@ func TestSpanIDMarshal(t *testing.T) {
 
 	sid := SpanID([8]byte{})
 	n, err := sid.MarshalTo(buf)
-	assert.EqualValues(t, 0, n)
+	assert.Equal(t, 0, n)
 	require.NoError(t, err)
 
 	sid = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 	n, err = sid.MarshalTo(buf)
 	require.NoError(t, err)
-	assert.EqualValues(t, 8, n)
-	assert.EqualValues(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, buf[0:8])
+	assert.Equal(t, 8, n)
+	assert.Equal(t, []byte{1, 2, 3, 4, 5, 6, 7, 8}, buf[0:8])
 
 	_, err = sid.MarshalTo(buf[0:1])
 	assert.Error(t, err)

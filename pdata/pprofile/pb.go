@@ -12,14 +12,26 @@ var _ MarshalSizer = (*ProtoMarshaler)(nil)
 
 type ProtoMarshaler struct{}
 
-func (e *ProtoMarshaler) MarshalProfiles(td Profiles) ([]byte, error) {
-	pb := internal.ProfilesToProto(internal.Profiles(td))
+func (e *ProtoMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	pb := internal.ProfilesToProto(internal.Profiles(pd))
 	return pb.Marshal()
 }
 
-func (e *ProtoMarshaler) ProfilesSize(td Profiles) int {
-	pb := internal.ProfilesToProto(internal.Profiles(td))
+func (e *ProtoMarshaler) ProfilesSize(pd Profiles) int {
+	pb := internal.ProfilesToProto(internal.Profiles(pd))
 	return pb.Size()
+}
+
+func (e *ProtoMarshaler) ResourceProfilesSize(pd ResourceProfiles) int {
+	return pd.orig.Size()
+}
+
+func (e *ProtoMarshaler) ScopeProfilesSize(pd ScopeProfiles) int {
+	return pd.orig.Size()
+}
+
+func (e *ProtoMarshaler) ProfileSize(pd Profile) int {
+	return pd.orig.Size()
 }
 
 type ProtoUnmarshaler struct{}

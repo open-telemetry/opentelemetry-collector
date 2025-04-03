@@ -19,9 +19,9 @@ import (
 )
 
 // QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
-type QueueBatchSettings[K any] struct {
-	Encoding queuebatch.Encoding[K]
-	Sizers   map[request.SizerType]request.Sizer[K]
+type QueueBatchSettings[T any] struct {
+	Encoding queuebatch.Encoding[T]
+	Sizers   map[request.SizerType]request.Sizer[T]
 }
 
 // NewDefaultQueueConfig returns the default config for queuebatch.Config.
@@ -60,6 +60,10 @@ func NewQueueSender(
 		return nil
 	}
 
+	// TODO: Remove this when WithBatcher is removed.
+	if bCfg.Enabled {
+		return queuebatch.NewQueueBatchLegacyBatcher(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
+	}
 	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 }
 

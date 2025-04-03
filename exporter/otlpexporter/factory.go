@@ -61,7 +61,7 @@ func createTraces(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -80,7 +80,7 @@ func createMetrics(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -99,7 +99,7 @@ func createLogs(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -118,7 +118,7 @@ func createProfilesExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)

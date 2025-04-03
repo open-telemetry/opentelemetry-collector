@@ -51,7 +51,7 @@ func (n *connectorNode) buildComponent(
 ) error {
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
 	}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
