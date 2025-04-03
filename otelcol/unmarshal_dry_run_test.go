@@ -71,6 +71,7 @@ func TestDryRunWithExpandedValues(t *testing.T) {
 			mockMap: map[string]string{
 				"number": "123",
 			},
+			expectErr: true,
 		},
 		{
 			name:       "string that looks like a bool",
