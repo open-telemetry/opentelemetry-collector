@@ -50,7 +50,7 @@ func TestProfilesRequest(t *testing.T) {
 	lr := newProfilesRequest(testdata.GenerateProfiles(1))
 
 	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
-	assert.EqualValues(
+	assert.Equal(
 		t,
 		newProfilesRequest(pprofile.NewProfiles()),
 		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),

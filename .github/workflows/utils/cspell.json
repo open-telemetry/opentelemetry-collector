@@ -176,6 +176,8 @@
       "expandmapconverter",
       "expandvar",
       "expoerterhelper",
+      "exporterbatch",
+      "exporterbatcher",
       "exporterheleper",
       "exporterhelper",
       "exporterhelperprofiles",

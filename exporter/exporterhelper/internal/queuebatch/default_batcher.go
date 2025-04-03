@@ -21,10 +21,10 @@ type batch struct {
 	done multiDone
 }
 
-type batcherSettings[K any] struct {
+type batcherSettings[T any] struct {
 	sizerType  request.SizerType
-	sizer      request.Sizer[K]
-	next       sender.SendFunc[K]
+	sizer      request.Sizer[T]
+	next       sender.SendFunc[T]
 	maxWorkers int
 }
 

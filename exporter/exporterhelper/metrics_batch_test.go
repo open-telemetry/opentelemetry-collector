@@ -126,7 +126,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expected), len(res))
+			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				expected := tt.expected[i].(*metricsRequest)
 				actual := res[i].(*metricsRequest)
@@ -288,7 +288,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expectedSizes), len(res))
+			assert.Len(t, res, len(tt.expectedSizes))
 			for i := range res {
 				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
 			}

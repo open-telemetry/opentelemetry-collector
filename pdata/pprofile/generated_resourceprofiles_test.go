@@ -47,7 +47,7 @@ func TestResourceProfiles_Resource(t *testing.T) {
 
 func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	ms := NewResourceProfiles()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly

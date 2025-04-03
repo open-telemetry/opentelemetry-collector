@@ -191,7 +191,7 @@ func TestProfile_DroppedAttributesCount(t *testing.T) {
 
 func TestProfile_OriginalPayloadFormat(t *testing.T) {
 	ms := NewProfile()
-	assert.Equal(t, "", ms.OriginalPayloadFormat())
+	assert.Empty(t, ms.OriginalPayloadFormat())
 	ms.SetOriginalPayloadFormat("original payload")
 	assert.Equal(t, "original payload", ms.OriginalPayloadFormat())
 	sharedState := internal.StateReadOnly

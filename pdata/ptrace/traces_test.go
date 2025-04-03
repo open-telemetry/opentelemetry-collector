@@ -20,16 +20,16 @@ import (
 
 func TestSpanCount(t *testing.T) {
 	traces := NewTraces()
-	assert.EqualValues(t, 0, traces.SpanCount())
+	assert.Equal(t, 0, traces.SpanCount())
 
 	rs := traces.ResourceSpans().AppendEmpty()
-	assert.EqualValues(t, 0, traces.SpanCount())
+	assert.Equal(t, 0, traces.SpanCount())
 
 	ils := rs.ScopeSpans().AppendEmpty()
-	assert.EqualValues(t, 0, traces.SpanCount())
+	assert.Equal(t, 0, traces.SpanCount())
 
 	ils.Spans().AppendEmpty()
-	assert.EqualValues(t, 1, traces.SpanCount())
+	assert.Equal(t, 1, traces.SpanCount())
 
 	rms := traces.ResourceSpans()
 	rms.EnsureCapacity(3)
@@ -39,21 +39,21 @@ func TestSpanCount(t *testing.T) {
 		ilss.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, traces.SpanCount())
+	assert.Equal(t, 6, traces.SpanCount())
 }
 
 func TestSpanCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
+	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},
 	}).SpanCount())
-	assert.EqualValues(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
+	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				ScopeSpans: []*otlptrace.ScopeSpans{{}},
 			},
 		},
 	}).SpanCount())
-	assert.EqualValues(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
+	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				ScopeSpans: []*otlptrace.ScopeSpans{
@@ -69,8 +69,8 @@ func TestSpanCountWithEmpty(t *testing.T) {
 func TestToFromOtlp(t *testing.T) {
 	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
 	traces := newTraces(otlp)
-	assert.EqualValues(t, NewTraces(), traces)
-	assert.EqualValues(t, otlp, traces.getOrig())
+	assert.Equal(t, NewTraces(), traces)
+	assert.Equal(t, otlp, traces.getOrig())
 	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
 	// circular dependency.
 }
@@ -106,7 +106,7 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, traces.getOrig(), &gogoprotoRS2)
+	assert.Equal(t, traces.getOrig(), &gogoprotoRS2)
 }
 
 func TestTracesCopyTo(t *testing.T) {
@@ -114,7 +114,7 @@ func TestTracesCopyTo(t *testing.T) {
 	fillTestResourceSpansSlice(traces.ResourceSpans())
 	tracesCopy := NewTraces()
 	traces.CopyTo(tracesCopy)
-	assert.EqualValues(t, traces, tracesCopy)
+	assert.Equal(t, traces, tracesCopy)
 }
 
 func TestReadOnlyTracesInvalidUsage(t *testing.T) {

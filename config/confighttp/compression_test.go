@@ -137,7 +137,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err, "failed to read request body: %v", err)
-				assert.EqualValues(t, tt.reqBody, body)
+				assert.Equal(t, tt.reqBody, body)
 				w.WriteHeader(http.StatusOK)
 			}))
 			t.Cleanup(srv.Close)
@@ -185,7 +185,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 		}
 
 		assert.NoError(t, err, "failed to read request body: %v", err)
-		assert.EqualValues(t, "decompressed body", string(body))
+		assert.Equal(t, "decompressed body", string(body))
 		w.WriteHeader(http.StatusOK)
 	})
 	decoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){
@@ -345,7 +345,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		body, err := io.ReadAll(r.Body)
 		assert.NoError(t, err, "failed to read request body: %v", err)
-		assert.EqualValues(t, compressedGzipBody.Bytes(), body)
+		assert.Equal(t, compressedGzipBody.Bytes(), body)
 	}))
 	defer srv.Close()
 

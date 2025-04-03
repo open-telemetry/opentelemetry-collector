@@ -38,10 +38,10 @@ func targetNested[T any](t *testing.T, value string) {
 		return
 	}
 
-	var cfgNested TargetConfig[T]
+	var cfgNested targetConfig[T]
 	errNested := confNested.Unmarshal(cfgNested)
 
-	var cfgSimple TargetConfig[T]
+	var cfgSimple targetConfig[T]
 	errSimple := confSimple.Unmarshal(cfgSimple)
 
 	require.Equal(t, errNested, errSimple)

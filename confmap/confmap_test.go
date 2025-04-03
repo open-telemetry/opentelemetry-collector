@@ -108,14 +108,14 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 		},
 	}
 	conf := NewFromStringMap(stringMap)
-	cfg := &TestConfig{}
+	cfg := &testConfig{}
 	assert.Nil(t, cfg.Struct)
 	require.NoError(t, conf.Unmarshal(cfg))
 	assert.Nil(t, cfg.Boolean)
 	// assert.False(t, *cfg.Boolean)
 	assert.Nil(t, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+	assert.Equal(t, &myStruct{}, cfg.MapStruct["struct"])
 }
 
 func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
@@ -128,12 +128,12 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	}
 	conf := NewFromStringMap(stringMap)
 	varBool := true
-	s1 := &Struct{Name: "s1"}
-	s2 := &Struct{Name: "s2"}
-	cfg := &TestConfig{
+	s1 := &myStruct{Name: "s1"}
+	s2 := &myStruct{Name: "s2"}
+	cfg := &testConfig{
 		Boolean:   &varBool,
 		Struct:    s1,
-		MapStruct: map[string]*Struct{"struct": s2},
+		MapStruct: map[string]*myStruct{"struct": s2},
 	}
 	require.NoError(t, conf.Unmarshal(cfg))
 	assert.NotNil(t, cfg.Boolean)
@@ -141,7 +141,7 @@ func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	assert.NotNil(t, cfg.Struct)
 	assert.Equal(t, s1, cfg.Struct)
 	assert.NotNil(t, cfg.MapStruct)
-	assert.Equal(t, &Struct{}, cfg.MapStruct["struct"])
+	assert.Equal(t, &myStruct{}, cfg.MapStruct["struct"])
 }
 
 func TestUnmarshalWithIgnoreUnused(t *testing.T) {
@@ -150,17 +150,17 @@ func TestUnmarshalWithIgnoreUnused(t *testing.T) {
 		"string":  "this is a string",
 	}
 	conf := NewFromStringMap(stringMap)
-	require.Error(t, conf.Unmarshal(&TestIDConfig{}))
-	assert.NoError(t, conf.Unmarshal(&TestIDConfig{}, WithIgnoreUnused()))
+	require.Error(t, conf.Unmarshal(&testIDConfig{}))
+	assert.NoError(t, conf.Unmarshal(&testIDConfig{}, WithIgnoreUnused()))
 }
 
-type TestConfig struct {
-	Boolean   *bool              `mapstructure:"boolean"`
-	Struct    *Struct            `mapstructure:"struct"`
-	MapStruct map[string]*Struct `mapstructure:"map_struct"`
+type testConfig struct {
+	Boolean   *bool                `mapstructure:"boolean"`
+	Struct    *myStruct            `mapstructure:"struct"`
+	MapStruct map[string]*myStruct `mapstructure:"map_struct"`
 }
 
-func (t TestConfig) Marshal(conf *Conf) error {
+func (t testConfig) Marshal(conf *Conf) error {
 	if t.Boolean != nil && !*t.Boolean {
 		return errors.New("unable to marshal")
 	}
@@ -172,7 +172,7 @@ func (t TestConfig) Marshal(conf *Conf) error {
 	}))
 }
 
-type Struct struct {
+type myStruct struct {
 	Name string
 }
 
@@ -194,7 +194,7 @@ func (tID TestID) MarshalText() (text []byte, err error) {
 	return []byte(out), nil
 }
 
-type TestIDConfig struct {
+type testIDConfig struct {
 	Boolean bool              `mapstructure:"bool"`
 	Map     map[TestID]string `mapstructure:"map"`
 }
@@ -208,13 +208,13 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFunc(t *testing.T) {
 	}
 	conf := NewFromStringMap(stringMap)
 
-	cfg := &TestIDConfig{}
+	cfg := &testIDConfig{}
 	require.NoError(t, conf.Unmarshal(cfg))
 	assert.True(t, cfg.Boolean)
 	assert.Equal(t, map[TestID]string{"string": "this is a string"}, cfg.Map)
 }
 
-type Uint32Config struct {
+type uint32Config struct {
 	Value uint32 `mapstructure:"value"`
 }
 
@@ -243,7 +243,7 @@ func TestUint32UnmarshalerSuccess(t *testing.T) {
 				"value": int(tt.testValue),
 			}
 			conf := NewFromStringMap(stringMap)
-			cfg := &Uint32Config{}
+			cfg := &uint32Config{}
 			err := conf.Unmarshal(cfg)
 
 			require.NoError(t, err)
@@ -258,13 +258,13 @@ func TestUint32UnmarshalerFailure(t *testing.T) {
 		"value": testValue,
 	}
 	conf := NewFromStringMap(stringMap)
-	cfg := &Uint32Config{}
+	cfg := &uint32Config{}
 	err := conf.Unmarshal(cfg)
 
 	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
 }
 
-type Uint64Config struct {
+type uint64Config struct {
 	Value uint64 `mapstructure:"value"`
 }
 
@@ -278,7 +278,7 @@ func TestUint64Unmarshaler(t *testing.T) {
 	}
 
 	conf := NewFromStringMap(stringMap)
-	cfg := &Uint64Config{}
+	cfg := &uint64Config{}
 	err := conf.Unmarshal(cfg)
 
 	require.NoError(t, err)
@@ -291,7 +291,7 @@ func TestUint64UnmarshalerFailure(t *testing.T) {
 		"value": testValue,
 	}
 	conf := NewFromStringMap(stringMap)
-	cfg := &Uint64Config{}
+	cfg := &uint64Config{}
 	err := conf.Unmarshal(cfg)
 
 	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
@@ -307,7 +307,7 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
 	}
 	conf := NewFromStringMap(stringMap)
 
-	cfg := &TestIDConfig{}
+	cfg := &testIDConfig{}
 	assert.Error(t, conf.Unmarshal(cfg))
 }
 
@@ -320,13 +320,13 @@ func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncErrorUnmarshal(t *testing.T)
 	}
 	conf := NewFromStringMap(stringMap)
 
-	cfg := &TestIDConfig{}
+	cfg := &testIDConfig{}
 	assert.Error(t, conf.Unmarshal(cfg))
 }
 
 func TestMarshal(t *testing.T) {
 	conf := New()
-	cfg := &TestIDConfig{
+	cfg := &testIDConfig{
 		Boolean: true,
 		Map: map[TestID]string{
 			"string": "this is a string",
@@ -339,7 +339,7 @@ func TestMarshal(t *testing.T) {
 
 func TestMarshalDuplicateID(t *testing.T) {
 	conf := New()
-	cfg := &TestIDConfig{
+	cfg := &testIDConfig{
 		Boolean: true,
 		Map: map[TestID]string{
 			"string":  "this is a string",
@@ -356,8 +356,8 @@ func TestMarshalError(t *testing.T) {
 
 func TestMarshaler(t *testing.T) {
 	conf := New()
-	cfg := &TestConfig{
-		Struct: &Struct{
+	cfg := &testConfig{
+		Struct: &myStruct{
 			Name: "StructName",
 		},
 	}
@@ -366,7 +366,7 @@ func TestMarshaler(t *testing.T) {
 
 	conf = New()
 	type NestedMarshaler struct {
-		TestConfig *TestConfig
+		TestConfig *testConfig
 	}
 	nmCfg := &NestedMarshaler{
 		TestConfig: cfg,
@@ -392,7 +392,7 @@ func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	return NewFromStringMap(data).ToStringMap()
 }
 
-type testConfig struct {
+type testConfig2 struct {
 	Next            *nextConfig `mapstructure:"next"`
 	Another         string      `mapstructure:"another"`
 	EmbeddedConfig  `mapstructure:",squash"`
@@ -465,7 +465,7 @@ func (ecwe EmbeddedConfigWithMarshalError) Unmarshal(_ *Conf) error {
 	return nil
 }
 
-func (tc *testConfig) Unmarshal(component *Conf) error {
+func (tc *testConfig2) Unmarshal(component *Conf) error {
 	if err := component.Unmarshal(tc); err != nil {
 		return err
 	}
@@ -496,12 +496,12 @@ func TestUnmarshaler(t *testing.T) {
 		"some_2":  "this better be",
 	})
 
-	tc := &testConfig{}
+	tc := &testConfig2{}
 	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this is only called directly", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
-	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
-	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+	assert.Equal(t, "make sure this is also called", tc.Some)
+	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
 func TestEmbeddedUnmarshaler(t *testing.T) {
@@ -518,8 +518,8 @@ func TestEmbeddedUnmarshaler(t *testing.T) {
 	require.NoError(t, cfgMap.Unmarshal(tc))
 	assert.Equal(t, "make sure this", tc.Another)
 	assert.Equal(t, "make sure this is called", tc.Next.String)
-	assert.Equal(t, "make sure this is also called", tc.EmbeddedConfig.Some)
-	assert.Equal(t, "this better be also called2", tc.EmbeddedConfig2.Some2)
+	assert.Equal(t, "make sure this is also called", tc.Some)
+	assert.Equal(t, "this better be also called2", tc.Some2)
 }
 
 func TestEmbeddedUnmarshalerError(t *testing.T) {
@@ -556,7 +556,7 @@ func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
 		"another": "make sure this",
 	})
 
-	tc := &testConfig{Next: &nextConfig{
+	tc := &testConfig2{Next: &nextConfig{
 		private: "keep already configured members",
 	}}
 	require.NoError(t, cfgMap.Unmarshal(tc))
@@ -573,7 +573,7 @@ func TestDirectUnmarshaler(t *testing.T) {
 		"another": "make sure this",
 	})
 
-	tc := &testConfig{Next: &nextConfig{
+	tc := &testConfig2{Next: &nextConfig{
 		private: "keep already configured members",
 	}}
 	require.NoError(t, tc.Unmarshal(cfgMap))
@@ -689,24 +689,24 @@ func TestZeroSliceHookFunc(t *testing.T) {
 	}
 }
 
-type C struct {
+type c struct {
 	Modifiers []string `mapstructure:"modifiers"`
 }
 
-func (c *C) Unmarshal(conf *Conf) error {
+func (c *c) Unmarshal(conf *Conf) error {
 	if err := conf.Unmarshal(c); err != nil {
 		return err
 	}
-	c.Modifiers = append(c.Modifiers, "C.Unmarshal")
+	c.Modifiers = append(c.Modifiers, "c.Unmarshal")
 	return nil
 }
 
-type B struct {
+type b struct {
 	Modifiers []string `mapstructure:"modifiers"`
-	C         C        `mapstructure:"c"`
+	C         c        `mapstructure:"c"`
 }
 
-func (b *B) Unmarshal(conf *Conf) error {
+func (b *b) Unmarshal(conf *Conf) error {
 	if err := conf.Unmarshal(b); err != nil {
 		return err
 	}
@@ -715,12 +715,12 @@ func (b *B) Unmarshal(conf *Conf) error {
 	return nil
 }
 
-type A struct {
+type a struct {
 	Modifiers []string `mapstructure:"modifiers"`
-	B         B        `mapstructure:"b"`
+	B         b        `mapstructure:"b"`
 }
 
-func (a *A) Unmarshal(conf *Conf) error {
+func (a *a) Unmarshal(conf *Conf) error {
 	if err := conf.Unmarshal(a); err != nil {
 		return err
 	}
@@ -730,8 +730,8 @@ func (a *A) Unmarshal(conf *Conf) error {
 	return nil
 }
 
-type Wrapper struct {
-	A A `mapstructure:"a"`
+type wrapper struct {
+	A a `mapstructure:"a"`
 }
 
 // Test that calling the Unmarshal method on configuration structs is done from the inside out.
@@ -747,13 +747,13 @@ func TestNestedUnmarshalerImplementations(t *testing.T) {
 	}})
 
 	// Use a wrapper struct until we deprecate component.UnmarshalConfig
-	w := &Wrapper{}
+	w := &wrapper{}
 	require.NoError(t, conf.Unmarshal(w))
 
 	a := w.A
 	assert.Equal(t, []string{"conf.Unmarshal", "A.Unmarshal"}, a.Modifiers)
 	assert.Equal(t, []string{"conf.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.Modifiers)
-	assert.Equal(t, []string{"conf.Unmarshal", "C.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.C.Modifiers)
+	assert.Equal(t, []string{"conf.Unmarshal", "c.Unmarshal", "B.Unmarshal", "A.Unmarshal"}, a.B.C.Modifiers)
 }
 
 // Test that unmarshaling the same conf twice works.
@@ -777,12 +777,12 @@ func TestUnmarshalDouble(t *testing.T) {
 	assert.Equal(t, "test", s2.Str)
 }
 
-type EmbeddedStructWithUnmarshal struct {
+type embeddedStructWithUnmarshal struct {
 	Foo     string `mapstructure:"foo"`
 	success string
 }
 
-func (e *EmbeddedStructWithUnmarshal) Unmarshal(c *Conf) error {
+func (e *embeddedStructWithUnmarshal) Unmarshal(c *Conf) error {
 	if err := c.Unmarshal(e, WithIgnoreUnused()); err != nil {
 		return err
 	}
@@ -791,7 +791,7 @@ func (e *EmbeddedStructWithUnmarshal) Unmarshal(c *Conf) error {
 }
 
 type configWithUnmarshalFromEmbeddedStruct struct {
-	EmbeddedStructWithUnmarshal
+	embeddedStructWithUnmarshal
 }
 
 type topLevel struct {
@@ -808,12 +808,12 @@ func TestUnmarshalThroughEmbeddedStruct(t *testing.T) {
 	cfg := &topLevel{}
 	err := c.Unmarshal(cfg)
 	require.NoError(t, err)
-	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
-	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
+	require.Equal(t, "success", cfg.Cfg.success)
+	require.Equal(t, "bar", cfg.Cfg.Foo)
 }
 
 type configWithOwnUnmarshalAndEmbeddedSquashedStruct struct {
-	EmbeddedStructWithUnmarshal `mapstructure:",squash"`
+	embeddedStructWithUnmarshal `mapstructure:",squash"`
 }
 
 type topLevelSquashedEmbedded struct {
@@ -830,16 +830,16 @@ func TestUnmarshalOwnThroughEmbeddedSquashedStruct(t *testing.T) {
 	cfg := &topLevelSquashedEmbedded{}
 	err := c.Unmarshal(cfg)
 	require.NoError(t, err)
-	require.Equal(t, "success", cfg.Cfg.EmbeddedStructWithUnmarshal.success)
-	require.Equal(t, "bar", cfg.Cfg.EmbeddedStructWithUnmarshal.Foo)
+	require.Equal(t, "success", cfg.Cfg.success)
+	require.Equal(t, "bar", cfg.Cfg.Foo)
 }
 
-type Recursive struct {
+type recursive struct {
 	Foo string `mapstructure:"foo"`
 }
 
-func (r *Recursive) Unmarshal(conf *Conf) error {
-	newR := &Recursive{}
+func (r *recursive) Unmarshal(conf *Conf) error {
+	newR := &recursive{}
 	if err := conf.Unmarshal(newR); err != nil {
 		return err
 	}
@@ -852,7 +852,7 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 	conf := NewFromStringMap(map[string]any{
 		"foo": "something",
 	})
-	r := &Recursive{}
+	r := &recursive{}
 	require.NoError(t, conf.Unmarshal(r))
 	require.Equal(t, "something", r.Foo)
 }

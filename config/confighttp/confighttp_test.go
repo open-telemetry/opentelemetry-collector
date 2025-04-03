@@ -171,12 +171,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			require.NoError(t, err)
 			switch transport := client.Transport.(type) {
 			case *http.Transport:
-				assert.EqualValues(t, 1024, transport.ReadBufferSize)
-				assert.EqualValues(t, 512, transport.WriteBufferSize)
-				assert.EqualValues(t, 50, transport.MaxIdleConns)
-				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
-				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
-				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.Equal(t, 1024, transport.ReadBufferSize)
+				assert.Equal(t, 512, transport.WriteBufferSize)
+				assert.Equal(t, 50, transport.MaxIdleConns)
+				assert.Equal(t, 40, transport.MaxIdleConnsPerHost)
+				assert.Equal(t, 45, transport.MaxConnsPerHost)
+				assert.Equal(t, 30*time.Second, transport.IdleConnTimeout)
 				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
@@ -218,11 +218,11 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			client, err := tt.settings.ToClient(context.Background(), host, tel)
 			require.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
-			assert.EqualValues(t, 1024, transport.ReadBufferSize)
-			assert.EqualValues(t, 512, transport.WriteBufferSize)
-			assert.EqualValues(t, 0, transport.MaxIdleConns)
-			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
-			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
+			assert.Equal(t, 1024, transport.ReadBufferSize)
+			assert.Equal(t, 512, transport.WriteBufferSize)
+			assert.Equal(t, 0, transport.MaxIdleConns)
+			assert.Equal(t, 0, transport.MaxIdleConnsPerHost)
+			assert.Equal(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 0, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
 		})
@@ -231,8 +231,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
-	assert.EqualValues(t, 100, httpClientSettings.MaxIdleConns)
-	assert.EqualValues(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
+	assert.Equal(t, 100, httpClientSettings.MaxIdleConns)
+	assert.Equal(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
 }
 
 func TestProxyURL(t *testing.T) {

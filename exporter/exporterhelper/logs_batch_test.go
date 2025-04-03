@@ -118,7 +118,7 @@ func TestMergeSplitLogs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expected), len(res))
+			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
 			}
@@ -224,7 +224,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			require.NoError(t, err)
-			assert.Equal(t, len(tt.expected), len(res))
+			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
 			}

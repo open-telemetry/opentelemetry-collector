@@ -71,7 +71,7 @@ func findAvailableAddress(tb testing.TB, network string) string {
 	case "tcp6":
 		host = "[::1]"
 	}
-	require.NotZero(tb, host, "network must be either of tcp, tcp4 or tcp6")
+	require.NotEmpty(tb, host, "network must be either of tcp, tcp4 or tcp6")
 
 	ln, err := net.Listen("tcp", host+":0")
 	require.NoError(tb, err, "Failed to get a free local port")

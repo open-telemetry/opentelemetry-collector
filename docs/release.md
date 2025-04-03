@@ -38,8 +38,8 @@ Before the release, make sure there are no open release blockers in [core](https
    insignificant, consider not releasing a new version for stable modules.
 
 3. Manually run the action [Automation - Prepare Release](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/prepare-release.yml). This action will create an issue to track the progress of the release and a pull request to update the changelog and version numbers in the repo.
-   - When prompted, enter the version bumps that are needed.
-   - If not intending to release stable modules, do not specify a version for `Release candidate version bump (stable)`.
+   - When prompted, enter the version numbers determined in Step 2, but do not include a leading `v`.
+   - If not intending to release stable modules, do not specify a version for `Release candidate version stable`.
    - While this PR is open all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
@@ -215,16 +215,16 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 ## Release schedule
 
-| Date       | Version  | Release manager                                   |
-|------------|----------|---------------------------------------------------|
-| 2025-03-31 | v0.123.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)  |
-| 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)            |
-| 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)            |
-| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)          |
-| 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)        |
-| 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)    |
-| 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)      |
-| 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd)  |
-| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                |
-| 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)              |
-| 2025-08-18 | v0.133.0 | [@evan-bradley](https://github.com/evan-bradley)  |
+| Date       | Version  | Release manager                                      |
+|------------|----------|------------------------------------------------------|
+| 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)               |
+| 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)               |
+| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
+| 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
+| 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
+| 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)         |
+| 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
+| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                   |
+| 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)                 |
+| 2025-08-18 | v0.133.0 | [@evan-bradley](https://github.com/evan-bradley)     |
+| 2025-09-01 | v0.134.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |

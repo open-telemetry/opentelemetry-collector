@@ -98,7 +98,7 @@ func fuzzMetrics(numIDs, numCons, numMetrics int) func(*testing.T) {
 				}
 				assert.Len(t, metrics, expected[id])
 				for n := 0; n < len(metrics); n++ {
-					assert.EqualValues(t, md, metrics[n])
+					assert.Equal(t, md, metrics[n])
 				}
 			}
 		}

@@ -136,6 +136,10 @@ func (md *Metadata) validateAttributes(usedAttrs map[AttributeName]bool) error {
 }
 
 func (md *Metadata) supportsSignal(signal string) bool {
+	if md.Status == nil {
+		return false
+	}
+
 	for _, signals := range md.Status.Stability {
 		for _, s := range signals {
 			if s == signal {

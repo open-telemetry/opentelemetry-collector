@@ -47,18 +47,18 @@ func TestMetricsMultiplexingNonMutating(t *testing.T) {
 
 	assert.Equal(t, md, p1.AllMetrics()[0])
 	assert.Equal(t, md, p1.AllMetrics()[1])
-	assert.EqualValues(t, md, p1.AllMetrics()[0])
-	assert.EqualValues(t, md, p1.AllMetrics()[1])
+	assert.Equal(t, md, p1.AllMetrics()[0])
+	assert.Equal(t, md, p1.AllMetrics()[1])
 
 	assert.Equal(t, md, p2.AllMetrics()[0])
 	assert.Equal(t, md, p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 
 	assert.Equal(t, md, p3.AllMetrics()[0])
 	assert.Equal(t, md, p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 
 	// The data should be marked as read only.
 	assert.True(t, md.IsReadOnly())
@@ -83,19 +83,19 @@ func TestMetricsMultiplexingMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.EqualValues(t, md, p1.AllMetrics()[0])
-	assert.EqualValues(t, md, p1.AllMetrics()[1])
+	assert.Equal(t, md, p1.AllMetrics()[0])
+	assert.Equal(t, md, p1.AllMetrics()[1])
 
 	assert.NotSame(t, &md, &p2.AllMetrics()[0])
 	assert.NotSame(t, &md, &p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p3.AllMetrics()[0])
 	assert.Equal(t, md, p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, md.IsReadOnly())
@@ -124,18 +124,18 @@ func TestReadOnlyMetricsMultiplexingMixFirstMutating(t *testing.T) {
 
 	assert.NotEqual(t, md, p1.AllMetrics()[0])
 	assert.NotEqual(t, md, p1.AllMetrics()[1])
-	assert.EqualValues(t, mdOrig, p1.AllMetrics()[0])
-	assert.EqualValues(t, mdOrig, p1.AllMetrics()[1])
+	assert.Equal(t, mdOrig, p1.AllMetrics()[0])
+	assert.Equal(t, mdOrig, p1.AllMetrics()[1])
 
 	assert.NotEqual(t, md, p2.AllMetrics()[0])
 	assert.NotEqual(t, md, p2.AllMetrics()[1])
-	assert.EqualValues(t, mdOrig, p2.AllMetrics()[0])
-	assert.EqualValues(t, mdOrig, p2.AllMetrics()[1])
+	assert.Equal(t, mdOrig, p2.AllMetrics()[0])
+	assert.Equal(t, mdOrig, p2.AllMetrics()[1])
 
 	assert.NotEqual(t, md, p3.AllMetrics()[0])
 	assert.NotEqual(t, md, p3.AllMetrics()[1])
-	assert.EqualValues(t, mdOrig, p3.AllMetrics()[0])
-	assert.EqualValues(t, mdOrig, p3.AllMetrics()[1])
+	assert.Equal(t, mdOrig, p3.AllMetrics()[0])
+	assert.Equal(t, mdOrig, p3.AllMetrics()[1])
 }
 
 func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
@@ -157,20 +157,20 @@ func TestMetricsMultiplexingMixLastMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.EqualValues(t, md, p1.AllMetrics()[0])
-	assert.EqualValues(t, md, p1.AllMetrics()[1])
+	assert.Equal(t, md, p1.AllMetrics()[0])
+	assert.Equal(t, md, p1.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p2.AllMetrics()[0])
 	assert.Equal(t, md, p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will clone the initial data.
 	assert.NotSame(t, &md, &p3.AllMetrics()[0])
 	assert.NotSame(t, &md, &p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, md.IsReadOnly())
@@ -195,19 +195,19 @@ func TestMetricsMultiplexingMixLastNonMutating(t *testing.T) {
 
 	assert.NotSame(t, &md, &p1.AllMetrics()[0])
 	assert.NotSame(t, &md, &p1.AllMetrics()[1])
-	assert.EqualValues(t, md, p1.AllMetrics()[0])
-	assert.EqualValues(t, md, p1.AllMetrics()[1])
+	assert.Equal(t, md, p1.AllMetrics()[0])
+	assert.Equal(t, md, p1.AllMetrics()[1])
 
 	assert.NotSame(t, &md, &p2.AllMetrics()[0])
 	assert.NotSame(t, &md, &p2.AllMetrics()[1])
-	assert.EqualValues(t, md, p2.AllMetrics()[0])
-	assert.EqualValues(t, md, p2.AllMetrics()[1])
+	assert.Equal(t, md, p2.AllMetrics()[0])
+	assert.Equal(t, md, p2.AllMetrics()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, md, p3.AllMetrics()[0])
 	assert.Equal(t, md, p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, md.IsReadOnly())
@@ -227,8 +227,8 @@ func TestMetricsWhenErrors(t *testing.T) {
 
 	assert.Equal(t, md, p3.AllMetrics()[0])
 	assert.Equal(t, md, p3.AllMetrics()[1])
-	assert.EqualValues(t, md, p3.AllMetrics()[0])
-	assert.EqualValues(t, md, p3.AllMetrics()[1])
+	assert.Equal(t, md, p3.AllMetrics()[0])
+	assert.Equal(t, md, p3.AllMetrics()[1])
 }
 
 type mutatingMetricsSink struct {

@@ -20,16 +20,16 @@ import (
 
 func TestLogRecordCount(t *testing.T) {
 	logs := NewLogs()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	rl := logs.ResourceLogs().AppendEmpty()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	ill := rl.ScopeLogs().AppendEmpty()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	ill.LogRecords().AppendEmpty()
-	assert.EqualValues(t, 1, logs.LogRecordCount())
+	assert.Equal(t, 1, logs.LogRecordCount())
 
 	rms := logs.ResourceLogs()
 	rms.EnsureCapacity(3)
@@ -39,7 +39,7 @@ func TestLogRecordCount(t *testing.T) {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, logs.LogRecordCount())
+	assert.Equal(t, 6, logs.LogRecordCount())
 }
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
@@ -70,8 +70,8 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 func TestToFromLogOtlp(t *testing.T) {
 	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
 	logs := newLogs(otlp)
-	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, otlp, logs.getOrig())
+	assert.Equal(t, NewLogs(), logs)
+	assert.Equal(t, otlp, logs.getOrig())
 }
 
 func TestResourceLogsWireCompatibility(t *testing.T) {
@@ -105,7 +105,7 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, logs.getOrig(), &gogoprotoRS2)
+	assert.Equal(t, logs.getOrig(), &gogoprotoRS2)
 }
 
 func TestLogsCopyTo(t *testing.T) {
@@ -113,7 +113,7 @@ func TestLogsCopyTo(t *testing.T) {
 	fillTestResourceLogsSlice(logs.ResourceLogs())
 	logsCopy := NewLogs()
 	logs.CopyTo(logsCopy)
-	assert.EqualValues(t, logs, logsCopy)
+	assert.Equal(t, logs, logsCopy)
 }
 
 func TestReadOnlyLogsInvalidUsage(t *testing.T) {

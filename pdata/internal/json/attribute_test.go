@@ -40,7 +40,7 @@ func TestReadArray(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := readArray(iter)
-			assert.EqualValues(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -141,7 +141,7 @@ func TestReadKvlistValue(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := readKvlistValue(iter)
-			assert.EqualValues(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -153,7 +153,7 @@ func TestReadAttributeUnknownField(t *testing.T) {
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.KeyValue{}, value)
+	assert.Equal(t, otlpcommon.KeyValue{}, value)
 }
 
 func TestReadAttributeValueUnknownField(t *testing.T) {
@@ -164,7 +164,7 @@ func TestReadAttributeValueUnknownField(t *testing.T) {
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.KeyValue{Key: "test"}, value)
+	assert.Equal(t, otlpcommon.KeyValue{Key: "test"}, value)
 }
 
 func TestReadValueUnknownField(t *testing.T) {
@@ -174,7 +174,7 @@ func TestReadValueUnknownField(t *testing.T) {
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{}, value)
+	assert.Equal(t, &otlpcommon.AnyValue{}, value)
 }
 
 func TestReadValueInvliadBytesValue(t *testing.T) {
@@ -192,7 +192,7 @@ func TestReadArrayUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readArray(iter)
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.ArrayValue{}, value)
+	assert.Equal(t, &otlpcommon.ArrayValue{}, value)
 }
 
 func TestReadKvlistValueUnknownField(t *testing.T) {
@@ -201,7 +201,7 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readKvlistValue(iter)
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.KeyValueList{}, value)
+	assert.Equal(t, &otlpcommon.KeyValueList{}, value)
 }
 
 func TestReadArrayValueInvalidArrayValue(t *testing.T) {
@@ -212,7 +212,7 @@ func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{
+	assert.Equal(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
 		},
@@ -227,7 +227,7 @@ func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
 	require.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{
+	assert.Equal(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},
 		},

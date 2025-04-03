@@ -40,7 +40,7 @@ func TestExport(t *testing.T) {
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
-	assert.EqualValues(t, md, mds[0])
+	assert.Equal(t, md, mds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

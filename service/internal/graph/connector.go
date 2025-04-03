@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
@@ -49,8 +49,10 @@ func (n *connectorNode) buildComponent(
 	builder *builders.ConnectorBuilder,
 	nexts []baseConsumer,
 ) error {
-	tel.Logger = componentattribute.NewLogger(tel.Logger, n.Attributes.Set())
 	set := connector.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
+	}
 	switch n.rcvrPipelineType {
 	case pipeline.SignalTraces:
 		return n.buildTraces(ctx, set, builder, nexts)

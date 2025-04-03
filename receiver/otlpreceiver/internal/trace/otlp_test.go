@@ -38,7 +38,7 @@ func TestExport(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, td, traceSink.AllTraces()[0])
+	assert.Equal(t, td, traceSink.AllTraces()[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {

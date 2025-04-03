@@ -10,7 +10,7 @@ import (
 )
 
 // Batcher is in charge of reading items from the queue and send them out asynchronously.
-type Batcher[K any] interface {
+type Batcher[T any] interface {
 	component.Component
-	Consume(context.Context, K, Done)
+	Consume(context.Context, T, Done)
 }

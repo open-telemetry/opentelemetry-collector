@@ -100,7 +100,7 @@ func fuzzProfiles(numIDs, numCons, numProfiles int) func(*testing.T) {
 				}
 				assert.Len(t, profiles, expected[id])
 				for n := 0; n < len(profiles); n++ {
-					assert.EqualValues(t, td, profiles[n])
+					assert.Equal(t, td, profiles[n])
 				}
 			}
 		}

@@ -25,7 +25,7 @@ var (
 func TestNewFactoryNoOptions(t *testing.T) {
 	defaultCfg := struct{}{}
 	factory := NewFactory(testType, func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
@@ -56,7 +56,7 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 		WithTracesToTraces(createTracesToTraces, component.StabilityLevelAlpha),
 		WithMetricsToMetrics(createMetricsToMetrics, component.StabilityLevelBeta),
 		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 	wrongID := component.MustNewID("wrong")
 	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
@@ -104,7 +104,7 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 		WithMetricsToLogs(createMetricsToLogs, component.StabilityLevelStable),
 		WithLogsToTraces(createLogsToTraces, component.StabilityLevelDeprecated),
 		WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
@@ -151,7 +151,7 @@ func TestNewFactoryWithAllTypes(t *testing.T) {
 		WithLogsToTraces(createLogsToTraces, component.StabilityLevelDeprecated),
 		WithLogsToMetrics(createLogsToMetrics, component.StabilityLevelUnmaintained),
 		WithLogsToLogs(createLogsToLogs, component.StabilityLevelUnmaintained))
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.TracesToTracesStability())

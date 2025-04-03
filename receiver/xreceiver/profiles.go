@@ -114,6 +114,6 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 	for _, opt := range options {
 		opt.applyOption(&opts)
 	}
-	opts.factory.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
+	opts.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
 	return opts.factory
 }

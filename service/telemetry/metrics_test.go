@@ -97,11 +97,13 @@ func TestTelemetryInit(t *testing.T) {
 		cfg := Config{
 			Metrics: MetricsConfig{
 				Level: configtelemetry.LevelDetailed,
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{
-						Exporter: config.PullMetricExporter{Prometheus: prom},
-					},
-				}},
+				MeterProvider: config.MeterProvider{
+					Readers: []config.MetricReader{{
+						Pull: &config.PullMetricReader{
+							Exporter: config.PullMetricExporter{Prometheus: prom},
+						},
+					}},
+				},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -217,9 +219,11 @@ func TestInstrumentEnabled(t *testing.T) {
 	cfg := Config{
 		Metrics: MetricsConfig{
 			Level: configtelemetry.LevelDetailed,
-			Readers: []config.MetricReader{{
-				Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
-			}},
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{{
+					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
+				}},
+			},
 		},
 	}
 	sdk, err := config.NewSDK(

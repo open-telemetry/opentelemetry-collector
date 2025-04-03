@@ -337,7 +337,7 @@ func TestSkipGoInitialization(t *testing.T) {
 	}
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
-	assert.Zero(t, cfg.Distribution.Go)
+	assert.Empty(t, cfg.Distribution.Go)
 }
 
 func TestBuildTagConfig(t *testing.T) {
@@ -377,11 +377,4 @@ func TestSkipsNilFieldValidation(t *testing.T) {
 	cfg.ConfmapProviders = nil
 	cfg.ConfmapConverters = nil
 	assert.NoError(t, cfg.Validate())
-}
-
-func TestValidateDeprecatedOtelColVersion(t *testing.T) {
-	cfg, err := NewDefaultConfig()
-	require.NoError(t, err)
-	cfg.Distribution.OtelColVersion = "test"
-	assert.Error(t, cfg.Validate())
 }

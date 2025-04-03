@@ -98,7 +98,7 @@ func fuzzTraces(numIDs, numCons, numTraces int) func(*testing.T) {
 				}
 				assert.Len(t, traces, expected[id])
 				for n := 0; n < len(traces); n++ {
-					assert.EqualValues(t, td, traces[n])
+					assert.Equal(t, td, traces[n])
 				}
 			}
 		}

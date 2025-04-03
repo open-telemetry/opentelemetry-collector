@@ -23,7 +23,7 @@ func TestSplitTraces_noop(t *testing.T) {
 		i++
 		return i > 5
 	})
-	assert.EqualValues(t, td, split)
+	assert.Equal(t, td, split)
 }
 
 func TestSplitTraces(t *testing.T) {

@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.29.0/v0.123.0
+
+### 🛑 Breaking changes 🛑
+
+- `otlpreceiver/otlpexporter/otlphttpexporter`: Avoid using go embedded messages in Config (#12718)
+- `exporterqueue`: Move Queue interface to internal, disallow alternative implementations (#12680)
+- `extensionauth, configauth`: Remove deprecated types and functions from `extensionauth` and `configauth` packages. (#12672)
+  This includes:
+  - `extensionauth.NewClient`,
+  - `extensionauth.ClientOption` and all its implementations,
+  - `extensionauth.NewServer`,
+  - `extensionauth.ServerOption` and all its implementations and
+  - `configauth.Authenticator.GetClientAuthenticator`.
+  
+- `exporterhelper`: Remove deprecated converter types from exporterhelper (#12686)
+- `exporterbatch`: Remove deprecated fields `min_size_items` and `max_size_items` from batch config. (#12684)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate BatcherConfig, SizeConfig and WithBatcher in favor of the new QueueBatchConfig. (#12748)
+- `exporterbatcher`: Deprecated Config, SizeConfig, SizerType, SizerType[Requests|Items|Bytes], NewDefaultConfig. Use alias from exporterhelper. (#12707)
+- `exporterqueue`: Deprecated Config, NewDefaultConfig, Encoding, ErrQueueFull. Use alias from exporterhelper. (#12706)
+- `exporterhelper`: Deprecate exporterhelper WithRequestQueue in favor of WithQueueBatch (#12679)
+- `exporterhelper`: Deprecate `QueueConfig` in favor of `QueueBatchConfig`. (#12746)
+
+### 💡 Enhancements 💡
+
+- `extensionauth`: Mark module as stable (#11006)
+- `processor`: Mark module as stable. (#12677)
+- `processorhelper`: Split processorhelper into a separate module. (#12678)
+
+<!-- previous-version -->
+
 ## v1.28.1/v0.122.1
 
 <!-- previous-version -->

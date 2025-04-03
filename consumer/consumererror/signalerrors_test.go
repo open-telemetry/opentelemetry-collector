@@ -19,8 +19,8 @@ func TestTraces(t *testing.T) {
 	traceErr := NewTraces(err, td)
 	require.EqualError(t, err, traceErr.Error())
 	var target Traces
-	assert.False(t, errors.As(nil, &target))
-	assert.False(t, errors.As(err, &target))
+	assert.NotErrorAs(t, nil, &target)
+	assert.NotErrorAs(t, err, &target)
 	require.ErrorAs(t, traceErr, &target)
 	assert.Equal(t, td, target.Data())
 }
@@ -43,8 +43,8 @@ func TestLogs(t *testing.T) {
 	logsErr := NewLogs(err, td)
 	require.EqualError(t, err, logsErr.Error())
 	var target Logs
-	assert.False(t, errors.As(nil, &target))
-	assert.False(t, errors.As(err, &target))
+	assert.NotErrorAs(t, nil, &target)
+	assert.NotErrorAs(t, err, &target)
 	require.ErrorAs(t, logsErr, &target)
 	assert.Equal(t, td, target.Data())
 }
@@ -67,8 +67,8 @@ func TestMetrics(t *testing.T) {
 	metricErr := NewMetrics(err, td)
 	require.EqualError(t, err, metricErr.Error())
 	var target Metrics
-	assert.False(t, errors.As(nil, &target))
-	assert.False(t, errors.As(err, &target))
+	assert.NotErrorAs(t, nil, &target)
+	assert.NotErrorAs(t, err, &target)
 	require.ErrorAs(t, metricErr, &target)
 	assert.Equal(t, td, target.Data())
 }
