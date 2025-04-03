@@ -30,9 +30,33 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_receiver_internal_errors_log_records
+
+Number of log records that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_receiver_internal_errors_metric_points
+
+Number of metric points that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {datapoints} | Sum | Int | true |
+
+### otelcol_receiver_internal_errors_spans
+
+Number of spans that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Sum | Int | true |
+
 ### otelcol_receiver_refused_log_records
 
-Number of log records that could not be pushed into the pipeline. [alpha]
+Number of log records that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +64,7 @@ Number of log records that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline. [alpha]
+Number of metric points that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -48,7 +72,7 @@ Number of metric points that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline. [alpha]
+Number of spans that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

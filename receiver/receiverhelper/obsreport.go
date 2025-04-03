@@ -157,34 +157,43 @@ func (rec *ObsReport) endOp(
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
+	numInternalErrors := 0
 	if err != nil {
 		numAccepted = 0
-		numRefused = numReceivedItems
+		if internal.IsDownstreamError(err) {
+			numRefused = numReceivedItems
+		} else {
+			numInternalErrors = numReceivedItems
+		}
 	}
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused)
+	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numInternalErrors)
 
 	// end span according to errors
 	if span.IsRecording() {
-		var acceptedItemsKey, refusedItemsKey string
+		var acceptedItemsKey, refusedItemsKey, internalErrorsKey string
 		switch signal {
 		case pipeline.SignalTraces:
 			acceptedItemsKey = internal.AcceptedSpansKey
 			refusedItemsKey = internal.RefusedSpansKey
+			internalErrorsKey = "internal_errors_spans"
 		case pipeline.SignalMetrics:
 			acceptedItemsKey = internal.AcceptedMetricPointsKey
 			refusedItemsKey = internal.RefusedMetricPointsKey
+			internalErrorsKey = "internal_errors_metric_points"
 		case pipeline.SignalLogs:
 			acceptedItemsKey = internal.AcceptedLogRecordsKey
 			refusedItemsKey = internal.RefusedLogRecordsKey
+			internalErrorsKey = "internal_errors_log_records"
 		}
 
 		span.SetAttributes(
 			attribute.String(internal.FormatKey, format),
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
+			attribute.Int64(internalErrorsKey, int64(numInternalErrors)),
 		)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
@@ -193,20 +202,24 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused int) {
-	var acceptedMeasure, refusedMeasure metric.Int64Counter
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused, numInternalErrors int) {
+	var acceptedMeasure, refusedMeasure, internalErrorsMeasure metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsSpans
 	case pipeline.SignalMetrics:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsMetricPoints
 	case pipeline.SignalLogs:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsLogRecords
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
+	internalErrorsMeasure.Add(receiverCtx, int64(numInternalErrors), rec.otelAttrs)
 }

@@ -7,9 +7,11 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
-	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const dataFormatProtobuf = "protobuf"
@@ -48,7 +50,18 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
 	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
-		return pmetricotlp.NewExportResponse(), errors.GetStatusFromError(err)
+		s, ok := status.FromError(err)
+		if !ok {
+			// Default to a retryable error
+			// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
+			code := codes.Unavailable
+			if consumererror.IsPermanent(err) {
+				// If an error is permanent but doesn't have an attached gRPC status, assume it is server-side.
+				code = codes.Internal
+			}
+			s = status.New(code, err.Error())
+		}
+		return pmetricotlp.NewExportResponse(), s.Err()
 	}
 
 	return pmetricotlp.NewExportResponse(), nil

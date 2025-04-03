@@ -755,7 +755,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				ServerConfig: confighttp.ServerConfig{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 					TLSSetting: &configtls.ServerConfig{
 						Config: configtls.Config{
@@ -788,7 +788,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 	cfg := &Config{
 		Protocols: Protocols{
 			HTTP: &HTTPConfig{
-				ServerConfig: confighttp.ServerConfig{
+				ServerConfig: &confighttp.ServerConfig{
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
 				},
@@ -833,7 +833,7 @@ func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.ServerConfig.Endpoint = endpoint
+	cfg.HTTP.Endpoint = endpoint
 	cfg.GRPC = nil
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
@@ -1015,7 +1015,7 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.ServerConfig.Endpoint = endpointHTTP
+	cfg.HTTP.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(
@@ -1208,25 +1208,25 @@ func (esc *errOrSinkConsumer) Reset() {
 func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	switch data.(type) {
 	case ptrace.Traces:
-		allTraces := esc.AllTraces()
+		allTraces := esc.TracesSink.AllTraces()
 		require.Len(t, allTraces, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allTraces[0], data)
 		}
 	case pmetric.Metrics:
-		allMetrics := esc.AllMetrics()
+		allMetrics := esc.MetricsSink.AllMetrics()
 		require.Len(t, allMetrics, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allMetrics[0], data)
 		}
 	case plog.Logs:
-		allLogs := esc.AllLogs()
+		allLogs := esc.LogsSink.AllLogs()
 		require.Len(t, allLogs, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allLogs[0], data)
 		}
 	case pprofile.Profiles:
-		allProfiles := esc.AllProfiles()
+		allProfiles := esc.ProfilesSink.AllProfiles()
 		require.Len(t, allProfiles, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allProfiles[0], data)
@@ -1235,12 +1235,48 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	got, err := tt.GetMetric("otelcol_receiver_requests")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_requests",
+			Description: "Number of receiver operations with outcome attribute.",
+			Unit:        "{operations}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport),
+							attribute.String("outcome", "success")),
+						Value: accepted,
+					},
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport),
+							attribute.String("outcome", "refused")),
+						Value: refused,
+					},
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport),
+							attribute.String("outcome", "failure")),
+						Value: 0, // No internal errors in this test
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_accepted_spans",
-			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
+			Description: "Number of spans successfully pushed into the pipeline.",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
@@ -1261,7 +1297,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_refused_spans",
-			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
+			Description: "Number of spans that could not be pushed into the pipeline due to errors from the next consumer in the pipeline.",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,

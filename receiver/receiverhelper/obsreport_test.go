@@ -60,7 +60,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, spans, len(params))
+		require.Equal(t, len(params), len(spans))
 
 		var acceptedSpans, refusedSpans int
 		for i, span := range spans {
@@ -126,7 +126,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, spans, len(params))
+		require.Equal(t, len(params), len(spans))
 
 		var acceptedLogRecords, refusedLogRecords int
 		for i, span := range spans {
@@ -191,7 +191,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, spans, len(params))
+		require.Equal(t, len(params), len(spans))
 
 		var acceptedMetricPoints, refusedMetricPoints int
 		for i, span := range spans {
@@ -261,7 +261,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Len(t, spans, len(params))
+	require.Equal(t, len(params), len(spans))
 
 	for i, span := range spans {
 		assert.False(t, span.Parent().IsValid())

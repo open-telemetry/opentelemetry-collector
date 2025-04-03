@@ -23,15 +23,18 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                        metric.Meter
-	mu                           sync.Mutex
-	registrations                []metric.Registration
-	ReceiverAcceptedLogRecords   metric.Int64Counter
-	ReceiverAcceptedMetricPoints metric.Int64Counter
-	ReceiverAcceptedSpans        metric.Int64Counter
-	ReceiverRefusedLogRecords    metric.Int64Counter
-	ReceiverRefusedMetricPoints  metric.Int64Counter
-	ReceiverRefusedSpans         metric.Int64Counter
+	meter                              metric.Meter
+	mu                                 sync.Mutex
+	registrations                      []metric.Registration
+	ReceiverAcceptedLogRecords         metric.Int64Counter
+	ReceiverAcceptedMetricPoints       metric.Int64Counter
+	ReceiverAcceptedSpans              metric.Int64Counter
+	ReceiverInternalErrorsLogRecords   metric.Int64Counter
+	ReceiverInternalErrorsMetricPoints metric.Int64Counter
+	ReceiverInternalErrorsSpans        metric.Int64Counter
+	ReceiverRefusedLogRecords          metric.Int64Counter
+	ReceiverRefusedMetricPoints        metric.Int64Counter
+	ReceiverRefusedSpans               metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -81,21 +84,39 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ReceiverInternalErrorsLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_receiver_internal_errors_log_records",
+		metric.WithDescription("Number of log records that could not be processed due to internal errors (e.g. parsing, validation). [alpha]"),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverInternalErrorsMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_receiver_internal_errors_metric_points",
+		metric.WithDescription("Number of metric points that could not be processed due to internal errors (e.g. parsing, validation). [alpha]"),
+		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverInternalErrorsSpans, err = builder.meter.Int64Counter(
+		"otelcol_receiver_internal_errors_spans",
+		metric.WithDescription("Number of spans that could not be processed due to internal errors (e.g. parsing, validation). [alpha]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_log_records",
-		metric.WithDescription("Number of log records that could not be pushed into the pipeline. [alpha]"),
+		metric.WithDescription("Number of log records that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_metric_points",
-		metric.WithDescription("Number of metric points that could not be pushed into the pipeline. [alpha]"),
+		metric.WithDescription("Number of metric points that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_spans",
-		metric.WithDescription("Number of spans that could not be pushed into the pipeline. [alpha]"),
+		metric.WithDescription("Number of spans that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
