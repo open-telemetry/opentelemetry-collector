@@ -1,9 +1,9 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package receiver defines components that allows the collector to receive metrics, traces and logs.
+// Package receiver defines components that allow the Collector to receive metrics, traces and logs.
 //
-// Receiver receives data from a source (either from a remote source via network
+// A Receiver receives data from a source (either from a remote source via network
 // or scrapes from a local host) and pushes the data to the pipelines it is attached
 // to by calling the nextConsumer.Consume*() function.
 //
