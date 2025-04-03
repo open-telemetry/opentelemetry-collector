@@ -7,7 +7,7 @@ change_type: enhancement
 component: pdata/profile
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduce PutAttribute helper method to modify the content of attributable records.
+note: Replace AddAttribute with the PutAttribute helper method to modify the content of attributable records.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12798]
