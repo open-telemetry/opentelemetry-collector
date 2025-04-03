@@ -19,8 +19,8 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ProcessorIncomingItems.Add(context.Background(), 1)
-	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
+	tb.RecordProcessorIncomingItems(context.Background(), 1)
+	tb.RecordProcessorOutgoingItems(context.Background(), 1)
 	AssertEqualProcessorIncomingItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
