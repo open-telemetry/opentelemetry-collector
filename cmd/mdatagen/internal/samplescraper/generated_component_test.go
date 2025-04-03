@@ -53,13 +53,11 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
-			require.NoError(t, err)
+			require.NoError(t, c.Shutdown(context.Background()))
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
-			require.NoError(t, err)
 			host := componenttest.NewNopHost()
+			firstRcvr, err := tt.createFn(context.Background(), scrapertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
