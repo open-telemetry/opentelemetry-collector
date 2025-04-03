@@ -7,12 +7,9 @@ import (
     {{- range $_, $metric := .Telemetry.Metrics }}
     {{- if $metric.Data.Async }}
     "context"
-    "sync"
-
-{{- break}}
-    {{- end }}
-    {{- end }}
+    {{- break}}{{- end }}{{- end }}
     "errors"
+    "sync"
     {{- end }}
 
 	"go.opentelemetry.io/otel/metric"
