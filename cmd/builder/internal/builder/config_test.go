@@ -5,6 +5,7 @@ package builder
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -163,7 +164,7 @@ func TestInvalidConverter(t *testing.T) {
 	require.Error(t, err, "expected an error when parsing invalid modules")
 }
 
-func TestRelativePath(t *testing.T) {
+func TestRelativePath_Module(t *testing.T) {
 	// prepare
 	cfg := Config{
 		Extensions: []Module{{
@@ -180,6 +181,31 @@ func TestRelativePath(t *testing.T) {
 	cwd, err := os.Getwd()
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(cfg.Extensions[0].Path, cwd))
+}
+
+func TestRelativePath_Replace(t *testing.T) {
+	// prepare
+	cfg := Config{
+		Replaces: []string{
+			"module1 => ./templates",
+			"module2 v0.0.1 => \"./templates\"",
+			"module3 v1.2.3 => fake.test/module3 latest",
+		},
+	}
+
+	// test
+	err := cfg.ParseModules()
+	require.NoError(t, err)
+
+	// verify
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	if assert.Len(t, cfg.Replaces, 3) {
+		assert.Equal(t, "module1 => "+filepath.Join(cwd, "templates"), cfg.Replaces[0])
+		assert.Equal(t, "module2 v0.0.1 => "+filepath.Join(cwd, "templates"), cfg.Replaces[1])
+		assert.Equal(t, "module3 v1.2.3 => fake.test/module3 latest", cfg.Replaces[2])
+	}
 }
 
 func TestModuleFromCore(t *testing.T) {
