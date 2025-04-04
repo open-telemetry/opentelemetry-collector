@@ -7,9 +7,11 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
 	"errors"
+
+	"github.com/google/go-tpm/tpm2/transport"
 )
 
-func openFunction(path string) func() (transport.TPMCloser, error) {
+func openTPM(path string) func() (transport.TPMCloser, error) {
 	return func() (transport.TPMCloser, error) {
 		return nil, errors.New("TPM is not supported on this platform")
 	}

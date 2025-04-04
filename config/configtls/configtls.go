@@ -363,7 +363,7 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 	}
 
 	if c.TPMConfig.Enabled {
-		certificate, errTPM := c.TPMConfig.tpmCertificate(keyPem, certPem, openFunction(c.TPMConfig.Path))
+		certificate, errTPM := c.TPMConfig.tpmCertificate(keyPem, certPem, openTPM(c.TPMConfig.Path))
 		if errTPM != nil {
 			return tls.Certificate{}, fmt.Errorf("failed to load private key from TPM: %w", errTPM)
 		}
