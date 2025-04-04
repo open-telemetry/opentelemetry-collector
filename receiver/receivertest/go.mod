@@ -6,15 +6,15 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.29.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.0
+	go.opentelemetry.io/collector/component/componenttest v0.123.0
 	go.opentelemetry.io/collector/consumer v1.29.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.121.0
+	go.opentelemetry.io/collector/consumer/consumererror v0.123.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.123.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.0
 	go.opentelemetry.io/collector/pdata v1.29.0
 	go.opentelemetry.io/collector/pipeline v0.123.0
 	go.opentelemetry.io/collector/receiver v1.29.0
-	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0
+	go.opentelemetry.io/collector/receiver/xreceiver v0.123.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -73,3 +73,7 @@ replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/featuregate => ../../featuregate
