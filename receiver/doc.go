@@ -3,7 +3,7 @@
 
 // Package receiver defines components that allow the Collector to receive metrics, traces and logs.
 //
-// A Receiver receives data from a source (either from a remote source via network
+// A receiver receives data from a source (either from a remote source via network
 // or scrapes from a local host) and pushes the data to the pipelines it is attached
 // to by calling the nextConsumer.Consume*() function.
 //

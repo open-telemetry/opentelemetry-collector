@@ -102,7 +102,7 @@ func TestCreateTraces(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:   &defaultServerConfig,
+		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -147,7 +147,7 @@ func TestCreateTraces(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
+						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
 						TracesURLPath: defaultTracesURLPath,
@@ -196,7 +196,7 @@ func TestCreateMetric(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = "127.0.0.1:0"
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:   &defaultServerConfig,
+		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -241,7 +241,7 @@ func TestCreateMetric(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
+						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						MetricsURLPath: defaultMetricsURLPath,
@@ -290,7 +290,7 @@ func TestCreateLogs(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:   &defaultServerConfig,
+		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -335,7 +335,7 @@ func TestCreateLogs(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
+						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						LogsURLPath: defaultLogsURLPath,
@@ -384,7 +384,7 @@ func TestCreateProfiles(t *testing.T) {
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	defaultHTTPSettings := &HTTPConfig{
-		ServerConfig:   &defaultServerConfig,
+		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
 		LogsURLPath:    defaultLogsURLPath,
@@ -429,7 +429,7 @@ func TestCreateProfiles(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: defaultGRPCSettings,
 					HTTP: &HTTPConfig{
-						ServerConfig: &confighttp.ServerConfig{
+						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
 					},
