@@ -40,6 +40,8 @@ type BackOffConfig struct {
 	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
 	// Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (bs *BackOffConfig) Validate() error {
