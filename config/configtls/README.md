@@ -162,7 +162,9 @@ receivers:
 
 The trusted platform module (TPM) configuration can be used for loading TLS key from TPM. Currently only TSS2 format is supported.
 
-- `path` (default = ""): The path to the TPM device or Unix domain socket. If specified the private key `tls.key_file` will be loaded from TPM. For instance `/dev/tpm0` or `/dev/tpmrm0`.
+- `enabled` (default = false): Enables loading `tls.key_file` from TPM.
+
+- `path` (default = ""): The path to the TPM device or Unix domain socket. For instance `/dev/tpm0` or `/dev/tpmrm0`. This option is not supported on Windows.
 
 - `owner_auth` (default = ""): The owner authorization value. This is used to authenticate the TPM device. If not set, the default owner authorization will be used.
 
@@ -179,6 +181,7 @@ exporters:
       cert_file: client.crt
       key_file: client-tss2.key
       tpm:
+        enabled: true
         path: /dev/tpmrm0
 ```
 

@@ -8,16 +8,15 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 
 	tpmkeyfile "github.com/foxboron/go-tpm-keyfiles"
 	"github.com/google/go-tpm/tpm2/transport"
-	"github.com/google/go-tpm/tpmutil"
 )
 
 // TPMConfig defines trusted platform module configuration for storing TLS keys.
 type TPMConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 	// The path to the TPM device or Unix domain socket.
 	// For instance /dev/tpm0 or /dev/tpmrm0.
 	Path      string `mapstructure:"path"`
@@ -51,17 +50,6 @@ func (c TPMConfig) tpmCertificate(keyPem []byte, certPem []byte, openTPM func() 
 		Leaf:        x509Cert,
 		PrivateKey:  tpmSigner,
 	}, nil
-}
-
-func (c TPMConfig) open() (transport.TPMCloser, error) {
-	if c.Path == "" {
-		return nil, errors.New("TPM path is not set")
-	}
-	tpm, err := tpmutil.OpenTPM(c.Path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open TPM (%s): %w", c.Path, err)
-	}
-	return transport.FromReadWriteCloser(tpm), nil
 }
 
 func (c TPMConfig) signer(tpm transport.TPMCloser, tss2key *tpmkeyfile.TPMKey) (crypto.Signer, error) {
