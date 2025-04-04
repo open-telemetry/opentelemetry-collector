@@ -35,6 +35,7 @@ type TelemetryBuilder struct {
 	ReceiverRefusedLogRecords          metric.Int64Counter
 	ReceiverRefusedMetricPoints        metric.Int64Counter
 	ReceiverRefusedSpans               metric.Int64Counter
+	ReceiverRequests                   metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -66,6 +67,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ReceiverRequests, err = builder.meter.Int64Counter(
+		"otelcol_receiver_requests",
+		metric.WithDescription("The number of requests received by the receiver"),
+		metric.WithUnit("{requests}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_log_records",
 		metric.WithDescription("Number of log records successfully pushed into the pipeline. [alpha]"),
