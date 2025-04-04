@@ -46,6 +46,8 @@ func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
 }
 
 func TestCreateSameReceiver(t *testing.T) {
+	setGate(t, telemetry.NewPipelineTelemetryGate, true)
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
