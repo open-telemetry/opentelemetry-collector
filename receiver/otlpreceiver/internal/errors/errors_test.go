@@ -94,3 +94,83 @@ func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 		})
 	}
 }
+
+func Test_IsClientDisconnectError(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    error
+		expected bool
+	}{
+		{
+			name:     "Canceled",
+			input:    status.Error(codes.Canceled, "client canceled"),
+			expected: true,
+		},
+		{
+			name:     "Unavailable",
+			input:    status.Error(codes.Unavailable, "connection lost"),
+			expected: true,
+		},
+		{
+			name:     "DeadlineExceeded",
+			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+			expected: true,
+		},
+		{
+			name:     "OtherError",
+			input:    status.Error(codes.Internal, "internal error"),
+			expected: false,
+		},
+		{
+			name:     "NonStatusError",
+			input:    errors.New("some error"),
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := IsClientDisconnectError(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func Test_GetClientDisconnectMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    error
+		expected string
+	}{
+		{
+			name:     "Canceled",
+			input:    status.Error(codes.Canceled, "client canceled"),
+			expected: "client canceled the request",
+		},
+		{
+			name:     "Unavailable",
+			input:    status.Error(codes.Unavailable, "connection lost"),
+			expected: "client connection lost",
+		},
+		{
+			name:     "DeadlineExceeded",
+			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+			expected: "client request timed out",
+		},
+		{
+			name:     "OtherError",
+			input:    status.Error(codes.Internal, "internal error"),
+			expected: "client disconnected",
+		},
+		{
+			name:     "NonStatusError",
+			input:    errors.New("some error"),
+			expected: "client disconnected",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetClientDisconnectMessage(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
