@@ -5,21 +5,14 @@ package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
 import (
 	"context"
-	"crypto"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
-
-	tpmkeyfile "github.com/foxboron/go-tpm-keyfiles"
-	"github.com/google/go-tpm/tpm2/transport"
-	"github.com/google/go-tpm/tpmutil"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 )
@@ -90,15 +83,6 @@ type Config struct {
 // NewDefaultConfig creates a new TLSSetting with any default values set.
 func NewDefaultConfig() Config {
 	return Config{}
-}
-
-// TPMConfig defines trusted platform module configuration for storing TLS keys.
-type TPMConfig struct {
-	// The path to the TPM device or Unix domain socket.
-	// For instance /dev/tpm0 or /dev/tpmrm0.
-	Path      string `mapstructure:"path"`
-	OwnerAuth string `mapstructure:"owner_auth"`
-	Auth      string `mapstructure:"auth"`
 }
 
 // ClientConfig contains TLS configurations that are specific to client
@@ -378,36 +362,19 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 		keyPem = []byte(c.KeyPem)
 	}
 
-	keyPemDecoded, _ := pem.Decode(keyPem)
-	var tpmSigner crypto.Signer
-	if keyPemDecoded != nil && strings.Contains(keyPemDecoded.Type, "TSS2 PRIVATE KEY") {
-		tpmKey, errTPMKey := tpmkeyfile.Decode(keyPem)
-		if errTPMKey != nil {
-			return tls.Certificate{}, fmt.Errorf("failed to load TPM key %s: %w", c.KeyFile, err)
-		}
-
-		tpmSigner, err = c.tpmSigner(tpmKey)
-		if err != nil {
-			return tls.Certificate{}, fmt.Errorf("failed to load TPM signer: %w", err)
-		}
-	} else {
-		certificate, errKeyPair := tls.X509KeyPair(certPem, keyPem)
-		if errKeyPair != nil {
-			return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", errKeyPair)
+	if c.TPMConfig.Path != "" {
+		certificate, errTPM := c.TPMConfig.tpmCertificate(keyPem, certPem, c.TPMConfig.open)
+		if errTPM != nil {
+			return tls.Certificate{}, fmt.Errorf("failed to load private key from TPM: %w", errTPM)
 		}
 		return certificate, nil
 	}
 
-	certDER, _ := pem.Decode(certPem)
-	x509Cert, err := x509.ParseCertificate(certDER.Bytes)
-	if err != nil {
-		return tls.Certificate{}, fmt.Errorf("failed to parse certificate: %w", err)
+	certificate, errKeyPair := tls.X509KeyPair(certPem, keyPem)
+	if errKeyPair != nil {
+		return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", errKeyPair)
 	}
-	return tls.Certificate{
-		Certificate: [][]byte{x509Cert.Raw},
-		Leaf:        x509Cert,
-		PrivateKey:  tpmSigner,
-	}, nil
+	return certificate, err
 }
 
 func (c Config) loadCert(caPath string) (*x509.CertPool, error) {
@@ -511,21 +478,4 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	"P384":   tls.CurveP384,
 	"P521":   tls.CurveP521,
 	"X25519": tls.X25519,
-}
-
-func (c Config) tpmSigner(tss2key *tpmkeyfile.TPMKey) (crypto.Signer, error) {
-	if c.TPMConfig.Path == "" {
-		return nil, errors.New("TPM path is not set")
-	}
-
-	tpm, err := tpmutil.OpenTPM(c.TPMConfig.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	signer, err := tss2key.Signer(transport.FromReadWriteCloser(tpm), []byte(c.TPMConfig.OwnerAuth), []byte(c.TPMConfig.Auth))
-	if err != nil {
-		return nil, err
-	}
-	return signer, err
 }
