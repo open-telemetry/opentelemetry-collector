@@ -32,6 +32,7 @@ func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport) *Rec
 // Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
+	// We need to ensure that it propagates the receiver name as a tag
 	numSpans := td.SpanCount()
 	if numSpans == 0 {
 		return ptraceotlp.NewExportResponse(), nil
