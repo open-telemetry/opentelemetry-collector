@@ -41,7 +41,7 @@ func TestAttribute_CopyTo(t *testing.T) {
 
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
-	assert.Equal(t, "", ms.Key())
+	assert.Empty(t, ms.Key())
 	ms.SetKey("key")
 	assert.Equal(t, "key", ms.Key())
 	sharedState := internal.StateReadOnly

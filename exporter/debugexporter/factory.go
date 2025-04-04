@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 
 func createTraces(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewTraces(ctx, set, config,
 		debug.pushTraces,
@@ -64,7 +64,7 @@ func createTraces(ctx context.Context, set exporter.Settings, config component.C
 
 func createMetrics(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewMetrics(ctx, set, config,
 		debug.pushMetrics,
@@ -76,7 +76,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, config component.
 
 func createLogs(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
@@ -88,7 +88,7 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 
 func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
+	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 	return xexporterhelper.NewProfilesExporter(ctx, set, config,
 		debug.pushProfiles,

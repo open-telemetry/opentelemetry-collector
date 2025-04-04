@@ -41,6 +41,8 @@ func NewQueueBatchLegacyBatcher(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
+	set.Telemetry.Logger.Warn("Configuring the exporter batcher capability separately is now deprecated. " +
+		"Use sending_queue::batch instead.")
 	return newQueueBatch(set, cfg, next, true)
 }
 

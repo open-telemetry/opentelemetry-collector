@@ -71,8 +71,8 @@ func TestQueueBatchStopWhileWaiting(t *testing.T) {
 	require.LessOrEqual(t, int64(1), qb.queue.Size())
 
 	require.NoError(t, qb.Shutdown(context.Background()))
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 3, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 3, sink.ItemsCount())
 	require.Zero(t, qb.queue.Size())
 }
 
@@ -90,8 +90,8 @@ func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	require.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4}))
 	require.NoError(t, qb.Shutdown(context.Background()))
 
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 4, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 4, sink.ItemsCount())
 	require.Zero(t, qb.queue.Size())
 }
 
@@ -535,8 +535,8 @@ func TestQueueBatchWithTimeout(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 12, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 12, sink.ItemsCount())
 
 	// 3 requests with a 90ms cumulative delay must be cancelled by the timeout sender
 	for i := 0; i < 3; i++ {
@@ -551,8 +551,8 @@ func TestQueueBatchWithTimeout(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 
 	// The sink should not change
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 12, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 12, sink.ItemsCount())
 }
 
 func TestQueueBatchTimerResetNoConflict(t *testing.T) {

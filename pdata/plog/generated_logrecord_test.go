@@ -82,16 +82,16 @@ func TestLogRecord_Flags(t *testing.T) {
 
 func TestLogRecord_EventName(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, "", ms.EventName())
+	assert.Empty(t, ms.EventName())
 	ms.SetEventName("")
-	assert.Equal(t, "", ms.EventName())
+	assert.Empty(t, ms.EventName())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("") })
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, "", ms.SeverityText())
+	assert.Empty(t, ms.SeverityText())
 	ms.SetSeverityText("INFO")
 	assert.Equal(t, "INFO", ms.SeverityText())
 	sharedState := internal.StateReadOnly

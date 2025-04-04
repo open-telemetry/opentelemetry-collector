@@ -227,7 +227,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
-			assert.EqualValues(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
+			assert.Equal(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
 			// And all must have a valid startup sequence
 			assert.Equal(t, startupStatuses(v), v)
 		}

@@ -158,6 +158,11 @@ func TestValidateMetricDuplicates(t *testing.T) {
 	}
 }
 
+func TestSupportsSignal(t *testing.T) {
+	md := Metadata{}
+	assert.False(t, md.supportsSignal("logs"))
+}
+
 func contains(r string, rs []string) bool {
 	for _, s := range rs {
 		if s == r {

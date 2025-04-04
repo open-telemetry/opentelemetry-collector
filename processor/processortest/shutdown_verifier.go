@@ -40,7 +40,7 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount, nextSink.SpanCount())
+	assert.Equal(t, generatedCount, nextSink.SpanCount())
 }
 
 func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
@@ -64,7 +64,7 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount, nextSink.LogRecordCount())
+	assert.Equal(t, generatedCount, nextSink.LogRecordCount())
 }
 
 func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
@@ -88,7 +88,7 @@ func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fa
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount*2, nextSink.DataPointCount())
+	assert.Equal(t, generatedCount*2, nextSink.DataPointCount())
 }
 
 // VerifyShutdown verifies the processor doesn't produce telemetry data after shutdown.

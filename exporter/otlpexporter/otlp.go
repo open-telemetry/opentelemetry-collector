@@ -54,7 +54,7 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
 
 	if oCfg.hasBatcher {
-		set.TelemetrySettings.Logger.Warn("using deprecated field: batcher")
+		set.Logger.Warn("using deprecated field: batcher")
 	}
 
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
@@ -100,7 +100,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
@@ -116,7 +116,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
@@ -132,7 +132,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
@@ -148,7 +148,7 @@ func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) e
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedProfiles() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
