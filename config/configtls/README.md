@@ -81,7 +81,7 @@ Additionally certificates may be reloaded by setting the below configuration.
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
-- `tpm` (optional): Use the trusted platform module to retrieve the TLS key. This is only supported for `key_file` configuration option.
+- `tpm` (optional): Use the trusted platform module to retrieve the TLS key.
 
 ## Client Configuration
 
@@ -185,4 +185,4 @@ exporters:
         path: /dev/tpmrm0
 ```
 
-The `client-tss2.key` private key with TSS2 format will be loaded from TPM device `/dev/tpmrm0`.
+The `client-tss2.key` private key with TSS2 format will be loaded from the TPM device `/dev/tpmrm0`.
