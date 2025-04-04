@@ -41,6 +41,12 @@ func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (pt
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
 	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, spanCount, err)
 
+	// Use appropriate status codes for permanent/non-permanent errors
+	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
+	// Refer: https://github.com/grpc/grpc-go/blob/v1.59.0/server.go#L1345
+	// So, convert the error to appropriate grpc status and return the error
+	// NonPermanent errors will be converted to codes.Unavailable (equivalent to HTTP 503)
+	// Permanent errors will be converted to codes.InvalidArgument (equivalent to HTTP 400)
 	if err != nil {
 		return ptraceotlp.NewExportResponse(), errors.GetStatusFromError(err)
 	}

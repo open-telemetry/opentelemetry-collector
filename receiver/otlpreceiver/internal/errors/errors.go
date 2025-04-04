@@ -53,6 +53,12 @@ func GetStatusFromError(err error) error {
 		// For client disconnection errors, we want to ensure they are marked as retryable
 		// and provide a descriptive message
 		s = status.New(codes.Unavailable, GetClientDisconnectMessage(err))
+	} else if consumererror.IsPermanent(err) {
+		// For permanent errors, convert to InvalidArgument (equivalent to HTTP 400)
+		s = status.New(codes.InvalidArgument, err.Error())
+	} else {
+		// For non-permanent errors, convert to Unavailable (equivalent to HTTP 503)
+		s = status.New(codes.Unavailable, err.Error())
 	}
 	return s.Err()
 }
