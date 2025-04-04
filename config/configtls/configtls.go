@@ -84,7 +84,7 @@ type Config struct {
 	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
 
 	// Trusted platform module configuration
-	TPMConfig *TPMConfig `mapstructure:"tpm_config,omitempty"`
+	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -380,9 +380,9 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 
 	keyPemDecoded, _ := pem.Decode(keyPem)
 	var tpmSigner crypto.Signer
-	if strings.Contains(keyPemDecoded.Type, "TSS2 PRIVATE KEY") {
-		tpmKey, err := tpmkeyfile.Decode(keyPem)
-		if err != nil {
+	if keyPemDecoded != nil && strings.Contains(keyPemDecoded.Type, "TSS2 PRIVATE KEY") {
+		tpmKey, errTPMKey := tpmkeyfile.Decode(keyPem)
+		if errTPMKey != nil {
 			return tls.Certificate{}, fmt.Errorf("failed to load TPM key %s: %w", c.KeyFile, err)
 		}
 
@@ -391,14 +391,15 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 			return tls.Certificate{}, fmt.Errorf("failed to load TPM signer: %w", err)
 		}
 	} else {
-		certificate, err := tls.X509KeyPair(certPem, keyPem)
-		if err != nil {
-			return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", err)
+		certificate, errKeyPair := tls.X509KeyPair(certPem, keyPem)
+		if errKeyPair != nil {
+			return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", errKeyPair)
 		}
 		return certificate, nil
 	}
 
-	x509Cert, err := x509.ParseCertificate(certPem)
+	certDER, _ := pem.Decode(certPem)
+	x509Cert, err := x509.ParseCertificate(certDER.Bytes)
 	if err != nil {
 		return tls.Certificate{}, fmt.Errorf("failed to parse certificate: %w", err)
 	}
@@ -513,6 +514,10 @@ var tlsCurveTypes = map[string]tls.CurveID{
 }
 
 func (c Config) tpmSigner(tss2key *tpmkeyfile.TPMKey) (crypto.Signer, error) {
+	if c.TPMConfig.Path == "" {
+		return nil, errors.New("TPM path is not set")
+	}
+
 	tpm, err := tpmutil.OpenTPM(c.TPMConfig.Path)
 	if err != nil {
 		return nil, err

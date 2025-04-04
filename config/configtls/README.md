@@ -81,6 +81,8 @@ Additionally certificates may be reloaded by setting the below configuration.
 How TLS/mTLS is configured depends on whether configuring the client or server.
 See below for examples.
 
+- `tpm` (optional): Use the trusted platform module to retrieve the TLS key. This is only supported for `key_file` configuration option.
+
 ## Client Configuration
 
 [Exporters](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/README.md)
@@ -155,3 +157,29 @@ receivers:
       grpc:
         endpoint: mysite.local:55690
 ```
+
+## Trusted platform module (TPM) configuration
+
+The trusted platform module (TPM) can be used for retrieving TLS keys (e.g. `TSS2`).
+
+- `path` (default = ""): The path to the TPM device or Unix domain socket. For instance `/dev/tpm0` or `/dev/tpmrm0`.
+
+- `owner_auth` (default = ""): The owner authorization value. This is used to authenticate the TPM device. If not set, the default owner authorization will be used.
+
+- `auth` (default = ""): The authorization value. This is used to authenticate the TPM device. If not set, the default authorization will be used.
+
+Example:
+
+```yaml
+exporters:
+  otlp:
+    endpoint: myserver.local:55690
+    tls:
+      ca_file: ca.crt
+      cert_file: client.crt
+      key_file: client-tss2.key
+      tpm:
+        path: /dev/tpmrm0
+```
+
+The `client-tss2.key` private key with TSS2 format will be loaded from TPM device `/dev/tpmrm0`.
