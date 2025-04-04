@@ -14,7 +14,7 @@ import (
 
 const dataFormatProtobuf = "protobuf"
 
-// Receiver is the type used to handle traces from OpenTelemetry exporters.
+// Receiver is the type used to handle spans from OpenTelemetry exporters.
 type Receiver struct {
 	ptraceotlp.UnimplementedGRPCServer
 	nextConsumer consumer.Traces
@@ -29,17 +29,17 @@ func New(nextConsumer consumer.Traces, obsreport *receiverhelper.ObsReport) *Rec
 	}
 }
 
-// Export implements the OTLP traces receiver protocol.
+// Export implements the service Export traces func.
 func (r *Receiver) Export(ctx context.Context, req ptraceotlp.ExportRequest) (ptraceotlp.ExportResponse, error) {
 	td := req.Traces()
-	spanCount := td.SpanCount()
-	if spanCount == 0 {
+	numSpans := td.SpanCount()
+	if numSpans == 0 {
 		return ptraceotlp.NewExportResponse(), nil
 	}
 
 	ctx = r.obsreport.StartTracesOp(ctx)
 	err := r.nextConsumer.ConsumeTraces(ctx, td)
-	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, spanCount, err)
+	r.obsreport.EndTracesOp(ctx, dataFormatProtobuf, numSpans, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
