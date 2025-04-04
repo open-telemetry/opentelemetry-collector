@@ -430,6 +430,7 @@
       "testprovider",
       "testutil",
       "tocstop",
+      "tpmrm",
       "tracecontext",
       "traceid",
       "tracesonmemory",
