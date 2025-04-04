@@ -5,6 +5,13 @@
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
+import (
+	"fmt"
+
+	"github.com/google/go-tpm/tpm2/transport"
+	"github.com/google/go-tpm/tpmutil"
+)
+
 func openFunction(path string) func() (transport.TPMCloser, error) {
 	return func() (transport.TPMCloser, error) {
 		tpm, err := tpmutil.OpenTPM()
