@@ -116,7 +116,7 @@ func TestBatchProcessorSpansDelivered(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				spans.At(spanIndex),
 				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
 		}
@@ -148,10 +148,7 @@ func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
 	require.NoError(t, traces.ConsumeTraces(context.Background(), td))
 
 	// wait for all spans to be reported
-	for {
-		if sink.SpanCount() == requestCount*spansPerRequest {
-			break
-		}
+	for sink.SpanCount() != requestCount*spansPerRequest {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -379,10 +376,7 @@ func TestBatchProcessorSentByTimeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.SpanCount() != 0 {
-			break
-		}
+	for sink.SpanCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -471,7 +465,7 @@ func TestBatchMetricProcessor_ReceivingData(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		ms := sentResourceMetrics.At(requestNum).ScopeMetrics().At(0).Metrics()
 		for metricIndex := 0; metricIndex < metricsPerRequest; metricIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				ms.At(metricIndex),
 				metricsReceivedByName[getTestMetricName(requestNum, metricIndex)])
 		}
@@ -615,10 +609,7 @@ func TestBatchMetricsProcessor_Timeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.DataPointCount() != 0 {
-			break
-		}
+	for sink.DataPointCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -821,7 +812,7 @@ func TestBatchLogProcessor_ReceivingData(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		lrs := sentResourceLogs.At(requestNum).ScopeLogs().At(0).LogRecords()
 		for logIndex := 0; logIndex < logsPerRequest; logIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				lrs.At(logIndex),
 				logsReceivedBySeverityText[getTestLogSeverityText(requestNum, logIndex)])
 		}
@@ -943,10 +934,7 @@ func TestBatchLogsProcessor_Timeout(t *testing.T) {
 	}
 
 	// Wait for at least one batch to be sent.
-	for {
-		if sink.LogRecordCount() != 0 {
-			break
-		}
+	for sink.LogRecordCount() == 0 {
 		<-time.After(cfg.Timeout)
 	}
 
@@ -1117,14 +1105,14 @@ func TestBatchProcessorSpansBatchedByMetadata(t *testing.T) {
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		spans := sentResourceSpans.At(requestNum).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			require.EqualValues(t,
+			require.Equal(t,
 				spans.At(spanIndex),
 				spansReceivedByName[getTestSpanName(requestNum, spanIndex)])
 		}
 	}
 
 	// This test ensures each context had the expected number of spans.
-	require.Equal(t, len(callCtxs), len(sink.spanCountByToken12))
+	require.Len(t, sink.spanCountByToken12, len(callCtxs))
 	for idx, ctx := range callCtxs {
 		md := client.FromContext(ctx).Metadata
 		exp := formatTwo(md.Get("token1"), md.Get("token2"))

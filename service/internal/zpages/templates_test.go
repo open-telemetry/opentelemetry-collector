@@ -38,7 +38,7 @@ func TestTemplateFuncs(t *testing.T) {
 		Element: [2]string{"key", "value"},
 	}
 	require.NoError(t, tmpl.Execute(buf, input))
-	assert.EqualValues(t, want, buf.String())
+	assert.Equal(t, want, buf.String())
 }
 
 func TestNoCrash(t *testing.T) {

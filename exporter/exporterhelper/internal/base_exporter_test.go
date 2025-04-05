@@ -79,11 +79,12 @@ func TestBaseExporterLogging(t *testing.T) {
 	sendErr := bs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
 	require.Error(t, sendErr)
 
-	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 2)
-	assert.Contains(t, observed.All()[0].Message, "Exporting failed. Dropping data.")
-	assert.Equal(t, "my error", observed.All()[0].ContextMap()["error"])
-	assert.Contains(t, observed.All()[1].Message, "Exporting failed. Rejecting data.")
-	assert.Equal(t, "my error", observed.All()[1].ContextMap()["error"])
+	errorLogs := observed.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 2)
+	assert.Contains(t, errorLogs[0].Message, "Exporting failed. Dropping data.")
+	assert.Equal(t, "my error", errorLogs[0].ContextMap()["error"])
+	assert.Contains(t, errorLogs[1].Message, "Exporting failed. Rejecting data.")
+	assert.Equal(t, "my error", errorLogs[1].ContextMap()["error"])
 	require.NoError(t, bs.Shutdown(context.Background()))
 }
 

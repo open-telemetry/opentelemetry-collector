@@ -22,7 +22,7 @@ type tracerProviderWithAttributesSdk struct {
 	attrs []attribute.KeyValue
 }
 
-// Creates a TracerProvider with a new set of injected instrumentation scope attributes.
+// TracerProviderWithAttributes creates a TracerProvider with a new set of injected instrumentation scope attributes.
 func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) trace.TracerProvider {
 	if tpwa, ok := tp.(tracerProviderWithAttributesSdk); ok {
 		tp = tpwa.TracerProvider

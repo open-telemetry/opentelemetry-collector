@@ -65,7 +65,7 @@ func TestZPagesExtensionUsage(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(cfg.ServerConfig.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(cfg.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}
@@ -172,7 +172,7 @@ func TestZPagesEnableExpvar(t *testing.T) {
 	// Give a chance for the server goroutine to run.
 	runtime.Gosched()
 
-	_, zpagesPort, err := net.SplitHostPort(cfg.ServerConfig.Endpoint)
+	_, zpagesPort, err := net.SplitHostPort(cfg.Endpoint)
 	require.NoError(t, err)
 
 	client := &http.Client{}

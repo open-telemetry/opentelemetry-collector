@@ -169,12 +169,16 @@ const accessorsOneOfPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .acce
 	ms := New{{ .structName }}()
 	{{- if eq .returnType "float64"}}
 	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .defaultVal "\"\"") }}
+	assert.Empty(t, ms.{{ .accessorFieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}())
 	{{- end }}
 	ms.Set{{ .accessorFieldName }}({{ .testValue }})
 	{{- if eq .returnType "float64" }}
 	assert.InDelta(t, {{ .testValue }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .testValue "\"\"") }}
+	assert.Empty(t, ms.{{ .accessorFieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .accessorFieldName }}())
 	{{- end }}
@@ -189,6 +193,8 @@ const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	assert.{{- if eq .defaultVal "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
 	{{- else if eq .returnType "float64" }}
 	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .defaultVal "\"\"") }}
+	assert.Empty(t, ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .fieldName }}())
 	{{- end }}
@@ -197,6 +203,8 @@ const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	assert.{{- if eq .testValue "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
 	{{- else if eq .returnType "float64"}}
 	assert.InDelta(t, {{ .testValue }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .testValue "\"\"") }}
+	assert.Empty(t, ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
 	{{- end }}

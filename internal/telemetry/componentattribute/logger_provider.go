@@ -15,7 +15,7 @@ type loggerProviderWithAttributes struct {
 	attrs []attribute.KeyValue
 }
 
-// Creates a LoggerProvider with a new set of injected instrumentation scope attributes.
+// LoggerProviderWithAttributes creates a LoggerProvider with a new set of injected instrumentation scope attributes.
 func LoggerProviderWithAttributes(lp log.LoggerProvider, attrs attribute.Set) log.LoggerProvider {
 	if lpwa, ok := lp.(loggerProviderWithAttributes); ok {
 		lp = lpwa.LoggerProvider

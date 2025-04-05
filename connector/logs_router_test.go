@@ -98,7 +98,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 				}
 				assert.Len(t, logs, expected[id])
 				for n := 0; n < len(logs); n++ {
-					assert.EqualValues(t, ld, logs[n])
+					assert.Equal(t, ld, logs[n])
 				}
 			}
 		}

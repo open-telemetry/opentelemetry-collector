@@ -8,7 +8,7 @@ import (
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
-// profiles is the top-level struct that is propagated through the profiles pipeline.
+// Profiles is the top-level struct that is propagated through the profiles pipeline.
 // Use NewProfiles to create new instance, zero-initialized instance is not valid for use.
 type Profiles internal.Profiles
 

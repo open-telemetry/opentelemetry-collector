@@ -119,9 +119,10 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 	ml.refCounterLock.Lock()
 	defer ml.refCounterLock.Unlock()
 
-	if ml.refCounter == 0 {
+	switch ml.refCounter {
+	case 0:
 		return ErrShutdownNotStarted
-	} else if ml.refCounter == 1 {
+	case 1:
 		ml.ticker.Stop()
 		close(ml.closed)
 		ml.waitGroup.Wait()

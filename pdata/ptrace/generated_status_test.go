@@ -48,7 +48,7 @@ func TestStatus_Code(t *testing.T) {
 
 func TestStatus_Message(t *testing.T) {
 	ms := NewStatus()
-	assert.Equal(t, "", ms.Message())
+	assert.Empty(t, ms.Message())
 	ms.SetMessage("cancelled")
 	assert.Equal(t, "cancelled", ms.Message())
 	sharedState := internal.StateReadOnly

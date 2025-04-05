@@ -40,7 +40,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly
@@ -49,7 +49,7 @@ func TestInstrumentationScope_Name(t *testing.T) {
 
 func TestInstrumentationScope_Version(t *testing.T) {
 	ms := NewInstrumentationScope()
-	assert.Equal(t, "", ms.Version())
+	assert.Empty(t, ms.Version())
 	ms.SetVersion("test_version")
 	assert.Equal(t, "test_version", ms.Version())
 	sharedState := internal.StateReadOnly

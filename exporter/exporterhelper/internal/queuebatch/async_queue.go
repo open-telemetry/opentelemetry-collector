@@ -40,7 +40,7 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {
-				ctx, req, done, ok := qc.readableQueue.Read(context.Background())
+				ctx, req, done, ok := qc.Read(context.Background())
 				if !ok {
 					return
 				}

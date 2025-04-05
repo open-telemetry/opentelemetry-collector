@@ -306,10 +306,10 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 
 	// compare two maps of status events ignoring timestamp
 	assertEqualStatuses := func(t *testing.T, evMap1, evMap2 map[*componentstatus.InstanceID][]*componentstatus.Event) {
-		assert.Equal(t, len(evMap1), len(evMap2))
+		assert.Len(t, evMap2, len(evMap1))
 		for id, evts1 := range evMap1 {
 			evts2 := evMap2[id]
-			assert.Equal(t, len(evts1), len(evts2))
+			assert.Len(t, evts2, len(evts1))
 			for i := 0; i < len(evts1); i++ {
 				ev1 := evts1[i]
 				ev2 := evts2[i]

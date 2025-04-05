@@ -7,6 +7,70 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.29.0/v0.123.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Mark `telemetry.disableAddressFieldForInternalTelemetry` as beta, usage of deprecated service::telemetry::address are ignored (#25115)
+  To restore the previous behavior disable `telemetry.disableAddressFieldForInternalTelemetry` feature gate.
+- `exporterbatch`: Remove deprecated fields `min_size_items` and `max_size_items` from batch config. (#12684)
+
+### 🚩 Deprecations 🚩
+
+- `otlpexporter`: Mark BatcherConfig as deprecated, use `sending_queue::batch` instead (#12726)
+- `exporterhelper`: Deprecate `blocking` in favor of `block_on_overflow`. (#12710)
+- `exporterhelper`: Deprecate configuring exporter batching separately. Use `sending_queue::batch` instead. (#12772)
+  Moving the batching configuration to `sending_queue::batch` requires setting `sending_queue::sizer` to `items`
+  which means that `sending_queue::queue_size` needs to be also increased by the average batch size number (roughly 
+  x5000 for the default batching configuration).
+  See https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration
+  
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add support to configure batching in the sending queue. (#12746)
+- `exporterhelper`: Add support for wait_for_result, remove disabled_queue (#12742)
+  This has a side effect for users of the experimental BatchConfig with the queue disabled, since not this is | uses only NumCPU() consumers.
+- `exporterhelper`: Allow exporter memory queue to use different type of sizers. (#12708)
+- `service`: Add "telemetry.newPipelineTelemetry" feature gate to inject component-identifying attributes in internal telemetry (#12217)
+  With the feature gate enabled, all internal telemetry (metrics/traces/logs) will include some of
+  the following instrumentation scope attributes:
+  - `otelcol.component.kind`
+  - `otelcol.component.id`
+  - `otelcol.pipeline.id`
+  - `otelcol.signal`
+  - `otelcol.signal.output`
+  
+  These attributes are defined in the [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md#attributes),
+  and identify the component instance from which the telemetry originates.
+  They are added automatically without changes to component code.
+  
+  These attributes were already included in internal logs as regular log attributes, starting from
+  v0.120.0. For consistency with other signals, they have been switched to scope attributes (with
+  the exception of logs emitted to standard output), and are now enabled by the feature gate.
+  
+  Please make sure that the exporter / backend endpoint you use has support for instrumentation
+  scope attributes before using this feature. If the internal telemetry is exported to another
+  Collector, a transform processor could be used to turn them into other kinds of attributes if
+  necessary.
+  
+- `exporterhelper`: Enable support to do batching using `bytes` sizer (#12751)
+- `service`: Add config key to set metric views used for internal telemetry (#10769)
+  The `service::telemetry::metrics::views` config key can now be used to explicitly set the list of
+  metric views used for internal telemetry, mirroring `meter_provider::views` in the SDK config.
+  This can be used to disable specific internal metrics, among other uses.
+  
+  This key will cause an error if used alongside other features which would normally implicitly create views, such as:
+  - not setting `service::telemetry::metrics::level` to `detailed`;
+  - enabling the `telemetry.disableHighCardinalityMetrics` feature flag.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix order of starting between queue and batch. (#12705)
+
+<!-- previous-version -->
+
 ## v1.28.1/v0.122.1
 
 ### 🧰 Bug fixes 🧰

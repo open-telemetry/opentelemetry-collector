@@ -357,7 +357,7 @@ func newCreateErrorExtensionFactory() extension.Factory {
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
 	// compare two slices of status events ignoring timestamp
 	assertEqualStatuses := func(t *testing.T, evts1, evts2 []*componentstatus.Event) {
-		assert.Equal(t, len(evts1), len(evts2))
+		assert.Len(t, evts2, len(evts1))
 		for i := 0; i < len(evts1); i++ {
 			ev1 := evts1[i]
 			ev2 := evts2[i]

@@ -28,7 +28,7 @@ var (
 func TestNewFactoryNoOptions(t *testing.T) {
 	defaultCfg := struct{}{}
 	factory := NewFactory(testType, func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateTracesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
@@ -51,7 +51,7 @@ func TestNewFactoryWithSameTypes(t *testing.T) {
 	factory := NewFactory(testType, func() component.Config { return &defaultCfg },
 		WithProfilesToProfiles(createProfilesToProfiles, component.StabilityLevelAlpha),
 	)
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelAlpha, factory.ProfilesToProfilesStability())
@@ -77,7 +77,7 @@ func TestNewFactoryWithTranslateTypes(t *testing.T) {
 		WithProfilesToMetrics(createProfilesToMetrics, component.StabilityLevelDevelopment),
 		WithProfilesToLogs(createProfilesToLogs, component.StabilityLevelAlpha),
 	)
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	_, err := factory.CreateProfilesToProfiles(context.Background(), connector.Settings{ID: testID}, &defaultCfg, consumertest.NewNop())

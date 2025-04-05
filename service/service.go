@@ -60,7 +60,7 @@ var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().Must
 // ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
 
-// ModuleInfo describes the go module for all components.
+// ModuleInfos describes the go module for all components.
 type ModuleInfos = moduleinfo.ModuleInfos
 
 // Settings holds configuration for building a new Service.
@@ -243,7 +243,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	if len(cfg.Address) != 0 { // SA1019
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 

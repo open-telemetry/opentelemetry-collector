@@ -1208,25 +1208,25 @@ func (esc *errOrSinkConsumer) Reset() {
 func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	switch data.(type) {
 	case ptrace.Traces:
-		allTraces := esc.TracesSink.AllTraces()
+		allTraces := esc.AllTraces()
 		require.Len(t, allTraces, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allTraces[0], data)
 		}
 	case pmetric.Metrics:
-		allMetrics := esc.MetricsSink.AllMetrics()
+		allMetrics := esc.AllMetrics()
 		require.Len(t, allMetrics, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allMetrics[0], data)
 		}
 	case plog.Logs:
-		allLogs := esc.LogsSink.AllLogs()
+		allLogs := esc.AllLogs()
 		require.Len(t, allLogs, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allLogs[0], data)
 		}
 	case pprofile.Profiles:
-		allProfiles := esc.ProfilesSink.AllProfiles()
+		allProfiles := esc.AllProfiles()
 		require.Len(t, allProfiles, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allProfiles[0], data)

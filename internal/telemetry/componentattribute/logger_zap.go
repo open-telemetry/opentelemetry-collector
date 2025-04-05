@@ -52,7 +52,7 @@ type consoleCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
 
-// Wraps a Zap core in order to inject component attributes as Zap fields.
+// NewConsoleCoreWithAttributes wraps a Zap core in order to inject component attributes as Zap fields.
 //
 // This is used for the Collector's console output.
 func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
@@ -80,7 +80,7 @@ type otelTeeCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 
-// Wraps a Zap core in order to copy logs to a [log.LoggerProvider] using [otelzap]. For the copied
+// NewOTelTeeCoreWithAttributes wraps a Zap core in order to copy logs to a [log.LoggerProvider] using [otelzap]. For the copied
 // logs, component attributes are injected as instrumentation scope attributes.
 //
 // This is used when service::telemetry::logs::processors is configured.
@@ -121,7 +121,7 @@ type wrapperCoreWithAttributes struct {
 
 var _ coreWithAttributes = (*wrapperCoreWithAttributes)(nil)
 
-// Applies a wrapper function to a core, similar to [zap.WrapCore]. The resulting wrapped core
+// NewWrapperCoreWithAttributes applies a wrapper function to a core, similar to [zap.WrapCore]. The resulting wrapped core
 // allows setting component attributes on the inner core and reapplying the wrapper function when
 // needed.
 //
@@ -138,7 +138,7 @@ func (wcwa *wrapperCoreWithAttributes) withAttributeSet(attrs attribute.Set) zap
 	return NewWrapperCoreWithAttributes(tryWithAttributeSet(wcwa.from, attrs), wcwa.wrapper)
 }
 
-// Creates a Zap Logger with a new set of injected component attributes.
+// ZapLoggerWithAttributes creates a Zap Logger with a new set of injected component attributes.
 func ZapLoggerWithAttributes(logger *zap.Logger, attrs attribute.Set) *zap.Logger {
 	return logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 		return tryWithAttributeSet(c, attrs)

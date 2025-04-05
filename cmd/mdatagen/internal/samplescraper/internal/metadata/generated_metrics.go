@@ -45,6 +45,36 @@ var MapAttributeEnumAttr = map[string]AttributeEnumAttr{
 	"blue":  AttributeEnumAttrBlue,
 }
 
+var MetricsInfo = metricsInfo{
+	DefaultMetric: metricInfo{
+		Name: "default.metric",
+	},
+	DefaultMetricToBeRemoved: metricInfo{
+		Name: "default.metric.to_be_removed",
+	},
+	MetricInputType: metricInfo{
+		Name: "metric.input_type",
+	},
+	OptionalMetric: metricInfo{
+		Name: "optional.metric",
+	},
+	OptionalMetricEmptyUnit: metricInfo{
+		Name: "optional.metric.empty_unit",
+	},
+}
+
+type metricsInfo struct {
+	DefaultMetric            metricInfo
+	DefaultMetricToBeRemoved metricInfo
+	MetricInputType          metricInfo
+	OptionalMetric           metricInfo
+	OptionalMetricEmptyUnit  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricDefaultMetric struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

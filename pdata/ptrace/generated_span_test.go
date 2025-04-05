@@ -72,7 +72,7 @@ func TestSpan_ParentSpanID(t *testing.T) {
 
 func TestSpan_Name(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly

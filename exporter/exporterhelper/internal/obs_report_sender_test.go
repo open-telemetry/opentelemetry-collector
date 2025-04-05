@@ -56,7 +56,7 @@ func TestExportTraceDataOp(t *testing.T) {
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
@@ -124,7 +124,7 @@ func TestExportMetricsOp(t *testing.T) {
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
@@ -192,7 +192,7 @@ func TestExportLogsOp(t *testing.T) {
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {

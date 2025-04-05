@@ -60,6 +60,10 @@ func NewQueueSender(
 		return nil
 	}
 
+	// TODO: Remove this when WithBatcher is removed.
+	if bCfg.Enabled {
+		return queuebatch.NewQueueBatchLegacyBatcher(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
+	}
 	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 }
 
