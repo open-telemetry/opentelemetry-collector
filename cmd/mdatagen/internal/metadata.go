@@ -286,59 +286,13 @@ type Warnings struct {
 }
 
 type ResourceAttribute struct {
-	// Description describes the purpose of the attribute.
-	Description string `mapstructure:"description"`
-	// NameOverride can be used to override the attribute name.
-	NameOverride string `mapstructure:"name_override"`
+	Attribute `mapstructure:",squash"`
 	// Enabled defines whether the attribute is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
-	// Include can be used to filter attributes.
-	Include []filter.Config `mapstructure:"include"`
-	// Include can be used to filter attributes.
-	Exclude []filter.Config `mapstructure:"exclude"`
-	// Enum can optionally describe the set of values to which the attribute can belong.
-	Enum []string `mapstructure:"enum"`
-	// Type is an attribute type.
-	Type ValueType `mapstructure:"type"`
-	// FullName is the attribute name populated from the map key.
-	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
 	// Optional defines whether the attribute is required.
 	Optional bool `mapstructure:"optional"`
-}
-
-// Name returns actual name of the attribute that is set on the metric after applying NameOverride.
-func (a ResourceAttribute) Name() AttributeName {
-	if a.NameOverride != "" {
-		return AttributeName(a.NameOverride)
-	}
-	return a.FullName
-}
-
-func (a ResourceAttribute) TestValue() string {
-	if a.Enum != nil {
-		return fmt.Sprintf(`"%s"`, a.Enum[0])
-	}
-	switch a.Type.ValueType {
-	case pcommon.ValueTypeEmpty:
-		return ""
-	case pcommon.ValueTypeStr:
-		return fmt.Sprintf(`"%s-val"`, a.FullName)
-	case pcommon.ValueTypeInt:
-		return strconv.Itoa(len(a.FullName))
-	case pcommon.ValueTypeDouble:
-		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
-	case pcommon.ValueTypeBool:
-		return strconv.FormatBool(len(a.FullName)%2 == 0)
-	case pcommon.ValueTypeMap:
-		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
-	case pcommon.ValueTypeSlice:
-		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
-	case pcommon.ValueTypeBytes:
-		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
-	}
-	return ""
 }
 
 type Attribute struct {
@@ -356,8 +310,6 @@ type Attribute struct {
 	Type ValueType `mapstructure:"type"`
 	// FullName is the attribute name populated from the map key.
 	FullName AttributeName `mapstructure:"-"`
-	// Warnings that will be shown to user under specified conditions.
-	Warnings Warnings `mapstructure:"warnings"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.

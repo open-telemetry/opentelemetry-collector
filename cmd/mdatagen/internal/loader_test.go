@@ -68,78 +68,94 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ResourceAttributes: map[AttributeName]ResourceAttribute{
 					"string.resource.attr": {
-						Description: "Resource attribute with any string value.",
-						Enabled:     true,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Enabled: true,
+						Attribute: Attribute{
+							Description: "Resource attribute with any string value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "string.resource.attr",
 						},
-						FullName: "string.resource.attr",
 					},
 					"string.enum.resource.attr": {
-						Description: "Resource attribute with a known set of string values.",
-						Enabled:     true,
-						Enum:        []string{"one", "two"},
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Enabled: true,
+						Attribute: Attribute{
+							Description: "Resource attribute with a known set of string values.",
+							Enum:        []string{"one", "two"},
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "string.enum.resource.attr",
 						},
-						FullName: "string.enum.resource.attr",
 					},
 					"optional.resource.attr": {
-						Description: "Explicitly disabled ResourceAttribute.",
-						Enabled:     false,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Enabled: false,
+						Attribute: Attribute{
+							Description: "Explicitly disabled ResourceAttribute.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "optional.resource.attr",
 						},
-						FullName: "optional.resource.attr",
 					},
 					"slice.resource.attr": {
-						Description: "Resource attribute with a slice value.",
-						Enabled:     true,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeSlice,
+						Enabled: true,
+						Attribute: Attribute{
+							Description: "Resource attribute with a slice value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeSlice,
+							},
+							FullName: "slice.resource.attr",
 						},
-						FullName: "slice.resource.attr",
 					},
 					"map.resource.attr": {
-						Description: "Resource attribute with a map value.",
-						Enabled:     true,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeMap,
+						Enabled: true,
+						Attribute: Attribute{
+							Description: "Resource attribute with a map value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeMap,
+							},
+							FullName: "map.resource.attr",
 						},
-						FullName: "map.resource.attr",
 					},
 					"string.resource.attr_disable_warning": {
-						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabledNotSet: "This resource_attribute will be disabled by default soon.",
 						},
 						Enabled: true,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Attribute: Attribute{
+							Description: "Resource attribute with any string value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "string.resource.attr_disable_warning",
 						},
-						FullName: "string.resource.attr_disable_warning",
 					},
 					"string.resource.attr_remove_warning": {
-						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfConfigured: "This resource_attribute is deprecated and will be removed soon.",
 						},
 						Enabled: false,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Attribute: Attribute{
+							Description: "Resource attribute with any string value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "string.resource.attr_remove_warning",
 						},
-						FullName: "string.resource.attr_remove_warning",
 					},
 					"string.resource.attr_to_be_removed": {
-						Description: "Resource attribute with any string value.",
 						Warnings: Warnings{
 							IfEnabled: "This resource_attribute is deprecated and will be removed soon.",
 						},
 						Enabled: true,
-						Type: ValueType{
-							ValueType: pcommon.ValueTypeStr,
+						Attribute: Attribute{
+							Description: "Resource attribute with any string value.",
+							Type: ValueType{
+								ValueType: pcommon.ValueTypeStr,
+							},
+							FullName: "string.resource.attr_to_be_removed",
 						},
-						FullName: "string.resource.attr_to_be_removed",
 					},
 				},
 
