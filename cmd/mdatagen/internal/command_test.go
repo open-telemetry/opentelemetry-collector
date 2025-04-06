@@ -335,7 +335,7 @@ func TestRun(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := run(tt.args.ymlPath)
 			if !tt.wantErr {
-				require.NoError(t, err, "run()")
+				require.NoErrorf(t, err, "run()")
 			} else {
 				require.Error(t, err)
 			}

@@ -125,7 +125,7 @@ func TestJsonHttp(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	sink := newErrOrSinkConsumer()
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	require.NoErrorf(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	for _, tt := range tests {
@@ -138,7 +138,7 @@ func TestJsonHttp(t *testing.T) {
 				respBytes := doHTTPRequest(t, url, tt.encoding, tt.contentType, dr.jsonBytes, tt.expectedStatusCode)
 				if tt.err == nil {
 					tr := ptraceotlp.NewExportResponse()
-					require.NoError(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
+					require.NoErrorf(t, tr.UnmarshalJSON(respBytes), "Unable to unmarshal response to Response")
 					sink.checkData(t, dr.data, 1)
 				} else {
 					errStatus := &spb.Status{}
@@ -160,7 +160,7 @@ func TestHandleInvalidRequests(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	sink := newErrOrSinkConsumer()
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	require.NoErrorf(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	tests := []struct {
@@ -382,7 +382,7 @@ func TestProtoHttp(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
 
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	require.NoErrorf(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	for _, tt := range tests {
@@ -463,7 +463,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	// Set the buffer count to 1 to make it flush the test span immediately.
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
 
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	require.NoErrorf(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
@@ -471,25 +471,25 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			body, err := test.reqBodyFunc()
-			require.NoError(t, err, "Error creating request body: %v", err)
+			require.NoErrorf(t, err, "Error creating request body: %v", err)
 
 			req, err := http.NewRequest(http.MethodPost, url, body)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			require.NoErrorf(t, err, "Error creating trace POST request: %v", err)
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
 
 			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			require.NoErrorf(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
 			respBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
+			require.NoErrorf(t, err, "Error reading response from trace grpc-gateway")
 			exRespBytes, err := test.resBodyFunc()
-			require.NoError(t, err, "Error creating expecting response body")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
+			require.NoErrorf(t, err, "Error creating expecting response body")
+			require.NoErrorf(t, resp.Body.Close(), "Error closing response body")
 
-			require.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
-			require.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-			require.Equal(t, exRespBytes, respBytes, "Unexpected response content")
+			require.Equalf(t, test.status, resp.StatusCode, "Unexpected return status")
+			require.Equalf(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+			require.Equalf(t, exRespBytes, respBytes, "Unexpected response content")
 		})
 	}
 }
@@ -497,7 +497,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
-	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
+	require.NoErrorf(t, err, "failed to listen on %q: %v", addr, err)
 	t.Cleanup(func() {
 		assert.NoError(t, ln.Close())
 	})
@@ -511,7 +511,7 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
-	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
+	require.NoErrorf(t, err, "failed to listen on %q: %v", addr, err)
 	t.Cleanup(func() {
 		assert.NoError(t, ln.Close())
 	})

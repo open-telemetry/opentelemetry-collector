@@ -42,10 +42,10 @@ func TestScrapeControllerSettings(t *testing.T) {
 
 			err := tc.set.Validate()
 			if tc.errVal == "" {
-				assert.NoError(t, err, "Must not error")
+				assert.NoErrorf(t, err, "Must not error")
 				return
 			}
-			assert.EqualError(t, err, tc.errVal, "Must match the expected error")
+			assert.EqualErrorf(t, err, tc.errVal, "Must match the expected error")
 		})
 	}
 }

@@ -22,10 +22,10 @@ var (
 func TestWrapServerStream(t *testing.T) {
 	ctx := context.WithValue(context.TODO(), oneCtxKey, 1)
 	fake := &fakeServerStream{ctx: ctx}
-	assert.NotNil(t, fake.Context().Value(oneCtxKey), "values from fake must propagate to wrapper")
+	assert.NotNilf(t, fake.Context().Value(oneCtxKey), "values from fake must propagate to wrapper")
 	wrapped := wrapServerStream(context.WithValue(fake.Context(), otherCtxKey, 2), fake)
-	assert.NotNil(t, wrapped.Context().Value(oneCtxKey), "values from wrapper must be set")
-	assert.NotNil(t, wrapped.Context().Value(otherCtxKey), "values from wrapper must be set")
+	assert.NotNilf(t, wrapped.Context().Value(oneCtxKey), "values from wrapper must be set")
+	assert.NotNilf(t, wrapped.Context().Value(otherCtxKey), "values from wrapper must be set")
 }
 
 func TestDoubleWrapping(t *testing.T) {

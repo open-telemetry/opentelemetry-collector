@@ -71,10 +71,10 @@ func findAvailableAddress(tb testing.TB, network string) string {
 	case "tcp6":
 		host = "[::1]"
 	}
-	require.NotEmpty(tb, host, "network must be either of tcp, tcp4 or tcp6")
+	require.NotEmptyf(tb, host, "network must be either of tcp, tcp4 or tcp6")
 
 	ln, err := net.Listen("tcp", host+":0")
-	require.NoError(tb, err, "Failed to get a free local port")
+	require.NoErrorf(tb, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
 	defer func() {
@@ -92,7 +92,7 @@ func getExclusionsList(tb testing.TB, network string) []portpair {
 	case "tcp6":
 		cmdTCP = exec.Command("netsh", "interface", "ipv6", "show", "excludedportrange", "protocol=tcp")
 	}
-	require.NotZero(tb, cmdTCP, "network must be either of tcp, tcp4 or tcp6")
+	require.NotZerof(tb, cmdTCP, "network must be either of tcp, tcp4 or tcp6")
 
 	outputTCP, errTCP := cmdTCP.CombinedOutput()
 	require.NoError(tb, errTCP)

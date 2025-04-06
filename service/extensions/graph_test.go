@@ -14,8 +14,8 @@ import (
 
 func TestCycleErr(t *testing.T) {
 	err := errors.New("foo")
-	assert.Equal(t, err, cycleErr(err, nil), "cycleErr should return the error unchanged when it's unrecognized")
+	assert.Equalf(t, err, cycleErr(err, nil), "cycleErr should return the error unchanged when it's unrecognized")
 
 	var topoErr topo.Unorderable = [][]graph.Node{{}}
-	assert.Equal(t, topoErr, cycleErr(topoErr, nil), "cycleErr should return topo.Unorderable error unchanged when no cycles are found")
+	assert.Equalf(t, topoErr, cycleErr(topoErr, nil), "cycleErr should return topo.Unorderable error unchanged when no cycles are found")
 }

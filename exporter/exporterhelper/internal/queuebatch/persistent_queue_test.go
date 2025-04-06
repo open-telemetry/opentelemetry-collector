@@ -932,7 +932,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	}
 
 	// Check that the size is correct
-	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+	require.Equalf(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
 
 	// Manually set the storage to only have a small amount of free space left (needs 24).
 	newMaxSize := client.GetSizeInBytes() + 23

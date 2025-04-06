@@ -300,8 +300,8 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 		metricsAddr = promtest.GetAvailableLocalIPv6AddressPrometheus(t)
 		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
 	}
-	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
-	require.NotEmpty(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
+	require.NotZerof(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
+	require.NotEmptyf(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
 
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
@@ -394,7 +394,7 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	require.NoError(t, srvTwo.Start(context.Background()))
 
 	// check telemetry server to ensure we get a response
-	require.Eventually(t,
+	require.Eventuallyf(t,
 		func() bool {
 			//nolint:gosec
 			resp, err = http.Get(telemetryURL)
@@ -573,7 +573,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	}
 	for metricName, metricFamily := range parsed {
 		if _, ok := expectedMetrics[metricName]; !ok {
-			require.True(t, ok, "unexpected metric: %s", metricName)
+			require.Truef(t, ok, "unexpected metric: %s", metricName)
 		}
 		expectedMetrics[metricName] = true
 		if metricName == "promhttp_metric_handler_errors_total" {
@@ -581,7 +581,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		}
 		if metricName != "target_info" {
 			// require is used here so test fails with a single message.
-			require.True(
+			require.Truef(
 				t,
 				strings.HasPrefix(metricName, prefix),
 				"expected prefix %q but string starts with %q",
@@ -609,7 +609,7 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 		}
 	}
 	for k, val := range expectedMetrics {
-		require.True(t, val, "missing metric: %s", k)
+		require.Truef(t, val, "missing metric: %s", k)
 	}
 }
 
@@ -624,8 +624,8 @@ func assertZPages(t *testing.T, zpagesAddr string) {
 	testZPagePathFn := func(t *testing.T, path string) {
 		client := &http.Client{}
 		resp, err := client.Get("http://" + zpagesAddr + path)
-		require.NoError(t, err, "error retrieving zpage at %q", path)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
+		require.NoErrorf(t, err, "error retrieving zpage at %q", path)
+		assert.Equalf(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
 		assert.NoError(t, resp.Body.Close())
 	}
 

@@ -72,12 +72,12 @@ func TestCGroupReadFirstLine(t *testing.T) {
 		cgroup := NewCGroup(cgroupPath)
 
 		content, err := cgroup.readFirstLine(tt.paramName)
-		assert.Equal(t, tt.expectedContent, content, tt.name)
+		assert.Equalf(t, tt.expectedContent, content, tt.name)
 
 		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
+			assert.Errorf(t, err, tt.name)
 		} else {
-			assert.NoError(t, err, tt.name)
+			assert.NoErrorf(t, err, tt.name)
 		}
 	}
 }
@@ -120,12 +120,12 @@ func TestCGroupReadInt(t *testing.T) {
 		cgroup := NewCGroup(cgroupPath)
 
 		value, err := cgroup.readInt(tt.paramName)
-		assert.Equal(t, tt.expectedValue, value, "%s/%s", tt.name, tt.paramName)
+		assert.Equalf(t, tt.expectedValue, value, "%s/%s", tt.name, tt.paramName)
 
 		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
+			assert.Errorf(t, err, tt.name)
 		} else {
-			assert.NoError(t, err, tt.name)
+			assert.NoErrorf(t, err, tt.name)
 		}
 	}
 }

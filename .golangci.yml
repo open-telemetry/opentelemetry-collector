@@ -188,6 +188,14 @@ linters:
       disable:
         - useless-assert # FIXME when golangci-lint > 2.0.2
       enable-all: true
+      formatter:
+        # To require f-assertions (e.g. `assert.Equalf`) if format string is used, even if there are no variable-length
+        # variables, i.e. it requires `require.NoErrorf` for both these cases:
+        # - require.NoErrorf(t, err, "unexpected error")
+        # - require.NoErrorf(t, err, "unexpected error for sid: %v", sid)
+        # To understand this behavior, please read the
+        # https://github.com/Antonboom/testifylint?tab=readme-ov-file#historical-reference-of-formatter.
+        require-f-funcs: true
 
     thelper:
       benchmark:

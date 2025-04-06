@@ -140,19 +140,19 @@ func TestTelemetryInit(t *testing.T) {
 
 			for metricName, metricValue := range tt.expectedMetrics {
 				mf, present := metrics[metricName]
-				require.True(t, present, "expected metric %q was not present", metricName)
+				require.Truef(t, present, "expected metric %q was not present", metricName)
 				if metricName == "promhttp_metric_handler_errors_total" {
 					continue
 				}
-				require.Len(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
+				require.Lenf(t, mf.Metric, 1, "only one measure should exist for metric %q", metricName)
 
 				labels := make(map[string]string)
 				for _, pair := range mf.Metric[0].Label {
 					labels[pair.GetName()] = pair.GetValue()
 				}
 
-				require.Equal(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
-				require.InDelta(t, metricValue.value, mf.Metric[0].Counter.GetValue(), 0.01, "value for metric %q was different than expected", metricName)
+				require.Equalf(t, metricValue.labels, labels, "labels for metric %q was different than expected", metricName)
+				require.InDeltaf(t, metricValue.value, mf.Metric[0].Counter.GetValue(), 0.01, "value for metric %q was different than expected", metricName)
 			}
 		})
 	}
@@ -201,8 +201,8 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 			time.Sleep(2 * time.Second) // Wait before retrying
 		}
 	}
-	require.NoError(t, err, "failed to get metrics from Prometheus after %d attempts", maxRetries)
-	require.Equal(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
+	require.NoErrorf(t, err, "failed to get metrics from Prometheus after %d attempts", maxRetries)
+	require.Equalf(t, http.StatusOK, rr.StatusCode, "unexpected status code after %d attempts", maxRetries)
 	defer rr.Body.Close()
 
 	var parser expfmt.TextParser
@@ -258,42 +258,42 @@ func TestInstrumentEnabled(t *testing.T) {
 	intCnt, err := meter.Int64Counter("int64.counter")
 	require.NoError(t, err)
 	_, ok := intCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64Counter does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Int64Counter does not implement the experimental 'Enabled' method")
 
 	intUpDownCnt, err := meter.Int64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = intUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Int64UpDownCounter does not implement the experimental 'Enabled' method")
 
 	intHist, err := meter.Int64Histogram("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = intHist.(enabledInstrument)
-	assert.True(t, ok, "Int64Histogram does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Int64Histogram does not implement the experimental 'Enabled' method")
 
 	intGauge, err := meter.Int64Gauge("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = intGauge.(enabledInstrument)
-	assert.True(t, ok, "Int64Gauge does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Int64Gauge does not implement the experimental 'Enabled' method")
 
 	floatCnt, err := meter.Float64Counter("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = floatCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64Counter does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Float64Counter does not implement the experimental 'Enabled' method")
 
 	floatUpDownCnt, err := meter.Float64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = floatUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Float64UpDownCounter does not implement the experimental 'Enabled' method")
 
 	floatHist, err := meter.Float64Histogram("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = floatHist.(enabledInstrument)
-	assert.True(t, ok, "Float64Histogram does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Float64Histogram does not implement the experimental 'Enabled' method")
 
 	floatGauge, err := meter.Float64Gauge("int64.updowncounter")
 	require.NoError(t, err)
 	_, ok = floatGauge.(enabledInstrument)
-	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
+	assert.Truef(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
 }
 
 func ptr[T any](v T) *T {

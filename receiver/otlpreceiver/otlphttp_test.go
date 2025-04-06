@@ -91,7 +91,7 @@ func TestHttpRetryAfter(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, sink)
 
-	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	require.NoErrorf(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
 
 	for _, tt := range tests {

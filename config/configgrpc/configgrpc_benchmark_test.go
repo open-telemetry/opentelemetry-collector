@@ -35,19 +35,19 @@ func BenchmarkCompressors(b *testing.B) {
 		for _, compressor := range compressors {
 			fmt.Println(payload.name)
 			messageBytes, err := payload.marshaler.marshal(payload.message)
-			require.NoError(b, err, "marshal(_) returned an error")
+			require.NoErrorf(b, err, "marshal(_) returned an error")
 
 			compressedBytes, err := compress(compressor, messageBytes)
-			require.NoError(b, err, "Compressor.Compress(_) returned an error")
+			require.NoErrorf(b, err, "Compressor.Compress(_) returned an error")
 
 			name := fmt.Sprintf("%v/raw_bytes_%v/compressed_bytes_%v/compressor_%v", payload.name, len(messageBytes), len(compressedBytes), compressor.Name())
 
 			b.Run(name, func(b *testing.B) {
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					require.NoError(b, err, "marshal(_) returned an error")
+					require.NoErrorf(b, err, "marshal(_) returned an error")
 					_, err := compress(compressor, messageBytes)
-					require.NoError(b, err, "compress(_) returned an error")
+					require.NoErrorf(b, err, "compress(_) returned an error")
 				}
 			})
 		}

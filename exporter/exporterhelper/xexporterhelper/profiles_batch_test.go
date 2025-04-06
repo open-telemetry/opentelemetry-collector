@@ -292,7 +292,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i, r := range res {
-				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)
+				assert.Equalf(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), "%+v", i)
 			}
 		})
 	}

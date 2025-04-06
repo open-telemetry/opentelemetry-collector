@@ -50,5 +50,5 @@ func TestEnsureTemplatesLoaded(t *testing.T) {
 		assert.Contains(t, templateFiles, path)
 		return nil
 	}))
-	assert.Equal(t, len(templateFiles), count, "Must match the expected number of calls")
+	assert.Equalf(t, len(templateFiles), count, "Must match the expected number of calls")
 }

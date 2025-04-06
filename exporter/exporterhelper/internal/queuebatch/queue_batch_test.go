@@ -176,7 +176,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	})
 
 	// we fail to start if we get an error creating the storage client
-	require.Error(t, qb.Start(context.Background(), host), "could not get storage client")
+	require.Errorf(t, qb.Start(context.Background(), host), "could not get storage client")
 }
 
 func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {

@@ -160,7 +160,7 @@ func TestInvalidConverter(t *testing.T) {
 
 	// Call the method and expect an error
 	err := config.ParseModules()
-	require.Error(t, err, "expected an error when parsing invalid modules")
+	require.Errorf(t, err, "expected an error when parsing invalid modules")
 }
 
 func TestRelativePath(t *testing.T) {

@@ -35,8 +35,8 @@ func TestExport(t *testing.T) {
 	metricsClient := makeMetricsServiceClient(t, metricSink)
 	resp, err := metricsClient.Export(context.Background(), req)
 
-	require.NoError(t, err, "Failed to export metrics: %v", err)
-	require.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export metrics: %v", err)
+	require.NotNilf(t, resp, "The response is missing")
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -77,7 +77,7 @@ func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRP
 	addr := otlpReceiverOnGRPCServer(t, mc)
 
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "Failed to create the MetricsServiceClient: %v", err)
+	require.NoErrorf(t, err, "Failed to create the MetricsServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
 	})
@@ -87,7 +87,7 @@ func makeMetricsServiceClient(t *testing.T, mc consumer.Metrics) pmetricotlp.GRP
 
 func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	require.NoErrorf(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {
 		require.NoError(t, ln.Close())

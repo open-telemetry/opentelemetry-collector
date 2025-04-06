@@ -799,7 +799,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// and that they have observed no signals yet.
 			for pipelineID, pipelineCfg := range tt.pipelineConfigs {
 				pipeline, ok := pg.pipelines[pipelineID]
-				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
+				require.Truef(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
 				// Determine independently if the capabilities node should report MutateData as true
 				var expectMutatesData bool
@@ -913,7 +913,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range tt.pipelineConfigs {
 				pipeline, ok := pg.pipelines[pipelineID]
-				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
+				require.Truef(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
 				for _, n := range pipeline.receivers {
 					switch c := n.(type) {
@@ -1166,7 +1166,7 @@ func TestInstances(t *testing.T) {
 			var totalExpected int
 			for id, instances := range componentInstances {
 				totalExpected += tt.expectInstances[id]
-				require.Len(t, instances, tt.expectInstances[id], id.String())
+				require.Lenf(t, instances, tt.expectInstances[id], id.String())
 			}
 			totalExpected += len(tt.pipelineConfigs) * 2 // one fanout & one capabilities node per pipeline
 			require.Equal(t, totalExpected, pg.componentGraph.Nodes().Len())

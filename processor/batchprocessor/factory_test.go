@@ -17,7 +17,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
+	assert.NotNilf(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
@@ -28,16 +28,16 @@ func TestCreateProcessor(t *testing.T) {
 	creationSet := processortest.NewNopSettings(factory.Type())
 	tp, err := factory.CreateTraces(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, tp)
-	assert.NoError(t, err, "cannot create trace processor")
+	assert.NoErrorf(t, err, "cannot create trace processor")
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
 	mp, err := factory.CreateMetrics(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mp)
-	assert.NoError(t, err, "cannot create metric processor")
+	assert.NoErrorf(t, err, "cannot create metric processor")
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
 	lp, err := factory.CreateLogs(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, lp)
-	assert.NoError(t, err, "cannot create logs processor")
+	assert.NoErrorf(t, err, "cannot create logs processor")
 	assert.NoError(t, lp.Shutdown(context.Background()))
 }

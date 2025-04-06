@@ -129,10 +129,10 @@ func TestLinkSliceAll(t *testing.T) {
 
 	var c int
 	for i, v := range ms.All() {
-		assert.Equal(t, ms.At(i), v, "element should match")
+		assert.Equalf(t, ms.At(i), v, "element should match")
 		c++
 	}
-	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+	assert.Equalf(t, ms.Len(), c, "All elements should have been visited")
 }
 
 func TestLinkSlice_Sort(t *testing.T) {

@@ -929,7 +929,7 @@ func TestHttpServerHeaders(t *testing.T) {
 
 func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
-	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
+	require.NoErrorf(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	if extraHeader {
 		req.Header.Set("ExtraHeader", "foo")
@@ -938,9 +938,9 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	req.Header.Set("Access-Control-Request-Method", "POST")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending OPTIONS to http server")
+	require.NoErrorf(t, err, "Error sending OPTIONS to http server")
 	require.NotNil(t, resp.Body)
-	require.NoError(t, resp.Body.Close(), "Error closing OPTIONS response body")
+	require.NoErrorf(t, resp.Body.Close(), "Error closing OPTIONS response body")
 
 	assert.Equal(t, wantStatus, resp.StatusCode)
 
@@ -964,12 +964,12 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 
 func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
-	require.NoError(t, err, "Error creating request")
+	require.NoErrorf(t, err, "Error creating request")
 
 	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err, "Error sending request to http server")
+	require.NoErrorf(t, err, "Error sending request to http server")
 	require.NotNil(t, resp.Body)
-	require.NoError(t, resp.Body.Close(), "Error closing response body")
+	require.NoErrorf(t, resp.Body.Close(), "Error closing response body")
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -1066,7 +1066,7 @@ func TestHttpTransportOptions(t *testing.T) {
 	client, err := clientConfig.ToClient(context.Background(), &mockHost{}, settings)
 	require.NoError(t, err)
 	transport, ok := client.Transport.(*http.Transport)
-	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Truef(t, ok, "client.Transport is not an *http.Transport")
 	require.Equal(t, 100, transport.MaxIdleConns)
 	require.Equal(t, time.Duration(100), transport.IdleConnTimeout)
 	require.Equal(t, 100, transport.MaxConnsPerHost)
@@ -1080,7 +1080,7 @@ func TestHttpTransportOptions(t *testing.T) {
 	client, err = clientConfig.ToClient(context.Background(), &mockHost{}, settings)
 	require.NoError(t, err)
 	transport, ok = client.Transport.(*http.Transport)
-	require.True(t, ok, "client.Transport is not an *http.Transport")
+	require.Truef(t, ok, "client.Transport is not an *http.Transport")
 	require.Equal(t, 0, transport.MaxIdleConns)
 	require.Equal(t, time.Duration(0), transport.IdleConnTimeout)
 	require.Equal(t, 0, transport.MaxConnsPerHost)
@@ -1290,7 +1290,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 	response := &httptest.ResponseRecorder{}
 
 	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoErrorf(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-invalid")
 
 	srv.Handler.ServeHTTP(response, req)
@@ -1318,7 +1318,7 @@ func TestServerWithDecoder(t *testing.T) {
 	response := &httptest.ResponseRecorder{}
 
 	req, err := http.NewRequest(http.MethodGet, srv.Addr, bytes.NewBuffer([]byte("something")))
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoErrorf(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-else")
 
 	srv.Handler.ServeHTTP(response, req)
@@ -1355,17 +1355,17 @@ func TestServerWithDecompression(t *testing.T) {
 	defer testSrv.Close()
 
 	req, err := http.NewRequest(http.MethodGet, testSrv.URL, compressZstd(t, body))
-	require.NoError(t, err, "Error creating request: %v", err)
+	require.NoErrorf(t, err, "Error creating request: %v", err)
 
 	req.Header.Set("Content-Encoding", "zstd")
 
 	// tt
 	c := http.Client{}
 	resp, err := c.Do(req)
-	require.NoError(t, err, "Error sending request: %v", err)
+	require.NoErrorf(t, err, "Error sending request: %v", err)
 
 	_, err = io.ReadAll(resp.Body)
-	require.NoError(t, err, "Error reading response body: %v", err)
+	require.NoErrorf(t, err, "Error reading response body: %v", err)
 
 	// verifications is done mostly within the tt, but this is only a sanity check
 	// that we got into the tt handler

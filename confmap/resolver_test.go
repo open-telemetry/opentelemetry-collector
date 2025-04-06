@@ -316,7 +316,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 			}
 			require.NoError(t, err)
 			_, err = resolver.Resolve(context.Background())
-			assert.ErrorContains(t, err, tt.errMessage, tt.name)
+			assert.ErrorContainsf(t, err, tt.errMessage, tt.name)
 		})
 	}
 }

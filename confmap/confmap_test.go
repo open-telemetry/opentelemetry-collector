@@ -387,7 +387,7 @@ func newConfFromFile(tb testing.TB, fileName string) map[string]any {
 	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
 
 	var data map[string]any
-	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
+	require.NoErrorf(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
 
 	return NewFromStringMap(data).ToStringMap()
 }
