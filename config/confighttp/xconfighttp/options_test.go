@@ -55,7 +55,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 	}
 
 	spans := te.GetSpans().Snapshots()
-	assert.Len(t, spans, 1, "the request to /foobar should not be traced")
+	assert.Lenf(t, spans, 1, "the request to /foobar should not be traced")
 	assert.Equal(t, "example/path", spans[0].Name())
 }
 

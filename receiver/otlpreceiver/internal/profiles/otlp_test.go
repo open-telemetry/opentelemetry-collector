@@ -30,8 +30,8 @@ func TestExport(t *testing.T) {
 	profileSink := new(consumertest.ProfilesSink)
 	profileClient := makeProfileServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), req)
-	require.NoError(t, err, "Failed to export profile: %v", err)
-	require.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export profile: %v", err)
+	require.NotNilf(t, resp, "The response is missing")
 
 	require.Len(t, profileSink.AllProfiles(), 1)
 	assert.Equal(t, td, profileSink.AllProfiles()[0])
@@ -41,8 +41,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 	profileSink := new(consumertest.ProfilesSink)
 	profileClient := makeProfileServiceClient(t, profileSink)
 	resp, err := profileClient.Export(context.Background(), pprofileotlp.NewExportRequest())
-	require.NoError(t, err, "Failed to export profile: %v", err)
-	assert.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export profile: %v", err)
+	assert.NotNilf(t, resp, "The response is missing")
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -70,7 +70,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 func makeProfileServiceClient(t *testing.T, tc xconsumer.Profiles) pprofileotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "Failed to create the profileServiceClient: %v", err)
+	require.NoErrorf(t, err, "Failed to create the profileServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
 	})
@@ -80,7 +80,7 @@ func makeProfileServiceClient(t *testing.T, tc xconsumer.Profiles) pprofileotlp.
 
 func otlpReceiverOnGRPCServer(t *testing.T, tc xconsumer.Profiles) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	require.NoErrorf(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {
 		require.NoError(t, ln.Close())

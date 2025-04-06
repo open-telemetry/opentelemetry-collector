@@ -71,8 +71,8 @@ func TestNewCGroupSubsysFromLine(t *testing.T) {
 
 	for _, tt := range testTable {
 		subsys, err := NewCGroupSubsysFromLine(tt.line)
-		assert.Equal(t, tt.expectedSubsys, subsys, tt.name)
-		assert.NoError(t, err, tt.name)
+		assert.Equalf(t, tt.expectedSubsys, subsys, tt.name)
+		assert.NoErrorf(t, err, tt.name)
 	}
 }
 
@@ -102,7 +102,7 @@ func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 
 	for _, tt := range testTable {
 		subsys, err := NewCGroupSubsysFromLine(tt.line)
-		assert.Nil(t, subsys, tt.name)
-		assert.Equal(t, tt.expectedError, err, tt.name)
+		assert.Nilf(t, subsys, tt.name)
+		assert.Equalf(t, tt.expectedError, err, tt.name)
 	}
 }

@@ -136,7 +136,7 @@ func TestHTTPClientCompression(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
-				assert.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoErrorf(t, err, "failed to read request body: %v", err)
 				assert.Equal(t, tt.reqBody, body)
 				w.WriteHeader(http.StatusOK)
 			}))
@@ -145,7 +145,7 @@ func TestHTTPClientCompression(t *testing.T) {
 			reqBody := bytes.NewBuffer(testBody)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, reqBody)
-			require.NoError(t, err, "failed to create request to test handler")
+			require.NoErrorf(t, err, "failed to create request to test handler")
 			clientSettings := ClientConfig{
 				Endpoint:          srv.URL,
 				Compression:       tt.encoding,
@@ -170,7 +170,7 @@ func TestHTTPClientCompression(t *testing.T) {
 
 			_, err = io.ReadAll(res.Body)
 			require.NoError(t, err)
-			require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+			require.NoErrorf(t, res.Body.Close(), "failed to close request body: %v", err)
 		})
 	}
 }
@@ -184,7 +184,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 			return
 		}
 
-		assert.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoErrorf(t, err, "failed to read request body: %v", err)
 		assert.Equal(t, "decompressed body", string(body))
 		w.WriteHeader(http.StatusOK)
 	})
@@ -198,16 +198,16 @@ func TestHTTPCustomDecompression(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	req, err := http.NewRequest(http.MethodGet, srv.URL, bytes.NewBuffer([]byte("123decompressed body")))
-	require.NoError(t, err, "failed to create request to test handler")
+	require.NoErrorf(t, err, "failed to create request to test handler")
 	req.Header.Set("Content-Encoding", "custom-encoding")
 
 	client := srv.Client()
 	res, err := client.Do(req)
 	require.NoError(t, err)
 
-	assert.Equal(t, http.StatusOK, res.StatusCode, "test handler returned unexpected status code ")
+	assert.Equalf(t, http.StatusOK, res.StatusCode, "test handler returned unexpected status code ")
 	_, err = io.ReadAll(res.Body)
-	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+	require.NoErrorf(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
 func TestHTTPContentDecompressionHandler(t *testing.T) {
@@ -315,24 +315,24 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 					return
 				}
 
-				assert.NoError(t, err, "failed to read request body: %v", err)
+				assert.NoErrorf(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
 			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, noDecoders))
 			t.Cleanup(srv.Close)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)
-			require.NoError(t, err, "failed to create request to test handler")
+			require.NoErrorf(t, err, "failed to create request to test handler")
 			req.Header.Set("Content-Encoding", tt.encoding)
 
 			client := srv.Client()
 			res, err := client.Do(req)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.respCode, res.StatusCode, "test handler returned unexpected status code ")
+			assert.Equalf(t, tt.respCode, res.StatusCode, "test handler returned unexpected status code ")
 			if tt.respBody != "" {
 				body, err := io.ReadAll(res.Body)
-				require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+				require.NoErrorf(t, res.Body.Close(), "failed to close request body: %v", err)
 				assert.Equal(t, tt.respBody, string(body))
 			}
 		})
@@ -344,13 +344,13 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		body, err := io.ReadAll(r.Body)
-		assert.NoError(t, err, "failed to read request body: %v", err)
+		assert.NoErrorf(t, err, "failed to read request body: %v", err)
 		assert.Equal(t, compressedGzipBody.Bytes(), body)
 	}))
 	defer srv.Close()
 
 	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
-	require.NoError(t, err, "failed to create request to test handler")
+	require.NoErrorf(t, err, "failed to create request to test handler")
 
 	client := srv.Client()
 	compressionParams := newCompressionParams(gzip.DefaultCompression)
@@ -361,7 +361,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 
 	_, err = io.ReadAll(res.Body)
 	require.NoError(t, err)
-	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+	require.NoErrorf(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
 func TestHTTPContentCompressionCopyError(t *testing.T) {
@@ -416,7 +416,7 @@ func TestOverrideCompressionList(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	req, err := http.NewRequest(http.MethodGet, srv.URL, compressSnappy(t, []byte("123decompressed body")))
-	require.NoError(t, err, "failed to create request to test handler")
+	require.NoErrorf(t, err, "failed to create request to test handler")
 	req.Header.Set("Content-Encoding", "snappy")
 
 	client := srv.Client()
@@ -426,9 +426,9 @@ func TestOverrideCompressionList(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify
-	assert.Equal(t, http.StatusBadRequest, res.StatusCode, "test handler returned unexpected status code ")
+	assert.Equalf(t, http.StatusBadRequest, res.StatusCode, "test handler returned unexpected status code ")
 	_, err = io.ReadAll(res.Body)
-	require.NoError(t, res.Body.Close(), "failed to close request body: %v", err)
+	require.NoErrorf(t, res.Body.Close(), "failed to close request body: %v", err)
 }
 
 func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
@@ -473,7 +473,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			h := httpContentDecompressor(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					n, err := io.Copy(io.Discard, r.Body)
-					assert.Equal(t, int64(1024), n, "Must have only read the limited value of bytes")
+					assert.Equalf(t, int64(1024), n, "Must have only read the limited value of bytes")
 					assert.EqualError(t, err, "http: request body too large")
 					w.WriteHeader(http.StatusBadRequest)
 				}),
@@ -484,7 +484,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			)
 
 			payload := tc.compress(t, make([]byte, 2*1024)) // 2KB uncompressed payload
-			assert.NotEmpty(t, payload.Bytes(), "Must have data available")
+			assert.NotEmptyf(t, payload.Bytes(), "Must have data available")
 
 			req := httptest.NewRequest(http.MethodPost, "/", payload)
 			req.Header.Set("Content-Encoding", tc.encoding)
@@ -493,8 +493,8 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 
 			h.ServeHTTP(resp, req)
 
-			assert.Equal(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
-			assert.Empty(t, resp.Body.String(), "Must match the returned string")
+			assert.Equalf(t, http.StatusBadRequest, resp.Code, "Must match the expected code")
+			assert.Emptyf(t, resp.Body.String(), "Must match the returned string")
 		})
 	}
 }

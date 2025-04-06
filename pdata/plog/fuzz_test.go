@@ -21,16 +21,16 @@ func FuzzUnmarshalJsonLogs(f *testing.F) {
 		}
 		m1 := &JSONMarshaler{}
 		b1, err := m1.MarshalLogs(ld1)
-		require.NoError(t, err, "failed to marshal valid struct")
+		require.NoErrorf(t, err, "failed to marshal valid struct")
 
 		u2 := &JSONUnmarshaler{}
 		ld2, err := u2.UnmarshalLogs(b1)
-		require.NoError(t, err, "failed to unmarshal valid bytes")
+		require.NoErrorf(t, err, "failed to unmarshal valid bytes")
 		m2 := &JSONMarshaler{}
 		b2, err := m2.MarshalLogs(ld2)
-		require.NoError(t, err, "failed to marshal valid struct")
+		require.NoErrorf(t, err, "failed to marshal valid struct")
 
-		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
+		require.Truef(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }
 
@@ -43,15 +43,15 @@ func FuzzUnmarshalPBLogs(f *testing.F) {
 		}
 		m1 := &ProtoMarshaler{}
 		b1, err := m1.MarshalLogs(ld1)
-		require.NoError(t, err, "failed to marshal valid struct")
+		require.NoErrorf(t, err, "failed to marshal valid struct")
 
 		u2 := &ProtoUnmarshaler{}
 		ld2, err := u2.UnmarshalLogs(b1)
-		require.NoError(t, err, "failed to unmarshal valid bytes")
+		require.NoErrorf(t, err, "failed to unmarshal valid bytes")
 		m2 := &ProtoMarshaler{}
 		b2, err := m2.MarshalLogs(ld2)
-		require.NoError(t, err, "failed to marshal valid struct")
+		require.NoErrorf(t, err, "failed to marshal valid struct")
 
-		require.True(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
+		require.Truef(t, bytes.Equal(b1, b2), "%s. \nexpected %d but got %d\n", unexpectedBytes, b1, b2)
 	})
 }

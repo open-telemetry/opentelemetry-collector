@@ -76,8 +76,8 @@ func TestNewMountPointFromLine(t *testing.T) {
 
 	for _, tt := range testTable {
 		mountPoint, err := NewMountPointFromLine(tt.line)
-		assert.Equal(t, tt.expected, mountPoint, tt.name)
-		assert.NoError(t, err, tt.name)
+		assert.Equalf(t, tt.expected, mountPoint, tt.name)
+		assert.NoErrorf(t, err, tt.name)
 	}
 }
 
@@ -90,8 +90,8 @@ func TestNewMountPointFromLineErr(t *testing.T) {
 
 	for i, line := range linesWithInvalidIDs {
 		mountPoint, err := NewMountPointFromLine(line)
-		assert.Nil(t, mountPoint, "[%d] %q", i, line)
-		require.Error(t, err, line)
+		assert.Nilf(t, mountPoint, "[%d] %q", i, line)
+		require.Errorf(t, err, line)
 	}
 
 	linesWithInvalidFields := []string{
@@ -106,8 +106,8 @@ func TestNewMountPointFromLineErr(t *testing.T) {
 		mountPoint, err := NewMountPointFromLine(line)
 		errExpected := mountPointFormatInvalidError{line}
 
-		assert.Nil(t, mountPoint, "[%d] %q", i, line)
-		assert.Equal(t, errExpected, err, "[%d] %q", i, line)
+		assert.Nilf(t, mountPoint, "[%d] %q", i, line)
+		assert.Equalf(t, errExpected, err, "[%d] %q", i, line)
 	}
 }
 
@@ -142,8 +142,8 @@ func TestMountPointTranslate(t *testing.T) {
 
 	for _, tt := range testTable {
 		path, err := cgroupMountPoint.Translate(tt.pathToTranslate)
-		assert.Equal(t, tt.pathTranslated, path, tt.name)
-		assert.NoError(t, err, tt.name)
+		assert.Equalf(t, tt.pathTranslated, path, tt.name)
+		assert.NoErrorf(t, err, tt.name)
 	}
 }
 
@@ -170,8 +170,8 @@ func TestMountPointTranslateError(t *testing.T) {
 			path:       path,
 		}
 
-		assert.Empty(t, translated, "inaccessiblePaths[%d] == %q", i, path)
-		assert.Equal(t, errExpected, err, "inaccessiblePaths[%d] == %q", i, path)
+		assert.Emptyf(t, translated, "inaccessiblePaths[%d] == %q", i, path)
+		assert.Equalf(t, errExpected, err, "inaccessiblePaths[%d] == %q", i, path)
 	}
 
 	relPaths := []string{
@@ -183,7 +183,7 @@ func TestMountPointTranslateError(t *testing.T) {
 	for i, path := range relPaths {
 		translated, err := cgroupMountPoint.Translate(path)
 
-		assert.Empty(t, translated, "relPaths[%d] == %q", i, path)
-		assert.Error(t, err, path)
+		assert.Emptyf(t, translated, "relPaths[%d] == %q", i, path)
+		assert.Errorf(t, err, path)
 	}
 }

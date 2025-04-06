@@ -143,10 +143,10 @@ func TestSliceAll(t *testing.T) {
 
 	var c int
 	for i, v := range es.All() {
-		assert.Equal(t, es.At(i), v, "element should match")
+		assert.Equalf(t, es.At(i), v, "element should match")
 		c++
 	}
-	assert.Equal(t, es.Len(), c, "All elements should have been visited")
+	assert.Equalf(t, es.Len(), c, "All elements should have been visited")
 }
 
 func TestInvalidSlice(t *testing.T) {

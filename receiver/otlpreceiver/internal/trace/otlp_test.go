@@ -34,8 +34,8 @@ func TestExport(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
 	resp, err := traceClient.Export(context.Background(), req)
-	require.NoError(t, err, "Failed to export trace: %v", err)
-	require.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export trace: %v", err)
+	require.NotNilf(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
 	assert.Equal(t, td, traceSink.AllTraces()[0])
@@ -45,8 +45,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
 	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewExportRequest())
-	require.NoError(t, err, "Failed to export trace: %v", err)
-	assert.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export trace: %v", err)
+	assert.NotNilf(t, resp, "The response is missing")
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -74,7 +74,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, tc)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
+	require.NoErrorf(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
 	})
@@ -84,7 +84,7 @@ func makeTraceServiceClient(t *testing.T, tc consumer.Traces) ptraceotlp.GRPCCli
 
 func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	require.NoErrorf(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {
 		require.NoError(t, ln.Close())

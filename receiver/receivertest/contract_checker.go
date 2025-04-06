@@ -470,7 +470,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 			// It is a permanent error, which means we need to drop the data.
 			// Remember the ids of dropped elements.
 			duplicates := m.droppedIDs.merge(ids)
-			require.Empty(m.t, duplicates, "elements that were dropped previously were sent again")
+			require.Emptyf(m.t, duplicates, "elements that were dropped previously were sent again")
 		} else {
 			// It is a non-permanent error. Don't add it to the drop list. Remember the number of
 			// failures to print at the end of the test.
@@ -482,7 +482,7 @@ func (m *mockConsumer) consume(ids idSet) error {
 
 	// The decision is a success. Remember the ids of the data in the accepted list.
 	duplicates := m.acceptedIDs.merge(ids)
-	require.Empty(m.t, duplicates, "elements that were accepted previously were sent again")
+	require.Emptyf(m.t, duplicates, "elements that were accepted previously were sent again")
 	return nil
 }
 
