@@ -14,21 +14,20 @@ type Partitioner[T any] interface {
 	GetKey(context.Context, T) string
 }
 
-type GetKeyFunc[T any] func(context.Context, T) string
+type getKeyFunc[T any] func(context.Context, T) string
 
-func (f GetKeyFunc[T]) GetKey(ctx context.Context, t T) string {
+func (f getKeyFunc[T]) GetKey(ctx context.Context, t T) string {
 	return f(ctx, t)
 }
 
 type BasePartitioner struct {
-	GetKeyFunc[request.Request]
+	getKeyFunc[request.Request]
 }
 
 func NewPartitioner(
-	getKeyFunc func(ctx context.Context,
-		req request.Request) string,
+	getKeyFunc getKeyFunc[request.Request],
 ) Partitioner[request.Request] {
 	return &BasePartitioner{
-		GetKeyFunc: getKeyFunc,
+		getKeyFunc: getKeyFunc,
 	}
 }

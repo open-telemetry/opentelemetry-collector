@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -16,7 +17,7 @@ import (
 
 func TestPartitioner_GetKeyFromRequest(t *testing.T) {
 	partitioner := NewPartitioner(func(_ context.Context, req request.Request) string {
-		return strconv.Itoa(req.ItemsCount())
+		return strconv.Itoa(req.(*requesttest.FakeRequest).ItemsCount())
 	})
 
 	require.Equal(t, "2", partitioner.GetKey(context.Background(), &requesttest.FakeRequest{Items: 2}))
@@ -24,7 +25,7 @@ func TestPartitioner_GetKeyFromRequest(t *testing.T) {
 	require.Equal(t, "4", partitioner.GetKey(context.Background(), &requesttest.FakeRequest{Items: 4}))
 }
 
-func g(t *testing.T) {
+func TestPartitioner_GetKeyFromContext(t *testing.T) {
 	partitioner := NewPartitioner(func(ctx context.Context, _ request.Request) string {
 		return client.FromContext(ctx).Metadata.Get("metadata_key")[0]
 	})
