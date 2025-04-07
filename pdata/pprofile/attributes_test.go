@@ -44,45 +44,61 @@ func TestFromAttributeIndices(t *testing.T) {
 	assert.Equal(t, attrs.AsRaw(), m)
 }
 
-func TestPutAttribute(t *testing.T) {
+func testPutAttribute(t *testing.T, record attributable) {
 	table := NewAttributeTableSlice()
-	indices := NewProfile()
 
 	// Put a first attribute.
-	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute, same key, same value.
 	// This should be a no-op.
-	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 1, table.Len())
-	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute, same key, different value.
 	// This updates the index and adds to the table.
 	fmt.Printf("test\n")
-	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world2")))
+	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world2")))
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{1}, indices.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{1}, record.AttributeIndices().AsRaw())
 
 	// Put an attribute that already exists in the table.
 	// This updates the index and does not add to the table.
-	require.NoError(t, PutAttribute(table, indices, "hello", pcommon.NewValueStr("world")))
+	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
 	assert.Equal(t, 2, table.Len())
-	assert.Equal(t, []int32{0}, indices.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
 	// Put a new attribute.
 	// This adds an index and adds to the table.
-	require.NoError(t, PutAttribute(table, indices, "good", pcommon.NewValueStr("day")))
+	require.NoError(t, PutAttribute(table, record, "good", pcommon.NewValueStr("day")))
 	assert.Equal(t, 3, table.Len())
-	assert.Equal(t, []int32{0, 2}, indices.AttributeIndices().AsRaw())
+	assert.Equal(t, []int32{0, 2}, record.AttributeIndices().AsRaw())
 
 	// Add multiple distinct attributes.
 	for i := range 100 {
-		require.NoError(t, PutAttribute(table, indices, fmt.Sprintf("key_%d", i), pcommon.NewValueStr("day")))
+		require.NoError(t, PutAttribute(table, record, fmt.Sprintf("key_%d", i), pcommon.NewValueStr("day")))
 		assert.Equal(t, i+4, table.Len())
-		assert.Equal(t, i+3, indices.AttributeIndices().Len())
+		assert.Equal(t, i+3, record.AttributeIndices().Len())
+	}
+}
+
+func TestPutAttribute(t *testing.T) {
+	// Test every existing record type.
+	for _, tt := range []struct {
+		name string
+		attr attributable
+	}{
+		{"Profile", NewProfile()},
+		{"Sample", NewSample()},
+		{"Mapping", NewMapping()},
+		{"Location", NewLocation()},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			testPutAttribute(t, tt.attr)
+		})
 	}
 }
 
