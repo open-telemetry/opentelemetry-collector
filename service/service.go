@@ -538,8 +538,8 @@ func ptr[T any](v T) *T {
 	return &v
 }
 
-// ValidateGraph verifies the graph by calling the internal graph.Build.
-func ValidateGraph(ctx context.Context, set Settings, cfg Config) error {
+// Validate verifies the graph by calling the internal graph.Build.
+func Validate(ctx context.Context, set Settings, cfg Config) error {
 	tel := component.TelemetrySettings{
 		Logger:         zap.NewNop(),
 		TracerProvider: nooptrace.NewTracerProvider(),

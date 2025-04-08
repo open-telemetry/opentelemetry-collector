@@ -897,7 +897,7 @@ func TestValidateGraph(t *testing.T) {
 				Pipelines: tc.pipelinesCfg,
 			}
 
-			err := ValidateGraph(context.Background(), settings, cfg)
+			err := Validate(context.Background(), settings, cfg)
 			if tc.expectedError == "" {
 				require.NoError(t, err)
 			} else {

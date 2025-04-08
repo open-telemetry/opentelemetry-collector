@@ -276,7 +276,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return err
 	}
 
-	return service.ValidateGraph(ctx, service.Settings{
+	return service.Validate(ctx, service.Settings{
 		BuildInfo:           col.set.BuildInfo,
 		ReceiversConfigs:    cfg.Receivers,
 		ReceiversFactories:  factories.Receivers,
