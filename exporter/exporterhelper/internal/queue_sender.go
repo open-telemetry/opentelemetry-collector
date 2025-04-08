@@ -6,91 +6,159 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 import (
 	"context"
 	"errors"
+	"fmt"
+	"math"
+	"runtime"
+	"time"
 
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/batcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"exporter.UsePullingBasedExporterQueueBatcher",
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.115.0"),
-	featuregate.WithRegisterToVersion("v0.121.0"),
-	featuregate.WithRegisterDescription("if set to true, turns on the pulling-based exporter queue bathcer"),
-)
+// QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
+type QueueBatchSettings[T any] struct {
+	Encoding queuebatch.Encoding[T]
+	Sizers   map[request.SizerType]request.Sizer[T]
+}
 
-type QueueSender struct {
-	queue   exporterqueue.Queue[request.Request]
-	batcher component.Component
+// NewDefaultQueueConfig returns the default config for queuebatch.Config.
+// By default, the queue stores 1000 requests of telemetry and is non-blocking when full.
+func NewDefaultQueueConfig() queuebatch.Config {
+	return queuebatch.Config{
+		Enabled:      true,
+		Sizer:        request.SizerTypeRequests,
+		NumConsumers: 10,
+		// By default, batches are 8192 spans, for a total of up to 8 million spans in the queue
+		// This can be estimated at 1-4 GB worth of maximum memory usage
+		// This default is probably still too high, and may be adjusted further down in a future release
+		QueueSize:       1_000,
+		BlockOnOverflow: false,
+		StorageID:       nil,
+		Batch:           nil,
+	}
 }
 
 func NewQueueSender(
-	qSet exporterqueue.Settings[request.Request],
-	qCfg exporterqueue.Config,
-	bCfg exporterbatcher.Config,
+	qSet queuebatch.Settings[request.Request],
+	qCfg queuebatch.Config,
+	bCfg BatcherConfig,
 	exportFailureMessage string,
-	next Sender[request.Request],
-) (*QueueSender, error) {
+	next sender.Sender[request.Request],
+) (sender.Sender[request.Request], error) {
 	exportFunc := func(ctx context.Context, req request.Request) error {
 		// Have to read the number of items before sending the request since the request can
 		// be modified by the downstream components like the batcher.
 		itemsCount := req.ItemsCount()
-		err := next.Send(ctx, req)
-		if err != nil {
-			qSet.ExporterSettings.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
-				zap.Error(err), zap.Int("dropped_items", itemsCount))
+		if errSend := next.Send(ctx, req); errSend != nil {
+			qSet.Telemetry.Logger.Error("Exporting failed. Dropping data."+exportFailureMessage,
+				zap.Error(errSend), zap.Int("dropped_items", itemsCount))
+			return errSend
 		}
-		return err
+		return nil
 	}
 
-	b, err := batcher.NewBatcher(bCfg, exportFunc, qCfg.NumConsumers)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
+	// TODO: Remove this when WithBatcher is removed.
 	if bCfg.Enabled {
-		qCfg.NumConsumers = 1
+		return queuebatch.NewQueueBatchLegacyBatcher(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 	}
-	q, err := newObsQueue(qSet, exporterqueue.NewQueue(context.Background(), qSet, qCfg, b.Consume))
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueSender{queue: q, batcher: b}, nil
+	return queuebatch.NewQueueBatch(qSet, newQueueBatchConfig(qCfg, bCfg), exportFunc)
 }
 
-// Start is invoked during service startup.
-func (qs *QueueSender) Start(ctx context.Context, host component.Host) error {
-	if err := qs.queue.Start(ctx, host); err != nil {
-		return err
+func newQueueBatchConfig(qCfg queuebatch.Config, bCfg BatcherConfig) queuebatch.Config {
+	// Overwrite configuration with the legacy BatcherConfig configured via WithBatcher.
+	// TODO: Remove this when WithBatcher is removed.
+	if !bCfg.Enabled {
+		return qCfg
 	}
 
-	return qs.batcher.Start(ctx, host)
+	// User configured queueing, copy all config.
+	if qCfg.Enabled {
+		// Overwrite configuration with the legacy BatcherConfig configured via WithBatcher.
+		// TODO: Remove this when WithBatcher is removed.
+		qCfg.Batch = &queuebatch.BatchConfig{
+			FlushTimeout: bCfg.FlushTimeout,
+			MinSize:      bCfg.MinSize,
+			MaxSize:      bCfg.MaxSize,
+		}
+		return qCfg
+	}
+
+	// This can happen only if the deprecated way to configure batching is used with a "disabled" queue.
+	// TODO: Remove this when WithBatcher is removed.
+	return queuebatch.Config{
+		Enabled:         true,
+		WaitForResult:   true,
+		Sizer:           request.SizerTypeRequests,
+		QueueSize:       math.MaxInt,
+		NumConsumers:    runtime.NumCPU(),
+		BlockOnOverflow: true,
+		StorageID:       nil,
+		Batch: &queuebatch.BatchConfig{
+			FlushTimeout: bCfg.FlushTimeout,
+			MinSize:      bCfg.MinSize,
+			MaxSize:      bCfg.MaxSize,
+		},
+	}
 }
 
-// Shutdown is invoked during service shutdown.
-func (qs *QueueSender) Shutdown(ctx context.Context) error {
-	// Stop the queue and batcher, this will drain the queue and will call the retry (which is stopped) that will only
-	// try once every request.
-	return errors.Join(qs.queue.Shutdown(ctx), qs.batcher.Shutdown(ctx))
+// BatcherConfig defines a configuration for batching requests based on a timeout and a minimum number of items.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+type BatcherConfig struct {
+	// Enabled indicates whether to not enqueue batches before sending to the consumerSender.
+	Enabled bool `mapstructure:"enabled"`
+
+	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
+	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	// SizeConfig sets the size limits for a batch.
+	SizeConfig `mapstructure:",squash"`
 }
 
-// Send implements the requestSender interface. It puts the request in the queue.
-func (qs *QueueSender) Send(ctx context.Context, req request.Request) error {
-	return qs.queue.Offer(ctx, req)
+// SizeConfig sets the size limits for a batch.
+type SizeConfig struct {
+	Sizer request.SizerType `mapstructure:"sizer"`
+
+	// MinSize defines the configuration for the minimum size of a batch.
+	MinSize int64 `mapstructure:"min_size"`
+	// MaxSize defines the configuration for the maximum size of a batch.
+	MaxSize int64 `mapstructure:"max_size"`
 }
 
-type MockHost struct {
-	component.Host
-	Ext map[component.ID]component.Component
+func (c *BatcherConfig) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+
+	if c.FlushTimeout <= 0 {
+		return errors.New("`flush_timeout` must be greater than zero")
+	}
+
+	if c.Sizer != request.SizerTypeItems {
+		return fmt.Errorf("unsupported sizer type: %q", c.Sizer)
+	}
+	if c.MinSize < 0 {
+		return errors.New("`min_size` must be greater than or equal to zero")
+	}
+	if c.MaxSize < 0 {
+		return errors.New("`max_size` must be greater than or equal to zero")
+	}
+	if c.MaxSize != 0 && c.MaxSize < c.MinSize {
+		return errors.New("`max_size` must be greater than or equal to mix_size")
+	}
+	return nil
 }
 
-func (nh *MockHost) GetExtensions() map[component.ID]component.Component {
-	return nh.Ext
+func NewDefaultBatcherConfig() BatcherConfig {
+	return BatcherConfig{
+		Enabled:      true,
+		FlushTimeout: 200 * time.Millisecond,
+		SizeConfig: SizeConfig{
+			Sizer:   request.SizerTypeItems,
+			MinSize: 8192,
+		},
+	}
 }

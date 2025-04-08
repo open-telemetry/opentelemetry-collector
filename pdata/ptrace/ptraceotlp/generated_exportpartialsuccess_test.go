@@ -57,7 +57,7 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
-	assert.Equal(t, "", ms.ErrorMessage())
+	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly

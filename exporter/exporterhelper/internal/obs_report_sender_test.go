@@ -19,7 +19,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -36,10 +38,11 @@ func TestExportTraceDataOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	var exporterErr error
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
-		newNoopExportSender(),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -48,11 +51,12 @@ func TestExportTraceDataOp(t *testing.T) {
 		{items: 14, err: errFake},
 	}
 	for i := range params {
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, ExportErr: params[i].err}), params[i].err)
+		exporterErr = params[i].err
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentSpans, failedToSendSpans int
 	for i, span := range spans {
@@ -102,10 +106,11 @@ func TestExportMetricsOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	var exporterErr error
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
-		newNoopExportSender(),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -114,11 +119,12 @@ func TestExportMetricsOp(t *testing.T) {
 		{items: 23, err: errFake},
 	}
 	for i := range params {
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, ExportErr: params[i].err}), params[i].err)
+		exporterErr = params[i].err
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentMetricPoints, failedToSendMetricPoints int
 	for i, span := range spans {
@@ -168,10 +174,11 @@ func TestExportLogsOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	var exporterErr error
 	obsrep, err := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
-		newNoopExportSender(),
+		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
 	)
 	require.NoError(t, err)
 
@@ -180,11 +187,12 @@ func TestExportLogsOp(t *testing.T) {
 		{items: 23, err: errFake},
 	}
 	for i := range params {
-		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items, ExportErr: params[i].err}), params[i].err)
+		exporterErr = params[i].err
+		require.ErrorIs(t, obsrep.Send(parentCtx, &requesttest.FakeRequest{Items: params[i].items}), params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var sentLogRecords, failedToSendLogRecords int
 	for i, span := range spans {

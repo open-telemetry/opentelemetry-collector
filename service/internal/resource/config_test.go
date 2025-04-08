@@ -100,7 +100,7 @@ func TestNew(t *testing.T) {
 				delete(tt.want, "service.instance.id")
 			}
 
-			assert.EqualValues(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	{{- if or isReceiver isScraper }}
+	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
 	{{- end }}
 	"go.uber.org/zap"
@@ -62,7 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-        	{{- if or isReceiver isScraper }}
+        	{{- if or isReceiver isScraper isConnector }}
             settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
 	        {{- end }}
 			settings.Logger = zap.New(observedZapCore)
@@ -166,7 +166,11 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
 					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+					{{- if len $metric.Unit}}
 					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+					{{- else }}
+					assert.Empty(t, ms.At(i).Unit())
+					{{- end }}
 					{{- if $metric.Data.HasMonotonic }}
 					assert.{{- if $metric.Data.Monotonic }}True{{ else }}False{{ end }}(t, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
 					{{- end }}
@@ -188,8 +192,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ok)
 					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
 					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else }}
+					{{- else if eq (attributeInfo $attr).Type.String "Int"}}
 					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- else }}
+					assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
 					{{- end }}
 					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
 					{{- end }}

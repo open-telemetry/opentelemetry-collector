@@ -4,18 +4,24 @@
 package extensionauthtest
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/extension/extensionauth"
 )
 
 func TestErrorClient(t *testing.T) {
-	client, err := NewErrorClient()
-	require.NoError(t, err)
+	client := NewErrorClient(errors.New("error"))
 
-	_, err = client.RoundTripper(nil)
+	httpClient, ok := client.(extensionauth.HTTPClient)
+	require.True(t, ok)
+	_, err := httpClient.RoundTripper(nil)
 	require.Error(t, err)
 
-	_, err = client.PerRPCCredentials()
+	grpcClient, ok := client.(extensionauth.GRPCClient)
+	require.True(t, ok)
+	_, err = grpcClient.PerRPCCredentials()
 	require.Error(t, err)
 }

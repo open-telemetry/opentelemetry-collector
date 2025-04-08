@@ -49,7 +49,7 @@ func TestScrapeLogsDataOp(t *testing.T) {
 	}
 
 	spans := tel.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var scrapedLogRecords, erroredLogRecords int
 	for i, span := range spans {

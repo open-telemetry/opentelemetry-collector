@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/otlpexporter/internal/metadata"
@@ -32,9 +31,6 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterbatcher.NewDefaultConfig()
-	batcherCfg.Enabled = false
-
 	clientCfg := *configgrpc.NewDefaultClientConfig()
 	// Default to gzip compression
 	clientCfg.Compression = configcompression.TypeGzip
@@ -48,7 +44,6 @@ func createDefaultConfig() component.Config {
 		TimeoutConfig: exporterhelper.NewDefaultTimeoutConfig(),
 		RetryConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueConfig:   exporterhelper.NewDefaultQueueConfig(),
-		BatcherConfig: batcherCfg,
 		ClientConfig:  clientCfg,
 	}
 }
@@ -66,7 +61,7 @@ func createTraces(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -85,7 +80,7 @@ func createMetrics(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -104,7 +99,7 @@ func createLogs(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)
@@ -123,7 +118,7 @@ func createProfilesExporter(
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
 		exporterhelper.WithRetry(oCfg.RetryConfig),
 		exporterhelper.WithQueue(oCfg.QueueConfig),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck // SA1019
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
 	)

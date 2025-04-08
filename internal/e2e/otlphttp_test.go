@@ -117,7 +117,7 @@ func TestTraceRoundTrip(t *testing.T) {
 			}, 1*time.Second, 10*time.Millisecond)
 			allTraces := sink.AllTraces()
 			require.Len(t, allTraces, 1)
-			assert.EqualValues(t, td, allTraces[0])
+			assert.Equal(t, td, allTraces[0])
 		})
 	}
 }
@@ -170,7 +170,7 @@ func TestMetricsRoundTrip(t *testing.T) {
 			}, 1*time.Second, 10*time.Millisecond)
 			allMetrics := sink.AllMetrics()
 			require.Len(t, allMetrics, 1)
-			assert.EqualValues(t, md, allMetrics[0])
+			assert.Equal(t, md, allMetrics[0])
 		})
 	}
 }
@@ -223,7 +223,7 @@ func TestLogsRoundTrip(t *testing.T) {
 			}, 1*time.Second, 10*time.Millisecond)
 			allLogs := sink.AllLogs()
 			require.Len(t, allLogs, 1)
-			assert.EqualValues(t, md, allLogs[0])
+			assert.Equal(t, md, allLogs[0])
 		})
 	}
 }
@@ -319,7 +319,7 @@ func startLogs(t *testing.T, baseURL string, overrideURL string) exporter.Logs {
 
 func createConfig(baseURL string, defaultCfg component.Config) *otlphttpexporter.Config {
 	cfg := defaultCfg.(*otlphttpexporter.Config)
-	cfg.Endpoint = baseURL
+	cfg.ClientConfig.Endpoint = baseURL
 	cfg.QueueConfig.Enabled = false
 	cfg.RetryConfig.Enabled = false
 	return cfg
@@ -351,7 +351,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.Endpoint = addr
+	cfg.HTTP.ServerConfig.Endpoint = addr
 	cfg.GRPC = nil
 	return cfg
 }

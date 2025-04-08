@@ -257,7 +257,7 @@ func (gcs *ClientConfig) ToClientConn(
 	if err != nil {
 		return nil, err
 	}
-	//nolint:staticcheck //SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
+	//nolint:staticcheck // SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
 	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
@@ -322,7 +322,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}

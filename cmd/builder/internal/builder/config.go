@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	defaultBetaOtelColVersion   = "v0.121.0"
-	defaultStableOtelColVersion = "v1.27.0"
+	defaultBetaOtelColVersion   = "v0.123.0"
+	defaultStableOtelColVersion = "v1.29.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
@@ -65,12 +65,10 @@ type ConfResolver struct {
 
 // Distribution holds the parameters for the final binary
 type Distribution struct {
-	Module      string `mapstructure:"module"`
-	Name        string `mapstructure:"name"`
-	Go          string `mapstructure:"go"`
-	Description string `mapstructure:"description"`
-	// Deprecated: [v0.113.0] only here to return a detailed error and not failing during unmarshalling.
-	OtelColVersion   string `mapstructure:"otelcol_version"`
+	Module           string `mapstructure:"module"`
+	Name             string `mapstructure:"name"`
+	Go               string `mapstructure:"go"`
+	Description      string `mapstructure:"description"`
 	OutputPath       string `mapstructure:"output_path"`
 	Version          string `mapstructure:"version"`
 	BuildTags        string `mapstructure:"build_tags"`
@@ -137,9 +135,6 @@ func NewDefaultConfig() (*Config, error) {
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {
-	if c.Distribution.OtelColVersion != "" {
-		return errors.New("`otelcol_version` has been removed. To build with an older Collector API, use an older (aligned) builder version instead")
-	}
 	return multierr.Combine(
 		validateModules("extension", c.Extensions),
 		validateModules("receiver", c.Receivers),

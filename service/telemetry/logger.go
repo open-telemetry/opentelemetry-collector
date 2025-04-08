@@ -5,9 +5,13 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"go.opentelemetry.io/contrib/bridges/otelzap"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
@@ -39,40 +43,65 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	var lp log.LoggerProvider
 
-	if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
-		lp = set.SDK.LoggerProvider()
+	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
-		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
-				c,
-				otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
-					otelzap.WithLoggerProvider(lp),
-				),
-			), zap.NewAtomicLevelAt(cfg.Logs.Level))
-			if err != nil {
-				panic(err)
+			if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
+				lp = set.SDK.LoggerProvider()
+
+				core = componentattribute.NewOTelTeeCoreWithAttributes(
+					core,
+					lp,
+					"go.opentelemetry.io/collector/service/telemetry",
+					cfg.Logs.Level,
+					attribute.NewSet(),
+				)
 			}
+
+			if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+				core = componentattribute.NewWrapperCoreWithAttributes(core, func(c zapcore.Core) zapcore.Core {
+					return newSampledCore(c, cfg.Logs.Sampling)
+				})
+			}
+
 			return core
 		}))
-	}
+	} else {
+		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
+			lp = set.SDK.LoggerProvider()
 
-	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-		logger = newSampledLogger(logger, cfg.Logs.Sampling)
+			logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+				core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
+					c,
+					otelzap.NewCore("go.opentelemetry.io/collector/service/telemetry",
+						otelzap.WithLoggerProvider(lp),
+					),
+				), zap.NewAtomicLevelAt(cfg.Logs.Level))
+				if err != nil {
+					panic(err)
+				}
+				return core
+			}))
+		}
+
+		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+			logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+				return newSampledCore(c, cfg.Logs.Sampling)
+			}))
+		}
 	}
 
 	return logger, lp, nil
 }
 
-func newSampledLogger(logger *zap.Logger, sc *LogsSamplingConfig) *zap.Logger {
+func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
 	// Create a logger that samples every Nth message after the first M messages every S seconds
 	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	opts := zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		return zapcore.NewSamplerWithOptions(
-			core,
-			sc.Tick,
-			sc.Initial,
-			sc.Thereafter,
-		)
-	})
-	return logger.WithOptions(opts)
+	return zapcore.NewSamplerWithOptions(
+		core,
+		sc.Tick,
+		sc.Initial,
+		sc.Thereafter,
+	)
 }
