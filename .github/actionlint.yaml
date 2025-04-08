@@ -1,0 +1,17 @@
+self-hosted-runner:
+  labels: []
+
+config-variables: null
+
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - '.*shellcheck reported issue in this script: SC1070:.+'
+      - '.*shellcheck reported issue in this script: SC1133:.+'
+      - '.*shellcheck reported issue in this script: SC2086:.+'
+      - '.*shellcheck reported issue in this script: SC2046:.+'
+      - '.*shellcheck reported issue in this script: SC2059:.+'
+      - '.*shellcheck reported issue in this script: SC2236:.+'
+      - '.*shellcheck reported issue in this script: SC1001:.+'
+      - '.*shellcheck reported issue in this script: SC2129:.+'
+      - '.*the runner of ".+" action is too old to run on GitHub Actions.+'

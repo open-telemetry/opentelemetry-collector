@@ -1,0 +1,38 @@
+name: Lint GitHub Workflow YAML Files
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/*.yml'
+      - '.github/workflows/*.yaml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Build Actionlint binary
+        run: |
+          mkdir -p .tools
+          go build -o .tools/actionlint github.com/rhysd/actionlint/cmd/actionlint
+          chmod +x .tools/actionlint
+
+      - name: Lint GitHub Workflow YAML Files
+        run: |
+          ./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+
+      - name: Reminder to Address Linting Errors
+        if: failure()
+        run: echo "⚠️ Please address all linting errors before merging this pull request."
+
+      - name: All linting checks passed
+        if: success()
+        run: echo "✅ All linting checks passed."
