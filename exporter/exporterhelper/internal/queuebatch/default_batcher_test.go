@@ -160,7 +160,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			require.NoError(t, ba.Shutdown(context.Background()))
 
 			// After shutdown the pending "current batch" is also flushed.
-			assert.EqualValues(t, 3, sink.RequestsCount())
+			assert.Equal(t, 3, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 57 || sink.BytesCount() == 57)
 
 			// Check that done callback is called for the right amount of times.
@@ -325,7 +325,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			require.NoError(t, ba.Shutdown(context.Background()))
 
 			// After shutdown the pending "current batch" is also flushed.
-			assert.EqualValues(t, 11, sink.RequestsCount())
+			assert.Equal(t, 11, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 1005 || sink.BytesCount() == 1005)
 
 			// Check that done callback is called for the right amount of times.
@@ -354,13 +354,13 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 1}, done)
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 2, Bytes: 2}, done)
 
-	assert.EqualValues(t, 0, sink.RequestsCount())
-	assert.EqualValues(t, 0, sink.ItemsCount())
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, 0, sink.ItemsCount())
 
 	require.NoError(t, ba.Shutdown(context.Background()))
 
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 3, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 3, sink.ItemsCount())
 
 	// Check that done callback is called for the right amount of times.
 	assert.EqualValues(t, 0, done.errors.Load())
@@ -396,7 +396,7 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	sink.SetExportErr(errors.New("transient error"))
 	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 4, Bytes: 4}, done)
 	assert.Eventually(t, func() bool {
-		return 2 == done.errors.Load()
+		return done.errors.Load() == 2
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// Check that done callback is called for the right amount of times.
@@ -427,7 +427,7 @@ func (fd fakeDone) OnDone(err error) {
 func newFakeBytesSizer() request.Sizer[request.Request] {
 	return request.BaseSizer{
 		SizeofFunc: func(req request.Request) int64 {
-			return int64(req.(*requesttest.FakeRequest).Items)
+			return int64(req.(*requesttest.FakeRequest).Bytes)
 		},
 	}
 }

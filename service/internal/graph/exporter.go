@@ -47,7 +47,7 @@ func (n *exporterNode) buildComponent(
 ) error {
 	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Attributes.Set())
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
 	}
 	var err error
 	switch n.pipelineType {

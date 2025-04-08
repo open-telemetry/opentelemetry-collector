@@ -337,7 +337,7 @@ func TestSkipGoInitialization(t *testing.T) {
 	}
 	assert.NoError(t, cfg.Validate())
 	assert.NoError(t, cfg.SetGoPath())
-	assert.Zero(t, cfg.Distribution.Go)
+	assert.Empty(t, cfg.Distribution.Go)
 }
 
 func TestBuildTagConfig(t *testing.T) {

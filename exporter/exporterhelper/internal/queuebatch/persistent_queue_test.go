@@ -444,7 +444,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 			wg.Wait()
 			// Because the persistent queue is not draining after Shutdown, need to wait here for the drain.
 			assert.Eventually(t, func() bool {
-				return 1_000_000 == int(consumed.Load())
+				return int(consumed.Load()) == 1_000_000
 			}, 5*time.Second, 10*time.Millisecond)
 			require.NoError(t, ac.Shutdown(context.Background()))
 		})

@@ -19,8 +19,8 @@ func TestProfiles(t *testing.T) {
 	profileErr := NewProfiles(err, td)
 	assert.Equal(t, err.Error(), profileErr.Error())
 	var target Profiles
-	assert.False(t, errors.As(nil, &target))
-	assert.False(t, errors.As(err, &target))
+	assert.NotErrorAs(t, nil, &target)
+	assert.NotErrorAs(t, err, &target)
 	require.ErrorAs(t, profileErr, &target)
 	assert.Equal(t, td, target.Data())
 }

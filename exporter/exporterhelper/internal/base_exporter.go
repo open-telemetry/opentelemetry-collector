@@ -83,7 +83,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		return nil, err
 	}
 
-	if be.batcherCfg.Enabled {
+	if be.batcherCfg.Enabled || be.queueCfg.Batch != nil {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
