@@ -87,9 +87,9 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
 
-	ctx, _ = or.tracer.Start(ctx, "exporter/enqueue")
+	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)
-	trace.SpanFromContext(ctx).End()
+	span.End()
 
 	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
 	if err != nil && or.enqueueFailedInst != nil {
