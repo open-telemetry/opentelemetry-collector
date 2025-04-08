@@ -6,9 +6,10 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/metric"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/otel/metric"
 )
 
 var _ consumer.Logs = logs{}

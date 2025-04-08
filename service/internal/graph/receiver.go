@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
+	"go.opentelemetry.io/collector/service/internal/metadata"
 )
 
 // A receiver instance can be shared by multiple pipelines of the same type.
@@ -48,32 +49,52 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		BuildInfo:         info,
 	}
 
-	var err error
+	tb, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return err
+	}
+
 	switch n.pipelineType {
 	case pipeline.SignalTraces:
 		var consumers []consumer.Traces
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		n.Component, err = builder.CreateTraces(ctx, set, fanoutconsumer.NewTraces(consumers))
+		obsConsumer := obsConsumerTraces{
+			Traces:      fanoutconsumer.NewTraces(consumers),
+			itemCounter: tb.ReceiverProducedItems,
+		}
+		n.Component, err = builder.CreateTraces(ctx, set, obsConsumer)
 	case pipeline.SignalMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
-		n.Component, err = builder.CreateMetrics(ctx, set, fanoutconsumer.NewMetrics(consumers))
+		obsConsumer := obsConsumerMetrics{
+			Metrics:     fanoutconsumer.NewMetrics(consumers),
+			itemCounter: tb.ReceiverProducedItems,
+		}
+		n.Component, err = builder.CreateMetrics(ctx, set, obsConsumer)
 	case pipeline.SignalLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
-		n.Component, err = builder.CreateLogs(ctx, set, fanoutconsumer.NewLogs(consumers))
+		obsConsumer := obsConsumerLogs{
+			Logs:        fanoutconsumer.NewLogs(consumers),
+			itemCounter: tb.ReceiverProducedItems,
+		}
+		n.Component, err = builder.CreateLogs(ctx, set, obsConsumer)
 	case xpipeline.SignalProfiles:
 		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
 			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
-		n.Component, err = builder.CreateProfiles(ctx, set, fanoutconsumer.NewProfiles(consumers))
+		obsConsumer := obsConsumerProfiles{
+			Profiles:    fanoutconsumer.NewProfiles(consumers),
+			itemCounter: tb.ReceiverProducedItems,
+		}
+		n.Component, err = builder.CreateProfiles(ctx, set, obsConsumer)
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

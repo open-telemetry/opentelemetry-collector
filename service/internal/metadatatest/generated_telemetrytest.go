@@ -13,6 +13,126 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
+func AssertEqualConnectorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_connector.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.consumed.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items passed to the connector.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_connector.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.consumed.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items passed to the connector.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualConnectorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_connector.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.produced.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items emitted from the connector.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_connector.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.produced.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items emitted from the connector.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter.consumed.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items passed to the exporter.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualExporterConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter.consumed.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items passed to the exporter.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_cpu_seconds"
 	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
@@ -129,6 +249,126 @@ func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []m
 		Description: "Uptime of the process [alpha]",
 		Unit:        "s",
 		Data: metricdata.Sum[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.consumed.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items passed to the processor.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.consumed.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items passed to the processor.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.produced.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items emitted from the processor.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.produced.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items emitted from the processor.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualReceiverProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_receiver.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver.produced.items"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Number of items emitted from the receiver.",
+		Unit:        "{item}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric(name)
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualReceiverProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_receiver.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver.produced.size"
+	}
+	want := metricdata.Metrics{
+		Name:        name,
+		Description: "Size of items emitted from the receiver.",
+		Unit:        "By",
+		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
 			DataPoints:  dps,

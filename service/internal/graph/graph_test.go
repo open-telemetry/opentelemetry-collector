@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -798,7 +800,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// Check each pipeline individually, ensuring that all components are started
 			// and that they have observed no signals yet.
 			for pipelineID, pipelineCfg := range tt.pipelineConfigs {
-				pipeline, ok := pg.pipelines[pipelineID]
+				pl, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
 				// Determine independently if the capabilities node should report MutateData as true
@@ -813,15 +815,15 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						expectMutatesData = true
 					}
 				}
-				assert.Equal(t, expectMutatesData, pipeline.capabilitiesNode.getConsumer().Capabilities().MutatesData)
+				assert.Equal(t, expectMutatesData, pl.capabilitiesNode.getConsumer().Capabilities().MutatesData)
 				mutatingPipelines[pipelineID] = expectMutatesData
 
 				expectedReceivers, expectedExporters := expectedInstances(tt.pipelineConfigs, pipelineID)
-				require.Len(t, pipeline.receivers, expectedReceivers)
-				require.Len(t, pipeline.processors, len(pipelineCfg.Processors))
-				require.Len(t, pipeline.exporters, expectedExporters)
+				require.Len(t, pl.receivers, expectedReceivers)
+				require.Len(t, pl.processors, len(pipelineCfg.Processors))
+				require.Len(t, pl.exporters, expectedExporters)
 
-				for _, n := range pipeline.exporters {
+				for _, n := range pl.exporters {
 					switch c := n.(type) {
 					case *exporterNode:
 						e := c.Component.(*testcomponents.ExampleExporter)
@@ -831,26 +833,22 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 						require.Empty(t, e.Logs)
 						require.Empty(t, e.Profiles)
 					case *connectorNode:
-						exConn := unwrapExampleConnector(c)
-						require.NotNil(t, exConn)
-						require.True(t, exConn.Started())
+						require.True(t, c.Component.(*testcomponents.ExampleConnector).Started())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 
-				for _, n := range pipeline.processors {
+				for _, n := range pl.processors {
 					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Started())
 				}
 
-				for _, n := range pipeline.receivers {
+				for _, n := range pl.receivers {
 					switch c := n.(type) {
 					case *receiverNode:
 						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Started())
 					case *connectorNode:
-						exConn := unwrapExampleConnector(c)
-						require.NotNil(t, exConn)
-						require.True(t, exConn.Started())
+						require.True(t, c.Component.(*testcomponents.ExampleConnector).Started())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
@@ -912,35 +910,30 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range tt.pipelineConfigs {
-				pipeline, ok := pg.pipelines[pipelineID]
+				pl, ok := pg.pipelines[pipelineID]
 				require.True(t, ok, "expected to find pipeline: %s", pipelineID.String())
 
-				for _, n := range pipeline.receivers {
+				for _, n := range pl.receivers {
 					switch c := n.(type) {
 					case *receiverNode:
 						require.True(t, c.Component.(*testcomponents.ExampleReceiver).Stopped())
 					case *connectorNode:
-						exConn := unwrapExampleConnector(c)
-						require.NotNil(t, exConn)
-						require.True(t, exConn.Stopped())
+						require.True(t, c.Component.(*testcomponents.ExampleConnector).Stopped())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
 				}
 
-				for _, n := range pipeline.processors {
+				for _, n := range pl.processors {
 					require.True(t, n.(*processorNode).Component.(*testcomponents.ExampleProcessor).Stopped())
 				}
 
-				for _, n := range pipeline.exporters {
+				for _, n := range pl.exporters {
 					switch c := n.(type) {
 					case *exporterNode:
-						e := c.Component.(*testcomponents.ExampleExporter)
-						require.True(t, e.Stopped())
+						require.True(t, c.Component.(*testcomponents.ExampleExporter).Stopped())
 					case *connectorNode:
-						exConn := unwrapExampleConnector(c)
-						require.NotNil(t, exConn)
-						require.True(t, exConn.Stopped())
+						require.True(t, c.Component.(*testcomponents.ExampleConnector).Stopped())
 					default:
 						require.Fail(t, fmt.Sprintf("unexpected type %T", c))
 					}
@@ -951,7 +944,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 			// exclude Connectors and validate each exporter once regardless of sharing between Pipelines.
 			allExporters := pg.GetExporters()
 			for _, e := range allExporters[pipeline.SignalTraces] {
-				tracesExporter := e.(*testcomponents.ExampleExporter)
+				tracesExporter := e.(consumer.Traces).(*testcomponents.ExampleExporter)
 				assert.Len(t, tracesExporter.Traces, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateTraces(1)
 				expectedReadOnly := testdata.GenerateTraces(1)
@@ -965,7 +958,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 			for _, e := range allExporters[pipeline.SignalMetrics] {
-				metricsExporter := e.(*testcomponents.ExampleExporter)
+				metricsExporter := e.(consumer.Metrics).(*testcomponents.ExampleExporter)
 				assert.Len(t, metricsExporter.Metrics, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateMetrics(1)
 				expectedReadOnly := testdata.GenerateMetrics(1)
@@ -979,7 +972,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 			for _, e := range allExporters[pipeline.SignalLogs] {
-				logsExporter := e.(*testcomponents.ExampleExporter)
+				logsExporter := e.(consumer.Logs).(*testcomponents.ExampleExporter)
 				assert.Len(t, logsExporter.Logs, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateLogs(1)
 				expectedReadOnly := testdata.GenerateLogs(1)
@@ -993,7 +986,7 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 				}
 			}
 			for _, e := range allExporters[xpipeline.SignalProfiles] {
-				profilesExporter := e.(*testcomponents.ExampleExporter)
+				profilesExporter := e.(xconsumer.Profiles).(*testcomponents.ExampleExporter)
 				assert.Len(t, profilesExporter.Profiles, tt.expectedPerExporter)
 				expectedMutable := testdata.GenerateProfiles(1)
 				expectedReadOnly := testdata.GenerateProfiles(1)

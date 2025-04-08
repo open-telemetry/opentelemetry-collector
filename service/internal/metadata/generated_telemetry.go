@@ -29,12 +29,24 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ConnectorConsumedItems            metric.Int64Counter
+	ConnectorConsumedSize             metric.Int64Counter
+	ConnectorProducedItems            metric.Int64Counter
+	ConnectorProducedSize             metric.Int64Counter
+	ExporterConsumedItems             metric.Int64Counter
+	ExporterConsumedSize              metric.Int64Counter
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
 	ProcessMemoryRss                  metric.Int64ObservableGauge
 	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
 	ProcessRuntimeTotalAllocBytes     metric.Int64ObservableCounter
 	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
 	ProcessUptime                     metric.Float64ObservableCounter
+	ProcessorConsumedItems            metric.Int64Counter
+	ProcessorConsumedSize             metric.Int64Counter
+	ProcessorProducedItems            metric.Int64Counter
+	ProcessorProducedSize             metric.Int64Counter
+	ReceiverProducedItems             metric.Int64Counter
+	ReceiverProducedSize              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -178,6 +190,66 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 
 	var name string
+	name = "otelcol_connector.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.consumed.items"
+	}
+	builder.ConnectorConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.consumed.size"
+	}
+	builder.ConnectorConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the connector."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.produced.items"
+	}
+	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.connector.produced.size"
+	}
+	builder.ConnectorProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the connector."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_exporter.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter.consumed.items"
+	}
+	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the exporter."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_exporter.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter.consumed.size"
+	}
+	builder.ExporterConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the exporter."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
 	name = "otelcol_process_cpu_seconds"
 	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
 		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
@@ -248,6 +320,66 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		name,
 		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.consumed.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.consumed.items"
+	}
+	builder.ProcessorConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.consumed.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.consumed.size"
+	}
+	builder.ProcessorConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the processor."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.produced.items"
+	}
+	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor.produced.size"
+	}
+	builder.ProcessorProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the processor."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_receiver.produced.items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver.produced.items"
+	}
+	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the receiver."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_receiver.produced.size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver.produced.size"
+	}
+	builder.ReceiverProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the receiver."),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

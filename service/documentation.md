@@ -6,6 +6,36 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_connector.consumed.items
+
+Note: The name is otelcol.connector.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_connector.produced.items
+
+Note: The name is otelcol.connector.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_exporter.consumed.items
+
+Note: The name is otelcol.exporter.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the exporter.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
 ### otelcol_process_cpu_seconds
 
 Note: The name is otelcol.process_cpu_seconds if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
@@ -65,3 +95,33 @@ Uptime of the process [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Double | true |
+
+### otelcol_processor.consumed.items
+
+Note: The name is otelcol.processor.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_processor.produced.items
+
+Note: The name is otelcol.processor.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_receiver.produced.items
+
+Note: The name is otelcol.receiver.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the receiver.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |

@@ -54,6 +54,7 @@ Spans, data points, and log records should carry the following attributes:
 - `otelcol.component.id`: The component ID
 - `otelcol.signal`: `logs`, `metrics` `traces`
 - `otelcol.signal.output`: `logs`, `metrics`, `traces`, `profiles`
+- `otelcol.pipeline.id.output`: The pipeline ID to which the data is sent
 
 Note: The `otelcol.signal`, `otelcol.signal.output`, or `otelcol.pipeline.id` attributes may be omitted if the corresponding component instances
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
