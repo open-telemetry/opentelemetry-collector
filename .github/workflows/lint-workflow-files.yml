@@ -19,15 +19,16 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Build Actionlint binary
+      - name: Install Actionlint
         run: |
           mkdir -p .tools
-          go build -o .tools/actionlint github.com/rhysd/actionlint/cmd/actionlint
-          chmod +x .tools/actionlint
+          cd internal/tools
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          mv $(go env GOPATH)/bin/actionlint ../../.tools/actionlint
 
-      - name: Lint GitHub Workflow YAML Files
+      - name: Run Actionlint
         run: |
-          ./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+          make actionlint
 
       - name: Reminder to Address Linting Errors
         if: failure()

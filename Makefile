@@ -163,6 +163,11 @@ otelcorecol:
 genotelcorecol: install-tools
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
+	cd internal/tools && $(GOCMD) install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+
+.PHONY: actionlint
+actionlint:
+	./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:
