@@ -25,9 +25,9 @@ type BasePartitioner struct {
 }
 
 func NewPartitioner(
-	GetKeyFunc GetKeyFunc[request.Request],
+	getKeyFunc GetKeyFunc[request.Request],
 ) Partitioner[request.Request] {
 	return &BasePartitioner{
-		GetKeyFunc: GetKeyFunc,
+		GetKeyFunc: getKeyFunc,
 	}
 }
