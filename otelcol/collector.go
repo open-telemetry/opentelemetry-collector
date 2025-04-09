@@ -272,7 +272,23 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	return xconfmap.Validate(cfg)
+	if err = xconfmap.Validate(cfg); err != nil {
+		return err
+	}
+
+	return service.Validate(ctx, service.Settings{
+		BuildInfo:           col.set.BuildInfo,
+		ReceiversConfigs:    cfg.Receivers,
+		ReceiversFactories:  factories.Receivers,
+		ProcessorsConfigs:   cfg.Processors,
+		ProcessorsFactories: factories.Processors,
+		ExportersConfigs:    cfg.Exporters,
+		ExportersFactories:  factories.Exporters,
+		ConnectorsConfigs:   cfg.Connectors,
+		ConnectorsFactories: factories.Connectors,
+	}, service.Config{
+		Pipelines: cfg.Service.Pipelines,
+	})
 }
 
 func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
