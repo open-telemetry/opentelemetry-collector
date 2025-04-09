@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/metadata"
+	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 )
 
 var _ consumerNode = (*processorNode)(nil)
@@ -60,57 +61,33 @@ func (n *processorNode) buildComponent(ctx context.Context,
 
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
-		obsConsumer := obsConsumerTraces{
-			Traces:      next.(consumer.Traces),
-			itemCounter: tb.ProcessorProducedItems,
-		}
+		obsConsumer := obsconsumer.NewTraces(next.(consumer.Traces), tb.ProcessorProducedItems)
 		n.Component, err = builder.CreateTraces(ctx, set, obsConsumer)
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
-		n.consumer = obsConsumerTraces{
-			Traces:      n.Component.(consumer.Traces),
-			itemCounter: tb.ProcessorConsumedItems,
-		}
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ProcessorConsumedItems)
 	case pipeline.SignalMetrics:
-		obsConsumer := obsConsumerMetrics{
-			Metrics:     next.(consumer.Metrics),
-			itemCounter: tb.ProcessorProducedItems,
-		}
+		obsConsumer := obsconsumer.NewMetrics(next.(consumer.Metrics), tb.ProcessorProducedItems)
 		n.Component, err = builder.CreateMetrics(ctx, set, obsConsumer)
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
-		n.consumer = obsConsumerMetrics{
-			Metrics:     n.Component.(consumer.Metrics),
-			itemCounter: tb.ProcessorConsumedItems,
-		}
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ProcessorConsumedItems)
 	case pipeline.SignalLogs:
-		obsConsumer := obsConsumerLogs{
-			Logs:        next.(consumer.Logs),
-			itemCounter: tb.ProcessorProducedItems,
-		}
+		obsConsumer := obsconsumer.NewLogs(next.(consumer.Logs), tb.ProcessorProducedItems)
 		n.Component, err = builder.CreateLogs(ctx, set, obsConsumer)
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
-		n.consumer = obsConsumerLogs{
-			Logs:        n.Component.(consumer.Logs),
-			itemCounter: tb.ProcessorConsumedItems,
-		}
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ProcessorConsumedItems)
 	case xpipeline.SignalProfiles:
-		obsConsumer := obsConsumerProfiles{
-			Profiles:    next.(xconsumer.Profiles),
-			itemCounter: tb.ProcessorProducedItems,
-		}
+		obsConsumer := obsconsumer.NewProfiles(next.(xconsumer.Profiles), tb.ProcessorProducedItems)
 		n.Component, err = builder.CreateProfiles(ctx, set, obsConsumer)
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
-		n.consumer = obsConsumerProfiles{
-			Profiles:    n.Component.(xconsumer.Profiles),
-			itemCounter: tb.ProcessorConsumedItems,
-		}
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ProcessorConsumedItems)
 	default:
 		return fmt.Errorf("error creating processor %q in pipeline %q, data type %q is not supported", set.ID, n.pipelineID.String(), n.pipelineID.Signal())
 	}
