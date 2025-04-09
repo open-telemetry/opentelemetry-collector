@@ -16,7 +16,7 @@ issues: [12801]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Now the TLS allows the use of TPM for for loading private keys (e.g. TSS2 format).
+  Now the TLS allows the use of TPM for loading private keys (e.g. in TSS2 format).
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
