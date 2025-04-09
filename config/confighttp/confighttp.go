@@ -441,7 +441,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.RequestParameters)
+		handler = authInterceptor(handler, server, hss.Auth.RequestParameters, serverOpts)
 	}
 
 	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
@@ -537,7 +537,7 @@ func NewDefaultCORSConfig() *CORSConfig {
 	return &CORSConfig{}
 }
 
-func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string) http.Handler {
+func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sources := r.Header
 		query := r.URL.Query()
@@ -548,7 +548,12 @@ func authInterceptor(next http.Handler, server extensionauth.Server, requestPara
 		}
 		ctx, err := server.Authenticate(r.Context(), sources)
 		if err != nil {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			if serverOpts.ErrHandler != nil {
+				serverOpts.ErrHandler(w, r, err.Error(), http.StatusUnauthorized)
+			} else {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+			}
+
 			return
 		}
 

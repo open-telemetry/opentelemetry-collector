@@ -1,0 +1,19 @@
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+connectors:
+  nop/forward:
+
+service:
+  pipelines:
+    traces/in:
+      receivers: [nop/forward]
+      processors: [ ]
+      exporters: [nop/forward]
+    traces/out:
+      receivers: [nop/forward]
+      processors: [ ]
+      exporters: [nop/forward]
