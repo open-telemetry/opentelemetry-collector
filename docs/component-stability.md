@@ -280,7 +280,6 @@ The component still needs to meet the general requirements for alpha components.
 
 To graduate any signal from alpha to beta on a component:
 1. The component MUST have at least two active code owners.
-2. The code owners for non-vendor-specific components SHOULD have at least two different employers.
 3. Within the 30 days prior to the graduation request, the code owners MUST have reviewed and
    replied to at least 80% of the issues and pull requests opened against the component. This
    excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
@@ -291,7 +290,6 @@ To graduate any signal from alpha to beta on a component:
 
 To graduate any signal from beta to stable on a component:
 1. The component MUST have at least three active code owners.
-2. The code owners for non-vendor-specific components SHOULD have at least two different employers.
 3. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
    replied to at least 80% of the issues and pull requests opened against the component. This
    excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
