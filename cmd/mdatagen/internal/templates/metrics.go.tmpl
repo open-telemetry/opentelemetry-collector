@@ -56,6 +56,24 @@ var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
 {{ end }}
 {{- end }}
 
+var MetricsInfo = metricsInfo{
+    {{- range $name, $metric := .Metrics }}
+    {{ $name.Render }}: metricInfo{
+        Name: "{{ $name }}",
+    },
+    {{- end }}
+}
+
+type metricsInfo struct {
+	{{- range $name, $metric := .Metrics }}
+	{{ $name.Render }} metricInfo
+	{{- end }}
+}
+
+type metricInfo struct {
+    Name string
+}
+
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
 	data     pmetric.Metric // data buffer for generated metric.

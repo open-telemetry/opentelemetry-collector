@@ -48,18 +48,18 @@ func TestProfilesMultiplexingNonMutating(t *testing.T) {
 
 	assert.Equal(t, td, p1.AllProfiles()[0])
 	assert.Equal(t, td, p1.AllProfiles()[1])
-	assert.EqualValues(t, td, p1.AllProfiles()[0])
-	assert.EqualValues(t, td, p1.AllProfiles()[1])
+	assert.Equal(t, td, p1.AllProfiles()[0])
+	assert.Equal(t, td, p1.AllProfiles()[1])
 
 	assert.Equal(t, td, p2.AllProfiles()[0])
 	assert.Equal(t, td, p2.AllProfiles()[1])
-	assert.EqualValues(t, td, p2.AllProfiles()[0])
-	assert.EqualValues(t, td, p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 
 	assert.Equal(t, td, p3.AllProfiles()[0])
 	assert.Equal(t, td, p3.AllProfiles()[1])
-	assert.EqualValues(t, td, p3.AllProfiles()[0])
-	assert.EqualValues(t, td, p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 
 	// The data should be marked as read only.
 	assert.True(t, td.IsReadOnly())
@@ -84,19 +84,19 @@ func TestProfilesMultiplexingMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.EqualValues(t, td, p1.AllProfiles()[0])
-	assert.EqualValues(t, td, p1.AllProfiles()[1])
+	assert.Equal(t, td, p1.AllProfiles()[0])
+	assert.Equal(t, td, p1.AllProfiles()[1])
 
 	assert.NotSame(t, &td, &p2.AllProfiles()[0])
 	assert.NotSame(t, &td, &p2.AllProfiles()[1])
-	assert.EqualValues(t, td, p2.AllProfiles()[0])
-	assert.EqualValues(t, td, p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllProfiles()[0])
 	assert.Equal(t, td, p3.AllProfiles()[1])
-	assert.EqualValues(t, td, p3.AllProfiles()[0])
-	assert.EqualValues(t, td, p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -126,18 +126,18 @@ func TestReadOnlyProfilesMultiplexingMutating(t *testing.T) {
 
 	assert.NotEqual(t, td, p1.AllProfiles()[0])
 	assert.NotEqual(t, td, p1.AllProfiles()[1])
-	assert.EqualValues(t, tdOrig, p1.AllProfiles()[0])
-	assert.EqualValues(t, tdOrig, p1.AllProfiles()[1])
+	assert.Equal(t, tdOrig, p1.AllProfiles()[0])
+	assert.Equal(t, tdOrig, p1.AllProfiles()[1])
 
 	assert.NotEqual(t, td, p2.AllProfiles()[0])
 	assert.NotEqual(t, td, p2.AllProfiles()[1])
-	assert.EqualValues(t, tdOrig, p2.AllProfiles()[0])
-	assert.EqualValues(t, tdOrig, p2.AllProfiles()[1])
+	assert.Equal(t, tdOrig, p2.AllProfiles()[0])
+	assert.Equal(t, tdOrig, p2.AllProfiles()[1])
 
 	assert.NotEqual(t, td, p3.AllProfiles()[0])
 	assert.NotEqual(t, td, p3.AllProfiles()[1])
-	assert.EqualValues(t, tdOrig, p3.AllProfiles()[0])
-	assert.EqualValues(t, tdOrig, p3.AllProfiles()[1])
+	assert.Equal(t, tdOrig, p3.AllProfiles()[0])
+	assert.Equal(t, tdOrig, p3.AllProfiles()[1])
 }
 
 func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
@@ -159,20 +159,20 @@ func TestProfilesMultiplexingMixLastMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.EqualValues(t, td, p1.AllProfiles()[0])
-	assert.EqualValues(t, td, p1.AllProfiles()[1])
+	assert.Equal(t, td, p1.AllProfiles()[0])
+	assert.Equal(t, td, p1.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p2.AllProfiles()[0])
 	assert.Equal(t, td, p2.AllProfiles()[1])
-	assert.EqualValues(t, td, p2.AllProfiles()[0])
-	assert.EqualValues(t, td, p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will clone the initial data.
 	assert.NotSame(t, &td, &p3.AllProfiles()[0])
 	assert.NotSame(t, &td, &p3.AllProfiles()[1])
-	assert.EqualValues(t, td, p3.AllProfiles()[0])
-	assert.EqualValues(t, td, p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -197,19 +197,19 @@ func TestProfilesMultiplexingMixLastNonMutating(t *testing.T) {
 
 	assert.NotSame(t, &td, &p1.AllProfiles()[0])
 	assert.NotSame(t, &td, &p1.AllProfiles()[1])
-	assert.EqualValues(t, td, p1.AllProfiles()[0])
-	assert.EqualValues(t, td, p1.AllProfiles()[1])
+	assert.Equal(t, td, p1.AllProfiles()[0])
+	assert.Equal(t, td, p1.AllProfiles()[1])
 
 	assert.NotSame(t, &td, &p2.AllProfiles()[0])
 	assert.NotSame(t, &td, &p2.AllProfiles()[1])
-	assert.EqualValues(t, td, p2.AllProfiles()[0])
-	assert.EqualValues(t, td, p2.AllProfiles()[1])
+	assert.Equal(t, td, p2.AllProfiles()[0])
+	assert.Equal(t, td, p2.AllProfiles()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllProfiles()[0])
 	assert.Equal(t, td, p3.AllProfiles()[1])
-	assert.EqualValues(t, td, p3.AllProfiles()[0])
-	assert.EqualValues(t, td, p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -229,8 +229,8 @@ func TestProfilesWhenErrors(t *testing.T) {
 
 	assert.Equal(t, td, p3.AllProfiles()[0])
 	assert.Equal(t, td, p3.AllProfiles()[1])
-	assert.EqualValues(t, td, p3.AllProfiles()[0])
-	assert.EqualValues(t, td, p3.AllProfiles()[1])
+	assert.Equal(t, td, p3.AllProfiles()[0])
+	assert.Equal(t, td, p3.AllProfiles()[1])
 }
 
 type mutatingProfilesSink struct {

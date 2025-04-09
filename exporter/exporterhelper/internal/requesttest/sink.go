@@ -18,6 +18,7 @@ func NewSink() *Sink {
 type Sink struct {
 	requestsCount int
 	itemsCount    int
+	bytesCount    int
 	mu            sync.Mutex
 	exportErr     error
 }
@@ -48,6 +49,7 @@ func (s *Sink) Export(ctx context.Context, req request.Request) error {
 	}
 	s.requestsCount++
 	s.itemsCount += r.Items
+	s.bytesCount += r.Bytes
 	return nil
 }
 
@@ -67,4 +69,10 @@ func (s *Sink) ItemsCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.itemsCount
+}
+
+func (s *Sink) BytesCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.bytesCount
 }

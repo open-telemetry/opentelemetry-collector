@@ -9,24 +9,24 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-type Sender[K any] interface {
+type Sender[T any] interface {
 	component.Component
-	Send(context.Context, K) error
+	Send(context.Context, T) error
 }
 
-type SendFunc[K any] func(ctx context.Context, data K) error
+type SendFunc[T any] func(ctx context.Context, data T) error
 
-func NewSender[K any](consFunc SendFunc[K]) Sender[K] {
-	return &sender[K]{consFunc: consFunc}
+func NewSender[T any](consFunc SendFunc[T]) Sender[T] {
+	return &sender[T]{consFunc: consFunc}
 }
 
 // sender is a Sender that emits the incoming request to the exporter consumer func.
-type sender[K any] struct {
+type sender[T any] struct {
 	component.StartFunc
 	component.ShutdownFunc
-	consFunc SendFunc[K]
+	consFunc SendFunc[T]
 }
 
-func (es *sender[K]) Send(ctx context.Context, req K) error {
+func (es *sender[T]) Send(ctx context.Context, req T) error {
 	return es.consFunc(ctx, req)
 }

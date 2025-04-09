@@ -280,8 +280,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "windows_C",
-			location:   `C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:       "windows_z",
@@ -290,8 +290,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "file_windows",
-			location:   `file:C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `file:c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:           "invalid_scheme",
@@ -495,7 +495,7 @@ func runScenario(t *testing.T, path string) {
 				require.NoError(t, err)
 				n, err := file.Write(b)
 				require.NoError(t, err)
-				require.Positive(t, n, 0)
+				require.Positive(t, n)
 				configFiles = append(configFiles, file.Name())
 			}
 

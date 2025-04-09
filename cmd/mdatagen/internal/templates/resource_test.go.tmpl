@@ -52,7 +52,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			{{- end }}
 			if ok {
+				{{- if eq $attr.Type.String "Int" -}}
 				assert.EqualValues(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
+				{{- else -}}
+				assert.Equal(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
+				{{- end -}}
 				{{- if or (eq $attr.Type.String "Bytes") (eq $attr.Type.String "Slice") (eq $attr.Type.String "Map") -}}
 				.AsRaw()
 				{{- end -}}

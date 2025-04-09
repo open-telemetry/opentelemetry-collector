@@ -10,8 +10,8 @@ import (
 )
 
 func TestStatusCodeString(t *testing.T) {
-	assert.EqualValues(t, "Unset", StatusCodeUnset.String())
-	assert.EqualValues(t, "Ok", StatusCodeOk.String())
-	assert.EqualValues(t, "Error", StatusCodeError.String())
-	assert.EqualValues(t, "", StatusCode(100).String())
+	assert.Equal(t, "Unset", StatusCodeUnset.String())
+	assert.Equal(t, "Ok", StatusCodeOk.String())
+	assert.Equal(t, "Error", StatusCodeError.String())
+	assert.Empty(t, StatusCode(100).String())
 }

@@ -31,7 +31,7 @@ func TestNewFactory(t *testing.T) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
 	assert.Equal(t, component.StabilityLevelDevelopment, factory.Stability())

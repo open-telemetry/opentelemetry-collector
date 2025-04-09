@@ -27,28 +27,28 @@ func TestReadOnlyProfilesInvalidUsage(t *testing.T) {
 
 func TestSampleCount(t *testing.T) {
 	profiles := NewProfiles()
-	assert.EqualValues(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, profiles.SampleCount())
 
 	rs := profiles.ResourceProfiles().AppendEmpty()
-	assert.EqualValues(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, profiles.SampleCount())
 
 	ils := rs.ScopeProfiles().AppendEmpty()
-	assert.EqualValues(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, profiles.SampleCount())
 
 	ps := ils.Profiles().AppendEmpty()
-	assert.EqualValues(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, profiles.SampleCount())
 
 	ps.Sample().AppendEmpty()
-	assert.EqualValues(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, profiles.SampleCount())
 
 	ils2 := rs.ScopeProfiles().AppendEmpty()
-	assert.EqualValues(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, profiles.SampleCount())
 
 	ps2 := ils2.Profiles().AppendEmpty()
-	assert.EqualValues(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, profiles.SampleCount())
 
 	ps2.Sample().AppendEmpty()
-	assert.EqualValues(t, 2, profiles.SampleCount())
+	assert.Equal(t, 2, profiles.SampleCount())
 
 	rms := profiles.ResourceProfiles()
 	rms.EnsureCapacity(3)
@@ -58,21 +58,21 @@ func TestSampleCount(t *testing.T) {
 		ilss.AppendEmpty()
 	}
 	// 5 + 2 (from rms.At(0) and rms.At(1) initialized first)
-	assert.EqualValues(t, 7, profiles.SampleCount())
+	assert.Equal(t, 7, profiles.SampleCount())
 }
 
 func TestSampleCountWithEmpty(t *testing.T) {
-	assert.EqualValues(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{{}},
 	}).SampleCount())
-	assert.EqualValues(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{
 			{
 				ScopeProfiles: []*otlpprofile.ScopeProfiles{{}},
 			},
 		},
 	}).SampleCount())
-	assert.EqualValues(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
+	assert.Equal(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{
 			{
 				ScopeProfiles: []*otlpprofile.ScopeProfiles{

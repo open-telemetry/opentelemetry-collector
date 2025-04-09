@@ -14,11 +14,9 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -49,8 +47,8 @@ type BaseExporter struct {
 	retryCfg   configretry.BackOffConfig
 
 	queueBatchSettings QueueBatchSettings[request.Request]
-	queueCfg           exporterqueue.Config
-	batcherCfg         exporterbatcher.Config
+	queueCfg           queuebatch.Config
+	batcherCfg         BatcherConfig
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -85,7 +83,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		return nil, err
 	}
 
-	if be.batcherCfg.Enabled {
+	if be.batcherCfg.Enabled || be.queueCfg.Batch != nil {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
@@ -192,10 +190,10 @@ func WithRetry(config configretry.BackOffConfig) Option {
 	}
 }
 
-// WithQueue overrides the default QueueConfig for an exporter.
-// The default QueueConfig is to disable queueing.
+// WithQueue overrides the default queuebatch.Config for an exporter.
+// The default queuebatch.Config is to disable queueing.
 // This option cannot be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
-func WithQueue(cfg exporterqueue.Config) Option {
+func WithQueue(cfg queuebatch.Config) Option {
 	return func(o *BaseExporter) error {
 		if o.queueBatchSettings.Encoding == nil {
 			return errors.New("WithQueue option is not available for the new request exporters, use WithQueueBatch instead")
@@ -208,7 +206,7 @@ func WithQueue(cfg exporterqueue.Config) Option {
 // This option should be used with the new exporter helpers New[Traces|Metrics|Logs]RequestExporter.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithQueueBatch(cfg exporterqueue.Config, set QueueBatchSettings[request.Request]) Option {
+func WithQueueBatch(cfg queuebatch.Config, set QueueBatchSettings[request.Request]) Option {
 	return func(o *BaseExporter) error {
 		if !cfg.Enabled {
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
@@ -238,7 +236,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg exporterbatcher.Config) Option {
+func WithBatcher(cfg BatcherConfig) Option {
 	return func(o *BaseExporter) error {
 		o.batcherCfg = cfg
 		return nil

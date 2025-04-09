@@ -62,7 +62,7 @@ func TestScrapeMetricsDataOp(t *testing.T) {
 	}
 
 	spans := tel.SpanRecorder.Ended()
-	require.Equal(t, len(params), len(spans))
+	require.Len(t, spans, len(params))
 
 	var scrapedMetricPoints, erroredMetricPoints int
 	for i, span := range spans {

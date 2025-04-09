@@ -16,11 +16,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -51,10 +48,10 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, bs.queueBatchSettings.Encoding)
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
-		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(exporterqueue.NewDefaultConfig()))
+		WithRetry(configretry.NewDefaultBackOffConfig()), WithQueue(NewDefaultQueueConfig()))
 	require.Error(t, err)
 
-	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg := NewDefaultQueueConfig()
 	storageID := component.NewID(component.MustNewType("test"))
 	qCfg.StorageID = &storageID
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
@@ -70,23 +67,24 @@ func TestBaseExporterLogging(t *testing.T) {
 	set.Logger = zap.New(logger)
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
-	qCfg := exporterqueue.NewDefaultConfig()
+	qCfg := NewDefaultQueueConfig()
 	qCfg.Enabled = false
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(qCfg),
-		WithBatcher(exporterbatcher.NewDefaultConfig()),
+		WithBatcher(NewDefaultBatcherConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
 	sendErr := bs.Send(context.Background(), &requesttest.FakeRequest{Items: 2})
 	require.Error(t, sendErr)
 
-	require.Len(t, observed.FilterLevelExact(zap.ErrorLevel).All(), 2)
-	assert.Contains(t, observed.All()[0].Message, "Exporting failed. Dropping data.")
-	assert.Equal(t, "my error", observed.All()[0].ContextMap()["error"])
-	assert.Contains(t, observed.All()[1].Message, "Exporting failed. Rejecting data.")
-	assert.Equal(t, "my error", observed.All()[1].ContextMap()["error"])
+	errorLogs := observed.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 2)
+	assert.Contains(t, errorLogs[0].Message, "Exporting failed. Dropping data.")
+	assert.Equal(t, "my error", errorLogs[0].ContextMap()["error"])
+	assert.Contains(t, errorLogs[1].Message, "Exporting failed. Rejecting data.")
+	assert.Equal(t, "my error", errorLogs[1].ContextMap()["error"])
 	require.NoError(t, bs.Shutdown(context.Background()))
 }
 
@@ -100,12 +98,12 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			queueOptions: []Option{
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				func() Option {
-					qs := exporterqueue.NewDefaultConfig()
+					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
 				func() Option {
-					bs := exporterbatcher.NewDefaultConfig()
+					bs := NewDefaultBatcherConfig()
 					bs.Enabled = false
 					return WithBatcher(bs)
 				}(),
@@ -115,12 +113,12 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			name: "WithRequestQueue",
 			queueOptions: []Option{
 				func() Option {
-					qs := exporterqueue.NewDefaultConfig()
+					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueueBatch(qs, newFakeQueueBatch())
 				}(),
 				func() Option {
-					bs := exporterbatcher.NewDefaultConfig()
+					bs := NewDefaultBatcherConfig()
 					bs.Enabled = false
 					return WithBatcher(bs)
 				}(),
@@ -156,8 +154,8 @@ func noopExport(context.Context, request.Request) error {
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
 		Encoding: fakeEncoding{},
-		Sizers: map[exporterbatcher.SizerType]queuebatch.Sizer[request.Request]{
-			exporterbatcher.SizerTypeRequests: queuebatch.RequestsSizer[request.Request]{},
+		Sizers: map[request.SizerType]request.Sizer[request.Request]{
+			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
 		},
 	}
 }
