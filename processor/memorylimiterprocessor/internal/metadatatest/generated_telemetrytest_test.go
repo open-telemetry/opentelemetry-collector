@@ -19,12 +19,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ProcessorAcceptedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorAcceptedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorAcceptedSpans.Add(context.Background(), 1)
-	tb.ProcessorRefusedLogRecords.Add(context.Background(), 1)
-	tb.ProcessorRefusedMetricPoints.Add(context.Background(), 1)
-	tb.ProcessorRefusedSpans.Add(context.Background(), 1)
+	tb.RecordProcessorAcceptedLogRecords(context.Background(), 1)
+	tb.RecordProcessorAcceptedMetricPoints(context.Background(), 1)
+	tb.RecordProcessorAcceptedSpans(context.Background(), 1)
+	tb.RecordProcessorRefusedLogRecords(context.Background(), 1)
+	tb.RecordProcessorRefusedMetricPoints(context.Background(), 1)
+	tb.RecordProcessorRefusedSpans(context.Background(), 1)
 	AssertEqualProcessorAcceptedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
