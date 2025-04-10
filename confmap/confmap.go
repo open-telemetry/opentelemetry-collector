@@ -233,7 +233,7 @@ func sliceOfMapsHookFunc() mapstructure.DecodeHookFuncType {
 				return slice, nil
 			}
 		}
-		
+
 		return data, nil
 	}
 }
@@ -259,7 +259,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-                        sliceOfMapsHookFunc(),
+			sliceOfMapsHookFunc(),
 			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
