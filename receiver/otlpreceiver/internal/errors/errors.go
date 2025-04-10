@@ -12,6 +12,32 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
+// IsClientDisconnectError returns true if the error indicates a client disconnection
+func IsClientDisconnectError(err error) bool {
+	if s, ok := status.FromError(err); ok {
+		switch s.Code() {
+		case codes.Canceled, codes.Unavailable, codes.DeadlineExceeded:
+			return true
+		}
+	}
+	return false
+}
+
+// GetClientDisconnectMessage returns a descriptive message for client disconnection errors
+func GetClientDisconnectMessage(err error) string {
+	if s, ok := status.FromError(err); ok {
+		switch s.Code() {
+		case codes.Canceled:
+			return "client canceled the request"
+		case codes.Unavailable:
+			return "client connection lost"
+		case codes.DeadlineExceeded:
+			return "client request timed out"
+		}
+	}
+	return "client disconnected"
+}
+
 func GetStatusFromError(err error) error {
 	s, ok := status.FromError(err)
 	if !ok {
@@ -23,6 +49,16 @@ func GetStatusFromError(err error) error {
 			code = codes.Internal
 		}
 		s = status.New(code, err.Error())
+	} else if IsClientDisconnectError(err) {
+		// For client disconnection errors, we want to ensure they are marked as retryable
+		// and provide a descriptive message
+		s = status.New(codes.Unavailable, GetClientDisconnectMessage(err))
+	} else if consumererror.IsPermanent(err) {
+		// For permanent errors, convert to InvalidArgument (equivalent to HTTP 400)
+		s = status.New(codes.InvalidArgument, err.Error())
+	} else {
+		// For non-permanent errors, convert to Unavailable (equivalent to HTTP 503)
+		s = status.New(codes.Unavailable, err.Error())
 	}
 	return s.Err()
 }
