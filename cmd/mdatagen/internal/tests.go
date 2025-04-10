@@ -17,6 +17,7 @@ type GoLeak struct {
 
 type Tests struct {
 	Config              any    `mapstructure:"config"`
+	Env                 any    `mapstructure:"env"`
 	SkipLifecycle       bool   `mapstructure:"skip_lifecycle"`
 	SkipShutdown        bool   `mapstructure:"skip_shutdown"`
 	GoLeak              GoLeak `mapstructure:"goleak"`
