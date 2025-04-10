@@ -97,6 +97,8 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+logs: {}
+
 metrics:
   default.metric:
     enabled: true

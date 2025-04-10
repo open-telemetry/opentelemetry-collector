@@ -247,6 +247,20 @@ func TestLoadMetadata(t *testing.T) {
 						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
+				Logs: map[LogName]Log{
+					"default.log": {
+						Enabled:               true,
+						Description:           "Example log record enabled by default.",
+						ExtendedDocumentation: "The log record will be renamed soon.",
+						Warnings: Warnings{
+							IfEnabledNotSet: "This log will be disabled by default soon.",
+						},
+						Body: &Body{
+							ValueType{ValueType: pcommon.ValueTypeStr},
+						},
+						Attributes: []AttributeName{"string_attr", "boolean_attr"},
+					},
+				},
 				Telemetry: Telemetry{
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
