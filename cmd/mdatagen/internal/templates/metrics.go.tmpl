@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	{{- if or isReceiver isScraper }}
+	{{- if or isReceiver isScraper isConnector }}
 	"go.opentelemetry.io/collector/{{ .Status.Class }}"
 	{{- end }}
 	{{- if .SemConvVersion }}
