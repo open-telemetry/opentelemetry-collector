@@ -367,6 +367,11 @@ func TestLoadMetadata(t *testing.T) {
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
 		},
 		{
+			name:    "testdata/no_enabled_log.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'logs[system.event]': missing required field: `enabled`",
+		},
+		{
 			name: "testdata/no_value_type.yaml",
 			want: Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +
