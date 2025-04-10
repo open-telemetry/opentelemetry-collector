@@ -20,14 +20,14 @@ func (f GetKeyFunc[T]) GetKey(ctx context.Context, t T) string {
 	return f(ctx, t)
 }
 
-type BasePartitioner struct {
+type basePartitioner struct {
 	GetKeyFunc[request.Request]
 }
 
 func NewPartitioner(
 	getKeyFunc GetKeyFunc[request.Request],
 ) Partitioner[request.Request] {
-	return &BasePartitioner{
+	return &basePartitioner{
 		GetKeyFunc: getKeyFunc,
 	}
 }
