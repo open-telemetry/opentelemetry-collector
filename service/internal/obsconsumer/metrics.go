@@ -6,7 +6,6 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -21,32 +20,27 @@ func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts
 		opt.apply(&o)
 	}
 	return Metrics{
-		consumer:    consumer,
-		itemCounter: itemCounter,
-		options:     o,
+		consumer:        consumer,
+		itemCounter:     itemCounter,
+		compiledOptions: o.compile(),
 	}
 }
 
 type Metrics struct {
 	consumer    consumer.Metrics
 	itemCounter metric.Int64Counter
-	options
+	compiledOptions
 }
 
 func (c Metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	// Measure before calling ConsumeMetrics because the data may be mutated downstream
 	itemCount := md.DataPointCount()
-
 	err := c.consumer.ConsumeMetrics(ctx, md)
-	outcome := "success"
-	if err != nil {
-		outcome = "failure"
+	if err == nil {
+		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
+	} else {
+		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
 	}
-
-	var attrs []attribute.KeyValue
-	attrs = append(attrs, c.staticDataPointAttributes...)
-	attrs = append(attrs, attribute.String("outcome", outcome))
-	c.itemCounter.Add(ctx, int64(itemCount), metric.WithAttributes(attrs...))
 	return err
 }
 

@@ -5,6 +5,7 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 
 import (
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 )
 
 // Option modifies the consumer behavior.
@@ -25,4 +26,24 @@ type staticDataPointAttributeOption attribute.KeyValue
 
 func (o staticDataPointAttributeOption) apply(opts *options) {
 	opts.staticDataPointAttributes = append(opts.staticDataPointAttributes, attribute.KeyValue(o))
+}
+
+type compiledOptions struct {
+	withSuccessAttrs metric.AddOption
+	withFailureAttrs metric.AddOption
+}
+
+func (o *options) compile() compiledOptions {
+	successAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
+	successAttrs = append(successAttrs, attribute.String("outcome", "success"))
+	successAttrs = append(successAttrs, o.staticDataPointAttributes...)
+
+	failureAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
+	failureAttrs = append(failureAttrs, attribute.String("outcome", "failure"))
+	failureAttrs = append(failureAttrs, o.staticDataPointAttributes...)
+
+	return compiledOptions{
+		withSuccessAttrs: metric.WithAttributes(successAttrs...),
+		withFailureAttrs: metric.WithAttributes(failureAttrs...),
+	}
 }
