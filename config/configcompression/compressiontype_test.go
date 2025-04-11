@@ -43,6 +43,12 @@ func TestUnmarshalText(t *testing.T) {
 			isCompressed:    true,
 		},
 		{
+			name:            "ValidSnappyFramed",
+			compressionName: []byte("x-snappy-framed"),
+			shouldError:     false,
+			isCompressed:    true,
+		},
+		{
 			name:            "ValidZstd",
 			compressionName: []byte("zstd"),
 			shouldError:     false,
@@ -125,6 +131,17 @@ func TestValidateParams(t *testing.T) {
 		{
 			name:             "InvalidSnappy",
 			compressionName:  []byte("snappy"),
+			compressionLevel: 1,
+			shouldError:      true,
+		},
+		{
+			name:            "ValidSnappyFramed",
+			compressionName: []byte("x-snappy-framed"),
+			shouldError:     false,
+		},
+		{
+			name:             "InvalidSnappyFramed",
+			compressionName:  []byte("x-snappy-framed"),
 			compressionLevel: 1,
 			shouldError:      true,
 		},
