@@ -260,6 +260,42 @@ To move within the 'Maintained' ladder ("graduate"), the process for doing so is
 3. If approved, a PR to change the stability level should be opened and MUST be approved by all
    listed code owners.
 
+## Graduation criteria
+
+In addition to the requirements outlined above, additional criteria should be met before a component
+can graduate to a higher stability level. These ensure that the component is ready for the increased
+usage and scrutiny that comes with a higher stability level, and that the community around it is
+sufficiently healthy.
+
+If the graduation criteria are not met, the approver should provide feedback on what is missing and
+how to address it. The component owners can then address the feedback and re-request graduation on
+the same issue.
+
+## In development to alpha
+
+No additional criteria are required to graduate from development to alpha.
+The component still needs to meet the general requirements for alpha components.
+
+## Alpha to beta
+
+To graduate any signal from alpha to beta on a component:
+1. The component MUST have at least two active code owners.
+3. Within the 30 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
+   been reviewed and replied to appropriately.
+
+## Beta to stable
+
+To graduate any signal from beta to stable on a component:
+1. The component MUST have at least three active code owners.
+3. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
+   been reviewed and replied to appropriately.
+
 ## Deprecation Information
 
 When a component is moved to deprecated, a deprecation section should indicate the date it was deprecated
