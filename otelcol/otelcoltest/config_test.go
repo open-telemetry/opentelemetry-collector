@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	require.Len(t, cfg.Service.Extensions, 1)
 	assert.Contains(t, cfg.Service.Extensions, component.MustNewID("nop"))
 	require.Len(t, cfg.Service.Pipelines, 1)
-	assert.Equal(t,
+	assert.Equalf(t,
 		&pipelines.PipelineConfig{
 			Receivers:  []component.ID{component.MustNewID("nop")},
 			Processors: []component.ID{component.MustNewID("nop")},

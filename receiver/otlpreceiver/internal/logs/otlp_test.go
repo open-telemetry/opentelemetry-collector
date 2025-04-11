@@ -34,8 +34,8 @@ func TestExport(t *testing.T) {
 	logSink := new(consumertest.LogsSink)
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), req)
-	require.NoError(t, err, "Failed to export trace: %v", err)
-	require.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export trace: %v", err)
+	require.NotNilf(t, resp, "The response is missing")
 
 	lds := logSink.AllLogs()
 	require.Len(t, lds, 1)
@@ -47,8 +47,8 @@ func TestExport_EmptyRequest(t *testing.T) {
 
 	logClient := makeLogsServiceClient(t, logSink)
 	resp, err := logClient.Export(context.Background(), plogotlp.NewExportRequest())
-	require.NoError(t, err, "Failed to export trace: %v", err)
-	assert.NotNil(t, resp, "The response is missing")
+	require.NoErrorf(t, err, "Failed to export trace: %v", err)
+	assert.NotNilf(t, resp, "The response is missing")
 }
 
 func TestExport_NonPermanentErrorConsumer(t *testing.T) {
@@ -76,7 +76,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 	addr := otlpReceiverOnGRPCServer(t, lc)
 	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err, "Failed to create the TraceServiceClient: %v", err)
+	require.NoErrorf(t, err, "Failed to create the TraceServiceClient: %v", err)
 	t.Cleanup(func() {
 		require.NoError(t, cc.Close())
 	})
@@ -86,7 +86,7 @@ func makeLogsServiceClient(t *testing.T, lc consumer.Logs) plogotlp.GRPCClient {
 
 func otlpReceiverOnGRPCServer(t *testing.T, lc consumer.Logs) net.Addr {
 	ln, err := net.Listen("tcp", "localhost:")
-	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
+	require.NoErrorf(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 
 	t.Cleanup(func() {
 		require.NoError(t, ln.Close())

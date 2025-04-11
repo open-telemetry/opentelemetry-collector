@@ -228,7 +228,7 @@ func TestSkipGenerate(t *testing.T) {
 	}()
 	require.NoError(t, err)
 	_, err = outputFile.Readdirnames(1)
-	require.ErrorIs(t, err, io.EOF, "skip generate should leave output directory empty")
+	require.ErrorIsf(t, err, io.EOF, "skip generate should leave output directory empty")
 }
 
 func TestGenerateAndCompile(t *testing.T) {

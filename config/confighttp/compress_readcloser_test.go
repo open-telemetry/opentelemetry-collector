@@ -63,13 +63,13 @@ func TestCompressReadCloser(t *testing.T) {
 				orig:   tc.wrapper(orig),
 			}
 
-			require.NoError(t, iotest.TestReader(crc, orig.Bytes()), "Must be able to read original content")
+			require.NoErrorf(t, iotest.TestReader(crc, orig.Bytes()), "Must be able to read original content")
 
 			err := crc.Close()
 			if tc.errVal != "" {
-				require.EqualError(t, err, tc.errVal, "Must match the expected error message")
+				require.EqualErrorf(t, err, tc.errVal, "Must match the expected error message")
 			} else {
-				require.NoError(t, err, "Must not error when closing reader")
+				require.NoErrorf(t, err, "Must not error when closing reader")
 			}
 		})
 	}

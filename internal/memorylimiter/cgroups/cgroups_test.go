@@ -55,8 +55,8 @@ func TestNewCGroups(t *testing.T) {
 
 	for _, tt := range testTable {
 		cgroup, exists := cgroups[tt.subsys]
-		assert.True(t, exists, "%q expected to present in `cgroups`", tt.subsys)
-		assert.Equal(t, tt.path, cgroup.path, "%q expected for `cgroups[%q].path`, got %q", tt.path, tt.subsys, cgroup.path)
+		assert.Truef(t, exists, "%q expected to present in `cgroups`", tt.subsys)
+		assert.Equalf(t, tt.path, cgroup.path, "%q expected for `cgroups[%q].path`, got %q", tt.path, tt.subsys, cgroup.path)
 	}
 }
 
@@ -112,22 +112,22 @@ func TestCGroupsMemoryQuota(t *testing.T) {
 	cgroups := make(CGroups)
 
 	quota, defined, err := cgroups.MemoryQuota()
-	assert.Equal(t, int64(-1), quota, "nonexistent")
-	assert.False(t, defined, "nonexistent")
-	require.NoError(t, err, "nonexistent")
+	assert.Equalf(t, int64(-1), quota, "nonexistent")
+	assert.Falsef(t, defined, "nonexistent")
+	require.NoErrorf(t, err, "nonexistent")
 
 	for _, tt := range testTable {
 		cgroupPath := filepath.Join(testDataCGroupsPath, tt.name)
 		cgroups[_cgroupSubsysMemory] = NewCGroup(cgroupPath)
 
 		quota, defined, err := cgroups.MemoryQuota()
-		assert.Equal(t, tt.expectedQuota, quota, tt.name)
-		assert.Equal(t, tt.expectedDefined, defined, tt.name)
+		assert.Equalf(t, tt.expectedQuota, quota, tt.name)
+		assert.Equalf(t, tt.expectedDefined, defined, tt.name)
 
 		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
+			assert.Errorf(t, err, tt.name)
 		} else {
-			assert.NoError(t, err, tt.name)
+			assert.NoErrorf(t, err, tt.name)
 		}
 	}
 }
@@ -164,12 +164,12 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 		mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name, "mountinfo")
 		isV2, err := isCGroupV2(mountInfoPath)
 
-		assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
+		assert.Equalf(t, tt.expectedIsV2, isV2, tt.name)
 
 		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
+			assert.Errorf(t, err, tt.name)
 		} else {
-			assert.NoError(t, err, tt.name)
+			assert.NoErrorf(t, err, tt.name)
 		}
 	}
 }
@@ -208,21 +208,21 @@ func TestCGroupsMemoryQuotaV2(t *testing.T) {
 	}
 
 	quota, defined, err := memoryQuotaV2("nonexistent", "nonexistent")
-	assert.Equal(t, int64(-1), quota, "nonexistent")
-	assert.False(t, defined, "nonexistent")
-	require.NoError(t, err, "nonexistent")
+	assert.Equalf(t, int64(-1), quota, "nonexistent")
+	assert.Falsef(t, defined, "nonexistent")
+	require.NoErrorf(t, err, "nonexistent")
 
 	cgroupBasePath := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range testTable {
 		cgroupPath := filepath.Join(cgroupBasePath, tt.name)
 		quota, defined, err := memoryQuotaV2(cgroupPath, "memory.max")
-		assert.Equal(t, tt.expectedQuota, quota, tt.name)
-		assert.Equal(t, tt.expectedDefined, defined, tt.name)
+		assert.Equalf(t, tt.expectedQuota, quota, tt.name)
+		assert.Equalf(t, tt.expectedDefined, defined, tt.name)
 
 		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
+			assert.Errorf(t, err, tt.name)
 		} else {
-			assert.NoError(t, err, tt.name)
+			assert.NoErrorf(t, err, tt.name)
 		}
 	}
 }
