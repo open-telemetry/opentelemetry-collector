@@ -277,6 +277,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:     "ValidSnappyFramedAsSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappyFramed(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
 			name:     "ValidLz4",
 			encoding: "lz4",
 			reqBody:  compressLz4(t, testBody),
