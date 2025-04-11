@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -44,7 +45,7 @@ func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 	br := bufio.NewReader(body)
 
 	peekBytes, err := br.Peek(len(snappyFramingHeader))
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
 	}
 
