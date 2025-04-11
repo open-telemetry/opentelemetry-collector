@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -27,7 +27,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	},
 		cfg)
 
-	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+	require.NoError(t, confmaptest.CheckConfigStruct(cfg))
 	ext, err := create(context.Background(), extensiontest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
