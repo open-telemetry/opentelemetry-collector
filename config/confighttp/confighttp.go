@@ -38,7 +38,7 @@ const (
 	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 )
 
-var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
