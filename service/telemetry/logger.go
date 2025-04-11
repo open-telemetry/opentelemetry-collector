@@ -41,6 +41,18 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		return nil, nil, err
 	}
 
+	// Add the resource fields to the logger
+	fields := []zap.Field{}
+	for k, v := range cfg.Resource {
+		if v != nil {
+			f := zap.Field{Key: k, Type: zapcore.StringType, String: *v}
+			fields = append(fields, f)
+		}
+	}
+	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+		return c.With(fields)
+	}))
+
 	var lp log.LoggerProvider
 
 	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
