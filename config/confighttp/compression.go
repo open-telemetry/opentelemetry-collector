@@ -55,17 +55,16 @@ func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 			Reader: snappy.NewReader(br),
 			orig:   body,
 		}, nil
-	} else {
-		compressed, err := io.ReadAll(br)
-		if err != nil {
-			return nil, err
-		}
-		decoded, err := snappy.Decode(nil, compressed)
-		if err != nil {
-			return nil, err
-		}
-		return io.NopCloser(bytes.NewReader(decoded)), nil
 	}
+	compressed, err := io.ReadAll(br)
+	if err != nil {
+		return nil, err
+	}
+	decoded, err := snappy.Decode(nil, compressed)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(bytes.NewReader(decoded)), nil
 }
 
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
