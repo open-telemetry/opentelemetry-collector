@@ -288,9 +288,9 @@ func isStringyStructure(t reflect.Type) bool {
 	if t.Kind() == reflect.String {
 		return true
 	}
-        if t.Kind() == reflect.Pointer {
-                return isStringyStructure(t.Elem())
-        }
+	if t.Kind() == reflect.Pointer {
+		return isStringyStructure(t.Elem())
+	}
 	if t.Kind() == reflect.Map {
 		return isStringyStructure(t.Elem())
 	}
