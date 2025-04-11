@@ -47,6 +47,32 @@ func DefaultMetricsConfig() MetricsConfig {
 }
 {{- end }}
 
+{{ if .Logs }}
+// LogConfig provides common config for a particular log.
+type LogConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+// LogsConfig provides config for {{ .Type }} logs.
+type LogsConfig struct {
+	{{- range $name, $log := .Logs }}
+	{{ $name.Render }} LogConfig `mapstructure:"{{ $name }}"`
+	{{- end }}
+}
+
+func DefaultLogsConfig() LogsConfig {
+	return LogsConfig{
+		{{- range $name, $log := .Logs }}
+		{{ $name.Render }}: LogConfig{
+			Enabled: {{ $log.Enabled }},
+		},
+		{{- end }}
+	}
+}
+{{- end }}
+
 {{ if .ResourceAttributes -}}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
@@ -109,6 +135,19 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}
+	}
+}
+{{- end }}
+
+{{ if .Logs -}}
+// LogsBuilderConfig is a configuration for {{ .Type }} logs builder.
+type LogsBuilderConfig struct {
+	Logs LogsConfig `mapstructure:"logs"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig {
+		Logs: DefaultLogsConfig(),
 	}
 }
 {{- end }}
