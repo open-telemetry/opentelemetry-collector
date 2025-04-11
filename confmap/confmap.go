@@ -211,33 +211,6 @@ func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
 
-// sliceOfMapsHookFunc provides a hook that processes maps within slices,
-// ensuring proper type conversion (especially for numeric values to strings).
-func sliceOfMapsHookFunc() mapstructure.DecodeHookFuncType {
-	return func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-		// Process slices - recursively handle maps within slices
-		if f.Kind() == reflect.Slice && data != nil {
-			if slice, ok := data.([]interface{}); ok {
-				for i, item := range slice {
-					if itemMap, ok := item.(map[string]interface{}); ok {
-						// Process each map within the slice - convert numeric values to strings
-						for k, v := range itemMap {
-							switch val := v.(type) {
-							case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
-								itemMap[k] = fmt.Sprintf("%v", val)
-							}
-						}
-						slice[i] = itemMap
-					}
-				}
-				return slice, nil
-			}
-		}
-
-		return data, nil
-	}
-}
-
 // decodeConfig decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
@@ -259,7 +232,6 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
-			sliceOfMapsHookFunc(),
 			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
@@ -316,6 +288,9 @@ func isStringyStructure(t reflect.Type) bool {
 	if t.Kind() == reflect.String {
 		return true
 	}
+        if t.Kind() == reflect.Pointer {
+                return isStringyStructure(t.Elem())
+        }
 	if t.Kind() == reflect.Map {
 		return isStringyStructure(t.Elem())
 	}
@@ -346,7 +321,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		}
 
 		switch to.Kind() {
-		case reflect.Array, reflect.Slice, reflect.Map:
+		case reflect.Array, reflect.Slice, reflect.Map, reflect.Pointer:
 			if isStringyStructure(to) {
 				// If the target field is a stringy structure, sanitize to use the original string value everywhere.
 				return sanitizeToStr(data), nil
