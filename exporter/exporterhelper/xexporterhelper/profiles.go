@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
@@ -46,14 +47,14 @@ func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 }
 
 type profilesRequest struct {
-	pd               pprofile.Profiles
-	cachedItemsCount int
+	pd         pprofile.Profiles
+	cachedSize int
 }
 
 func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
 	return &profilesRequest{
-		pd:               pd,
-		cachedItemsCount: pd.SampleCount(),
+		pd:         pd,
+		cachedSize: -1,
 	}
 }
 
@@ -80,11 +81,18 @@ func (req *profilesRequest) OnError(err error) exporterhelper.Request {
 }
 
 func (req *profilesRequest) ItemsCount() int {
-	return req.cachedItemsCount
+	return req.pd.SampleCount()
 }
 
-func (req *profilesRequest) setCachedItemsCount(count int) {
-	req.cachedItemsCount = count
+func (req *profilesRequest) size(sizer sizer.ProfilesSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.ProfilesSize(req.pd)
+	}
+	return req.cachedSize
+}
+
+func (req *profilesRequest) setCachedSize(size int) {
+	req.cachedSize = size
 }
 
 type profileExporter struct {
@@ -106,7 +114,7 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
+	return NewProfilesRequest(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
 
@@ -124,10 +132,13 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 	}
 }
 
-// NewProfilesRequestExporter creates a new profiles exporter based on a custom ProfilesConverter and Sender.
+// Deprecated: [v0.124.0] use NewProfilesRequest.
+var NewProfilesRequestExporter = NewProfilesRequest
+
+// NewProfilesRequest creates a new profiles exporter based on a custom ProfilesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewProfilesRequestExporter(
+func NewProfilesRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],

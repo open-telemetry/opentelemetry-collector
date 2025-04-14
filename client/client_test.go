@@ -8,6 +8,7 @@ package client
 import (
 	"context"
 	"net"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,6 +80,7 @@ func TestFromContext(t *testing.T) {
 func TestMetadata(t *testing.T) {
 	source := map[string][]string{"test-key": {"test-val"}, "TEST-KEY-2": {"test-val"}}
 	md := NewMetadata(source)
+	assert.Equal(t, []string{"test-key", "test-key-2"}, slices.Sorted(md.Keys()))
 	assert.Equal(t, []string{"test-val"}, md.Get("test-key"))
 	assert.Equal(t, []string{"test-val"}, md.Get("test-KEY"))   // case insensitive lookup
 	assert.Equal(t, []string{"test-val"}, md.Get("test-key-2")) // case insensitive lookup
@@ -93,5 +95,6 @@ func TestMetadata(t *testing.T) {
 
 func TestUninstantiatedMetadata(t *testing.T) {
 	i := Info{}
+	assert.Empty(t, slices.Collect(i.Metadata.Keys()))
 	assert.Empty(t, i.Metadata.Get("test"))
 }

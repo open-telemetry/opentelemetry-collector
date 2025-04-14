@@ -14,7 +14,9 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -60,7 +62,7 @@ var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().Must
 // ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
 
-// ModuleInfo describes the go module for all components.
+// ModuleInfos describes the go module for all components.
 type ModuleInfos = moduleinfo.ModuleInfos
 
 // Settings holds configuration for building a new Service.
@@ -243,7 +245,7 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 		return
 	}
 
-	if len(cfg.Address) != 0 { // SA1019
+	if len(cfg.Address) != 0 {
 		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
@@ -534,4 +536,27 @@ func configureViews(level configtelemetry.Level) []config.View {
 
 func ptr[T any](v T) *T {
 	return &v
+}
+
+// Validate verifies the graph by calling the internal graph.Build.
+func Validate(ctx context.Context, set Settings, cfg Config) error {
+	tel := component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: nooptrace.NewTracerProvider(),
+		MeterProvider:  noopmetric.NewMeterProvider(),
+		Resource:       pcommon.NewResource(),
+	}
+	_, err := graph.Build(ctx, graph.Settings{
+		Telemetry:        tel,
+		BuildInfo:        set.BuildInfo,
+		ReceiverBuilder:  builders.NewReceiver(set.ReceiversConfigs, set.ReceiversFactories),
+		ProcessorBuilder: builders.NewProcessor(set.ProcessorsConfigs, set.ProcessorsFactories),
+		ExporterBuilder:  builders.NewExporter(set.ExportersConfigs, set.ExportersFactories),
+		ConnectorBuilder: builders.NewConnector(set.ConnectorsConfigs, set.ConnectorsFactories),
+		PipelineConfigs:  cfg.Pipelines,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to build pipelines: %w", err)
+	}
+	return nil
 }

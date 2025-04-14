@@ -82,6 +82,7 @@ jobs:
           VERSION: ${{ needs.check-versions.outputs.latest-version }}
           # not using secrets.GITHUB_TOKEN since pull requests from that token do not run workflows
           GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          
         run: |
           message="Add semantic conventions version $VERSION"
           body="Add semantic conventions version \`$VERSION\`. Related to #10842"
@@ -105,5 +106,7 @@ jobs:
           url=$(gh pr create --title "$message" \
                              --body "$body" \
                              --base main)
-
-          pull_request_number=${url//*\//}
+          # The SC2034 warning is disabled because 'pull_request_number' is assigned but not used directly.
+          # ShellCheck flags this as unused, but it's stored for potential external usage.
+          # shellcheck disable=SC2034
+          pull_request_number=${url//*\//} 

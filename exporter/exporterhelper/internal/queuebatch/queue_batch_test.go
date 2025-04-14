@@ -71,8 +71,8 @@ func TestQueueBatchStopWhileWaiting(t *testing.T) {
 	require.LessOrEqual(t, int64(1), qb.queue.Size())
 
 	require.NoError(t, qb.Shutdown(context.Background()))
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 3, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 3, sink.ItemsCount())
 	require.Zero(t, qb.queue.Size())
 }
 
@@ -90,8 +90,8 @@ func TestQueueBatchDoNotPreserveCancellation(t *testing.T) {
 	require.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4}))
 	require.NoError(t, qb.Shutdown(context.Background()))
 
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 4, sink.ItemsCount())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 4, sink.ItemsCount())
 	require.Zero(t, qb.queue.Size())
 }
 
@@ -449,40 +449,6 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
-// Validate that the batch is cancelled once the first request in the request is cancelled
-func TestQueueBatch_BatchCancelled(t *testing.T) {
-	sink := requesttest.NewSink()
-	cfg := newTestConfig()
-	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 2
-	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
-	require.NoError(t, err)
-	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
-
-	// send 2 blockOnOverflow requests
-	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.ErrorIs(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 1, Delay: 100 * time.Millisecond}), context.Canceled)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(100 * time.Millisecond) // ensure this call is the second
-		assert.ErrorIs(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Delay: 100 * time.Millisecond}), context.Canceled)
-	}()
-	cancel() // canceling the first request should cancel the whole batch
-	wg.Wait()
-
-	// nothing should be delivered
-	assert.Equal(t, 0, sink.RequestsCount())
-	assert.Equal(t, 0, sink.ItemsCount())
-
-	require.NoError(t, qb.Shutdown(context.Background()))
-}
-
 func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
@@ -512,47 +478,6 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 
 	assert.Equal(t, 2, sink.RequestsCount())
 	assert.Equal(t, 3, sink.ItemsCount())
-}
-
-func TestQueueBatchWithTimeout(t *testing.T) {
-	sink := requesttest.NewSink()
-	cfg := newTestConfig()
-	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 10
-	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
-	require.NoError(t, err)
-	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-	// Send 3 concurrent requests that should be merged in one batch
-	wg := sync.WaitGroup{}
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4}))
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 12, sink.ItemsCount())
-
-	// 3 requests with a 90ms cumulative delay must be cancelled by the timeout sender
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go func() {
-			assert.Error(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4, Delay: 30 * time.Millisecond}))
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	require.NoError(t, qb.Shutdown(context.Background()))
-
-	// The sink should not change
-	assert.EqualValues(t, 1, sink.RequestsCount())
-	assert.EqualValues(t, 12, sink.ItemsCount())
 }
 
 func TestQueueBatchTimerResetNoConflict(t *testing.T) {

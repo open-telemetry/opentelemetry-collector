@@ -193,6 +193,11 @@ Errors should be "tagged as coming from downstream" the same way permanent error
         monotonic: true
 ```
 
+#### Additional Attribute for Connectors
+
+Connectors can route telemetry to specific pipelines. Therefore, `otelcol.connector.produced.*` metrics should carry an
+additional data point attribute, `otelcol.pipeline.id`, to describe the pipeline ID to which the data is sent.
+
 ### Auto-Instrumented Logs
 
 Metrics provide most of the observability we need but there are some gaps which logs can fill. Although metrics would describe the overall

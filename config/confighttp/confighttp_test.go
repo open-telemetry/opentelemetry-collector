@@ -171,12 +171,12 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			require.NoError(t, err)
 			switch transport := client.Transport.(type) {
 			case *http.Transport:
-				assert.EqualValues(t, 1024, transport.ReadBufferSize)
-				assert.EqualValues(t, 512, transport.WriteBufferSize)
-				assert.EqualValues(t, 50, transport.MaxIdleConns)
-				assert.EqualValues(t, 40, transport.MaxIdleConnsPerHost)
-				assert.EqualValues(t, 45, transport.MaxConnsPerHost)
-				assert.EqualValues(t, 30*time.Second, transport.IdleConnTimeout)
+				assert.Equal(t, 1024, transport.ReadBufferSize)
+				assert.Equal(t, 512, transport.WriteBufferSize)
+				assert.Equal(t, 50, transport.MaxIdleConns)
+				assert.Equal(t, 40, transport.MaxIdleConnsPerHost)
+				assert.Equal(t, 45, transport.MaxConnsPerHost)
+				assert.Equal(t, 30*time.Second, transport.IdleConnTimeout)
 				assert.True(t, transport.DisableKeepAlives)
 			case *compressRoundTripper:
 				assert.EqualValues(t, "gzip", transport.compressionType)
@@ -218,11 +218,11 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			client, err := tt.settings.ToClient(context.Background(), host, tel)
 			require.NoError(t, err)
 			transport := client.Transport.(*http.Transport)
-			assert.EqualValues(t, 1024, transport.ReadBufferSize)
-			assert.EqualValues(t, 512, transport.WriteBufferSize)
-			assert.EqualValues(t, 0, transport.MaxIdleConns)
-			assert.EqualValues(t, 0, transport.MaxIdleConnsPerHost)
-			assert.EqualValues(t, 0, transport.MaxConnsPerHost)
+			assert.Equal(t, 1024, transport.ReadBufferSize)
+			assert.Equal(t, 512, transport.WriteBufferSize)
+			assert.Equal(t, 0, transport.MaxIdleConns)
+			assert.Equal(t, 0, transport.MaxIdleConnsPerHost)
+			assert.Equal(t, 0, transport.MaxConnsPerHost)
 			assert.EqualValues(t, 0, transport.IdleConnTimeout)
 			assert.False(t, transport.DisableKeepAlives)
 		})
@@ -231,8 +231,8 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 
 func TestDefaultHTTPClientSettings(t *testing.T) {
 	httpClientSettings := NewDefaultClientConfig()
-	assert.EqualValues(t, 100, httpClientSettings.MaxIdleConns)
-	assert.EqualValues(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
+	assert.Equal(t, 100, httpClientSettings.MaxIdleConns)
+	assert.Equal(t, 90*time.Second, httpClientSettings.IdleConnTimeout)
 }
 
 func TestProxyURL(t *testing.T) {
@@ -1212,7 +1212,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("Settings failed")
+				return ctx, errors.New("invalid authorization")
 			}),
 		},
 	}
@@ -1227,6 +1227,44 @@ func TestFailedServerAuth(t *testing.T) {
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
 	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
+}
+
+func TestFailedServerAuthWithErrorHandler(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		Endpoint: "localhost:0",
+		Auth: &AuthConfig{
+			Authentication: configauth.Authentication{
+				AuthenticatorID: mockID,
+			},
+		},
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, errors.New("invalid authorization")
+			}),
+		},
+	}
+
+	eh := func(w http.ResponseWriter, _ *http.Request, err string, statusCode int) {
+		assert.Equal(t, http.StatusUnauthorized, statusCode)
+		// custom error handler uses real error string
+		assert.Equal(t, "invalid authorization", err)
+		// custom error handler changes returned status code
+		http.Error(w, err, http.StatusInternalServerError)
+	}
+
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
+	require.NoError(t, err)
+
+	// tt
+	response := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	// verify
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)), response.Result().Status)
 }
 
 func TestServerWithErrorHandler(t *testing.T) {

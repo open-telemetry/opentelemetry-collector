@@ -191,7 +191,7 @@ func (ste *ProfilesSink) AllProfiles() []pprofile.Profiles {
 	return copyProfiles
 }
 
-// ProfileRecordCount returns the number of profiles stored by this sink since last Reset.
+// SampleCount returns the number of profiles stored by this sink since last Reset.
 func (ste *ProfilesSink) SampleCount() int {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()

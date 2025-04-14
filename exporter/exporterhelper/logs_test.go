@@ -52,7 +52,7 @@ func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1))
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
-	assert.EqualValues(
+	assert.Equal(
 		t,
 		newLogsRequest(plog.NewLogs()),
 		lr.(RequestErrorHandler).OnError(logErr),

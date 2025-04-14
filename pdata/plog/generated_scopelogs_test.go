@@ -47,7 +47,7 @@ func TestScopeLogs_Scope(t *testing.T) {
 
 func TestScopeLogs_SchemaUrl(t *testing.T) {
 	ms := NewScopeLogs()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly

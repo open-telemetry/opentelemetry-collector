@@ -8,7 +8,8 @@
     "go": "1.23"
   },
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
   ],
   "schedule": [
     "on tuesday"

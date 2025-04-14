@@ -1,0 +1,44 @@
+self-hosted-runner:
+  labels: []
+
+config-variables: null
+
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # SC1070: Suppressing because scripts intentionally contain valid but unusual characters,
+      # Escape characters like `\o` used purposefully, and tested for clarity
+      - '.*shellcheck reported issue in this script: SC1070:.+'
+
+      # SC1133: ShellCheck suggests optimizing conditional expressions, but these scripts
+      # operate correctly and readability is prioritized in real-world use. This ensures familiarity for contributors.
+      - '.*shellcheck reported issue in this script: SC1133:.+'
+
+      # SC2086: Ignored because word splitting is intentional in commands like `git diff`,
+      # where simple, predictable paths are passed as arguments. No unintended globbing occurs in this context.
+      - '.*shellcheck reported issue in this script: SC2086:.+'
+
+      # SC2046: Suppressed because word splitting is desired and necessary in certain scenarios,
+      # PR_HEAD is set by GitHub Actions and paths are fixed/controlled.
+      - '.*shellcheck reported issue in this script: SC2046:.+'
+
+      # SC2059: Format strings in `printf` are deliberately designed and controlled for specific outputs.
+      # ShellCheck’s safeguard warning is appreciated but not critical in these cases.
+      - '.*shellcheck reported issue in this script: SC2059:.+'
+
+      # SC2236: Both `! -z` and `-n` achieve the same result, and while `-n` is idiomatic. (Just a style suggestion)
+      # suppressing this warning allows scripts to remain consistent with existing standards.
+      - '.*shellcheck reported issue in this script: SC2236:.+'
+
+      # SC1001: Escaped characters (like `\o`) are deliberate in certain scripts for expected functionality.
+      # ShellCheck’s flagging of these characters as potential issues isn’t applicable to this use case.
+      - '.*shellcheck reported issue in this script: SC1001:.+'
+
+      # SC2129: Individual redirections are chosen for simplicity and clarity in the workflows.
+      # combining them is technically efficient, the current approach ensures more readable scripts.
+      - '.*shellcheck reported issue in this script: SC2129:.+'
+
+      # Runner warnings ignored because scripts are validated against specific configurations
+      # and tested on GitHub Actions, ensuring compatibility. These warnings do not affect functionality.
+      - '.*the runner of ".+" action is too old to run on GitHub Actions.+'
+
