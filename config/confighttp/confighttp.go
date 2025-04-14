@@ -410,7 +410,13 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 	})
 }
 
-// ToServer creates an http.Server from settings object.
+// ToServer creates an http.Server, serving requests with the given handler.
+//
+// If handler is an *http.ServeMux, then its Handler method will be used to
+// determine the matching route pattern to format the span name according to
+// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name. For
+// backwards compatibility, if handler is NOT an *http.ServeMux, then the
+// span name will be the URL path.
 func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
@@ -423,6 +429,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
+	mux, handlerIsMux := handler.(*http.ServeMux)
 	handler = httpContentDecompressor(
 		handler,
 		hss.MaxRequestBodySize,
@@ -461,19 +468,37 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 		handler = responseHeadersHandler(handler, hss.ResponseHeaders)
 	}
 
+	spanNameFormatter := func(_ string, r *http.Request) string {
+		return r.URL.Path
+	}
+	if handlerIsMux {
+		spanNameFormatter = func(_ string, r *http.Request) string {
+			target := r.Pattern
+			if target == "" {
+				target = "unknown route"
+			}
+			return fmt.Sprintf("%s %s", r.Method, target)
+		}
+	}
+
 	otelOpts := append(
 		[]otelhttp.Option{
 			otelhttp.WithTracerProvider(settings.TracerProvider),
 			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
-			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-				return r.URL.Path
-			}),
+			otelhttp.WithSpanNameFormatter(spanNameFormatter),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
 		serverOpts.OtelhttpOpts...)
 
 	// Enable OpenTelemetry observability plugin.
 	handler = otelhttp.NewHandler(handler, "", otelOpts...)
+
+	// We need to ensure Request.Pattern is set prior to instrumentation.
+	// This is set by ServeMux.ServeHTTP, but that won't be invoked until
+	// after the otelhttp instrumentation.
+	if handlerIsMux {
+		handler = &muxPatternHandler{next: handler, mux: mux}
+	}
 
 	// wrap the current handler in an interceptor that will add client.Info to the request's context
 	handler = &clientInfoHandler{
@@ -496,6 +521,16 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	}
 
 	return server, err
+}
+
+type muxPatternHandler struct {
+	next http.Handler
+	mux  *http.ServeMux
+}
+
+func (h *muxPatternHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	_, r.Pattern = h.mux.Handler(r)
+	h.next.ServeHTTP(w, r)
 }
 
 func responseHeadersHandler(handler http.Handler, headers map[string]configopaque.String) http.Handler {
