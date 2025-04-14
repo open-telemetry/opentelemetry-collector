@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.0
-	go.opentelemetry.io/collector/consumer/xconsumer v0.123.0
-	go.opentelemetry.io/collector/pipeline v0.123.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.124.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.124.0
+	go.opentelemetry.io/collector/pipeline v0.124.0
 	go.opentelemetry.io/collector/processor v1.30.0
 )
 
@@ -25,9 +25,9 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.30.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.124.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.30.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.123.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.124.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
