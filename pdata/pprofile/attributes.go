@@ -5,6 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"errors"
+	"fmt"
 	"math"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,18 +31,19 @@ func FromAttributeIndices(table AttributeTableSlice, record attributable) pcommo
 	return m
 }
 
+var errTooManyTableEntries = errors.New("too many entries in AttributeTable")
+
 // PutAttribute updates an AttributeTable and a record's AttributeIndices to
 // add a new attribute.
 // The assumption is that attributes are a map as for other signals (metrics, logs, etc.), thus
 // the same key must not appear twice in a list of attributes / attribute indices.
 // The record can be any struct that implements an `AttributeIndices` method.
 func PutAttribute(table AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
-	if record.AttributeIndices().Len() >= math.MaxInt32-1 {
-		return errors.New("AttributeTable can't take more attributes")
-	}
-
 	for i := range record.AttributeIndices().Len() {
 		idx := record.AttributeIndices().At(i)
+		if idx < 0 || idx >= int32(table.Len()) {
+			return fmt.Errorf("index value %d out of range in AttributeIndices[%d]", idx, i)
+		}
 		attr := table.At(int(idx))
 		if attr.Key() == key {
 			if attr.Value().Equal(value) {
@@ -53,9 +55,16 @@ func PutAttribute(table AttributeTableSlice, record attributable, key string, va
 			for j := range table.Len() {
 				a := table.At(j)
 				if a.Key() == key && a.Value().Equal(value) {
+					if j > math.MaxInt32 {
+						return errTooManyTableEntries
+					}
 					record.AttributeIndices().SetAt(i, int32(j)) //nolint:gosec // overflow checked
 					return nil
 				}
+			}
+
+			if table.Len() >= math.MaxInt32 {
+				return errTooManyTableEntries
 			}
 
 			// Add the key/value pair as a new attribute to the table...
@@ -67,6 +76,14 @@ func PutAttribute(table AttributeTableSlice, record attributable, key string, va
 			record.AttributeIndices().SetAt(i, int32(table.Len()-1)) //nolint:gosec // overflow checked
 			return nil
 		}
+	}
+
+	if table.Len() >= math.MaxInt32 {
+		return errTooManyTableEntries
+	}
+
+	if record.AttributeIndices().Len() >= math.MaxInt32 {
+		return errors.New("too many entries in AttributeIndices")
 	}
 
 	// Add the key/value pair as a new attribute to the table...
