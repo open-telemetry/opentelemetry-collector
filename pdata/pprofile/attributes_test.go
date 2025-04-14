@@ -86,9 +86,16 @@ func testPutAttribute(t *testing.T, record attributable) {
 
 	// Add a negative index to the record.
 	record.AttributeIndices().Append(-1)
-	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
 	tableLen := table.Len()
 	indicesLen := record.AttributeIndices().Len()
+	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
+	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
+	require.Equal(t, tableLen, table.Len())
+	require.Equal(t, indicesLen, record.AttributeIndices().Len())
+
+	// Set the last index to the table length, which is out of range.
+	record.AttributeIndices().SetAt(indicesLen-1, int32(tableLen))
+	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
 	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
 	require.Equal(t, tableLen, table.Len())
 	require.Equal(t, indicesLen, record.AttributeIndices().Len())
