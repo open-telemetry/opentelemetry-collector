@@ -1,0 +1,19 @@
+receivers:
+  otlp:
+
+processors:
+  batch:
+
+exporters:
+  otlp:
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp]
+
+  telemetry:
+    logs:
+      level: info
