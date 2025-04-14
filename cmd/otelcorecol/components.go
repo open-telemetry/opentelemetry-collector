@@ -12,7 +12,9 @@ import (
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
 	"go.opentelemetry.io/collector/extension"
+	limitermiddlewareextension "go.opentelemetry.io/collector/extension/limitermiddlewareextension"
 	memorylimiterextension "go.opentelemetry.io/collector/extension/memorylimiterextension"
+	ratelimiterextension "go.opentelemetry.io/collector/extension/ratelimiterextension"
 	zpagesextension "go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/processor"
@@ -29,6 +31,8 @@ func components() (otelcol.Factories, error) {
 
 	factories.Extensions, err = otelcol.MakeFactoryMap[extension.Factory](
 		memorylimiterextension.NewFactory(),
+		limitermiddlewareextension.NewFactory(),
+		ratelimiterextension.NewFactory(),
 		zpagesextension.NewFactory(),
 	)
 	if err != nil {
@@ -36,6 +40,8 @@ func components() (otelcol.Factories, error) {
 	}
 	factories.ExtensionModules = make(map[component.Type]string, len(factories.Extensions))
 	factories.ExtensionModules[memorylimiterextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/memorylimiterextension v0.124.0"
+	factories.ExtensionModules[limitermiddlewareextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/limitermiddlewareextension v0.124.0"
+	factories.ExtensionModules[ratelimiterextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/ratelimiterextension v0.124.0"
 	factories.ExtensionModules[zpagesextension.NewFactory().Type()] = "go.opentelemetry.io/collector/extension/zpagesextension v0.124.0"
 
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](

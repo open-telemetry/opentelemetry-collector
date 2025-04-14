@@ -1,0 +1,12 @@
+type: rate_limiter
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+
+tests:
+  # note: not sure how to configure the associated limiter extension
+  skip_lifecycle: true

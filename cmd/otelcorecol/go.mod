@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.23.0
 
-toolchain go1.23.8
+toolchain go1.24.1
 
 require (
 	go.opentelemetry.io/collector/component v1.30.0
@@ -22,7 +22,9 @@ require (
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.124.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.124.0
 	go.opentelemetry.io/collector/extension v1.30.0
+	go.opentelemetry.io/collector/extension/limitermiddlewareextension v0.124.0
 	go.opentelemetry.io/collector/extension/memorylimiterextension v0.124.0
+	go.opentelemetry.io/collector/extension/ratelimiterextension v0.124.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.124.0
 	go.opentelemetry.io/collector/otelcol v0.124.0
 	go.opentelemetry.io/collector/processor v1.30.0
@@ -89,6 +91,8 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.124.0 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.124.0 // indirect
+	go.opentelemetry.io/collector/config/configlimiter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.30.0 // indirect
@@ -107,6 +111,8 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.124.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.124.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
@@ -185,6 +191,10 @@ replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgr
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
+replace go.opentelemetry.io/collector/config/configlimiter => ../../config/configlimiter
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
@@ -251,9 +261,17 @@ replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest 
 
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
 replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
+
+replace go.opentelemetry.io/collector/extension/ratelimiterextension => ../../extension/ratelimiterextension
+
+replace go.opentelemetry.io/collector/extension/limitermiddlewareextension => ../../extension/limitermiddlewareextension
 
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
