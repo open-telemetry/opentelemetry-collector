@@ -94,7 +94,7 @@ func testPutAttribute(t *testing.T, record attributable) {
 	require.Equal(t, indicesLen, record.AttributeIndices().Len())
 
 	// Set the last index to the table length, which is out of range.
-	record.AttributeIndices().SetAt(indicesLen-1, int32(tableLen))
+	record.AttributeIndices().SetAt(indicesLen-1, int32(tableLen)) //nolint:gosec
 	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
 	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
 	require.Equal(t, tableLen, table.Len())

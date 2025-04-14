@@ -40,11 +40,11 @@ var errTooManyTableEntries = errors.New("too many entries in AttributeTable")
 // The record can be any struct that implements an `AttributeIndices` method.
 func PutAttribute(table AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
 	for i := range record.AttributeIndices().Len() {
-		idx := record.AttributeIndices().At(i)
-		if idx < 0 || idx >= int32(table.Len()) {
+		idx := int(record.AttributeIndices().At(i))
+		if idx < 0 || idx >= table.Len() {
 			return fmt.Errorf("index value %d out of range in AttributeIndices[%d]", idx, i)
 		}
-		attr := table.At(int(idx))
+		attr := table.At(idx)
 		if attr.Key() == key {
 			if attr.Value().Equal(value) {
 				// Attribute already exists, nothing to do.
