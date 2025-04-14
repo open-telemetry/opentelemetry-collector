@@ -83,6 +83,15 @@ func testPutAttribute(t *testing.T, record attributable) {
 		assert.Equal(t, i+4, table.Len())
 		assert.Equal(t, i+3, record.AttributeIndices().Len())
 	}
+
+	// Add a negative index to the record.
+	record.AttributeIndices().Append(-1)
+	// Try putting a new attribute, make sure it fails, and that table/indices didn't change.
+	tableLen := table.Len()
+	indicesLen := record.AttributeIndices().Len()
+	require.Error(t, PutAttribute(table, record, "newKey", pcommon.NewValueStr("value")))
+	require.Equal(t, tableLen, table.Len())
+	require.Equal(t, indicesLen, record.AttributeIndices().Len())
 }
 
 func TestPutAttribute(t *testing.T) {
