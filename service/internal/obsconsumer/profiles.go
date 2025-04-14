@@ -13,27 +13,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-var _ xconsumer.Profiles = Profiles{}
+var _ xconsumer.Profiles = profiles{}
 
-func NewProfiles(consumer xconsumer.Profiles, itemCounter metric.Int64Counter, opts ...Option) Profiles {
+func NewProfiles(consumer xconsumer.Profiles, itemCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	return Profiles{
+	return profiles{
 		consumer:        consumer,
 		itemCounter:     itemCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type Profiles struct {
+type profiles struct {
 	consumer    xconsumer.Profiles
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c Profiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+func (c profiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
 	// Measure before calling ConsumeProfiles because the data may be mutated downstream
 	itemCount := pd.SampleCount()
 	err := c.consumer.ConsumeProfiles(ctx, pd)
@@ -45,6 +45,6 @@ func (c Profiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) err
 	return err
 }
 
-func (c Profiles) Capabilities() consumer.Capabilities {
+func (c profiles) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

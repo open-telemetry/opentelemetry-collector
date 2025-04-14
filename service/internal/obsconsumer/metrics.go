@@ -12,27 +12,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var _ consumer.Metrics = Metrics{}
+var _ consumer.Metrics = metrics{}
 
-func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts ...Option) Metrics {
+func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	return Metrics{
+	return metrics{
 		consumer:        consumer,
 		itemCounter:     itemCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type Metrics struct {
+type metrics struct {
 	consumer    consumer.Metrics
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c Metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (c metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	// Measure before calling ConsumeMetrics because the data may be mutated downstream
 	itemCount := md.DataPointCount()
 	err := c.consumer.ConsumeMetrics(ctx, md)
@@ -44,6 +44,6 @@ func (c Metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return err
 }
 
-func (c Metrics) Capabilities() consumer.Capabilities {
+func (c metrics) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

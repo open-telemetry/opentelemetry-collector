@@ -12,27 +12,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ consumer.Logs = Logs{}
+var _ consumer.Logs = logs{}
 
-func NewLogs(consumer consumer.Logs, itemCounter metric.Int64Counter, opts ...Option) Logs {
+func NewLogs(consumer consumer.Logs, itemCounter metric.Int64Counter, opts ...Option) consumer.Logs {
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	return Logs{
+	return logs{
 		consumer:        consumer,
 		itemCounter:     itemCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type Logs struct {
+type logs struct {
 	consumer    consumer.Logs
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c Logs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (c logs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// Measure before calling ConsumeLogs because the data may be mutated downstream
 	itemCount := ld.LogRecordCount()
 	err := c.consumer.ConsumeLogs(ctx, ld)
@@ -44,6 +44,6 @@ func (c Logs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return err
 }
 
-func (c Logs) Capabilities() consumer.Capabilities {
+func (c logs) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

@@ -12,27 +12,27 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ consumer.Traces = Traces{}
+var _ consumer.Traces = traces{}
 
-func NewTraces(consumer consumer.Traces, itemCounter metric.Int64Counter, opts ...Option) Traces {
+func NewTraces(consumer consumer.Traces, itemCounter metric.Int64Counter, opts ...Option) consumer.Traces {
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)
 	}
-	return Traces{
+	return traces{
 		consumer:        consumer,
 		itemCounter:     itemCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type Traces struct {
+type traces struct {
 	consumer    consumer.Traces
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c Traces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (c traces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	// Measure before calling ConsumeTraces because the data may be mutated downstream
 	itemCount := td.SpanCount()
 	err := c.consumer.ConsumeTraces(ctx, td)
@@ -44,6 +44,6 @@ func (c Traces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return err
 }
 
-func (c Traces) Capabilities() consumer.Capabilities {
+func (c traces) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }
