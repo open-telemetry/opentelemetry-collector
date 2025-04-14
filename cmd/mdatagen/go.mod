@@ -6,20 +6,20 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.29.0
+	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componenttest v0.123.0
-	go.opentelemetry.io/collector/confmap v1.29.0
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.29.0
+	go.opentelemetry.io/collector/confmap v1.30.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.30.0
 	go.opentelemetry.io/collector/connector v0.123.0
 	go.opentelemetry.io/collector/connector/connectortest v0.123.0
-	go.opentelemetry.io/collector/consumer v1.29.0
+	go.opentelemetry.io/collector/consumer v1.30.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.123.0
 	go.opentelemetry.io/collector/filter v0.123.0
-	go.opentelemetry.io/collector/pdata v1.29.0
+	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/pipeline v0.123.0
-	go.opentelemetry.io/collector/processor v1.29.0
+	go.opentelemetry.io/collector/processor v1.30.0
 	go.opentelemetry.io/collector/processor/processortest v0.123.0
-	go.opentelemetry.io/collector/receiver v1.29.0
+	go.opentelemetry.io/collector/receiver v1.30.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.123.0
 	go.opentelemetry.io/collector/scraper v0.123.0
 	go.opentelemetry.io/collector/scraper/scrapertest v0.123.0
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/collector/connector/xconnector v0.123.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.123.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.123.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.123.0 // indirect
