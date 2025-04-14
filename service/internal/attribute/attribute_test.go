@@ -30,14 +30,14 @@ var (
 	}
 
 	pIDs = []pipeline.ID{
-		pipeline.MustNewID("traces"),
-		pipeline.MustNewIDWithName("traces", "2"),
-		pipeline.MustNewID("metrics"),
-		pipeline.MustNewIDWithName("metrics", "2"),
-		pipeline.MustNewID("logs"),
-		pipeline.MustNewIDWithName("logs", "2"),
-		pipeline.MustNewID("profiles"),
-		pipeline.MustNewIDWithName("profiles", "2"),
+		pipeline.NewID(pipeline.SignalTraces),
+		pipeline.NewIDWithName(pipeline.SignalTraces, "2"),
+		pipeline.NewID(pipeline.SignalMetrics),
+		pipeline.NewIDWithName(pipeline.SignalMetrics, "2"),
+		pipeline.NewID(pipeline.SignalLogs),
+		pipeline.NewIDWithName(pipeline.SignalLogs, "2"),
+		pipeline.NewID(xpipeline.SignalProfiles),
+		pipeline.NewIDWithName(xpipeline.SignalProfiles, "2"),
 	}
 )
 
