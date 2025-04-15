@@ -17,7 +17,7 @@ issues: [12856]
 # Use pipe (|) for multiline entries.
 subtext: |
   The off state of this feature gate introduced a regression, where the Collector's internal logs were missing component attributes. See issue #12870 for more details on this bug. Since there does not appear to be much benefit to disabling the gate, we are immediately moving it to stable in order to lock in the correct behavior.
-
+  
   This comes with a breaking change, where internal logs exported through OTLP will now use instrumentation scope attributes to identify the source component instead of log attributes. This does not affect the Collector's stderr output. See the changelog for v0.123.0 for a more detailed description of the gate's effects.
 
 # Optional: The change log or logs in which this entry should be included.

@@ -15,9 +15,11 @@ import (
 
 func AssertEqualConnectorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_connector.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items passed to the connector.",
@@ -35,9 +37,11 @@ func AssertEqualConnectorConsumedItems(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_connector.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items passed to the connector.",
@@ -55,9 +59,11 @@ func AssertEqualConnectorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualConnectorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_connector.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items emitted from the connector.",
@@ -75,9 +81,11 @@ func AssertEqualConnectorProducedItems(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_connector.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items emitted from the connector.",
@@ -95,9 +103,11 @@ func AssertEqualConnectorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualExporterConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items passed to the exporter.",
@@ -115,9 +125,11 @@ func AssertEqualExporterConsumedItems(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualExporterConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items passed to the exporter.",
@@ -261,9 +273,11 @@ func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []m
 
 func AssertEqualProcessorConsumedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items passed to the processor.",
@@ -281,9 +295,11 @@ func AssertEqualProcessorConsumedItems(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items passed to the processor.",
@@ -301,9 +317,11 @@ func AssertEqualProcessorConsumedSize(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualProcessorProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items emitted from the processor.",
@@ -321,9 +339,11 @@ func AssertEqualProcessorProducedItems(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items emitted from the processor.",
@@ -341,9 +361,11 @@ func AssertEqualProcessorProducedSize(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualReceiverProducedItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_receiver.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.receiver.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items emitted from the receiver.",
@@ -361,9 +383,11 @@ func AssertEqualReceiverProducedItems(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualReceiverProducedSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_receiver.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.receiver.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Size of items emitted from the receiver.",

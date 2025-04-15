@@ -191,9 +191,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
 	var name string
 	name = "otelcol_connector.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.items"
+		}
+	})
 	builder.ConnectorConsumedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items passed to the connector."),
@@ -201,9 +203,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_connector.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.size"
+		}
+	})
 	builder.ConnectorConsumedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items passed to the connector."),
@@ -211,9 +215,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_connector.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.items"
+		}
+	})
 	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items emitted from the connector."),
@@ -221,9 +227,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_connector.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.connector.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.size"
+		}
+	})
 	builder.ConnectorProducedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items emitted from the connector."),
@@ -231,9 +239,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_exporter.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.items"
+		}
+	})
 	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items passed to the exporter."),
@@ -241,9 +251,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_exporter.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.size"
+		}
+	})
 	builder.ExporterConsumedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items passed to the exporter."),
@@ -323,9 +335,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor.consumed.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.consumed.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.items"
+		}
+	})
 	builder.ProcessorConsumedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items passed to the processor."),
@@ -333,9 +347,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor.consumed.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.consumed.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.size"
+		}
+	})
 	builder.ProcessorConsumedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items passed to the processor."),
@@ -343,9 +359,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.items"
+		}
+	})
 	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items emitted from the processor."),
@@ -353,9 +371,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.size"
+		}
+	})
 	builder.ProcessorProducedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items emitted from the processor."),
@@ -363,9 +383,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_receiver.produced.items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.receiver.produced.items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.items"
+		}
+	})
 	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of items emitted from the receiver."),
@@ -373,9 +395,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_receiver.produced.size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.receiver.produced.size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.size"
+		}
+	})
 	builder.ReceiverProducedSize, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Size of items emitted from the receiver."),
