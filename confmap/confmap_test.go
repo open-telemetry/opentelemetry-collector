@@ -4,12 +4,12 @@
 package confmap
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -911,56 +911,34 @@ func TestSubExpandedValue(t *testing.T) {
 	assert.Nil(t, cm.Get("key::subkey::subsubkey"))
 }
 
-func TestStringyTypes(t *testing.T) {
-	tests := []struct {
-		valueOfType any
-		isStringy   bool
-	}{
-		{
-			valueOfType: "string",
-			isStringy:   true,
-		},
-		{
-			valueOfType: 1,
-			isStringy:   false,
-		},
-		{
-			valueOfType: map[string]any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: []any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: map[string]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: []string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: map[string][]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: map[string]map[string]string{},
-			isStringy:   true,
-		},
-		{
-			valueOfType: []map[string]any{},
-			isStringy:   false,
-		},
-		{
-			valueOfType: []map[string]string{},
-			isStringy:   true,
-		},
-	}
+type Config struct {
+	SliceSubConfig []SubConfig `mapstructure:"slice_sub_config"`
+}
+type SubConfig struct {
+	FieldOne string  `mapstructure:"field_one"`
+	FieldTwo *string `mapstructure:"field_two"`
+}
 
-	for _, tt := range tests {
-		// Create a reflect.Type from the value
-		to := reflect.TypeOf(tt.valueOfType)
-		assert.Equal(t, tt.isStringy, isStringyStructure(to))
+func TestExpandedSliceStruct(t *testing.T) {
+	stringMap := map[string]any{
+		"slice_sub_config": []any{
+			map[string]any{
+				"field_one": "${PORT}",
+				"field_two": "value2",
+			},
+		},
 	}
+	provider := newFakeProvider("input", func(context.Context, string, WatcherFunc) (*Retrieved, error) {
+		return NewRetrieved(stringMap)
+	})
+
+	envProvider := newEnvProvider()
+	set := ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, envProvider}, ConverterFactories: nil}
+	set.DefaultScheme = "env"
+	resolver, err := NewResolver(set)
+	require.NoError(t, err)
+	conf, err := resolver.Resolve(context.Background())
+	require.NoError(t, err)
+	cfg := &Config{}
+	require.NoError(t, conf.Unmarshal(cfg))
 }
