@@ -13,11 +13,13 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
 	go.opentelemetry.io/collector/config/configauth v0.124.0
 	go.opentelemetry.io/collector/config/configcompression v1.30.0
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/configopaque v1.30.0
 	go.opentelemetry.io/collector/config/configtls v1.30.0
 	go.opentelemetry.io/collector/extension v1.30.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.124.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
 	go.opentelemetry.io/otel v1.35.0
 	go.uber.org/goleak v1.3.0
@@ -58,6 +60,8 @@ replace go.opentelemetry.io/collector/config/configauth => ../configauth
 
 replace go.opentelemetry.io/collector/config/configcompression => ../configcompression
 
+replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
+
 replace go.opentelemetry.io/collector/config/configopaque => ../configopaque
 
 replace go.opentelemetry.io/collector/config/configtls => ../configtls
@@ -65,6 +69,8 @@ replace go.opentelemetry.io/collector/config/configtls => ../configtls
 replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
