@@ -12,17 +12,17 @@ require (
 	github.com/jcchavezs/porto v0.7.0
 	github.com/pavius/impi v0.0.3
 	github.com/rhysd/actionlint v1.7.7
-	go.opentelemetry.io/build-tools/checkfile v0.21.0
-	go.opentelemetry.io/build-tools/chloggen v0.21.0
-	go.opentelemetry.io/build-tools/crosslink v0.21.0
-	go.opentelemetry.io/build-tools/githubgen v0.21.0
-	go.opentelemetry.io/build-tools/multimod v0.21.0
-	go.opentelemetry.io/build-tools/semconvgen v0.21.0
+	go.opentelemetry.io/build-tools/checkfile v0.22.0
+	go.opentelemetry.io/build-tools/chloggen v0.22.0
+	go.opentelemetry.io/build-tools/crosslink v0.22.0
+	go.opentelemetry.io/build-tools/githubgen v0.22.0
+	go.opentelemetry.io/build-tools/multimod v0.22.0
+	go.opentelemetry.io/build-tools/semconvgen v0.22.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/tools v0.32.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.12.1
-	mvdan.cc/gofumpt v0.7.0
+	mvdan.cc/gofumpt v0.8.0
 )
 
 require (
@@ -226,7 +226,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.11.0 // indirect
-	go.opentelemetry.io/build-tools v0.21.0 // indirect
+	go.opentelemetry.io/build-tools v0.22.0 // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
