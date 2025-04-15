@@ -14,14 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.newPipelineTelemetry",
-	featuregate.StageStable,
-	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterToVersion("v0.127.0"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
-)
-
 var OwnMetricsUsePeriodPrefixGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.ownMetricsUsePeriodPrefix",
 	featuregate.StageAlpha,
