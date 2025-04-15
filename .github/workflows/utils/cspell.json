@@ -285,6 +285,7 @@
       "metricsexporter",
       "metricsgenerationprocessor",
       "metricstransformprocessor",
+      "middleware",
       "mininum",
       "mostynb",
       "muehle",
