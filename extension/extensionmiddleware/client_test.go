@@ -20,7 +20,7 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 		var nilFunc GetHTTPRoundTripperFunc
 		rt, err := nilFunc.GetHTTPRoundTripper(baseRT)
 		require.NoError(t, err)
-		require.Equal(t, baseRT, rt, "nil function should return the base round tripper")
+		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("identity function", func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 		})
 		rt, err := identityFunc.GetHTTPRoundTripper(baseRT)
 		require.NoError(t, err)
-		require.Equal(t, baseRT, rt, "identity function should return the base round tripper")
+		require.Equal(t, baseRT, rt)
 	})
 
 	t.Run("wrapping function", func(t *testing.T) {
@@ -47,7 +47,7 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("round tripper error")
-		errorFunc := GetHTTPRoundTripperFunc(func(base http.RoundTripper) (http.RoundTripper, error) {
+		errorFunc := GetHTTPRoundTripperFunc(func(_ http.RoundTripper) (http.RoundTripper, error) {
 			return nil, expectedErr
 		})
 
@@ -73,7 +73,7 @@ func TestGetGRPCClientOptionsFunc(t *testing.T) {
 		var nilFunc GetGRPCClientOptionsFunc
 		options, err := nilFunc.GetGRPCClientOptions()
 		require.NoError(t, err)
-		require.Nil(t, options, "nil function should return nil options")
+		require.Nil(t, options)
 	})
 
 	t.Run("empty options function", func(t *testing.T) {
@@ -83,7 +83,7 @@ func TestGetGRPCClientOptionsFunc(t *testing.T) {
 
 		options, err := emptyFunc.GetGRPCClientOptions()
 		require.NoError(t, err)
-		require.Equal(t, 0, len(options), "empty function should return empty options slice")
+		require.Empty(t, options)
 	})
 
 	t.Run("options function", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestGetGRPCClientOptionsFunc(t *testing.T) {
 
 		options, err := optionsFunc.GetGRPCClientOptions()
 		require.NoError(t, err)
-		require.Equal(t, 2, len(options), "function should return expected number of options")
+		require.Len(t, options, 2)
 	})
 
 	t.Run("error function", func(t *testing.T) {

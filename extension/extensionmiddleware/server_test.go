@@ -16,8 +16,8 @@ import (
 
 func TestGetHTTPHandlerFunc(t *testing.T) {
 	t.Run("nil_function", func(t *testing.T) {
-		var f GetHTTPHandlerFunc = nil
-		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var f GetHTTPHandlerFunc
+		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNoContent)
 		})
 
@@ -25,13 +25,13 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		require.NoError(t, err)
 
 		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 		require.Equal(t, http.StatusNoContent, rr.Code)
 	})
 
 	t.Run("returns_wrapped_handler", func(t *testing.T) {
 		called := false
-		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -47,18 +47,18 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 		require.NotNil(t, handler)
 
 		rr := httptest.NewRecorder()
-		handler.ServeHTTP(rr, httptest.NewRequest("GET", "/", nil))
+		handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 		require.True(t, called)
 		require.Equal(t, http.StatusOK, rr.Code)
 	})
 
 	t.Run("returns_error", func(t *testing.T) {
 		expectedErr := errors.New("test error")
-		f := GetHTTPHandlerFunc(func(base http.Handler) (http.Handler, error) {
+		f := GetHTTPHandlerFunc(func(http.Handler) (http.Handler, error) {
 			return nil, expectedErr
 		})
 
-		baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		baseHandler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 		handler, err := f.GetHTTPHandler(baseHandler)
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, handler)
@@ -67,7 +67,7 @@ func TestGetHTTPHandlerFunc(t *testing.T) {
 
 func TestGetGRPCServerOptionsFunc(t *testing.T) {
 	t.Run("nil_function", func(t *testing.T) {
-		var f GetGRPCServerOptionsFunc = nil
+		var f GetGRPCServerOptionsFunc
 		opts, err := f.GetGRPCServerOptions()
 		require.NoError(t, err)
 		require.Nil(t, opts)
@@ -75,10 +75,10 @@ func TestGetGRPCServerOptionsFunc(t *testing.T) {
 
 	t.Run("returns_server_options", func(t *testing.T) {
 		var interceptor grpc.UnaryServerInterceptor = func(
-			ctx context.Context,
-			req any,
-			info *grpc.UnaryServerInfo,
-			handler grpc.UnaryHandler,
+			context.Context,
+			any,
+			*grpc.UnaryServerInfo,
+			grpc.UnaryHandler,
 		) (resp any, err error) {
 			return nil, nil
 		}
