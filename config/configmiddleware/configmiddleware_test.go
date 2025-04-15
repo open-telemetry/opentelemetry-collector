@@ -5,63 +5,21 @@ package configmiddleware
 
 import (
 	"context"
-	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
 var testID = component.MustNewID("test")
 
-// mockComponent is a base mock that implements component.Component
-type mockComponent struct{}
-
-func (m mockComponent) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (m mockComponent) Shutdown(_ context.Context) error {
-	return nil
-}
-
-// mockHTTPServerMiddleware implements extensionmiddleware.HTTPServer
-type mockHTTPServerMiddleware struct {
-	mockComponent
-}
-
-func (m mockHTTPServerMiddleware) GetHTTPHandler(next http.Handler) (http.Handler, error) {
-	return next, nil
-}
-
-// mockHTTPClientMiddleware implements extensionmiddleware.HTTPClient
-type mockHTTPClientMiddleware struct {
-	mockComponent
-}
-
-func (m mockHTTPClientMiddleware) GetHTTPRoundTripper(next http.RoundTripper) (http.RoundTripper, error) {
-	return next, nil
-}
-
-// mockGRPCServerMiddleware implements extensionmiddleware.GRPCServer
-type mockGRPCServerMiddleware struct {
-	mockComponent
-}
-
-func (m mockGRPCServerMiddleware) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
-	return []grpc.ServerOption{}, nil
-}
-
-// mockGRPCClientMiddleware implements extensionmiddleware.GRPCClient
-type mockGRPCClientMiddleware struct {
-	mockComponent
-}
-
-func (m mockGRPCClientMiddleware) GetGRPCClientOptions() ([]grpc.DialOption, error) {
-	return []grpc.DialOption{}, nil
+type mockWrongType struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
@@ -79,7 +37,7 @@ func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockHTTPServerMiddleware{},
+				testID: extensionmiddlewaretest.NewNopServer(),
 			},
 			wantErr: nil,
 		},
@@ -97,7 +55,7 @@ func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockComponent{},
+				testID: mockWrongType{},
 			},
 			wantErr: errNotHTTPServer,
 		},
@@ -111,7 +69,7 @@ func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				assert.NotNil(t, value)
+				require.NotNil(t, value)
 			}
 		})
 	}
@@ -132,7 +90,7 @@ func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockHTTPClientMiddleware{},
+				testID: extensionmiddlewaretest.NewNopClient(),
 			},
 			wantErr: nil,
 		},
@@ -150,7 +108,7 @@ func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockComponent{},
+				testID: mockWrongType{},
 			},
 			wantErr: errNotHTTPClient,
 		},
@@ -164,7 +122,7 @@ func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				assert.NotNil(t, value)
+				require.NotNil(t, value)
 			}
 		})
 	}
@@ -185,7 +143,17 @@ func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockGRPCServerMiddleware{},
+				testID: struct {
+					component.StartFunc
+					component.ShutdownFunc
+					extensionmiddleware.GetGRPCServerOptionsFunc
+				}{
+					GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+						return []grpc.ServerOption{
+							grpc.EmptyServerOption{},
+						}, nil
+					},
+				},
 			},
 			wantErr: nil,
 		},
@@ -203,7 +171,7 @@ func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockComponent{},
+				testID: mockWrongType{},
 			},
 			wantErr: errNotGRPCServer,
 		},
@@ -217,7 +185,7 @@ func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				assert.NotNil(t, value)
+				require.NotNil(t, value)
 			}
 		})
 	}
@@ -238,7 +206,17 @@ func TestMiddleware_GetGRPCClientOptions(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockGRPCClientMiddleware{},
+				testID: struct {
+					component.StartFunc
+					component.ShutdownFunc
+					extensionmiddleware.GetGRPCClientOptionsFunc
+				}{
+					GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
+						return []grpc.DialOption{
+							grpc.EmptyDialOption{},
+						}, nil
+					},
+				},
 			},
 			wantErr: nil,
 		},
@@ -256,7 +234,7 @@ func TestMiddleware_GetGRPCClientOptions(t *testing.T) {
 				MiddlewareID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: mockComponent{},
+				testID: mockWrongType{},
 			},
 			wantErr: errNotGRPCClient,
 		},
@@ -270,7 +248,7 @@ func TestMiddleware_GetGRPCClientOptions(t *testing.T) {
 				require.ErrorIs(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				assert.NotNil(t, value)
+				require.NotNil(t, value)
 			}
 		})
 	}
