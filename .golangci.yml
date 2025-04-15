@@ -90,8 +90,9 @@ linters:
         # See https://github.com/open-telemetry/opentelemetry-collector/issues/2789
         - fieldalignment
       enable-all: true
+      # settings per analyzer
       settings:
-        printf: # analyzer name, run `go tool vet help` to see all analyzers 
+        printf: # analyzer name, run `go tool vet help` to see all analyzers
           funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
             - Infof
             - Warnf
