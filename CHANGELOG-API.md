@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.30.0/v0.124.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterbatcher`: Remove deprecated package exporterbatcher (#12780)
+- `exporterqueue`: Remove deprecated package exporterqueue (#12779)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add variable for metric name in mdatagen (#12459)
+  Access metric name via `metadata.MetricsInfo.<metric-variable>.Name`
+- `client`: Add support for iterating over client metadata keys (#12804)
+- `service`: Adds the GetFactory interface to the hostcapabilities package (#12789)
+- `cmd/mdatagen`: Add the foundational changes necessary for supporting logs data in `mdatagen` (#12571)
+
+<!-- previous-version -->
+
 ## v1.29.0/v0.123.0
 
 ### 🛑 Breaking changes 🛑

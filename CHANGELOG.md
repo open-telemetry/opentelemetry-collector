@@ -7,6 +7,20 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.30.0/v0.124.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add support for bytes-based batching for profiles in the exporterhelper package. (#3262)
+- `otelcol`: Enhance config validation using <validate> command to capture all validation errors that prevents the collector from starting. (#8721)
+- `exporterhelper`: Link batcher context to all batched request's span contexts. (#12212, #8122)
+
+### 🧰 Bug fixes 🧰
+
+- `confighttp`: Ensure http authentication server failures are handled by the provided error handler (#12666)
+
+<!-- previous-version -->
+
 ## v1.29.0/v0.123.0
 
 ### 🛑 Breaking changes 🛑

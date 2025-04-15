@@ -22,9 +22,10 @@ import (
 )
 
 var (
-	_ component.Host                   = (*Host)(nil)
-	_ hostcapabilities.ModuleInfo      = (*Host)(nil)
-	_ hostcapabilities.ExposeExporters = (*Host)(nil)
+	_ component.Host                    = (*Host)(nil)
+	_ hostcapabilities.ModuleInfo       = (*Host)(nil)
+	_ hostcapabilities.ExposeExporters  = (*Host)(nil)
+	_ hostcapabilities.ComponentFactory = (*Host)(nil)
 )
 
 type Host struct {

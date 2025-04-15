@@ -77,8 +77,10 @@ The included builder configuration file/manifest should be replaced by mounting 
 Assuming you are running this image in your working directory, have a `builder-config.yaml` file located in this folder, the `dist.output_path` item inside your `builder-config.yaml` is set to `./otelcol-dev`, and you wish to output the binary/go module files to a folder named `output`, the command would look as follows:
 
 ```
-docker run -v "$(pwd)/builder-config.yaml:/build/builder-config.yaml" -v "$(pwd)/output:/build/otelcol-dev" otel/opentelemetry-collector-builder:latest
+docker run -v "$(pwd)/builder-config.yaml:/build/builder-config.yaml" -v "$(pwd)/output:/build/otelcol-dev" otel/opentelemetry-collector-builder:latest --config=/build/builder-config.yaml
 ```
+
+Please note that a `--config` flag must be passed to specify your custom manifest.yaml/builder-config.yaml file regardless of where you mount it inside the container, otherwise a default config is used that cannot be changed.
 
 Additional arguments may be passed to ocb on the command line as specified below, but if you wish to do this, you must make sure to pass the `--config` argument, as this is specified as an additional `CMD`, not an entrypoint. 
 

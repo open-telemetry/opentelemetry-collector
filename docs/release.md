@@ -222,9 +222,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
 | 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
-| 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)         |
-| 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
-| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                   |
-| 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)                 |
-| 2025-08-18 | v0.133.0 | [@evan-bradley](https://github.com/evan-bradley)     |
-| 2025-09-01 | v0.134.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
+| 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
+| 2025-07-14 | v0.130.0 | [@jmacd](https://github.com/jmacd)                   |
+| 2025-07-28 | v0.131.0 | [@mx-psi](https://github.com/mx-psi)                 |
+| 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
+| 2025-08-18 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
