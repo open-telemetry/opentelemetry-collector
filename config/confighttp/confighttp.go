@@ -117,6 +117,7 @@ type ClientConfig struct {
 type CookiesConfig struct {
 	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
 	Enabled bool `mapstructure:"enabled,omitempty"`
+	_       struct{}
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -361,6 +362,8 @@ type AuthConfig struct {
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
 	RequestParameters []string `mapstructure:"request_params,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ToListener creates a net.Listener.
@@ -530,6 +533,8 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.

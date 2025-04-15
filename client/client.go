@@ -101,6 +101,9 @@ type Info struct {
 
 	// Metadata is the request metadata from the client connecting to this connector.
 	Metadata Metadata
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
