@@ -219,3 +219,7 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confma
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../config/configmiddleware

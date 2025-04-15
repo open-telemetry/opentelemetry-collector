@@ -42,6 +42,7 @@ module-sets:
       - go.opentelemetry.io/collector/config/configgrpc
       - go.opentelemetry.io/collector/config/confighttp
       - go.opentelemetry.io/collector/config/confighttp/xconfighttp
+      - go.opentelemetry.io/collector/config/configmiddleware
       - go.opentelemetry.io/collector/config/configtelemetry
       - go.opentelemetry.io/collector/connector
       - go.opentelemetry.io/collector/connector/connectortest
@@ -61,6 +62,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/xexporter
       - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest
       - go.opentelemetry.io/collector/extension/extensioncapabilities
+      - go.opentelemetry.io/collector/extension/extensionmiddleware
       - go.opentelemetry.io/collector/extension/extensiontest
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension

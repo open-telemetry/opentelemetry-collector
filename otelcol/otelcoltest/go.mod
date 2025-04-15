@@ -228,3 +228,7 @@ replace go.opentelemetry.io/collector/processor/processortest => ../../processor
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware

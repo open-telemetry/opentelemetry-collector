@@ -43,9 +43,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.124.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.30.0 // indirect
@@ -110,3 +112,7 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extensionmiddleware

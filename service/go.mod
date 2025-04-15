@@ -104,10 +104,12 @@ require (
 	go.opentelemetry.io/collector/client v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.124.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.30.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.60.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.11.0 // indirect
@@ -233,3 +235,7 @@ replace go.opentelemetry.io/collector/otelcol => ../otelcol
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../confmap/provider/yamlprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../config/configmiddleware

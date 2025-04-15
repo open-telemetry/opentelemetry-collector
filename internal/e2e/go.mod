@@ -83,6 +83,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.124.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.124.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.124.0 // indirect
@@ -91,6 +92,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.124.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.124.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
@@ -260,3 +262,7 @@ replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../con
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
