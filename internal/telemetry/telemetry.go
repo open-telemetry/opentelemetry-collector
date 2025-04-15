@@ -9,17 +9,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-)
-
-var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.newPipelineTelemetry",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterDescription("Instruments Collector pipelines and injects component-identifying attributes"),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
 )
 
 // IMPORTANT: This struct is reexported as part of the public API of
@@ -46,16 +37,10 @@ type TelemetrySettings struct {
 // The publicization of this API is tracked in https://github.com/open-telemetry/opentelemetry-collector/issues/12405
 
 func WithoutAttributes(ts TelemetrySettings, fields ...string) TelemetrySettings {
-	if !NewPipelineTelemetryGate.IsEnabled() {
-		return ts
-	}
 	return WithAttributeSet(ts, componentattribute.RemoveAttributes(ts.extraAttributes, fields...))
 }
 
 func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettings {
-	if !NewPipelineTelemetryGate.IsEnabled() {
-		return ts
-	}
 	ts.extraAttributes = attrs
 	ts.Logger = componentattribute.ZapLoggerWithAttributes(ts.Logger, ts.extraAttributes)
 	ts.TracerProvider = componentattribute.TracerProviderWithAttributes(ts.TracerProvider, ts.extraAttributes)
