@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -50,6 +51,8 @@ func (n *processorNode) buildComponent(ctx context.Context,
 	set := processor.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
 	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
+	} else {
+		set.Logger = componentattribute.NewLogger(tel.Logger, n.Set())
 	}
 	var err error
 	switch n.pipelineID.Signal() {
