@@ -6,10 +6,11 @@ package extensionmiddlewaretest // import "go.opentelemetry.io/collector/extensi
 import (
 	"net/http"
 
+	"google.golang.org/grpc"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
-	"google.golang.org/grpc"
 )
 
 var (
