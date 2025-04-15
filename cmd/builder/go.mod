@@ -6,10 +6,10 @@ module go.opentelemetry.io/collector/cmd/builder
 go 1.23.0
 
 require (
-	github.com/knadh/koanf/parsers/yaml v0.1.0
+	github.com/knadh/koanf/parsers/yaml v1.0.0
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/providers/file v1.2.0
-	github.com/knadh/koanf/providers/fs v0.1.0
+	github.com/knadh/koanf/providers/fs v1.0.0
 	github.com/knadh/koanf/v2 v2.2.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
