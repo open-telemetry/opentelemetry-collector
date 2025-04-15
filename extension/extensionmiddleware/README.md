@@ -32,8 +32,6 @@ Each interface has a single function to configure middleware for a
 protocol on the client or server side.  An error is returned if the
 extension cannot be configured.
 
-If this information is required
-
 New protocols and new ways to configure middleware can be introduced
 by adding new interfaces.  Note that for each interface, there is a
 corresponding method to locate a named middleware extension that
