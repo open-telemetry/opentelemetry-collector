@@ -61,6 +61,7 @@ module-sets:
       - go.opentelemetry.io/collector/exporter/xexporter
       - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest
       - go.opentelemetry.io/collector/extension/extensioncapabilities
+      - go.opentelemetry.io/collector/extension/extensionmiddleware
       - go.opentelemetry.io/collector/extension/extensiontest
       - go.opentelemetry.io/collector/extension/zpagesextension
       - go.opentelemetry.io/collector/extension/memorylimiterextension
