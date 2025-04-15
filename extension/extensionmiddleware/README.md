@@ -2,7 +2,8 @@
 
 This package implements interfaces for injecting middleware behavior
 in OpenTelemetry Collector exporters and receivers.  See the
-associated `configmiddleware` package for referring to middleware
+[associated `configmiddleware` package](../../config/configmiddleware/README.md)
+for referring to middleware
 extensions in component configurations.
 
 ## Overview
@@ -35,7 +36,8 @@ extension cannot be configured.
 New protocols and new ways to configure middleware can be introduced
 by adding new interfaces.  Note that for each interface, there is a
 corresponding method to locate a named middleware extension that
-satisfies the interface in the `configmiddleware` package.
+satisfies the interface in
+[the `configmiddleware` package](../../config/configmiddleware/README.md) .
 
 ### HTTP
 
