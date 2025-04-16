@@ -7,7 +7,7 @@ change_type: breaking
 component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove the `telemetry.newPipelineTelemetry` feature gate.
+note: Set the `telemetry.newPipelineTelemetry` feature gate to stable.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12856]
@@ -15,7 +15,10 @@ issues: [12856]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  This gate introduces a regression which could be fixed by _enabling_ the gate.
+  Since there does not appear to be any benefit to the gate while disabled, we are
+  immediately moving it to stable in order to lock in the correct behavior.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
