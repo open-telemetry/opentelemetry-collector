@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2
 	github.com/stretchr/testify v1.10.0
+	go.opentelemetry.io/collector/client v1.29.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
 	go.opentelemetry.io/collector/config/configretry v1.30.0
@@ -112,3 +113,5 @@ replace go.opentelemetry.io/collector/featuregate => ../featuregate
 replace go.opentelemetry.io/collector/confmap => ../confmap
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
+
+replace go.opentelemetry.io/collector/client => ../client
