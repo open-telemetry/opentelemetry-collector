@@ -106,7 +106,7 @@ any-typed variable. The yaml.v3 parser mostly follows the YAML v1.2
 specification with [*some exceptions*](https://github.com/go-yaml/yaml#compatibility). 
 You can see
 how it works for some edge cases in this example:
-[`go.dev/play/p/RtPmH8aZA1X`](https://go.dev/play/p/RtPmH8aZA1X).
+[`go.dev/play/p/3vNLznwSZQe`](https://go.dev/play/p/3vNLznwSZQe).
 
 ### Issues of current behavior
 
