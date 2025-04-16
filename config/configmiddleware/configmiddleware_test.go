@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
@@ -37,7 +38,7 @@ func TestConfig_GetHTTPServerHandler(t *testing.T) {
 				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: extensionmiddlewaretest.NewNopServer(),
+				testID: extensionmiddlewaretest.NewNop(),
 			},
 			wantErr: nil,
 		},
@@ -90,7 +91,7 @@ func TestConfig_GetHTTPClientRoundTripper(t *testing.T) {
 				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
-				testID: extensionmiddlewaretest.NewNopClient(),
+				testID: extensionmiddlewaretest.NewNop(),
 			},
 			wantErr: nil,
 		},
@@ -144,10 +145,10 @@ func TestConfig_GetGRPCServerOptions(t *testing.T) {
 			},
 			extensions: map[component.ID]component.Component{
 				testID: struct {
-					component.StartFunc
-					component.ShutdownFunc
+					extension.Extension
 					extensionmiddleware.GetGRPCServerOptionsFunc
 				}{
+					Extension: extensionmiddlewaretest.NewNop(),
 					GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
 						return []grpc.ServerOption{
 							grpc.EmptyServerOption{},
@@ -207,10 +208,10 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 			},
 			extensions: map[component.ID]component.Component{
 				testID: struct {
-					component.StartFunc
-					component.ShutdownFunc
+					extension.Extension
 					extensionmiddleware.GetGRPCClientOptionsFunc
 				}{
+					Extension: extensionmiddlewaretest.NewNop(),
 					GetGRPCClientOptionsFunc: func() ([]grpc.DialOption, error) {
 						return []grpc.DialOption{
 							grpc.EmptyDialOption{},

@@ -11,8 +11,24 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
+func TestNopClient(t *testing.T) {
+	client := NewNop()
+
+	httpClient, ok := client.(extensionmiddleware.HTTPClient)
+	require.True(t, ok)
+	rt, err := httpClient.GetHTTPRoundTripper(nil)
+	require.NoError(t, err)
+	require.Nil(t, rt)
+
+	grpcClient, ok := client.(extensionmiddleware.GRPCClient)
+	require.True(t, ok)
+	grpcOpts, err := grpcClient.GetGRPCClientOptions()
+	require.NoError(t, err)
+	require.Nil(t, grpcOpts)
+}
+
 func TestNopServer(t *testing.T) {
-	client := NewNopServer()
+	client := NewNop()
 
 	httpServer, ok := client.(extensionmiddleware.HTTPServer)
 	require.True(t, ok)
