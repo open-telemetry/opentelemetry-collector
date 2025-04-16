@@ -761,7 +761,7 @@ func TestEmptySliceUnchanged(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, nilCfg, nilConf.ToStringMap())
-	require.EqualValues(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
+	require.Equal(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
 }
 
 type c struct {
