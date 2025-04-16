@@ -219,21 +219,21 @@ func (l *Conf) ToStringMap() map[string]any {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
-    // Add a specific hook for configopaque.String
-    configOpaqueHook := func(f reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
-        // Check for both direct configopaque.String and pointer to it
-        isConfigOpaque := t.String() == "configopaque.String" ||
-                        (t.Kind() == reflect.Pointer && t.Elem().String() == "configopaque.String")
+	// Add a specific hook for configopaque.String
+	configOpaqueHook := func(_ reflect.Type, t reflect.Type, data interface{}) (interface{}, error) {
+		// Check for both direct configopaque.String and pointer to it
+		isConfigOpaque := t.String() == "configopaque.String" ||
+			(t.Kind() == reflect.Pointer && t.Elem().String() == "configopaque.String")
 
-        if isConfigOpaque {
-            // Convert numeric values to string
-            switch v := data.(type) {
-            case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
-                return fmt.Sprintf("%v", v), nil
-            }
-        }
-        return data, nil
-    }
+		if isConfigOpaque {
+			// Convert numeric values to string
+			switch v := data.(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
+				return fmt.Sprintf("%v", v), nil
+			}
+		}
+		return data, nil
+	}
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -241,7 +241,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-                        configOpaqueHook,
+			configOpaqueHook,
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -336,23 +336,23 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 			return v, nil
 		}
 
-                // Debug output for diagnostic purposes
-                if to.Kind() == reflect.Pointer {
-                    fmt.Printf("DEBUG: Pointer type: %v, Elem: %v\n", to.String(), to.Elem().String())
-                    if strings.Contains(to.Elem().String(), "configopaque.String") || to.Elem().String() == "configopaque.String" {
-                        fmt.Printf("DEBUG: Found configopaque.String pointer\n")
-                        fmt.Printf("DEBUG: Data type: %T, value: %v\n", data, data)
-                    }
-                }
+		// Debug output for diagnostic purposes
+		if to.Kind() == reflect.Pointer {
+			fmt.Printf("DEBUG: Pointer type: %v, Elem: %v\n", to.String(), to.Elem().String())
+			if strings.Contains(to.Elem().String(), "configopaque.String") || to.Elem().String() == "configopaque.String" {
+				fmt.Printf("DEBUG: Found configopaque.String pointer\n")
+				fmt.Printf("DEBUG: Data type: %T, value: %v\n", data, data)
+			}
+		}
 
-                // Special case for *configopaque.String
-                if to.Kind() == reflect.Pointer && to.Elem().String() == "configopaque.String" {
-                    switch v:= data.(type) {
-                    case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
-                        fmt.Printf("DEBUG: Converting %v to string\n", v)
-                        return fmt.Sprintf("%v", v), nil
-                    }
-                }
+		// Special case for *configopaque.String
+		if to.Kind() == reflect.Pointer && to.Elem().String() == "configopaque.String" {
+			switch v := data.(type) {
+			case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, bool:
+				fmt.Printf("DEBUG: Converting %v to string\n", v)
+				return fmt.Sprintf("%v", v), nil
+			}
+		}
 
 		switch to.Kind() {
 		case reflect.Array, reflect.Slice, reflect.Map, reflect.Pointer:

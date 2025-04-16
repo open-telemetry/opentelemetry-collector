@@ -1,0 +1,4 @@
+- type: bug
+  component: confmap
+  description: Fixed handling of configopaque.String type conversion when unmarshaling numeric values from environment variables.
+  issue: 12793
