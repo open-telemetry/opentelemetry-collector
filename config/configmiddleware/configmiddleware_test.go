@@ -22,19 +22,19 @@ type mockWrongType struct {
 	component.ShutdownFunc
 }
 
-func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
+func TestConfig_GetHTTPServerHandler(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name       string
-		middleware Middleware
+		middleware Config
 		extensions map[component.ID]component.Component
 		wantErr    error
 	}{
 		{
 			name: "found_and_valid",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: extensionmiddlewaretest.NewNopServer(),
@@ -43,16 +43,16 @@ func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
 		},
 		{
 			name: "middleware_not_found",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{},
 			wantErr:    errMiddlewareNotFound,
 		},
 		{
 			name: "middleware_wrong_type",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: mockWrongType{},
@@ -75,19 +75,19 @@ func TestMiddleware_GetHTTPServerHandler(t *testing.T) {
 	}
 }
 
-func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
+func TestConfig_GetHTTPClientRoundTripper(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name       string
-		middleware Middleware
+		middleware Config
 		extensions map[component.ID]component.Component
 		wantErr    error
 	}{
 		{
 			name: "found_and_valid",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: extensionmiddlewaretest.NewNopClient(),
@@ -96,16 +96,16 @@ func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
 		},
 		{
 			name: "middleware_not_found",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{},
 			wantErr:    errMiddlewareNotFound,
 		},
 		{
 			name: "middleware_wrong_type",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: mockWrongType{},
@@ -128,19 +128,19 @@ func TestMiddleware_GetHTTPClientRoundTripper(t *testing.T) {
 	}
 }
 
-func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
+func TestConfig_GetGRPCServerOptions(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name       string
-		middleware Middleware
+		middleware Config
 		extensions map[component.ID]component.Component
 		wantErr    error
 	}{
 		{
 			name: "found_and_valid",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: struct {
@@ -159,16 +159,16 @@ func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
 		},
 		{
 			name: "middleware_not_found",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{},
 			wantErr:    errMiddlewareNotFound,
 		},
 		{
 			name: "middleware_wrong_type",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: mockWrongType{},
@@ -191,19 +191,19 @@ func TestMiddleware_GetGRPCServerOptions(t *testing.T) {
 	}
 }
 
-func TestMiddleware_GetGRPCClientOptions(t *testing.T) {
+func TestConfig_GetGRPCClientOptions(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
 		name       string
-		middleware Middleware
+		middleware Config
 		extensions map[component.ID]component.Component
 		wantErr    error
 	}{
 		{
 			name: "found_and_valid",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: struct {
@@ -222,16 +222,16 @@ func TestMiddleware_GetGRPCClientOptions(t *testing.T) {
 		},
 		{
 			name: "middleware_not_found",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{},
 			wantErr:    errMiddlewareNotFound,
 		},
 		{
 			name: "middleware_wrong_type",
-			middleware: Middleware{
-				MiddlewareID: testID,
+			middleware: Config{
+				ID: testID,
 			},
 			extensions: map[component.ID]component.Component{
 				testID: mockWrongType{},

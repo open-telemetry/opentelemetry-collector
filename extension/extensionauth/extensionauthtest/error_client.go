@@ -14,12 +14,12 @@ import (
 )
 
 var (
-	_ extension.Extension      = (*errorClient)(nil)
-	_ extensionauth.HTTPClient = (*errorClient)(nil)
-	_ extensionauth.GRPCClient = (*errorClient)(nil)
+	_ extension.Extension      = (*errClient)(nil)
+	_ extensionauth.HTTPClient = (*errClient)(nil)
+	_ extensionauth.GRPCClient = (*errClient)(nil)
 )
 
-type errorClient struct {
+type errClient struct {
 	component.StartFunc
 	component.ShutdownFunc
 	extensionauth.ClientPerRPCCredentialsFunc
@@ -28,7 +28,7 @@ type errorClient struct {
 
 // NewErrorClient returns a new [extension.Extension] that implements the [extensionauth.HTTPClient] and [extensionauth.GRPCClient] and always returns an error on both methods.
 func NewErrorClient(err error) extension.Extension {
-	return &errorClient{
+	return &errClient{
 		ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
 			return nil, err
 		},

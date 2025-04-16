@@ -192,6 +192,7 @@
       "extensionauthtest",
       "extensioncapabilities",
       "extensionmiddleware",
+      "extensionmiddlewaretest",
       "extensionhelper",
       "extensiontest",
       "extensionz",
