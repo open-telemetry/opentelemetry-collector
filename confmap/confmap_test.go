@@ -731,7 +731,6 @@ func TestNilValuesUnchanged(t *testing.T) {
 		"strings": []any(nil),
 	}
 	nilConf := NewFromStringMap(nilCfg)
-	require.Equal(t, nilCfg, nilConf.ToStringMap())
 	err := nilConf.Unmarshal(slicesStruct)
 	require.NoError(t, err)
 
@@ -739,6 +738,7 @@ func TestNilValuesUnchanged(t *testing.T) {
 	err = confFromStruct.Marshal(slicesStruct)
 	require.NoError(t, err)
 
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
 	require.Equal(t, confFromStruct.ToStringMap(), nilConf.ToStringMap())
 }
 
