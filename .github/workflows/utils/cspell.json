@@ -270,6 +270,7 @@
       "lables",
       "lastest",
       "ldflags",
+      "limitermiddleware",
       "localhostgate",
       "loggingexporter",
       "logstest",

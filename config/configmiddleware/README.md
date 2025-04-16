@@ -5,7 +5,7 @@ This package implements a configuration struct for referring to
 
 ## Overview
 
-The `configmiddleware` package defines a `Middleware` type that
+The `configmiddleware` package defines a `Config` type that
 allows components to configure middleware extensions, typically as
 an ordered list.
 This support is built in for push-based receivers configured through
