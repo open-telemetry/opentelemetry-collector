@@ -14,21 +14,21 @@ import (
 )
 
 var (
-	_ extension.Extension            = (*errorClient)(nil)
-	_ extensionmiddleware.HTTPClient = (*errorClient)(nil)
-	_ extensionmiddleware.GRPCClient = (*errorClient)(nil)
+	_ extension.Extension            = (*errClient)(nil)
+	_ extensionmiddleware.HTTPClient = (*errClient)(nil)
+	_ extensionmiddleware.GRPCClient = (*errClient)(nil)
 )
 
-type errorClient struct {
+type errClient struct {
 	component.StartFunc
 	component.ShutdownFunc
 	extensionmiddleware.GetHTTPRoundTripperFunc
 	extensionmiddleware.GetGRPCClientOptionsFunc
 }
 
-// NewErrorClient returns a new [extension.Extension] that implements the [extensionmiddleware.HTTPClient] and [extensionmiddleware.GRPCClient] and always returns an error on both methods.
-func NewErrorClient(err error) extension.Extension {
-	return &errorClient{
+// NewErr returns a new [extension.Extension] that implements the [extensionmiddleware.HTTPClient] and [extensionmiddleware.GRPCClient] and always returns an error on both methods.
+func NewErr(err error) extension.Extension {
+	return &errClient{
 		GetHTTPRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
 			return nil, err
 		},

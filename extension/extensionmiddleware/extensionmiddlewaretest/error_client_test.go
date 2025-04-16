@@ -13,7 +13,7 @@ import (
 )
 
 func TestErrorClient(t *testing.T) {
-	client := NewErrorClient(errors.New("error"))
+	client := NewErr(errors.New("error"))
 
 	httpClient, ok := client.(extensionmiddleware.HTTPClient)
 	require.True(t, ok)
