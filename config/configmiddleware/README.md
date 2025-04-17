@@ -17,7 +17,7 @@ receivers:
     protocols:
 	  http:
 	    middlewares:
-		- middleware: limitermiddleware
+		- id: limitermiddleware
 ```
 
 ## Methods
