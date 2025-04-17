@@ -105,6 +105,19 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+logs:
+  default.log:
+    enabled: true
+    description: Example log record enabled by default.
+    extended_documentation: The log record will be renamed soon.
+    body:
+      type: string
+    attributes:
+      - string_attr
+      - boolean_attr
+    warnings:
+      if_enabled_not_set: This log will be disabled by default soon.
+
 metrics:
   default.metric:
     enabled: true

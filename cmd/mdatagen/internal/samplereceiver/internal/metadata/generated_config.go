@@ -55,6 +55,26 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
+// LogConfig provides common config for a particular log.
+type LogConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+// LogsConfig provides config for sample logs.
+type LogsConfig struct {
+	DefaultLog LogConfig `mapstructure:"default.log"`
+}
+
+func DefaultLogsConfig() LogsConfig {
+	return LogsConfig{
+		DefaultLog: LogConfig{
+			Enabled: true,
+		},
+	}
+}
+
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
@@ -132,5 +152,16 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
+	}
+}
+
+// LogsBuilderConfig is a configuration for sample logs builder.
+type LogsBuilderConfig struct {
+	Logs LogsConfig `mapstructure:"logs"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig{
+		Logs: DefaultLogsConfig(),
 	}
 }

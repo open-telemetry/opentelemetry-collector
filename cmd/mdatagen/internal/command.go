@@ -162,7 +162,8 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
-	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 {
+	// Note for logs: We provide basic logs support if `logs` section is not null, include `{}` as well.
+	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 || md.Logs != nil {
 		testdataDir := filepath.Join(codeDir, "testdata")
 		if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
 			return fmt.Errorf("unable to create output directory %q: %w", testdataDir, err)
@@ -183,7 +184,7 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "metrics_test.go.tmpl")] = filepath.Join(codeDir, "generated_metrics_test.go")
 	}
 
-	if md.supportsSignal("logs") &&
+	if md.Logs != nil &&
 		(md.Status.Class == "receiver" || md.Status.Class == "scraper") {
 		toGenerate[filepath.Join(tmplDir, "logs.go.tmpl")] = filepath.Join(codeDir, "generated_logs.go")
 		toGenerate[filepath.Join(tmplDir, "logs_test.go.tmpl")] = filepath.Join(codeDir, "generated_logs_test.go")
