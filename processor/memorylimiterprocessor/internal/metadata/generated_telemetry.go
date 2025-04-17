@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -63,38 +64,64 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_processor_accepted_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_log_records"
+	}
 	builder.ProcessorAcceptedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_accepted_log_records",
+		name,
 		metric.WithDescription("Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_accepted_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_metric_points"
+	}
 	builder.ProcessorAcceptedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_accepted_metric_points",
+		name,
 		metric.WithDescription("Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_accepted_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_spans"
+	}
 	builder.ProcessorAcceptedSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_accepted_spans",
+		name,
 		metric.WithDescription("Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_refused_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_log_records"
+	}
 	builder.ProcessorRefusedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_processor_refused_log_records",
+		name,
 		metric.WithDescription("Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_refused_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_metric_points"
+	}
 	builder.ProcessorRefusedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_processor_refused_metric_points",
+		name,
 		metric.WithDescription("Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_refused_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_spans"
+	}
 	builder.ProcessorRefusedSpans, err = builder.meter.Int64Counter(
-		"otelcol_processor_refused_spans",
+		name,
 		metric.WithDescription("Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]"),
 		metric.WithUnit("{spans}"),
 	)

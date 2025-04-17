@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -23,8 +24,12 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 }
 
 func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_batch_batch_send_size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_batch_batch_send_size"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_batch_send_size",
+		Name:        name,
 		Description: "Number of units in the batch",
 		Unit:        "{units}",
 		Data: metricdata.Histogram[int64]{
@@ -32,14 +37,18 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_batch_batch_send_size_bytes"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_batch_batch_send_size_bytes"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_batch_send_size_bytes",
+		Name:        name,
 		Description: "Number of bytes in batch that was sent. Only available on detailed level.",
 		Unit:        "By",
 		Data: metricdata.Histogram[int64]{
@@ -47,14 +56,18 @@ func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_batch_send_size_bytes")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_batch_batch_size_trigger_send"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_batch_batch_size_trigger_send"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_batch_size_trigger_send",
+		Name:        name,
 		Description: "Number of times the batch was sent due to a size trigger",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
@@ -63,14 +76,18 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componentte
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_batch_size_trigger_send")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_batch_metadata_cardinality"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_batch_metadata_cardinality"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_metadata_cardinality",
+		Name:        name,
 		Description: "Number of distinct metadata value combinations being processed",
 		Unit:        "{combinations}",
 		Data: metricdata.Sum[int64]{
@@ -79,14 +96,18 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttes
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_metadata_cardinality")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_batch_timeout_trigger_send"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_batch_timeout_trigger_send"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_batch_timeout_trigger_send",
+		Name:        name,
 		Description: "Number of times the batch was sent due to a timeout trigger",
 		Unit:        "{times}",
 		Data: metricdata.Sum[int64]{
@@ -95,7 +116,7 @@ func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_batch_timeout_trigger_send")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

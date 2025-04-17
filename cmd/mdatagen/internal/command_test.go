@@ -707,6 +707,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -739,6 +740,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {

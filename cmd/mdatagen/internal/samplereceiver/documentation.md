@@ -120,6 +120,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_batch_size_trigger_send
 
+Note: The name is otelcol.batch_size_trigger_send if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -127,6 +129,8 @@ Number of times the batch was sent due to a size trigger [deprecated since v0.11
 | {times} | Sum | Int | true |
 
 ### otelcol_process_runtime_total_alloc_bytes
+
+Note: The name is otelcol.process_runtime_total_alloc_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
 
@@ -136,6 +140,8 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 ### otelcol_queue_capacity
 
+Note: The name is otelcol.queue_capacity if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Queue capacity - sync gauge example.
 
 | Unit | Metric Type | Value Type |
@@ -143,6 +149,8 @@ Queue capacity - sync gauge example.
 | {items} | Gauge | Int |
 
 ### otelcol_queue_length
+
+Note: The name is otelcol.queue_length if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
 
@@ -153,6 +161,8 @@ For example this metric only exists if feature A is enabled.
 | {items} | Gauge | Int |
 
 ### otelcol_request_duration
+
+Note: The name is otelcol.request_duration if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Duration of request [alpha]
 

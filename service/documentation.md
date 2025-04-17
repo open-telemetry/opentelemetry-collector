@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_process_cpu_seconds
 
+Note: The name is otelcol.process_cpu_seconds if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Total CPU user and system time in seconds [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Total CPU user and system time in seconds [alpha]
 | s | Sum | Double | true |
 
 ### otelcol_process_memory_rss
+
+Note: The name is otelcol.process_memory_rss if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Total physical memory (resident set size) [alpha]
 
@@ -24,6 +28,8 @@ Total physical memory (resident set size) [alpha]
 
 ### otelcol_process_runtime_heap_alloc_bytes
 
+Note: The name is otelcol.process_runtime_heap_alloc_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]
 
 | Unit | Metric Type | Value Type |
@@ -31,6 +37,8 @@ Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha
 | By | Gauge | Int |
 
 ### otelcol_process_runtime_total_alloc_bytes
+
+Note: The name is otelcol.process_runtime_total_alloc_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]
 
@@ -40,6 +48,8 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 ### otelcol_process_runtime_total_sys_memory_bytes
 
+Note: The name is otelcol.process_runtime_total_sys_memory_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]
 
 | Unit | Metric Type | Value Type |
@@ -47,6 +57,8 @@ Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [
 | By | Gauge | Int |
 
 ### otelcol_process_uptime
+
+Note: The name is otelcol.process_uptime if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Uptime of the process [alpha]
 

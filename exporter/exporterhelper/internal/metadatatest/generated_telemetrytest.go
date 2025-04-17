@@ -10,11 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_enqueue_failed_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_enqueue_failed_log_records",
+		Name:        name,
 		Description: "Number of log records failed to be added to the sending queue. [alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
@@ -23,14 +28,18 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_enqueue_failed_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_enqueue_failed_metric_points",
+		Name:        name,
 		Description: "Number of metric points failed to be added to the sending queue. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -39,14 +48,18 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttes
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_enqueue_failed_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_spans"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_enqueue_failed_spans",
+		Name:        name,
 		Description: "Number of spans failed to be added to the sending queue. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -55,42 +68,54 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_enqueue_failed_spans")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_queue_capacity"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_queue_capacity"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_queue_capacity",
+		Name:        name,
 		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_queue_capacity")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_queue_size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_queue_size"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_queue_size",
+		Name:        name,
 		Description: "Current size of the retry queue (in batches) [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_queue_size")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_send_failed_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_send_failed_log_records",
+		Name:        name,
 		Description: "Number of log records in failed attempts to send to destination. [alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
@@ -99,14 +124,18 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_send_failed_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_send_failed_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_send_failed_metric_points",
+		Name:        name,
 		Description: "Number of metric points in failed attempts to send to destination. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -115,14 +144,18 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_send_failed_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_send_failed_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_spans"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_send_failed_spans",
+		Name:        name,
 		Description: "Number of spans in failed attempts to send to destination. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -131,14 +164,18 @@ func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetr
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_send_failed_spans")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_sent_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_sent_log_records",
+		Name:        name,
 		Description: "Number of log record successfully sent to destination. [alpha]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
@@ -147,14 +184,18 @@ func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_sent_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_sent_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_sent_metric_points",
+		Name:        name,
 		Description: "Number of metric points successfully sent to destination. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -163,14 +204,18 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_sent_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualExporterSentSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_exporter_sent_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_spans"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_exporter_sent_spans",
+		Name:        name,
 		Description: "Number of spans successfully sent to destination. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -179,7 +224,7 @@ func AssertEqualExporterSentSpans(t *testing.T, tt *componenttest.Telemetry, dps
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_exporter_sent_spans")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

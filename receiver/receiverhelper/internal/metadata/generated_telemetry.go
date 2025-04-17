@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -63,38 +64,64 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_receiver_accepted_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_accepted_log_records"
+	}
 	builder.ReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_receiver_accepted_log_records",
+		name,
 		metric.WithDescription("Number of log records successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_receiver_accepted_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_accepted_metric_points"
+	}
 	builder.ReceiverAcceptedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_receiver_accepted_metric_points",
+		name,
 		metric.WithDescription("Number of metric points successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_receiver_accepted_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_accepted_spans"
+	}
 	builder.ReceiverAcceptedSpans, err = builder.meter.Int64Counter(
-		"otelcol_receiver_accepted_spans",
+		name,
 		metric.WithDescription("Number of spans successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_receiver_refused_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_refused_log_records"
+	}
 	builder.ReceiverRefusedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_receiver_refused_log_records",
+		name,
 		metric.WithDescription("Number of log records that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_receiver_refused_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_refused_metric_points"
+	}
 	builder.ReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_receiver_refused_metric_points",
+		name,
 		metric.WithDescription("Number of metric points that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_receiver_refused_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.receiver_refused_spans"
+	}
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
-		"otelcol_receiver_refused_spans",
+		name,
 		metric.WithDescription("Number of spans that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)

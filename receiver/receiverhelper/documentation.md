@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_accepted_log_records
 
+Note: The name is otelcol.receiver_accepted_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log records successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Number of log records successfully pushed into the pipeline. [alpha]
 | {records} | Sum | Int | true |
 
 ### otelcol_receiver_accepted_metric_points
+
+Note: The name is otelcol.receiver_accepted_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of metric points successfully pushed into the pipeline. [alpha]
 
@@ -24,6 +28,8 @@ Number of metric points successfully pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_accepted_spans
 
+Note: The name is otelcol.receiver_accepted_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of spans successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -31,6 +37,8 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | {spans} | Sum | Int | true |
 
 ### otelcol_receiver_refused_log_records
+
+Note: The name is otelcol.receiver_refused_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of log records that could not be pushed into the pipeline. [alpha]
 
@@ -40,6 +48,8 @@ Number of log records that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_metric_points
 
+Note: The name is otelcol.receiver_refused_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of metric points that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -47,6 +57,8 @@ Number of metric points that could not be pushed into the pipeline. [alpha]
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_receiver_refused_spans
+
+Note: The name is otelcol.receiver_refused_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of spans that could not be pushed into the pipeline. [alpha]
 

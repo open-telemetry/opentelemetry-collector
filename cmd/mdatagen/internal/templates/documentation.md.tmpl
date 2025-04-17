@@ -38,7 +38,10 @@
 {{- $metricName := . }}
 {{- $metric := $metricName | telemetryInfo -}}
 
+
 ### otelcol_{{ $metricName }}
+
+Note: The name is otelcol.{{ $metricName }} if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 {{ $metric.Description }}{{ $metric.Stability }}
 
