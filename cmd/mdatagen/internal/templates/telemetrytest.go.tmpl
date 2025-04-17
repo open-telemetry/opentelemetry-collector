@@ -17,6 +17,7 @@ import (
     "go.opentelemetry.io/collector/{{ .Status.Class }}"
     "go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
     {{- end }}
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 {{ if or isConnector isExporter isExtension isProcessor isReceiver isScraper }}
@@ -32,9 +33,11 @@ return set
 
 func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
 	name := "otelcol_{{ $name }}"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.{{ $name }}"
-	}
+    featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+            name = "otelcol.{{ $name }}"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "{{ $metric.Description }}{{ $metric.Stability }}",

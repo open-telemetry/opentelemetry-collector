@@ -10,14 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_scraper_errored_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_errored_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_errored_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records that were unable to be scraped. [alpha]",
@@ -35,9 +37,11 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemet
 
 func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_scraper_errored_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_errored_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_errored_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points that were unable to be scraped. [alpha]",
@@ -55,9 +59,11 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telem
 
 func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_scraper_scraped_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_scraped_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_scraped_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records successfully scraped. [alpha]",
@@ -75,9 +81,11 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemet
 
 func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_scraper_scraped_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_scraped_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_scraped_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points successfully scraped. [alpha]",

@@ -10,14 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_enqueue_failed_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_enqueue_failed_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_enqueue_failed_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records failed to be added to the sending queue. [alpha]",
@@ -35,9 +37,11 @@ func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.
 
 func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_enqueue_failed_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_enqueue_failed_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_enqueue_failed_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points failed to be added to the sending queue. [alpha]",
@@ -55,9 +59,11 @@ func AssertEqualExporterEnqueueFailedMetricPoints(t *testing.T, tt *componenttes
 
 func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_enqueue_failed_spans"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_enqueue_failed_spans"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_enqueue_failed_spans"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of spans failed to be added to the sending queue. [alpha]",
@@ -75,9 +81,11 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 
 func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_queue_capacity"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_queue_capacity"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_queue_capacity"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
@@ -93,9 +101,11 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_queue_size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_queue_size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_queue_size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Current size of the retry queue (in batches) [alpha]",
@@ -111,9 +121,11 @@ func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps
 
 func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_send_failed_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_send_failed_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_send_failed_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records in failed attempts to send to destination. [alpha]",
@@ -131,9 +143,11 @@ func AssertEqualExporterSendFailedLogRecords(t *testing.T, tt *componenttest.Tel
 
 func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_send_failed_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_send_failed_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_send_failed_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points in failed attempts to send to destination. [alpha]",
@@ -151,9 +165,11 @@ func AssertEqualExporterSendFailedMetricPoints(t *testing.T, tt *componenttest.T
 
 func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_send_failed_spans"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_send_failed_spans"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_send_failed_spans"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of spans in failed attempts to send to destination. [alpha]",
@@ -171,9 +187,11 @@ func AssertEqualExporterSendFailedSpans(t *testing.T, tt *componenttest.Telemetr
 
 func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_sent_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_sent_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_sent_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log record successfully sent to destination. [alpha]",
@@ -191,9 +209,11 @@ func AssertEqualExporterSentLogRecords(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_sent_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_sent_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_sent_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points successfully sent to destination. [alpha]",
@@ -211,9 +231,11 @@ func AssertEqualExporterSentMetricPoints(t *testing.T, tt *componenttest.Telemet
 
 func AssertEqualExporterSentSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_exporter_sent_spans"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.exporter_sent_spans"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter_sent_spans"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of spans successfully sent to destination. [alpha]",

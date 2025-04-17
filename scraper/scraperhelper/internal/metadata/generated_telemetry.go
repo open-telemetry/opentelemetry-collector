@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -65,9 +65,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
 	var name string
 	name = "otelcol_scraper_errored_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_errored_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_errored_log_records"
+		}
+	})
 	builder.ScraperErroredLogRecords, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of log records that were unable to be scraped. [alpha]"),
@@ -75,9 +77,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_scraper_errored_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_errored_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_errored_metric_points"
+		}
+	})
 	builder.ScraperErroredMetricPoints, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of metric points that were unable to be scraped. [alpha]"),
@@ -85,9 +89,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_scraper_scraped_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_scraped_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_scraped_log_records"
+		}
+	})
 	builder.ScraperScrapedLogRecords, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of log records successfully scraped. [alpha]"),
@@ -95,9 +101,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_scraper_scraped_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.scraper_scraped_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.scraper_scraped_metric_points"
+		}
+	})
 	builder.ScraperScrapedMetricPoints, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of metric points successfully scraped. [alpha]"),

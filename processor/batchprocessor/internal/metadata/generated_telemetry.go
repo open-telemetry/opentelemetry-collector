@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -93,9 +93,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
 	var name string
 	name = "otelcol_processor_batch_batch_send_size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_send_size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_send_size"
+		}
+	})
 	builder.ProcessorBatchBatchSendSize, err = builder.meter.Int64Histogram(
 		name,
 		metric.WithDescription("Number of units in the batch"),
@@ -104,9 +106,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor_batch_batch_send_size_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_send_size_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_send_size_bytes"
+		}
+	})
 	builder.ProcessorBatchBatchSendSizeBytes, err = builder.meter.Int64Histogram(
 		name,
 		metric.WithDescription("Number of bytes in batch that was sent. Only available on detailed level."),
@@ -115,9 +119,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor_batch_batch_size_trigger_send"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_size_trigger_send"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_size_trigger_send"
+		}
+	})
 	builder.ProcessorBatchBatchSizeTriggerSend, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of times the batch was sent due to a size trigger"),
@@ -125,9 +131,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor_batch_metadata_cardinality"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_metadata_cardinality"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_metadata_cardinality"
+		}
+	})
 	builder.ProcessorBatchMetadataCardinality, err = builder.meter.Int64ObservableUpDownCounter(
 		name,
 		metric.WithDescription("Number of distinct metadata value combinations being processed"),
@@ -135,9 +143,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	name = "otelcol_processor_batch_timeout_trigger_send"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_timeout_trigger_send"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_timeout_trigger_send"
+		}
+	})
 	builder.ProcessorBatchTimeoutTriggerSend, err = builder.meter.Int64Counter(
 		name,
 		metric.WithDescription("Number of times the batch was sent due to a timeout trigger"),

@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -25,9 +25,11 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 
 func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_batch_batch_send_size"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_send_size"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_send_size"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of units in the batch",
@@ -44,9 +46,11 @@ func AssertEqualProcessorBatchBatchSendSize(t *testing.T, tt *componenttest.Tele
 
 func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_batch_batch_send_size_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_send_size_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_send_size_bytes"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of bytes in batch that was sent. Only available on detailed level.",
@@ -63,9 +67,11 @@ func AssertEqualProcessorBatchBatchSendSizeBytes(t *testing.T, tt *componenttest
 
 func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_batch_batch_size_trigger_send"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_batch_size_trigger_send"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_batch_size_trigger_send"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of times the batch was sent due to a size trigger",
@@ -83,9 +89,11 @@ func AssertEqualProcessorBatchBatchSizeTriggerSend(t *testing.T, tt *componentte
 
 func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_batch_metadata_cardinality"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_metadata_cardinality"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_metadata_cardinality"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of distinct metadata value combinations being processed",
@@ -103,9 +111,11 @@ func AssertEqualProcessorBatchMetadataCardinality(t *testing.T, tt *componenttes
 
 func AssertEqualProcessorBatchTimeoutTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_batch_timeout_trigger_send"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_batch_timeout_trigger_send"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_batch_timeout_trigger_send"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of times the batch was sent due to a timeout trigger",

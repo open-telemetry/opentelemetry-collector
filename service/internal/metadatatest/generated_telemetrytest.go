@@ -10,14 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_cpu_seconds"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_cpu_seconds"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_cpu_seconds"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Total CPU user and system time in seconds [alpha]",
@@ -35,9 +37,11 @@ func AssertEqualProcessCPUSeconds(t *testing.T, tt *componenttest.Telemetry, dps
 
 func AssertEqualProcessMemoryRss(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_memory_rss"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_memory_rss"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_memory_rss"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Total physical memory (resident set size) [alpha]",
@@ -53,9 +57,11 @@ func AssertEqualProcessMemoryRss(t *testing.T, tt *componenttest.Telemetry, dps 
 
 func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_runtime_heap_alloc_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_runtime_heap_alloc_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_heap_alloc_bytes"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]",
@@ -71,9 +77,11 @@ func AssertEqualProcessRuntimeHeapAllocBytes(t *testing.T, tt *componenttest.Tel
 
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_runtime_total_alloc_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_runtime_total_alloc_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_total_alloc_bytes"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]",
@@ -91,9 +99,11 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Te
 
 func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_runtime_total_sys_memory_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_runtime_total_sys_memory_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_total_sys_memory_bytes"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]",
@@ -109,9 +119,11 @@ func AssertEqualProcessRuntimeTotalSysMemoryBytes(t *testing.T, tt *componenttes
 
 func AssertEqualProcessUptime(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[float64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_uptime"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_uptime"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_uptime"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Uptime of the process [alpha]",

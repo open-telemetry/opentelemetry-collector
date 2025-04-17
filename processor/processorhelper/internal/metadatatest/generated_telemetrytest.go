@@ -10,14 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_incoming_items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_incoming_items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_incoming_items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items passed to the processor. [alpha]",
@@ -35,9 +37,11 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_outgoing_items"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_outgoing_items"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_outgoing_items"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of items emitted from the processor. [alpha]",
