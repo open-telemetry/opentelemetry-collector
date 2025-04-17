@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -25,9 +25,11 @@ func NewSettings(tt *componenttest.Telemetry) receiver.Settings {
 
 func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_batch_size_trigger_send"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.batch_size_trigger_send"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.batch_size_trigger_send"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]",
@@ -45,9 +47,11 @@ func AssertEqualBatchSizeTriggerSend(t *testing.T, tt *componenttest.Telemetry, 
 
 func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_process_runtime_total_alloc_bytes"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.process_runtime_total_alloc_bytes"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_total_alloc_bytes"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
@@ -65,9 +69,11 @@ func AssertEqualProcessRuntimeTotalAllocBytes(t *testing.T, tt *componenttest.Te
 
 func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_queue_capacity"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.queue_capacity"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.queue_capacity"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Queue capacity - sync gauge example.",
@@ -83,9 +89,11 @@ func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []m
 
 func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_queue_length"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.queue_length"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.queue_length"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
@@ -101,9 +109,11 @@ func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []met
 
 func AssertEqualRequestDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	name := "otelcol_request_duration"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.request_duration"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.request_duration"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Duration of request [alpha]",

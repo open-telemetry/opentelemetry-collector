@@ -11,7 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -25,9 +25,11 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 
 func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_accepted_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_accepted_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_accepted_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -45,9 +47,11 @@ func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Tele
 
 func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_accepted_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_accepted_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_accepted_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -65,9 +69,11 @@ func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Te
 
 func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_accepted_spans"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_accepted_spans"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_accepted_spans"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
@@ -85,9 +91,11 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry
 
 func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_refused_log_records"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_refused_log_records"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_refused_log_records"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
@@ -105,9 +113,11 @@ func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telem
 
 func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_refused_metric_points"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_refused_metric_points"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_refused_metric_points"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
@@ -125,9 +135,11 @@ func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Tel
 
 func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	name := "otelcol_processor_refused_spans"
-	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
-		name = "otelcol.processor_refused_spans"
-	}
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor_refused_spans"
+		}
+	})
 	want := metricdata.Metrics{
 		Name:        name,
 		Description: "Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
