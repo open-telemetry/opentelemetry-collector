@@ -59,6 +59,9 @@ type Metric struct {
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// Override the default prefix for the metric name.
+	Prefix string `mapstructure:"prefix"`
 }
 
 type Stability struct {
