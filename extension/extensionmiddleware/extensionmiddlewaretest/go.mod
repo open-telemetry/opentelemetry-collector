@@ -7,7 +7,6 @@ require (
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/extension v1.30.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
-	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.71.1
 )
 
