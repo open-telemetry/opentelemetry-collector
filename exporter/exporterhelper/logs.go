@@ -41,8 +41,8 @@ func NewLogsQueueBatchSettings() QueueBatchSettings {
 				},
 			},
 		},
-		Partitioner: queuebatch.BasePartitioner{
-			GetKeyFunc: func(_ context.Context, req request.Request) string {
+		Partitioner: queuebatch.NewPartitioner(
+			func(_ context.Context, req request.Request) string {
 				logRequest := req.(*logsRequest)
 				if logRequest.ld.ResourceLogs().Len() == 0 {
 					return ""
@@ -53,7 +53,7 @@ func NewLogsQueueBatchSettings() QueueBatchSettings {
 				}
 				return key.AsString()
 			},
-		},
+		),
 	}
 }
 
