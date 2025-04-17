@@ -31,8 +31,12 @@ return set
 {{ range $name, $metric := .Telemetry.Metrics }}
 
 func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
+	name := "otelcol_{{ $name }}"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.{{ $name }}"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_{{ $name }}",
+		Name:        name,
 		Description: "{{ $metric.Description }}{{ $metric.Stability }}",
 		Unit:        "{{ $metric.Unit }}",
 		Data:        metricdata.{{ $metric.Data.Type }}[{{ $metric.Data.BasicType }}]{
@@ -45,7 +49,7 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 			DataPoints: dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_{{ $name }}")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

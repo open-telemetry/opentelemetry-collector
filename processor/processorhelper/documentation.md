@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_incoming_items
 
+Note: The name is otelcol.processor_incoming_items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of items passed to the processor. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Number of items passed to the processor. [alpha]
 | {items} | Sum | Int | true |
 
 ### otelcol_processor_outgoing_items
+
+Note: The name is otelcol.processor_outgoing_items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of items emitted from the processor. [alpha]
 

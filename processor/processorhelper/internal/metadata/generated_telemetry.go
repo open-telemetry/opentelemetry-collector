@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -59,14 +60,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_processor_incoming_items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_incoming_items"
+	}
 	builder.ProcessorIncomingItems, err = builder.meter.Int64Counter(
-		"otelcol_processor_incoming_items",
+		name,
 		metric.WithDescription("Number of items passed to the processor. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_processor_outgoing_items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_outgoing_items"
+	}
 	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(
-		"otelcol_processor_outgoing_items",
+		name,
 		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
 		metric.WithUnit("{items}"),
 	)

@@ -20,6 +20,8 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 const (
@@ -304,7 +306,11 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
+	if err := tmpl.Execute(&buf, TemplateContext{
+		Metadata:                             md,
+		Package:                              goPackage,
+		OwnMetricsUsePeriodPrefixGateEnabled: telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled(),
+	}); err != nil {
 		return []byte{}, fmt.Errorf("failed executing template: %w", err)
 	}
 	return buf.Bytes(), nil

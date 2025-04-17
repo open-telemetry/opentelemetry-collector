@@ -24,6 +24,8 @@ type TemplateContext struct {
 	Metadata
 	// Package name for generated code.
 	Package string
+	// Whether own metrics prefix is 'otelcol.' instead of 'otelcol_'.
+	OwnMetricsUsePeriodPrefixGateEnabled bool
 }
 
 func LoadMetadata(filePath string) (Metadata, error) {

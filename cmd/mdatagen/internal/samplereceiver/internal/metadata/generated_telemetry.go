@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -104,32 +105,54 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_batch_size_trigger_send"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.batch_size_trigger_send"
+	}
 	builder.BatchSizeTriggerSend, err = builder.meter.Int64Counter(
-		"otelcol_batch_size_trigger_send",
+		name,
 		metric.WithDescription("Number of times the batch was sent due to a size trigger [deprecated since v0.110.0]"),
 		metric.WithUnit("{times}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_total_alloc_bytes"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_runtime_total_alloc_bytes"
+	}
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"otelcol_process_runtime_total_alloc_bytes",
+		name,
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_queue_capacity"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.queue_capacity"
+	}
 	builder.QueueCapacity, err = builder.meter.Int64Gauge(
-		"otelcol_queue_capacity",
+		name,
 		metric.WithDescription("Queue capacity - sync gauge example."),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_queue_length"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.queue_length"
+	}
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
-		"otelcol_queue_length",
+		name,
 		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_request_duration"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.request_duration"
+	}
 	builder.RequestDuration, err = builder.meter.Float64Histogram(
-		"otelcol_request_duration",
+		name,
 		metric.WithDescription("Duration of request [alpha]"),
 		metric.WithUnit("s"),
 		metric.WithExplicitBucketBoundaries([]float64{1, 10, 100}...),

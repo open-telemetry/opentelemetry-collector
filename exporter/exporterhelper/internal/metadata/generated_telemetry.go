@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -110,68 +111,114 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_exporter_enqueue_failed_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_log_records"
+	}
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_exporter_enqueue_failed_log_records",
+		name,
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_enqueue_failed_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_metric_points"
+	}
 	builder.ExporterEnqueueFailedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_exporter_enqueue_failed_metric_points",
+		name,
 		metric.WithDescription("Number of metric points failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_enqueue_failed_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_enqueue_failed_spans"
+	}
 	builder.ExporterEnqueueFailedSpans, err = builder.meter.Int64Counter(
-		"otelcol_exporter_enqueue_failed_spans",
+		name,
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_queue_capacity"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_queue_capacity"
+	}
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
-		"otelcol_exporter_queue_capacity",
+		name,
 		metric.WithDescription("Fixed capacity of the retry queue (in batches) [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_queue_size"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_queue_size"
+	}
 	builder.ExporterQueueSize, err = builder.meter.Int64ObservableGauge(
-		"otelcol_exporter_queue_size",
+		name,
 		metric.WithDescription("Current size of the retry queue (in batches) [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_send_failed_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_log_records"
+	}
 	builder.ExporterSendFailedLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_exporter_send_failed_log_records",
+		name,
 		metric.WithDescription("Number of log records in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_send_failed_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_metric_points"
+	}
 	builder.ExporterSendFailedMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_exporter_send_failed_metric_points",
+		name,
 		metric.WithDescription("Number of metric points in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_send_failed_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_send_failed_spans"
+	}
 	builder.ExporterSendFailedSpans, err = builder.meter.Int64Counter(
-		"otelcol_exporter_send_failed_spans",
+		name,
 		metric.WithDescription("Number of spans in failed attempts to send to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_sent_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_log_records"
+	}
 	builder.ExporterSentLogRecords, err = builder.meter.Int64Counter(
-		"otelcol_exporter_sent_log_records",
+		name,
 		metric.WithDescription("Number of log record successfully sent to destination. [alpha]"),
 		metric.WithUnit("{records}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_sent_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_metric_points"
+	}
 	builder.ExporterSentMetricPoints, err = builder.meter.Int64Counter(
-		"otelcol_exporter_sent_metric_points",
+		name,
 		metric.WithDescription("Number of metric points successfully sent to destination. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_exporter_sent_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.exporter_sent_spans"
+	}
 	builder.ExporterSentSpans, err = builder.meter.Int64Counter(
-		"otelcol_exporter_sent_spans",
+		name,
 		metric.WithDescription("Number of spans successfully sent to destination. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)

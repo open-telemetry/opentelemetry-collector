@@ -10,11 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_incoming_items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_incoming_items"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_incoming_items",
+		Name:        name,
 		Description: "Number of items passed to the processor. [alpha]",
 		Unit:        "{items}",
 		Data: metricdata.Sum[int64]{
@@ -23,14 +28,18 @@ func AssertEqualProcessorIncomingItems(t *testing.T, tt *componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_incoming_items")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_outgoing_items"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_outgoing_items"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_outgoing_items",
+		Name:        name,
 		Description: "Number of items emitted from the processor. [alpha]",
 		Unit:        "{items}",
 		Data: metricdata.Sum[int64]{
@@ -39,7 +48,7 @@ func AssertEqualProcessorOutgoingItems(t *testing.T, tt *componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_outgoing_items")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

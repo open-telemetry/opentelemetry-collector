@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
@@ -23,8 +24,12 @@ func NewSettings(tt *componenttest.Telemetry) processor.Settings {
 }
 
 func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_accepted_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_accepted_log_records",
+		Name:        name,
 		Description: "Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
@@ -33,14 +38,18 @@ func AssertEqualProcessorAcceptedLogRecords(t *testing.T, tt *componenttest.Tele
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_accepted_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_accepted_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_accepted_metric_points",
+		Name:        name,
 		Description: "Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -49,14 +58,18 @@ func AssertEqualProcessorAcceptedMetricPoints(t *testing.T, tt *componenttest.Te
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_accepted_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_accepted_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_accepted_spans"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_accepted_spans",
+		Name:        name,
 		Description: "Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -65,14 +78,18 @@ func AssertEqualProcessorAcceptedSpans(t *testing.T, tt *componenttest.Telemetry
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_accepted_spans")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_refused_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_refused_log_records",
+		Name:        name,
 		Description: "Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{records}",
 		Data: metricdata.Sum[int64]{
@@ -81,14 +98,18 @@ func AssertEqualProcessorRefusedLogRecords(t *testing.T, tt *componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_refused_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_refused_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_refused_metric_points",
+		Name:        name,
 		Description: "Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -97,14 +118,18 @@ func AssertEqualProcessorRefusedMetricPoints(t *testing.T, tt *componenttest.Tel
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_refused_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_processor_refused_spans"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.processor_refused_spans"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_processor_refused_spans",
+		Name:        name,
 		Description: "Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -113,7 +138,7 @@ func AssertEqualProcessorRefusedSpans(t *testing.T, tt *componenttest.Telemetry,
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_processor_refused_spans")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

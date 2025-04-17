@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_exporter_enqueue_failed_log_records
 
+Note: The name is otelcol.exporter_enqueue_failed_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log records failed to be added to the sending queue. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Number of log records failed to be added to the sending queue. [alpha]
 | {records} | Sum | Int | true |
 
 ### otelcol_exporter_enqueue_failed_metric_points
+
+Note: The name is otelcol.exporter_enqueue_failed_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of metric points failed to be added to the sending queue. [alpha]
 
@@ -24,6 +28,8 @@ Number of metric points failed to be added to the sending queue. [alpha]
 
 ### otelcol_exporter_enqueue_failed_spans
 
+Note: The name is otelcol.exporter_enqueue_failed_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of spans failed to be added to the sending queue. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -31,6 +37,8 @@ Number of spans failed to be added to the sending queue. [alpha]
 | {spans} | Sum | Int | true |
 
 ### otelcol_exporter_queue_capacity
+
+Note: The name is otelcol.exporter_queue_capacity if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Fixed capacity of the retry queue (in batches) [alpha]
 
@@ -40,6 +48,8 @@ Fixed capacity of the retry queue (in batches) [alpha]
 
 ### otelcol_exporter_queue_size
 
+Note: The name is otelcol.exporter_queue_size if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Current size of the retry queue (in batches) [alpha]
 
 | Unit | Metric Type | Value Type |
@@ -47,6 +57,8 @@ Current size of the retry queue (in batches) [alpha]
 | {batches} | Gauge | Int |
 
 ### otelcol_exporter_send_failed_log_records
+
+Note: The name is otelcol.exporter_send_failed_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of log records in failed attempts to send to destination. [alpha]
 
@@ -56,6 +68,8 @@ Number of log records in failed attempts to send to destination. [alpha]
 
 ### otelcol_exporter_send_failed_metric_points
 
+Note: The name is otelcol.exporter_send_failed_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of metric points in failed attempts to send to destination. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -63,6 +77,8 @@ Number of metric points in failed attempts to send to destination. [alpha]
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_exporter_send_failed_spans
+
+Note: The name is otelcol.exporter_send_failed_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of spans in failed attempts to send to destination. [alpha]
 
@@ -72,6 +88,8 @@ Number of spans in failed attempts to send to destination. [alpha]
 
 ### otelcol_exporter_sent_log_records
 
+Note: The name is otelcol.exporter_sent_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log record successfully sent to destination. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -80,6 +98,8 @@ Number of log record successfully sent to destination. [alpha]
 
 ### otelcol_exporter_sent_metric_points
 
+Note: The name is otelcol.exporter_sent_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of metric points successfully sent to destination. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -87,6 +107,8 @@ Number of metric points successfully sent to destination. [alpha]
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_exporter_sent_spans
+
+Note: The name is otelcol.exporter_sent_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of spans successfully sent to destination. [alpha]
 

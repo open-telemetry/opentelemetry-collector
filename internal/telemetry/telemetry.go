@@ -22,6 +22,14 @@ var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
 )
 
+var OwnMetricsUsePeriodPrefixGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.ownMetricsUsePeriodPrefix",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterDescription("Own metrics use 'otelcol.' prefix instead of 'otelcol_'."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
+)
+
 // IMPORTANT: This struct is reexported as part of the public API of
 // go.opentelemetry.io/collector/component, a stable module.
 // DO NOT MAKE BREAKING CHANGES TO EXPORTED FIELDS.

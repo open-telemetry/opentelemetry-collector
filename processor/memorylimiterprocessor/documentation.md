@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_accepted_log_records
 
+Note: The name is otelcol.processor_accepted_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log records successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Number of log records successfully pushed into the next component in the pipelin
 | {records} | Sum | Int | true |
 
 ### otelcol_processor_accepted_metric_points
+
+Note: The name is otelcol.processor_accepted_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of metric points successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
@@ -24,6 +28,8 @@ Number of metric points successfully pushed into the next component in the pipel
 
 ### otelcol_processor_accepted_spans
 
+Note: The name is otelcol.processor_accepted_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of spans successfully pushed into the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -31,6 +37,8 @@ Number of spans successfully pushed into the next component in the pipeline. [de
 | {spans} | Sum | Int | true |
 
 ### otelcol_processor_refused_log_records
+
+Note: The name is otelcol.processor_refused_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of log records that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 
@@ -40,6 +48,8 @@ Number of log records that were rejected by the next component in the pipeline. 
 
 ### otelcol_processor_refused_metric_points
 
+Note: The name is otelcol.processor_refused_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of metric points that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -47,6 +57,8 @@ Number of metric points that were rejected by the next component in the pipeline
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_processor_refused_spans
+
+Note: The name is otelcol.processor_refused_spans if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of spans that were rejected by the next component in the pipeline. [deprecated since v0.110.0]
 

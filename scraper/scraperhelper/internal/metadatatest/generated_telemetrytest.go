@@ -10,11 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_scraper_errored_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.scraper_errored_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_errored_log_records",
+		Name:        name,
 		Description: "Number of log records that were unable to be scraped. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -23,14 +28,18 @@ func AssertEqualScraperErroredLogRecords(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_scraper_errored_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_scraper_errored_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.scraper_errored_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_errored_metric_points",
+		Name:        name,
 		Description: "Number of metric points that were unable to be scraped. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -39,14 +48,18 @@ func AssertEqualScraperErroredMetricPoints(t *testing.T, tt *componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_scraper_errored_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_scraper_scraped_log_records"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.scraper_scraped_log_records"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_scraped_log_records",
+		Name:        name,
 		Description: "Number of log records successfully scraped. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -55,14 +68,18 @@ func AssertEqualScraperScrapedLogRecords(t *testing.T, tt *componenttest.Telemet
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_scraper_scraped_log_records")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
 func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	name := "otelcol_scraper_scraped_metric_points"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.scraper_scraped_metric_points"
+	}
 	want := metricdata.Metrics{
-		Name:        "otelcol_scraper_scraped_metric_points",
+		Name:        name,
 		Description: "Number of metric points successfully scraped. [alpha]",
 		Unit:        "{datapoints}",
 		Data: metricdata.Sum[int64]{
@@ -71,7 +88,7 @@ func AssertEqualScraperScrapedMetricPoints(t *testing.T, tt *componenttest.Telem
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_scraper_scraped_metric_points")
+	got, err := tt.GetMetric(name)
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

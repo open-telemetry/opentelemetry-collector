@@ -40,6 +40,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -529,6 +531,20 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 // proper metrics were recorded. It also uses all endpoints supported by the
 // trace receiver.
 func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
+	gate := telemetry.OwnMetricsUsePeriodPrefixGate
+	initialValue := gate.IsEnabled()
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+
+	_ = featuregate.GlobalRegistry().Set(gate.ID(), true)
+	testOTLPReceiverGRPCTracesIngestTest(t)
+
+	_ = featuregate.GlobalRegistry().Set(gate.ID(), false)
+	testOTLPReceiverGRPCTracesIngestTest(t)
+}
+
+func testOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	type ingestionStateTest struct {
 		okToIngest   bool
 		permanent    bool
@@ -605,6 +621,21 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 // proper metrics were recorded. It also uses all endpoints supported by the
 // trace receiver.
 func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
+	gate := telemetry.OwnMetricsUsePeriodPrefixGate
+	initialValue := gate.IsEnabled()
+	_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+
+	_ = featuregate.GlobalRegistry().Set(gate.ID(), true)
+	testOTLPReceiverHTTPTracesIngestTest(t)
+
+	_ = featuregate.GlobalRegistry().Set(gate.ID(), false)
+	testOTLPReceiverHTTPTracesIngestTest(t)
+}
+
+func testOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 	type ingestionStateTest struct {
 		okToIngest         bool
 		err                error
@@ -1235,11 +1266,15 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	prefix := "otelcol_"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		prefix = "otelcol."
+	}
+	got, err := tt.GetMetric(prefix + "receiver_accepted_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
-			Name:        "otelcol_receiver_accepted_spans",
+			Name:        prefix + "receiver_accepted_spans",
 			Description: "Number of spans successfully pushed into the pipeline. [alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{
@@ -1256,11 +1291,11 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-	got, err = tt.GetMetric("otelcol_receiver_refused_spans")
+	got, err = tt.GetMetric(prefix + "receiver_refused_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
-			Name:        "otelcol_receiver_refused_spans",
+			Name:        prefix + "receiver_refused_spans",
 			Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
 			Unit:        "{spans}",
 			Data: metricdata.Sum[int64]{

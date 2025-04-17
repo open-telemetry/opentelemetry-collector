@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -175,38 +176,64 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_process_cpu_seconds"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_cpu_seconds"
+	}
 	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
-		"otelcol_process_cpu_seconds",
+		name,
 		metric.WithDescription("Total CPU user and system time in seconds [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_memory_rss"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_memory_rss"
+	}
 	builder.ProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_memory_rss",
+		name,
 		metric.WithDescription("Total physical memory (resident set size) [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_heap_alloc_bytes"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_runtime_heap_alloc_bytes"
+	}
 	builder.ProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_runtime_heap_alloc_bytes",
+		name,
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_total_alloc_bytes"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_runtime_total_alloc_bytes"
+	}
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"otelcol_process_runtime_total_alloc_bytes",
+		name,
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_total_sys_memory_bytes"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_runtime_total_sys_memory_bytes"
+	}
 	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_runtime_total_sys_memory_bytes",
+		name,
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_uptime"
+	if telemetry.OwnMetricsUsePeriodPrefixGate.IsEnabled() {
+		name = "otelcol.process_uptime"
+	}
 	builder.ProcessUptime, err = builder.meter.Float64ObservableCounter(
-		"otelcol_process_uptime",
+		name,
 		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
 	)
