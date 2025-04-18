@@ -50,7 +50,7 @@ func TestHTTPClientFunc(t *testing.T) {
 	resp := &http.Response{}
 
 	f := HTTPClientFunc(func(r *http.Request) (*http.Response, error) {
-		require.Equal(t, r, resp)
+		require.Equal(t, r, req)
 		called = true
 		return resp, nil
 	})
