@@ -25,9 +25,8 @@ See also the [Troubleshooting][troubleshooting_docs] document for examples on us
 
 The following settings are optional:
 
-- `verbosity` (default = `basic`): the verbosity of the debug exporter
-  (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
-  logged.
+- `verbosity` (default = `basic`): the verbosity of the debug exporter: `basic`, `normal` or `detailed`.
+  See [Verbosity levels](#verbosity-levels) below for more information.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
 - `sampling_thereafter` (default = `1`): sampling rate after the initial
@@ -52,6 +51,8 @@ exporters:
 
 The following subsections describe the output from the exporter depending on the configured verbosity level - `basic`, `normal` and `detailed`.
 The default verbosity level is `basic`.
+
+To understand how the below example output was generated, see [Generating example output](./generating-example-output.md).
 
 ### Basic verbosity
 
