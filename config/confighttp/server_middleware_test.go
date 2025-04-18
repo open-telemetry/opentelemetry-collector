@@ -5,6 +5,7 @@ package confighttp
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -128,6 +129,123 @@ func TestServerMiddleware(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedOutput, string(body))
+		})
+	}
+}
+
+func TestServerMiddlewareErrors(t *testing.T) {
+	// Create a basic handler for testing
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("OK"))
+	})
+
+	// Test cases for HTTP server middleware errors
+	httpTests := []struct {
+		name    string
+		host    component.Host
+		config  ServerConfig
+		errText string
+	}{
+		{
+			name: "extension_not_found",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{},
+			},
+			config: ServerConfig{
+				Endpoint: "localhost:0",
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("nonexistent"),
+					},
+				},
+			},
+			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
+		},
+		{
+			name: "get_http_handler_fails",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("http middleware error")),
+				},
+			},
+			config: ServerConfig{
+				Endpoint: "localhost:0",
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("errormw"),
+					},
+				},
+			},
+			errText: "http middleware error",
+		},
+	}
+
+	for _, tc := range httpTests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Trying to create the server should fail
+			_, err := tc.config.ToServer(
+				context.Background(),
+				tc.host,
+				componenttest.NewNopTelemetrySettings(),
+				handler,
+			)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errText)
+		})
+	}
+
+	// Test cases for gRPC server middleware errors
+	grpcTests := []struct {
+		name    string
+		host    component.Host
+		config  ServerConfig
+		errText string
+	}{
+		{
+			name: "grpc_extension_not_found",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{},
+			},
+			config: ServerConfig{
+				Endpoint: "localhost:0",
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("nonexistent"),
+					},
+				},
+			},
+			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
+		},
+		{
+			name: "get_grpc_handler_fails",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("grpc middleware error")),
+				},
+			},
+			config: ServerConfig{
+				Endpoint: "localhost:0",
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("errormw"),
+					},
+				},
+			},
+			errText: "grpc middleware error",
+		},
+	}
+
+	for _, tc := range grpcTests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Trying to create the server should fail
+			_, err := tc.config.ToServer(
+				context.Background(),
+				tc.host,
+				componenttest.NewNopTelemetrySettings(),
+				handler,
+			)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errText)
 		})
 	}
 }
