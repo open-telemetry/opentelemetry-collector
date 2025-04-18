@@ -4,6 +4,7 @@
 package extensionmiddlewaretest
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,4 +42,19 @@ func TestNopServer(t *testing.T) {
 	grpcOpts, err := grpcServer.GetGRPCServerOptions()
 	require.NoError(t, err)
 	require.Nil(t, grpcOpts)
+}
+
+func TestHTTPClientFunc(t *testing.T) {
+	called := false
+	req := &http.Request{}
+	resp := &http.Response{}
+
+	f := HTTPClientFunc(func(r *http.Request) (*http.Response, error) {
+		called = true
+		return resp, nil
+	})
+
+	result, _ := f.RoundTrip(req)
+	require.True(t, called)
+	require.Equal(t, resp, result)
 }
