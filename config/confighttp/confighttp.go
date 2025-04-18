@@ -114,7 +114,7 @@ type ClientConfig struct {
 	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
 
 	// Middlewares are used to add custom functionality to the HTTP client.
-	// Middleware handlers are applied in the order they appear in this list,
+	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 }
@@ -201,8 +201,8 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	clientTransport := (http.RoundTripper)(transport)
 
-	// Apply middlewares in reverse order so they are applied in
-	// order. The first middleware runs after authentication.
+	// Apply middlewares in reverse order so they execute in
+	// forward order. The first middleware runs after authentication.
 	for i := len(hcs.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
 		wrapper, err = hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
@@ -363,7 +363,7 @@ type ServerConfig struct {
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
 	// Middlewares are used to add custom functionality to the HTTP server.
-	// Middleware handlers are applied in the order they appear in this list,
+	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
 	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 }
@@ -453,9 +453,9 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
-	// Apply middlewares in reverse order so they are applied in
-	// order.  The first middleware runs after decompression,
-	// below, preceded by Auth, CORS, etc.
+	// Apply middlewares in reverse order so they execute in
+	// forward order.  The first middleware runs after
+	// decompression, below, preceded by Auth, CORS, etc.
 	for i := len(hss.Middlewares) - 1; i >= 0; i-- {
 		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
 		// If we failed to get the middleware
