@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.23.0
 
-toolchain go1.23.8
+toolchain go1.24.1
 
 require (
 	go.opentelemetry.io/collector/component v1.30.0
@@ -188,6 +188,8 @@ replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgr
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
 
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
@@ -254,6 +256,10 @@ replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest 
 
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
 
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
 replace go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
@@ -315,9 +321,3 @@ replace go.opentelemetry.io/collector/semconv => ../../semconv
 replace go.opentelemetry.io/collector/service => ../../service
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
-
-replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
-
-replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
