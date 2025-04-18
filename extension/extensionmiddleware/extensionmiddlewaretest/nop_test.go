@@ -44,12 +44,12 @@ func TestNopServer(t *testing.T) {
 	require.Nil(t, grpcOpts)
 }
 
-func TestHTTPClientFunc(t *testing.T) {
+func TestRoundTripperFunc(t *testing.T) {
 	called := false
 	req := &http.Request{}
 	resp := &http.Response{}
 
-	f := HTTPClientFunc(func(r *http.Request) (*http.Response, error) {
+	f := RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		require.Equal(t, r, req)
 		called = true
 		return resp, nil

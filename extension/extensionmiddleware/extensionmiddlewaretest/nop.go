@@ -17,11 +17,11 @@ func NewNop() extension.Extension {
 	return &baseExtension{}
 }
 
-// HTTPClientFunc implements an HTTP client middleware function.  This
+// RoundTripperFunc implements an HTTP client middleware function.  This
 // is the equivalent of net/http.HandlerFunc for creating a
 // net/http.RoundTripper from a function.
-type HTTPClientFunc func(*http.Request) (*http.Response, error)
+type RoundTripperFunc func(*http.Request) (*http.Response, error)
 
-func (f HTTPClientFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f RoundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }

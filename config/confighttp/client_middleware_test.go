@@ -33,7 +33,7 @@ func newTestClientMiddleware(name string) component.Component {
 	return &testClientMiddleware{
 		Extension: extensionmiddlewaretest.NewNop(),
 		GetHTTPRoundTripperFunc: func(transport http.RoundTripper) (http.RoundTripper, error) {
-			return extensionmiddlewaretest.HTTPClientFunc(
+			return extensionmiddlewaretest.RoundTripperFunc(
 				func(req *http.Request) (*http.Response, error) {
 					resp, err := transport.RoundTrip(req)
 					if err != nil {
