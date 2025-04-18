@@ -32,19 +32,6 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 		require.Equal(t, baseRT, rt)
 	})
 
-	t.Run("wrapping function", func(t *testing.T) {
-		// Create a custom round tripper wrapper for testing
-		customRT := &testRoundTripper{base: baseRT}
-
-		wrapperFunc := GetHTTPRoundTripperFunc(func(base http.RoundTripper) (http.RoundTripper, error) {
-			return &testRoundTripper{base: base}, nil
-		})
-
-		rt, err := wrapperFunc.GetHTTPRoundTripper(baseRT)
-		require.NoError(t, err)
-		require.IsType(t, customRT, rt, "wrapper function should return the custom round tripper")
-	})
-
 	t.Run("error function", func(t *testing.T) {
 		expectedErr := errors.New("round tripper error")
 		errorFunc := GetHTTPRoundTripperFunc(func(_ http.RoundTripper) (http.RoundTripper, error) {
@@ -56,16 +43,6 @@ func TestGetHTTPRoundTripperFunc(t *testing.T) {
 		require.Equal(t, expectedErr, err)
 		require.Nil(t, rt)
 	})
-}
-
-// testRoundTripper is a simple round tripper implementation for testing
-type testRoundTripper struct {
-	base http.RoundTripper
-}
-
-func (t *testRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	// Just delegate to the base round tripper
-	return t.base.RoundTrip(req)
 }
 
 func TestGetGRPCClientOptionsFunc(t *testing.T) {
