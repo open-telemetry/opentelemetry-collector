@@ -44,8 +44,8 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
-	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.2 // indirect
+	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -56,11 +56,13 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.124.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.124.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.124.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.124.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.124.0 // indirect
@@ -82,6 +84,7 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace go.opentelemetry.io/collector => ../../
@@ -160,3 +163,9 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest

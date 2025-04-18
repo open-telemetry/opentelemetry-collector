@@ -47,6 +47,8 @@ type KeepaliveClientConfig struct {
 	Time                time.Duration `mapstructure:"time"`
 	Timeout             time.Duration `mapstructure:"timeout"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
@@ -122,6 +124,8 @@ func NewDefaultClientConfig() *ClientConfig {
 type KeepaliveServerConfig struct {
 	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
 	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
@@ -141,6 +145,8 @@ type KeepaliveServerParameters struct {
 	MaxConnectionAgeGrace time.Duration `mapstructure:"max_connection_age_grace,omitempty"`
 	Time                  time.Duration `mapstructure:"time,omitempty"`
 	Timeout               time.Duration `mapstructure:"timeout,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
@@ -154,6 +160,8 @@ func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
 type KeepaliveEnforcementPolicy struct {
 	MinTime             time.Duration `mapstructure:"min_time,omitempty"`
 	PermitWithoutStream bool          `mapstructure:"permit_without_stream,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
@@ -196,6 +204,9 @@ type ServerConfig struct {
 
 	// Middlewares for the gRPC server.
 	Middlewares []configmiddleware.Middleware `mapstructure:"middlewares,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig returns a new instance of ServerConfig with default values.
