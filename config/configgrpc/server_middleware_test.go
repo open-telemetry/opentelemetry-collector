@@ -15,6 +15,9 @@ import (
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
 // contextKey is a private type for keys defined in this test.
@@ -34,35 +37,24 @@ func getMiddlewareCalls(ctx context.Context) []string {
 
 // testServerMiddleware is a test implementation of configmiddleware.Middleware
 type testServerMiddleware struct {
-	name string
+	extension.Extension
+	extensionmiddleware.GetGRPCServerOptionsFunc
 }
 
-func (*testServerMiddleware) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (*testServerMiddleware) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (tm *testServerMiddleware) call(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	ctx = context.WithValue(ctx, middlewareCallsKey, append(getMiddlewareCalls(ctx), tm.name))
-	return handler(ctx, req)
-}
-
-func (tm *testServerMiddleware) GetGRPCServerOptions() ([]grpc.ServerOption, error) {
-	return []grpc.ServerOption{grpc.ChainUnaryInterceptor(tm.call)}, nil
-}
-
-func newTestServerMiddleware(name string) component.Component {
+func newTestServerMiddleware(name string) extension.Extension {
 	return &testServerMiddleware{
-		name: name,
-	}
-}
-
-func newTestServerConfig(name string) configmiddleware.Middleware {
-	return configmiddleware.Middleware{
-		MiddlewareID: component.MustNewID(name),
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetGRPCServerOptionsFunc: func() ([]grpc.ServerOption, error) {
+			return []grpc.ServerOption{grpc.ChainUnaryInterceptor(
+				func(
+					ctx context.Context,
+					req any, _ *grpc.UnaryServerInfo,
+					handler grpc.UnaryHandler,
+				) (any, error) {
+					ctx = context.WithValue(ctx, middlewareCallsKey, append(getMiddlewareCalls(ctx), name))
+					return handler(ctx, req)
+				})}, nil
+		},
 	}
 }
 
@@ -87,9 +79,9 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 				Endpoint:  "localhost:0",
 				Transport: confignet.TransportTypeTCP,
 			},
-			Middlewares: []configmiddleware.Middleware{
-				newTestServerConfig("test1"),
-				newTestServerConfig("test2"),
+			Middlewares: []configmiddleware.Config{
+				newTestMiddlewareConfig("test1"),
+				newTestMiddlewareConfig("test2"),
 			},
 		}, host)
 		defer srv.Stop()

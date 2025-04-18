@@ -108,7 +108,7 @@ type ClientConfig struct {
 	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
 
 	// Middlewares for the gRPC client.
-	Middlewares []configmiddleware.Middleware `mapstructure:"middlewares,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
@@ -203,7 +203,7 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 
 	// Middlewares for the gRPC server.
-	Middlewares []configmiddleware.Middleware `mapstructure:"middlewares,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

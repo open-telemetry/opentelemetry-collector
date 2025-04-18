@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.124.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/pdata/testdata v0.124.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
