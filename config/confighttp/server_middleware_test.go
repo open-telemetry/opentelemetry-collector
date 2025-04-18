@@ -16,43 +16,38 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
-// testServerMiddleware is a test implementation of configmiddleware.Middleware
+// testServerMiddleware is a test implementation of configmiddleware.Config
 type testServerMiddleware struct {
-	name string
-}
-
-func (*testServerMiddleware) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (*testServerMiddleware) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (tm *testServerMiddleware) GetHTTPHandler(handler http.Handler) (http.Handler, error) {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Append middleware name to the URL path
-		r.URL.Path += tm.name + "/"
-
-		// Call the next handler in the chain
-		handler.ServeHTTP(w, r)
-
-		// Add middleware name to the response
-		_, _ = w.Write([]byte("\r\nserved by " + tm.name))
-	}), nil
+	extension.Extension
+	extensionmiddleware.GetHTTPHandlerFunc
 }
 
 func newTestServerMiddleware(name string) component.Component {
 	return &testServerMiddleware{
-		name: name,
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetHTTPHandlerFunc: func(handler http.Handler) (http.Handler, error) {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				// Append middleware name to the URL path
+				r.URL.Path += name + "/"
+
+				// Call the next handler in the chain
+				handler.ServeHTTP(w, r)
+
+				// Add middleware name to the response
+				_, _ = w.Write([]byte("\r\nserved by " + name))
+			}), nil
+		},
 	}
 }
 
-func newTestServerConfig(name string) configmiddleware.Middleware {
-	return configmiddleware.Middleware{
-		MiddlewareID: component.MustNewID(name),
+func newTestServerConfig(name string) configmiddleware.Config {
+	return configmiddleware.Config{
+		ID: component.MustNewID(name),
 	}
 }
 
@@ -68,7 +63,7 @@ func TestServerMiddleware(t *testing.T) {
 	// Test with different middleware configurations
 	testCases := []struct {
 		name           string
-		middlewares    []configmiddleware.Middleware
+		middlewares    []configmiddleware.Config
 		expectedOutput string
 	}{
 		{
@@ -78,14 +73,14 @@ func TestServerMiddleware(t *testing.T) {
 		},
 		{
 			name: "single_middleware",
-			middlewares: []configmiddleware.Middleware{
+			middlewares: []configmiddleware.Config{
 				newTestServerConfig("test1"),
 			},
 			expectedOutput: "OK{/test1/}\r\nserved by test1",
 		},
 		{
 			name: "multiple_middlewares",
-			middlewares: []configmiddleware.Middleware{
+			middlewares: []configmiddleware.Config{
 				newTestServerConfig("test1"),
 				newTestServerConfig("test2"),
 			},

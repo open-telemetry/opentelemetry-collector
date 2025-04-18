@@ -4,6 +4,8 @@
 package extensionmiddlewaretest // import "go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 
 import (
+	"net/http"
+
 	"go.opentelemetry.io/collector/extension"
 )
 
@@ -13,4 +15,11 @@ import (
 // empty slice of options.
 func NewNop() extension.Extension {
 	return &baseExtension{}
+}
+
+// HTTPClientFunc implements an HTTP client middleware function.
+type HTTPClientFunc func(*http.Request) (*http.Response, error)
+
+func (f HTTPClientFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }

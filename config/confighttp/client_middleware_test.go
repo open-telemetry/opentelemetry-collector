@@ -17,71 +17,51 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
 // testClientMiddleware is a test middleware that appends a string to the response body
 type testClientMiddleware struct {
-	name string
-}
-
-func (*testClientMiddleware) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (*testClientMiddleware) Shutdown(_ context.Context) error {
-	return nil
-}
-
-var _ extensionmiddleware.HTTPClient = &testClientMiddleware{}
-
-// GetHTTPRoundTripper creates a round tripper that appends text to the response body
-func (m *testClientMiddleware) GetHTTPRoundTripper(transport http.RoundTripper) (http.RoundTripper, error) {
-	return &bodyAppenderRoundTripper{
-		name:      m.name,
-		transport: transport,
-	}, nil
-}
-
-// bodyAppenderRoundTripper is a round tripper that appends text to the response body
-type bodyAppenderRoundTripper struct {
-	name      string
-	transport http.RoundTripper
-}
-
-// RoundTrip appends text to the response body
-func (rt *bodyAppenderRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	resp, err := rt.transport.RoundTrip(req)
-	if err != nil {
-		return resp, err
-	}
-
-	// Read the original body
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return resp, err
-	}
-	_ = resp.Body.Close()
-
-	// Create a new body with the appended text
-	newBody := string(body) + "\r\noutput by " + rt.name
-
-	// Replace the response body
-	resp.Body = io.NopCloser(strings.NewReader(newBody))
-	resp.ContentLength = int64(len(newBody))
-
-	return resp, nil
+	extension.Extension
+	extensionmiddleware.GetHTTPRoundTripperFunc
 }
 
 func newTestClientMiddleware(name string) component.Component {
 	return &testClientMiddleware{
-		name: name,
+		Extension: extensionmiddlewaretest.NewNop(),
+		GetHTTPRoundTripperFunc: func(transport http.RoundTripper) (http.RoundTripper, error) {
+			return extensionmiddlewaretest.HTTPClientFunc(
+				func(req *http.Request) (*http.Response, error) {
+					resp, err := transport.RoundTrip(req)
+					if err != nil {
+						return resp, err
+					}
+
+					// Read the original body
+					body, err := io.ReadAll(resp.Body)
+					if err != nil {
+						return resp, err
+					}
+					_ = resp.Body.Close()
+
+					// Create a new body with the appended text
+					newBody := string(body) + "\r\noutput by " + name
+
+					// Replace the response body
+					resp.Body = io.NopCloser(strings.NewReader(newBody))
+					resp.ContentLength = int64(len(newBody))
+
+					return resp, nil
+				}), nil
+		},
 	}
 }
 
-func newTestClientConfig(name string) configmiddleware.Middleware {
-	return configmiddleware.Middleware{
-		MiddlewareID: component.MustNewID(name),
+func newTestClientConfig(name string) configmiddleware.Config {
+	return configmiddleware.Config{
+		ID: component.MustNewID(name),
 	}
 }
 
@@ -104,7 +84,7 @@ func TestClientMiddlewares(t *testing.T) {
 	// Test with different middleware configurations
 	testCases := []struct {
 		name           string
-		middlewares    []configmiddleware.Middleware
+		middlewares    []configmiddleware.Config
 		expectedOutput string
 	}{
 		{
@@ -114,14 +94,14 @@ func TestClientMiddlewares(t *testing.T) {
 		},
 		{
 			name: "single_middleware",
-			middlewares: []configmiddleware.Middleware{
+			middlewares: []configmiddleware.Config{
 				newTestClientConfig("test1"),
 			},
 			expectedOutput: "OK\r\noutput by test1",
 		},
 		{
 			name: "multiple_middlewares",
-			middlewares: []configmiddleware.Middleware{
+			middlewares: []configmiddleware.Config{
 				newTestClientConfig("test1"),
 				newTestClientConfig("test2"),
 			},
