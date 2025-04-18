@@ -304,7 +304,10 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 	tmpl := templatize(tmplFile, md)
 	buf := bytes.Buffer{}
 
-	if err := tmpl.Execute(&buf, TemplateContext{Metadata: md, Package: goPackage}); err != nil {
+	if err := tmpl.Execute(&buf, TemplateContext{
+		Metadata: md,
+		Package:  goPackage,
+	}); err != nil {
 		return []byte{}, fmt.Errorf("failed executing template: %w", err)
 	}
 	return buf.Bytes(), nil

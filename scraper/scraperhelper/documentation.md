@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_scraper_errored_log_records
 
+Note: The name is otelcol.scraper_errored_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log records that were unable to be scraped. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -15,6 +17,8 @@ Number of log records that were unable to be scraped. [alpha]
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_scraper_errored_metric_points
+
+Note: The name is otelcol.scraper_errored_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of metric points that were unable to be scraped. [alpha]
 
@@ -24,6 +28,8 @@ Number of metric points that were unable to be scraped. [alpha]
 
 ### otelcol_scraper_scraped_log_records
 
+Note: The name is otelcol.scraper_scraped_log_records if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of log records successfully scraped. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -31,6 +37,8 @@ Number of log records successfully scraped. [alpha]
 | {datapoints} | Sum | Int | true |
 
 ### otelcol_scraper_scraped_metric_points
+
+Note: The name is otelcol.scraper_scraped_metric_points if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of metric points successfully scraped. [alpha]
 

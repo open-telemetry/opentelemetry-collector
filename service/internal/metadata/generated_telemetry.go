@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -28,12 +29,24 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ConnectorConsumedItems            metric.Int64Counter
+	ConnectorConsumedSize             metric.Int64Counter
+	ConnectorProducedItems            metric.Int64Counter
+	ConnectorProducedSize             metric.Int64Counter
+	ExporterConsumedItems             metric.Int64Counter
+	ExporterConsumedSize              metric.Int64Counter
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
 	ProcessMemoryRss                  metric.Int64ObservableGauge
 	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
 	ProcessRuntimeTotalAllocBytes     metric.Int64ObservableCounter
 	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
 	ProcessUptime                     metric.Float64ObservableCounter
+	ProcessorConsumedItems            metric.Int64Counter
+	ProcessorConsumedSize             metric.Int64Counter
+	ProcessorProducedItems            metric.Int64Counter
+	ProcessorProducedSize             metric.Int64Counter
+	ReceiverProducedItems             metric.Int64Counter
+	ReceiverProducedSize              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -175,40 +188,222 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+
+	var name string
+	name = "otelcol_connector.consumed.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.items"
+		}
+	})
+	builder.ConnectorConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.consumed.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.consumed.size"
+		}
+	})
+	builder.ConnectorConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the connector."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.produced.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.items"
+		}
+	})
+	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_connector.produced.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.connector.produced.size"
+		}
+	})
+	builder.ConnectorProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the connector."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_exporter.consumed.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.items"
+		}
+	})
+	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the exporter."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_exporter.consumed.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.exporter.consumed.size"
+		}
+	})
+	builder.ExporterConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the exporter."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_process_cpu_seconds"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_cpu_seconds"
+		}
+	})
 	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
-		"otelcol_process_cpu_seconds",
+		name,
 		metric.WithDescription("Total CPU user and system time in seconds [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_memory_rss"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_memory_rss"
+		}
+	})
 	builder.ProcessMemoryRss, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_memory_rss",
+		name,
 		metric.WithDescription("Total physical memory (resident set size) [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_heap_alloc_bytes"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_heap_alloc_bytes"
+		}
+	})
 	builder.ProcessRuntimeHeapAllocBytes, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_runtime_heap_alloc_bytes",
+		name,
 		metric.WithDescription("Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_total_alloc_bytes"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_total_alloc_bytes"
+		}
+	})
 	builder.ProcessRuntimeTotalAllocBytes, err = builder.meter.Int64ObservableCounter(
-		"otelcol_process_runtime_total_alloc_bytes",
+		name,
 		metric.WithDescription("Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_runtime_total_sys_memory_bytes"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_runtime_total_sys_memory_bytes"
+		}
+	})
 	builder.ProcessRuntimeTotalSysMemoryBytes, err = builder.meter.Int64ObservableGauge(
-		"otelcol_process_runtime_total_sys_memory_bytes",
+		name,
 		metric.WithDescription("Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]"),
 		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
+	name = "otelcol_process_uptime"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.process_uptime"
+		}
+	})
 	builder.ProcessUptime, err = builder.meter.Float64ObservableCounter(
-		"otelcol_process_uptime",
+		name,
 		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.consumed.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.items"
+		}
+	})
+	builder.ProcessorConsumedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items passed to the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.consumed.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.consumed.size"
+		}
+	})
+	builder.ProcessorConsumedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items passed to the processor."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.produced.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.items"
+		}
+	})
+	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_processor.produced.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.processor.produced.size"
+		}
+	})
+	builder.ProcessorProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the processor."),
+		metric.WithUnit("By"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_receiver.produced.items"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.items"
+		}
+	})
+	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Number of items emitted from the receiver."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	name = "otelcol_receiver.produced.size"
+	featuregate.GlobalRegistry().VisitAll(func(gate *featuregate.Gate) {
+		if gate.ID() == "telemetry.ownMetricsUsePeriodPrefix" && gate.IsEnabled() {
+			name = "otelcol.receiver.produced.size"
+		}
+	})
+	builder.ReceiverProducedSize, err = builder.meter.Int64Counter(
+		name,
+		metric.WithDescription("Size of items emitted from the receiver."),
+		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

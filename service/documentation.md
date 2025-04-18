@@ -6,7 +6,39 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_connector.consumed.items
+
+Note: The name is otelcol.connector.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_connector.produced.items
+
+Note: The name is otelcol.connector.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_exporter.consumed.items
+
+Note: The name is otelcol.exporter.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the exporter.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
 ### otelcol_process_cpu_seconds
+
+Note: The name is otelcol.process_cpu_seconds if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Total CPU user and system time in seconds [alpha]
 
@@ -16,6 +48,8 @@ Total CPU user and system time in seconds [alpha]
 
 ### otelcol_process_memory_rss
 
+Note: The name is otelcol.process_memory_rss if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Total physical memory (resident set size) [alpha]
 
 | Unit | Metric Type | Value Type |
@@ -23,6 +57,8 @@ Total physical memory (resident set size) [alpha]
 | By | Gauge | Int |
 
 ### otelcol_process_runtime_heap_alloc_bytes
+
+Note: The name is otelcol.process_runtime_heap_alloc_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]
 
@@ -32,6 +68,8 @@ Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha
 
 ### otelcol_process_runtime_total_alloc_bytes
 
+Note: The name is otelcol.process_runtime_total_alloc_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -39,6 +77,8 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 | By | Sum | Int | true |
 
 ### otelcol_process_runtime_total_sys_memory_bytes
+
+Note: The name is otelcol.process_runtime_total_sys_memory_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]
 
@@ -48,8 +88,40 @@ Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [
 
 ### otelcol_process_uptime
 
+Note: The name is otelcol.process_uptime if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Uptime of the process [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Double | true |
+
+### otelcol_processor.consumed.items
+
+Note: The name is otelcol.processor.consumed.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_processor.produced.items
+
+Note: The name is otelcol.processor.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol_receiver.produced.items
+
+Note: The name is otelcol.receiver.produced.items if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
+Number of items emitted from the receiver.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
