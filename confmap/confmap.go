@@ -125,12 +125,6 @@ func sanitize(a any) any {
 	return sanitizeExpanded(a, false)
 }
 
-// sanitizeToStringMap recursively removes expandedValue references from the given data.
-// It uses the expandedValue.Original field to replace the expandedValue references.
-func sanitizeToStr(a any) any {
-	return sanitizeExpanded(a, true)
-}
-
 func sanitizeExpanded(a any, useOriginal bool) any {
 	switch m := a.(type) {
 	case map[string]any:
@@ -281,22 +275,6 @@ func castTo(exp expandedValue, useOriginal bool) any {
 	return exp.Value
 }
 
-// Check if a reflect.Type is of the form T, where:
-// X is any type or interface
-// T = string | map[X]T | []T | [n]T
-func isStringyStructure(t reflect.Type) bool {
-	if t.Kind() == reflect.String {
-		return true
-	}
-	if t.Kind() == reflect.Map {
-		return isStringyStructure(t.Elem())
-	}
-	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
-		return isStringyStructure(t.Elem())
-	}
-	return false
-}
-
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
 // original string representation when decoding into a string field, and use the original otherwise.
@@ -307,7 +285,11 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 		data any,
 	) (any, error) {
 		if exp, ok := data.(expandedValue); ok {
-			v := castTo(exp, to.Kind() == reflect.String)
+			kind := to.Kind()
+			if kind == reflect.Pointer {
+				kind = to.Elem().Kind()
+			}
+			v := castTo(exp, kind == reflect.String)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
 			// If the `to.Kind` is not a string, then expandValue's original value is useless and
 			// the casted-to value will be nil. In that scenario, we need to use the default value of `to`'s kind.
@@ -315,16 +297,6 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 				return reflect.Zero(to).Interface(), nil
 			}
 			return v, nil
-		}
-
-		switch to.Kind() {
-		case reflect.Array, reflect.Slice, reflect.Map:
-			if isStringyStructure(to) {
-				// If the target field is a stringy structure, sanitize to use the original string value everywhere.
-				return sanitizeToStr(data), nil
-			}
-			// Otherwise, sanitize to use the parsed value everywhere.
-			return sanitize(data), nil
 		}
 		return data, nil
 	}
