@@ -3464,7 +3464,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename ForEach (in pdata) with Range to be consistent with sync.Map (#2931)
 - Rename `componenthelper.Start` to `componenthelper.StartFunc` (#2880)
 - Rename `componenthelper.Stop` to `componenthelper.StopFunc` (#2880)
-- Remove `exporterheleper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionheleper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
+- Remove `exporterhelper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionhelper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `component.CustomUnmarshaler` implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `testutil.HostPortFromAddr`, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
