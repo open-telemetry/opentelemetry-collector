@@ -5,6 +5,7 @@ package configgrpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -138,4 +140,63 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 	// The sequence should be "middleware-1,middleware-2" as that's the order they were registered
 	expectedSequence := "middleware-1,middleware-2"
 	assert.Equal(t, expectedSequence, md[0])
+}
+
+// TestClientMiddlewareToClientErrors tests failure cases for the ToClient method
+// specifically related to middleware resolution and API calls.
+func TestClientMiddlewareToClientErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		host    component.Host
+		config  ClientConfig
+		errText string
+	}{
+		{
+			name: "extension_not_found",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{},
+			},
+			config: ClientConfig{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("nonexistent"),
+					},
+				},
+			},
+			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
+		},
+		{
+			name: "get_client_options_fails",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get options failed")),
+				},
+			},
+			config: ClientConfig{
+				Endpoint: "localhost:1234",
+				TLSSetting: configtls.ClientConfig{
+					Insecure: true,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("errormw"),
+					},
+				},
+			},
+			errText: "get options failed",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test creating the client with middleware errors
+			_, err := tc.config.ToClientConn(context.Background(), tc.host, componenttest.NewNopTelemetrySettings())
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errText)
+		})
+	}
 }
