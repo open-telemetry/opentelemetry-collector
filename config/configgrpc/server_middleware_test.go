@@ -5,6 +5,7 @@ package configgrpc
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -99,4 +100,67 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 
 	// Verify interceptors were called in the correct order
 	assert.Equal(t, []string{"test1", "test2"}, getMiddlewareCalls(server.recordedContext))
+}
+
+// TestServerMiddlewareToServerErrors tests failure cases for the ToServer method
+// specifically related to middleware resolution and API calls.
+func TestServerMiddlewareToServerErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		host    component.Host
+		config  ServerConfig
+		errText string
+	}{
+		{
+			name: "extension_not_found",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{},
+			},
+			config: ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("nonexistent"),
+					},
+				},
+			},
+			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
+		},
+		{
+			name: "get_server_options_fails",
+			host: &mockHost{
+				ext: map[component.ID]component.Component{
+					component.MustNewID("errormw"): extensionmiddlewaretest.NewErr(errors.New("get server options failed")),
+				},
+			},
+			config: ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Middlewares: []configmiddleware.Config{
+					{
+						ID: component.MustNewID("errormw"),
+					},
+				},
+			},
+			errText: "get server options failed",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Test creating the server with middleware errors
+			server := &grpcTraceServer{}
+			srv, err := server.startTestServerWithHostError(t, tc.config, tc.host)
+			if srv != nil {
+				srv.Stop()
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errText)
+		})
+	}
 }

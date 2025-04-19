@@ -1160,6 +1160,22 @@ func (gts *grpcTraceServer) startTestServerWithHost(t *testing.T, gss ServerConf
 	return server, listener.Addr().String()
 }
 
+func (gts *grpcTraceServer) startTestServerWithHostError(_ *testing.T, gss ServerConfig, host component.Host, opts ...ToServerOption) (*grpc.Server, error) {
+	listener, err := gss.NetAddr.Listen(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer listener.Close()
+
+	server, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	ptraceotlp.RegisterGRPCServer(server, gts)
+	return server, nil
+}
+
 // sendTestRequest issues a ptraceotlp export request and captures metadata.
 func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse, error) {
 	return sendTestRequestWithHost(t, gcs, componenttest.NewNopHost())
