@@ -11,10 +11,32 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
+	var gate *featuregate.Gate
+	featuregate.GlobalRegistry().VisitAll(func(g *featuregate.Gate) {
+		if g.ID() == "telemetry.ownMetricsUsePeriodPrefix" {
+			gate = g
+		}
+	})
+	require.NotNil(t, gate)
+
+	initialValue := gate.IsEnabled()
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set("telemetry.ownMetricsUsePeriodPrefix", initialValue)
+	}()
+
+	_ = featuregate.GlobalRegistry().Set("telemetry.ownMetricsUsePeriodPrefix", true)
+	testSetupTelemetry(t)
+
+	_ = featuregate.GlobalRegistry().Set("telemetry.ownMetricsUsePeriodPrefix", false)
+	testSetupTelemetry(t)
+}
+
+func testSetupTelemetry(t *testing.T) {
 	testTel := componenttest.NewTelemetry()
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)

@@ -8,6 +8,8 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_batch_batch_send_size
 
+Note: The name is otelcol.processor_batch_batch_send_size if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of units in the batch
 
 | Unit | Metric Type | Value Type |
@@ -15,6 +17,8 @@ Number of units in the batch
 | {units} | Histogram | Int |
 
 ### otelcol_processor_batch_batch_send_size_bytes
+
+Note: The name is otelcol.processor_batch_batch_send_size_bytes if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of bytes in batch that was sent. Only available on detailed level.
 
@@ -24,6 +28,8 @@ Number of bytes in batch that was sent. Only available on detailed level.
 
 ### otelcol_processor_batch_batch_size_trigger_send
 
+Note: The name is otelcol.processor_batch_batch_size_trigger_send if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of times the batch was sent due to a size trigger
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -32,6 +38,8 @@ Number of times the batch was sent due to a size trigger
 
 ### otelcol_processor_batch_metadata_cardinality
 
+Note: The name is otelcol.processor_batch_metadata_cardinality if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
+
 Number of distinct metadata value combinations being processed
 
 | Unit | Metric Type | Value Type | Monotonic |
@@ -39,6 +47,8 @@ Number of distinct metadata value combinations being processed
 | {combinations} | Sum | Int | false |
 
 ### otelcol_processor_batch_timeout_trigger_send
+
+Note: The name is otelcol.processor_batch_timeout_trigger_send if the `telemetry.ownMetricsUsePeriodPrefix` feature gate is enabled.
 
 Number of times the batch was sent due to a timeout trigger
 

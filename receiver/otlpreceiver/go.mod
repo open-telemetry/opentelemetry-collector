@@ -22,6 +22,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.124.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.124.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.124.0
+	go.opentelemetry.io/collector/featuregate v1.30.0
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.124.0
 	go.opentelemetry.io/collector/internal/telemetry v0.124.0
 	go.opentelemetry.io/collector/pdata v1.30.0
@@ -68,7 +69,6 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.124.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
