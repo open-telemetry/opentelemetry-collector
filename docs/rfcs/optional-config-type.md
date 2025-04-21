@@ -86,9 +86,10 @@ Optional types can fulfill the following use cases we have when decoding config.
 
 ### Representing optional config fields
 
-To use the optional type to mark a config field as optional, the type can simply
-be used as a type parameter to `Optional[T]`. The following config struct shows
-how this may look, both in definition and in usage:
+To use the optional type to mark a config field as optional, the type can simply be used as a type
+parameter to `Optional[T]`. The YAML representation of `Optional[T]` is the same as that of `T`,
+except that the type records whether the value is present. The following config struct shows how
+this may look, both in definition and in usage:
 
 ```golang
 type Protocols struct {
