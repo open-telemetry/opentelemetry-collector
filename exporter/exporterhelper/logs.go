@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,6 +41,19 @@ func NewLogsQueueBatchSettings() QueueBatchSettings {
 				},
 			},
 		},
+		Partitioner: queuebatch.NewPartitioner(
+			func(_ context.Context, req request.Request) string {
+				logRequest := req.(*logsRequest)
+				if logRequest.ld.ResourceLogs().Len() == 0 {
+					return ""
+				}
+				key, ok := logRequest.ld.ResourceLogs().At(0).Resource().Attributes().Get("service.name")
+				if !ok {
+					return ""
+				}
+				return key.AsString()
+			},
+		),
 	}
 }
 

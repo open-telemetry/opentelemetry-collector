@@ -17,6 +17,10 @@ type Config struct {
 	// Enabled indicates whether to not enqueue and batch before exporting.
 	Enabled bool `mapstructure:"enabled"`
 
+	// PerPartition indicates whether to use a separate queue for each partition.
+	// If true, each partition will have its own queue.
+	PerPartition bool `mapstructure:"per_partition"`
+
 	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
 	// Currently, this option is not available when persistent queue is configured using the storage configuration.
 	WaitForResult bool `mapstructure:"wait_for_result"`
