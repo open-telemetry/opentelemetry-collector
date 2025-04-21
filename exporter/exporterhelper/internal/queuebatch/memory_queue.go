@@ -20,7 +20,10 @@ var blockingDonePool = sync.Pool{
 	},
 }
 
-var errInvalidSize = errors.New("invalid element size")
+var (
+	errInvalidSize  = errors.New("invalid element size")
+	errSizeTooLarge = errors.New("element size too large")
+)
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
 type memoryQueueSettings[T any] struct {
@@ -72,6 +75,11 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 
 	if elSize <= 0 {
 		return errInvalidSize
+	}
+
+	// If element larger than the capacity, will never been able to add it.
+	if elSize > mq.cap {
+		return errSizeTooLarge
 	}
 
 	done, err := mq.add(ctx, el, elSize)

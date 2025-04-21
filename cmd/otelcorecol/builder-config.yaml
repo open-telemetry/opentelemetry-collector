@@ -85,6 +85,7 @@ replaces:
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
   - go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
   - go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+  - go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
   - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/ratelimiterextension => ../../extension/ratelimiterextension

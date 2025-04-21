@@ -31,6 +31,9 @@ type Config struct {
 
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

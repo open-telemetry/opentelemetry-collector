@@ -90,6 +90,8 @@ replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../con
 
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
 
-replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware

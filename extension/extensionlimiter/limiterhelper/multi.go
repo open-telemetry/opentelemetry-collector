@@ -12,11 +12,11 @@ import (
 )
 
 // MiddlewaresToLimiterProvider returns a multi-provider that combines all middleware limiter providers.
-func MiddlewaresToLimiterProvider(host component.Host, middlewares []configmiddleware.Middleware) extensionlimiter.Provider {
+func MiddlewaresToLimiterProvider(host component.Host, middlewares []configmiddleware.Config) extensionlimiter.Provider {
 	var providers []extensionlimiter.Provider
 	exts := host.GetExtensions()
 	for _, middleware := range middlewares {
-		ext := exts[middleware.MiddlewareID]
+		ext := exts[middleware.ID]
 		if ext == nil {
 			continue
 		}

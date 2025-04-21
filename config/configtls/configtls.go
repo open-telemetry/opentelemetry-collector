@@ -102,6 +102,8 @@ type ClientConfig struct {
 	// This sets the ServerName in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
@@ -128,6 +130,8 @@ type ServerConfig struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig creates a new TLSServerSetting with any default values set.

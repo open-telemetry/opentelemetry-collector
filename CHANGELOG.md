@@ -381,14 +381,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `service`: ensure traces and logs emitted by the otel go SDK use the same resource information (#11578)
 - `config/configgrpc`: Patch for bug in the grpc-go NewClient that makes the way the hostname is resolved incompatible with the way proxy setting are applied. (#11537)
-- `builder`: Update builder default providers to lastest stable releases (#11566)
+- `builder`: Update builder default providers to latest stable releases (#11566)
 
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑
 
 - `consumer/consumererror`: Extract consumer/consumererror as a separate go module (#11440)
-- `exporter/expotertest`: Put expotertest into its own module (#11461)
+- `exporter/exportertest`: Put exportertest into its own module (#11461)
 - `service`: Remove stable gate component.UseLocalHostAsDefaultHost (#11412)
 
 ### 🚩 Deprecations 🚩
@@ -3221,7 +3221,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   - `opencensus`: Convert to new Number metrics (#3708)
   - `scraperhelper` receiver: Convert to new Number metrics (#3717)
   - `testbed`: Convert to new Number metrics (#3719)
-  - `expoerterhelper`: Convert `resourcetolabel` to new Number metrics (#3723)
+  - `exporterhelper`: Convert `resourcetolabel` to new Number metrics (#3723)
 - `configauth`: Prepare auth API to return a context (#3618)
 - `pdata`:
   - Implement `Equal()` for map-valued `AttributeValues` (#3612)
@@ -3464,7 +3464,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename ForEach (in pdata) with Range to be consistent with sync.Map (#2931)
 - Rename `componenthelper.Start` to `componenthelper.StartFunc` (#2880)
 - Rename `componenthelper.Stop` to `componenthelper.StopFunc` (#2880)
-- Remove `exporterheleper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionheleper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
+- Remove `exporterhelper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionhelper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `component.CustomUnmarshaler` implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `testutil.HostPortFromAddr`, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)

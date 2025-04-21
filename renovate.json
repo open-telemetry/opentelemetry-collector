@@ -102,6 +102,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "All github.com/knadh/koanf packages",
+      "matchPackageNames": [
+        "github.com/knadh/koanf{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "All go.opentelemetry.io/collector packages",
       "matchPackageNames": [
         "go.opentelemetry.io/collector{/,}**"
