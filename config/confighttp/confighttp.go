@@ -114,15 +114,16 @@ type ClientConfig struct {
 	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
 
 	// Middlewares are used to add custom functionality to the HTTP client.
-	// Middleware handlers are applied in the order they appear in this list,
+	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Middleware `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
 type CookiesConfig struct {
 	// Enabled if true, cookies from HTTP responses will be reused in further HTTP requests with the same server.
 	Enabled bool `mapstructure:"enabled,omitempty"`
+	_       struct{}
 }
 
 // NewDefaultClientConfig returns ClientConfig type object with
@@ -200,10 +201,11 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 
 	clientTransport := (http.RoundTripper)(transport)
 
-	// Apply middlewares in reverse order so they are applied in
-	// order. The first middleware runs after authentication.
+	// Apply middlewares in reverse order so they execute in
+	// forward order. The first middleware runs after authentication.
 	for i := len(hcs.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
+		wrapper, err = hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -361,9 +363,9 @@ type ServerConfig struct {
 	IdleTimeout time.Duration `mapstructure:"idle_timeout"`
 
 	// Middlewares are used to add custom functionality to the HTTP server.
-	// Middleware handlers are applied in the order they appear in this list,
+	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Middleware `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
@@ -387,6 +389,8 @@ type AuthConfig struct {
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
 	RequestParameters []string `mapstructure:"request_params,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ToListener creates a net.Listener.
@@ -449,9 +453,9 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		hss.CompressionAlgorithms = defaultCompressionAlgorithms
 	}
 
-	// Apply middlewares in reverse order so they are applied in
-	// order.  The first middleware runs after decompression,
-	// below, preceded by Auth, CORS, etc.
+	// Apply middlewares in reverse order so they execute in
+	// forward order.  The first middleware runs after
+	// decompression, below, preceded by Auth, CORS, etc.
 	for i := len(hss.Middlewares) - 1; i >= 0; i-- {
 		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
 		// If we failed to get the middleware
@@ -572,6 +576,8 @@ type CORSConfig struct {
 	// Set it to the number of seconds that browsers should cache a CORS
 	// preflight response for.
 	MaxAge int `mapstructure:"max_age,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
