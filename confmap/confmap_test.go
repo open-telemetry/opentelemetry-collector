@@ -742,6 +742,28 @@ func TestNilValuesUnchanged(t *testing.T) {
 	require.Equal(t, confFromStruct.ToStringMap(), nilConf.ToStringMap())
 }
 
+func TestEmptySliceUnchanged(t *testing.T) {
+	type structWithSlices struct {
+		Strings []string `mapstructure:"strings"`
+	}
+
+	slicesStruct := &structWithSlices{}
+
+	nilCfg := map[string]any{
+		"strings": []any{},
+	}
+	nilConf := NewFromStringMap(nilCfg)
+	err := nilConf.Unmarshal(slicesStruct)
+	require.NoError(t, err)
+
+	confFromStruct := New()
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
+	require.Equal(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
+}
+
 type c struct {
 	Modifiers []string `mapstructure:"modifiers"`
 }

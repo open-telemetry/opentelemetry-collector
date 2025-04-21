@@ -10,12 +10,15 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
 	go.opentelemetry.io/collector/config/configauth v0.124.0
 	go.opentelemetry.io/collector/config/configcompression v1.30.0
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/confignet v1.30.0
 	go.opentelemetry.io/collector/config/configopaque v1.30.0
 	go.opentelemetry.io/collector/config/configtls v1.30.0
 	go.opentelemetry.io/collector/extension v1.30.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.124.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/pdata/testdata v0.124.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
@@ -50,9 +53,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -74,6 +77,10 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
+replace go.opentelemetry.io/collector/config/configmiddleware => ../configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
@@ -93,3 +100,5 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telem
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest

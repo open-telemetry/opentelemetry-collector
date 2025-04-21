@@ -455,7 +455,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewErrorClient(errors.New("error")),
+					mockID: extensionauthtest.NewErr(errors.New("error")),
 				},
 			},
 		},
