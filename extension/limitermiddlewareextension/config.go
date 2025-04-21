@@ -14,7 +14,7 @@ var errNoLimiterSpecified = errors.New("no limiter extension specified")
 // Config defines configuration for the limiter middleware extension.
 type Config struct {
 	// Limiter configures the underlying extension used for limiting.
-	Limiter configlimiter.Config `mapstructure:",squash"`
+	Limiter configlimiter.Config `mapstructure:"limiter,omitempty"`
 }
 
 // Validate checks if the extension configuration is valid

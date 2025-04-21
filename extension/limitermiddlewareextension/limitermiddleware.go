@@ -45,19 +45,6 @@ var (
 	_ component.Component            = &limiterMiddleware{}
 )
 
-// limiterMiddleware also implements the extensionlimiter interface.
-var _ extensionlimiter.Provider = &limiterMiddleware{}
-
-// RateLimiter implements extensionlimiter.Provider.
-func (lm *limiterMiddleware) RateLimiter(key extensionlimiter.WeightKey) extensionlimiter.RateLimiter {
-	return lm.provider.RateLimiter(key)
-}
-
-// ResourceLimiter implements extensionlimiter.Provider
-func (lm *limiterMiddleware) ResourceLimiter(key extensionlimiter.WeightKey) extensionlimiter.ResourceLimiter {
-	return lm.provider.ResourceLimiter(key)
-}
-
 // Start initializes the limiter by getting it from host extensions.
 func (lm *limiterMiddleware) Start(ctx context.Context, host component.Host) error {
 	provider, err := lm.id.GetProvider(ctx, host.GetExtensions())
