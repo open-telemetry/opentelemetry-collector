@@ -22,16 +22,17 @@ type batch struct {
 }
 
 type batcherSettings[T any] struct {
-	sizerType  request.SizerType
-	sizer      request.Sizer[T]
-	next       sender.SendFunc[T]
-	maxWorkers int
+	sizerType   request.SizerType
+	sizer       request.Sizer[T]
+	partitioner Partitioner[T]
+	next        sender.SendFunc[T]
+	maxWorkers  int
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type defaultBatcher struct {
 	cfg            BatchConfig
-	workerPool     chan struct{}
+	workerPool     *chan struct{}
 	sizerType      request.SizerType
 	sizer          request.Sizer[request.Request]
 	consumeFunc    sender.SendFunc[request.Request]
@@ -53,7 +54,7 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 	}
 	return &defaultBatcher{
 		cfg:         bCfg,
-		workerPool:  workerPool,
+		workerPool:  &workerPool,
 		sizerType:   bSet.sizerType,
 		sizer:       bSet.sizer,
 		consumeFunc: bSet.next,
@@ -210,13 +211,13 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
-		<-qb.workerPool
+		<-*qb.workerPool
 	}
 	go func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
-			qb.workerPool <- struct{}{}
+			*qb.workerPool <- struct{}{}
 		}
 	}()
 }
