@@ -22,6 +22,8 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeProfiles(), ms)
 	assert.Equal(t, generateTestScopeProfiles(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestScopeProfiles(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
 	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).MoveTo(dest) })

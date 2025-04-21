@@ -65,6 +65,13 @@ func TestNew{{ .structName }}(t *testing.T) {
 	{{- else }}
 	assert.Equal(t, {{ .itemType }}({{index .testInterfaceOrigVal 0 }}), mv.At(0))
 	{{- end }}
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	{{- if eq .itemType "float64" }}
+	assert.InDelta(t, {{ .itemType }}({{index .testInterfaceOrigVal 0 }}), mv.At(0), 0.01)
+	{{- else }}
+	assert.Equal(t, {{ .itemType }}({{index .testInterfaceOrigVal 0 }}), mv.At(0))
+	{{- end }}
 }
 
 func Test{{ .structName }}ReadOnly(t *testing.T) {

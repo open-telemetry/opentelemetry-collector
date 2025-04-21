@@ -21,6 +21,8 @@ func TestInstrumentationScope_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewInstrumentationScope(), ms)
 	assert.Equal(t, generateTestInstrumentationScope(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestInstrumentationScope(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState)) })
 	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).MoveTo(dest) })

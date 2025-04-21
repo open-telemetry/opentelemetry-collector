@@ -43,6 +43,9 @@ func TestNewStringSlice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, string("a"), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, string("a"), mv.At(0))
 }
 
 func TestStringSliceReadOnly(t *testing.T) {
