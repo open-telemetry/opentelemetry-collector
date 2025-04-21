@@ -14,12 +14,12 @@ var errNoLimiterSpecified = errors.New("no limiter extension specified")
 // Config defines configuration for the limiter middleware extension.
 type Config struct {
 	// Limiter configures the underlying extension used for limiting.
-	Limiter configlimiter.Limiter `mapstructure:",squash"`
+	Limiter configlimiter.Config `mapstructure:",squash"`
 }
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	var noID configlimiter.Limiter
+	var noID configlimiter.Config
 	if cfg.Limiter == noID {
 		return errNoLimiterSpecified
 	}

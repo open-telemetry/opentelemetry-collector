@@ -22,50 +22,57 @@ import (
 //
 // The network_bytes weight key not supported because that information
 // is not available from the pdata object.
-type Consumer struct {
+type limiter struct {
 	requestItemsLimiter extensionlimiter.ResourceLimiter
 	memorySizeLimiter   extensionlimiter.ResourceLimiter
 	requestCountLimiter extensionlimiter.ResourceLimiter
 }
 
-// Config stores configuration from Options.
-type Config struct {
+// config stores configuration from Options.
+type config struct {
 	requestItemsLimiter bool
 	memorySizeLimiter   bool
 	requestCountLimiter bool
 }
 
 // Option represents the consumer options
-type Option func(*Config)
+type Option interface {
+	apply(*config)
+}
+
+type optionFunc func(*config)
+
+func (of optionFunc) apply(cfg *config) {
+	of(cfg)
+}
 
 // WithRequestCountLimit configures the consumer to limit based on request count.
 func WithRequestCountLimit() Option {
-	return func(c *Config) {
+	return optionFunc(func(c *config) {
 		c.requestCountLimiter = true
-	}
+	})
 }
 
 // WithRequestItemsLimit configures the consumer to limit based on item counts.
 func WithRequestItemsLimit() Option {
-	return func(c *Config) {
+	return optionFunc(func(c *config) {
 		c.requestItemsLimiter = true
-	}
+	})
 }
 
 // WithMemorySizeLimit configures the consumer to limit based on memory size.
 func WithMemorySizeLimit() Option {
-	return func(c *Config) {
+	return optionFunc(func(c *config) {
 		c.memorySizeLimiter = true
-	}
+	})
 }
 
-// NewConsumer creates a new limiterhelper Consumer
-func NewConsumer(provider extensionlimiter.Provider, options ...Option) *Consumer {
-	cfg := &Config{}
+func newLimiter(provider extensionlimiter.Provider, options ...Option) *limiter {
+	cfg := &config{}
 	for _, option := range options {
-		option(cfg)
+		option.apply(cfg)
 	}
-	c := &Consumer{}
+	c := &limiter{}
 	if cfg.requestCountLimiter {
 		c.requestCountLimiter = provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount)
 	}
@@ -79,53 +86,60 @@ func NewConsumer(provider extensionlimiter.Provider, options ...Option) *Consume
 }
 
 // WrapTraces wraps a traces consumer with resource limiters
-func (c *Consumer) WrapTraces(nextConsumer consumer.Traces) consumer.Traces {
-	if c.requestItemsLimiter == nil && c.memorySizeLimiter == nil && c.requestCountLimiter == nil {
+func WrapTraces(provider extensionlimiter.Provider, nextConsumer consumer.Traces, options ...Option) consumer.Traces {
+	limiter := newLimiter(provider, options...)
+
+	if limiter.requestItemsLimiter == nil && limiter.memorySizeLimiter == nil && limiter.requestCountLimiter == nil {
 		return nextConsumer
 	}
 	return &tracesConsumer{
 		nextConsumer: nextConsumer,
-		Consumer:     c,
+		limiter:      limiter,
 	}
 }
 
 // WrapMetrics wraps a metrics consumer with resource limiters
-func (c *Consumer) WrapMetrics(nextConsumer consumer.Metrics) consumer.Metrics {
-	if c.requestItemsLimiter == nil && c.memorySizeLimiter == nil && c.requestCountLimiter == nil {
+func WrapMetrics(provider extensionlimiter.Provider, nextConsumer consumer.Metrics, options ...Option) consumer.Metrics {
+	limiter := newLimiter(provider, options...)
+
+	if limiter.requestItemsLimiter == nil && limiter.memorySizeLimiter == nil && limiter.requestCountLimiter == nil {
 		return nextConsumer
 	}
 	return &metricsConsumer{
 		nextConsumer: nextConsumer,
-		Consumer:     c,
+		limiter:      limiter,
 	}
 }
 
 // WrapLogs wraps a logs consumer with resource limiters
-func (c *Consumer) WrapLogs(nextConsumer consumer.Logs) consumer.Logs {
-	if c.requestItemsLimiter == nil && c.memorySizeLimiter == nil && c.requestCountLimiter == nil {
+func WrapLogs(provider extensionlimiter.Provider, nextConsumer consumer.Logs, options ...Option) consumer.Logs {
+	limiter := newLimiter(provider, options...)
+	if limiter.requestItemsLimiter == nil && limiter.memorySizeLimiter == nil && limiter.requestCountLimiter == nil {
 		return nextConsumer
 	}
 	return &logsConsumer{
 		nextConsumer: nextConsumer,
-		Consumer:     c,
+		limiter:      limiter,
 	}
 }
 
 // WrapProfiles wraps a profiles consumer with resource limiters
-func (c *Consumer) WrapProfiles(nextConsumer xconsumer.Profiles) xconsumer.Profiles {
-	if c.requestItemsLimiter == nil && c.memorySizeLimiter == nil && c.requestCountLimiter == nil {
+func WrapProfiles(provider extensionlimiter.Provider, nextConsumer xconsumer.Profiles, options ...Option) xconsumer.Profiles {
+	limiter := newLimiter(provider, options...)
+
+	if limiter.requestItemsLimiter == nil && limiter.memorySizeLimiter == nil && limiter.requestCountLimiter == nil {
 		return nextConsumer
 	}
 	return &profilesConsumer{
 		nextConsumer: nextConsumer,
-		Consumer:     c,
+		limiter:      limiter,
 	}
 }
 
 // Signal-specific consumer implementations
 type tracesConsumer struct {
 	nextConsumer consumer.Traces
-	*Consumer
+	*limiter
 }
 
 func (tc *tracesConsumer) Capabilities() consumer.Capabilities {
@@ -173,7 +187,7 @@ func (tc *tracesConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) e
 
 type metricsConsumer struct {
 	nextConsumer consumer.Metrics
-	*Consumer
+	*limiter
 }
 
 func (mc *metricsConsumer) Capabilities() consumer.Capabilities {
@@ -220,7 +234,7 @@ func (mc *metricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 type logsConsumer struct {
 	nextConsumer consumer.Logs
-	*Consumer
+	*limiter
 }
 
 func (lc *logsConsumer) Capabilities() consumer.Capabilities {
@@ -267,7 +281,7 @@ func (lc *logsConsumer) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 type profilesConsumer struct {
 	nextConsumer xconsumer.Profiles
-	*Consumer
+	*limiter
 }
 
 func (pc *profilesConsumer) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {

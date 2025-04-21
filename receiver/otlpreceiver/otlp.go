@@ -99,26 +99,25 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	limiterProvider := limiterhelper.MiddlewaresToLimiterProvider(host, r.cfg.GRPC.Middlewares)
-	limiterConsumer := limiterhelper.NewConsumer(
-		limiterProvider,
+	helperOptions := []limiterhelper.Option{
 		limiterhelper.WithRequestItemsLimit(),
 		limiterhelper.WithMemorySizeLimit(),
-	)
+	}
 
 	if r.nextTraces != nil {
-		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(limiterConsumer.WrapTraces(r.nextTraces), r.obsrepGRPC))
+		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(limiterhelper.WrapTraces(limiterProvider, r.nextTraces, helperOptions...), r.obsrepGRPC))
 	}
 
 	if r.nextMetrics != nil {
-		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(limiterConsumer.WrapMetrics(r.nextMetrics), r.obsrepGRPC))
+		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(limiterhelper.WrapMetrics(limiterProvider, r.nextMetrics, helperOptions...), r.obsrepGRPC))
 	}
 
 	if r.nextLogs != nil {
-		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(limiterConsumer.WrapLogs(r.nextLogs), r.obsrepGRPC))
+		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(limiterhelper.WrapLogs(limiterProvider, r.nextLogs, helperOptions...), r.obsrepGRPC))
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(limiterConsumer.WrapProfiles(r.nextProfiles)))
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(limiterhelper.WrapProfiles(limiterProvider, r.nextProfiles, helperOptions...)))
 	}
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
@@ -145,36 +144,35 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	limiterProvider := limiterhelper.MiddlewaresToLimiterProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
-	limiterConsumer := limiterhelper.NewConsumer(
-		limiterProvider,
+	helperOptions := []limiterhelper.Option{
 		limiterhelper.WithRequestItemsLimit(),
 		limiterhelper.WithMemorySizeLimit(),
-	)
+	}
 
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
-		httpTracesReceiver := trace.New(limiterConsumer.WrapTraces(r.nextTraces), r.obsrepHTTP)
+		httpTracesReceiver := trace.New(limiterhelper.WrapTraces(limiterProvider, r.nextTraces, helperOptions...), r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
-		httpMetricsReceiver := metrics.New(limiterConsumer.WrapMetrics(r.nextMetrics), r.obsrepHTTP)
+		httpMetricsReceiver := metrics.New(limiterhelper.WrapMetrics(limiterProvider, r.nextMetrics, helperOptions...), r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
-		httpLogsReceiver := logs.New(limiterConsumer.WrapLogs(r.nextLogs), r.obsrepHTTP)
+		httpLogsReceiver := logs.New(limiterhelper.WrapLogs(limiterProvider, r.nextLogs, helperOptions...), r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(limiterConsumer.WrapProfiles(r.nextProfiles))
+		httpProfilesReceiver := profiles.New(limiterhelper.WrapProfiles(limiterProvider, r.nextProfiles, helperOptions...))
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})

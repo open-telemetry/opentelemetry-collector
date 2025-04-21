@@ -25,7 +25,7 @@ var tooManyRequestsMsg = http.StatusText(http.StatusTooManyRequests)
 
 // limiterMiddleware implements rate limiting across various transports.
 type limiterMiddleware struct {
-	id       configlimiter.Limiter
+	id       configlimiter.Config
 	provider extensionlimiter.Provider
 }
 
