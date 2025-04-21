@@ -10,31 +10,31 @@ dist:
   module: go.opentelemetry.io/collector/cmd/otelcorecol
   name: otelcorecol
   description: Local OpenTelemetry Collector binary, testing only.
-  version: 0.123.0-dev
+  version: 0.124.0-dev
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.123.0
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.123.0
+  - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.124.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.124.0
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.123.0
-  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.123.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.123.0
-  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.123.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.124.0
+  - gomod: go.opentelemetry.io/collector/exporter/nopexporter v0.124.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.124.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlphttpexporter v0.124.0
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.123.0
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.123.0
+  - gomod: go.opentelemetry.io/collector/extension/memorylimiterextension v0.124.0
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.124.0
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.123.0
-  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.123.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.124.0
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.124.0
 connectors:
-  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.123.0
+  - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.124.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.29.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.29.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.29.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.29.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.29.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.30.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.30.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.30.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.30.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.30.0
 
 replaces:
   - go.opentelemetry.io/collector => ../../
@@ -46,6 +46,7 @@ replaces:
   - go.opentelemetry.io/collector/config/configcompression => ../../config/configcompression
   - go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
   - go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+  - go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
   - go.opentelemetry.io/collector/config/confignet => ../../config/confignet
   - go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
   - go.opentelemetry.io/collector/config/configretry => ../../config/configretry
@@ -79,6 +80,8 @@ replaces:
   - go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
   - go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
   - go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
+  - go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+  - go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
   - go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
   - go.opentelemetry.io/collector/extension/memorylimiterextension => ../../extension/memorylimiterextension
   - go.opentelemetry.io/collector/extension/xextension => ../../extension/xextension

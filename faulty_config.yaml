@@ -1,0 +1,18 @@
+receivers:
+  nop:
+exporters:
+  nop:
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: []
+      exporters: [nop]
+  telemetry:
+    metrics:
+      readers:
+        - periodic:
+            exporter:
+              otlp:
+                protocol: http/protobuf
+                endpoint: https://backend:4318

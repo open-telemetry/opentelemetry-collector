@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )

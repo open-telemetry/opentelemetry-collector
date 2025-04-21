@@ -15,7 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v3"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -687,6 +687,81 @@ func TestZeroSliceHookFunc(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Tests for issue that happened in https://github.com/open-telemetry/opentelemetry-collector/issues/12661.
+func TestStructValuesReplaced(t *testing.T) {
+	type S struct {
+		A string `mapstructure:"A,omitempty"`
+		B string `mapstructure:"B,omitempty"`
+	}
+
+	type structWithSlices struct {
+		Structs []S `mapstructure:"structs"`
+	}
+
+	slicesStruct := structWithSlices{
+		Structs: []S{
+			{A: "A"},
+		},
+	}
+
+	bCfg := map[string]any{
+		"structs": []any{
+			map[string]any{
+				"B": "B",
+			},
+		},
+	}
+	bConf := NewFromStringMap(bCfg)
+	err := bConf.Unmarshal(&slicesStruct)
+	require.NoError(t, err)
+
+	assert.Equal(t, []S{{B: "B"}}, slicesStruct.Structs)
+}
+
+func TestNilValuesUnchanged(t *testing.T) {
+	type structWithSlices struct {
+		Strings []string `mapstructure:"strings"`
+	}
+
+	slicesStruct := &structWithSlices{}
+
+	nilCfg := map[string]any{
+		"strings": []any(nil),
+	}
+	nilConf := NewFromStringMap(nilCfg)
+	err := nilConf.Unmarshal(slicesStruct)
+	require.NoError(t, err)
+
+	confFromStruct := New()
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
+	require.Equal(t, confFromStruct.ToStringMap(), nilConf.ToStringMap())
+}
+
+func TestEmptySliceUnchanged(t *testing.T) {
+	type structWithSlices struct {
+		Strings []string `mapstructure:"strings"`
+	}
+
+	slicesStruct := &structWithSlices{}
+
+	nilCfg := map[string]any{
+		"strings": []any{},
+	}
+	nilConf := NewFromStringMap(nilCfg)
+	err := nilConf.Unmarshal(slicesStruct)
+	require.NoError(t, err)
+
+	confFromStruct := New()
+	err = confFromStruct.Marshal(slicesStruct)
+	require.NoError(t, err)
+
+	require.Equal(t, nilCfg, nilConf.ToStringMap())
+	require.Equal(t, nilConf.ToStringMap(), confFromStruct.ToStringMap())
 }
 
 type c struct {

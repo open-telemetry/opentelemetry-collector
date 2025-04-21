@@ -42,10 +42,12 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	builder *builders.ReceiverBuilder,
 	nexts []baseConsumer,
 ) error {
-	set := receiver.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
-	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
+	set := receiver.Settings{
+		ID:                n.componentID,
+		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
+		BuildInfo:         info,
 	}
+
 	var err error
 	switch n.pipelineType {
 	case pipeline.SignalTraces:

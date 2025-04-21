@@ -7,6 +7,20 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.30.0/v0.124.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add support for bytes-based batching for profiles in the exporterhelper package. (#3262)
+- `otelcol`: Enhance config validation using <validate> command to capture all validation errors that prevents the collector from starting. (#8721)
+- `exporterhelper`: Link batcher context to all batched request's span contexts. (#12212, #8122)
+
+### 🧰 Bug fixes 🧰
+
+- `confighttp`: Ensure http authentication server failures are handled by the provided error handler (#12666)
+
+<!-- previous-version -->
+
 ## v1.29.0/v0.123.0
 
 ### 🛑 Breaking changes 🛑
@@ -3450,7 +3464,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename ForEach (in pdata) with Range to be consistent with sync.Map (#2931)
 - Rename `componenthelper.Start` to `componenthelper.StartFunc` (#2880)
 - Rename `componenthelper.Stop` to `componenthelper.StopFunc` (#2880)
-- Remove `exporterheleper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionheleper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
+- Remove `exporterhelper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionhelper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `component.CustomUnmarshaler` implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `testutil.HostPortFromAddr`, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)
