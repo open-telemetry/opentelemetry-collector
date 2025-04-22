@@ -67,11 +67,23 @@ func newWriteCloserResetFunc(compressionType configcompression.Type, compression
 			return w
 		}, nil
 	case configcompression.TypeSnappyFramed:
+		if !enableFramedSnappy.IsEnabled() {
+			return nil, errors.New("x-snappy-framed is not enabled")
+		}
 		return func() writeCloserReset {
 			return snappy.NewBufferedWriter(nil)
 		}, nil
 	case configcompression.TypeSnappy:
+		if !enableFramedSnappy.IsEnabled() {
+			// If framed snappy feature gate is not enabled, we keep the current behavior
+			// where the 'Content-Encoding: snappy' is compressed as the framed snappy format.
+			return func() writeCloserReset {
+				return snappy.NewBufferedWriter(nil)
+			}, nil
+		}
 		return func() writeCloserReset {
+			// If framed snappy feature gate is enabled, we use the correct behavior
+			// where the 'Content-Encoding: snappy' is compressed as the block snappy format.
 			return &rawSnappyWriter{}
 		}, nil
 	case configcompression.TypeZstd:

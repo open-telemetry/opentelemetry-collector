@@ -1,7 +1,7 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: enhancement
+change_type: bug_fix
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
 component: confighttp
@@ -19,15 +19,14 @@ subtext: |
   The collector used the Snappy compression type of "framed" to handle the HTTP
   content-encoding "snappy".  However, this encoding is typically used to indicate
   the "block" compression variant of "snappy".  This change allows the collector to:
-  - The server endpoints will now accept "x-snappy-framed" as a valid
-    content-encoding.
-  - Client compression type "snappy" will now compress to the "block" variant of snappy
-    instead of "framed".  If you want the old behavior, you can set the
-    compression type to "x-snappy-framed".
-  - When a server endpoint receives a content-encoding of "snappy", it will
-    look at the first bytes of the payload to determine if it is "framed" or "block" snappy,
+  - When receiving a request with encoding 'snappy', the server endpoints will peek
+    at the first bytes of the payload to determine if it is "framed" or "block" snappy,
     and will decompress accordingly.  This is a backwards-compatible change.
-  - In a future release, this checking behavior may be removed.
+
+  If the feature-gate "confighttp.framedSnappy" is enabled, you'll see new behavior for both client and server:
+  - Client compression type "snappy" will now compress to the "block" variant of snappy
+    instead of "framed". Client compression type "x-snappy-framed" will now compress to the "framed" variant of snappy.
+  - Servers will accept both "snappy" and "x-snappy-framed" as valid content-encodings.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
