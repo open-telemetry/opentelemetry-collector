@@ -23,6 +23,8 @@ func TestLogRecord_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLogRecord(), ms)
 	assert.Equal(t, generateTestLogRecord(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestLogRecord(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
 	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).MoveTo(dest) })

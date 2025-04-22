@@ -50,6 +50,10 @@ func New{{ .structName }}() {{ .structName }} {
 func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	ms.{{ .stateAccessor }}.AssertMutable()
 	dest.{{ .stateAccessor }}.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.{{ .origAccessor }} == dest.{{ .origAccessor }} {
+		return
+	}
 	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }

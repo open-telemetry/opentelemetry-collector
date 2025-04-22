@@ -21,6 +21,8 @@ func TestSum_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSum(), ms)
 	assert.Equal(t, generateTestSum(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSum(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
 	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).MoveTo(dest) })

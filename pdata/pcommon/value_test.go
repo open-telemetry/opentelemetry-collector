@@ -244,6 +244,9 @@ func TestValue_MoveTo(t *testing.T) {
 	expected := NewValueMap()
 	expected.Map().PutStr("key", "value")
 	assert.True(t, dest.Equal(expected))
+
+	dest.MoveTo(dest)
+	assert.True(t, dest.Equal(expected))
 }
 
 func TestValue_CopyTo(t *testing.T) {

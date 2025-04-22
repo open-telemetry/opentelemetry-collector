@@ -21,6 +21,8 @@ func TestGauge_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewGauge(), ms)
 	assert.Equal(t, generateTestGauge(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestGauge(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newGauge(&otlpmetrics.Gauge{}, &sharedState)) })
 	assert.Panics(t, func() { newGauge(&otlpmetrics.Gauge{}, &sharedState).MoveTo(dest) })
