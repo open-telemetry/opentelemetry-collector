@@ -31,7 +31,11 @@ func newAttributes(attrs ...attribute.KeyValue) Attributes {
 	}
 	return Attributes{
 		set: attribute.NewSet(attrs...),
-		id:  int64(h.Sum64()), // #nosec G115
+
+		// The graph identifies nodes by an int64 ID, but fnv gives us a uint64.
+		// It is safe to cast because the meaning of the number is irrelevant.
+		// We only care that each node has a unique 64 bit ID, which is unaltered by this cast.
+		id: int64(h.Sum64()), // #nosec G115
 	}
 }
 
