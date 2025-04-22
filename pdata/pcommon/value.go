@@ -324,6 +324,10 @@ func (v Value) SetEmptySlice() Slice {
 func (v Value) MoveTo(dest Value) {
 	v.getState().AssertMutable()
 	dest.getState().AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if v.getOrig() == dest.getOrig() {
+		return
+	}
 	*dest.getOrig() = *v.getOrig()
 	v.getOrig().Value = nil
 }
