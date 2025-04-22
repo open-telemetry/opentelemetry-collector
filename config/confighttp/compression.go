@@ -78,7 +78,7 @@ func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 }
 
 func availableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, error) {
-	var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
+	availableDecoders := map[string]func(body io.ReadCloser) (io.ReadCloser, error){
 		"": func(io.ReadCloser) (io.ReadCloser, error) {
 			// Not a compressed payload. Nothing to do.
 			return nil, nil
