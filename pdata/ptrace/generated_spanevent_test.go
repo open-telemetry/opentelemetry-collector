@@ -22,6 +22,8 @@ func TestSpanEvent_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanEvent(), ms)
 	assert.Equal(t, generateTestSpanEvent(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSpanEvent(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
 	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).MoveTo(dest) })

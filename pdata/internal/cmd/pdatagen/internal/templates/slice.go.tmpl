@@ -113,6 +113,10 @@ func (es {{ .structName }}) AppendEmpty() {{ .elementName }} {
 func (es {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 	es.{{ .stateAccessor }}.AssertMutable()
 	dest.{{ .stateAccessor }}.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.{{ .origAccessor }} == dest.{{ .origAccessor }} {
+		return
+	}
 	if *dest.{{ .origAccessor }} == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.{{ .origAccessor }} = *es.{{ .origAccessor }}

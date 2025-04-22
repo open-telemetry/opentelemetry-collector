@@ -21,6 +21,8 @@ func TestResource_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResource(), ms)
 	assert.Equal(t, generateTestResource(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestResource(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newResource(&otlpresource.Resource{}, &sharedState)) })
 	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).MoveTo(dest) })

@@ -43,6 +43,9 @@ func TestNewFloat64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.InDelta(t, float64(1), mv.At(0), 0.01)
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.InDelta(t, float64(1), mv.At(0), 0.01)
 }
 
 func TestFloat64SliceReadOnly(t *testing.T) {
