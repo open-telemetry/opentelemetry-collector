@@ -15,6 +15,6 @@ import (
 
 func TestConfmapMarshalConfigAuth(t *testing.T) {
 	conf := confmap.New()
-	require.NoError(t, conf.Marshal(configauth.Authentication{}))
+	require.NoError(t, conf.Marshal(configauth.AuthenticationConfig{}))
 	assert.Equal(t, map[string]any{}, conf.ToStringMap())
 }

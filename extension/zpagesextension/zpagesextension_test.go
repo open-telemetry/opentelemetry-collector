@@ -81,7 +81,7 @@ func TestZPagesExtensionBadAuthExtension(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:0",
 			Auth: &confighttp.AuthConfig{
-				Authentication: configauth.Authentication{
+				Authentication: configauth.AuthenticationConfig{
 					AuthenticatorID: component.MustNewIDWithName("foo", "bar"),
 				},
 			},

@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-// Server is an optional Extension interface that can be used as an authenticator for the configauth.Authentication option.
+// Server is an optional Extension interface that can be used as an authenticator for the configauth.AuthenticationConfig option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration. Each Server is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same

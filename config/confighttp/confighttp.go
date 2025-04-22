@@ -69,7 +69,7 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.AuthenticationConfig `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
@@ -384,7 +384,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	configauth.Authentication `mapstructure:",squash"`
+	configauth.AuthenticationConfig `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
