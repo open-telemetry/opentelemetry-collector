@@ -74,7 +74,7 @@ func newQueueBatch(
 			})
 		} else {
 			// If partitioning is not enabled or if paritition is done at queue level, we can use the default batcher.
-			if set.Partitioner == nil || cfg.PerPartition {
+			if set.Partitioner == nil {
 				b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
 					sizerType:  cfg.Sizer,
 					sizer:      sizer,

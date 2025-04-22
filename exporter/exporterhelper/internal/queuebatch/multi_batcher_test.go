@@ -49,11 +49,17 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 	assert.Equal(t, 0, sink.ItemsCount())
 
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 16
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
 	ba.Consume(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}, done)
 
 	assert.Eventually(t, func() bool {
 		return sink.RequestsCount() == 2 && sink.ItemsCount() == 28
-	}, 1*time.Second, 10*time.Millisecond)
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
 	// Check that done callback is called for the right amount of times.
 	assert.EqualValues(t, 0, done.errors.Load())
 	assert.EqualValues(t, 4, done.success.Load())
