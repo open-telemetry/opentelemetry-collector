@@ -22,11 +22,11 @@ var (
 	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
 
-// Deprecated: [v0.125.0] Use AuthenticationConfig instead.
-type Authentication = AuthenticationConfig
+// Deprecated: [v0.125.0] Use Config instead.
+type Authentication = Config
 
-// AuthenticationConfig defines the auth settings for the receiver.
-type AuthenticationConfig struct {
+// Config defines the auth settings for the receiver.
+type Config struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
 	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
 	// prevent unkeyed literal initialization
@@ -35,7 +35,7 @@ type AuthenticationConfig struct {
 
 // GetServerAuthenticator attempts to select the appropriate extensionauth.Server from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a AuthenticationConfig) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Server, error) {
+func (a Config) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Server, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if server, ok := ext.(extensionauth.Server); ok {
 			return server, nil
@@ -49,7 +49,7 @@ func (a AuthenticationConfig) GetServerAuthenticator(_ context.Context, extensio
 // GetHTTPClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a AuthenticationConfig) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.HTTPClient, error) {
+func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.HTTPClient, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if client, ok := ext.(extensionauth.HTTPClient); ok {
 			return client, nil
@@ -62,7 +62,7 @@ func (a AuthenticationConfig) GetHTTPClientAuthenticator(_ context.Context, exte
 // GetGRPCClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by gRPC clients.
-func (a AuthenticationConfig) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
+func (a Config) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
 		if client, ok := ext.(extensionauth.GRPCClient); ok {
 			return client, nil

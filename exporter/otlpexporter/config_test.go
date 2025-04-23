@@ -82,7 +82,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				WriteBufferSize: 512 * 1024,
 				BalancerName:    "round_robin",
-				Auth:            &configauth.AuthenticationConfig{AuthenticatorID: component.MustNewID("nop")},
+				Auth:            &configauth.Config{AuthenticatorID: component.MustNewID("nop")},
 			},
 		}, cfg)
 }

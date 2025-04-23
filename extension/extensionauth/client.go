@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// HTTPClient is an optional Extension interface that can be used as an HTTP authenticator for the configauth.AuthenticationConfig option.
+// HTTPClient is an optional Extension interface that can be used as an HTTP authenticator for the configauth.Config option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration.
 type HTTPClient interface {
@@ -17,7 +17,7 @@ type HTTPClient interface {
 	RoundTripper(base http.RoundTripper) (http.RoundTripper, error)
 }
 
-// GRPCClient is an optional Extension interface that can be used as a gRPC authenticator for the configauth.AuthenticationConfig option.
+// GRPCClient is an optional Extension interface that can be used as a gRPC authenticator for the configauth.Config option.
 // Authenticators are then included as part of OpenTelemetry Collector builds and can be referenced by their
 // names from the Authentication configuration.
 type GRPCClient interface {

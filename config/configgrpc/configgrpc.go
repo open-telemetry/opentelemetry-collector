@@ -105,7 +105,7 @@ type ClientConfig struct {
 	Authority string `mapstructure:"authority,omitempty"`
 
 	// Auth configuration for outgoing RPCs.
-	Auth *configauth.AuthenticationConfig `mapstructure:"auth,omitempty"`
+	Auth *configauth.Config `mapstructure:"auth,omitempty"`
 
 	// Middlewares for the gRPC client.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
@@ -197,7 +197,7 @@ type ServerConfig struct {
 	Keepalive *KeepaliveServerConfig `mapstructure:"keepalive,omitempty"`
 
 	// Auth for this receiver
-	Auth *configauth.AuthenticationConfig `mapstructure:"auth,omitempty"`
+	Auth *configauth.Config `mapstructure:"auth,omitempty"`
 
 	// Include propagates the incoming connection's metadata to downstream consumers.
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
