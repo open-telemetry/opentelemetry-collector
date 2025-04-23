@@ -63,7 +63,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*baseExporter, er
 	if oCfg.ClientConfig.Endpoint != "" {
 		_, err := url.Parse(oCfg.ClientConfig.Endpoint)
 		if err != nil {
-			return nil, errors.New("endpoint must be a valid URL")
+			return nil, fmt.Errorf("endpoint must be a valid URL: %w", err)
 		}
 	}
 
