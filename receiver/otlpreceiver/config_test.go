@@ -121,7 +121,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				HTTP: &HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Auth: &confighttp.AuthConfig{
-							Authentication: configauth.Config{
+							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
 						},
