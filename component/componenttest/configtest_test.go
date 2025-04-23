@@ -43,7 +43,7 @@ func TestCheckConfigStruct(t *testing.T) {
 				// A public type with proper tag.
 				MyPublicInt string `mapstructure:"int"`
 				// A public type that should be ignored.
-				MyFunc func() error
+				MyFunc func() error `mapstructure:"-"`
 				// A public type that should be ignored.
 				Reader io.Reader
 				// private type not tagged.
@@ -174,6 +174,20 @@ func TestCheckConfigStruct(t *testing.T) {
 			name: "valid_slice_item",
 			config: struct {
 				Slice []string `mapstructure:"test_slice"`
+			}{},
+		},
+		{
+			name: "invalid_function_item",
+			config: struct {
+				Function func() `mapstructure:"test_function"`
+			}{},
+			wantErrMsgSubStr: "config must be able to be marshaled to JSON and YAML, failed to marshal config: json: unsupported type: func()",
+		},
+		{
+			name: "valid_ignored_function_item",
+			config: struct {
+				Function func() `mapstructure:"-"`
+				Data     string `mapstructure:"data"`
 			}{},
 		},
 	}
