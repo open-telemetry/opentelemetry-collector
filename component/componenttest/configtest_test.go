@@ -4,12 +4,38 @@
 package componenttest
 
 import (
+	"errors"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type FailMarshalYaml string
+
+type TestID string
+
+func (tID *TestID) UnmarshalText(text []byte) error {
+	*tID = TestID(strings.TrimSuffix(string(text), "_"))
+	if *tID == "error" {
+		return errors.New("parsing error")
+	}
+	return nil
+}
+
+func (tID TestID) MarshalText() (text []byte, err error) {
+	out := string(tID)
+	if !strings.HasSuffix(out, "_") {
+		out += "_"
+	}
+	return []byte(out), nil
+}
+
+func (FailMarshalYaml) MarshalYAML() (interface{}, error) {
+	return nil, assert.AnError
+}
 
 func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {
@@ -189,6 +215,27 @@ func TestCheckConfigStruct(t *testing.T) {
 				Function func() `mapstructure:"-"`
 				Data     string `mapstructure:"data"`
 			}{},
+		},
+		{
+			name: "invalid_yaml_item",
+			config: struct {
+				Function    func()          `mapstructure:"-"`
+				FailMarshal FailMarshalYaml `mapstructure:"fail_marshal"`
+				Data        string          `mapstructure:"data"`
+			}{},
+			wantErrMsgSubStr: "config must be able to be marshaled to JSON and YAML, failed to marshal config: assert.AnError general error for testing",
+		},
+		{
+			name: "invalid_config_duplicate_id",
+			config: struct {
+				Map map[TestID]string `mapstructure:"map"`
+			}{
+				Map: map[TestID]string{
+					"string":  "this is a string",
+					"string_": "this is another string",
+				},
+			},
+			wantErrMsgSubStr: `config must be able to be marshaled to JSON and YAML, failed to marshal config: error encoding field "map": duplicate key "string_" while encoding`,
 		},
 	}
 
