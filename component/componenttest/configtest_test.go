@@ -4,7 +4,6 @@
 package componenttest
 
 import (
-	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -13,15 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type FailMarshalYaml string
-
 type TestID string
 
 func (tID *TestID) UnmarshalText(text []byte) error {
 	*tID = TestID(strings.TrimSuffix(string(text), "_"))
-	if *tID == "error" {
-		return errors.New("parsing error")
-	}
 	return nil
 }
 
@@ -33,7 +27,9 @@ func (tID TestID) MarshalText() (text []byte, err error) {
 	return []byte(out), nil
 }
 
-func (FailMarshalYaml) MarshalYAML() (interface{}, error) {
+type FailMarshalYaml string
+
+func (FailMarshalYaml) MarshalYAML() (any, error) {
 	return nil, assert.AnError
 }
 
