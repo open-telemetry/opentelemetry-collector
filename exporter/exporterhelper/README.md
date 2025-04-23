@@ -25,9 +25,9 @@ The following configuration options can be modified:
     - `bytes`: the size of serialized data in bytes (the least performant option).
   - `queue_size` (default = 1000): Maximum size the queue can accept. Measured in units defined by `sizer`
   - `batch` disabled by default if not defined
-    - `flush_timeout`: time after which a batch will be sent regardless of its size.
+    - `flush_timeout`: time after which a batch will be sent regardless of its size. Must be a non-zero value
     - `min_size`: the minimum size of a batch.
-    - `min_size`: the maximum size of a batch, enables batch splitting.
+    - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the mininum size of a batch.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 

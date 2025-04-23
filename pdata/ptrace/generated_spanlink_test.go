@@ -23,6 +23,8 @@ func TestSpanLink_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpanLink(), ms)
 	assert.Equal(t, generateTestSpanLink(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSpanLink(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
 	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).MoveTo(dest) })
