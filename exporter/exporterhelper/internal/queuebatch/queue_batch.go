@@ -64,7 +64,7 @@ func newQueueBatch(
 	var b Batcher[request.Request]
 	if cfg.Batch != nil {
 		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-		cfg.NumConsumers = 1
+		fmt.Println("Number of consumer is ", cfg.NumConsumers)
 		if oldBatcher {
 			// If user configures the old batcher we only can support "items" sizer.
 			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{

@@ -508,6 +508,51 @@ func TestQueueBatchTimerResetNoConflict(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatchReproduceDeadlock(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := newTestConfig()
+	cfg.WaitForResult = true
+	cfg.Batch.MinSize = 19
+	cfg.Batch.FlushTimeout = 0 // disable flush timer
+	cfg.NumConsumers = 2
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send 2 concurrent requests that should be merged in one batch in the same interval as the flush timer
+	wg := sync.WaitGroup{}
+	wg.Add(5)
+	go func() {
+		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+		wg.Done()
+	}()
+	go func() {
+		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+		wg.Done()
+	}()
+	go func() {
+		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+		wg.Done()
+	}()
+	go func() {
+		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+		wg.Done()
+	}()
+	go func() {
+		assert.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 4}))
+		wg.Done()
+	}()
+
+	// The batch should be sent either with the flush interval or by reaching the minimum items size with no conflict
+	assert.EventuallyWithT(t, func(c *assert.CollectT) {
+		assert.LessOrEqual(c, 1, sink.RequestsCount())
+		assert.Equal(c, 20, sink.ItemsCount())
+	}, 1*time.Second, 10*time.Millisecond)
+
+	wg.Wait()
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func TestQueueBatchTimerFlush(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/10802")
