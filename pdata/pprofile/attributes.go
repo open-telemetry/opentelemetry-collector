@@ -78,12 +78,24 @@ func PutAttribute(table AttributeTableSlice, record attributable, key string, va
 		}
 	}
 
-	if table.Len() >= math.MaxInt32 {
-		return errTooManyTableEntries
-	}
-
 	if record.AttributeIndices().Len() >= math.MaxInt32 {
 		return errors.New("too many entries in AttributeIndices")
+	}
+
+	for j := range table.Len() {
+		a := table.At(j)
+		if a.Key() == key && a.Value().Equal(value) {
+			if j > math.MaxInt32 {
+				return errTooManyTableEntries
+			}
+			// Add the index of the existing attribute to the indices.
+			record.AttributeIndices().Append(int32(j)) //nolint:gosec // overflow checked
+			return nil
+		}
+	}
+
+	if table.Len() >= math.MaxInt32 {
+		return errTooManyTableEntries
 	}
 
 	// Add the key/value pair as a new attribute to the table...

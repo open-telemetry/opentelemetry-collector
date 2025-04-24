@@ -58,6 +58,13 @@ func testPutAttribute(t *testing.T, record attributable) {
 	assert.Equal(t, 1, table.Len())
 	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
 
+	// Special case: removing and adding again should not change the table as
+	// this can lead to multiple identical attributes in the table.
+	record.AttributeIndices().FromRaw([]int32{})
+	require.NoError(t, PutAttribute(table, record, "hello", pcommon.NewValueStr("world")))
+	assert.Equal(t, 1, table.Len())
+	assert.Equal(t, []int32{0}, record.AttributeIndices().AsRaw())
+
 	// Put an attribute, same key, different value.
 	// This updates the index and adds to the table.
 	fmt.Printf("test\n")
