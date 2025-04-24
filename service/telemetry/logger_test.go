@@ -13,14 +13,26 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
+
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry"
 )
+
+func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
+	initialValue := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), value))
+	t.Cleanup(func() {
+		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
+	})
+}
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
-		name         string
-		wantCoreType any
-		wantErr      error
-		cfg          Config
+		name            string
+		wantCoreType    any
+		wantCoreTypeRfc any
+		wantErr         error
+		cfg             Config
 	}{
 		{
 			name:         "no log config",
@@ -40,7 +52,8 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
+			wantCoreType:    "*zapcore.ioCore",
+			wantCoreTypeRfc: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -63,7 +76,8 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
+			wantCoreType:    "*zapcore.levelFilterCore",
+			wantCoreTypeRfc: "*componentattribute.otelTeeCoreWithAttributes",
 		},
 		{
 			name: "log config with sampling",
@@ -85,7 +99,8 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.wrapperCoreWithAttributes",
+			wantCoreType:    "*zapcore.sampler",
+			wantCoreTypeRfc: "*componentattribute.wrapperCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
@@ -110,7 +125,13 @@ func TestNewLogger(t *testing.T) {
 				}
 			}
 		}
-
-		testCoreType(t, tt.wantCoreType)
+		t.Run(tt.name, func(t *testing.T) {
+			setGate(t, telemetry.NewPipelineTelemetryGate, false)
+			testCoreType(t, tt.wantCoreType)
+		})
+		t.Run(tt.name+" (pipeline telemetry on)", func(t *testing.T) {
+			setGate(t, telemetry.NewPipelineTelemetryGate, true)
+			testCoreType(t, tt.wantCoreTypeRfc)
+		})
 	}
 }

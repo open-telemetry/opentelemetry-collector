@@ -45,12 +45,10 @@ func (n *exporterNode) buildComponent(
 	info component.BuildInfo,
 	builder *builders.ExporterBuilder,
 ) error {
-	set := exporter.Settings{
-		ID:                n.componentID,
-		TelemetrySettings: telemetry.WithAttributeSet(tel, *n.Set()),
-		BuildInfo:         info,
+	set := exporter.Settings{ID: n.componentID, TelemetrySettings: tel, BuildInfo: info}
+	if telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		set.TelemetrySettings = telemetry.WithAttributeSet(set.TelemetrySettings, *n.Set())
 	}
-
 	var err error
 	switch n.pipelineType {
 	case pipeline.SignalTraces:
