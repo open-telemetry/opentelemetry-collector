@@ -19,7 +19,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
-	lb := NewLogsBuilder(settings)
+	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -72,4 +72,44 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
+}
+func TestLogsBuilder(t *testing.T) {
+	tests := []struct {
+		name        string
+		logsSet     testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:        "all_set",
+			logsSet:     testDataSetAll,
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "none_set",
+			logsSet:     testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:    "filter_set_include",
+			logsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			logsSet:     testDataSetAll,
+			expectEmpty: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedZapCore, _ := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings.Logger = zap.New(observedZapCore)
+			_ = NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
+		})
+	}
 }

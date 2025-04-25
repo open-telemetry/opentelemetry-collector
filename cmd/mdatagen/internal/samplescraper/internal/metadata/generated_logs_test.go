@@ -12,16 +12,25 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings(receivertest.NopType)
+	settings := scrapertest.NewNopSettings(scrapertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
 	lb := NewLogsBuilder(settings)
 
-	res := pcommon.NewResource()
+	rb := lb.NewResourceBuilder()
+	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
+	rb.SetOptionalResourceAttr("optional.resource.attr-val")
+	rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
+	rb.SetStringEnumResourceAttrOne()
+	rb.SetStringResourceAttr("string.resource.attr-val")
+	rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
+	rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
+	rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+	res := rb.Emit()
 
 	// append the first log record
 	lr := plog.NewLogRecord()

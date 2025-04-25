@@ -105,6 +105,19 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+events:
+  default.event:
+    enabled: true
+    description: Example event enabled by default.
+    extended_documentation: The event will be renamed soon.
+    body:
+      type: string
+    attributes:
+      - string_attr
+      - boolean_attr
+    warnings:
+      if_enabled_not_set: This event will be disabled by default soon.
+
 metrics:
   default.metric:
     enabled: true
