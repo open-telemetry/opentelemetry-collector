@@ -11,6 +11,11 @@ import (
 )
 
 func mergeAppend(src, dest map[string]any) error {
+	// mergeAppend recursively merges the src map into the dest map (left to right),
+	// modifying and expanding the dest map in the process.
+	// This function does not overwrite component lists, and ensures that the
+	// final value is a name-aware copy of lists from src and dest.
+
 	// Compile the globs once
 	patterns := []string{
 		"service::extensions",
@@ -28,13 +33,13 @@ func mergeAppend(src, dest map[string]any) error {
 	srcFlat, _ := maps.Flatten(src, []string{}, KeyDelimiter)
 	destFlat, _ := maps.Flatten(dest, []string{}, KeyDelimiter)
 
-	for key, sVal := range srcFlat {
-		if !isMatch(key, globs) {
+	for sKey, sVal := range srcFlat {
+		if !isMatch(sKey, globs) {
 			continue
 		}
 
-		dVal, exists := destFlat[key]
-		if !exists {
+		dVal, dOk := destFlat[sKey]
+		if !dOk {
 			continue // Let maps.Merge handle missing keys
 		}
 
@@ -43,7 +48,7 @@ func mergeAppend(src, dest map[string]any) error {
 
 		// Only merge if the value is a slice or array; let maps.Merge handle other types
 		if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
-			srcFlat[key] = mergeSlice(srcVal, destVal)
+			srcFlat[sKey] = mergeSlice(srcVal, destVal)
 		}
 	}
 
