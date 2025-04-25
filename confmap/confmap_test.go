@@ -1039,3 +1039,20 @@ func TestStringyTypes(t *testing.T) {
 		assert.Equal(t, tt.isStringy, isStringyStructure(to))
 	}
 }
+
+func TestExpandValueToStringPointerField(t *testing.T) {
+	cm := NewFromStringMap(map[string]any{
+		"key": expandedValue{
+			Value:    123,
+			Original: "123",
+		},
+	})
+
+	type Config struct {
+		Key *string `mapstructure:"key"`
+	}
+
+	cfg := Config{}
+	require.NoError(t, cm.Unmarshal(&cfg))
+	assert.Equal(t, "123", *cfg.Key)
+}
