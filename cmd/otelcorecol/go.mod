@@ -90,6 +90,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.124.0 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.124.0 // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250422165940-c47951a8bf71 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.30.0 // indirect
@@ -108,6 +109,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.124.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250422165940-c47951a8bf71 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.124.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.124.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
@@ -163,7 +165,7 @@ require (
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
-	google.golang.org/grpc v1.71.1 // indirect
+	google.golang.org/grpc v1.72.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
@@ -186,6 +188,8 @@ replace go.opentelemetry.io/collector/config/configcompression => ../../config/c
 replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
@@ -252,6 +256,10 @@ replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension
 replace go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest => ../../extension/extensionauth/extensionauthtest
 
 replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 

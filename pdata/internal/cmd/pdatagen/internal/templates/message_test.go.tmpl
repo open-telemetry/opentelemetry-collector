@@ -18,6 +18,8 @@ func Test{{ .structName }}_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, New{{ .structName }}(), ms)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTest{{ .structName }}(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originName }}{}, &sharedState).MoveTo(dest) })

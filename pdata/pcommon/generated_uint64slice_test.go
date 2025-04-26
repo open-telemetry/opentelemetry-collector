@@ -43,6 +43,9 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, uint64(1), mv.At(0))
 }
 
 func TestUInt64SliceReadOnly(t *testing.T) {
