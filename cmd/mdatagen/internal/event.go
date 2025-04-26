@@ -28,9 +28,6 @@ type Event struct {
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
 
-	// Body stores metadata for event body
-	Body ValueType `mapstructure:"body"`
-
 	// Description of the event.
 	Description string `mapstructure:"description"`
 
