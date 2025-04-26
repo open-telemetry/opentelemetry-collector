@@ -29,7 +29,7 @@ type Event struct {
 	Warnings Warnings `mapstructure:"warnings"`
 
 	// Body stores metadata for event body
-	Body *Body `mapstructure:"body"`
+	Body ValueType `mapstructure:"body"`
 
 	// Description of the event.
 	Description string `mapstructure:"description"`
@@ -57,8 +57,4 @@ func (l *Event) Unmarshal(parser *confmap.Conf) error {
 		return errors.New("missing required field: `enabled`")
 	}
 	return parser.Unmarshal(l)
-}
-
-type Body struct {
-	Type ValueType `mapstructure:"type"`
 }

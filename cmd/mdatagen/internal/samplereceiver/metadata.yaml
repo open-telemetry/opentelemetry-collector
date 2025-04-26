@@ -110,8 +110,7 @@ events:
     enabled: true
     description: Example event enabled by default.
     extended_documentation: The event will be renamed soon.
-    body:
-      type: string
+    body: string
     attributes:
       - string_attr
       - boolean_attr

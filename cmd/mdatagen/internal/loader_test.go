@@ -255,9 +255,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabledNotSet: "This event will be disabled by default soon.",
 						},
-						Body: &Body{
-							ValueType{ValueType: pcommon.ValueTypeStr},
-						},
+						Body:       ValueType{ValueType: pcommon.ValueTypeStr},
 						Attributes: []AttributeName{"string_attr", "boolean_attr"},
 					},
 				},

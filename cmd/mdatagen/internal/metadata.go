@@ -33,10 +33,6 @@ type Metadata struct {
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[MetricName]Metric `mapstructure:"metrics"`
-	// Logs that indicate whether we should enable basic logs' builder.
-	Logs struct {
-		Enabled bool `mapstructure:"enabled"`
-	} `mapstructure:"logs"`
 	// Events that can be emitted by the component.
 	Events map[EventName]Event `mapstructure:"events"`
 	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
