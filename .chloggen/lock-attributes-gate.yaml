@@ -10,7 +10,7 @@ component: service
 note: Restrict the `telemetry.newPipelineTelemetry` feature gate to metrics.
 
 # One or more tracking issues or pull requests related to the change
-issues: [12856]
+issues: [12856, 12933]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
@@ -20,8 +20,11 @@ subtext: |
   
   On the other hand, the "on" state introduced an issue with the Collector's default internal metrics, because the Prometheus exporter does not currently support instrumentation scope attributes.
 
-  To solve these issues, this change turns on the new scope attributes for logs and traces by default regardless of the feature gate.
+  To solve both of these issues, this change turns on the new scope attributes for logs and traces by default regardless of the feature gate.
   However, the new scope attributes for metrics stay locked behind the feature gate, and will remain off by default until the Prometheus exporter is updated to support scope attributes.
+
+  Please understand that enabling the `telemetry.newPipelineTelemetry` feature gate may break the export of Collector metrics through, depending on your configuration.
+  Having a `batch` processor in multiple pipelines is a known trigger for this.
   
   This comes with a breaking change, where internal logs exported through OTLP will now use instrumentation scope attributes to identify the source component instead of log attributes.
   This does not affect the Collector's stderr output. See the changelog for v0.123.0 for a more detailed description of the gate's effects.
