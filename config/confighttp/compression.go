@@ -50,6 +50,9 @@ var snappyFramingHeader = []byte{
 // However, "content-encoding: snappy" is uses the block format, and "x-snappy-framed"
 // is the framing format.  This handler is a (hopefully temporary) hack to
 // make this work in a backwards-compatible way.
+//
+// See https://github.com/google/snappy/blob/6af9287fbdb913f0794d0148c6aa43b58e63c8e3/framing_format.txt#L27-L36
+// for more details on the framing format.
 func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 	br := bufio.NewReader(body)
 
