@@ -535,7 +535,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 				1024,
 				defaultErrorHandler,
 				defaultCompressionAlgorithms(),
-				availableDecoders(),
+				getAvailableDecoders(),
 			)
 
 			payload := tc.compress(t, make([]byte, 2*1024)) // 2KB uncompressed payload

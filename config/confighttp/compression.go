@@ -80,8 +80,10 @@ func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(decoded)), nil
 }
 
-func availableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, error) {
-	availableDecoders := map[string]func(body io.ReadCloser) (io.ReadCloser, error){
+var availableDecoders map[string]func(body io.ReadCloser) (io.ReadCloser, error)
+
+func getAvailableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, error) {
+	decoders := map[string]func(body io.ReadCloser) (io.ReadCloser, error){
 		"": func(io.ReadCloser) (io.ReadCloser, error) {
 			// Not a compressed payload. Nothing to do.
 			return nil, nil
@@ -127,7 +129,7 @@ func availableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, err
 
 	if enableFramedSnappy.IsEnabled() {
 		//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
-		availableDecoders["x-snappy-framed"] = func(body io.ReadCloser) (io.ReadCloser, error) {
+		decoders["x-snappy-framed"] = func(body io.ReadCloser) (io.ReadCloser, error) {
 			// Lazy Reading content to improve memory efficiency
 			return &compressReadCloser{
 				Reader: snappy.NewReader(body),
@@ -136,7 +138,7 @@ func availableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, err
 		}
 	}
 
-	return availableDecoders
+	return decoders
 }
 
 func newCompressionParams(level configcompression.Level) configcompression.CompressionParams {
@@ -203,7 +205,10 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		errHandler = eh
 	}
 
-	availableDecoders := availableDecoders()
+	if availableDecoders == nil {
+		availableDecoders = getAvailableDecoders()
+	}
+
 	enabled := map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 	for _, dec := range enableDecoders {
 		enabled[dec] = availableDecoders[dec]
