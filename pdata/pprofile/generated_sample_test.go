@@ -22,6 +22,8 @@ func TestSample_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSample(), ms)
 	assert.Equal(t, generateTestSample(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSample(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
 	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).MoveTo(dest) })

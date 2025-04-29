@@ -21,6 +21,8 @@ func TestSummary_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummary(), ms)
 	assert.Equal(t, generateTestSummary(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSummary(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
 	assert.Panics(t, func() { newSummary(&otlpmetrics.Summary{}, &sharedState).MoveTo(dest) })

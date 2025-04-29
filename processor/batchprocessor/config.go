@@ -44,6 +44,8 @@ type Config struct {
 	// batcher instances that will be created through a distinct
 	// combination of MetadataKeys.
 	MetadataCardinalityLimit uint32 `mapstructure:"metadata_cardinality_limit"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

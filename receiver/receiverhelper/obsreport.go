@@ -42,6 +42,9 @@ type ObsReportSettings struct {
 	// operations without a corresponding new context per operation.
 	LongLivedCtx           bool
 	ReceiverCreateSettings receiver.Settings
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewObsReport creates a new ObsReport.

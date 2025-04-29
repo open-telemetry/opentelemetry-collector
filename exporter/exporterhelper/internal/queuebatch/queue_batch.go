@@ -63,8 +63,6 @@ func newQueueBatch(
 
 	var b Batcher[request.Request]
 	if cfg.Batch != nil {
-		// TODO: https://github.com/open-telemetry/opentelemetry-collector/issues/12244
-		cfg.NumConsumers = 1
 		if oldBatcher {
 			// If user configures the old batcher we only can support "items" sizer.
 			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
@@ -81,6 +79,9 @@ func newQueueBatch(
 				maxWorkers: cfg.NumConsumers,
 			})
 		}
+		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
+		// https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+		cfg.NumConsumers = 1
 	} else {
 		b = newDisabledBatcher[request.Request](next)
 	}

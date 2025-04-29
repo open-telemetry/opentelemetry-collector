@@ -231,6 +231,24 @@ func TestNilOrigSetValue(t *testing.T) {
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
 }
 
+func TestValue_MoveTo(t *testing.T) {
+	src := NewValueMap()
+	src.Map().PutStr("key", "value")
+
+	dest := NewValueEmpty()
+	assert.True(t, dest.Equal(NewValueEmpty()))
+
+	src.MoveTo(dest)
+	assert.True(t, src.Equal(NewValueEmpty()))
+
+	expected := NewValueMap()
+	expected.Map().PutStr("key", "value")
+	assert.True(t, dest.Equal(expected))
+
+	dest.MoveTo(dest)
+	assert.True(t, dest.Equal(expected))
+}
+
 func TestValue_CopyTo(t *testing.T) {
 	state := internal.StateMutable
 
