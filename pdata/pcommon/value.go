@@ -25,6 +25,7 @@ const (
 	ValueTypeBool
 	ValueTypeMap
 	ValueTypeSlice
+	ValueTypeTemplate
 	ValueTypeBytes
 )
 
@@ -47,6 +48,8 @@ func (avt ValueType) String() string {
 		return "Slice"
 	case ValueTypeBytes:
 		return "Bytes"
+	case ValueTypeTemplate:
+		return "Template"
 	}
 	return ""
 }
@@ -109,6 +112,12 @@ func NewValueMap() Value {
 func NewValueSlice() Value {
 	state := internal.StateMutable
 	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}}, &state)
+}
+
+// NewValueTemplate creates a new Value with the given string value.
+func NewValueTemplate(v string) Value {
+	state := internal.StateMutable
+	return newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: v}}, &state)
 }
 
 // NewValueBytes creates a new empty Value of byte type.
@@ -195,6 +204,8 @@ func (v Value) Type() ValueType {
 		return ValueTypeSlice
 	case *otlpcommon.AnyValue_BytesValue:
 		return ValueTypeBytes
+	case *otlpcommon.AnyValue_TemplateValue:
+		return ValueTypeStr
 	}
 	return ValueTypeEmpty
 }
@@ -385,7 +396,7 @@ func (v Value) AsString() string {
 	case ValueTypeEmpty:
 		return ""
 
-	case ValueTypeStr:
+	case ValueTypeStr, ValueTypeTemplate:
 		return v.Str()
 
 	case ValueTypeBool:
@@ -448,7 +459,7 @@ func (v Value) AsRaw() any {
 	switch v.Type() {
 	case ValueTypeEmpty:
 		return nil
-	case ValueTypeStr:
+	case ValueTypeStr, ValueTypeTemplate:
 		return v.Str()
 	case ValueTypeBool:
 		return v.Bool()
@@ -475,6 +486,8 @@ func (v Value) Equal(c Value) bool {
 	case ValueTypeEmpty:
 		return true
 	case ValueTypeStr:
+		return v.Str() == c.Str()
+	case ValueTypeTemplate:
 		return v.Str() == c.Str()
 	case ValueTypeBool:
 		return v.Bool() == c.Bool()
