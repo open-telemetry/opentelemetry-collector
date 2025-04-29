@@ -27,8 +27,8 @@ func TestNewFactory(t *testing.T) {
 	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, f.Type())
-	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	assert.Equal(t, testType, f.Type())
+	assert.Equal(t, &defaultCfg, f.CreateDefaultConfig())
 	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
 	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
@@ -45,8 +45,8 @@ func TestNewFactoryWithOptions(t *testing.T) {
 		WithTraces(createTraces, component.StabilityLevelDeprecated),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
 		WithLogs(createLogs, component.StabilityLevelStable))
-	assert.EqualValues(t, testType, f.Type())
-	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	assert.Equal(t, testType, f.Type())
+	assert.Equal(t, &defaultCfg, f.CreateDefaultConfig())
 
 	wrongID := component.MustNewID("wrong")
 	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()

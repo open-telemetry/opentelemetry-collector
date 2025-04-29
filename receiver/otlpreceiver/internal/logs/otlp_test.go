@@ -39,7 +39,7 @@ func TestExport(t *testing.T) {
 
 	lds := logSink.AllLogs()
 	require.Len(t, lds, 1)
-	assert.EqualValues(t, ld, lds[0])
+	assert.Equal(t, ld, lds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
