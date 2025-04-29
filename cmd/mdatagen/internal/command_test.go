@@ -45,6 +45,7 @@ func TestRunContents(t *testing.T) {
 		wantGoleakSetup                 bool
 		wantGoleakTeardown              bool
 		wantErr                         bool
+		wantAttributes                  []string
 	}{
 		{
 			yml:     "invalid.yaml",
@@ -156,6 +157,7 @@ func TestRunContents(t *testing.T) {
 			wantTelemetryGenerated:     true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
+			wantAttributes:             []string{"name"},
 		},
 		{
 			yml:                        "invalid_telemetry_missing_value_type_for_histogram.yaml",
@@ -211,6 +213,13 @@ foo
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
 				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+				if len(tt.wantAttributes) > 0 {
+					contents, err = os.ReadFile(filepath.Join(tmpdir, "documentation.md")) //nolint:gosec
+					require.NoError(t, err)
+					for _, attr := range tt.wantAttributes {
+						require.Contains(t, string(contents), attr)
+					}
+				}
 				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go")) //nolint:gosec
 				require.NoError(t, err)
 				if tt.wantMetricsContext {

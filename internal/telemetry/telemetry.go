@@ -16,10 +16,10 @@ import (
 
 var NewPipelineTelemetryGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.newPipelineTelemetry",
-	featuregate.StageStable,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.123.0"),
-	featuregate.WithRegisterToVersion("v0.127.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md"),
+	featuregate.WithRegisterDescription("Injects component-identifying scope attributes in internal Collector metrics"),
 )
 
 // IMPORTANT: This struct is reexported as part of the public API of
@@ -53,6 +53,8 @@ func WithAttributeSet(ts TelemetrySettings, attrs attribute.Set) TelemetrySettin
 	ts.extraAttributes = attrs
 	ts.Logger = componentattribute.ZapLoggerWithAttributes(ts.Logger, ts.extraAttributes)
 	ts.TracerProvider = componentattribute.TracerProviderWithAttributes(ts.TracerProvider, ts.extraAttributes)
-	ts.MeterProvider = componentattribute.MeterProviderWithAttributes(ts.MeterProvider, ts.extraAttributes)
+	if NewPipelineTelemetryGate.IsEnabled() {
+		ts.MeterProvider = componentattribute.MeterProviderWithAttributes(ts.MeterProvider, ts.extraAttributes)
+	}
 	return ts
 }

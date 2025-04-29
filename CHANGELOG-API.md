@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.31.0/v0.125.0
+
+### 🚩 Deprecations 🚩
+
+- `extensionauthtest`: Deprecate NewErrorClient in favor of NewErrClient. (#12874)
+
+### 💡 Enhancements 💡
+
+- `xextension/storage`: ErrStorageFull error added to xextension/storage contract (#12925)
+- `pdata`: Add MoveTo to pcommon.Value, only type missing this (#12877)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix MoveTo when moving to the same destination (#12887)
+
+<!-- previous-version -->
+
 ## v1.30.0/v0.124.0
 
 ### 🛑 Breaking changes 🛑
