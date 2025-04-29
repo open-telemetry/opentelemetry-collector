@@ -204,8 +204,6 @@ func (v Value) Type() ValueType {
 		return ValueTypeSlice
 	case *otlpcommon.AnyValue_BytesValue:
 		return ValueTypeBytes
-	case *otlpcommon.AnyValue_TemplateValue:
-		return ValueTypeStr
 	}
 	return ValueTypeEmpty
 }
