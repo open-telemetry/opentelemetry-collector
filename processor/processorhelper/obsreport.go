@@ -37,6 +37,6 @@ func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, e
 }
 
 func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
-	or.telemetryBuilder.RecordProcessorIncomingItems(ctx, int64(incoming), or.otelAttrs)
-	or.telemetryBuilder.RecordProcessorOutgoingItems(ctx, int64(outgoing), or.otelAttrs)
+	or.telemetryBuilder.AddProcessorIncomingItems(ctx, int64(incoming), or.otelAttrs)
+	or.telemetryBuilder.AddProcessorOutgoingItems(ctx, int64(outgoing), or.otelAttrs)
 }

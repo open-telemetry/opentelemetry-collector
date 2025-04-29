@@ -28,7 +28,7 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
-	tb.RecordBatchSizeTriggerSend(context.Background(), 1)
+	tb.AddBatchSizeTriggerSend(context.Background(), 1)
 	tb.RecordQueueCapacity(context.Background(), 1)
 	tb.RecordRequestDuration(context.Background(), 1)
 	AssertEqualBatchSizeTriggerSend(t, testTel,

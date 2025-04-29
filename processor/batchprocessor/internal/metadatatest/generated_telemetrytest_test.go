@@ -26,8 +26,8 @@ func TestSetupTelemetry(t *testing.T) {
 	}))
 	tb.RecordProcessorBatchBatchSendSize(context.Background(), 1)
 	tb.RecordProcessorBatchBatchSendSizeBytes(context.Background(), 1)
-	tb.RecordProcessorBatchBatchSizeTriggerSend(context.Background(), 1)
-	tb.RecordProcessorBatchTimeoutTriggerSend(context.Background(), 1)
+	tb.AddProcessorBatchBatchSizeTriggerSend(context.Background(), 1)
+	tb.AddProcessorBatchTimeoutTriggerSend(context.Background(), 1)
 	AssertEqualProcessorBatchBatchSendSize(t, testTel,
 		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())

@@ -179,38 +179,38 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	return &builder, errs
 }
 
-func (builder *TelemetryBuilder) RecordExporterEnqueueFailedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterEnqueueFailedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterEnqueueFailedLogRecords.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterEnqueueFailedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterEnqueueFailedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterEnqueueFailedMetricPoints.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterEnqueueFailedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterEnqueueFailedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterEnqueueFailedSpans.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSendFailedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSendFailedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSendFailedLogRecords.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSendFailedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSendFailedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSendFailedMetricPoints.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSendFailedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSendFailedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSendFailedSpans.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSentLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSentLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSentLogRecords.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSentMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSentMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSentMetricPoints.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordExporterSentSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddExporterSentSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ExporterSentSpans.Add(ctx, val, opts...)
 }

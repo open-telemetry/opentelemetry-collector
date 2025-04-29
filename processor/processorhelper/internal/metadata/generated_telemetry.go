@@ -75,10 +75,10 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	return &builder, errs
 }
 
-func (builder *TelemetryBuilder) RecordProcessorIncomingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddProcessorIncomingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ProcessorIncomingItems.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordProcessorOutgoingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddProcessorOutgoingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ProcessorOutgoingItems.Add(ctx, val, opts...)
 }

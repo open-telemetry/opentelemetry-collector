@@ -99,14 +99,14 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	// No metrics recorded for profiles.
 	switch ors.signal {
 	case pipeline.SignalTraces:
-		ors.tb.RecordExporterSentSpans(ctx, numSent, ors.metricAttr)
-		ors.tb.RecordExporterSendFailedSpans(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.AddExporterSentSpans(ctx, numSent, ors.metricAttr)
+		ors.tb.AddExporterSendFailedSpans(ctx, numFailedToSend, ors.metricAttr)
 	case pipeline.SignalMetrics:
-		ors.tb.RecordExporterSentMetricPoints(ctx, numSent, ors.metricAttr)
-		ors.tb.RecordExporterSendFailedMetricPoints(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.AddExporterSentMetricPoints(ctx, numSent, ors.metricAttr)
+		ors.tb.AddExporterSendFailedMetricPoints(ctx, numFailedToSend, ors.metricAttr)
 	case pipeline.SignalLogs:
-		ors.tb.RecordExporterSentLogRecords(ctx, numSent, ors.metricAttr)
-		ors.tb.RecordExporterSendFailedLogRecords(ctx, numFailedToSend, ors.metricAttr)
+		ors.tb.AddExporterSentLogRecords(ctx, numSent, ors.metricAttr)
+		ors.tb.AddExporterSendFailedLogRecords(ctx, numFailedToSend, ors.metricAttr)
 	}
 
 	span := trace.SpanFromContext(ctx)

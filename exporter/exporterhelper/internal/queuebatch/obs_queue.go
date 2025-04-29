@@ -87,11 +87,11 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	if err != nil {
 		switch or.signal {
 		case pipeline.SignalTraces:
-			or.tb.RecordExporterEnqueueFailedSpans(ctx, int64(numItems), or.metricAttr)
+			or.tb.AddExporterEnqueueFailedSpans(ctx, int64(numItems), or.metricAttr)
 		case pipeline.SignalMetrics:
-			or.tb.RecordExporterEnqueueFailedMetricPoints(ctx, int64(numItems), or.metricAttr)
+			or.tb.AddExporterEnqueueFailedMetricPoints(ctx, int64(numItems), or.metricAttr)
 		case pipeline.SignalLogs:
-			or.tb.RecordExporterEnqueueFailedLogRecords(ctx, int64(numItems), or.metricAttr)
+			or.tb.AddExporterEnqueueFailedLogRecords(ctx, int64(numItems), or.metricAttr)
 		}
 	}
 	return err

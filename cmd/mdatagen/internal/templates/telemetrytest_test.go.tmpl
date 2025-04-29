@@ -38,7 +38,7 @@ func TestSetupTelemetry(t *testing.T) {
 
     {{- range $name, $metric := .Telemetry.Metrics }}
         {{- if (and (not $metric.Optional) (not $metric.Data.Async)) }}
-            tb.Record{{ $name.Render }}(context.Background(), 1)
+            tb.{{- if eq $metric.Data.Type "Sum" -}}Add{{- else -}}Record{{- end -}}{{ $name.Render }}(context.Background(), 1)
         {{- end }}
     {{- end }}
 

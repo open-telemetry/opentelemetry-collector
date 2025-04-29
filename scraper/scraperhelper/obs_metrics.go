@@ -68,8 +68,8 @@ func wrapObsMetrics(sc scraper.Metrics, receiverID component.ID, scraperID compo
 			numScrapedMetrics = md.MetricCount()
 		}
 
-		telemetryBuilder.RecordScraperScrapedMetricPoints(ctx, int64(numScrapedMetrics), otelAttrs)
-		telemetryBuilder.RecordScraperErroredMetricPoints(ctx, int64(numErroredMetrics), otelAttrs)
+		telemetryBuilder.AddScraperScrapedMetricPoints(ctx, int64(numScrapedMetrics), otelAttrs)
+		telemetryBuilder.AddScraperErroredMetricPoints(ctx, int64(numErroredMetrics), otelAttrs)
 
 		// end span according to errors
 		if span.IsRecording() {

@@ -138,7 +138,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	return &builder, errs
 }
 
-func (builder *TelemetryBuilder) RecordBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.BatchSizeTriggerSend.Add(ctx, val, opts...)
 }
 

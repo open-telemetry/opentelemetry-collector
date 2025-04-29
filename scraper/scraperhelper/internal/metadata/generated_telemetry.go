@@ -89,18 +89,18 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	return &builder, errs
 }
 
-func (builder *TelemetryBuilder) RecordScraperErroredLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddScraperErroredLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ScraperErroredLogRecords.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordScraperErroredMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddScraperErroredMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ScraperErroredMetricPoints.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordScraperScrapedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddScraperScrapedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ScraperScrapedLogRecords.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordScraperScrapedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddScraperScrapedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ScraperScrapedMetricPoints.Add(ctx, val, opts...)
 }

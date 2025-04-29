@@ -132,10 +132,10 @@ func (builder *TelemetryBuilder) RecordProcessorBatchBatchSendSizeBytes(ctx cont
 	builder.ProcessorBatchBatchSendSizeBytes.Record(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordProcessorBatchBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddProcessorBatchBatchSizeTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ProcessorBatchBatchSizeTriggerSend.Add(ctx, val, opts...)
 }
 
-func (builder *TelemetryBuilder) RecordProcessorBatchTimeoutTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
+func (builder *TelemetryBuilder) AddProcessorBatchTimeoutTriggerSend(ctx context.Context, val int64, opts ...metric.AddOption) {
 	builder.ProcessorBatchTimeoutTriggerSend.Add(ctx, val, opts...)
 }
