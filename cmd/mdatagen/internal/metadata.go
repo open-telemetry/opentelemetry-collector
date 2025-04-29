@@ -346,8 +346,7 @@ func (a Attribute) TestValue() string {
 }
 
 func (a Attribute) TestResultValue() string {
-	switch a.Type.ValueType {
-	case pcommon.ValueTypeTemplate:
+	if a.Type.ValueType == pcommon.ValueTypeTemplate {
 		return `"val"`
 	}
 	return ""

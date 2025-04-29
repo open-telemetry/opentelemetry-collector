@@ -43,6 +43,9 @@ func TestValue(t *testing.T) {
 
 	v = NewValueSlice()
 	assert.Equal(t, ValueTypeSlice, v.Type())
+
+	v = NewValueTemplate("b")
+	assert.Equal(t, ValueTypeStr, v.Type())
 }
 
 func TestValueReadOnly(t *testing.T) {
@@ -309,6 +312,11 @@ func TestValueAsString(t *testing.T) {
 			expected: "string value",
 		},
 		{
+			name:     "template",
+			input:    NewValueTemplate("string value"),
+			expected: "string value",
+		},
+		{
 			name:     "int64",
 			input:    NewValueInt(42),
 			expected: "42",
@@ -381,6 +389,11 @@ func TestValueAsRaw(t *testing.T) {
 		{
 			name:     "string",
 			input:    NewValueStr("value"),
+			expected: "value",
+		},
+		{
+			name:     "template",
+			input:    NewValueTemplate("value"),
 			expected: "value",
 		},
 		{
@@ -619,6 +632,12 @@ func TestValueEqual(t *testing.T) {
 			name:       "same strings",
 			value:      NewValueStr("test"),
 			comparison: NewValueStr("test"),
+			expected:   true,
+		},
+		{
+			name:       "same templates",
+			value:      NewValueTemplate("test"),
+			comparison: NewValueTemplate("test"),
 			expected:   true,
 		},
 		{
