@@ -4,12 +4,7 @@ package {{ .Package }}
 
 import (
     {{- if .Telemetry.Metrics }}
-        {{- range $_, $metric := .Telemetry.Metrics }}
-            {{- if $metric.Data.Async }}
     "context"
-                {{- break}}
-            {{- end }}
-        {{- end }}
     "errors"
     "sync"
     {{- end }}
