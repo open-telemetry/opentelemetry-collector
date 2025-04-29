@@ -206,6 +206,8 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 		mvt.ValueType = pcommon.ValueTypeSlice
 	case "map":
 		mvt.ValueType = pcommon.ValueTypeMap
+	case "template":
+		mvt.ValueType = pcommon.ValueTypeTemplate
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -222,6 +224,8 @@ func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
 	case pcommon.ValueTypeStr:
 		return "string"
+	case pcommon.ValueTypeTemplate:
+		return "template"
 	case pcommon.ValueTypeInt:
 		return "int64"
 	case pcommon.ValueTypeDouble:
@@ -288,6 +292,8 @@ func (a Attribute) TestValue() string {
 		return ""
 	case pcommon.ValueTypeStr:
 		return fmt.Sprintf(`"%s-val"`, a.FullName)
+	case pcommon.ValueTypeTemplate:
+		return `"key", "val"`
 	case pcommon.ValueTypeInt:
 		return strconv.Itoa(len(a.FullName))
 	case pcommon.ValueTypeDouble:
@@ -300,6 +306,14 @@ func (a Attribute) TestValue() string {
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
 		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
+	}
+	return ""
+}
+
+func (a Attribute) TestResultValue() string {
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeTemplate:
+		return `"val"`
 	}
 	return ""
 }
