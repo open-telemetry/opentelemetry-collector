@@ -23,7 +23,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
     settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
     {{- end }}
     settings.Logger = zap.New(observedZapCore)
-    lb := NewLogsBuilder(settings)
+    lb := NewLogsBuilder({{ if .Events }}loadLogsBuilderConfig(t, "all_set"), {{ end }}settings)
 
     {{ if .ResourceAttributes }}
     rb := lb.NewResourceBuilder()
@@ -80,3 +80,4 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
 }
+

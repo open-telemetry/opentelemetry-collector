@@ -12,14 +12,14 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 )
 
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopSettings(receivertest.NopType)
+	settings := scrapertest.NewNopSettings(scrapertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
-	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
+	lb := NewLogsBuilder(settings)
 
 	rb := lb.NewResourceBuilder()
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
