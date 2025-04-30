@@ -38,6 +38,57 @@ type compressRoundTripper struct {
 	compressor        *compressor
 }
 
+var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
+	"": func(io.ReadCloser) (io.ReadCloser, error) {
+		// Not a compressed payload. Nothing to do.
+		return nil, nil
+	},
+	"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
+		gr, err := gzip.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return gr, nil
+	},
+	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
+		zr, err := zstd.NewReader(
+			body,
+			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
+			// for our use-case (a server accepting decoding http requests).
+			// Disabling async improves performance (I benchmarked it previously when working
+			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
+			zstd.WithDecoderConcurrency(1),
+		)
+		if err != nil {
+			return nil, err
+		}
+		return zr.IOReadCloser(), nil
+	},
+	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
+		zr, err := zlib.NewReader(body)
+		if err != nil {
+			return nil, err
+		}
+		return zr, nil
+	},
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
+	"snappy": snappyHandler,
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
+	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
+		return &compressReadCloser{
+			Reader: lz4.NewReader(body),
+			orig:   body,
+		}, nil
+	},
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
+	"x-snappy-framed": func(body io.ReadCloser) (io.ReadCloser, error) {
+		return &compressReadCloser{
+			Reader: snappy.NewReader(body),
+			orig:   body,
+		}, nil
+	},
+}
+
 // snappyFramingHeader is always the first 10 bytes of a snappy framed stream.
 var snappyFramingHeader = []byte{
 	0xff, 0x06, 0x00, 0x00,
@@ -78,67 +129,6 @@ func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
 		return nil, err
 	}
 	return io.NopCloser(bytes.NewReader(decoded)), nil
-}
-
-var availableDecoders map[string]func(body io.ReadCloser) (io.ReadCloser, error)
-
-func getAvailableDecoders() map[string]func(body io.ReadCloser) (io.ReadCloser, error) {
-	decoders := map[string]func(body io.ReadCloser) (io.ReadCloser, error){
-		"": func(io.ReadCloser) (io.ReadCloser, error) {
-			// Not a compressed payload. Nothing to do.
-			return nil, nil
-		},
-		"gzip": func(body io.ReadCloser) (io.ReadCloser, error) {
-			gr, err := gzip.NewReader(body)
-			if err != nil {
-				return nil, err
-			}
-			return gr, nil
-		},
-		"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
-			zr, err := zstd.NewReader(
-				body,
-				// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
-				// for our use-case (a server accepting decoding http requests).
-				// Disabling async improves performance (I benchmarked it previously when working
-				// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
-				zstd.WithDecoderConcurrency(1),
-			)
-			if err != nil {
-				return nil, err
-			}
-			return zr.IOReadCloser(), nil
-		},
-		"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
-			zr, err := zlib.NewReader(body)
-			if err != nil {
-				return nil, err
-			}
-			return zr, nil
-		},
-		"snappy": snappyHandler,
-
-		//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
-		"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
-			return &compressReadCloser{
-				Reader: lz4.NewReader(body),
-				orig:   body,
-			}, nil
-		},
-	}
-
-	if enableFramedSnappy.IsEnabled() {
-		//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
-		decoders["x-snappy-framed"] = func(body io.ReadCloser) (io.ReadCloser, error) {
-			// Lazy Reading content to improve memory efficiency
-			return &compressReadCloser{
-				Reader: snappy.NewReader(body),
-				orig:   body,
-			}, nil
-		}
-	}
-
-	return decoders
 }
 
 func newCompressionParams(level configcompression.Level) configcompression.CompressionParams {
@@ -205,12 +195,11 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 		errHandler = eh
 	}
 
-	if availableDecoders == nil {
-		availableDecoders = getAvailableDecoders()
-	}
-
 	enabled := map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 	for _, dec := range enableDecoders {
+		if dec == "x-frame-snappy" && !enableFramedSnappy.IsEnabled() {
+			continue
+		}
 		enabled[dec] = availableDecoders[dec]
 
 		if dec == "deflate" {
