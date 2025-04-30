@@ -31,9 +31,6 @@ func FromAttributeIndices(table AttributeTableSlice, record attributable) pcommo
 	return m
 }
 
-// AddAttribute updates an AttributeTable and a record's AttributeIndices to
-// add a new attribute.
-// The record can be any struct that implements an `AttributeIndices` method.
 // Deprecated: [v0.126.0] Use PutAttribute instead.
 func AddAttribute(table AttributeTableSlice, record attributable, key string, value pcommon.Value) error {
 	for i := range table.Len() {
