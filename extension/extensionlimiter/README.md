@@ -109,6 +109,8 @@ before creating new concurrent work.
 
 ### Examples
 
+#### OTLP receiver
+
 Limiters applied through middleware are an implementation detail,
 simply configure them using `configgrpc` or `confighttp`.  For the
 OTLP receiver (e.g., with two `ratelimiter` extensions):
@@ -131,7 +133,134 @@ receivers:
 		- ratelimiter/limit_for_http
 ```
 
-@@@
-a stream one
-a pull-based one
-a data-dependent one
+Note that the OTLP receiver specifically supports multiple protocols
+with separate middleware configurations, thus it configures limiters
+for request items and memory size on a protocol-by-protocol
+basis.
+
+#### HTTP metrics scraper
+
+A HTTP pull-based receiver can implement a basic limited scraper loop
+as follows. The HTTP client config object's `middlewares` field
+automatically configures network bytes and request count limits:
+
+```
+receivers:
+  scraper:
+    http:
+      middlewares:
+	  - ratelimiter/scraper
+```
+
+Limiter extensions are derived from a host, a middlewares list, and a
+list of weight keys. When middleware is configurable at the factory
+level, it may be added via `receiver.NewFactory` using
+`receiver.WithLimiters(getLimiters)`:
+
+```
+func NewFactory() receiver.Factory {
+	return xreceiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		xreceiver.WithLimiters(getLimiters),
+	)
+}
+```
+
+Here, `getLimiters` is a function to get the effective
+`[]configmiddleware.Config` and derive pipeline consumers using
+`limiterhelper` adapters.
+
+To acquire a limiter, use `MiddlewaresToLimiterWrapperProvider` to
+obtain a combined limiter wrapper around the input `nextMetrics`
+consumer.  It will pass `StandardNotMiddlewareKeys()` indicating to
+apply request items and memory size:
+
+```
+	// Extract limiter provider from middlewares.
+	s.limiterProvider, err = limiterhelper.MiddlewaresToLimiterWrapperProvider(
+		cfg.Middlewares)
+	if err != nil { ... }
+
+	// Here get a limiter-wrapped pipeline and a combination of weight-specific
+	// limiters for MustDeny() functionality.
+	s.anyLimiter, s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
+		s.nextMetrics, limiterhelper.StandardNotMiddlewareKeys(), s.limiterProvider)
+	if err != nil { ... }
+```
+
+In the scraper loop, use `MustDeny` before starting a scrape:
+
+```
+func (s *scraper) scrapeOnce(ctx context.Context) error {
+    if err := s.anyLimiter.MustDeny(ctx); err != nil {
+		return err		
+	}
+	
+	// Network bytes and request count limits are applied in middleware.
+	// before this returns:
+	data, err := s.getData(ctx)
+	if err != nil {
+	    return err
+	}
+
+	// Request items and memory size are applied in the pipeline.
+	return s.nextMetrics.ConsumeMetrics(ctx, data)
+}
+```
+
+#### gRPC stream receiver
+
+A gRPC streaming receiver that holds memory across its allocated in
+`Send()` and does not release it until after a corresponding `Recv()`
+requires use of the lower-level `ResourceLimiter` interface. 
+The gRPC  config object's `middlewares` field
+automatically configures network bytes and request count limits:
+
+```
+receivers:
+  streamer:
+    grpc:
+      middlewares:
+	  - ratelimiter/streamer
+```
+
+The receiver will check `s.anyLimiter.MustDeny()` as above.  In a
+stream, limiters are expected to block the stream until limit requests
+succeed, however after the limit requests succeed, the receiver may
+wish to return from `Send()` to continue accepting new requests while
+the consumer works in a separate goroutine. The limit will be released
+after the consumer returns.
+
+```
+func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
+    for {
+		// Check saturation for all limiters.
+		err := s.anyLimiter.MustDeny(ctx)
+		if err != nil { ... }
+
+        // The network bytes and request count are applied in middleware.
+		req, err := stream.Recv()
+		if err != nil { ... }
+
+		// Allocate memory objects.
+		data, err := s.getLogs(ctx, req)
+		if err != nil { ... }
+
+		release, err := s.memorySizeLimiter.Acquire(ctx, pdataSize(data))
+		if err != nil { ... }
+	
+		go func() {
+			// Request items limit is applied in the pipeline consumer
+			err := s.nextMetrics.ConsumeMetrics(ctx, data)
+			
+			// Release the memory.
+			release()
+			
+			// Reply to the caller.
+			stream.Send(streamResponseFromConsumerError(err))
+		}
+	}
+}
+```

@@ -41,14 +41,8 @@ func (f ResourceLimiterProviderFunc) ResourceLimiter(key WeightKey) (ResourceLim
 //
 // See the README for more recommendations.
 type ResourceLimiter interface {
-	// Must deny is the logical equivalent of Acquire(0).  If the
-	// Acquire would fail even for 0 units of a resource, the
-	// caller must deny the request.  Implementations are
-	// encouraged to ensure that when MustDeny() is false,
-	// Acquire(0) is also false, however callers could use a
-	// faster code path to implement MustDeny() since it does not
-	// depend on the value.
-	MustDeny(context.Context) error
+	// Limiter includes MustDeny().
+	Limiter
 
 	// Acquire attempts to acquire a quantified resource with the
 	// provided weight, based on the key that was given to the

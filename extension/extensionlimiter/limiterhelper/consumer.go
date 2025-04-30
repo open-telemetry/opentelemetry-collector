@@ -125,22 +125,23 @@ func limitOne[P any, C any](
 	key extensionlimiter.WeightKey,
 	opts []consumer.Option,
 	quantify func(P) uint64,
-) (C, error) {
+) (extensionlimiter.Limiter, C, error) {
 	if !slices.Contains(keys, key) {
-		return next, nil
+		return nil, next, nil
 	}
 	lim, err := provider.LimiterWrapper(key)
 	if err != nil {
-		return next, err
+		return nil, next, err
 	}
 	if lim == nil {
-		return next, nil
+		return nil, next, nil
 	}
-	return m.create(func(ctx context.Context, data P) error {
+	con, err := m.create(func(ctx context.Context, data P) error {
 		return lim.LimitCall(ctx, quantify(data), func(ctx context.Context) error {
 			return m.consume(ctx, data, next)
 		})
 	}, opts...)
+	return lim, con, err
 }
 
 // newLimited is signal-generic limiting logic.
@@ -150,48 +151,49 @@ func newLimited[P any, C any](
 	provider extensionlimiter.LimiterWrapperProvider,
 	m traits[P, C],
 	opts ...consumer.Option,
-) (C, error) {
+) (extensionlimiter.Limiter, C, error) {
 	if provider == nil {
-		return next, nil
+		return nil, next, nil
 	}
+	var lim1, lim2, lim3 extensionlimiter.Limiter
 	var err1, err2, err3 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
-	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
+	lim1, next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
 
 		func(data P) uint64 {
 			return m.memorySize(data)
 		})
-	next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
+	lim2, next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
 		func(data P) uint64 {
 			return m.itemCount(data)
 		})
-	next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
+	lim3, next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
 		func(_ P) uint64 {
 			return 1
 		})
-	return next, errors.Join(err1, err2, err3)
+	return extensionlimiter.MultiLimiter{lim1, lim2, lim3}, next, errors.Join(err1, err2, err3)
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.
-func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (consumer.Traces, error) {
+func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (extensionlimiter.Limiter, consumer.Traces, error) {
 	return newLimited(next, keys, provider, traceTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedLogs applies a limiter using the provider over keys before calling next.
-func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (consumer.Logs, error) {
+func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (extensionlimiter.Limiter, consumer.Logs, error) {
 	return newLimited(next, keys, provider, logTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedMetrics applies a limiter using the provider over keys before calling next.
-func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (consumer.Metrics, error) {
+func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (extensionlimiter.Limiter, consumer.Metrics, error) {
 	return newLimited(next, keys, provider, metricTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedProfiles applies a limiter using the provider over keys before calling next.
-func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (xconsumer.Profiles, error) {
+func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider extensionlimiter.LimiterWrapperProvider) (extensionlimiter.Limiter, xconsumer.Profiles, error) {
 	return newLimited(next, keys, provider, profileTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }

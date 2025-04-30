@@ -55,6 +55,10 @@ func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []confi
 	return MultiLimiterWrapperProvider(providers), nil
 }
 
+// Note: MiddlewaresToRateLimiterProvider, MiddlewaresToResourceLimiterProvider
+// are needed for special cases, however these functions can be implemented
+// manually, they are similar to the above.
+
 // MiddlewareToLimiterWrapperProvider returns a limiter wrapper
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
