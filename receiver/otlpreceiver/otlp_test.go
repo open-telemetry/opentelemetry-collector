@@ -1208,7 +1208,7 @@ func (esc *errOrSinkConsumer) Reset() {
 func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	switch data.(type) {
 	case ptrace.Traces:
-		allTraces := esc.TracesSink.AllTraces()
+		allTraces := esc.AllTraces()
 		require.Len(t, allTraces, dataLen)
 		if dataLen > 0 {
 			require.Equal(t, allTraces[0], data)

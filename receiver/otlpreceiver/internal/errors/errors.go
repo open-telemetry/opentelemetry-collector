@@ -39,7 +39,8 @@ func GetClientDisconnectMessage(err error) string {
 }
 
 func GetStatusFromError(err error) error {
-	s, ok := status.FromError(err)
+	var s *status.Status
+	_, ok := status.FromError(err)
 	if !ok {
 		// Default to a retryable error
 		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
