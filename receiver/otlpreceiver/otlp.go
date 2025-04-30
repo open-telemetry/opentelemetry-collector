@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
@@ -97,20 +99,42 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		return err
 	}
 
+	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
+	limiterProvider, err := limiterhelper.MiddlewaresToLimiterWrapperProvider(host, r.cfg.GRPC.Middlewares)
+	if err != nil {
+		return err
+	}
+
 	if r.nextTraces != nil {
-		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
+		next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(next, r.obsrepGRPC))
 	}
 
 	if r.nextMetrics != nil {
-		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC))
+		next, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(next, r.obsrepGRPC))
 	}
 
 	if r.nextLogs != nil {
-		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
+		next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(next, r.obsrepGRPC))
 	}
 
 	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
+		next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(next))
 	}
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
@@ -136,15 +160,29 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 		return nil
 	}
 
+	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
+	limiterProvider, err := limiterhelper.MiddlewaresToLimiterWrapperProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
+	if err != nil {
+		return err
+	}
+
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
-		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+		next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		httpTracesReceiver := trace.New(next, r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
+		_, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
@@ -152,20 +190,27 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextLogs != nil {
-		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+		next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		httpLogsReceiver := logs.New(next, r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
 
 	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
+		next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
+		if err != nil {
+			return err
+		}
+		httpProfilesReceiver := profiles.New(next)
 		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleProfiles(resp, req, httpProfilesReceiver)
 		})
 	}
 
-	var err error
 	if r.serverHTTP, err = r.cfg.HTTP.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
