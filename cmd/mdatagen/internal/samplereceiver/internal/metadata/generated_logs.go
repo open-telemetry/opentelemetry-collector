@@ -23,7 +23,7 @@ type LogBuilderOption interface {
 	apply(*LogsBuilder)
 }
 
-func NewLogsBuilder(settings receiver.Settings) *LogsBuilder {
+func NewLogsBuilder(lbc LogsBuilderConfig, settings receiver.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
 		logsBuffer:       plog.NewLogs(),
 		logRecordsBuffer: plog.NewLogRecordSlice(),
