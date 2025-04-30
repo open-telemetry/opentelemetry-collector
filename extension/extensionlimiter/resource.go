@@ -14,17 +14,17 @@ import (
 // Limiters are covered by configmiddleware configuration, which
 // is able to construct LimiterWrappers from these providers.
 type ResourceLimiterProvider interface {
-	ResourceLimiter(WeightKey) (ResourceLimiter, error)
+	ResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
 }
 
 // ResourceLimiterProviderFunc is a functional way to build ResourceLimters.
-type ResourceLimiterProviderFunc func(WeightKey) (ResourceLimiter, error)
+type ResourceLimiterProviderFunc func(WeightKey, ...Option) (ResourceLimiter, error)
 
 var _ ResourceLimiterProvider = ResourceLimiterProviderFunc(nil)
 
 // ResourceLimiter implements ResourceLimiterProvider.
-func (f ResourceLimiterProviderFunc) ResourceLimiter(key WeightKey) (ResourceLimiter, error) {
-	return f(key)
+func (f ResourceLimiterProviderFunc) ResourceLimiter(key WeightKey, opts ...Option) (ResourceLimiter, error) {
+	return f(key, opts...)
 }
 
 // ResourceLimiter is an interface that an implementation makes

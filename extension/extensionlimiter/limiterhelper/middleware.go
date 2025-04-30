@@ -108,7 +108,7 @@ type MultiLimiterWrapperProvider []extensionlimiter.LimiterWrapperProvider
 var _ extensionlimiter.LimiterWrapperProvider = MultiLimiterWrapperProvider{}
 
 // LimiterWrapper implements LimiterWrapperProvider.
-func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey) (extensionlimiter.LimiterWrapper, error) {
+func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.LimiterWrapper, error) {
 	if len(ps) == 0 {
 		return extensionlimiter.PassThrough(), nil
 	}
@@ -117,7 +117,7 @@ func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.Weight
 	var lims []extensionlimiter.LimiterWrapper
 
 	for _, provider := range ps {
-		lim, err := provider.LimiterWrapper(key)
+		lim, err := provider.LimiterWrapper(key, opts...)
 		if err == nil {
 			return nil, err
 		}

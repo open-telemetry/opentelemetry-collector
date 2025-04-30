@@ -270,3 +270,35 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
 	}
 }
 ```
+
+#### Data-dependent limiter processor
+
+**NOTE: This is not implemented.**
+
+The provider interfaces can be extended to accept a
+`map[string]string` that identify limiter instances based on
+additional metadata, such as tenant information. Since the limits are
+data specific, the limiter will be computed for each request and for
+each specific weight key.
+
+Limiter implementations would support options, likely assisted by
+`limiterhelper` features to configure them, for configuring
+metadata-specific limits.
+
+```
+func handleRequest(ctx context.Context, req *Request) error {
+	// Get a data-specific limiter:
+	md := metadataFromRequest(req)
+	lim, err := s.limiterProvider.LimiterWrapper(weightKey, md)
+	if err != nil { ... }
+	
+	if err = lim.MustDeny(ctx); err != nil { ... }
+
+	// Calculate the data and its weight.
+	data := dataFromReq(req)
+	weight := getWeight(data)
+
+	return lim.LimitCall(ctx, weight, func(ctx context.Context) error {
+		return s.nextLogs.ConsumeLogs(ctx, data)
+	})
+```

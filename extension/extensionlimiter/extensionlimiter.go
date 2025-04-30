@@ -7,6 +7,16 @@ import (
 	"context"
 )
 
+// Option is passed to limiter providers.
+//
+// NOTE: For data-specific or tenant-specific limits we will extend
+// providers with Options and add a Config type, but none are
+// supported yet and this PR contains only interfaces, not need for
+// options in core repository components.
+type Option interface {
+	apply()
+}
+
 // Limiter is the common functionality implemented by LimiterWrapper,
 // RateLimiter, and ResourceLimiter. This can be called prior to the
 // start of work to check for limiter saturation.

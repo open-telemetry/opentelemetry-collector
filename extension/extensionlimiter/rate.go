@@ -14,17 +14,18 @@ import (
 // Limiters are covered by configmiddleware configuration, which is
 // able to construct LimiterWrappers from these providers.
 type RateLimiterProvider interface {
-	RateLimiter(WeightKey) (RateLimiter, error)
+	// RateLimiter returns a provider for rate limiters.
+	RateLimiter(WeightKey, ...Option) (RateLimiter, error)
 }
 
 // RateLimiterProviderFunc is a functional way to build RateLimters.
-type RateLimiterProviderFunc func(WeightKey) (RateLimiter, error)
+type RateLimiterProviderFunc func(WeightKey, ...Option) (RateLimiter, error)
 
 var _ RateLimiterProvider = RateLimiterProviderFunc(nil)
 
 // RateLimiter implements RateLimiterProvider.
-func (f RateLimiterProviderFunc) RateLimiter(key WeightKey) (RateLimiter, error) {
-	return f(key)
+func (f RateLimiterProviderFunc) RateLimiter(key WeightKey, opts ...Option) (RateLimiter, error) {
+	return f(key, opts...)
 }
 
 // RateLimiter is an interface that an implementation makes available
