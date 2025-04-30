@@ -106,7 +106,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextTraces != nil {
-		_, next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
+		var next consumer.Traces
+		_, next, err = limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -114,7 +115,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextMetrics != nil {
-		_, next, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
+		var next consumer.Metrics
+		_, next, err = limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -122,7 +124,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextLogs != nil {
-		_, next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
+		var next consumer.Logs
+		_, next, err = limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -130,7 +133,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextProfiles != nil {
-		_, next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
+		var next xconsumer.Profiles
+		_, next, err = limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}

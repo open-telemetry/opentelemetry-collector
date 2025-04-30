@@ -273,7 +273,9 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
 
 #### Data-dependent limiter processor
 
-**NOTE: This is not implemented.**
+**NOTE: This is not implemented.** An `Option` type has been added as
+a placeholder in the provider interfaces to support adding this
+feature.
 
 The provider interfaces can be extended to accept a
 `map[string]string` that identify limiter instances based on
