@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-var typeStr = component.MustNewType("examplereceiver")
+var typeStr = component.MustNewType("example")
 
 type exampleConfig struct {
 	Interval time.Duration
@@ -131,5 +131,5 @@ func Example() {
 	fmt.Println(exampleReceiver.Type())
 
 	// Output:
-	// examplereceiver
+	// example
 }
