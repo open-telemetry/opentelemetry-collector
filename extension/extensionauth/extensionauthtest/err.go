@@ -4,6 +4,7 @@
 package extensionauthtest // import "go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 
 import (
+	"context"
 	"net/http"
 
 	"google.golang.org/grpc/credentials"
@@ -14,26 +15,32 @@ import (
 )
 
 var (
-	_ extension.Extension      = (*errorClient)(nil)
-	_ extensionauth.HTTPClient = (*errorClient)(nil)
-	_ extensionauth.GRPCClient = (*errorClient)(nil)
+	_ extension.Extension      = (*errClient)(nil)
+	_ extensionauth.HTTPClient = (*errClient)(nil)
+	_ extensionauth.GRPCClient = (*errClient)(nil)
 )
 
-type errorClient struct {
+type errClient struct {
 	component.StartFunc
 	component.ShutdownFunc
 	extensionauth.ClientPerRPCCredentialsFunc
 	extensionauth.ClientRoundTripperFunc
+	extensionauth.ServerAuthenticateFunc
 }
 
-// NewErrorClient returns a new [extension.Extension] that implements the [extensionauth.HTTPClient] and [extensionauth.GRPCClient] and always returns an error on both methods.
-func NewErrorClient(err error) extension.Extension {
-	return &errorClient{
+// Deprecated: [v0.125.0] Use NewErr.
+var NewErrorClient = NewErr
+
+// NewErr returns a new [extension.Extension] that implements all
+// extensionauth interface and always returns an error.
+func NewErr(err error) extension.Extension {
+	return &errClient{
 		ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
 			return nil, err
 		},
 		ClientPerRPCCredentialsFunc: func() (credentials.PerRPCCredentials, error) {
 			return nil, err
 		},
+		ServerAuthenticateFunc: func(ctx context.Context, _ map[string][]string) (context.Context, error) { return ctx, err },
 	}
 }

@@ -4,6 +4,10 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
+attributes:
+  name:
+    description: Name of sampling decision
+    type: string
 telemetry:
   metrics:
     sampling_decision_latency:
@@ -14,3 +18,4 @@ telemetry:
         level: alpha
       histogram:
         value_type: int
+      attributes: [name]

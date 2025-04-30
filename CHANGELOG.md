@@ -7,6 +7,61 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.31.0/v0.125.0
+
+### 🛑 Breaking changes 🛑
+
+- `service`: Lowercase values for 'otelcol.component.kind' attributes. (#12865)
+- `service`: Restrict the `telemetry.newPipelineTelemetry` feature gate to metrics. (#12856, #12933)
+  The "off" state of this feature gate introduced a regression, where the Collector's internal logs were missing component attributes. See issue #12870 for more details on this bug.
+  
+  On the other hand, the "on" state introduced an issue with the Collector's default internal metrics, because the Prometheus exporter does not currently support instrumentation scope attributes.
+  
+  To solve both of these issues, this change turns on the new scope attributes for logs and traces by default regardless of the feature gate.
+  However, the new scope attributes for metrics stay locked behind the feature gate, and will remain off by default until the Prometheus exporter is updated to support scope attributes.
+  
+  Please understand that enabling the `telemetry.newPipelineTelemetry` feature gate may break the export of Collector metrics through, depending on your configuration.
+  Having a `batch` processor in multiple pipelines is a known trigger for this.
+  
+  This comes with a breaking change, where internal logs exported through OTLP will now use instrumentation scope attributes to identify the source component instead of log attributes.
+  This does not affect the Collector's stderr output. See the changelog for v0.123.0 for a more detailed description of the gate's effects.
+  
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add support for attributes for telemetry configuration in metadata. (#12919)
+- `configmiddleware`: Add extensionmiddleware interface. (#12603, #9591)
+- `configgrpc`: Add gRPC middleware support. (#12603, #9591)
+- `confighttp`: Add HTTP middleware support. (#12603, #9591, #7441)
+- `configmiddleware`: Add configmiddleware struct. (#12603, #9591)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Do not ignore the `num_consumers` setting when batching is enabled. (#12244)
+- `exporterhelper`: Reject elements larger than the queue capacity (#12847)
+- `mdatagen`: Add time and plog package imports (#12907)
+- `confmap`: Maintain nil values when marshaling or unmarshaling nil slices (#11882)
+  Previously, nil slices were converted to empty lists, which are semantically different
+  than a nil slice. This change makes this conversion more consistent when encoding
+  or decoding config, and these values are now maintained.
+  
+
+<!-- previous-version -->
+
+## v1.30.0/v0.124.0
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Add support for bytes-based batching for profiles in the exporterhelper package. (#3262)
+- `otelcol`: Enhance config validation using <validate> command to capture all validation errors that prevents the collector from starting. (#8721)
+- `exporterhelper`: Link batcher context to all batched request's span contexts. (#12212, #8122)
+
+### 🧰 Bug fixes 🧰
+
+- `confighttp`: Ensure http authentication server failures are handled by the provided error handler (#12666)
+
+<!-- previous-version -->
+
 ## v1.29.0/v0.123.0
 
 ### 🛑 Breaking changes 🛑
@@ -367,14 +422,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `service`: ensure traces and logs emitted by the otel go SDK use the same resource information (#11578)
 - `config/configgrpc`: Patch for bug in the grpc-go NewClient that makes the way the hostname is resolved incompatible with the way proxy setting are applied. (#11537)
-- `builder`: Update builder default providers to lastest stable releases (#11566)
+- `builder`: Update builder default providers to latest stable releases (#11566)
 
 ## v1.18.0/v0.112.0
 
 ### 🛑 Breaking changes 🛑
 
 - `consumer/consumererror`: Extract consumer/consumererror as a separate go module (#11440)
-- `exporter/expotertest`: Put expotertest into its own module (#11461)
+- `exporter/exportertest`: Put exportertest into its own module (#11461)
 - `service`: Remove stable gate component.UseLocalHostAsDefaultHost (#11412)
 
 ### 🚩 Deprecations 🚩
@@ -3207,7 +3262,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   - `opencensus`: Convert to new Number metrics (#3708)
   - `scraperhelper` receiver: Convert to new Number metrics (#3717)
   - `testbed`: Convert to new Number metrics (#3719)
-  - `expoerterhelper`: Convert `resourcetolabel` to new Number metrics (#3723)
+  - `exporterhelper`: Convert `resourcetolabel` to new Number metrics (#3723)
 - `configauth`: Prepare auth API to return a context (#3618)
 - `pdata`:
   - Implement `Equal()` for map-valued `AttributeValues` (#3612)
@@ -3450,7 +3505,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Rename ForEach (in pdata) with Range to be consistent with sync.Map (#2931)
 - Rename `componenthelper.Start` to `componenthelper.StartFunc` (#2880)
 - Rename `componenthelper.Stop` to `componenthelper.StopFunc` (#2880)
-- Remove `exporterheleper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionheleper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
+- Remove `exporterhelper.WithCustomUnmarshaler`, `processorhelper.WithCustomUnmarshaler`, `receiverhelper.WithCustomUnmarshaler`, `extensionhelper.WithCustomUnmarshaler`, implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `component.CustomUnmarshaler` implement `config.CustomUnmarshaler` interface instead (#2867)
 - Remove `testutil.HostPortFromAddr`, users can write their own parsing helper (#2919)
 - Remove `configparser.DecodeTypeAndName`, use `config.IDFromString` (#2869)

@@ -125,9 +125,10 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	// - Last result may not have enough data to be flushed.
 
 	// Logic on how to deal with the current batch:
-	// TODO: Deal with merging Context.
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
+	qb.currentBatch.ctx = contextWithMergedLinks(qb.currentBatch.ctx, ctx)
+
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
 	var firstBatch *batch

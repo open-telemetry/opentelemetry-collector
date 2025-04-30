@@ -25,9 +25,8 @@ See also the [Troubleshooting][troubleshooting_docs] document for examples on us
 
 The following settings are optional:
 
-- `verbosity` (default = `basic`): the verbosity of the debug exporter
-  (detailed|normal|basic). When set to `detailed`, pipeline data is verbosely
-  logged.
+- `verbosity` (default = `basic`): the verbosity of the debug exporter: `basic`, `normal` or `detailed`.
+  See [Verbosity levels](#verbosity-levels) below for more information.
 - `sampling_initial` (default = `2`): number of messages initially logged each
   second.
 - `sampling_thereafter` (default = `1`): sampling rate after the initial
@@ -53,6 +52,8 @@ exporters:
 The following subsections describe the output from the exporter depending on the configured verbosity level - `basic`, `normal` and `detailed`.
 The default verbosity level is `basic`.
 
+To understand how the below example output was generated, see [Generating example output](./generating-example-output.md).
+
 ### Basic verbosity
 
 With `verbosity: basic`, the exporter outputs a single-line summary of received data with a total count of telemetry records for every batch of received logs, metrics or traces.
@@ -60,7 +61,7 @@ With `verbosity: basic`, the exporter outputs a single-line summary of received 
 Here's an example output:
 
 ```console
-2023-11-10T22:49:03.510-0600    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
+2025-04-17T10:40:44.559+0200    info    Traces  {"otelcol.component.id": "debug/basic", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
 ```
 
 ### Normal verbosity
@@ -72,10 +73,10 @@ For example, logs with multiline body will be output as multiple lines.
 Here's an example output:
 
 ```console
-2024-06-24T15:18:58.559+0200    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
-2024-06-24T15:18:58.559+0200    info    okey-dokey-0 4bdc558f0f0650e3ccaac8f3ae133954 8b69459f015c164b net.peer.ip=1.2.3.4 peer.service=telemetrygen-client
-lets-go 4bdc558f0f0650e3ccaac8f3ae133954 8820ee5366817639 net.peer.ip=1.2.3.4 peer.service=telemetrygen-server
-        {"kind": "exporter", "data_type": "traces", "name": "debug"}
+2025-04-17T10:40:44.560+0200    info    Traces  {"otelcol.component.id": "debug/normal", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
+2025-04-17T10:40:44.560+0200    info    okey-dokey-0 fafdac970271dd2ce89de2442c0518c7 3875f436d989d0e5 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-client
+lets-go fafdac970271dd2ce89de2442c0518c7 d98de4cb8e2a0ad6 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-server
+        {"otelcol.component.id": "debug/normal", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces"}
 ```
 
 ### Detailed verbosity
@@ -85,41 +86,41 @@ With `verbosity: detailed`, the exporter outputs all details of every telemetry 
 Here's an example output:
 
 ```console
-2023-11-10T22:49:03.510-0600    info    TracesExporter  {"kind": "exporter", "data_type": "traces", "name": "debug", "resource spans": 1, "spans": 2}
-2023-11-10T22:49:03.510-0600    info    ResourceSpans #0
-Resource SchemaURL: https://opentelemetry.io/schemas/1.4.0
+2025-04-17T10:40:44.560+0200    info    Traces  {"otelcol.component.id": "debug/detailed", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
+2025-04-17T10:40:44.560+0200    info    ResourceSpans #0
+Resource SchemaURL: https://opentelemetry.io/schemas/1.25.0
 Resource attributes:
      -> service.name: Str(telemetrygen)
 ScopeSpans #0
-ScopeSpans SchemaURL:
-InstrumentationScope telemetrygen
+ScopeSpans SchemaURL: 
+InstrumentationScope telemetrygen 
 Span #0
-    Trace ID       : 3bde5d3ee82303571bba6e1136781fe4
-    Parent ID      : 5e9dcf9bac4acc1f
-    ID             : 2cf3ef2899aba35c
-    Name           : okey-dokey
+    Trace ID       : fafdac970271dd2ce89de2442c0518c7
+    Parent ID      : d98de4cb8e2a0ad6
+    ID             : 3875f436d989d0e5
+    Name           : okey-dokey-0
     Kind           : Server
-    Start time     : 2023-11-11 04:49:03.509369393 +0000 UTC
-    End time       : 2023-11-11 04:49:03.50949377 +0000 UTC
+    Start time     : 2025-04-17 08:40:44.555461596 +0000 UTC
+    End time       : 2025-04-17 08:40:44.555584596 +0000 UTC
     Status code    : Unset
-    Status message :
+    Status message : 
 Attributes:
-     -> net.peer.ip: Str(1.2.3.4)
+     -> net.sock.peer.addr: Str(1.2.3.4)
      -> peer.service: Str(telemetrygen-client)
 Span #1
-    Trace ID       : 3bde5d3ee82303571bba6e1136781fe4
-    Parent ID      :
-    ID             : 5e9dcf9bac4acc1f
+    Trace ID       : fafdac970271dd2ce89de2442c0518c7
+    Parent ID      : 
+    ID             : d98de4cb8e2a0ad6
     Name           : lets-go
     Kind           : Client
-    Start time     : 2023-11-11 04:49:03.50935117 +0000 UTC
-    End time       : 2023-11-11 04:49:03.50949377 +0000 UTC
+    Start time     : 2025-04-17 08:40:44.555461596 +0000 UTC
+    End time       : 2025-04-17 08:40:44.555584596 +0000 UTC
     Status code    : Unset
-    Status message :
+    Status message : 
 Attributes:
-     -> net.peer.ip: Str(1.2.3.4)
+     -> net.sock.peer.addr: Str(1.2.3.4)
      -> peer.service: Str(telemetrygen-server)
-        {"kind": "exporter", "data_type": "traces", "name": "debug"}
+        {"otelcol.component.id": "debug/detailed", "otelcol.component.kind": "Exporter", "otelcol.signal": "traces"}
 ```
 
 ## Using the collector's internal logger

@@ -4,18 +4,18 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: mdatagen
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add variable for metric name in mdatagen
+note: Add type definition for events in mdatagen
 
 # One or more tracking issues or pull requests related to the change
-issues: [12459]
+issues: [12571]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: Access metric name via `metadata.MetricsInfo.<metric-variable>.Name`
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

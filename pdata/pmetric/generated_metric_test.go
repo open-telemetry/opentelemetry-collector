@@ -22,6 +22,8 @@ func TestMetric_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewMetric(), ms)
 	assert.Equal(t, generateTestMetric(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestMetric(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
 	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).MoveTo(dest) })
