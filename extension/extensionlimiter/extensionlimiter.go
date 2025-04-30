@@ -33,21 +33,3 @@ func (f LimiterFunc) MustDeny(ctx context.Context) error {
 	}
 	return f(ctx)
 }
-
-// MultiLimiter returns MustDeny when any element returns MustDeny.
-type MultiLimiter []Limiter
-
-var _ Limiter = MultiLimiter{}
-
-// MustDeny implements Limiter.
-func (ls MultiLimiter) MustDeny(ctx context.Context) error {
-	for _, lim := range ls {
-		if lim == nil {
-			continue
-		}
-		if err := lim.MustDeny(ctx); err != nil {
-			return err
-		}
-	}
-	return nil
-}

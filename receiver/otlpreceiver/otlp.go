@@ -106,7 +106,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextTraces != nil {
-		next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -114,7 +114,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextMetrics != nil {
-		next, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextLogs != nil {
-		next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	if r.nextProfiles != nil {
-		next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -168,7 +168,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
-		next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedTraces(r.nextTraces, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -179,18 +179,18 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextMetrics != nil {
-		_, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedMetrics(r.nextMetrics, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
-		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+		httpMetricsReceiver := metrics.New(next, r.obsrepHTTP)
 		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
-		next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedLogs(r.nextLogs, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	if r.nextProfiles != nil {
-		next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
+		_, next, err := limiterhelper.NewLimitedProfiles(r.nextProfiles, limitKeys, limiterProvider)
 		if err != nil {
 			return err
 		}

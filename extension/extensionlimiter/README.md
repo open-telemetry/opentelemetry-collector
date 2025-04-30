@@ -27,20 +27,23 @@ at this moment and should be taken as a strong signal to stop
 accepting requests.
 
 Each kind of limiter as well as the wrapper type have corresponding
-providers that give access to a limiter instance based on a weight
-key.
+**provider** interface that returns a limiter instance based on a
+weight key or keys.
 
-Weight keys describes the standard limiting dimensions. There are
+Weight keys describe the standard limiting dimensions. There are
 currently four standard weight keys: network bytes, request count,
 request items, and memory size.
 
 ## Key Interfaces
 
 - `LimiterWrapper`: Provides a callback-based limiting interface that
-  works with both rate and resource limiters, has a `LimitCall` method.
-- `RateLimiter`: Applies time-based limits, has a `Limit` method.
+  works with both rate and resource limiters, has a `LimitCall` method,
+  plus a provider type.
+- `RateLimiter`: Applies time-based limits, has a `Limit` method,
+  plus provider type.
 - `ResourceLimiter`: Manages physical resource limits, has
-  an `Acquire` method and corresponding `ReleaseFunc`.
+  an `Acquire` method and corresponding `ReleaseFunc`,
+  plus a provider type.
 - `Limiter`: Any of the above, has a `MustDeny` method.
 
 ### Limiter helpers
@@ -48,9 +51,10 @@ request items, and memory size.
 The `limiterhelper` subpackage provides:
 
 - Consumer wrappers apply limits to a collector pipeline (e.g.,
-  `NewLimitedLogs` to combine a limiter using `consumer.NewLogs`)
-- Multi-limiter combinators: `MultiLimiterWrapperProvider` builds a sequence of wrapped limiters.
-- Middleware conversion utilities: Convert middleware configurations to `LimiterWrapperProvider`.
+  `NewLimitedLogs` for a limiter combined with `consumer.NewLogs`)
+- Multi-limiter combinators: for simple combined limiter functionality
+- Middleware conversion utilities: convert middleware configurations to 
+  liiter providers.
 
 ## Recommendations
 

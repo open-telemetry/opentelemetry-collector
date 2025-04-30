@@ -17,6 +17,24 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+// MultiLimiter returns MustDeny when any element returns MustDeny.
+type MultiLimiter []extensionlimiter.Limiter
+
+var _ extensionlimiter.Limiter = MultiLimiter{}
+
+// MustDeny implements Limiter.
+func (ls MultiLimiter) MustDeny(ctx context.Context) error {
+	for _, lim := range ls {
+		if lim == nil {
+			continue
+		}
+		if err := lim.MustDeny(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Traits object interface is generalized by P the pipeline data type
 // (e.g., ptrace.Traces) and C the consumer type (e.g.,
 // consumer.Traces)
@@ -171,7 +189,7 @@ func newLimited[P any, C any](
 		func(_ P) uint64 {
 			return 1
 		})
-	return extensionlimiter.MultiLimiter{lim1, lim2, lim3}, next, errors.Join(err1, err2, err3)
+	return MultiLimiter{lim1, lim2, lim3}, next, errors.Join(err1, err2, err3)
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.
