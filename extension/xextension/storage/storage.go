@@ -5,6 +5,7 @@ package storage // import "go.opentelemetry.io/collector/extension/xextension/st
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -91,3 +92,5 @@ func DeleteOperation(key string) *Operation {
 		Type: Delete,
 	}
 }
+
+var ErrStorageFull = errors.New("the storage extension has run out of available space")

@@ -114,13 +114,13 @@ The last step of the release process creates artifacts for the new version of th
 
 5. Ensure the "Release Core", "Release Contrib", "Release k8s", and "Builder - Release" actions pass, this will
 
-    1. push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`
+    1. ~~push new container images to `https://hub.docker.com/repository/docker/otel/opentelemetry-collector`, `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-contrib` and `https://hub.docker.com/repository/docker/otel/opentelemetry-collector-k8s`~~ Currently we cannot publish images to Dockerhub due to rate limiting http://github.com/open-telemetry/community/issues/2641.
 
     2. create a Github release for the tag and push all the build artifacts to the Github release. See [example](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/release-core.yaml).
 
     3. build and release ocb binaries under a separate tagged Github release, e.g. `cmd/builder/v0.85.0`
 
-    4. build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository
+    4. ~~build and push ocb Docker images to `https://hub.docker.com/r/otel/opentelemetry-collector-builder` and the GitHub Container Registry within the releases repository~~
 
 6. Update the release notes with the CHANGELOG.md updates.
 
@@ -217,7 +217,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)               |
 | 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
 | 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
@@ -227,3 +226,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
+| 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
