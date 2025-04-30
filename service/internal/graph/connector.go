@@ -108,11 +108,13 @@ func (n *connectorNode) buildTraces(
 			return err
 		}
 		// Connectors which might pass along data must inherit capabilities of all nexts
-		capConsumer := capabilityconsumer.NewTraces(
-			n.Component.(consumer.Traces),
-			aggregateCap(n.Component.(consumer.Traces), nexts),
+		n.consumer = obsconsumer.NewTraces(
+			capabilityconsumer.NewTraces(
+				n.Component.(consumer.Traces),
+				aggregateCap(n.Component.(consumer.Traces), nexts),
+			),
+			tb.ConnectorConsumedItems,
 		)
-		n.consumer = obsconsumer.NewTraces(capConsumer, tb.ConnectorConsumedItems)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		if err != nil {
@@ -168,11 +170,13 @@ func (n *connectorNode) buildMetrics(
 			return err
 		}
 		// Connectors which might pass along data must inherit capabilities of all nexts
-		capConsumer := capabilityconsumer.NewMetrics(
-			n.Component.(consumer.Metrics),
-			aggregateCap(n.Component.(consumer.Metrics), nexts),
+		n.consumer = obsconsumer.NewMetrics(
+			capabilityconsumer.NewMetrics(
+				n.Component.(consumer.Metrics),
+				aggregateCap(n.Component.(consumer.Metrics), nexts),
+			),
+			tb.ConnectorConsumedItems,
 		)
-		n.consumer = obsconsumer.NewMetrics(capConsumer, tb.ConnectorConsumedItems)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		if err != nil {
@@ -228,11 +232,13 @@ func (n *connectorNode) buildLogs(
 			return err
 		}
 		// Connectors which might pass along data must inherit capabilities of all nexts
-		capConsumer := capabilityconsumer.NewLogs(
-			n.Component.(consumer.Logs),
-			aggregateCap(n.Component.(consumer.Logs), nexts),
+		n.consumer = obsconsumer.NewLogs(
+			capabilityconsumer.NewLogs(
+				n.Component.(consumer.Logs),
+				aggregateCap(n.Component.(consumer.Logs), nexts),
+			),
+			tb.ConnectorConsumedItems,
 		)
-		n.consumer = obsconsumer.NewLogs(capConsumer, tb.ConnectorConsumedItems)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		if err != nil {
@@ -288,11 +294,13 @@ func (n *connectorNode) buildProfiles(
 			return err
 		}
 		// Connectors which might pass along data must inherit capabilities of all nexts
-		capConsumer := capabilityconsumer.NewProfiles(
-			n.Component.(xconsumer.Profiles),
-			aggregateCap(n.Component.(xconsumer.Profiles), nexts),
+		n.consumer = obsconsumer.NewProfiles(
+			capabilityconsumer.NewProfiles(
+				n.Component.(xconsumer.Profiles),
+				aggregateCap(n.Component.(xconsumer.Profiles), nexts),
+			),
+			tb.ConnectorConsumedItems,
 		)
-		n.consumer = obsconsumer.NewProfiles(capConsumer, tb.ConnectorConsumedItems)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
 		if err != nil {

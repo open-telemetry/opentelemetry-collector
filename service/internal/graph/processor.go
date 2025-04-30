@@ -63,29 +63,29 @@ func (n *processorNode) buildComponent(ctx context.Context,
 
 	switch n.pipelineID.Signal() {
 	case pipeline.SignalTraces:
-		obsConsumer := obsconsumer.NewTraces(next.(consumer.Traces), tb.ProcessorProducedItems)
-		n.Component, err = builder.CreateTraces(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateTraces(ctx, set,
+			obsconsumer.NewTraces(next.(consumer.Traces), tb.ProcessorProducedItems))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ProcessorConsumedItems)
 	case pipeline.SignalMetrics:
-		obsConsumer := obsconsumer.NewMetrics(next.(consumer.Metrics), tb.ProcessorProducedItems)
-		n.Component, err = builder.CreateMetrics(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateMetrics(ctx, set,
+			obsconsumer.NewMetrics(next.(consumer.Metrics), tb.ProcessorProducedItems))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ProcessorConsumedItems)
 	case pipeline.SignalLogs:
-		obsConsumer := obsconsumer.NewLogs(next.(consumer.Logs), tb.ProcessorProducedItems)
-		n.Component, err = builder.CreateLogs(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateLogs(ctx, set,
+			obsconsumer.NewLogs(next.(consumer.Logs), tb.ProcessorProducedItems))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}
 		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ProcessorConsumedItems)
 	case xpipeline.SignalProfiles:
-		obsConsumer := obsconsumer.NewProfiles(next.(xconsumer.Profiles), tb.ProcessorProducedItems)
-		n.Component, err = builder.CreateProfiles(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateProfiles(ctx, set,
+			obsconsumer.NewProfiles(next.(xconsumer.Profiles), tb.ProcessorProducedItems))
 		if err != nil {
 			return fmt.Errorf("failed to create %q processor, in pipeline %q: %w", set.ID, n.pipelineID.String(), err)
 		}

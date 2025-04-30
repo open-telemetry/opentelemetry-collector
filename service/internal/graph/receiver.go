@@ -61,29 +61,29 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
-		obsConsumer := obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), tb.ReceiverProducedItems)
-		n.Component, err = builder.CreateTraces(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateTraces(ctx, set,
+			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), tb.ReceiverProducedItems))
 	case pipeline.SignalMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
-		obsConsumer := obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), tb.ReceiverProducedItems)
-		n.Component, err = builder.CreateMetrics(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateMetrics(ctx, set,
+			obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), tb.ReceiverProducedItems))
 	case pipeline.SignalLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
-		obsConsumer := obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), tb.ReceiverProducedItems)
-		n.Component, err = builder.CreateLogs(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateLogs(ctx, set,
+			obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), tb.ReceiverProducedItems))
 	case xpipeline.SignalProfiles:
 		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
 			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
-		obsConsumer := obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), tb.ReceiverProducedItems)
-		n.Component, err = builder.CreateProfiles(ctx, set, obsConsumer)
+		n.Component, err = builder.CreateProfiles(ctx, set,
+			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), tb.ReceiverProducedItems))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

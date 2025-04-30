@@ -8,6 +8,9 @@ import (
 	"errors"
 	"hash/fnv"
 	"sync"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
@@ -17,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -303,4 +308,12 @@ func (e errComponent) Start(context.Context, component.Host) error {
 
 func (e errComponent) Shutdown(context.Context) error {
 	return errors.New("my error")
+}
+
+func setObsConsumerGateForTest(t *testing.T, enabled bool) {
+	initial := telemetry.NewPipelineTelemetryGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), enabled))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(telemetry.NewPipelineTelemetryGate.ID(), initial))
+	})
 }

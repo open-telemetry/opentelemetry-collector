@@ -36,6 +36,17 @@ import (
 )
 
 func TestConnectorPipelinesGraph(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testConnectorPipelinesGraph(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testConnectorPipelinesGraph(t)
+	})
+}
+
+func testConnectorPipelinesGraph(t *testing.T) {
 	tests := []struct {
 		name                string
 		pipelineConfigs     pipelines.Config
@@ -1004,6 +1015,17 @@ func TestConnectorPipelinesGraph(t *testing.T) {
 }
 
 func TestInstances(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testInstances(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testInstances(t)
+	})
+}
+
+func testInstances(t *testing.T) {
 	tests := []struct {
 		name            string
 		pipelineConfigs pipelines.Config
@@ -1168,6 +1190,17 @@ func TestInstances(t *testing.T) {
 }
 
 func TestConnectorRouter(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testConnectorRouter(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testConnectorRouter(t)
+	})
+}
+
+func testConnectorRouter(t *testing.T) {
 	rcvrID := component.MustNewID("examplereceiver")
 	routeTracesID := component.MustNewIDWithName("examplerouter", "traces")
 	routeMetricsID := component.MustNewIDWithName("examplerouter", "metrics")
@@ -1394,6 +1427,17 @@ func TestConnectorRouter(t *testing.T) {
 }
 
 func TestGraphBuildErrors(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testGraphBuildErrors(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testGraphBuildErrors(t)
+	})
+}
+
+func testGraphBuildErrors(t *testing.T) {
 	nopReceiverFactory := receivertest.NewNopFactory()
 	nopProcessorFactory := processortest.NewNopFactory()
 	nopExporterFactory := exportertest.NewNopFactory()

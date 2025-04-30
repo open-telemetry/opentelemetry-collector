@@ -29,11 +29,8 @@ type TelemetryBuilder struct {
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
 	ConnectorConsumedItems            metric.Int64Counter
-	ConnectorConsumedSize             metric.Int64Counter
 	ConnectorProducedItems            metric.Int64Counter
-	ConnectorProducedSize             metric.Int64Counter
 	ExporterConsumedItems             metric.Int64Counter
-	ExporterConsumedSize              metric.Int64Counter
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
 	ProcessMemoryRss                  metric.Int64ObservableGauge
 	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
@@ -41,11 +38,8 @@ type TelemetryBuilder struct {
 	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
 	ProcessUptime                     metric.Float64ObservableCounter
 	ProcessorConsumedItems            metric.Int64Counter
-	ProcessorConsumedSize             metric.Int64Counter
 	ProcessorProducedItems            metric.Int64Counter
-	ProcessorProducedSize             metric.Int64Counter
 	ReceiverProducedItems             metric.Int64Counter
-	ReceiverProducedSize              metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -193,34 +187,16 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorConsumedSize, err = builder.meter.Int64Counter(
-		"otelcol.connector.consumed.size",
-		metric.WithDescription("Size of items passed to the connector."),
-		metric.WithUnit("By"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
 		"otelcol.connector.produced.items",
 		metric.WithDescription("Number of items emitted from the connector."),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorProducedSize, err = builder.meter.Int64Counter(
-		"otelcol.connector.produced.size",
-		metric.WithDescription("Size of items emitted from the connector."),
-		metric.WithUnit("By"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
 		"otelcol.exporter.consumed.items",
 		metric.WithDescription("Number of items passed to the exporter."),
 		metric.WithUnit("{item}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ExporterConsumedSize, err = builder.meter.Int64Counter(
-		"otelcol.exporter.consumed.size",
-		metric.WithDescription("Size of items passed to the exporter."),
-		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
@@ -265,34 +241,16 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorConsumedSize, err = builder.meter.Int64Counter(
-		"otelcol.processor.consumed.size",
-		metric.WithDescription("Size of items passed to the processor."),
-		metric.WithUnit("By"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
 		"otelcol.processor.produced.items",
 		metric.WithDescription("Number of items emitted from the processor."),
 		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorProducedSize, err = builder.meter.Int64Counter(
-		"otelcol.processor.produced.size",
-		metric.WithDescription("Size of items emitted from the processor."),
-		metric.WithUnit("By"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(
 		"otelcol.receiver.produced.items",
 		metric.WithDescription("Number of items emitted from the receiver."),
 		metric.WithUnit("{item}"),
-	)
-	errs = errors.Join(errs, err)
-	builder.ReceiverProducedSize, err = builder.meter.Int64Counter(
-		"otelcol.receiver.produced.size",
-		metric.WithDescription("Size of items emitted from the receiver."),
-		metric.WithUnit("By"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
