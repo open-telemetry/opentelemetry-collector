@@ -5,27 +5,28 @@
 The `extensionlimiter` package provides interfaces for rate limiting
 and resource limiting in the OpenTelemetry Collector, enabling control
 over data flow and resource usage through extensions which can be
-configured through and middleware and/or directly by pipeline
-components.
+configured through middleware and/or directly by pipeline components.
 
 ## Overview
 
-This package defines two primary limiter types with their respective
-interfaces:
+This package defines two primary limiter **kinds**, which have
+different interfaces:
 
 - **Rate Limiters**: Control time-based limits on quantities such as
   bytes or items per second.
 - **Resource Limiters**: Manage physical limits on quantities such as
   concurrent requests or memory usage.
 
-Both limiter types are unified through the `LimiterWrapper` interface,
-which simplifies consumer usage by providing a consistent `LimitCall`
-interface.
+Both limiter kinds are unified through the `LimiterWrapper` interface,
+which simplifies consumers in most cases by providing a consistent
+`LimitCall` interface.
 
 A limiter is **saturated** by definition when a limit is completely
-overloaded, generally it means a limit request of any size would fail.
+overloaded, generally it means a limit request of any size would fail
+at this moment and should be taken as a strong signal to stop
+accepting requests.
 
-Each each base limiter type and the wrapper type have corresponding
+Each kind of limiter as well as the wrapper type have corresponding
 providers that give access to a limiter instance based on a weight
 key.
 
@@ -40,6 +41,7 @@ request items, and memory size.
 - `RateLimiter`: Applies time-based limits, has a `Limit` method.
 - `ResourceLimiter`: Manages physical resource limits, has
   an `Acquire` method and corresponding `ReleaseFunc`.
+- `Limiter`: Any of the above, has a `MustDeny` method.
 
 ### Limiter helpers
 
