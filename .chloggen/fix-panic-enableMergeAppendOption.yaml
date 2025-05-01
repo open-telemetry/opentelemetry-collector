@@ -7,7 +7,7 @@ change_type: bug_fix
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use reflect.DeepEqual while comparing values to avoid panic
+note: Use reflect.DeepEqual to avoid panic when confmap.enableMergeAppendOption feature gate is enabled.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12932]
