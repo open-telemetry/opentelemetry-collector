@@ -21,6 +21,8 @@ type TPMConfig struct {
 	Path      string `mapstructure:"path"`
 	OwnerAuth string `mapstructure:"owner_auth"`
 	Auth      string `mapstructure:"auth"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c TPMConfig) tpmCertificate(keyPem []byte, certPem []byte, openTPM func() (transport.TPMCloser, error)) (tls.Certificate, error) {
