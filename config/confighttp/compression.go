@@ -71,7 +71,6 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
-	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"snappy": snappyHandler,
 	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
