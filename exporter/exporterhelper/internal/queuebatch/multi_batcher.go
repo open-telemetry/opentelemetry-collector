@@ -55,7 +55,7 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 }
 
 func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *singleBatcher {
-	if qb.singleShard == nil {
+	if qb.singleShard != nil {
 		return qb.singleShard
 	}
 
@@ -96,7 +96,10 @@ func (qb *multiBatcher) Shutdown(ctx context.Context) error {
 	var g errgroup.Group
 	qb.shards.Range(func(key string, shard *singleBatcher) bool {
 		g.Go(func() error {
-			return fmt.Errorf("Failed to shutdown partition %s: %w", key, shard.Shutdown(ctx))
+			if err := shard.Shutdown(ctx); err != nil {
+				return fmt.Errorf("failed to shutdown partition %s: %w", key, err)
+			}
+			return nil
 		})
 		return true
 	})
