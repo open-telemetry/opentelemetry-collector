@@ -73,23 +73,13 @@ func newQueueBatch(
 				maxWorkers: cfg.NumConsumers,
 			})
 		} else {
-			// If partitioning is not enabled or if paritition is done at queue level, we can use the default batcher.
-			if set.Partitioner == nil {
-				b = newSingleBatcher(*cfg.Batch, batcherSettings[request.Request]{
-					sizerType:  cfg.Sizer,
-					sizer:      sizer,
-					next:       next,
-					maxWorkers: cfg.NumConsumers,
-				})
-			} else {
-				b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
-					sizerType:   cfg.Sizer,
-					sizer:       sizer,
-					partitioner: set.Partitioner,
-					next:        next,
-					maxWorkers:  cfg.NumConsumers,
-				})
-			}
+			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:   cfg.Sizer,
+				sizer:       sizer,
+				partitioner: set.Partitioner,
+				next:        next,
+				maxWorkers:  cfg.NumConsumers,
+			})
 		}
 		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
 		// https://github.com/open-telemetry/opentelemetry-collector/issues/12473
