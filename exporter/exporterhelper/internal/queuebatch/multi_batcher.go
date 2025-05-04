@@ -4,11 +4,13 @@
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	"golang.org/x/sync/errgroup"
 )
 
 type multiBatcher struct {
@@ -19,8 +21,9 @@ type multiBatcher struct {
 	partitioner Partitioner[request.Request]
 	consumeFunc sender.SendFunc[request.Request]
 
-	shardMapMu sync.Mutex
-	shards     map[string]*singleBatcher
+	singleShard *singleBatcher
+	shardMapMu  sync.Mutex
+	shards      map[string]*singleBatcher
 }
 
 func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *multiBatcher {
@@ -45,7 +48,6 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 
 func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *singleBatcher {
 	key := qb.partitioner.GetKey(ctx, req)
-
 	qb.shardMapMu.Lock()
 	defer qb.shardMapMu.Unlock()
 
@@ -66,26 +68,36 @@ func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *sing
 	return s
 }
 
-func (qb *multiBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *multiBatcher) Start(ctx context.Context, host component.Host) error {
+	if qb.singleShard != nil {
+		return qb.singleShard.Start(ctx, host)
+	}
 	return nil
 }
 
 func (qb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+	if qb.singleShard == nil {
+		qb.singleShard.Consume(ctx, req, done)
+		return
+	}
+
 	shard := qb.getShard(ctx, req)
 	shard.Consume(ctx, req, done)
 }
 
 func (qb *multiBatcher) Shutdown(ctx context.Context) error {
+	if qb.singleShard != nil {
+		return qb.singleShard.Shutdown(ctx)
+	}
+
 	qb.shardMapMu.Lock()
 	defer qb.shardMapMu.Unlock()
-	stopWG := sync.WaitGroup{}
-	for _, shard := range qb.shards {
-		stopWG.Add(1)
-		go func() {
-			_ = shard.Shutdown(ctx)
-			stopWG.Done()
-		}()
+
+	var g errgroup.Group
+	for key, shard := range qb.shards {
+		g.Go(func() error {
+			return fmt.Errorf("Failed to shutdown partition %s: %w", key, shard.Shutdown(ctx))
+		})
 	}
-	stopWG.Wait()
-	return nil
+	return g.Wait()
 }
