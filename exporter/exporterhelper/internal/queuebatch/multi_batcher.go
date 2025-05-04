@@ -26,6 +26,8 @@ type multiBatcher struct {
 	shards      map[string]*singleBatcher
 }
 
+var _ Batcher[request.Request] = (*multiBatcher)(nil)
+
 func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *multiBatcher {
 	var workerPool chan struct{}
 	if bSet.maxWorkers != 0 {
