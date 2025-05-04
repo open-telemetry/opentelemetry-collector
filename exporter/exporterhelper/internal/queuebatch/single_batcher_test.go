@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
-func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
+func TestSingleBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -59,7 +59,7 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 				sizerType:  tt.sizerType,
 				sizer:      tt.sizer,
 				next:       sink.Export,
@@ -89,7 +89,7 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
+func TestSingleBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -129,7 +129,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 				sizerType:  tt.sizerType,
 				sizer:      tt.sizer,
 				next:       sink.Export,
@@ -170,7 +170,7 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
+func TestSingleBatcher_NoSplit_WithTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
 	}
@@ -214,7 +214,7 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 				sizerType:  tt.sizerType,
 				sizer:      tt.sizer,
 				next:       sink.Export,
@@ -245,7 +245,7 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 	}
 }
 
-func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
+func TestSingleBatcher_Split_TimeoutDisabled(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
 	}
@@ -290,7 +290,7 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 				sizerType:  tt.sizerType,
 				sizer:      tt.sizer,
 				next:       sink.Export,
@@ -335,14 +335,14 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestDefaultBatcher_Shutdown(t *testing.T) {
+func TestSingleBatcher_Shutdown(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Second,
 		MinSize:      10,
 	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+	ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 		sizerType:  request.SizerTypeItems,
 		sizer:      request.NewItemsSizer(),
 		next:       sink.Export,
@@ -367,7 +367,7 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
-func TestDefaultBatcher_MergeError(t *testing.T) {
+func TestSingleBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
 		MinSize:      5,
@@ -375,7 +375,7 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+	ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
 		sizerType:  request.SizerTypeItems,
 		sizer:      request.NewItemsSizer(),
 		next:       sink.Export,
