@@ -66,7 +66,7 @@ func newQueueBatch(
 	if cfg.Batch != nil {
 		if oldBatcher {
 			// If user configures the old batcher we only can support "items" sizer.
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+			b = newSingleBatcher(*cfg.Batch, batcherSettings[request.Request]{
 				sizerType:  request.SizerTypeItems,
 				sizer:      request.NewItemsSizer(),
 				next:       next,
@@ -75,7 +75,7 @@ func newQueueBatch(
 		} else {
 			// If partitioning is not enabled or if paritition is done at queue level, we can use the default batcher.
 			if set.Partitioner == nil {
-				b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				b = newSingleBatcher(*cfg.Batch, batcherSettings[request.Request]{
 					sizerType:  cfg.Sizer,
 					sizer:      sizer,
 					next:       next,

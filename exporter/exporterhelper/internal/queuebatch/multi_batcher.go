@@ -20,11 +20,10 @@ type multiBatcher struct {
 	consumeFunc sender.SendFunc[request.Request]
 
 	shardMapMu sync.Mutex
-	shards     map[string]*defaultBatcher
+	shards     map[string]*singleBatcher
 }
 
 func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *multiBatcher {
-	// TODO: Determine what is the right behavior for this in combination with async queue.
 	var workerPool chan struct{}
 	if bSet.maxWorkers != 0 {
 		workerPool = make(chan struct{}, bSet.maxWorkers)
@@ -40,11 +39,11 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 		partitioner: bSet.partitioner,
 		consumeFunc: bSet.next,
 		shardMapMu:  sync.Mutex{},
-		shards:      make(map[string]*defaultBatcher),
+		shards:      make(map[string]*singleBatcher),
 	}
 }
 
-func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *defaultBatcher {
+func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *singleBatcher {
 	key := qb.partitioner.GetKey(ctx, req)
 
 	qb.shardMapMu.Lock()
@@ -52,7 +51,7 @@ func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *defa
 
 	s, ok := qb.shards[key]
 	if !ok {
-		s = &defaultBatcher{
+		s = &singleBatcher{
 			cfg:         qb.cfg,
 			workerPool:  qb.workerPool,
 			sizerType:   qb.sizerType,
