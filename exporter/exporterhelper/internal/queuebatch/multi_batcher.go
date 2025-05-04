@@ -8,10 +8,11 @@ import (
 	"sync"
 
 	"github.com/puzpuzpuz/xsync/v3"
+	"golang.org/x/sync/errgroup"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
-	"golang.org/x/sync/errgroup"
 )
 
 type multiBatcher struct {
