@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/puzpuzpuz/xsync/v3"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -22,8 +23,7 @@ type multiBatcher struct {
 	consumeFunc sender.SendFunc[request.Request]
 
 	singleShard *singleBatcher
-	shardMapMu  sync.Mutex
-	shards      map[string]*singleBatcher
+	shards      *xsync.MapOf[string, *singleBatcher]
 }
 
 var _ Batcher[request.Request] = (*multiBatcher)(nil)
@@ -36,26 +36,31 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 			workerPool <- struct{}{}
 		}
 	}
-	return &multiBatcher{
+	mb := &multiBatcher{
 		cfg:         bCfg,
 		workerPool:  &workerPool,
 		sizerType:   bSet.sizerType,
 		sizer:       bSet.sizer,
 		partitioner: bSet.partitioner,
 		consumeFunc: bSet.next,
-		shardMapMu:  sync.Mutex{},
-		shards:      make(map[string]*singleBatcher),
 	}
+
+	if bSet.partitioner == nil {
+		mb.singleShard = newSingleBatcher(bCfg, bSet)
+	} else {
+		mb.shards = xsync.NewMapOf[string, *singleBatcher]()
+	}
+	return mb
 }
 
 func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *singleBatcher {
-	key := qb.partitioner.GetKey(ctx, req)
-	qb.shardMapMu.Lock()
-	defer qb.shardMapMu.Unlock()
+	if qb.singleShard == nil {
+		return qb.singleShard
+	}
 
-	s, ok := qb.shards[key]
-	if !ok {
-		s = &singleBatcher{
+	key := qb.partitioner.GetKey(ctx, req)
+	result, _ := qb.shards.LoadOrCompute(key, func() *singleBatcher {
+		s := &singleBatcher{
 			cfg:         qb.cfg,
 			workerPool:  qb.workerPool,
 			sizerType:   qb.sizerType,
@@ -64,10 +69,10 @@ func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *sing
 			stopWG:      sync.WaitGroup{},
 			shutdownCh:  make(chan struct{}, 1),
 		}
-		qb.shards[key] = s
 		_ = s.Start(ctx, nil)
-	}
-	return s
+		return s
+	})
+	return result
 }
 
 func (qb *multiBatcher) Start(ctx context.Context, host component.Host) error {
@@ -78,11 +83,6 @@ func (qb *multiBatcher) Start(ctx context.Context, host component.Host) error {
 }
 
 func (qb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
-	if qb.singleShard == nil {
-		qb.singleShard.Consume(ctx, req, done)
-		return
-	}
-
 	shard := qb.getShard(ctx, req)
 	shard.Consume(ctx, req, done)
 }
@@ -92,14 +92,12 @@ func (qb *multiBatcher) Shutdown(ctx context.Context) error {
 		return qb.singleShard.Shutdown(ctx)
 	}
 
-	qb.shardMapMu.Lock()
-	defer qb.shardMapMu.Unlock()
-
 	var g errgroup.Group
-	for key, shard := range qb.shards {
+	qb.shards.Range(func(key string, shard *singleBatcher) bool {
 		g.Go(func() error {
 			return fmt.Errorf("Failed to shutdown partition %s: %w", key, shard.Shutdown(ctx))
 		})
-	}
+		return true
+	})
 	return g.Wait()
 }
