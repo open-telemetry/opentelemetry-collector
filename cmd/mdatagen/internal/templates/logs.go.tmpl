@@ -27,8 +27,8 @@ type LogBuilderOption interface {
     apply(*LogsBuilder)
 }
 
-{{- if isReceiver }}
-func NewLogsBuilder(settings {{ .Status.Class }}.Settings) *LogsBuilder {
+{{- if or isReceiver isScraper }}
+func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ .Status.Class }}.Settings) *LogsBuilder {
 	lb := &LogsBuilder{
 		logsBuffer:     plog.NewLogs(),
 		logRecordsBuffer: plog.NewLogRecordSlice(),

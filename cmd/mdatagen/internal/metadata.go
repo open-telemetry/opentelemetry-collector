@@ -33,6 +33,8 @@ type Metadata struct {
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
 	Metrics map[MetricName]Metric `mapstructure:"metrics"`
+	// Events that can be emitted by the component.
+	Events map[EventName]Event `mapstructure:"events"`
 	// GithubProject is the project where the component README lives in the format of org/repo, defaults to open-telemetry/opentelemetry-collector-contrib
 	GithubProject string `mapstructure:"github_project"`
 	// ScopeName of the metrics emitted by the component.
@@ -70,9 +72,10 @@ func (md *Metadata) Validate() error {
 		errs = errors.Join(errs, err)
 	}
 
-	if err := md.validateMetrics(); err != nil {
+	if err := md.validateMetricsAndEvents(); err != nil {
 		errs = errors.Join(errs, err)
 	}
+
 	return errs
 }
 
@@ -113,11 +116,13 @@ func (md *Metadata) validateResourceAttributes() error {
 	return errs
 }
 
-func (md *Metadata) validateMetrics() error {
+func (md *Metadata) validateMetricsAndEvents() error {
 	var errs error
 	usedAttrs := map[AttributeName]bool{}
-	errs = errors.Join(errs, validateMetrics(md.Metrics, md.Attributes, usedAttrs),
+	errs = errors.Join(errs,
+		validateMetrics(md.Metrics, md.Attributes, usedAttrs),
 		validateMetrics(md.Telemetry.Metrics, md.Attributes, usedAttrs),
+		validateEvents(md.Events, md.Attributes, usedAttrs),
 		md.validateAttributes(usedAttrs))
 	return errs
 }
@@ -176,6 +181,28 @@ func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName
 		}
 		if len(unknownAttrs) > 0 {
 			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
+		}
+	}
+	return errs
+}
+
+func validateEvents(events map[EventName]Event, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
+	var errs error
+	for en, e := range events {
+		if err := e.validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v": %w`, en, err))
+			continue
+		}
+		unknownAttrs := make([]AttributeName, 0, len(e.Attributes))
+		for _, attr := range e.Attributes {
+			if _, ok := attributes[attr]; ok {
+				usedAttrs[attr] = true
+			} else {
+				unknownAttrs = append(unknownAttrs, attr)
+			}
+		}
+		if len(unknownAttrs) > 0 {
+			errs = errors.Join(errs, fmt.Errorf(`event "%v" refers to undefined attributes: %v`, en, unknownAttrs))
 		}
 	}
 	return errs

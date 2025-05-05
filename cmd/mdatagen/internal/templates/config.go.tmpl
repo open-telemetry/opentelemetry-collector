@@ -47,6 +47,32 @@ func DefaultMetricsConfig() MetricsConfig {
 }
 {{- end }}
 
+{{ if .Events }}
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+// EventsConfig provides config for {{ .Type }} events.
+type EventsConfig struct {
+	{{- range $name, $event := .Events }}
+	{{ $name.Render }} EventConfig `mapstructure:"{{ $name }}"`
+	{{- end }}
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		{{- range $name, $event := .Events }}
+		{{ $name.Render }}: EventConfig{
+			Enabled: {{ $event.Enabled }},
+		},
+		{{- end }}
+	}
+}
+{{- end }}
+
 {{ if .ResourceAttributes -}}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
@@ -109,6 +135,19 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}
+	}
+}
+{{- end }}
+
+{{ if .Events -}}
+// LogsBuilderConfig is a configuration for {{ .Type }} logs builder.
+type LogsBuilderConfig struct {
+	Events EventsConfig `mapstructure:"events"`
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig {
+		Events: DefaultEventsConfig(),
 	}
 }
 {{- end }}

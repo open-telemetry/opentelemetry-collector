@@ -78,6 +78,10 @@ func TestValidate(t *testing.T) {
 			wantErr: "metric \"default.metric\": missing metric description",
 		},
 		{
+			name:    "testdata/events/no_description.yaml",
+			wantErr: "event \"default.event\": missing event description",
+		},
+		{
 			name:    "testdata/no_metric_unit.yaml",
 			wantErr: "metric \"default.metric\": missing metric unit",
 		},
@@ -98,6 +102,10 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/unknown_metric_attribute.yaml",
 			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
+		},
+		{
+			name:    "testdata/events/unknown_attribute.yaml",
+			wantErr: "event \"system.event\" refers to undefined attributes: [missing]",
 		},
 		{
 			name:    "testdata/unused_attribute.yaml",
