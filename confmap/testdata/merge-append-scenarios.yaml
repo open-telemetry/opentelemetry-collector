@@ -650,9 +650,10 @@
     processors:
         resource:
             attributes:
-            - key: deployment.region
-              value: "nl"
-              action: upsert
+            # TODO: once merge append mode is configurable, comment this out.
+            # - key: deployment.region
+            #   value: "nl"
+            #   action: upsert
             - key: app
               value: "foo"
               action: upsert
