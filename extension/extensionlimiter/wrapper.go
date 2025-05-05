@@ -15,44 +15,32 @@ type LimiterWrapperProvider interface {
 	LimiterWrapper(WeightKey, ...Option) (LimiterWrapper, error)
 }
 
-// LimiterWrapperFunc is a functional way to build LimiterWrappers.
-type LimiterWrapperFunc func(context.Context, uint64, func(ctx context.Context) error) error
-
-var _ LimiterWrapper = LimiterWrapperFunc(nil)
-
 // LimiterWrapper is a general-purpose interface for limiter consumers
 // to limit resources with use of a callback.  This is the simplest
 // form of rate limiting interface from a callers perspective.  If the
 // caller is a pipeline component, consider using a consumer-oriented
-// limiterhelper (e.g., limiterhelper.NewLimitedLogs) to apply a list of
+// limiterhelper (e.g., limiterhelper.NewLimitedLogs) to simplify
+// construction of this interface.
 //
-// Limiter implementions are meant to implement either the RateLimiter
-// or ResourceLimiter interfaces. LimiterWrappers can be constructed
-// from either of the underlying limiters and their corresponding
-// providers. Usually configmiddleware or limiterhelper is responsible
-// for constructing the correct wrapper from these two kinds of limiter;
-// users will use this interface consistently.
+// A wrapped limiter is either a RateLimiter or ResourceLimiter
+// interface. LimiterWrappers can be constructed from either of the
+// underlying limiters and their corresponding providers. Usually
+// configmiddleware or limiterhelper is responsible for constructing
+// the correct wrapper from these two kinds of limiter; users will use
+// this interface consistently.
 type LimiterWrapper interface {
-	// Limiter includes MustDeny().
-	Limiter
-
 	// LimitCall applies the limiter and with the rate or resource
 	// granted makes a scoped call, returning success or an error
 	// from either the limiter or the enclosed callback.
-	LimitCall(context.Context, uint64, func(ctx context.Context) error) error
+	//
+	// The `call` parameter must be non-nil.
+	LimitCall(ctx context.Context, weight uint64, call func(ctx context.Context) error) error
 }
 
-// PassThrough returns a LimiterWrapper that imposes no limit.
-func PassThrough() LimiterWrapper {
-	return LimiterWrapperFunc(nil)
-}
+// LimiterWrapperFunc is a functional way to build LimiterWrappers.
+type LimiterWrapperFunc func(context.Context, uint64, func(ctx context.Context) error) error
 
-// MustDeny implements LimiterWrapper.
-func (f LimiterWrapperFunc) MustDeny(ctx context.Context) error {
-	return f.LimitCall(ctx, 0, func(_ context.Context) error {
-		return nil
-	})
-}
+var _ LimiterWrapper = LimiterWrapperFunc(nil)
 
 // LimitCall implements LimiterWrapper.
 func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value uint64, call func(ctx context.Context) error) error {
@@ -62,6 +50,11 @@ func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value uint64, call fu
 	return f(ctx, value, call)
 }
 
+// PassThroughWrapper returns a LimiterWrapper that imposes no limit.
+func PassThroughWrapper() LimiterWrapper {
+	return LimiterWrapperFunc(nil)
+}
+
 // LimiterWrapperProviderFunc is a functional way to build LimiterWrappers.
 type LimiterWrapperProviderFunc func(WeightKey, ...Option) (LimiterWrapper, error)
 
@@ -69,6 +62,9 @@ var _ LimiterWrapperProvider = LimiterWrapperProviderFunc(nil)
 
 // LimiterWrapper implements LimiterWrapperProvider.
 func (f LimiterWrapperProviderFunc) LimiterWrapper(key WeightKey, opts ...Option) (LimiterWrapper, error) {
+	if f == nil {
+		return PassThroughWrapper(), nil
+	}
 	return f(key, opts...)
 }
 
@@ -93,5 +89,27 @@ func NewRateLimiterWrapperProvider(rp RateLimiterProvider) LimiterWrapperProvide
 			return nil, err
 		}
 		return NewRateLimiterWrapper(lim), err
+	})
+}
+
+// NewRateLimiterWrapper returns a LimiterWrapper from a RateLimiter.
+func NewRateLimiterWrapper(limiter RateLimiter) LimiterWrapper {
+	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
+		if err := limiter.Limit(ctx, value); err != nil {
+			return err
+		}
+		return call(ctx)
+	})
+}
+
+// NewResourceLimiterWrapper returns a LimiterWrapper from a ResourceLimiter.
+func NewResourceLimiterWrapper(limiter ResourceLimiter) LimiterWrapper {
+	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
+		release, err := limiter.Acquire(ctx, value)
+		if err != nil {
+			return err
+		}
+		defer release()
+		return call(ctx)
 	})
 }

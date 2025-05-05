@@ -7,6 +7,11 @@ import (
 	"context"
 )
 
+// Defines:
+// - Option
+// - Checker
+// - CheckerFunc
+
 // Option is passed to limiter providers.
 //
 // NOTE: For data-specific or tenant-specific limits we will extend
@@ -17,11 +22,10 @@ type Option interface {
 	apply()
 }
 
-// Limiter is the common functionality implemented by LimiterWrapper,
-// RateLimiter, and ResourceLimiter. This can be called prior to the
-// start of work to check for limiter saturation.
-type Limiter interface {
-	// Must deny is the logical equivalent of Acquire(0).  If the
+// Checker is for checking when a limit is saturated.  This can be
+// called prior to the start of work to check for limiter saturation.
+type Checker interface {
+	// MustDeny is the logical equivalent of Acquire(0).  If the
 	// Acquire would fail even for 0 units of a rate, the
 	// caller must deny the request.  Implementations are
 	// encouraged to ensure that when MustDeny() is false,
@@ -31,15 +35,20 @@ type Limiter interface {
 	MustDeny(context.Context) error
 }
 
-// LimiterFunc is a functional way to build MustDeny functions.
-type LimiterFunc func(context.Context) error
+// CheckerFunc is a functional way to build Checker implementations.
+type CheckerFunc func(context.Context) error
 
-var _ Limiter = LimiterFunc(nil)
+var _ Checker = CheckerFunc(nil)
 
-// MustDeny implements Limiter.
-func (f LimiterFunc) MustDeny(ctx context.Context) error {
+// MustDeny implements Checker.
+func (f CheckerFunc) MustDeny(ctx context.Context) error {
 	if f == nil {
 		return nil
 	}
 	return f(ctx)
+}
+
+// PassThroughChecker returns a Checker that never denies.
+func PassThroughChecker() Checker {
+	return CheckerFunc(nil)
 }

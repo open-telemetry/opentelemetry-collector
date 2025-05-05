@@ -7,6 +7,12 @@ import (
 	"context"
 )
 
+// Defines:
+// - RateLimiterProvider
+// - RateLimiterProviderFunc
+// - RateLimiter
+// - RateLimiterFunc
+
 // RateLimiterProvider is a provider for rate limiters.
 //
 // Limiter implementations will implement this or the
@@ -40,9 +46,6 @@ func (f RateLimiterProviderFunc) RateLimiter(key WeightKey, opts ...Option) (Rat
 //
 // See the README for more recommendations.
 type RateLimiter interface {
-	// Limiter includes MustDeny().
-	Limiter
-
 	// Limit attempts to apply rate limiting with the provided
 	// weight, based on the key that was given to the provider.
 	//
@@ -57,39 +60,10 @@ type RateLimiterFunc func(ctx context.Context, value uint64) error
 
 var _ RateLimiter = RateLimiterFunc(nil)
 
-// MustDeny implements RateLimiter.
-func (f RateLimiterFunc) MustDeny(ctx context.Context) error {
-	return f.Limit(ctx, 0)
-}
-
 // Limit implements RateLimiter.
 func (f RateLimiterFunc) Limit(ctx context.Context, value uint64) error {
 	if f == nil {
 		return nil
 	}
 	return f(ctx, value)
-}
-
-// NewRateLimiterWrapper returns a LimiterWrapper from a RateLimiter.
-func NewRateLimiterWrapper(limiter RateLimiter) LimiterWrapper {
-	return rateLimiterWrapper{limiter: limiter}
-}
-
-type rateLimiterWrapper struct {
-	limiter RateLimiter
-}
-
-var _ LimiterWrapper = rateLimiterWrapper{}
-
-// MustDeny implements LimiterWrapper.
-func (w rateLimiterWrapper) MustDeny(ctx context.Context) error {
-	return w.limiter.MustDeny(ctx)
-}
-
-// LimitCall implements LimiterWrapper.
-func (w rateLimiterWrapper) LimitCall(ctx context.Context, value uint64, call func(context.Context) error) error {
-	if err := w.limiter.Limit(ctx, value); err != nil {
-		return err
-	}
-	return call(ctx)
 }

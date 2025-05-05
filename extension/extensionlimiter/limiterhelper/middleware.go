@@ -110,7 +110,7 @@ var _ extensionlimiter.LimiterWrapperProvider = MultiLimiterWrapperProvider{}
 // LimiterWrapper implements LimiterWrapperProvider.
 func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.LimiterWrapper, error) {
 	if len(ps) == 0 {
-		return extensionlimiter.PassThrough(), nil
+		return extensionlimiter.PassThroughWrapper(), nil
 	}
 
 	// Map provider list to limiter list.
