@@ -48,6 +48,8 @@ README](../configtls/README.md).
       - SpeedBestCompression: `11`
     - `snappy`
       No compression levels supported yet
+    - `x-snappy-framed` (When feature gate `confighttp.framedSnappy` is enabled)
+      No compression levels supported yet
 - [`max_idle_conns`](https://golang.org/pkg/net/http/#Transport)
 - [`max_idle_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
 - [`max_conns_per_host`](https://golang.org/pkg/net/http/#Transport)
@@ -105,6 +107,7 @@ will not be enabled.
 - `endpoint`: Valid value syntax available [here](https://github.com/grpc/grpc/blob/master/doc/naming.md)
 - `max_request_body_size`: configures the maximum allowed body size in bytes for a single request. Default: `20971520` (20MiB)
 - `compression_algorithms`: configures the list of compression algorithms the server can accept. Default: ["", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"]
+  - `x-snappy-framed` can be used if feature gate `confighttp.snappyFramed` is enabled.
 - [`tls`](../configtls/README.md)
 - [`auth`](../configauth/README.md)
   - `request_params`: a list of query parameter names to add to the auth context, along with the HTTP headers
