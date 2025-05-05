@@ -171,3 +171,46 @@ func contains(r string, rs []string) bool {
 	}
 	return false
 }
+
+func TestCodeCovID(t *testing.T) {
+	tests := []struct {
+		md   Metadata
+		want string
+	}{
+		{
+			md: Metadata{
+				Type: "aes",
+				Status: &Status{
+					Class:              "provider",
+					CodeCovComponentID: "my_custom_id",
+				},
+			},
+			want: "my_custom_id",
+		},
+		{
+			md: Metadata{
+				Type: "count",
+				Status: &Status{
+					Class: "connector",
+				},
+			},
+			want: "connector_count",
+		},
+		{
+			md: Metadata{
+				Type: "file",
+				Status: &Status{
+					Class: "exporter",
+				},
+			},
+			want: "exporter_file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.md.Type, func(t *testing.T) {
+			got := tt.md.GetCodeCovComponentID()
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

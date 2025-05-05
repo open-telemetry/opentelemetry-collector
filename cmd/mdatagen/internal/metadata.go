@@ -43,6 +43,14 @@ type Metadata struct {
 	Tests Tests `mapstructure:"tests"`
 }
 
+func (md Metadata) GetCodeCovComponentID() string {
+	if md.Status.CodeCovComponentID != "" {
+		return md.Status.CodeCovComponentID
+	}
+
+	return strings.ReplaceAll(md.Status.Class+"_"+md.Type, "/", "_")
+}
+
 func (md *Metadata) Validate() error {
 	var errs error
 	if err := md.validateType(); err != nil {

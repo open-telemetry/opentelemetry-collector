@@ -27,7 +27,8 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "sample",
 				SemConvVersion:       "1.9.0",
 				Status: &Status{
-					Class: "receiver",
+					DisableCodeCov: true,
+					Class:          "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelDevelopment: {"logs"},
 						component.StabilityLevelBeta:        {"traces"},
