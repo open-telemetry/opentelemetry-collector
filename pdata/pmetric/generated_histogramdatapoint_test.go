@@ -22,6 +22,8 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogramDataPoint(), ms)
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
 	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).MoveTo(dest) })

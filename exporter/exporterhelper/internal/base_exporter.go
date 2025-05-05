@@ -232,7 +232,7 @@ func WithCapabilities(capabilities consumer.Capabilities) Option {
 }
 
 // WithBatcher enables batching for an exporter based on custom request types.
-// For now, it can be used only with the New[Traces|Metrics|Logs]RequestExporter exporter helpers and
+// For now, it can be used only with the New[Traces|Metrics|Logs|Profiles]Request exporter helpers and
 // WithRequestBatchFuncs provided.
 // This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.

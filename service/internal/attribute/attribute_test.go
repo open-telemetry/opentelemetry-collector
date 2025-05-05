@@ -47,7 +47,7 @@ func TestReceiver(t *testing.T) {
 			r := attribute.Receiver(sig, id)
 			componentKind, ok := r.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
-			require.Equal(t, component.KindReceiver.String(), componentKind.AsString())
+			require.Equal(t, "receiver", componentKind.AsString())
 
 			signal, ok := r.Set().Value(componentattribute.SignalKey)
 			require.True(t, ok)
@@ -66,7 +66,7 @@ func TestProcessor(t *testing.T) {
 			p := attribute.Processor(pID, id)
 			componentKind, ok := p.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
-			require.Equal(t, component.KindProcessor.String(), componentKind.AsString())
+			require.Equal(t, "processor", componentKind.AsString())
 
 			pipelineID, ok := p.Set().Value(componentattribute.PipelineIDKey)
 			require.True(t, ok)
@@ -85,7 +85,7 @@ func TestExporter(t *testing.T) {
 			e := attribute.Exporter(sig, id)
 			componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
 			require.True(t, ok)
-			require.Equal(t, component.KindExporter.String(), componentKind.AsString())
+			require.Equal(t, "exporter", componentKind.AsString())
 
 			signal, ok := e.Set().Value(componentattribute.SignalKey)
 			require.True(t, ok)
@@ -105,7 +105,7 @@ func TestConnector(t *testing.T) {
 				c := attribute.Connector(exprSig, rcvrSig, id)
 				componentKind, ok := c.Set().Value(componentattribute.ComponentKindKey)
 				require.True(t, ok)
-				require.Equal(t, component.KindConnector.String(), componentKind.AsString())
+				require.Equal(t, "connector", componentKind.AsString())
 
 				signal, ok := c.Set().Value(componentattribute.SignalKey)
 				require.True(t, ok)
@@ -127,7 +127,7 @@ func TestExtension(t *testing.T) {
 	e := attribute.Extension(component.MustNewID("foo"))
 	componentKind, ok := e.Set().Value(componentattribute.ComponentKindKey)
 	require.True(t, ok)
-	require.Equal(t, component.KindExtension.String(), componentKind.AsString())
+	require.Equal(t, "extension", componentKind.AsString())
 }
 
 func TestSetEquality(t *testing.T) {

@@ -22,6 +22,8 @@ func TestLocation_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLocation(), ms)
 	assert.Equal(t, generateTestLocation(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestLocation(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).MoveTo(dest) })

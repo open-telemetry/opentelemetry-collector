@@ -21,6 +21,8 @@ func TestAttributeUnit_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewAttributeUnit(), ms)
 	assert.Equal(t, generateTestAttributeUnit(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestAttributeUnit(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState)) })
 	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).MoveTo(dest) })

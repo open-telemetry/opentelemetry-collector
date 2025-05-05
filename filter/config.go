@@ -12,6 +12,8 @@ import (
 type Config struct {
 	Strict string `mapstructure:"strict"`
 	Regex  string `mapstructure:"regexp"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c Config) Validate() error {

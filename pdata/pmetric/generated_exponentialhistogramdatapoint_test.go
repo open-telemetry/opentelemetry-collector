@@ -22,6 +22,8 @@ func TestExponentialHistogramDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPoint(), ms)
 	assert.Equal(t, generateTestExponentialHistogramDataPoint(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestExponentialHistogramDataPoint(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
 		ms.MoveTo(newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState))

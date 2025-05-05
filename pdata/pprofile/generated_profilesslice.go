@@ -109,6 +109,10 @@ func (es ProfilesSlice) AppendEmpty() Profile {
 func (es ProfilesSlice) MoveAndAppendTo(dest ProfilesSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig

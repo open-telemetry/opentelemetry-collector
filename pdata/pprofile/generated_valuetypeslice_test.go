@@ -103,6 +103,13 @@ func TestValueTypeSlice_MoveAndAppendTo(t *testing.T) {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
 		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+
+	dest.MoveAndAppendTo(dest)
+	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.Equal(t, expectedSlice.At(i), dest.At(i))
+		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func TestValueTypeSlice_RemoveIf(t *testing.T) {

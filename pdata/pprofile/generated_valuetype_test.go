@@ -21,6 +21,8 @@ func TestValueType_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewValueType(), ms)
 	assert.Equal(t, generateTestValueType(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestValueType(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newValueType(&otlpprofiles.ValueType{}, &sharedState)) })
 	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).MoveTo(dest) })

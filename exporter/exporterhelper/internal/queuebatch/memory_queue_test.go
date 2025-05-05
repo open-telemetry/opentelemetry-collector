@@ -97,6 +97,11 @@ func TestMemoryQueueOfferInvalidSize(t *testing.T) {
 	require.ErrorIs(t, q.Offer(context.Background(), -1), errInvalidSize)
 }
 
+func TestMemoryQueueRejectOverCapacityElements(t *testing.T) {
+	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7, blockOnOverflow: true})
+	require.ErrorIs(t, q.Offer(context.Background(), 8), errSizeTooLarge)
+}
+
 func TestMemoryQueueOfferZeroSize(t *testing.T) {
 	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
 	require.NoError(t, q.Offer(context.Background(), 0))
@@ -106,7 +111,8 @@ func TestMemoryQueueOfferZeroSize(t *testing.T) {
 }
 
 func TestMemoryQueueZeroCapacity(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 0})
+	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	require.NoError(t, q.Offer(context.Background(), 1))
 	require.ErrorIs(t, q.Offer(context.Background(), 1), ErrQueueIsFull)
 	require.NoError(t, q.Shutdown(context.Background()))
 }

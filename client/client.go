@@ -79,6 +79,8 @@ package client // import "go.opentelemetry.io/collector/client"
 
 import (
 	"context"
+	"iter"
+	"maps"
 	"net"
 	"strings"
 )
@@ -99,6 +101,9 @@ type Info struct {
 
 	// Metadata is the request metadata from the client connecting to this connector.
 	Metadata Metadata
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // AuthData represents the authentication data as seen by authenticators tied to
@@ -146,6 +151,11 @@ func NewMetadata(md map[string][]string) Metadata {
 	return Metadata{
 		data: c,
 	}
+}
+
+// Keys returns an iterator for the metadata keys.
+func (m Metadata) Keys() iter.Seq[string] {
+	return maps.Keys(m.data)
 }
 
 // Get gets the value of the key from metadata, returning a copy.

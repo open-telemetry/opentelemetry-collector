@@ -180,7 +180,6 @@ Here is a list of community roles with current and previous members:
    - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
    - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
    - [Joshua MacDonald](https://github.com/jmacd), Microsoft
-   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
    - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
    - [Yang Song](https://github.com/songy23), Datadog
 
@@ -188,6 +187,7 @@ Here is a list of community roles with current and previous members:
 
    - [James Bebbington](https://github.com/james-bebbington)
    - [Jay Camp](https://github.com/jrcamp)
+   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
    - [Nail Islamov](https://github.com/nilebox)
    - [Owais Lone](https://github.com/owais)
    - [Rahul Patel](https://github.com/rghetia)

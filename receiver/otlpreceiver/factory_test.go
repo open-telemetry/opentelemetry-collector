@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/internal/testutil"
@@ -37,17 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func setGate(t *testing.T, gate *featuregate.Gate, value bool) {
-	initialValue := gate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), value))
-	t.Cleanup(func() {
-		_ = featuregate.GlobalRegistry().Set(gate.ID(), initialValue)
-	})
-}
-
 func TestCreateSameReceiver(t *testing.T) {
-	setGate(t, telemetry.NewPipelineTelemetryGate, true)
-
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)

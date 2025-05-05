@@ -3,6 +3,7 @@
 package {{ .Package }}
 
 import (
+	"time"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,6 +11,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
     "go.opentelemetry.io/collector/pdata/pcommon"
+    "go.opentelemetry.io/collector/pdata/plog"
     {{- if or isReceiver isScraper }}
     "go.opentelemetry.io/collector/{{ .Status.Class }}/{{ .Status.Class }}test"
     {{- end }}
@@ -21,7 +23,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
     settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
     {{- end }}
     settings.Logger = zap.New(observedZapCore)
-    lb := NewLogsBuilder(settings)
+    lb := NewLogsBuilder({{ if .Events }}loadLogsBuilderConfig(t, "all_set"), {{ end }}settings)
 
     {{ if .ResourceAttributes }}
     rb := lb.NewResourceBuilder()
@@ -78,3 +80,4 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
 }
+

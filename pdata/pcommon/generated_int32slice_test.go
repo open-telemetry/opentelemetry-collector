@@ -43,6 +43,9 @@ func TestNewInt32Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, int32(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, int32(1), mv.At(0))
 }
 
 func TestInt32SliceReadOnly(t *testing.T) {

@@ -94,10 +94,10 @@ linters:
       settings:
         printf: # analyzer name, run `go tool vet help` to see all analyzers
           funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Fatalf
+            - Infof
+            - Warnf
+            - Errorf
+            - Fatalf
 
     misspell:
       # Correct spellings using locale preferences for US or UK.
@@ -185,8 +185,6 @@ linters:
         - -ST1022
 
     testifylint:
-      disable:
-        - useless-assert # FIXME when golangci-lint > 2.0.2
       enable-all: true
 
     thelper:

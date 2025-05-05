@@ -22,6 +22,8 @@ func TestResourceSpans_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceSpans(), ms)
 	assert.Equal(t, generateTestResourceSpans(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestResourceSpans(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState)) })
 	assert.Panics(t, func() { newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState).MoveTo(dest) })

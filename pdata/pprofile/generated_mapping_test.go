@@ -22,6 +22,8 @@ func TestMapping_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewMapping(), ms)
 	assert.Equal(t, generateTestMapping(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestMapping(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).MoveTo(dest) })

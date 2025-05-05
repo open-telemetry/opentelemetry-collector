@@ -21,6 +21,8 @@ func TestLine_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLine(), ms)
 	assert.Equal(t, generateTestLine(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestLine(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
 	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).MoveTo(dest) })

@@ -21,6 +21,8 @@ func TestHistogram_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogram(), ms)
 	assert.Equal(t, generateTestHistogram(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestHistogram(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
 	assert.Panics(t, func() { newHistogram(&otlpmetrics.Histogram{}, &sharedState).MoveTo(dest) })

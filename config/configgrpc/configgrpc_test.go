@@ -176,7 +176,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -205,7 +205,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -234,7 +234,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -299,7 +299,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -312,6 +312,7 @@ func TestGrpcServerExtraOption(t *testing.T) {
 	}
 	extraOpt := grpc.ConnectionTimeout(1_000_000_000)
 	opts, err := gss.getGrpcServerOptions(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
@@ -401,7 +402,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -412,7 +413,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	gss.Auth = &configauth.Authentication{
+	gss.Auth = &configauth.Config{
 		AuthenticatorID: mockID,
 	}
 
@@ -491,7 +492,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
+				Auth:     &configauth.Config{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
@@ -499,7 +500,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
+				Auth:     &configauth.Config{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{},
 		},
@@ -1144,9 +1145,13 @@ func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.ExportReque
 }
 
 func (gts *grpcTraceServer) startTestServer(t *testing.T, gss ServerConfig) (*grpc.Server, string) {
+	return gts.startTestServerWithHost(t, gss, componenttest.NewNopHost())
+}
+
+func (gts *grpcTraceServer) startTestServerWithHost(t *testing.T, gss ServerConfig, host component.Host, opts ...ToServerOption) (*grpc.Server, string) {
 	listener, err := gss.NetAddr.Listen(context.Background())
 	require.NoError(t, err)
-	server, err := gss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	server, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), opts...)
 	require.NoError(t, err)
 	ptraceotlp.RegisterGRPCServer(server, gts)
 	go func() {
@@ -1155,8 +1160,30 @@ func (gts *grpcTraceServer) startTestServer(t *testing.T, gss ServerConfig) (*gr
 	return server, listener.Addr().String()
 }
 
+func (gts *grpcTraceServer) startTestServerWithHostError(_ *testing.T, gss ServerConfig, host component.Host, opts ...ToServerOption) (*grpc.Server, error) {
+	listener, err := gss.NetAddr.Listen(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer listener.Close()
+
+	server, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	ptraceotlp.RegisterGRPCServer(server, gts)
+	return server, nil
+}
+
+// sendTestRequest issues a ptraceotlp export request and captures metadata.
 func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse, error) {
-	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	return sendTestRequestWithHost(t, gcs, componenttest.NewNopHost())
+}
+
+// sendTestRequestWithHost is similar to sendTestRequest but allows specifying the host
+func sendTestRequestWithHost(t *testing.T, gcs ClientConfig, host component.Host) (ptraceotlp.ExportResponse, error) {
+	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, errClient)
 	defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)

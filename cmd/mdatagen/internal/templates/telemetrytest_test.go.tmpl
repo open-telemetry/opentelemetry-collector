@@ -3,15 +3,22 @@
 package {{ .Package }}test
 
 import (
-	"context"
-	"testing"
+    "context"
+    "testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+    {{- if .Telemetry.Metrics }}
+        {{- range $_, $metric := .Telemetry.Metrics }}
+             {{- if $metric.Data.Async }}
+    "go.opentelemetry.io/otel/metric"
+                {{- break}}
+            {{- end }}
+        {{- end }}
+    {{- end }}
+    "go.opentelemetry.io/otel/sdk/metric/metricdata"
+    "go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
-	"go.opentelemetry.io/collector/component/componenttest"
+    "go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -21,12 +28,12 @@ func TestSetupTelemetry(t *testing.T) {
 	defer tb.Shutdown()
 
     {{- range $name, $metric := .Telemetry.Metrics }}
-    {{- if $metric.Data.Async }}
+        {{- if $metric.Data.Async }}
     require.NoError(t, tb.Register{{ $name.Render }}Callback(func(_ context.Context, observer metric.{{ casesTitle $metric.Data.BasicType }}Observer) error {
         observer.Observe(1)
         return nil
     }))
-    {{- end }}
+        {{- end }}
     {{- end }}
 
     {{- range $name, $metric := .Telemetry.Metrics }}

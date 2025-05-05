@@ -43,6 +43,9 @@ func TestNewByteSlice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, byte(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, byte(1), mv.At(0))
 }
 
 func TestByteSliceReadOnly(t *testing.T) {

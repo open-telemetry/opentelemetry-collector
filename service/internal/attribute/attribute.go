@@ -5,6 +5,7 @@ package attribute // import "go.opentelemetry.io/collector/service/internal/attr
 
 import (
 	"hash/fnv"
+	"strings"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -30,7 +31,11 @@ func newAttributes(attrs ...attribute.KeyValue) Attributes {
 	}
 	return Attributes{
 		set: attribute.NewSet(attrs...),
-		id:  int64(h.Sum64()), // #nosec G115
+
+		// The graph identifies nodes by an int64 ID, but fnv gives us a uint64.
+		// It is safe to cast because the meaning of the number is irrelevant.
+		// We only care that each node has a unique 64 bit ID, which is unaltered by this cast.
+		id: int64(h.Sum64()), // #nosec G115
 	}
 }
 
@@ -44,7 +49,7 @@ func (a Attributes) ID() int64 {
 
 func Receiver(pipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentattribute.ComponentKindKey, component.KindReceiver.String()),
+		attribute.String(componentattribute.ComponentKindKey, strings.ToLower(component.KindReceiver.String())),
 		attribute.String(componentattribute.SignalKey, pipelineType.String()),
 		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
@@ -52,7 +57,7 @@ func Receiver(pipelineType pipeline.Signal, id component.ID) Attributes {
 
 func Processor(pipelineID pipeline.ID, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentattribute.ComponentKindKey, component.KindProcessor.String()),
+		attribute.String(componentattribute.ComponentKindKey, strings.ToLower(component.KindProcessor.String())),
 		attribute.String(componentattribute.SignalKey, pipelineID.Signal().String()),
 		attribute.String(componentattribute.PipelineIDKey, pipelineID.String()),
 		attribute.String(componentattribute.ComponentIDKey, id.String()),
@@ -61,7 +66,7 @@ func Processor(pipelineID pipeline.ID, id component.ID) Attributes {
 
 func Exporter(pipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentattribute.ComponentKindKey, component.KindExporter.String()),
+		attribute.String(componentattribute.ComponentKindKey, strings.ToLower(component.KindExporter.String())),
 		attribute.String(componentattribute.SignalKey, pipelineType.String()),
 		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
@@ -69,7 +74,7 @@ func Exporter(pipelineType pipeline.Signal, id component.ID) Attributes {
 
 func Connector(exprPipelineType, rcvrPipelineType pipeline.Signal, id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentattribute.ComponentKindKey, component.KindConnector.String()),
+		attribute.String(componentattribute.ComponentKindKey, strings.ToLower(component.KindConnector.String())),
 		attribute.String(componentattribute.SignalKey, exprPipelineType.String()),
 		attribute.String(componentattribute.SignalOutputKey, rcvrPipelineType.String()),
 		attribute.String(componentattribute.ComponentIDKey, id.String()),
@@ -78,7 +83,7 @@ func Connector(exprPipelineType, rcvrPipelineType pipeline.Signal, id component.
 
 func Extension(id component.ID) Attributes {
 	return newAttributes(
-		attribute.String(componentattribute.ComponentKindKey, component.KindExtension.String()),
+		attribute.String(componentattribute.ComponentKindKey, strings.ToLower(component.KindExtension.String())),
 		attribute.String(componentattribute.ComponentIDKey, id.String()),
 	)
 }

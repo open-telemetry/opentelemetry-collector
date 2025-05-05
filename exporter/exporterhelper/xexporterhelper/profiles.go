@@ -114,7 +114,7 @@ func NewProfilesExporter(
 	if pusher == nil {
 		return nil, errNilPushProfileData
 	}
-	return NewProfilesRequestExporter(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
+	return NewProfilesRequest(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
 
@@ -132,10 +132,13 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 	}
 }
 
-// NewProfilesRequestExporter creates a new profiles exporter based on a custom ProfilesConverter and Sender.
+// Deprecated: [v0.124.0] use NewProfilesRequest.
+var NewProfilesRequestExporter = NewProfilesRequest
+
+// NewProfilesRequest creates a new profiles exporter based on a custom ProfilesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewProfilesRequestExporter(
+func NewProfilesRequest(
 	_ context.Context,
 	set exporter.Settings,
 	converter exporterhelper.RequestConverterFunc[pprofile.Profiles],

@@ -22,6 +22,8 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeMetrics(), ms)
 	assert.Equal(t, generateTestScopeMetrics(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestScopeMetrics(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
 	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).MoveTo(dest) })

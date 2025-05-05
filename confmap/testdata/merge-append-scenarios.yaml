@@ -669,3 +669,30 @@
                 receivers: [nop]
                 processors: [attributes/example, nop2]
                 exporters: [nop]
+- name: merge-mode-map
+  configs:
+    -
+        processors:
+            resource:
+                attributes:
+                - key: deployment.region
+                  value: "nl"
+                  action: upsert
+    -
+        processors:
+            resource:
+                attributes:
+                - key: app
+                  value: "foo"
+                  action: upsert
+
+  expected: 
+    processors:
+        resource:
+            attributes:
+            - key: deployment.region
+              value: "nl"
+              action: upsert
+            - key: app
+              value: "foo"
+              action: upsert

@@ -21,6 +21,8 @@ func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummaryDataPointValueAtQuantile(), ms)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantile(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantile(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
 		ms.MoveTo(newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState))

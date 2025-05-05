@@ -75,6 +75,9 @@ type Config struct {
 	// an ECDHE handshake, in preference order
 	// Defaults to empty list and "crypto/tls" defaults are used, internally.
 	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
+
+	// Trusted platform module configuration
+	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -102,6 +105,8 @@ type ClientConfig struct {
 	// This sets the ServerName in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
 	ServerName string `mapstructure:"server_name_override,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
@@ -128,6 +133,8 @@ type ServerConfig struct {
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
 	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig creates a new TLSServerSetting with any default values set.
@@ -359,11 +366,18 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 		keyPem = []byte(c.KeyPem)
 	}
 
-	certificate, err := tls.X509KeyPair(certPem, keyPem)
-	if err != nil {
-		return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", err)
+	if c.TPMConfig.Enabled {
+		certificate, errTPM := c.TPMConfig.tpmCertificate(keyPem, certPem, openTPM(c.TPMConfig.Path))
+		if errTPM != nil {
+			return tls.Certificate{}, fmt.Errorf("failed to load private key from TPM: %w", errTPM)
+		}
+		return certificate, nil
 	}
 
+	certificate, errKeyPair := tls.X509KeyPair(certPem, keyPem)
+	if errKeyPair != nil {
+		return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", errKeyPair)
+	}
 	return certificate, err
 }
 

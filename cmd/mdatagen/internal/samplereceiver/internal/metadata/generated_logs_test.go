@@ -19,7 +19,7 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
 	settings.Logger = zap.New(observedZapCore)
-	lb := NewLogsBuilder(settings)
+	lb := NewLogsBuilder(loadLogsBuilderConfig(t, "all_set"), settings)
 
 	rb := lb.NewResourceBuilder()
 	rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})

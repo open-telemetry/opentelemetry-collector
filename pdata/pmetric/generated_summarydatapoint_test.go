@@ -22,6 +22,8 @@ func TestSummaryDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSummaryDataPoint(), ms)
 	assert.Equal(t, generateTestSummaryDataPoint(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSummaryDataPoint(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState)) })
 	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).MoveTo(dest) })

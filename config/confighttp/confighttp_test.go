@@ -328,7 +328,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Config{AuthenticatorID: dummyID},
 			},
 		},
 	}
@@ -387,7 +387,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Config{AuthenticatorID: dummyID},
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -400,7 +400,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+				Auth:     &configauth.Config{AuthenticatorID: dummyID},
 			},
 			shouldErr: true,
 			host:      componenttest.NewNopHost(),
@@ -409,7 +409,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Config{AuthenticatorID: mockID},
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -422,7 +422,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_headers",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Config{AuthenticatorID: mockID},
 				Headers:  map[string]configopaque.String{"foo": "bar"},
 			},
 			shouldErr: false,
@@ -436,7 +436,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_compression",
 			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
-				Auth:        &configauth.Authentication{AuthenticatorID: component.MustNewID("mock")},
+				Auth:        &configauth.Config{AuthenticatorID: component.MustNewID("mock")},
 				Compression: configcompression.TypeGzip,
 			},
 			shouldErr: false,
@@ -450,12 +450,12 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: mockID},
+				Auth:     &configauth.Config{AuthenticatorID: mockID},
 			},
 			shouldErr: true,
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
-					mockID: extensionauthtest.NewErrorClient(errors.New("error")),
+					mockID: extensionauthtest.NewErr(errors.New("error")),
 				},
 			},
 		},
@@ -844,7 +844,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 			AllowedOrigins: []string{"*"},
 		},
 		Auth: &AuthConfig{
-			Authentication: configauth.Authentication{
+			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1154,7 +1154,7 @@ func TestServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
-			Authentication: configauth.Authentication{
+			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1188,7 +1188,7 @@ func TestServerAuth(t *testing.T) {
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Auth: &AuthConfig{
-			Authentication: configauth.Authentication{
+			Config: configauth.Config{
 				AuthenticatorID: nonExistingID,
 			},
 		},
@@ -1204,7 +1204,7 @@ func TestFailedServerAuth(t *testing.T) {
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
-			Authentication: configauth.Authentication{
+			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		},
@@ -1212,7 +1212,7 @@ func TestFailedServerAuth(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
 			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
-				return ctx, errors.New("Settings failed")
+				return ctx, errors.New("invalid authorization")
 			}),
 		},
 	}
@@ -1227,6 +1227,44 @@ func TestFailedServerAuth(t *testing.T) {
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
 	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized)), response.Result().Status)
+}
+
+func TestFailedServerAuthWithErrorHandler(t *testing.T) {
+	// prepare
+	hss := ServerConfig{
+		Endpoint: "localhost:0",
+		Auth: &AuthConfig{
+			Config: configauth.Config{
+				AuthenticatorID: mockID,
+			},
+		},
+	}
+	host := &mockHost{
+		ext: map[component.ID]component.Component{
+			mockID: newMockAuthServer(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+				return ctx, errors.New("invalid authorization")
+			}),
+		},
+	}
+
+	eh := func(w http.ResponseWriter, _ *http.Request, err string, statusCode int) {
+		assert.Equal(t, http.StatusUnauthorized, statusCode)
+		// custom error handler uses real error string
+		assert.Equal(t, "invalid authorization", err)
+		// custom error handler changes returned status code
+		http.Error(w, err, http.StatusInternalServerError)
+	}
+
+	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
+	require.NoError(t, err)
+
+	// tt
+	response := &httptest.ResponseRecorder{}
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	// verify
+	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
+	assert.Equal(t, fmt.Sprintf("%v %s", http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError)), response.Result().Status)
 }
 
 func TestServerWithErrorHandler(t *testing.T) {
@@ -1382,7 +1420,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 		Endpoint: "localhost:0",
 		Auth: &AuthConfig{
 			RequestParameters: []string{"auth"},
-			Authentication: configauth.Authentication{
+			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
 		},

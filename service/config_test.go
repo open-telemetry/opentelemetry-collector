@@ -124,7 +124,7 @@ func TestConfmapMarshalConfig(t *testing.T) {
 									"host": "localhost",
 									"port": 8888,
 									"with_resource_constant_labels": map[string]any{
-										"included": []any(nil),
+										"included": []any{},
 									},
 									"without_scope_info":  true,
 									"without_type_suffix": true,

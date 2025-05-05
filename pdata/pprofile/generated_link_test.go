@@ -23,6 +23,8 @@ func TestLink_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLink(), ms)
 	assert.Equal(t, generateTestLink(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestLink(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
 	assert.Panics(t, func() { newLink(&otlpprofiles.Link{}, &sharedState).MoveTo(dest) })

@@ -21,6 +21,8 @@ func TestFunction_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewFunction(), ms)
 	assert.Equal(t, generateTestFunction(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestFunction(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
 	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).MoveTo(dest) })

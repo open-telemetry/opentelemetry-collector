@@ -22,6 +22,8 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeSpans(), ms)
 	assert.Equal(t, generateTestScopeSpans(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestScopeSpans(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
 	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).MoveTo(dest) })

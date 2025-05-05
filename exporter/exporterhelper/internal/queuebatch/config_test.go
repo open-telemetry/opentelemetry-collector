@@ -51,6 +51,10 @@ func TestConfig_Validate(t *testing.T) {
 	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` or `bytes` sizer")
 
 	cfg = newTestConfig()
+	cfg.QueueSize = cfg.Batch.MinSize - 1
+	require.EqualError(t, cfg.Validate(), "`min_size` must be less than or equal to `queue_size`")
+
+	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
 	require.NoError(t, cfg.Validate())
 

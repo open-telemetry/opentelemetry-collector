@@ -53,6 +53,19 @@
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
 
+{{- if $metric.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+{{- range $metric.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- end }}
+
+{{- end }}
 
 {{- end -}}
 

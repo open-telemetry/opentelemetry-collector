@@ -60,10 +60,6 @@ gotest-with-cover:
 gotest-with-junit:
 	@$(MAKE) for-all-target TARGET="test-with-junit"
 
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) for-all-target TARGET="testifylint-fix"
-
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
@@ -163,6 +159,11 @@ otelcorecol:
 genotelcorecol: install-tools
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
+	cd internal/tools && $(GOCMD) install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+
+.PHONY: actionlint
+actionlint:
+	./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:

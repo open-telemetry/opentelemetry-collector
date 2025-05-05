@@ -17,6 +17,9 @@ func TestTraceState_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewTraceState(), ms)
 	assert.Equal(t, TraceState(internal.GenerateTestTraceState()), dest)
+
+	dest.MoveTo(dest)
+	assert.Equal(t, TraceState(internal.GenerateTestTraceState()), dest)
 }
 
 func TestTraceState_CopyTo(t *testing.T) {
