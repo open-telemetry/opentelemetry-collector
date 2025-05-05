@@ -55,6 +55,18 @@ type EventConfig struct {
 	enabledSetByUser bool
 }
 
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // EventsConfig provides config for {{ .Type }} events.
 type EventsConfig struct {
 	{{- range $name, $event := .Events }}
@@ -85,6 +97,17 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	{{- end }}
+	{{- if .Events }}
+	// Note: This only works when `events` are specified in metadata.yml
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Note: This only works when `events` are specified in metadata.yml
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 	{{- end }}
 
 	enabledSetByUser bool
@@ -143,11 +166,17 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 // LogsBuilderConfig is a configuration for {{ .Type }} logs builder.
 type LogsBuilderConfig struct {
 	Events EventsConfig `mapstructure:"events"`
+	{{- if .ResourceAttributes }}
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	{{- end }}
 }
 
 func DefaultLogsBuilderConfig() LogsBuilderConfig {
 	return LogsBuilderConfig {
 		Events: DefaultEventsConfig(),
+		{{- if .ResourceAttributes }}
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+		{{- end }}
 	}
 }
 {{- end }}

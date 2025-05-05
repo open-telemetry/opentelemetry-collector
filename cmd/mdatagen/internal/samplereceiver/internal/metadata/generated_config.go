@@ -62,15 +62,35 @@ type EventConfig struct {
 	enabledSetByUser bool
 }
 
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
 // EventsConfig provides config for sample events.
 type EventsConfig struct {
-	DefaultEvent EventConfig `mapstructure:"default.event"`
+	DefaultEvent            EventConfig `mapstructure:"default.event"`
+	DefaultEventToBeRemoved EventConfig `mapstructure:"default.event.to_be_removed"`
+	DefaultEventToBeRenamed EventConfig `mapstructure:"default.event.to_be_renamed"`
 }
 
 func DefaultEventsConfig() EventsConfig {
 	return EventsConfig{
 		DefaultEvent: EventConfig{
 			Enabled: true,
+		},
+		DefaultEventToBeRemoved: EventConfig{
+			Enabled: true,
+		},
+		DefaultEventToBeRenamed: EventConfig{
+			Enabled: false,
 		},
 	}
 }
@@ -85,6 +105,15 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	// Note: This only works when `events` are specified in metadata.yml
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Note: This only works when `events` are specified in metadata.yml
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 
 	enabledSetByUser bool
 }
@@ -157,11 +186,13 @@ func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 
 // LogsBuilderConfig is a configuration for sample logs builder.
 type LogsBuilderConfig struct {
-	Events EventsConfig `mapstructure:"events"`
+	Events             EventsConfig             `mapstructure:"events"`
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func DefaultLogsBuilderConfig() LogsBuilderConfig {
 	return LogsBuilderConfig{
-		Events: DefaultEventsConfig(),
+		Events:             DefaultEventsConfig(),
+		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }

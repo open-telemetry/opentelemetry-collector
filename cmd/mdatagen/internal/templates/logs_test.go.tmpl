@@ -17,6 +17,16 @@ import (
     {{- end }}
 )
 
+{{- if .Events }}
+type eventsTestDataSet int
+
+const (
+	eventTestDataSetDefault eventsTestDataSet = iota
+	eventTestDataSetAll
+	eventTestDataSetNone
+)
+{{- end }}
+
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
     observedZapCore, _ := observer.New(zap.WarnLevel)
     {{- if or isReceiver isScraper }}
@@ -81,3 +91,165 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
 }
 
+{{- if .Events }}
+func TestLogsBuilder(t *testing.T) {
+	tests := []struct {
+		name               string
+		eventsSet          eventsTestDataSet
+		resAttrsSet        eventsTestDataSet
+		expectEmpty        bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:        "all_set",
+			eventsSet:   eventTestDataSetAll,
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "none_set",
+			eventsSet:   eventTestDataSetNone,
+			resAttrsSet: eventTestDataSetNone,
+			expectEmpty: true,
+		},
+		{{- if .ResourceAttributes }}
+		{
+			name:        "filter_set_include",
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: eventTestDataSetAll,
+			expectEmpty: true,
+		},
+		{{- end }}
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedTimestamp := pcommon.Timestamp(1_000_000_000)
+			timestamp := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+        	{{- if or isReceiver isScraper }}
+            settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
+	        {{- end }}
+			settings.Logger = zap.New(observedZapCore)
+			lb := NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
+
+            expectedWarnings := 0
+			{{- range $name, $event := .Events }}
+			{{- if and $event.Enabled $event.Warnings.IfEnabled }}
+			if tt.eventsSet == eventTestDataSetDefault || tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $event.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $event.Warnings.IfEnabledNotSet }}
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $event.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $event.Warnings.IfConfigured }}
+			if tt.eventsSet == eventTestDataSetAll || tt.eventsSet == eventTestDataSetNone {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $event.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- end }}
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if and $attr.Enabled $attr.Warnings.IfEnabled }}
+			if tt.resAttrsSet == eventTestDataSetDefault || tt.resAttrsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $attr.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $attr.Warnings.IfEnabledNotSet }}
+			if tt.resAttrsSet == eventTestDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $attr.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- if $attr.Warnings.IfConfigured }}
+			if tt.resAttrsSet == eventTestDataSetAll || tt.resAttrsSet == eventTestDataSetNone {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $attr.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- end }}
+
+
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultEventsCount := 0
+			allEventsCount := 0
+			{{- range $name, $event := .Events }}
+				{{ if $event.Enabled }}defaultEventsCount++{{ end }}
+				allEventsCount++
+				lb.Record{{ $name.Render }}Event(observedTimestamp, timestamp
+				{{- range $event.Attributes -}}
+					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
+				{{- end }})
+			{{- end }}
+
+			{{ if .ResourceAttributes }}
+			rb := lb.NewResourceBuilder()
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if $attr.Enum }}
+			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+			{{- else }}
+			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
+			{{- end }}
+			{{- end }}
+			res := rb.Emit()
+			{{- else }}
+			res := pcommon.NewResource()
+			{{- end }}
+			logs := lb.Emit(WithLogsResource(res))
+
+			if tt.expectEmpty {
+				assert.Equal(t, 0, logs.ResourceLogs().Len())
+				return
+			}
+
+			assert.Equal(t, 1, logs.ResourceLogs().Len())
+			rl := logs.ResourceLogs().At(0)
+			assert.Equal(t, res, rl.Resource())
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			lrs := rl.ScopeLogs().At(0).LogRecords()
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, defaultEventsCount, lrs.Len())
+			}
+			if tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, allEventsCount, lrs.Len())
+			}
+			validatedEvents := make(map[string]bool)
+			for i := 0; i < lrs.Len(); i++ {
+				switch lrs.At(i).EventName() {
+				{{- range $name, $event := .Events }}
+				case "{{ $name }}":
+					assert.False(t, validatedEvents["{{ $name }}"], "Found a duplicate in the events slice: {{ $name }}")
+					validatedEvents["{{ $name }}"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
+					assert.Equal(t, timestamp, lr.Timestamp())
+
+					{{- range $i, $attr := $event.Attributes }}
+					attrVal, ok {{ if eq $i 0 }}:{{ end }}= lr.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+					assert.True(t, ok)
+					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
+					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- else if eq (attributeInfo $attr).Type.String "Int"}}
+					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- else }}
+					assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- end }}
+					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+					{{- end }}
+				{{- end }}
+				}
+			}
+		})
+	}
+}
+{{- end }}

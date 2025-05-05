@@ -15,6 +15,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+type eventsTestDataSet int
+
+const (
+	eventTestDataSetDefault eventsTestDataSet = iota
+	eventTestDataSetAll
+	eventTestDataSetNone
+)
+
 func TestLogsBuilderAppendLogRecord(t *testing.T) {
 	observedZapCore, _ := observer.New(zap.WarnLevel)
 	settings := receivertest.NewNopSettings(receivertest.NopType)
@@ -72,4 +80,177 @@ func TestLogsBuilderAppendLogRecord(t *testing.T) {
 
 	assert.Equal(t, pcommon.ValueTypeStr, sl.LogRecords().At(1).Body().Type())
 	assert.Equal(t, "the second log record", sl.LogRecords().At(1).Body().Str())
+}
+func TestLogsBuilder(t *testing.T) {
+	tests := []struct {
+		name        string
+		eventsSet   eventsTestDataSet
+		resAttrsSet eventsTestDataSet
+		expectEmpty bool
+	}{
+		{
+			name: "default",
+		},
+		{
+			name:        "all_set",
+			eventsSet:   eventTestDataSetAll,
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "none_set",
+			eventsSet:   eventTestDataSetNone,
+			resAttrsSet: eventTestDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: eventTestDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: eventTestDataSetAll,
+			expectEmpty: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observedTimestamp := pcommon.Timestamp(1_000_000_000)
+			timestamp := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings.Logger = zap.New(observedZapCore)
+			lb := NewLogsBuilder(loadLogsBuilderConfig(t, tt.name), settings)
+
+			expectedWarnings := 0
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `default.event`: This event will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.eventsSet == eventTestDataSetDefault || tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `default.event.to_be_removed` should not be enabled: This event is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.eventsSet == eventTestDataSetAll || tt.eventsSet == eventTestDataSetNone {
+				assert.Equal(t, "[WARNING] `default.event.to_be_renamed` should not be configured: This event is deprecated and will be renamed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == eventTestDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == eventTestDataSetAll || tt.resAttrsSet == eventTestDataSetNone {
+				assert.Equal(t, "[WARNING] `string.resource.attr_remove_warning` should not be configured: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if tt.resAttrsSet == eventTestDataSetDefault || tt.resAttrsSet == eventTestDataSetAll {
+				assert.Equal(t, "[WARNING] `string.resource.attr_to_be_removed` should not be enabled: This resource_attribute is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultEventsCount := 0
+			allEventsCount := 0
+			defaultEventsCount++
+			allEventsCount++
+			lb.RecordDefaultEventEvent(observedTimestamp, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			defaultEventsCount++
+			allEventsCount++
+			lb.RecordDefaultEventToBeRemovedEvent(observedTimestamp, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+
+			allEventsCount++
+			lb.RecordDefaultEventToBeRenamedEvent(observedTimestamp, timestamp, "string_attr-val", true, false)
+
+			rb := lb.NewResourceBuilder()
+			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
+			rb.SetOptionalResourceAttr("optional.resource.attr-val")
+			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
+			rb.SetStringEnumResourceAttrOne()
+			rb.SetStringResourceAttr("string.resource.attr-val")
+			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
+			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
+			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			res := rb.Emit()
+			logs := lb.Emit(WithLogsResource(res))
+
+			if tt.expectEmpty {
+				assert.Equal(t, 0, logs.ResourceLogs().Len())
+				return
+			}
+
+			assert.Equal(t, 1, logs.ResourceLogs().Len())
+			rl := logs.ResourceLogs().At(0)
+			assert.Equal(t, res, rl.Resource())
+			assert.Equal(t, 1, rl.ScopeLogs().Len())
+			lrs := rl.ScopeLogs().At(0).LogRecords()
+			if tt.eventsSet == eventTestDataSetDefault {
+				assert.Equal(t, defaultEventsCount, lrs.Len())
+			}
+			if tt.eventsSet == eventTestDataSetAll {
+				assert.Equal(t, allEventsCount, lrs.Len())
+			}
+			validatedEvents := make(map[string]bool)
+			for i := 0; i < lrs.Len(); i++ {
+				switch lrs.At(i).EventName() {
+				case "default.event":
+					assert.False(t, validatedEvents["default.event"], "Found a duplicate in the events slice: default.event")
+					validatedEvents["default.event"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
+					assert.Equal(t, timestamp, lr.Timestamp())
+					attrVal, ok := lr.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("enum_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "red", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					attrVal, ok = lr.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+				case "default.event.to_be_removed":
+					assert.False(t, validatedEvents["default.event.to_be_removed"], "Found a duplicate in the events slice: default.event.to_be_removed")
+					validatedEvents["default.event.to_be_removed"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
+					assert.Equal(t, timestamp, lr.Timestamp())
+					attrVal, ok := lr.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("enum_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "red", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					attrVal, ok = lr.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+				case "default.event.to_be_renamed":
+					assert.False(t, validatedEvents["default.event.to_be_renamed"], "Found a duplicate in the events slice: default.event.to_be_renamed")
+					validatedEvents["default.event.to_be_renamed"] = true
+					lr := lrs.At(i)
+					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
+					assert.Equal(t, timestamp, lr.Timestamp())
+					attrVal, ok := lr.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = lr.Attributes().Get("boolean_attr")
+					assert.True(t, ok)
+					assert.True(t, attrVal.Bool())
+					attrVal, ok = lr.Attributes().Get("boolean_attr2")
+					assert.True(t, ok)
+					assert.False(t, attrVal.Bool())
+				}
+			}
+		})
+	}
 }
