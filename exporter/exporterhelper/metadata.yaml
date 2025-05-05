@@ -2,6 +2,7 @@ type: exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
+  disable_codecov_badge: true
   codeowners:
     active:
       - BogdanDrutu

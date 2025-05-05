@@ -66,7 +66,7 @@
         pipelines:
             traces:
                 receivers: [nop, nop2]
-                processors: [nop, nop2]
+                processors: [nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append
   configs:
@@ -134,7 +134,7 @@
         pipelines:
             traces:
                 receivers: [nop, nop2]
-                processors: [nop, nop2]
+                processors: [nop2]
                 exporters: [nop, nop2]
 - name: merge-mode-append-override-old-values
   configs:
@@ -335,70 +335,6 @@
             traces:
                 receivers: [nop, nop2, nop3]
                 exporters: [nop, nop2, nop3]
-- name: merge-mode-append-processor
-  configs:
-    -
-        receivers:
-            nop:
-
-        exporters:
-            nop:
-
-        extensions:
-            nop:
-        processors:
-            processor:
-                path: [path]
-        service:
-            extensions: [nop]
-            pipelines:
-                traces:
-                    receivers: [nop]
-                    processors: [processor]
-                    exporters: [nop]
-    -
-        receivers:
-            nop2:
-
-        exporters:
-            nop2:
-
-        extensions:
-            nop2:
-        processors:
-            processor:
-                path: [path2]
-
-        service:
-            extensions: [nop2]
-            pipelines:
-                traces:
-                    receivers: [nop2]
-                    processors: [processor]
-                    exporters: [nop2]
-  expected: 
-    receivers:
-        nop:
-        nop2:
-
-    exporters:
-        nop:
-        nop2:
-
-    extensions:
-        nop:
-        nop2:
-    processors:
-        processor:
-            path: [path, path2]
-
-    service:
-        extensions: [nop, nop2]
-        pipelines:
-            traces:
-                receivers: [nop, nop2]
-                processors: [processor]
-                exporters: [nop, nop2]
 - name: merge-mode-append-processor-service
   configs:
     -
@@ -454,7 +390,7 @@
         nop2:
     processors:
         processor:
-            path: [path, path2]
+            path: [path2]
 
     service:
         extensions: [nop, nop2]
@@ -543,7 +479,7 @@
 
     processors:
         processor:
-            path: [path, path2, path3]
+            path: [path3]
         processor2:
 
     service:
@@ -603,7 +539,7 @@
                 receivers: [nop]
                 processors: [nop]
                 exporters: [nop]
-- name: merge-mode-extra-processor
+- name: merge-mode-multiple-pipelines
   configs:
     -
         receivers:
@@ -611,11 +547,8 @@
                 key: val
 
         processors:
-            attributes/example:
-                actions:
-                - key: key
-                value: "value"
-                action: upsert
+            nop:
+                key: val
 
         exporters:
             nop:
@@ -631,41 +564,96 @@
                     receivers: [nop]
                     processors: [attributes/example]
                     exporters: [nop]
+                logs:
+                    receivers: [nop]
+                    processors: [attributes/example]
+                    exporters: [nop]
     -
-        extensions:
-            nop2:
+        receivers:
+            nop1:
+                key: val
+
         processors:
-            nop2:
+            nop1:
+                key: val
+
+        exporters:
+            nop1:
+                key: 2
+
+        extensions:
+            nop1:
+
         service:
-            extensions: [nop2]
+            extensions: [nop1]
             pipelines:
                 traces:
-                    processors: [nop2]
+                    receivers: [nop1]
+                    processors: [nop1]
+                    exporters: [nop1]
+                logs:
+                    receivers: [nop1]
+                    processors: [nop1]
+                    exporters: [nop1]
   expected: 
     receivers:
         nop:
             key: val
+        nop1:
+            key: val
 
     processors:
-        nop2:
-        attributes/example:
-            actions:
-            - key: key
-            value: "value"
-            action: upsert
+        nop:
+            key: val
+        nop1:
+            key: val
 
     exporters:
         nop:
             key: 2
+        nop1:
+            key: 2
 
     extensions:
         nop:
-        nop2:
+        nop1:
 
     service:
-        extensions: [nop, nop2]
+        extensions: [nop, nop1]
         pipelines:
             traces:
-                receivers: [nop]
-                processors: [attributes/example, nop2]
-                exporters: [nop]
+                receivers: [nop, nop1]
+                processors: [nop1]
+                exporters: [nop, nop1]
+            logs:
+                receivers: [nop, nop1]
+                processors: [nop1]
+                exporters: [nop, nop1]
+- name: merge-mode-map
+  configs:
+    -
+        processors:
+            resource:
+                attributes:
+                - key: deployment.region
+                  value: "nl"
+                  action: upsert
+    -
+        processors:
+            resource:
+                attributes:
+                - key: app
+                  value: "foo"
+                  action: upsert
+
+  expected: 
+    processors:
+        resource:
+            attributes:
+            # TODO: once merge append mode is configurable, comment this out.
+            # - key: deployment.region
+            #   value: "nl"
+            #   action: upsert
+            - key: app
+              value: "foo"
+              action: upsert
