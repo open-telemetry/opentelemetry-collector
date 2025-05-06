@@ -8,6 +8,10 @@ import (
 	"go.opentelemetry.io/otel/metric"
 )
 
+const (
+	ComponentOutcome = "otelcol.component.outcome"
+)
+
 // Option modifies the consumer behavior.
 type Option interface {
 	apply(*options)
@@ -35,11 +39,11 @@ type compiledOptions struct {
 
 func (o *options) compile() compiledOptions {
 	successAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
-	successAttrs = append(successAttrs, attribute.String("outcome", "success"))
+	successAttrs = append(successAttrs, attribute.String(ComponentOutcome, "success"))
 	successAttrs = append(successAttrs, o.staticDataPointAttributes...)
 
 	failureAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
-	failureAttrs = append(failureAttrs, attribute.String("outcome", "failure"))
+	failureAttrs = append(failureAttrs, attribute.String(ComponentOutcome, "failure"))
 	failureAttrs = append(failureAttrs, o.staticDataPointAttributes...)
 
 	return compiledOptions{

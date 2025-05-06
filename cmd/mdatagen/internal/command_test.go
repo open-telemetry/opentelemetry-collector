@@ -576,12 +576,13 @@ Some info about a component
 				Type:            "foo",
 				ShortFolderName: "foo",
 				Status: &Status{
-					Stability:     stability,
-					Distributions: tt.distros,
-					Class:         tt.componentClass,
-					Warnings:      tt.warnings,
-					Codeowners:    tt.codeowners,
-					Deprecation:   tt.deprecation,
+					DisableCodeCov: true,
+					Stability:      stability,
+					Distributions:  tt.distros,
+					Class:          tt.componentClass,
+					Warnings:       tt.warnings,
+					Codeowners:     tt.codeowners,
+					Deprecation:    tt.deprecation,
 				},
 			}
 			tmpdir := t.TempDir()
