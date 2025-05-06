@@ -68,7 +68,7 @@ func TestMetricsConsumeSuccess(t *testing.T) {
 
 	attrs := data.DataPoints[0].Attributes
 	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key("outcome"))
+	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 }
@@ -110,7 +110,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 
 	attrs := data.DataPoints[0].Attributes
 	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key("outcome"))
+	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
 }
@@ -156,7 +156,7 @@ func TestMetricsWithStaticAttributes(t *testing.T) {
 	val, ok := attrs.Value(attribute.Key("test"))
 	require.True(t, ok)
 	require.Equal(t, "value", val.Emit())
-	val, ok = attrs.Value(attribute.Key("outcome"))
+	val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 }
@@ -232,7 +232,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	// Find success and failure data points
 	var successDP, failureDP metricdata.DataPoint[int64]
 	for _, dp := range data.DataPoints {
-		val, ok := dp.Attributes.Value(attribute.Key("outcome"))
+		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
 		if ok && val.Emit() == "success" {
 			successDP = dp
 		} else {

@@ -49,6 +49,8 @@ type Status struct {
 	Codeowners           *Codeowners    `mapstructure:"codeowners"`
 	UnsupportedPlatforms []string       `mapstructure:"unsupported_platforms"`
 	Deprecation          DeprecationMap `mapstructure:"deprecation"`
+	CodeCovComponentID   string         `mapstructure:"codecov_component_id"`
+	DisableCodeCov       bool           `mapstructure:"disable_codecov_badge"`
 }
 
 type DeprecationMap map[string]DeprecationInfo

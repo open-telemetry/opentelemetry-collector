@@ -36,6 +36,9 @@ type Config struct {
 	Extensions map[component.ID]component.Config `mapstructure:"extensions"`
 
 	Service service.Config `mapstructure:"service"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate returns an error if the config is invalid.

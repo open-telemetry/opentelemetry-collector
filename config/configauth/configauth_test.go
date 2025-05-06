@@ -37,7 +37,7 @@ func TestGetServer(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare
-			cfg := &Authentication{
+			cfg := &Config{
 				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
@@ -59,7 +59,7 @@ func TestGetServer(t *testing.T) {
 }
 
 func TestGetServerFails(t *testing.T) {
-	cfg := &Authentication{
+	cfg := &Config{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 
@@ -88,7 +88,7 @@ func TestGetHTTPClient(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare
-			cfg := &Authentication{
+			cfg := &Config{
 				AuthenticatorID: mockID,
 			}
 			ext := map[component.ID]component.Component{
@@ -110,7 +110,7 @@ func TestGetHTTPClient(t *testing.T) {
 }
 
 func TestGetGRPCClientFails(t *testing.T) {
-	cfg := &Authentication{
+	cfg := &Config{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 	authenticator, err := cfg.GetGRPCClientAuthenticator(context.Background(), map[component.ID]component.Component{})

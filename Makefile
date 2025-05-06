@@ -60,10 +60,6 @@ gotest-with-cover:
 gotest-with-junit:
 	@$(MAKE) for-all-target TARGET="test-with-junit"
 
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) for-all-target TARGET="testifylint-fix"
-
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd/mdatagen/third_party$$" ./
@@ -318,6 +314,10 @@ certs:
 .PHONY: certs-dryrun
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
+
+.PHONY: checkapi
+checkapi: $(CHECKAPI)
+	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc

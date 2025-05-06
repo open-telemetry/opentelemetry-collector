@@ -6,9 +6,11 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +20,15 @@ import (
 	"github.com/pierrec/lz4/v4"
 
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var enableFramedSnappy = featuregate.GlobalRegistry().MustRegister(
+	"confighttp.framedSnappy",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterDescription("Content encoding 'snappy' will compress/decompress block snappy format while 'x-snappy-framed' will compress/decompress framed snappy format."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/10584"),
 )
 
 type compressRoundTripper struct {
@@ -60,14 +71,7 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		}
 		return zr, nil
 	},
-	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
-	"snappy": func(body io.ReadCloser) (io.ReadCloser, error) {
-		// Lazy Reading content to improve memory efficiency
-		return &compressReadCloser{
-			Reader: snappy.NewReader(body),
-			orig:   body,
-		}, nil
-	},
+	"snappy": snappyHandler,
 	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
 	"lz4": func(body io.ReadCloser) (io.ReadCloser, error) {
 		return &compressReadCloser{
@@ -75,6 +79,55 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 			orig:   body,
 		}, nil
 	},
+	//nolint:unparam // Ignoring the linter request to remove error return since it needs to match the method signature
+	"x-snappy-framed": func(body io.ReadCloser) (io.ReadCloser, error) {
+		return &compressReadCloser{
+			Reader: snappy.NewReader(body),
+			orig:   body,
+		}, nil
+	},
+}
+
+// snappyFramingHeader is always the first 10 bytes of a snappy framed stream.
+var snappyFramingHeader = []byte{
+	0xff, 0x06, 0x00, 0x00,
+	0x73, 0x4e, 0x61, 0x50, 0x70, 0x59, // "sNaPpY"
+}
+
+// snappyHandler returns an io.ReadCloser that auto-detects the snappy format.
+// This is necessary because the collector previously used "content-encoding: snappy"
+// but decompressed and compressed the payloads using the snappy framing format.
+// However, "content-encoding: snappy" is uses the block format, and "x-snappy-framed"
+// is the framing format.  This handler is a (hopefully temporary) hack to
+// make this work in a backwards-compatible way.
+//
+// See https://github.com/google/snappy/blob/6af9287fbdb913f0794d0148c6aa43b58e63c8e3/framing_format.txt#L27-L36
+// for more details on the framing format.
+func snappyHandler(body io.ReadCloser) (io.ReadCloser, error) {
+	br := bufio.NewReader(body)
+
+	peekBytes, err := br.Peek(len(snappyFramingHeader))
+	if err != nil && !errors.Is(err, io.EOF) {
+		return nil, err
+	}
+
+	isFramed := len(peekBytes) >= len(snappyFramingHeader) && bytes.Equal(peekBytes[:len(snappyFramingHeader)], snappyFramingHeader)
+
+	if isFramed {
+		return &compressReadCloser{
+			Reader: snappy.NewReader(br),
+			orig:   body,
+		}, nil
+	}
+	compressed, err := io.ReadAll(br)
+	if err != nil {
+		return nil, err
+	}
+	decoded, err := snappy.Decode(nil, compressed)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(bytes.NewReader(decoded)), nil
 }
 
 func newCompressionParams(level configcompression.Level) configcompression.CompressionParams {
@@ -143,6 +196,9 @@ func httpContentDecompressor(h http.Handler, maxRequestBodySize int64, eh func(w
 
 	enabled := map[string]func(body io.ReadCloser) (io.ReadCloser, error){}
 	for _, dec := range enableDecoders {
+		if dec == "x-frame-snappy" && !enableFramedSnappy.IsEnabled() {
+			continue
+		}
 		enabled[dec] = availableDecoders[dec]
 
 		if dec == "deflate" {

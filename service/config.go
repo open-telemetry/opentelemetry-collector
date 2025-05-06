@@ -19,4 +19,7 @@ type Config struct {
 
 	// Pipelines are the set of data pipelines configured for the service.
 	Pipelines pipelines.Config `mapstructure:"pipelines"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
