@@ -6,11 +6,14 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +37,7 @@ const (
 	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
 	//nolint:unused
 	queueMetadataKey = "qmv0"
+	errInvalidTraceFlagsLength = "trace flags must only be 1 byte"
 )
 
 var (
@@ -244,6 +248,56 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	return pq.putInternal(ctx, req)
 }
 
+type marshaledRequestWithSpanContext struct {
+	RequestBytes    []byte          `json:"request"`
+	SpanContextJSON json.RawMessage `json:"span_context"`
+}
+
+type spanContextConfigWrapper struct {
+	TraceID    string
+	SpanID     string
+	TraceFlags string
+	TraceState string
+	Remote     bool
+}
+
+func SpanContextFromWrapper(wrapper spanContextConfigWrapper) (*trace.SpanContext, error) {
+	traceID, err := trace.TraceIDFromHex(wrapper.TraceID)
+	if err != nil {
+		return nil, err
+	}
+	spanID, err := trace.SpanIDFromHex(wrapper.SpanID)
+	if err != nil {
+		return nil, err
+	}
+	decoded, err := hex.DecodeString(wrapper.TraceFlags)
+	if err != nil {
+		return nil, err
+	}
+	if len(decoded) != 1 {
+		return nil, errors.New(errInvalidTraceFlagsLength)
+	}
+	traceFlags := trace.TraceFlags(decoded[0])
+	traceState, err := trace.ParseTraceState(wrapper.TraceState)
+	if err != nil {
+		return nil, err
+	}
+
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: traceFlags,
+		TraceState: traceState,
+		Remote:     wrapper.Remote,
+	})
+
+	if !sc.IsValid() {
+		return nil, nil
+	}
+
+	return &sc, nil
+}
+
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	reqSize := pq.set.sizer.Sizeof(req)
@@ -260,11 +314,24 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	if err != nil {
 		return err
 	}
-
+	// Retrieve SpanContext object from provided context, and store alongside the request
+	sc := trace.SpanContextFromContext(ctx)
+	scJSON, err := json.Marshal(sc)
+	if err != nil {
+		return err
+	}
+	envelope := marshaledRequestWithSpanContext{
+		RequestBytes:    reqBuf,
+		SpanContextJSON: scJSON,
+	}
+	envelopeBytes, err := json.Marshal(envelope)
+	if err != nil {
+		return err
+	}
 	// Carry out a transaction where we both add the item and update the write index
 	ops := []*storage.Operation{
 		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1)),
-		storage.SetOperation(getItemKey(pq.writeIndex), reqBuf),
+		storage.SetOperation(getItemKey(pq.writeIndex), envelopeBytes),
 	}
 	if err = pq.client.Batch(ctx, ops...); err != nil {
 		return err
@@ -297,7 +364,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.readIndex != pq.writeIndex {
-			index, req, consumed := pq.getNextItem(ctx)
+			index, req, consumed, restoredContext := pq.getNextItem(ctx)
 			// Ensure the used size and the channel size are in sync.
 			if pq.readIndex == pq.writeIndex {
 				pq.queueSize = 0
@@ -306,7 +373,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
 				id.reset(index, pq.set.sizer.Sizeof(req), pq)
-				return context.Background(), req, id, true
+				return restoredContext, req, id, true
 			}
 		}
 
@@ -319,7 +386,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with onDone to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool, context.Context) {
 	index := pq.readIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.readIndex++
@@ -331,8 +398,24 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 		getOp)
 
 	var request T
+	restoredContext := context.Background()
 	if err == nil {
-		request, err = pq.set.encoding.Unmarshal(getOp.Value)
+		var envelope marshaledRequestWithSpanContext
+		if err = json.Unmarshal(getOp.Value, &envelope); err == nil {
+			// Unmarshal the request using the specified encoding
+			if request, err = pq.set.encoding.Unmarshal(envelope.RequestBytes); err == nil {
+				// Unmarshal the SpanContext from JSON
+				var wrapper spanContextConfigWrapper
+				if len(envelope.SpanContextJSON) > 0 {
+					if err = json.Unmarshal(envelope.SpanContextJSON, &wrapper); err == nil {
+						var sc *trace.SpanContext
+						if sc, err = SpanContextFromWrapper(wrapper); err == nil && sc != nil {
+							restoredContext = trace.ContextWithSpanContext(restoredContext, *sc)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if err != nil {
@@ -342,14 +425,14 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return 0, request, false
+		return 0, request, false, restoredContext
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 
-	return index, request, true
+	return index, request, true, restoredContext
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.

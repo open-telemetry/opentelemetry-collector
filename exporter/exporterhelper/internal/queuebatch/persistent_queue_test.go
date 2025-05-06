@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -1204,4 +1205,182 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
+}
+
+func TestSpanContextFromWrapper(t *testing.T) {
+	testCases := []struct {
+		name          string
+		wrapper       spanContextConfigWrapper
+		expectErr     bool
+		errContains   string
+		expectNil     bool
+		expectValid   bool
+		expectTraceID string
+		expectSpanID  string
+		expectFlags   string
+		expectState   string
+		expectRemote  bool
+	}{
+		{
+			name: "invalid trace id",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "invalidtraceid",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid span id",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "invalidspanid",
+				TraceFlags: "01",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid trace flags hex",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "zz",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid trace flags length",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "0102",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr:   true,
+			expectNil:   true,
+			errContains: errInvalidTraceFlagsLength,
+		},
+		{
+			name: "invalid trace state",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "invalid=tracestate,=bad",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "valid span context",
+			wrapper: spanContextConfigWrapper{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "vendor=value",
+				Remote:     true,
+			},
+			expectErr:     false,
+			expectNil:     false,
+			expectValid:   true,
+			expectTraceID: "0102030405060708090a0b0c0d0e0f10",
+			expectSpanID:  "0102030405060708",
+			expectFlags:   "01",
+			expectState:   "vendor=value",
+			expectRemote:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scc, err := SpanContextFromWrapper(tc.wrapper)
+			if tc.expectErr {
+				require.Error(t, err)
+				if tc.errContains != "" {
+					assert.Contains(t, err.Error(), tc.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.expectNil {
+				assert.Nil(t, scc)
+			} else {
+				assert.NotNil(t, scc)
+				if tc.expectValid {
+					assert.True(t, scc.IsValid())
+					assert.Equal(t, tc.expectTraceID, scc.TraceID().String())
+					assert.Equal(t, tc.expectSpanID, scc.SpanID().String())
+					assert.Equal(t, tc.expectFlags, scc.TraceFlags().String())
+					assert.Equal(t, tc.expectState, scc.TraceState().String())
+					assert.Equal(t, tc.expectRemote, scc.IsRemote())
+				}
+			}
+		})
+	}
+}
+
+func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
+	// Setup a minimal persistent queue using uint64Encoding and uint64
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  10,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  uint64Encoding{},
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	client, err := ext.GetClient(context.Background(), component.KindExporter, pq.set.id, pq.set.signal.String())
+	require.NoError(t, err)
+	pq.initClient(context.Background(), client)
+
+	// Create a valid SpanContext
+	traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	spanID, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+
+	// Offer a request with this context
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctxWithSC, req))
+
+	// Read the request and restored context
+	restoredCtx, gotReq, _, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	assert.True(t, restoredSC.IsValid())
+	assert.Equal(t, sc.TraceID(), restoredSC.TraceID())
+	assert.Equal(t, sc.SpanID(), restoredSC.SpanID())
+	assert.Equal(t, sc.TraceFlags(), restoredSC.TraceFlags())
+	assert.Equal(t, sc.TraceState().String(), restoredSC.TraceState().String())
+	assert.Equal(t, sc.IsRemote(), restoredSC.IsRemote())
+
+	// Also test with a context with no SpanContext
+	req2 := uint64(99)
+	require.NoError(t, pq.Offer(context.Background(), req2))
+	restoredCtx2, gotReq2, _, ok2 := pq.Read(context.Background())
+	require.True(t, ok2)
+	assert.Equal(t, req2, gotReq2)
+	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+	assert.False(t, restoredSC2.IsValid())
 }
