@@ -237,13 +237,12 @@ receivers:
       - ratelimiter/streamer
 ```
 
-The receiver will create with `extensionlimiter.StandardAllKeys()` and
-check `s.checker.MustDeny()` as above.  In a stream, limiters are
-expected to block the stream until limit requests succeed, however
-after the limit requests succeed, the receiver may wish to return from
-`Send()` to continue accepting new requests while the consumer works
-in a separate goroutine. The limit will be released after the consumer
-returns.
+The receiver will check `s.checker.MustDeny()` as above.  In a stream,
+limiters are expected to block the stream until limit requests
+succeed, however after the limit requests succeed, the receiver may
+wish to return from `Send()` to continue accepting new requests while
+the consumer works in a separate goroutine. The limit will be released
+after the consumer returns.
 
 ```golang
 func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
@@ -277,36 +276,77 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
 }
 ```
 
-#### Data-dependent limiter processor
+#### Open questions
+
+##### Middleware implementation details
+
+Details are
+important. [#12700](https://github.com/open-telemetry/opentelemetry-collector/pull/12700)
+contained a `limitermiddleware` implementation which was a middleware
+that called a limiter for HTTP and gRPC. Roughly the same code will be
+used, and the details will come out.
+
+##### Provider options
 
 An `Option` type has been added as a placeholder in the provider
-interfaces to support adding this feature. **NOTE: This is not
-implemented.**
+interfaces. **NOTE: No options are implemented.** Potential options:
 
-The provider interfaces can be extended to accept a
-`map[string]string` that identify limiter instances based on
-additional metadata, such as tenant information. Since the limits are
-data specific, the limiter will be computed for each request and for
-each specific weight key.
+- The protocol name
+- The signal kind
+- The caller's component ID
 
-Limiter implementations would support options, likely assisted by
-`limiterhelper` features to configure them, for configuring
-metadata-specific limits.
+Because the set of each of these is small, it is possible to
+pre-compute limiter instances for the cross product of configurations.
 
-```golang
-func handleRequest(ctx context.Context, req *Request) error {
-    // Get a data-specific limiter:
-    md := metadataFromRequest(req)
-    lim, err := s.limiterProvider.LimiterWrapper(weightKey, md)
-    if err != nil { ... }
+##### Context-dependent limits
 
-    if err = lim.MustDeny(ctx); err != nil { ... }
+Client metadata (i.e., headers) may be used in the context to make
+limiter decisions. These details are automatically extracted from the
+Context passed to `MustDeny`, `Limit`, `Acquire`, and `LimitCall`
+functions. No examples are provided. How will limiters configure, for
+example, tenant-specific limits?
 
-    // Calculate the data and its weight.
-    data := dataFromReq(req)
-    weight := getWeight(data)
+##### Data-dependent limits
 
-    return lim.LimitCall(ctx, weight, func(ctx context.Context) error {
-        return s.nextLogs.ConsumeLogs(ctx, data)
-    })
+When a single unit of data contains limits that are assignable to
+multiple distinct limiters, one option available to users is to split
+requests and add to their context and run them concurrently through
+context-dependent limiters.  See
+[#39199](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39199).
+
+Another option is to add support for non-blocking limit requests. For
+example, to apply limits using information derived from the
+OpenTelemetry resource, we might do something like this pseudo-code:
+
 ```
+func (p *processor) limitLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, extensionlimiter.ReleaseFunc, error) {
+    var rels extensionlimiter.ReleaseFuncs
+	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		md := resourceToMetadata(rl.Resource())
+		rel, err := p.nonBlockingLimiter.TryLimitOrAcquire(withMetadata(ctx, md))
+		if err != nil {
+		    return false
+		}
+		rels = append(rels, rel)
+		return true
+	})
+	if logsData.ResourceLogs().Len() == 0 {
+		return logsData, func() {}, processorhelper.ErrSkipProcessingData
+	}
+	return logsData, rels.Release, nil
+}
+
+func (p *processor) ConsumeLogs(ctx context.Context, logsData plog.Logs) error {
+	logsData, release, err = limitLogs(ctx, logsData)
+	if err != nil {
+	    return err
+	}
+	defer release()
+	return p.nextLogs.ConsumeLogs(ctx, logsData)
+}
+```
+
+Here, the release a new `TryLimitOrAcquire` function abstracts the
+form of a non-blocking call to either form of limiter. If the
+underyling limiter is a rate limiter, the release function will be a
+no-op.
