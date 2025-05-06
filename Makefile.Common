@@ -26,6 +26,7 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
+CHECKAPI     := $(TOOLS_BIN_DIR)/checkapi
 CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
