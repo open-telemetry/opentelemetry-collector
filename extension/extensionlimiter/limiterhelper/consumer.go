@@ -151,8 +151,7 @@ func applyChecker[P any, C any](
 	m traits[P, C],
 	opts []consumer.Option,
 ) (C, error) {
-	// Apply the Checker.
-	ck, err := provider.GetChecker(keys)
+	ck, err := provider.GetChecker()
 	if err != nil {
 		return next, err
 	}

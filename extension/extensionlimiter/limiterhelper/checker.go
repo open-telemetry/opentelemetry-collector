@@ -26,3 +26,8 @@ func (ls MultiChecker) MustDeny(ctx context.Context) error {
 	}
 	return err
 }
+
+// NeverDeny returns a Checker that never denies.
+func NeverDeny() extensionlimiter.Checker {
+	return extensionlimiter.MustDenyFunc(nil)
+}

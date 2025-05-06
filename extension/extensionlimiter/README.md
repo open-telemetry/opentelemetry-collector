@@ -22,17 +22,17 @@ which simplifies consumers in most cases by providing a consistent
 `LimitCall` interface.
 
 A limiter is **saturated** by definition when a limit is completely
-overloaded, generally it means a limit request of any size would fail
-at that moment and should be taken as a strong signal to stop
-accepting requests.
+overloaded in at least one weight, generally it means callers should
+immediately deny work to continue on the request.
 
 Each kind of limiter as well as the wrapper type have corresponding
 **provider** interfaces that return a limiter instance based on a
-weight key or keys.
+weight keys.
 
 Weight keys describe the standard limiting dimensions. There are
 currently four standard weight keys: network bytes, request count,
-request items, and memory size.
+request items, and memory size.  Callers use the `Checker` interface
+to check whether any weight keys (from a set) are saturated.
 
 ## Key Interfaces
 
@@ -44,7 +44,7 @@ request items, and memory size.
 - `ResourceLimiter`: Manages physical resource limits, has
   an `Acquire` method and a corresponding `ReleaseFunc`,
   plus a provider type.
-- `Limiter`: Any of the above, has a `MustDeny` method.
+- `Checker`: Has a `MustDeny` method.
 
 ### Limiter helpers
 
@@ -91,15 +91,17 @@ becomes available, they should return a standard overload signal.
 
 ### Limiter saturation
 
-All limiters feature a `MustDeny` method which is made available for
-applications to test when a limit is fully saturated. This special
-limit request is defined as the equivalent of passing a zero value to
-the limiter.
+Rate and resource limiter providers have a `GetChecker` method to
+provide a `Checker`, featuring a `MustDeny` method which is made
+available for applications to test when any limit is fully
+saturated that would eventually deny the request.
 
-Limiters SHOULD treat a request for zero units of the limit as a
-special case, used for indicating when non-zero limit requests are
-likely to fail. This is not an exact requirement; implementations are
-free to define their own saturation parameters.
+The `Checker` is consulted at least once and applies to all weight
+keys.  Because a `Checker` can be consulted more than once by a
+receiver and/or middleware, it is possible for requests to be denied
+over the saturation of limits they were already granted. Users should
+configure external load balancers and/or horizontal scaling policies
+to avoid cases of limiter saturation.
 
 ### Limit before or after use
 
@@ -187,10 +189,14 @@ apply request items and memory size:
     s.limiterProvider, err = limiterhelper.MiddlewaresToLimiterWrapperProvider(
         cfg.Middlewares)
     if err != nil { ... }
+	
+	// Extract a checker from the provider
+	s.checker, err = s.limiterProvider.GetChecker()
+	if err != nil { ... }
 
     // Here get a limiter-wrapped pipeline and a combination of weight-specific
     // limiters for MustDeny() functionality.
-    s.anyLimiter, s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
+    s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
         s.nextMetrics, limiterhelper.StandardNotMiddlewareKeys(), s.limiterProvider)
     if err != nil { ... }
 ```
@@ -199,7 +205,7 @@ In the scraper loop, use `MustDeny` before starting a scrape:
 
 ```golang
 func (s *scraper) scrapeOnce(ctx context.Context) error {
-    if err := s.anyLimiter.MustDeny(ctx); err != nil {
+    if err := s.checker.MustDeny(ctx); err != nil {
         return err
     }
 
@@ -231,21 +237,22 @@ receivers:
       - ratelimiter/streamer
 ```
 
-The receiver will check `s.anyLimiter.MustDeny()` as above.  In a
-stream, limiters are expected to block the stream until limit requests
-succeed, however after the limit requests succeed, the receiver may
-wish to return from `Send()` to continue accepting new requests while
-the consumer works in a separate goroutine. The limit will be released
-after the consumer returns.
+The receiver will create with `extensionlimiter.StandardAllKeys()` and
+check `s.checker.MustDeny()` as above.  In a stream, limiters are
+expected to block the stream until limit requests succeed, however
+after the limit requests succeed, the receiver may wish to return from
+`Send()` to continue accepting new requests while the consumer works
+in a separate goroutine. The limit will be released after the consumer
+returns.
 
 ```golang
 func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
     for {
-        // Check saturation for all limiters.
-        err := s.anyLimiter.MustDeny(ctx)
+        // Check saturation for all limiters, all keys.
+        err := s.checker.MustDeny(ctx)
         if err != nil { ... }
 
-        // The network bytes and request count are applied in middleware.
+        // The network bytes and request count limits are applied in middleware.
         req, err := stream.Recv()
         if err != nil { ... }
 

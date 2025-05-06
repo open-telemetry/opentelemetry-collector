@@ -40,26 +40,21 @@ func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	return f(ctx)
 }
 
-// NeverDeny returns a Checker that never denies.
-func NeverDeny() Checker {
-	return MustDenyFunc(nil)
-}
-
 // CheckerProvider is an interface to obtain checkers for a group of
 // weight keys.
 type CheckerProvider interface {
 	// GetChecker returns a checker for a group of weight keys.
-	GetChecker(WeightSet, ...Option) (Checker, error)
+	GetChecker(...Option) (Checker, error)
 }
 
 // GetCheckerFunc is a functional way to construct GetChecker
 // functions, used in limiter providers.
-type GetCheckerFunc func(WeightSet, ...Option) (Checker, error)
+type GetCheckerFunc func(...Option) (Checker, error)
 
 // Checker implements CheckerProvider.
-func (f GetCheckerFunc) GetChecker(keys WeightSet, opts ...Option) (Checker, error) {
+func (f GetCheckerFunc) GetChecker(opts ...Option) (Checker, error) {
 	if f == nil {
 		return nil, nil
 	}
-	return f(keys, opts...)
+	return f(opts...)
 }
