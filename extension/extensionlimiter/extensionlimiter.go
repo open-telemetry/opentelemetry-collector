@@ -20,30 +20,27 @@ type Option interface {
 // Checker is for checking when a limit is saturated.  This can be
 // called prior to the start of work to check for limiter saturation.
 type Checker interface {
-	// MustDeny is the logical equivalent of Acquire(0).  If the
-	// Acquire would fail even for 0 units of a rate, the
-	// caller must deny the request.  Implementations are
-	// encouraged to ensure that when MustDeny() is false,
-	// Acquire(0) is also false, however callers could use a
-	// faster code path to implement MustDeny() since it does not
-	// depend on the value.
+	// MustDeny is a request to apply a hard limit. If this
+	// returns non-nil, the caller must not begin new work in this
+	// context.
 	MustDeny(context.Context) error
 }
 
-// CheckerFunc is a functional way to build Checker implementations.
-type CheckerFunc func(context.Context) error
+// MustDenyFunc is a functional way to build MustDeny functions.
+type MustDenyFunc func(context.Context) error
 
-var _ Checker = CheckerFunc(nil)
+// A MustDeny function is a complete Checker.
+var _ Checker = MustDenyFunc(nil)
 
 // MustDeny implements Checker.
-func (f CheckerFunc) MustDeny(ctx context.Context) error {
+func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	if f == nil {
 		return nil
 	}
 	return f(ctx)
 }
 
-// PassThroughChecker returns a Checker that never denies.
-func PassThroughChecker() Checker {
-	return CheckerFunc(nil)
+// NeverDeny returns a Checker that never denies.
+func NeverDeny() Checker {
+	return MustDenyFunc(nil)
 }

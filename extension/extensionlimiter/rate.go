@@ -14,17 +14,21 @@ import (
 // Limiters are covered by configmiddleware configuration, which is
 // able to construct LimiterWrappers from these providers.
 type RateLimiterProvider interface {
-	// RateLimiter returns a provider for rate limiters.
-	RateLimiter(WeightKey, ...Option) (RateLimiter, error)
+	// GetRateLimiter returns a provider for rate limiters.
+	GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)
 }
 
-// RateLimiterProviderFunc is a functional way to build RateLimters.
-type RateLimiterProviderFunc func(WeightKey, ...Option) (RateLimiter, error)
+// RateLimiterFunc is a functional way to construct GetRateLimiter
+// functions.
+type GetRateLimiterFunc func(WeightKey, ...Option) (RateLimiter, error)
 
-var _ RateLimiterProvider = RateLimiterProviderFunc(nil)
+var _ RateLimiterProvider = GetRateLimiterFunc(nil)
 
 // RateLimiter implements RateLimiterProvider.
-func (f RateLimiterProviderFunc) RateLimiter(key WeightKey, opts ...Option) (RateLimiter, error) {
+func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateLimiter, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return f(key, opts...)
 }
 
@@ -40,6 +44,8 @@ func (f RateLimiterProviderFunc) RateLimiter(key WeightKey, opts ...Option) (Rat
 //
 // See the README for more recommendations.
 type RateLimiter interface {
+	Checker
+
 	// Limit attempts to apply rate limiting with the provided
 	// weight, based on the key that was given to the provider.
 	//
@@ -49,15 +55,19 @@ type RateLimiter interface {
 	Limit(ctx context.Context, value uint64) error
 }
 
-// RateLimiterFunc is an easy way to construct RateLimiters.
-type RateLimiterFunc func(ctx context.Context, value uint64) error
+// LimitFunc is a functional way to construct Limit functions.
+type LimitFunc func(ctx context.Context, value uint64) error
 
-var _ RateLimiter = RateLimiterFunc(nil)
-
-// Limit implements RateLimiter.
-func (f RateLimiterFunc) Limit(ctx context.Context, value uint64) error {
+// Limit implements part of the RateLimiter interface.
+func (f LimitFunc) Limit(ctx context.Context, value uint64) error {
 	if f == nil {
 		return nil
 	}
 	return f(ctx, value)
 }
+
+// Verify that a rate limiter is constructed of two functions.
+var _ RateLimiter = struct {
+	MustDenyFunc
+	LimitFunc
+}{}

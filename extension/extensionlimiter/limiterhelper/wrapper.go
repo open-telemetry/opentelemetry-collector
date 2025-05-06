@@ -74,7 +74,7 @@ func PassThroughWrapper() LimiterWrapper {
 // LimiterWrapperProvider for a resource limiter extension.
 func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
 	return LimiterWrapperProviderFunc(func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-		lim, err := rp.ResourceLimiter(key, opts...)
+		lim, err := rp.GetResourceLimiter(key, opts...)
 		if err == nil {
 			return nil, err
 		}
@@ -86,7 +86,7 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 // for a rate limiter extension.
 func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
 	return LimiterWrapperProviderFunc(func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-		lim, err := rp.RateLimiter(key, opts...)
+		lim, err := rp.GetRateLimiter(key, opts...)
 		if err == nil {
 			return nil, err
 		}

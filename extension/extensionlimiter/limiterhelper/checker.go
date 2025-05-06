@@ -29,21 +29,21 @@ func (ls MultiChecker) MustDeny(ctx context.Context) error {
 
 // NewLimiterWrapperChecker returns a Checker for a LimiterWrapper.
 func NewLimiterWrapperChecker(limiter LimiterWrapper) extensionlimiter.Checker {
-	return extensionlimiter.CheckerFunc(func(ctx context.Context) error {
+	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
 		return limiter.LimitCall(ctx, 0, func(_ context.Context) error { return nil })
 	})
 }
 
 // NewRateLimiterChecker returns a Checker for a RateLimiter.
 func NewRateLimiterChecker(limiter extensionlimiter.RateLimiter) extensionlimiter.Checker {
-	return extensionlimiter.CheckerFunc(func(ctx context.Context) error {
+	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
 		return limiter.Limit(ctx, 0)
 	})
 }
 
 // NewResourceLimiterChecker returns a Checker for ResourceLimiter.
 func NewResourceLimiterChecker(limiter extensionlimiter.ResourceLimiter) extensionlimiter.Checker {
-	return extensionlimiter.CheckerFunc(func(ctx context.Context) error {
+	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
 		_, err := limiter.Acquire(ctx, 0)
 		return err
 	})

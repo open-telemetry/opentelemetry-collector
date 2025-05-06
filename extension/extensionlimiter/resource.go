@@ -14,16 +14,20 @@ import (
 // Limiters are covered by configmiddleware configuration, which
 // is able to construct LimiterWrappers from these providers.
 type ResourceLimiterProvider interface {
-	ResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
+	GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
 }
 
-// ResourceLimiterProviderFunc is a functional way to build ResourceLimters.
-type ResourceLimiterProviderFunc func(WeightKey, ...Option) (ResourceLimiter, error)
+// GetResourceLimiterFunc is a functional way to construct
+// GetResourceLimiter functions.
+type GetResourceLimiterFunc func(WeightKey, ...Option) (ResourceLimiter, error)
 
-var _ ResourceLimiterProvider = ResourceLimiterProviderFunc(nil)
+var _ ResourceLimiterProvider = GetResourceLimiterFunc(nil)
 
-// ResourceLimiter implements ResourceLimiterProvider.
-func (f ResourceLimiterProviderFunc) ResourceLimiter(key WeightKey, opts ...Option) (ResourceLimiter, error) {
+// GetResourceLimiter implements part of ResourceLimiterProvider.
+func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option) (ResourceLimiter, error) {
+	if f == nil {
+		return nil, nil
+	}
 	return f(key, opts...)
 }
 
@@ -41,6 +45,8 @@ func (f ResourceLimiterProviderFunc) ResourceLimiter(key WeightKey, opts ...Opti
 //
 // See the README for more recommendations.
 type ResourceLimiter interface {
+	Checker
+
 	// Acquire attempts to acquire a quantified resource with the
 	// provided weight, based on the key that was given to the
 	// provider. The caller has these options:
@@ -66,15 +72,19 @@ type ResourceLimiter interface {
 // Acquire(0) is called, since there is nothing to release.
 type ReleaseFunc func()
 
-// ResourceLimiterFunc is a functional way to construct ResourceLimiters.
-type ResourceLimiterFunc func(ctx context.Context, value uint64) (ReleaseFunc, error)
+// AcquireFunc is a functional way to construct Acquire functions.
+type AcquireFunc func(ctx context.Context, value uint64) (ReleaseFunc, error)
 
-var _ ResourceLimiter = ResourceLimiterFunc(nil)
-
-// Acquire implements ResourceLimiter
-func (f ResourceLimiterFunc) Acquire(ctx context.Context, value uint64) (ReleaseFunc, error) {
+// Acquire implements part of ResourceLimiter.
+func (f AcquireFunc) Acquire(ctx context.Context, value uint64) (ReleaseFunc, error) {
 	if f == nil {
 		return func() {}, nil
 	}
 	return f(ctx, value)
 }
+
+// Verify that a rate limiter is constructed of two functions.
+var _ ResourceLimiter = struct {
+	MustDenyFunc
+	AcquireFunc
+}{}
