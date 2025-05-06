@@ -87,6 +87,16 @@ Stable components MUST be compatible between minor versions unless critical secu
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
 
+#### Testing requirements
+
+Stable components MUST have a test coverage that exceeds the highest between 80% coverage and the
+repository-wide minimum. The unit test suite SHOULD cover all configuration options. The coverage
+MUST be shown as part of the component documentation.
+
+Stable components SHOULD provide at least one example configuration that works for each stable
+signal, and have at least one lifecycle test that tests the component's initialization with a valid
+configuration. Said configuration should also be shown in the component documentation.
+
 #### Documentation requirements
 
 Stable components should have a complete set of documentation, including:
