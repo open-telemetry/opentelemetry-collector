@@ -31,7 +31,7 @@ require (
 	go.opentelemetry.io/collector/receiver v1.31.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.125.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.125.0
-	golang.org/x/sys v0.32.0
+	golang.org/x/sys v0.33.0
 )
 
 require (
