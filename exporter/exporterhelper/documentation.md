@@ -6,6 +6,30 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_batch_failed_log_records
+
+Number of log records in failed attempts to batch in the exporter. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+### otelcol_exporter_batch_failed_metric_points
+
+Number of metric points in failed attempts to batch in the exporter. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {datapoints} | Sum | Int | true |
+
+### otelcol_exporter_batch_failed_spans
+
+Number of spans in failed attempts to batch in the exporter. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Sum | Int | true |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [alpha]
