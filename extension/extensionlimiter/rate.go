@@ -14,15 +14,15 @@ import (
 // Limiters are covered by configmiddleware configuration, which is
 // able to construct LimiterWrappers from these providers.
 type RateLimiterProvider interface {
-	// GetRateLimiter returns a provider for rate limiters.
+	CheckerProvider
+
+	// GetRateLimiter returns a rate limiter for a weight key.
 	GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)
 }
 
-// RateLimiterFunc is a functional way to construct GetRateLimiter
+// GetRateLimiterFunc is a functional way to construct GetRateLimiter
 // functions.
 type GetRateLimiterFunc func(WeightKey, ...Option) (RateLimiter, error)
-
-var _ RateLimiterProvider = GetRateLimiterFunc(nil)
 
 // RateLimiter implements RateLimiterProvider.
 func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateLimiter, error) {
@@ -31,6 +31,11 @@ func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateL
 	}
 	return f(key, opts...)
 }
+
+var _ RateLimiterProvider = struct {
+	GetRateLimiterFunc
+	GetCheckerFunc
+}{}
 
 // RateLimiter is an interface that an implementation makes available
 // to apply time-based limits on quantities such as the number of
@@ -44,8 +49,6 @@ func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateL
 //
 // See the README for more recommendations.
 type RateLimiter interface {
-	Checker
-
 	// Limit attempts to apply rate limiting with the provided
 	// weight, based on the key that was given to the provider.
 	//
@@ -66,8 +69,4 @@ func (f LimitFunc) Limit(ctx context.Context, value uint64) error {
 	return f(ctx, value)
 }
 
-// Verify that a rate limiter is constructed of two functions.
-var _ RateLimiter = struct {
-	MustDenyFunc
-	LimitFunc
-}{}
+var _ RateLimiter = LimitFunc(nil)

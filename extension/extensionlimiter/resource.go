@@ -14,14 +14,14 @@ import (
 // Limiters are covered by configmiddleware configuration, which
 // is able to construct LimiterWrappers from these providers.
 type ResourceLimiterProvider interface {
+	CheckerProvider
+
 	GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
 }
 
 // GetResourceLimiterFunc is a functional way to construct
 // GetResourceLimiter functions.
 type GetResourceLimiterFunc func(WeightKey, ...Option) (ResourceLimiter, error)
-
-var _ ResourceLimiterProvider = GetResourceLimiterFunc(nil)
 
 // GetResourceLimiter implements part of ResourceLimiterProvider.
 func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option) (ResourceLimiter, error) {
@@ -30,6 +30,11 @@ func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option
 	}
 	return f(key, opts...)
 }
+
+var _ ResourceLimiterProvider = struct {
+	GetResourceLimiterFunc
+	GetCheckerFunc
+}{}
 
 // ResourceLimiter is an interface that an implementation makes
 // available to apply physical limits on quantities such as the number
@@ -45,8 +50,6 @@ func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option
 //
 // See the README for more recommendations.
 type ResourceLimiter interface {
-	Checker
-
 	// Acquire attempts to acquire a quantified resource with the
 	// provided weight, based on the key that was given to the
 	// provider. The caller has these options:
@@ -83,8 +86,4 @@ func (f AcquireFunc) Acquire(ctx context.Context, value uint64) (ReleaseFunc, er
 	return f(ctx, value)
 }
 
-// Verify that a rate limiter is constructed of two functions.
-var _ ResourceLimiter = struct {
-	MustDenyFunc
-	AcquireFunc
-}{}
+var _ ResourceLimiter = AcquireFunc(nil)

@@ -6,7 +6,6 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 import (
 	"context"
 	"errors"
-	"slices"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -119,81 +118,101 @@ func (profileTraits) consume(ctx context.Context, data pprofile.Profiles, next x
 // limitOne obtains a LimiterWrapper and applies a single weight limit.
 func limitOne[P any, C any](
 	next C,
-	keys []extensionlimiter.WeightKey,
+	keys extensionlimiter.WeightSet,
 	provider LimiterWrapperProvider,
 	m traits[P, C],
 	key extensionlimiter.WeightKey,
 	opts []consumer.Option,
 	quantify func(P) uint64,
-) (extensionlimiter.Checker, C, error) {
-	if !slices.Contains(keys, key) {
-		return nil, next, nil
+) (C, error) {
+	if !keys.Contains(key) {
+		return next, nil
 	}
-	lim, err := provider.LimiterWrapper(key)
+	lim, err := provider.GetLimiterWrapper(key)
 	if err != nil {
-		return nil, next, err
+		return next, err
 	}
 	if lim == nil {
-		return nil, next, nil
+		return next, nil
 	}
-	con, err := m.create(func(ctx context.Context, data P) error {
+	return m.create(func(ctx context.Context, data P) error {
 		return lim.LimitCall(ctx, quantify(data), func(ctx context.Context) error {
 			return m.consume(ctx, data, next)
 		})
 	}, opts...)
-	return NewLimiterWrapperChecker(lim), con, err
+}
+
+// applyChecker gets a Checker and wraps the pipeline in a MustDeny
+// check.
+func applyChecker[P any, C any](
+	next C,
+	keys extensionlimiter.WeightSet,
+	provider LimiterWrapperProvider,
+	m traits[P, C],
+	opts []consumer.Option,
+) (C, error) {
+	// Apply the Checker.
+	ck, err := provider.GetChecker(keys)
+	if err != nil {
+		return next, err
+	}
+	return m.create(func(ctx context.Context, data P) error {
+		if err := ck.MustDeny(ctx); err != nil {
+			return err
+		}
+		return m.consume(ctx, data, next)
+	}, opts...)
 }
 
 // newLimited is signal-generic limiting logic.
 func newLimited[P any, C any](
 	next C,
-	keys []extensionlimiter.WeightKey,
+	keys extensionlimiter.WeightSet,
 	provider LimiterWrapperProvider,
 	m traits[P, C],
 	opts ...consumer.Option,
-) (extensionlimiter.Checker, C, error) {
+) (C, error) {
 	if provider == nil {
-		return nil, next, nil
+		return next, nil
 	}
-	var lim1, lim2, lim3 extensionlimiter.Checker
-	var err1, err2, err3 error
+	var err1, err2, err3, err4 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
-	lim1, next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
-
+	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
 		func(data P) uint64 {
 			return m.memorySize(data)
 		})
-	lim2, next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
+	next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
 		func(data P) uint64 {
 			return m.itemCount(data)
 		})
-	lim3, next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
+	next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
 		func(_ P) uint64 {
 			return 1
 		})
-	return MultiChecker{lim1, lim2, lim3}, next, errors.Join(err1, err2, err3)
+	next, err4 = applyChecker(next, keys, provider, m, opts)
+	return next, errors.Join(err1, err2, err3, err4)
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.
-func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (extensionlimiter.Checker, consumer.Traces, error) {
+func NewLimitedTraces(next consumer.Traces, keys extensionlimiter.WeightSet, provider LimiterWrapperProvider) (consumer.Traces, error) {
 	return newLimited(next, keys, provider, traceTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedLogs applies a limiter using the provider over keys before calling next.
-func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (extensionlimiter.Checker, consumer.Logs, error) {
+func NewLimitedLogs(next consumer.Logs, keys extensionlimiter.WeightSet, provider LimiterWrapperProvider) (consumer.Logs, error) {
 	return newLimited(next, keys, provider, logTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedMetrics applies a limiter using the provider over keys before calling next.
-func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (extensionlimiter.Checker, consumer.Metrics, error) {
+func NewLimitedMetrics(next consumer.Metrics, keys extensionlimiter.WeightSet, provider LimiterWrapperProvider) (consumer.Metrics, error) {
 	return newLimited(next, keys, provider, metricTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedProfiles applies a limiter using the provider over keys before calling next.
-func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (extensionlimiter.Checker, xconsumer.Profiles, error) {
+func NewLimitedProfiles(next xconsumer.Profiles, keys extensionlimiter.WeightSet, provider LimiterWrapperProvider) (xconsumer.Profiles, error) {
 	return newLimited(next, keys, provider, profileTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }

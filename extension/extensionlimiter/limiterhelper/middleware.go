@@ -107,24 +107,46 @@ type MultiLimiterWrapperProvider []LimiterWrapperProvider
 
 var _ LimiterWrapperProvider = MultiLimiterWrapperProvider{}
 
-// LimiterWrapper implements LimiterWrapperProvider.
-func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-	if len(ps) == 0 {
-		return PassThroughWrapper(), nil
+// GetLimiterWrapper implements LimiterWrapperProvider, combining
+// checkers for all wrappers in a sequence.
+func (ps MultiLimiterWrapperProvider) GetChecker(keys extensionlimiter.WeightSet, opts ...extensionlimiter.Option) (extensionlimiter.Checker, error) {
+	var retErr error
+	var cks MultiChecker
+	for _, provider := range ps {
+		ck, err := provider.GetChecker(keys, opts...)
+		retErr = errors.Join(retErr, err)
+		if ck == nil {
+			continue
+		}
+		cks = append(cks, ck)
 	}
+	if len(cks) == 0 {
+		return extensionlimiter.NeverDeny(), retErr
+	}
+	return cks, retErr
+}
 
+// GetLimiterWrapper implements LimiterWrapperProvider, calling
+// wrappers in a sequence.
+func (ps MultiLimiterWrapperProvider) GetLimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 	// Map provider list to limiter list.
 	var lims []LimiterWrapper
 
 	for _, provider := range ps {
-		lim, err := provider.LimiterWrapper(key, opts...)
+		lim, err := provider.GetLimiterWrapper(key, opts...)
 		if err == nil {
 			return nil, err
+		}
+		if lim == nil {
+			continue
 		}
 		lims = append(lims, lim)
 	}
 
-	// Compose limiters in sequence.
+	if len(lims) == 0 {
+		return PassThroughWrapper(), nil
+	}
+
 	return sequenceLimiters(lims), nil
 }
 

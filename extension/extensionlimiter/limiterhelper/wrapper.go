@@ -14,21 +14,26 @@ import (
 // function call, because for wrapped calls there is no distinction
 // between rate limiters and resource limiters.
 type LimiterWrapperProvider interface {
-	LimiterWrapper(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
+	extensionlimiter.CheckerProvider
+
+	GetLimiterWrapper(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
 }
 
-// LimiterWrapperProviderFunc is a functional way to build LimiterWrappers.
-type LimiterWrapperProviderFunc func(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
+// GetLimiterWrapperFunc is an easy way to build GetLimiterWrapper functions.
+type GetLimiterWrapperFunc func(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
 
-var _ LimiterWrapperProvider = LimiterWrapperProviderFunc(nil)
-
-// LimiterWrapper implements LimiterWrapperProvider.
-func (f LimiterWrapperProviderFunc) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
+// GetLimiterWrapper implements LimiterWrapperProvider.
+func (f GetLimiterWrapperFunc) GetLimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 	if f == nil {
 		return PassThroughWrapper(), nil
 	}
 	return f(key, opts...)
 }
+
+var _ LimiterWrapperProvider = struct {
+	GetLimiterWrapperFunc
+	extensionlimiter.GetCheckerFunc
+}{}
 
 // LimiterWrapper is a general-purpose interface for limiter consumers
 // to limit resources with use of a callback.  This is the simplest
@@ -70,48 +75,51 @@ func PassThroughWrapper() LimiterWrapper {
 	return LimiterWrapperFunc(nil)
 }
 
+// wrapperProvider is a combinator for building wrapper providers from
+// the underlying limter types.
+type wrapperProvider struct {
+	GetLimiterWrapperFunc
+	extensionlimiter.GetCheckerFunc
+}
+
 // NewResourceLimiterWrapperProvider constructs a
 // LimiterWrapperProvider for a resource limiter extension.
 func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
-	return LimiterWrapperProviderFunc(func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-		lim, err := rp.GetResourceLimiter(key, opts...)
-		if err == nil {
-			return nil, err
-		}
-		return NewResourceLimiterWrapper(lim), err
-	})
+	return wrapperProvider{
+		GetCheckerFunc: rp.GetChecker,
+		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
+			lim, err := rp.GetResourceLimiter(key, opts...)
+			if err == nil {
+				return nil, err
+			}
+			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
+				release, err := lim.Acquire(ctx, value)
+				if err != nil {
+					return err
+				}
+				defer release()
+				return call(ctx)
+			}), err
+		},
+	}
 }
 
 // NewRateLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
 func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
-	return LimiterWrapperProviderFunc(func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-		lim, err := rp.GetRateLimiter(key, opts...)
-		if err == nil {
-			return nil, err
-		}
-		return NewRateLimiterWrapper(lim), err
-	})
-}
-
-// NewRateLimiterWrapper returns a LimiterWrapper from a RateLimiter.
-func NewRateLimiterWrapper(limiter extensionlimiter.RateLimiter) LimiterWrapper {
-	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-		if err := limiter.Limit(ctx, value); err != nil {
-			return err
-		}
-		return call(ctx)
-	})
-}
-
-// NewResourceLimiterWrapper returns a LimiterWrapper from a ResourceLimiter.
-func NewResourceLimiterWrapper(limiter extensionlimiter.ResourceLimiter) LimiterWrapper {
-	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-		release, err := limiter.Acquire(ctx, value)
-		if err != nil {
-			return err
-		}
-		defer release()
-		return call(ctx)
-	})
+	return wrapperProvider{
+		GetCheckerFunc: rp.GetChecker,
+		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
+			lim, err := rp.GetRateLimiter(key, opts...)
+			if err == nil {
+				return nil, err
+			}
+			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
+				if err := lim.Limit(ctx, value); err != nil {
+					return err
+				}
+				return call(ctx)
+			}), err
+		},
+	}
 }

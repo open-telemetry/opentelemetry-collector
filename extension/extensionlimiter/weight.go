@@ -3,7 +3,7 @@
 
 package extensionlimiter // import "go.opentelemetry.io/collector/extension/extensionlimiter"
 
-// WeightKey is an enum type for common rate limits.  The
+import "slices" // WeightKey is an enum type for common rate limits.  The
 // StandardAllKeys, StandardMiddlewareKeys, and
 // StandardNotMiddlewareKeys methods return the list of middleware
 // keys that can be automatically configured through middleware and
@@ -37,6 +37,13 @@ const (
 	// for limiting active memory usage.
 	WeightKeyMemorySize WeightKey = "memory_size"
 )
+
+// WeightSet are a group of weights to be tested.
+type WeightSet []WeightKey
+
+func (ws WeightSet) Contains(w WeightKey) bool {
+	return slices.Contains(ws, w)
+}
 
 // StandardAllKeys is all the keys that can be automatically
 // implemented by middleware and/or limiterhelper.
