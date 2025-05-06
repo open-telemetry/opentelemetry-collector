@@ -36,9 +36,9 @@ func MiddlewareIsLimiter(host component.Host, middleware configmiddleware.Config
 // When no limiters are found (with no errors), the returned provider
 // is nil. When a nil is passed to the consumer helpers (e.g.,
 // NewLimitedLogs) it will pass-through when the limiter is nil.
-func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []configmiddleware.Config) (extensionlimiter.LimiterWrapperProvider, error) {
+func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []configmiddleware.Config) (LimiterWrapperProvider, error) {
 	var retErr error
-	var providers []extensionlimiter.LimiterWrapperProvider
+	var providers []LimiterWrapperProvider
 	for _, mid := range middleware {
 		ok, err := MiddlewareIsLimiter(host, mid)
 		retErr = errors.Join(retErr, err)
@@ -63,17 +63,17 @@ func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []confi
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
-func MiddlewareToLimiterWrapperProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.LimiterWrapperProvider, error) {
+func MiddlewareToLimiterWrapperProvider(host component.Host, middleware configmiddleware.Config) (LimiterWrapperProvider, error) {
 	ext, ok, err := middlewareIsLimiter(host, middleware)
 	if err != nil {
 		return nil, err
 	}
 	if ok {
 		if lim, ok := ext.(extensionlimiter.ResourceLimiterProvider); ok {
-			return extensionlimiter.NewResourceLimiterWrapperProvider(lim), nil
+			return NewResourceLimiterWrapperProvider(lim), nil
 		}
 		if lim, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
-			return extensionlimiter.NewRateLimiterWrapperProvider(lim), nil
+			return NewRateLimiterWrapperProvider(lim), nil
 		}
 	}
 	return nil, fmt.Errorf("%w: %s", ErrNotALimiter, ext)
@@ -103,18 +103,18 @@ func middlewareIsLimiter(host component.Host, middleware configmiddleware.Config
 // MultiLimiterWrapperProvider combines multiple limiter wrappers
 // providers into a single provider by sequencing wrapped limiters.
 // Returns errors from the underlying LimiterWrapper() calls, if any.
-type MultiLimiterWrapperProvider []extensionlimiter.LimiterWrapperProvider
+type MultiLimiterWrapperProvider []LimiterWrapperProvider
 
-var _ extensionlimiter.LimiterWrapperProvider = MultiLimiterWrapperProvider{}
+var _ LimiterWrapperProvider = MultiLimiterWrapperProvider{}
 
 // LimiterWrapper implements LimiterWrapperProvider.
-func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.LimiterWrapper, error) {
+func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 	if len(ps) == 0 {
-		return extensionlimiter.PassThroughWrapper(), nil
+		return PassThroughWrapper(), nil
 	}
 
 	// Map provider list to limiter list.
-	var lims []extensionlimiter.LimiterWrapper
+	var lims []LimiterWrapper
 
 	for _, provider := range ps {
 		lim, err := provider.LimiterWrapper(key, opts...)
@@ -128,15 +128,15 @@ func (ps MultiLimiterWrapperProvider) LimiterWrapper(key extensionlimiter.Weight
 	return sequenceLimiters(lims), nil
 }
 
-func sequenceLimiters(lims []extensionlimiter.LimiterWrapper) extensionlimiter.LimiterWrapper {
+func sequenceLimiters(lims []LimiterWrapper) LimiterWrapper {
 	if len(lims) == 1 {
 		return lims[0]
 	}
 	return composeLimiters(lims[0], sequenceLimiters(lims[1:]))
 }
 
-func composeLimiters(first, second extensionlimiter.LimiterWrapper) extensionlimiter.LimiterWrapper {
-	return extensionlimiter.LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(ctx context.Context) error) error {
+func composeLimiters(first, second LimiterWrapper) LimiterWrapper {
+	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(ctx context.Context) error) error {
 		return first.LimitCall(ctx, value, func(ctx context.Context) error {
 			return second.LimitCall(ctx, value, call)
 		})

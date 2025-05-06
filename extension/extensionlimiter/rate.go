@@ -7,12 +7,6 @@ import (
 	"context"
 )
 
-// Defines:
-// - RateLimiterProvider
-// - RateLimiterProviderFunc
-// - RateLimiter
-// - RateLimiterFunc
-
 // RateLimiterProvider is a provider for rate limiters.
 //
 // Limiter implementations will implement this or the

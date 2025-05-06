@@ -7,13 +7,6 @@ import (
 	"context"
 )
 
-// Defines:
-// - ResourceLimiterProvider
-// - ResourceLimiterProviderFunc
-// - ResourceLimiter
-// - ResourceLimiterFunc
-// - ReleaseFunc
-
 // ResourceLimiterProvider is a provider for resource limiters.
 //
 // Limiter implementations will implement this or the

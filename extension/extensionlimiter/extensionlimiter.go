@@ -7,11 +7,6 @@ import (
 	"context"
 )
 
-// Defines:
-// - Option
-// - Checker
-// - CheckerFunc
-
 // Option is passed to limiter providers.
 //
 // NOTE: For data-specific or tenant-specific limits we will extend
