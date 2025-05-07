@@ -114,7 +114,6 @@ func TestLogsBuilder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			observedTimestamp := pcommon.Timestamp(1_000_000_000)
 			timestamp := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
@@ -153,13 +152,13 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDefaultEventEvent(observedTimestamp, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			lb.RecordDefaultEventEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDefaultEventToBeRemovedEvent(observedTimestamp, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			lb.RecordDefaultEventToBeRemovedEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allEventsCount++
-			lb.RecordDefaultEventToBeRenamedEvent(observedTimestamp, timestamp, "string_attr-val", true, false)
+			lb.RecordDefaultEventToBeRenamedEvent(timestamp, "string_attr-val", true, false)
 
 			rb := lb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -196,7 +195,6 @@ func TestLogsBuilder(t *testing.T) {
 					assert.False(t, validatedEvents["default.event"], "Found a duplicate in the events slice: default.event")
 					validatedEvents["default.event"] = true
 					lr := lrs.At(i)
-					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
 					assert.Equal(t, timestamp, lr.Timestamp())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)
@@ -217,7 +215,6 @@ func TestLogsBuilder(t *testing.T) {
 					assert.False(t, validatedEvents["default.event.to_be_removed"], "Found a duplicate in the events slice: default.event.to_be_removed")
 					validatedEvents["default.event.to_be_removed"] = true
 					lr := lrs.At(i)
-					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
 					assert.Equal(t, timestamp, lr.Timestamp())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)
@@ -238,7 +235,6 @@ func TestLogsBuilder(t *testing.T) {
 					assert.False(t, validatedEvents["default.event.to_be_renamed"], "Found a duplicate in the events slice: default.event.to_be_renamed")
 					validatedEvents["default.event.to_be_renamed"] = true
 					lr := lrs.At(i)
-					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
 					assert.Equal(t, timestamp, lr.Timestamp())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)

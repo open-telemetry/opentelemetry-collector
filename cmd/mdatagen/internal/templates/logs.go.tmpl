@@ -21,14 +21,13 @@ type event{{ $name.Render }} struct {
 	config   EventConfig         // event config provided by user.
 }
 
-func (e *event{{ $name.Render }}) recordEvent(observed pcommon.Timestamp, timestamp pcommon.Timestamp
+func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
 {{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
 	if !e.config.Enabled {
 		return
 	}
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("{{ $name }}")
-	lr.SetObservedTimestamp(observed)
 	lr.SetTimestamp(timestamp)
 	{{- range $event.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
@@ -237,11 +236,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 
 {{ range $name, $event := .Events -}}
 // Record{{ $name.Render }}Event adds a log record of {{ $name }} event.
-func (lb *LogsBuilder) Record{{ $name.Render }}Event(observed pcommon.Timestamp, timestamp pcommon.Timestamp
+func (lb *LogsBuilder) Record{{ $name.Render }}Event(timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
 	{{- end }}) {
-	lb.event{{ $name.Render }}.recordEvent(observed, timestamp
+	lb.event{{ $name.Render }}.recordEvent(timestamp
 		{{- range $event.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})

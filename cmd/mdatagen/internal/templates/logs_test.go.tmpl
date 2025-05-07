@@ -127,7 +127,6 @@ func TestLogsBuilder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			observedTimestamp := pcommon.Timestamp(1_000_000_000)
 			timestamp := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
         	{{- if or isReceiver isScraper }}
@@ -186,7 +185,7 @@ func TestLogsBuilder(t *testing.T) {
 			{{- range $name, $event := .Events }}
 				{{ if $event.Enabled }}defaultEventsCount++{{ end }}
 				allEventsCount++
-				lb.Record{{ $name.Render }}Event(observedTimestamp, timestamp
+				lb.Record{{ $name.Render }}Event(timestamp
 				{{- range $event.Attributes -}}
 					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 				{{- end }})
@@ -231,7 +230,6 @@ func TestLogsBuilder(t *testing.T) {
 					assert.False(t, validatedEvents["{{ $name }}"], "Found a duplicate in the events slice: {{ $name }}")
 					validatedEvents["{{ $name }}"] = true
 					lr := lrs.At(i)
-					assert.Equal(t, observedTimestamp, lr.ObservedTimestamp())
 					assert.Equal(t, timestamp, lr.Timestamp())
 
 					{{- range $i, $attr := $event.Attributes }}
