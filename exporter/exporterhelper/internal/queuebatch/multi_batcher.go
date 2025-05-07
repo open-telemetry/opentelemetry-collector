@@ -23,8 +23,8 @@ type multiBatcher struct {
 	partitioner Partitioner[request.Request]
 	consumeFunc sender.SendFunc[request.Request]
 
-	singleShard *singleBatcher
-	shards      *xsync.MapOf[string, *singleBatcher]
+	singleShard *shardBatcher
+	shards      *xsync.MapOf[string, *shardBatcher]
 }
 
 var _ Batcher[request.Request] = (*multiBatcher)(nil)
@@ -47,26 +47,34 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 	}
 
 	if bSet.partitioner == nil {
-		mb.singleShard = newSingleBatcher(bCfg, bSet)
+		mb.singleShard = &shardBatcher{
+			cfg:         bCfg,
+			workerPool:  mb.workerPool,
+			sizerType:   bSet.sizerType,
+			sizer:       bSet.sizer,
+			consumeFunc: bSet.next,
+			stopWG:      sync.WaitGroup{},
+			shutdownCh:  make(chan struct{}, 1),
+		}
 	} else {
-		mb.shards = xsync.NewMapOf[string, *singleBatcher]()
+		mb.shards = xsync.NewMapOf[string, *shardBatcher]()
 	}
 	return mb
 }
 
-func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *singleBatcher {
-	if qb.singleShard != nil {
-		return qb.singleShard
+func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shardBatcher {
+	if mb.singleShard != nil {
+		return mb.singleShard
 	}
 
-	key := qb.partitioner.GetKey(ctx, req)
-	result, _ := qb.shards.LoadOrCompute(key, func() *singleBatcher {
-		s := &singleBatcher{
-			cfg:         qb.cfg,
-			workerPool:  qb.workerPool,
-			sizerType:   qb.sizerType,
-			sizer:       qb.sizer,
-			consumeFunc: qb.consumeFunc,
+	key := mb.partitioner.GetKey(ctx, req)
+	result, _ := mb.shards.LoadOrCompute(key, func() *shardBatcher {
+		s := &shardBatcher{
+			cfg:         mb.cfg,
+			workerPool:  mb.workerPool,
+			sizerType:   mb.sizerType,
+			sizer:       mb.sizer,
+			consumeFunc: mb.consumeFunc,
 			stopWG:      sync.WaitGroup{},
 			shutdownCh:  make(chan struct{}, 1),
 		}
@@ -76,25 +84,25 @@ func (qb *multiBatcher) getShard(ctx context.Context, req request.Request) *sing
 	return result
 }
 
-func (qb *multiBatcher) Start(ctx context.Context, host component.Host) error {
-	if qb.singleShard != nil {
-		return qb.singleShard.Start(ctx, host)
+func (mb *multiBatcher) Start(ctx context.Context, host component.Host) error {
+	if mb.singleShard != nil {
+		return mb.singleShard.Start(ctx, host)
 	}
 	return nil
 }
 
-func (qb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
-	shard := qb.getShard(ctx, req)
+func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+	shard := mb.getShard(ctx, req)
 	shard.Consume(ctx, req, done)
 }
 
-func (qb *multiBatcher) Shutdown(ctx context.Context) error {
-	if qb.singleShard != nil {
-		return qb.singleShard.Shutdown(ctx)
+func (mb *multiBatcher) Shutdown(ctx context.Context) error {
+	if mb.singleShard != nil {
+		return mb.singleShard.Shutdown(ctx)
 	}
 
 	var g errgroup.Group
-	qb.shards.Range(func(key string, shard *singleBatcher) bool {
+	mb.shards.Range(func(key string, shard *shardBatcher) bool {
 		g.Go(func() error {
 			if err := shard.Shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to shutdown partition %s: %w", key, err)
