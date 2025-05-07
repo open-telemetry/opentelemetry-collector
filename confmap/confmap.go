@@ -173,6 +173,10 @@ func (l *Conf) IsSet(key string) bool {
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 func (l *Conf) Merge(in *Conf) error {
+	if enableMergeAppendOption.IsEnabled() {
+		// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
+		return l.mergeAppend(in)
+	}
 	return l.k.Merge(in.k)
 }
 
