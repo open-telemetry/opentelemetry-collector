@@ -66,9 +66,25 @@ func newWriteCloserResetFunc(compressionType configcompression.Type, compression
 			w, _ := gzip.NewWriterLevel(nil, int(compressionParams.Level))
 			return w
 		}, nil
-	case configcompression.TypeSnappy:
+	case configcompression.TypeSnappyFramed:
+		if !enableFramedSnappy.IsEnabled() {
+			return nil, errors.New("x-snappy-framed is not enabled")
+		}
 		return func() writeCloserReset {
 			return snappy.NewBufferedWriter(nil)
+		}, nil
+	case configcompression.TypeSnappy:
+		if !enableFramedSnappy.IsEnabled() {
+			// If framed snappy feature gate is not enabled, we keep the current behavior
+			// where the 'Content-Encoding: snappy' is compressed as the framed snappy format.
+			return func() writeCloserReset {
+				return snappy.NewBufferedWriter(nil)
+			}, nil
+		}
+		return func() writeCloserReset {
+			// If framed snappy feature gate is enabled, we use the correct behavior
+			// where the 'Content-Encoding: snappy' is compressed as the block snappy format.
+			return &rawSnappyWriter{}
 		}, nil
 	case configcompression.TypeZstd:
 		level := zstd.WithEncoderLevel(zstd.EncoderLevelFromZstd(int(compressionParams.Level)))
@@ -110,4 +126,38 @@ func (p *compressor) compress(buf *bytes.Buffer, body io.ReadCloser) error {
 	}
 
 	return writer.Close()
+}
+
+// rawSnappyWriter buffers all writes and, on Close,
+// compresses the data as a raw snappy block (non-framed)
+// and writes the compressed bytes to the underlying writer.
+type rawSnappyWriter struct {
+	buffer bytes.Buffer
+	w      io.Writer
+	closed bool
+}
+
+// Write buffers the data.
+func (w *rawSnappyWriter) Write(p []byte) (int, error) {
+	return w.buffer.Write(p)
+}
+
+// Close compresses the buffered data in one shot using snappy.Encode,
+// writes the compressed block to the underlying writer, and marks the writer as closed.
+func (w *rawSnappyWriter) Close() error {
+	if w.closed {
+		return nil
+	}
+	w.closed = true
+	// Compress the buffered uncompressed bytes.
+	compressed := snappy.Encode(nil, w.buffer.Bytes())
+	_, err := w.w.Write(compressed)
+	return err
+}
+
+// Reset sets a new underlying writer, resets the buffer and the closed flag.
+func (w *rawSnappyWriter) Reset(newWriter io.Writer) {
+	w.buffer.Reset()
+	w.w = newWriter
+	w.closed = false
 }

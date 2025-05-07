@@ -92,9 +92,16 @@ func (cfg *Config) Validate() error {
 		return errors.New("persistent queue configured with `storage` only supports `requests` sizer")
 	}
 
-	// Only support items sizer for batch at this moment.
-	if cfg.Batch != nil && (cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes) {
-		return errors.New("`batch` supports only `items` or `bytes` sizer")
+	if cfg.Batch != nil {
+		// Only support items or bytes sizer for batch at this moment.
+		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
+			return errors.New("`batch` supports only `items` or `bytes` sizer")
+		}
+
+		// Avoid situations where the queue is not able to hold any data.
+		if cfg.Batch.MinSize > cfg.QueueSize {
+			return errors.New("`min_size` must be less than or equal to `queue_size`")
+		}
 	}
 
 	return nil

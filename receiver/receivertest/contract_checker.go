@@ -63,6 +63,8 @@ type CheckConsumeContractParams struct {
 	// GenerateCount specifies the number of times to call the generator.Generate()
 	// for each test scenario.
 	GenerateCount int
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // CheckConsumeContract checks the contract between the receiver and its next consumer. For the contract
