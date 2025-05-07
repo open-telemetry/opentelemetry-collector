@@ -88,6 +88,8 @@ Additional arguments may be passed to ocb on the command line as specified below
 
 This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
+Use `ocb --help` to learn about which flags are available.
+
 ### `go install`
 
 You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
@@ -96,7 +98,7 @@ You need to have a `go` compiler in your PATH. Run the following command to inst
 go install go.opentelemetry.io/collector/cmd/builder@latest
 ```
 
-If installing through this method the binary will be called `builder`.
+If installed through this method the binary will be called `builder`.
 
 In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
 
