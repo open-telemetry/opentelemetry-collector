@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
-func TestSingleBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
+func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -59,11 +59,12 @@ func TestSingleBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  tt.sizerType,
-				sizer:      tt.sizer,
-				next:       sink.Export,
-				maxWorkers: tt.maxWorkers,
+			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:   tt.sizerType,
+				sizer:       tt.sizer,
+				partitioner: nil,
+				next:        sink.Export,
+				maxWorkers:  tt.maxWorkers,
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -89,7 +90,7 @@ func TestSingleBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestSingleBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
+func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -129,11 +130,12 @@ func TestSingleBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  tt.sizerType,
-				sizer:      tt.sizer,
-				next:       sink.Export,
-				maxWorkers: tt.maxWorkers,
+			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:   tt.sizerType,
+				sizer:       tt.sizer,
+				partitioner: nil,
+				next:        sink.Export,
+				maxWorkers:  tt.maxWorkers,
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -170,7 +172,7 @@ func TestSingleBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestSingleBatcher_NoSplit_WithTimeout(t *testing.T) {
+func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
 	}
@@ -214,11 +216,12 @@ func TestSingleBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  tt.sizerType,
-				sizer:      tt.sizer,
-				next:       sink.Export,
-				maxWorkers: tt.maxWorkers,
+			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:   tt.sizerType,
+				sizer:       tt.sizer,
+				partitioner: nil,
+				next:        sink.Export,
+				maxWorkers:  tt.maxWorkers,
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -245,7 +248,7 @@ func TestSingleBatcher_NoSplit_WithTimeout(t *testing.T) {
 	}
 }
 
-func TestSingleBatcher_Split_TimeoutDisabled(t *testing.T) {
+func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
 	}
@@ -290,11 +293,12 @@ func TestSingleBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:  tt.sizerType,
-				sizer:      tt.sizer,
-				next:       sink.Export,
-				maxWorkers: tt.maxWorkers,
+			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+				sizerType:   tt.sizerType,
+				sizer:       tt.sizer,
+				partitioner: nil,
+				next:        sink.Export,
+				maxWorkers:  tt.maxWorkers,
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -335,18 +339,19 @@ func TestSingleBatcher_Split_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestSingleBatcher_Shutdown(t *testing.T) {
+func TestShardBatcher_Shutdown(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Second,
 		MinSize:      10,
 	}
 
 	sink := requesttest.NewSink()
-	ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-		sizerType:  request.SizerTypeItems,
-		sizer:      request.NewItemsSizer(),
-		next:       sink.Export,
-		maxWorkers: 2,
+	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+		sizerType:   request.SizerTypeItems,
+		sizer:       request.NewItemsSizer(),
+		partitioner: nil,
+		next:        sink.Export,
+		maxWorkers:  2,
 	})
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -367,7 +372,7 @@ func TestSingleBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
-func TestSingleBatcher_MergeError(t *testing.T) {
+func TestShardBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
 		MinSize:      5,
@@ -375,11 +380,12 @@ func TestSingleBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newSingleBatcher(cfg, batcherSettings[request.Request]{
-		sizerType:  request.SizerTypeItems,
-		sizer:      request.NewItemsSizer(),
-		next:       sink.Export,
-		maxWorkers: 2,
+	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+		sizerType:   request.SizerTypeItems,
+		sizer:       request.NewItemsSizer(),
+		partitioner: nil,
+		next:        sink.Export,
+		maxWorkers:  2,
 	})
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
