@@ -1,0 +1,48 @@
+protocols:
+  grpc:
+    # The following entry demonstrates how to specify TLS credentials for the server.
+    # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+    tls:
+      cert_file: test.crt
+      key_file: test.key
+
+    # The following demonstrates how to set maximum limits on stream, message size and connection idle time.
+    # Note: The test yaml has demonstrated configuration on a grouped by their structure; however, all of the settings can
+    # be mix and matched like adding the maximum connection idle setting in this example.
+    max_recv_msg_size_mib: 32
+    max_concurrent_streams: 16
+    read_buffer_size: 1024
+    write_buffer_size: 1024
+
+    # The following entry configures all of the keep alive settings. These settings are used to configure the receiver.
+    keepalive:
+      server_parameters:
+        max_connection_idle: 11s
+        max_connection_age: 12s
+        max_connection_age_grace: 13s
+        time: 30s
+        timeout: 5s
+      enforcement_policy:
+        min_time: 10s
+        permit_without_stream: true
+  http:
+    auth:
+      authenticator: test
+    # The following entry demonstrates how to specify TLS credentials for the server.
+    # Note: These files do not exist. If the receiver is started with this configuration, it will fail.
+    tls:
+      cert_file: test.crt
+      key_file: test.key
+
+    # The following entry demonstrates how to configure the OTLP receiver to allow Cross-Origin Resource Sharing (CORS).
+    # Both fully qualified domain names and the use of wildcards are supported.
+    cors:
+      allowed_origins:
+        - https://*.test.com # Wildcard subdomain. Allows domains like https://www.test.com and https://foo.test.com but not https://wwwtest.com.
+        - https://test.com # Fully qualified domain name. Allows https://test.com only.
+      max_age: 7200
+
+    # The following shows URL paths for endpoints where signals are listened for bt the OTLP receiver
+    traces_url_path: traces
+    metrics_url_path: /v2/metrics
+    logs_url_path: log/ingest

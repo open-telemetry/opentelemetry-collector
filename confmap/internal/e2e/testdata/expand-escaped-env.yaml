@@ -1,0 +1,41 @@
+test_map:
+  # $$ -> escaped $
+  key1: "$$ENV_VALUE"
+  # $$$$ -> two escaped $
+  key2: "$$$$ENV_VALUE"
+  # $$ -> escaped $ + ${ENV_VALUE} expanded
+  key3: "$$${ENV_VALUE}"
+  # expanded in the middle
+  key4: "some${ENV_VALUE}text"
+  # escaped $ in the middle
+  key5: "some$${ENV_VALUE}text"
+  # two escaped $
+  key6: "$${ONE}$${TWO}"
+  # trailing escaped $
+  key7: "text$$"
+  # escaped $ alone
+  key8: "$$"
+  # escaped number and uri
+  key9: "$${1}$${env:2}"
+  # escape provider
+  key10: "some$${env:ENV_VALUE}text"
+  # can escape outer when nested
+  key11: "$${env:${ENV_VALUE}}"
+  # can escape inner and outer when nested
+  key12: "$${env:$${ENV_VALUE}}"
+  # can escape partial
+  key13: "env:MAP_VALUE_2}$${ENV_VALUE}{"
+  # $$$ -> escaped $ + expanded env var
+  key14: "$$${env:ENV_VALUE}"
+  # $ -> $
+  key15: "$ENV_VALUE"
+  # list is escaped
+  key16: "${env:ENV_LIST}"
+  # map is escaped
+  key17: "${env:ENV_MAP}"
+  # nested $$ -> escaped $
+  key18: "${env:ENV_NESTED_DOLLARSIGN}"
+  # nested $$$ -> escaped $$
+  key19: "${env:ENV_NESTED_DOLLARSIGN_ESCAPED}"
+  # nested env var syntax is expanded
+  key20: "${env:ENV_EXPAND_NESTED}"

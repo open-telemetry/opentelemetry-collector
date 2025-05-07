@@ -1,0 +1,21 @@
+type: metric
+
+status:
+  class: receiver
+  stability:
+    beta: [traces, logs, metrics]
+attributes:
+  name:
+    description: Name of sampling decision
+    type: string
+telemetry:
+  metrics:
+    sampling_decision_latency:
+      description: Latency (in microseconds) of a given sampling policy
+      unit: µs
+      enabled: true
+      stability:
+        level: alpha
+      histogram:
+        value_type: int
+      attributes: [name]

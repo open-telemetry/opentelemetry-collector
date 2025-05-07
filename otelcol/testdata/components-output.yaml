@@ -1,0 +1,48 @@
+buildinfo:
+    command: otelcol
+    description: OpenTelemetry Collector
+    version: latest
+receivers:
+    - name: nop
+      module: go.opentelemetry.io/collector/receiver/receivertest v1.2.3
+      stability:
+        logs: Stable
+        metrics: Stable
+        traces: Stable
+processors:
+    - name: nop
+      module: go.opentelemetry.io/collector/processor/processortest v1.2.3
+      stability:
+        logs: Stable
+        metrics: Stable
+        traces: Stable
+exporters:
+    - name: nop
+      module: go.opentelemetry.io/collector/exporter/exportertest v1.2.3
+      stability:
+        logs: Stable
+        metrics: Stable
+        traces: Stable
+connectors:
+    - name: nop
+      module: go.opentelemetry.io/collector/connector/connectortest v1.2.3
+      stability:
+        logs-to-logs: Development
+        logs-to-metrics: Development
+        logs-to-traces: Development
+        metrics-to-logs: Development
+        metrics-to-metrics: Development
+        metrics-to-traces: Development
+        traces-to-logs: Development
+        traces-to-metrics: Development
+        traces-to-traces: Development
+extensions:
+    - name: nop
+      module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
+      stability:
+        extension: Stable
+providers:
+    - scheme: nop
+      module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
+converters:
+    - module: go.opentelemetry.io/collector/converter/testconverter v1.2.3

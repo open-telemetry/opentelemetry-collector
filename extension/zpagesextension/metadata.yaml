@@ -1,0 +1,11 @@
+type: zpages
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [core, contrib, k8s]
+  warnings:
+    - The zPages extension is incompatible with `service::telemetry::traces::level` set to `none`

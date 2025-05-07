@@ -1,0 +1,8 @@
+type: test
+
+status:
+  class: incorrectclass
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]

@@ -1,0 +1,184 @@
+ResourceMetrics #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeMetrics #0
+ScopeMetrics SchemaURL: 
+InstrumentationScope  
+Metric #0
+Descriptor:
+     -> Name: gauge-int
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 123
+NumberDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 456
+Metric #1
+Descriptor:
+     -> Name: gauge-double
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 1.230000
+NumberDataPoints #1
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 4.560000
+Metric #2
+Descriptor:
+     -> Name: sum-int
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Sum
+     -> IsMonotonic: true
+     -> AggregationTemporality: Cumulative
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 123
+NumberDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 456
+Metric #3
+Descriptor:
+     -> Name: sum-double
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Sum
+     -> IsMonotonic: true
+     -> AggregationTemporality: Cumulative
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 1.230000
+NumberDataPoints #1
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 4.560000
+Metric #4
+Descriptor:
+     -> Name: histogram
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Histogram
+     -> AggregationTemporality: Cumulative
+HistogramDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 1
+Sum: 15.000000
+HistogramDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 1
+Sum: 15.000000
+Min: 15.000000
+Max: 15.000000
+ExplicitBounds #0: 1.000000
+Buckets #0, Count: 0
+Buckets #1, Count: 1
+Exemplars:
+Exemplar #0
+     -> Trace ID: 0102030405060708090a0b0c0d0e0f10
+     -> Span ID: 1112131415161718
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> Value: 15.000000
+     -> FilteredAttributes:
+          -> exemplar-attachment: Str(exemplar-attachment-value)
+Metric #5
+Descriptor:
+     -> Name: exponential-histogram
+     -> Description: 
+     -> Unit: 1
+     -> DataType: ExponentialHistogram
+     -> AggregationTemporality: Delta
+ExponentialHistogramDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 5
+Sum: 0.150000
+Bucket [-1.414214, -1.000000), Count: 1
+Bucket [-1.000000, -0.707107), Count: 1
+Bucket [0, 0], Count: 1
+Bucket (1.414214, 2.000000], Count: 1
+Bucket (2.000000, 2.828427], Count: 1
+ExponentialHistogramDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 3
+Sum: 1.250000
+Min: 0.000000
+Max: 1.000000
+Bucket [0, 0], Count: 1
+Bucket (0.250000, 1.000000], Count: 1
+Bucket (1.000000, 4.000000], Count: 1
+Exemplars:
+Exemplar #0
+     -> Trace ID: 0102030405060708090a0b0c0d0e0f10
+     -> Span ID: 1112131415161718
+     -> Timestamp: 2020-02-11 20:26:13.000000123 +0000 UTC
+     -> Value: 15
+     -> FilteredAttributes:
+          -> exemplar-attachment: Str(exemplar-attachment-value)
+Metric #6
+Descriptor:
+     -> Name: summary
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Summary
+SummaryDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 1
+Sum: 15.000000
+SummaryDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Count: 1
+Sum: 15.000000
+QuantileValue #0: Quantile 0.010000, Value 15.000000

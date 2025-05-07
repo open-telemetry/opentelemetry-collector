@@ -1,0 +1,7 @@
+type: file
+status:
+  class: receiver
+  stability:
+    development: [incorrectcomponent]
+    beta: [traces]
+    stable: [metrics]

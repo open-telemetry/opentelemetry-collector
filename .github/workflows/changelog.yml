@@ -1,0 +1,85 @@
+# This action requires that any PR targeting the main branch should touch at
+# least one CHANGELOG file. If a CHANGELOG entry is not required, add the "Skip
+# Changelog" label to disable this action.
+
+name: changelog
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled, edited]
+    branches:
+      - main
+  merge_group:
+    types: [checks_requested]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions: read-all
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]') }}
+
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+
+      - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
+        run: |
+          if [[ $(git diff --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./CHANGELOG*.md) ]]
+          then
+          echo "CHANGELOG.md and CHANGELOG-API.md should not be directly modified."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
+            echo "See CONTRIBUTING.md for more details."
+            echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+            false
+          else
+          echo "CHANGELOG.md and CHANGELOG-API.md were not modified."
+          fi
+
+      - name: Ensure ./.chloggen/*.yaml addition(s)
+        run: |
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen | grep -c \\.yaml) ]]
+          then
+            echo "No changelog entry was added to the ./.chloggen/ directory."
+            echo "Please add a .yaml file to the ./.chloggen/ directory."
+            echo "See CONTRIBUTING.md for more details."
+            echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+            false
+          else
+            echo "A changelog entry was added to the ./.chloggen/ directory."
+          fi
+
+      - name: Validate ./.chloggen/*.yaml changes
+        run: |
+          make chlog-validate \
+            || { echo "New ./.chloggen/*.yaml file failed validation."; exit 1; }
+
+      # In order to validate any links in the yaml file, render the config to markdown
+      - name: Render .chloggen changelog entries
+        run: make chlog-preview > changelog_preview.md
+      - name: Link Checker
+        id: lychee
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        with:
+          args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
+          failIfEmpty: false

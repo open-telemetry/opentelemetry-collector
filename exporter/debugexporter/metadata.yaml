@@ -1,0 +1,13 @@
+type: debug
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  codeowners:
+    active:
+      - andrzej-stencel
+  class: exporter
+  stability:
+    development: [traces, metrics, logs, profiles]
+  distributions: [core, contrib, k8s]
+  warnings: [Unstable Output Format]

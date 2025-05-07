@@ -1,0 +1,13 @@
+receivers:
+  nop:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  nop:
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines: ${file:${env:BASE_FOLDER}/indirect-slice-env-var-pipelines.yaml}

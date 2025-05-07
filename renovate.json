@@ -1,0 +1,145 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "labels": [
+    "renovatebot",
+    "dependencies"
+  ],
+  "constraints": {
+    "go": "1.23"
+  },
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "schedule": [
+    "on tuesday"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "pin",
+        "pinDigest",
+        "digest",
+        "lockFileMaintenance",
+        "rollback",
+        "bump",
+        "replacement"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "prBodyNotes": [
+        ":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"
+      ],
+      "labels": [
+        "dependency-major-update"
+      ]
+    },
+    {
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "dockerfile deps"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "groupName": "docker-compose deps"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions deps"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/open-telemetry/opentelemetry-go-contrib"
+      ],
+      "groupName": "All opentelemetry-go-contrib packages"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/contrib packages",
+      "matchSourceUrls": [
+        "https://go.opentelemetry.io/otel{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All google.golang.org packages",
+      "matchSourceUrls": [
+        "https://google.golang.org{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All golang.org/x packages",
+      "matchPackageNames": [
+        "golang.org/x{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/knadh/koanf packages",
+      "matchPackageNames": [
+        "github.com/knadh/koanf{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/collector packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/collector{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All go.opentelemetry.io/build-tools packages",
+      "matchPackageNames": [
+        "go.opentelemetry.io/build-tools{/,}**"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "toolchain"
+      ],
+      "enabled": false
+    }
+  ],
+  "ignoreDeps": [
+    "github.com/mattn/go-ieproxy"
+  ],
+  "prConcurrentLimit": 200,
+  "suppressNotifications": [
+    "prEditedNotification"
+  ]
+}

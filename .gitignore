@@ -1,0 +1,40 @@
+bin/
+dist/
+.tools/
+local
+
+# GoLand IDEA
+/.idea/
+*.iml
+
+# VS Code
+.vscode/
+.devcontainer/
+
+# Emacs
+*~
+\#*\#
+
+# Miscellaneous files
+*.sw[op]
+*.DS_Store
+
+# Coverage
+coverage/*
+coverage.txt
+
+# Benchmarks
+**/benchmark.txt
+benchmarks.txt
+
+# Wix
+*.wixobj
+*.wixpdb
+
+# golang
+go.work*
+
+# npm (used for markdown-link-check)
+node_modules/*
+package-lock.json
+

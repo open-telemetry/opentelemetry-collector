@@ -1,0 +1,45 @@
+ResourceMetrics #0
+Resource SchemaURL: 
+Resource attributes:
+     -> resource-attr: Str(resource-attr-val-1)
+ScopeMetrics #0
+ScopeMetrics SchemaURL: 
+InstrumentationScope  
+Metric #0
+Descriptor:
+     -> Name: gauge-int
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 123
+NumberDataPoints #1
+Data point attributes:
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 456
+Metric #1
+Descriptor:
+     -> Name: gauge-double
+     -> Description: 
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-2: Str(label-value-2)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 1.230000
+NumberDataPoints #1
+Data point attributes:
+     -> label-1: Str(label-value-1)
+     -> label-3: Str(label-value-3)
+StartTimestamp: 2020-02-11 20:26:12.000000321 +0000 UTC
+Timestamp: 2020-02-11 20:26:13.000000789 +0000 UTC
+Value: 4.560000

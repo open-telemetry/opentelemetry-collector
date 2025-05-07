@@ -1,0 +1,70 @@
+type: receiverhelper
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    beta: [traces, metrics, logs]
+
+telemetry:
+  metrics:
+    receiver_accepted_spans:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of spans successfully pushed into the pipeline.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_refused_spans:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of spans that could not be pushed into the pipeline.
+      unit: "{spans}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_accepted_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points successfully pushed into the pipeline.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_refused_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points that could not be pushed into the pipeline.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_accepted_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records successfully pushed into the pipeline.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_refused_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records that could not be pushed into the pipeline.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true

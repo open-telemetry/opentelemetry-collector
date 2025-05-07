@@ -1,0 +1,9 @@
+type: xextension
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: extension
+  codeowners:
+  stability:
+    development: [profiles]

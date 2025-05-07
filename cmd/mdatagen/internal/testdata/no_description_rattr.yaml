@@ -1,0 +1,12 @@
+type: file
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+resource_attributes:
+  string.resource.attr:
+    type: string
+    enabled: true

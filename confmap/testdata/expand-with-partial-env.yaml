@@ -1,0 +1,10 @@
+test_map:
+  extra: "${env:EXTRA}"
+  extra_map:
+    recv.1: "${env:EXTRA_MAP_VALUE_1}"
+    recv.2: "some map value_2"
+  extra_list_map:
+    - { recv.1: "some list map value_1",recv.2: "${env:EXTRA_LIST_MAP_VALUE_2}" }
+  extra_list:
+    - "some list value_1"
+    - "${env:EXTRA_LIST_VALUE_2}"

@@ -1,0 +1,285 @@
+name: build-and-test
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  merge_group:
+    types: [checks_requested]
+  pull_request:
+
+permissions: read-all
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  setup-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make gomoddownload
+
+  lint:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: golint
+        run: make -j2 golint
+      - name: goimpi
+        run: make goimpi
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
+      - name: Run `govulncheck`
+        run: make govulncheck
+
+  checks:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: checklicense
+        run: make checklicense
+      - name: misspell
+        run: make misspell
+      - name: checkdoc
+        run: make checkdoc
+      - name: checkapi
+        run: make checkapi
+      - name: Check for go mod dependency changes
+        run: |
+          make gotidy
+          git diff --exit-code || (echo 'go.mod/go.sum deps changes detected, please run "make gotidy" and commit the changes in this PR.' && exit 1)
+      - name: go:porto
+        run: |
+          make goporto
+          git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
+      - name: go:generate
+        run: |
+          make gogenerate
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make gogenerate" and commit the changes in this PR.' && exit 1)
+      - name: Gen Pdata
+        run: |
+          make genpdata
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genpdata" and commit the changes in this PR.' && exit 1)
+      - name: Gen otelcorecol
+        run: |
+          make genotelcorecol
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genotelcorecol" and commit the changes in this PR.' && exit 1)
+      - name: Multimod verify
+        run: make multimod-verify
+      - name: crosslink
+        run: |
+          make crosslink
+          git diff -s --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+
+  unittest-matrix:
+    strategy:
+      matrix:
+        runner: [ubuntu-latest]
+        go-version: ["~1.24", "~1.23"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+    runs-on: ${{ matrix.runner }}
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Build
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: ~/.cache/go-build
+          key: unittest-${{ runner.os }}-${{ matrix.runner }}-go-build-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit Tests
+        run: |
+          make -j4 gotest-with-junit
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: test-results-${{ runner.os }}-${{ matrix.runner }}-${{ matrix.go-version }}
+          path: internal/tools/testresults/
+          retention-days: 4
+  unittest:
+    if: always()
+    runs-on: ubuntu-latest
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
+
+  test-coverage:
+    runs-on: ubuntu-latest
+    needs: [setup-environment]
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Build
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: ~/.cache/go-build
+          key: coverage-${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit Tests With Coverage
+        run: make gotest-with-cover
+      - name: Upload coverage report
+        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # 5.4.0
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  cross-build-collector:
+    needs: [setup-environment]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
+          #- goos: darwin
+          #  goarch: 386
+          - goos: aix
+            goarch: ppc64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: linux
+            goarch: 386
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: linux
+            goarch: ppc64le
+          - goos: linux
+            goarch: arm
+            goarm: 7
+          - goos: linux
+            goarch: s390x
+          - goos: windows
+            goarch: 386
+          - goos: windows
+            goarch: amd64
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: ~1.23.8
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Build
+        env:
+          GOOS: ${{matrix.goos}}
+          GOARCH: ${{matrix.goarch}}
+          GOARM: ${{matrix.goarm}}
+        run: |
+          make otelcorecol
