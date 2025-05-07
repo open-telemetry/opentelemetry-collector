@@ -914,7 +914,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+	marshaled, err := marshalRequestWithSpanContext(context.Background(), uint64Encoding{}, uint64(50))
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 

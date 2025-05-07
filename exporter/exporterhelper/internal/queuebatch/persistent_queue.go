@@ -250,7 +250,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 type marshaledRequestWithSpanContext struct {
 	RequestBytes    []byte          `json:"request"`
-	SpanContextJSON json.RawMessage `json:"span_context"`
+	SpanContextJSON json.RawMessage `json:"span_context,omitempty"`
 }
 
 type spanContextConfigWrapper struct {
@@ -298,6 +298,53 @@ func SpanContextFromWrapper(wrapper spanContextConfigWrapper) (*trace.SpanContex
 	return &sc, nil
 }
 
+// unmarshalRequestWithSpanContext unmarshals a marshaledRequestWithSpanContext from bytes, returning the request
+// and a context with the restored SpanContext (if present).
+func unmarshalRequestWithSpanContext[T any](encoding Encoding[T], value []byte) (T, context.Context, error) {
+	var req T
+	restoredContext := context.Background()
+	var envelope marshaledRequestWithSpanContext
+	if err := json.Unmarshal(value, &envelope); err != nil {
+		return req, restoredContext, err
+	}
+	request, err := encoding.Unmarshal(envelope.RequestBytes)
+	if err != nil {
+		return req, restoredContext, err
+	}
+	if len(envelope.SpanContextJSON) > 0 {
+		var wrapper spanContextConfigWrapper
+		if err := json.Unmarshal(envelope.SpanContextJSON, &wrapper); err == nil {
+			if sc, err := SpanContextFromWrapper(wrapper); err == nil && sc != nil {
+				restoredContext = trace.ContextWithSpanContext(restoredContext, *sc)
+			}
+		}
+	}
+	return request, restoredContext, nil
+}
+
+// marshalRequestWithSpanContext marshals the request and the SpanContext from ctx into a marshaledRequestWithSpanContext envelope as bytes.
+func marshalRequestWithSpanContext[T any](ctx context.Context, encoding Encoding[T], req T) ([]byte, error) {
+	reqBuf, err := encoding.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	sc := trace.SpanContextFromContext(ctx)
+	var scJSON []byte
+	if sc.IsValid() {
+		scJSON, err = json.Marshal(sc)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		scJSON = nil // Will be omitted due to omitempty
+	}
+	envelope := marshaledRequestWithSpanContext{
+		RequestBytes:    reqBuf,
+		SpanContextJSON: scJSON,
+	}
+	return json.Marshal(envelope)
+}
+
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	reqSize := pq.set.sizer.Sizeof(req)
@@ -310,28 +357,14 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		}
 	}
 
-	reqBuf, err := pq.set.encoding.Marshal(req)
-	if err != nil {
-		return err
-	}
-	// Retrieve SpanContext object from provided context, and store alongside the request
-	sc := trace.SpanContextFromContext(ctx)
-	scJSON, err := json.Marshal(sc)
-	if err != nil {
-		return err
-	}
-	envelope := marshaledRequestWithSpanContext{
-		RequestBytes:    reqBuf,
-		SpanContextJSON: scJSON,
-	}
-	envelopeBytes, err := json.Marshal(envelope)
+	reqBuf, err := marshalRequestWithSpanContext(ctx, pq.set.encoding, req)
 	if err != nil {
 		return err
 	}
 	// Carry out a transaction where we both add the item and update the write index
 	ops := []*storage.Operation{
 		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1)),
-		storage.SetOperation(getItemKey(pq.writeIndex), envelopeBytes),
+		storage.SetOperation(getItemKey(pq.writeIndex), reqBuf),
 	}
 	if err = pq.client.Batch(ctx, ops...); err != nil {
 		return err
@@ -400,22 +433,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 	var request T
 	restoredContext := context.Background()
 	if err == nil {
-		var envelope marshaledRequestWithSpanContext
-		if err = json.Unmarshal(getOp.Value, &envelope); err == nil {
-			// Unmarshal the request using the specified encoding
-			if request, err = pq.set.encoding.Unmarshal(envelope.RequestBytes); err == nil {
-				// Unmarshal the SpanContext from JSON
-				var wrapper spanContextConfigWrapper
-				if len(envelope.SpanContextJSON) > 0 {
-					if err = json.Unmarshal(envelope.SpanContextJSON, &wrapper); err == nil {
-						var sc *trace.SpanContext
-						if sc, err = SpanContextFromWrapper(wrapper); err == nil && sc != nil {
-							restoredContext = trace.ContextWithSpanContext(restoredContext, *sc)
-						}
-					}
-				}
-			}
-		}
+		request, restoredContext, err = unmarshalRequestWithSpanContext(pq.set.encoding, getOp.Value)
 	}
 
 	if err != nil {
@@ -524,7 +542,7 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pq.set.encoding.Unmarshal(op.Value)
+		req, _, err := unmarshalRequestWithSpanContext(pq.set.encoding, op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
