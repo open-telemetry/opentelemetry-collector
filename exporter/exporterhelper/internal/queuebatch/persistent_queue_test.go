@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -1304,7 +1305,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scc, err := SpanContextFromWrapper(tc.wrapper)
+			scc, err := spanContextFromWrapper(tc.wrapper)
 			if tc.expectErr {
 				require.Error(t, err)
 				if tc.errContains != "" {
@@ -1383,4 +1384,102 @@ func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
 	assert.Equal(t, req2, gotReq2)
 	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
 	assert.False(t, restoredSC2.IsValid())
+}
+
+func TestMarshalUnmarshalRequestWithSpanContext(t *testing.T) {
+	t.Run("valid SpanContext round-trip", func(t *testing.T) {
+		traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+		spanID, _ := trace.SpanIDFromHex("0102030405060708")
+		sc := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    traceID,
+			SpanID:     spanID,
+			TraceFlags: 0x01,
+			TraceState: trace.TraceState{},
+			Remote:     true,
+		})
+		ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+		request := uint64(42)
+		data, err := marshalRequestWithSpanContext(ctxWithSC, uint64Encoding{}, request)
+		require.NoError(t, err)
+		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		require.NoError(t, err)
+		assert.Equal(t, request, gotReq)
+		restoredSC := trace.SpanContextFromContext(gotCtx)
+		assert.True(t, restoredSC.IsValid())
+		assert.Equal(t, sc.TraceID(), restoredSC.TraceID())
+		assert.Equal(t, sc.SpanID(), restoredSC.SpanID())
+		assert.Equal(t, sc.TraceFlags(), restoredSC.TraceFlags())
+		assert.Equal(t, sc.TraceState().String(), restoredSC.TraceState().String())
+		assert.Equal(t, sc.IsRemote(), restoredSC.IsRemote())
+	})
+
+	t.Run("invalid SpanContext is omitted", func(t *testing.T) {
+		// An invalid SpanContext (zero value)
+		ctxWithInvalidSC := trace.ContextWithSpanContext(context.Background(), trace.SpanContext{})
+		request := uint64(99)
+		data, err := marshalRequestWithSpanContext(ctxWithInvalidSC, uint64Encoding{}, request)
+		require.NoError(t, err)
+		// Should not contain span_context field
+		assert.NotContains(t, string(data), "span_context")
+		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		require.NoError(t, err)
+		assert.Equal(t, request, gotReq)
+		restoredSC := trace.SpanContextFromContext(gotCtx)
+		assert.False(t, restoredSC.IsValid())
+	})
+
+	t.Run("no SpanContext in context is omitted", func(t *testing.T) {
+		request := uint64(123)
+		data, err := marshalRequestWithSpanContext(context.Background(), uint64Encoding{}, request)
+		require.NoError(t, err)
+		assert.NotContains(t, string(data), "span_context")
+		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		require.NoError(t, err)
+		assert.Equal(t, request, gotReq)
+		restoredSC := trace.SpanContextFromContext(gotCtx)
+		assert.False(t, restoredSC.IsValid())
+	})
+
+	t.Run("corrupted span_context field", func(t *testing.T) {
+		// Manually create a bad envelope
+		envelope := marshaledRequestWithSpanContext{
+			RequestBytes:    []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+			SpanContextJSON: []byte(`{"TraceID":123}`), // invalid TraceID
+		}
+		data, err := json.Marshal(envelope)
+		require.NoError(t, err)
+		_, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		require.NoError(t, err)
+		// Should not panic, should return background context
+		restoredSC := trace.SpanContextFromContext(gotCtx)
+		assert.False(t, restoredSC.IsValid())
+	})
+
+	t.Run("valid JSON, invalid RequestBytes returns error", func(t *testing.T) {
+		envelope := marshaledRequestWithSpanContext{
+			RequestBytes:    []byte{0x01, 0x02}, // too short for uint64Encoding.Unmarshal
+			SpanContextJSON: nil,
+		}
+		data, err := json.Marshal(envelope)
+		require.NoError(t, err)
+		_, _, err = unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		require.Error(t, err)
+	})
+}
+
+type errorEncoding struct{}
+
+func (errorEncoding) Marshal(_ uint64) ([]byte, error) {
+	return nil, errors.New("marshal error")
+}
+
+func (errorEncoding) Unmarshal(_ []byte) (uint64, error) {
+	return 0, nil
+}
+
+func TestMarshalRequestWithSpanContext_MarshalError(t *testing.T) {
+	ctx := context.Background()
+	_, err := marshalRequestWithSpanContext(ctx, errorEncoding{}, uint64(123))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "marshal error")
 }
