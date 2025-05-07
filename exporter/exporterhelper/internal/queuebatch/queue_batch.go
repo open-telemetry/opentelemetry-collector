@@ -66,11 +66,12 @@ func newQueueBatch(
 	if cfg.Batch != nil {
 		if oldBatcher {
 			// If user configures the old batcher we only can support "items" sizer.
-			b = newSingleBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
+			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:   request.SizerTypeItems,
+				sizer:       request.NewItemsSizer(),
+				partitioner: nil,
+				next:        next,
+				maxWorkers:  cfg.NumConsumers,
 			})
 		} else {
 			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
