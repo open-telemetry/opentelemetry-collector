@@ -195,3 +195,9 @@ func (es Slice) Equal(val Slice) bool {
 	}
 	return true
 }
+
+// AsReadOnly returns a read-only shallow copy of this Slice instance.
+func (es Slice) AsReadOnly() Slice {
+	state := internal.StateReadOnly
+	return newSlice(es.getOrig(), &state)
+}

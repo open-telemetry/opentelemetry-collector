@@ -335,3 +335,9 @@ func (m Map) Equal(val Map) bool {
 	})
 	return fullEqual
 }
+
+// AsReadOnly returns a read-only shallow copy of this Map instance.
+func (m Map) AsReadOnly() Map {
+	state := internal.StateReadOnly
+	return newMap(m.getOrig(), &state)
+}

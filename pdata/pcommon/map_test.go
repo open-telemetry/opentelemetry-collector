@@ -92,6 +92,30 @@ func TestMapReadOnly(t *testing.T) {
 	assert.Panics(t, func() { _ = m.FromRaw(map[string]any{"k1": "v1"}) })
 }
 
+func TestMapReadOnlyValues(t *testing.T) {
+	state := internal.StateReadOnly
+	m := newMap(&[]otlpcommon.KeyValue{
+		{Key: "k1", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}}},
+		{Key: "k2", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v2"}}},
+	}, &state)
+
+	// Value returned by Get(k) must be read-only.
+	gv, ok := m.Get("k1")
+	assert.True(t, ok)
+	assert.Panics(t, func() { gv.SetStr("foo") })
+
+	// Value passed to the Range() callback must be read-only.
+	m.Range(func(_ string, rv Value) bool {
+		assert.Panics(t, func() { rv.SetStr("foo") })
+		return true
+	})
+
+	// Yielded values from All() must be read-only.
+	for _, iv := range m.All() {
+		assert.Panics(t, func() { iv.SetStr("foo") })
+	}
+}
+
 func TestMapPutEmpty(t *testing.T) {
 	m := NewMap()
 	v := m.PutEmpty("k1")
@@ -530,6 +554,30 @@ func TestMap_RemoveIf(t *testing.T) {
 	assert.False(t, exists)
 	_, exists = am.Get("k_empty")
 	assert.True(t, exists)
+}
+
+func TestMap_AsReadOnly(t *testing.T) {
+	src := NewMap()
+	src.PutStr("k1", "v1")
+	src.PutStr("k2", "v2")
+
+	cp := src.AsReadOnly()
+
+	// Assert read-only state and values
+	readOnlyState := internal.StateReadOnly
+	assert.Equal(t, &readOnlyState, cp.getState())
+	assert.NotEqual(t, src, cp)
+	assert.Equal(t, src.AsRaw(), cp.AsRaw())
+
+	// Assert it's a shallow copy
+	k1Val, _ := src.Get("k1")
+	require.NotNil(t, k1Val)
+	k1Val.SetStr("shallow")
+
+	srcVal, _ := src.Get("k1")
+	cpVal, _ := cp.Get("k1")
+	assert.NotEqual(t, srcVal, cpVal)
+	assert.Equal(t, srcVal.AsRaw(), cpVal.AsRaw())
 }
 
 func generateTestEmptyMap(t *testing.T) Map {
