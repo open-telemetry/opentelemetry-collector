@@ -61,6 +61,7 @@ There are three supported ways to install the builder:
 1. Via official release Docker images (recommended)
 2. Via official release binaries (recommended)
 3. Through `go install` (not recommended)
+4. Through `go get --tool`
 
 ### Official release Docker image
 
@@ -112,7 +113,25 @@ To build a default collector configuration, you can use [this](../otelcorecol/bu
 ocb --config=builder-config.yaml
 ```
 
-Use `ocb --help` to learn about which flags are available.
+### `go get --tool` (`go version` >= 1.24)
+
+You need to have a `go` compiler in your PATH, as well as a Go project containing a `go.mod` file.
+
+Run the following command to register the `builder` CLI as a go tool.
+
+```console
+go get --tool go.opentelemetry.io/collector/cmd/builder
+```
+
+If Installed through this method, the binary can be called with `go tool builder` . Note that it will only be accessible from within your Go project.
+
+The upside of using `go get --tool` over the other aforementioned method is that the go toolchain manages the binary like any other dependency: a `tool` directive will be added to your `go.mod` file.
+
+This has a couple upsides:
+
+- You can pin the version of the builder used to build your distribution, which also pins the version of the core Collector libraries used as part of it. This ensures compatibility with imports of OTel libraries within your component code.
+- Different go projects using different versions will use different `builder` managed automatically instead of forcing the user to download multiple versions of the binary.  
+
 
 ## Debug
 
