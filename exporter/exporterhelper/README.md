@@ -1,8 +1,7 @@
 # Exporter Helper
 
-This is a helper exporter that other exporters can depend on. Today, it primarily offers queued retry capabilities.
-
-> :warning: This exporter should not be added to a service pipeline.
+This package provides reusable implementations of common capabilities for exporters.
+Currently, this includes queuing, batching, timeouts, and retries.
 
 ## Configuration
 
