@@ -30,6 +30,14 @@ Number of spans in failed attempts to batch in the exporter. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_exporter_batch_size
+
+Batches size in the queue [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {bytes} | Gauge | Int |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [alpha]

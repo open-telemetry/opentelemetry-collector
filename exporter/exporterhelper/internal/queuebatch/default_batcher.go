@@ -53,7 +53,10 @@ type defaultBatcher struct {
 
 type metricsBatcher struct {
 	ExporterBatchFailedItems metric.Int64Counter
+	ExporterBatchSize        metric.Int64ObservableGauge
 	metricAttr               metric.MeasurementOption
+	batchSize                int64
+	batchSizeMu              sync.Mutex
 }
 
 func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
@@ -87,8 +90,17 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 
 		batcherMetrics = &metricsBatcher{
 			ExporterBatchFailedItems: failedItems,
+			ExporterBatchSize:        tb.ExporterBatchSize,
 			metricAttr:               metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
 		}
+
+		// Register callback for batch size gauge
+		_ = tb.RegisterExporterBatchSizeCallback(func(_ context.Context, observer metric.Int64Observer) error {
+			batcherMetrics.batchSizeMu.Lock()
+			defer batcherMetrics.batchSizeMu.Unlock()
+			observer.Observe(batcherMetrics.batchSize, batcherMetrics.metricAttr)
+			return nil
+		})
 	}
 
 	return &defaultBatcher{
@@ -119,6 +131,16 @@ func (qb *defaultBatcher) observeBatchedItems(ctx context.Context, reqList []req
 
 	if diff > 0 && qb.metrics != nil {
 		qb.metrics.ExporterBatchFailedItems.Add(ctx, int64(diff), qb.metrics.metricAttr)
+	}
+
+	size := 0
+	for _, req := range reqList {
+		size += req.BytesSize()
+	}
+	if qb.metrics != nil {
+		qb.metrics.batchSizeMu.Lock()
+		qb.metrics.batchSize = int64(size)
+		qb.metrics.batchSizeMu.Unlock()
 	}
 }
 
