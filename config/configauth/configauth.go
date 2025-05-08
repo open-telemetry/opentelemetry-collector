@@ -22,9 +22,6 @@ var (
 	errNotServer             = errors.New("requested authenticator is not a server authenticator")
 )
 
-// Deprecated: [v0.125.0] Use Config instead.
-type Authentication = Config
-
 // Config defines the auth settings for the receiver.
 type Config struct {
 	// AuthenticatorID specifies the name of the extension to use in order to authenticate the incoming data point.
