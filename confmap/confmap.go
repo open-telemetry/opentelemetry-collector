@@ -309,12 +309,14 @@ func isStringyStructure(t reflect.Type) bool {
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
 // original string representation when decoding into a string field, and use the original otherwise.
-func useExpandValue() mapstructure.DecodeHookFuncType {
+func useExpandValue() mapstructure.DecodeHookFuncValue {
 	return func(
-		_ reflect.Type,
-		to reflect.Type,
-		data any,
+		fromVal reflect.Value,
+		toVal reflect.Value,
 	) (any, error) {
+		to := toVal.Type()
+		data := fromVal.Interface()
+
 		if exp, ok := data.(expandedValue); ok {
 			v := castTo(exp, to.Kind() == reflect.String)
 			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10949
@@ -378,14 +380,18 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 	}
 }
 
-// mapKeyStringToMapKeyTextUnmarshalerHookFunc returns a DecodeHookFuncType that checks that a conversion from
+// mapKeyStringToMapKeyTextUnmarshalerHookFunc returns a DecodeHookFuncValue that checks that a conversion from
 // map[string]any to map[encoding.TextUnmarshaler]any does not overwrite keys,
 // when UnmarshalText produces equal elements from different strings (e.g. trims whitespaces).
 //
 // This is needed in combination with ComponentID, which may produce equal IDs for different strings,
 // and an error needs to be returned in that case, otherwise the last equivalent ID overwrites the previous one.
-func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncType {
-	return func(from reflect.Type, to reflect.Type, data any) (any, error) {
+func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
+	return func(fromVal reflect.Value, toVal reflect.Value) (any, error) {
+		from := fromVal.Type()
+		to := toVal.Type()
+		data := fromVal.Interface()
+
 		if from.Kind() != reflect.Map || from.Key().Kind() != reflect.String {
 			return data, nil
 		}
