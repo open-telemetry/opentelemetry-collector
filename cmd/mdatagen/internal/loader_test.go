@@ -250,13 +250,30 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Events: map[EventName]Event{
 					"default.event": {
-						Enabled:               true,
-						Description:           "Example event enabled by default.",
-						ExtendedDocumentation: "The event will be renamed soon.",
+						Enabled:     true,
+						Description: "Example event enabled by default.",
 						Warnings: Warnings{
 							IfEnabledNotSet: "This event will be disabled by default soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
+					"default.event.to_be_renamed": {
+						Enabled:               false,
+						Description:           "[DEPRECATED] Example event disabled by default.",
+						ExtendedDocumentation: "The event will be renamed soon.",
+						Warnings: Warnings{
+							IfConfigured: "This event is deprecated and will be renamed soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+					},
+					"default.event.to_be_removed": {
+						Enabled:               true,
+						Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
+						ExtendedDocumentation: "The event will be will be removed soon.",
+						Warnings: Warnings{
+							IfEnabled: "This event is deprecated and will be removed soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Telemetry: Telemetry{
