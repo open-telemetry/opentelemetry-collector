@@ -111,6 +111,8 @@ jobs:
         run: make misspell
       - name: checkdoc
         run: make checkdoc
+      - name: checkapi
+        run: make checkapi
       - name: Check for go mod dependency changes
         run: |
           make gotidy

@@ -26,6 +26,7 @@ Before the release, make sure there are no open release blockers in [core](https
 ## Releasing opentelemetry-collector
 
 1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
+   - While this PR is open, all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.

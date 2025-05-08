@@ -315,6 +315,10 @@ certs:
 certs-dryrun:
 	@internal/buildscripts/gen-certs.sh -d
 
+.PHONY: checkapi
+checkapi: $(CHECKAPI)
+	$(CHECKAPI) -folder . -config .checkapi.yaml
+
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
 checkdoc: $(CHECKFILE)

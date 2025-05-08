@@ -7,6 +7,7 @@ github_project: open-telemetry/opentelemetry-collector
 sem_conv_version: 1.9.0
 
 status:
+  disable_codecov_badge: true
   class: receiver
   stability:
     development: [logs]
@@ -109,12 +110,25 @@ events:
   default.event:
     enabled: true
     description: Example event enabled by default.
-    extended_documentation: The event will be renamed soon.
-    attributes:
-      - string_attr
-      - boolean_attr
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
     warnings:
       if_enabled_not_set: This event will be disabled by default soon.
+
+  default.event.to_be_renamed:
+    enabled: false
+    description: "[DEPRECATED] Example event disabled by default."
+    extended_documentation: The event will be renamed soon.
+    attributes: [ string_attr, boolean_attr, boolean_attr2 ]
+    warnings:
+      if_configured: This event is deprecated and will be renamed soon.
+
+  default.event.to_be_removed:
+    enabled: true
+    description: "[DEPRECATED] Example to-be-removed event enabled by default."
+    extended_documentation: The event will be will be removed soon.
+    warnings:
+      if_enabled: This event is deprecated and will be removed soon.
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
 
 metrics:
   default.metric:

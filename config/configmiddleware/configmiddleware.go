@@ -29,6 +29,8 @@ var (
 type Config struct {
 	// ID specifies the name of the extension to use.
 	ID component.ID `mapstructure:"id,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
