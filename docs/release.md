@@ -178,20 +178,22 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - Changing the configuration to an easy to find value.
 2. The bug happens in common setups. To gauge this, maintainers can consider the following:
     - If the bug is specific to a certain platform, and if that platform is in [Tier 1](../docs/platform-support.md#tiered-platform-support-model).
-    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+    - The bug happens with the default configuration or with one that is known to be used in production.
 3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
     - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+    - The bug makes it difficult to troubleshoot or debug Collector setups
 
 We aim to provide a release that fixes security-related issues in at most 30 days since they are publicly announced; with the current release schedule this means security issues will typically not warrant a bugfix release. An exception is critical vulnerabilities (CVSSv3 score >= 9.0), which will warrant a release within five business days.
 
 The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug or security issue fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+If the maintainers are unable to reach consensus within one working day, we will lean towards releasing a bugfix version.
 
 ### Bugfix release procedure
 
-The following documents the procedure to release a bugfix
+The release manager of a minor version is responsible for releasing any bugfix versions on this release series. The following documents the procedure to release a bugfix
 
 1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
