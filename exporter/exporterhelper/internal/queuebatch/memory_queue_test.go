@@ -202,6 +202,7 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	// Consume async new data.
 	go func() {
 		defer wg.Done()
+		wg.Add(1)
 		for {
 			_, req, done, ok := q.Read(context.Background())
 			if !ok {
