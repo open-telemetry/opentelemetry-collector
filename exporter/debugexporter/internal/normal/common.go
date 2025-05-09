@@ -23,30 +23,30 @@ func writeAttributes(attributes pcommon.Map) (attributeStrings []string) {
 func writeAttributesString(attributesMap pcommon.Map) (attributesString string) {
 	attributes := writeAttributes(attributesMap)
 	if len(attributes) > 0 {
-		attributesString = fmt.Sprintf(" %s", strings.Join(attributes, " "))
+		attributesString = " " + strings.Join(attributes, " ")
 	}
 	return attributesString
 }
 
-func writeResourceDetails(schemaUrl string) (resourceDetails string) {
-	if len(schemaUrl) > 0 {
-		resourceDetails = " [" + schemaUrl + "]"
+func writeResourceDetails(schemaURL string) (resourceDetails string) {
+	if len(schemaURL) > 0 {
+		resourceDetails = " [" + schemaURL + "]"
 	}
 	return resourceDetails
 }
 
-func writeScopeDetails(name string, version string, schemaUrl string) (scopeDetails string) {
+func writeScopeDetails(name string, version string, schemaURL string) (scopeDetails string) {
 	if len(name) > 0 {
 		scopeDetails += name
 	}
 	if len(version) > 0 {
 		scopeDetails += "@" + version
 	}
-	if len(schemaUrl) > 0 {
+	if len(schemaURL) > 0 {
 		if len(scopeDetails) > 0 {
 			scopeDetails += " "
 		}
-		scopeDetails += "[" + schemaUrl + "]"
+		scopeDetails += "[" + schemaURL + "]"
 	}
 	if len(scopeDetails) > 0 {
 		scopeDetails = " " + scopeDetails
