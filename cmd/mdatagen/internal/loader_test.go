@@ -179,6 +179,14 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "map_attr",
 					},
+					"optional_attr": {
+						Description: "An optional attribute",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "optional_attr",
+						Optional: true,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -194,7 +202,7 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"optional.metric": {
 						Enabled:     false,
@@ -206,7 +214,7 @@ func TestLoadMetadata(t *testing.T) {
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"optional.metric.empty_unit": {
 						Enabled:     false,
@@ -255,7 +263,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabledNotSet: "This event will be disabled by default soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"default.event.to_be_renamed": {
 						Enabled:               false,
@@ -264,7 +272,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfConfigured: "This event is deprecated and will be renamed soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"default.event.to_be_removed": {
 						Enabled:               true,

@@ -217,6 +217,34 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
+				"eventAttributes": func() []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Events {
+						for _, attribute := range event.Attributes {
+							if !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					return used
+				},
+				"metricAttributes": func() []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Metrics {
+						for _, attribute := range event.Attributes {
+							if !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					return used
+				},
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]
 				},
@@ -297,7 +325,7 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
 				// with a `/` for it to find the file.
-			}).ParseFS(TemplateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
+			}).ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
 func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, error) {
