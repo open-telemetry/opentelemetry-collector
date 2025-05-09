@@ -92,6 +92,10 @@ func (req *metricsRequest) setCachedSize(count int) {
 	req.cachedSize = count
 }
 
+func (req *metricsRequest) BytesSize() int {
+	return req.size(&sizer.MetricsBytesSizer{})
+}
+
 type metricsExporter struct {
 	*internal.BaseExporter
 	consumer.Metrics

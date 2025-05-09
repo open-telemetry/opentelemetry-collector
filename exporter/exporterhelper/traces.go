@@ -92,6 +92,10 @@ func (req *tracesRequest) setCachedSize(size int) {
 	req.cachedSize = size
 }
 
+func (req *tracesRequest) BytesSize() int {
+	return req.size(&sizer.TracesBytesSizer{})
+}
+
 type tracesExporter struct {
 	*internal.BaseExporter
 	consumer.Traces
