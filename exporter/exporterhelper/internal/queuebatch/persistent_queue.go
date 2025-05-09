@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"sync"
 
@@ -257,7 +256,42 @@ type spanContextConfigWrapper struct {
 	Remote     bool
 }
 
-func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*trace.SpanContext, error) {
+type spanContext trace.SpanContext
+
+//	func (sc *spanContext) MarshalJSON() ([]byte, error) {
+//		return json.Marshal(sc)
+//	}
+func (sc *spanContext) UnmarshalJSON(data []byte) error {
+	var scc spanContextConfigWrapper
+	err := json.Unmarshal(data, &scc)
+	if err != nil {
+		fmt.Println("Error unmarshaling JSON into spanContextConfigWrapper:", err)
+		return err
+	}
+	fmt.Println("Unmarshaled spanContextConfigWrapper:", scc)
+
+	scfw, err := spanContextFromWrapper(scc)
+	if err != nil {
+		fmt.Println("Error converting spanContextConfigWrapper to spanContext:", err)
+		return err
+	}
+	*sc = *scfw
+	return nil
+}
+
+func traceFlagsFromHex(hexStr string) (*trace.TraceFlags, error) {
+	decoded, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, err
+	}
+	if len(decoded) != 1 {
+		return nil, errors.New(errInvalidTraceFlagsLength)
+	}
+	traceFlags := trace.TraceFlags(decoded[0])
+	return &traceFlags, nil
+}
+
+func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*spanContext, error) {
 	traceID, err := trace.TraceIDFromHex(wrapper.TraceID)
 	if err != nil {
 		return nil, err
@@ -266,94 +300,36 @@ func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*trace.SpanContex
 	if err != nil {
 		return nil, err
 	}
-	decoded, err := hex.DecodeString(wrapper.TraceFlags)
+	traceFlags, err := traceFlagsFromHex(wrapper.TraceFlags)
 	if err != nil {
 		return nil, err
 	}
-	if len(decoded) != 1 {
-		return nil, errors.New(errInvalidTraceFlagsLength)
-	}
-	traceFlags := trace.TraceFlags(decoded[0])
 	traceState, err := trace.ParseTraceState(wrapper.TraceState)
 	if err != nil {
 		return nil, err
 	}
 
-	sc := trace.NewSpanContext(trace.SpanContextConfig{
+	sc := spanContext(trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    traceID,
 		SpanID:     spanID,
-		TraceFlags: traceFlags,
+		TraceFlags: *traceFlags,
 		TraceState: traceState,
 		Remote:     wrapper.Remote,
-	})
+	}))
 
 	return &sc, nil
 }
 
-// unmarshalRequestWithSpanContext unmarshals a binary envelope, returning the request and a context with the restored SpanContext (if present).
-func unmarshalRequestWithSpanContext[T any](encoding Encoding[T], value []byte) (T, context.Context, error) {
-	var req T
-	restoredContext := context.Background()
-	if len(value) < 8 {
-		return req, restoredContext, errors.New("envelope too short")
+func getAndMarshalSpanContext(ctx context.Context) ([]byte, error) {
+	sc := trace.SpanContextFromContext(ctx)
+	if !sc.IsValid() {
+		return nil, nil
 	}
-	reqLen := binary.LittleEndian.Uint32(value[:4])
-	if len(value) < int(4+reqLen+4) {
-		return req, restoredContext, errors.New("envelope too short for request")
-	}
-	reqBytes := value[4 : 4+reqLen]
-	scLen := binary.LittleEndian.Uint32(value[4+reqLen : 8+reqLen])
-	if len(value) < int(8+reqLen+scLen) {
-		return req, restoredContext, errors.New("envelope too short for span context")
-	}
-	scBytes := value[8+reqLen : 8+reqLen+scLen]
-	// Unmarshal request
-	r, err := encoding.Unmarshal(reqBytes)
-	if err != nil {
-		return req, restoredContext, err
-	}
-	req = r
-	// Unmarshal span context if present
-	if scLen > 0 {
-		var wrapper spanContextConfigWrapper
-		if err := json.Unmarshal(scBytes, &wrapper); err == nil {
-			if sc, err := spanContextFromWrapper(wrapper); err == nil && sc != nil {
-				restoredContext = trace.ContextWithSpanContext(restoredContext, *sc)
-			}
-		}
-	}
-	return req, restoredContext, nil
-}
-
-// marshalRequestWithSpanContext marshals the request and the SpanContext from ctx into a binary envelope as bytes.
-func marshalRequestWithSpanContext[T any](ctx context.Context, encoding Encoding[T], req T) ([]byte, error) {
-	reqBuf, err := encoding.Marshal(req)
+	scJSON, err := json.Marshal(sc)
 	if err != nil {
 		return nil, err
 	}
-	sc := trace.SpanContextFromContext(ctx)
-	var scJSON []byte
-	if sc.IsValid() {
-		scJSON, err = json.Marshal(sc)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if len(reqBuf) > int(math.MaxInt32) {
-		return nil, fmt.Errorf("request too large to encode: %d bytes", len(reqBuf))
-	}
-	if len(scJSON) > int(math.MaxInt32) {
-		return nil, fmt.Errorf("span context too large to encode: %d bytes", len(scJSON))
-	}
-	// Compose binary envelope: [4 bytes reqLen][req][4 bytes scLen][scJSON]
-	buf := make([]byte, 0, 8+len(reqBuf)+len(scJSON))
-	//nolint:gosec // G115: integer overflow conversion int -> uint32
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(reqBuf)))
-	buf = append(buf, reqBuf...)
-	//nolint:gosec // G115: integer overflow conversion int -> uint32
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(scJSON)))
-	buf = append(buf, scJSON...)
-	return buf, nil
+	return scJSON, nil
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
@@ -367,15 +343,23 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 			return err
 		}
 	}
-
-	reqBuf, err := marshalRequestWithSpanContext(ctx, pq.set.encoding, req)
+	var reqBuf []byte
+	var err error
+	var ops []*storage.Operation
+	var contextBuf []byte
+	reqBuf, err = pq.set.encoding.Marshal(req)
+	if err != nil {
+		return err
+	}
+	contextBuf, err = getAndMarshalSpanContext(ctx)
 	if err != nil {
 		return err
 	}
 	// Carry out a transaction where we both add the item and update the write index
-	ops := []*storage.Operation{
-		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1)),
-		storage.SetOperation(getItemKey(pq.writeIndex), reqBuf),
+	ops = append(ops, storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1)))
+	ops = append(ops, storage.SetOperation(getItemKey(pq.writeIndex), reqBuf))
+	if contextBuf != nil {
+		ops = append(ops, storage.SetOperation(getContextKey(pq.writeIndex), contextBuf))
 	}
 	if err = pq.client.Batch(ctx, ops...); err != nil {
 		return err
@@ -436,15 +420,28 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 	pq.readIndex++
 	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
-	err := pq.client.Batch(ctx,
-		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)),
-		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)),
-		getOp)
+	var ops []*storage.Operation
+	ctxOp := storage.GetOperation(getContextKey(index))
+	ops = append(ops, storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)))
+	ops = append(ops, storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+	ops = append(ops, getOp)
+	ops = append(ops, ctxOp)
 
 	var request T
 	restoredContext := context.Background()
+	err := pq.client.Batch(ctx, ops...)
 	if err == nil {
-		request, restoredContext, err = unmarshalRequestWithSpanContext(pq.set.encoding, getOp.Value)
+		request, err = pq.set.encoding.Unmarshal(getOp.Value)
+		if err != nil {
+			return 0, request, false, restoredContext
+		}
+		var sc spanContext
+		if ctxOp.Value != nil {
+			err = json.Unmarshal(ctxOp.Value, &sc)
+			if err == nil && trace.SpanContext(sc).IsValid() {
+				restoredContext = trace.ContextWithSpanContext(restoredContext, trace.SpanContext(sc))
+			}
+		}
 	}
 
 	if err != nil {
@@ -528,12 +525,15 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
-	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
-	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
+	retrieveBatch := make([]*storage.Operation, len(dispatchedItems)*2)
+	cleanupBatch := make([]*storage.Operation, len(dispatchedItems)*2)
 	for i, it := range dispatchedItems {
-		key := getItemKey(it)
-		retrieveBatch[i] = storage.GetOperation(key)
-		cleanupBatch[i] = storage.DeleteOperation(key)
+		reqKey := getItemKey(it)
+		ctxKey := getContextKey(it)
+		retrieveBatch[i*2] = storage.GetOperation(reqKey)
+		retrieveBatch[i*2+1] = storage.GetOperation(ctxKey)
+		cleanupBatch[i*2] = storage.DeleteOperation(reqKey)
+		cleanupBatch[i*2+1] = storage.DeleteOperation(ctxKey)
 	}
 	retrieveErr := pq.client.Batch(ctx, retrieveBatch...)
 	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
@@ -548,18 +548,30 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 
 	errCount := 0
-	for _, op := range retrieveBatch {
+	for idx := 0; idx < len(retrieveBatch); idx += 2 {
+		op := retrieveBatch[idx]
 		if op.Value == nil {
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, _, err := unmarshalRequestWithSpanContext(pq.set.encoding, op.Value)
+		restoredContext := ctx
+		req, err := pq.set.encoding.Unmarshal(op.Value)
+		if err == nil && idx+1 < len(retrieveBatch) {
+			nextOp := retrieveBatch[idx+1]
+			if nextOp.Value != nil {
+				var sc *spanContext
+				err = json.Unmarshal(nextOp.Value, &sc)
+				if err == nil && sc != nil {
+					restoredContext = trace.ContextWithSpanContext(restoredContext, trace.SpanContext(*sc))
+				}
+			}
+		}
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(ctx, req) != nil {
+		if pq.putInternal(restoredContext, req) != nil {
 			errCount++
 		}
 	}
@@ -584,9 +596,9 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		}
 	}
 
-	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))
-	deleteOp := storage.DeleteOperation(getItemKey(index))
-	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
+	setOps := []*storage.Operation{storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))}
+	deleteOps := []*storage.Operation{storage.DeleteOperation(getItemKey(index)), storage.DeleteOperation(getContextKey(index))}
+	if err := pq.client.Batch(ctx, append(setOps, deleteOps...)...); err != nil {
 		// got an error, try to gracefully handle it
 		pq.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.Error(err))
@@ -595,12 +607,12 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		return nil
 	}
 
-	if err := pq.client.Batch(ctx, deleteOp); err != nil {
+	if err := pq.client.Batch(ctx, deleteOps...); err != nil {
 		// Return an error here, as this indicates an issue with the underlying storage medium
 		return fmt.Errorf("failed deleting item from queue, got error from storage: %w", err)
 	}
 
-	if err := pq.client.Batch(ctx, setOp); err != nil {
+	if err := pq.client.Batch(ctx, setOps...); err != nil {
 		// even if this fails, we still have the right dispatched items in memory
 		// at worst, we'll have the wrong list in storage, and we'll discard the nonexistent items during startup
 		return fmt.Errorf("failed updating currently dispatched items, but deleted item successfully: %w", err)
@@ -625,6 +637,10 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 
 func getItemKey(index uint64) string {
 	return strconv.FormatUint(index, 10)
+}
+
+func getContextKey(index uint64) string {
+	return strconv.FormatUint(index, 10) + "_context"
 }
 
 func itemIndexToBytes(value uint64) []byte {

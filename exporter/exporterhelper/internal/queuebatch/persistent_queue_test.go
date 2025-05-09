@@ -914,7 +914,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := marshalRequestWithSpanContext(context.Background(), uint64Encoding{}, uint64(50))
+	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 
@@ -1318,12 +1318,13 @@ func TestSpanContextFromWrapper(t *testing.T) {
 			} else {
 				assert.NotNil(t, scc)
 				if tc.expectValid {
-					assert.True(t, scc.IsValid())
-					assert.Equal(t, tc.expectTraceID, scc.TraceID().String())
-					assert.Equal(t, tc.expectSpanID, scc.SpanID().String())
-					assert.Equal(t, tc.expectFlags, scc.TraceFlags().String())
-					assert.Equal(t, tc.expectState, scc.TraceState().String())
-					assert.Equal(t, tc.expectRemote, scc.IsRemote())
+					sccObject := trace.SpanContext(*scc)
+					assert.True(t, sccObject.IsValid())
+					assert.Equal(t, tc.expectTraceID, sccObject.TraceID().String())
+					assert.Equal(t, tc.expectSpanID, sccObject.SpanID().String())
+					assert.Equal(t, tc.expectFlags, sccObject.TraceFlags().String())
+					assert.Equal(t, tc.expectState, sccObject.TraceState().String())
+					assert.Equal(t, tc.expectRemote, sccObject.IsRemote())
 				}
 			}
 		})
@@ -1383,108 +1384,4 @@ func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
 	assert.Equal(t, req2, gotReq2)
 	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
 	assert.False(t, restoredSC2.IsValid())
-}
-
-func TestMarshalUnmarshalRequestWithSpanContext(t *testing.T) {
-	t.Run("valid SpanContext round-trip", func(t *testing.T) {
-		traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
-		spanID, _ := trace.SpanIDFromHex("0102030405060708")
-		sc := trace.NewSpanContext(trace.SpanContextConfig{
-			TraceID:    traceID,
-			SpanID:     spanID,
-			TraceFlags: 0x01,
-			TraceState: trace.TraceState{},
-			Remote:     true,
-		})
-		ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
-		request := uint64(42)
-		data, err := marshalRequestWithSpanContext(ctxWithSC, uint64Encoding{}, request)
-		require.NoError(t, err)
-		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
-		require.NoError(t, err)
-		assert.Equal(t, request, gotReq)
-		restoredSC := trace.SpanContextFromContext(gotCtx)
-		assert.True(t, restoredSC.IsValid())
-		assert.Equal(t, sc.TraceID(), restoredSC.TraceID())
-		assert.Equal(t, sc.SpanID(), restoredSC.SpanID())
-		assert.Equal(t, sc.TraceFlags(), restoredSC.TraceFlags())
-		assert.Equal(t, sc.TraceState().String(), restoredSC.TraceState().String())
-		assert.Equal(t, sc.IsRemote(), restoredSC.IsRemote())
-	})
-
-	t.Run("invalid SpanContext is omitted", func(t *testing.T) {
-		// An invalid SpanContext (zero value)
-		ctxWithInvalidSC := trace.ContextWithSpanContext(context.Background(), trace.SpanContext{})
-		request := uint64(99)
-		data, err := marshalRequestWithSpanContext(ctxWithInvalidSC, uint64Encoding{}, request)
-		require.NoError(t, err)
-		// Should not contain span_context field
-		assert.NotContains(t, string(data), "span_context")
-		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
-		require.NoError(t, err)
-		assert.Equal(t, request, gotReq)
-		restoredSC := trace.SpanContextFromContext(gotCtx)
-		assert.False(t, restoredSC.IsValid())
-	})
-
-	t.Run("no SpanContext in context is omitted", func(t *testing.T) {
-		request := uint64(123)
-		data, err := marshalRequestWithSpanContext(context.Background(), uint64Encoding{}, request)
-		require.NoError(t, err)
-		assert.NotContains(t, string(data), "span_context")
-		gotReq, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
-		require.NoError(t, err)
-		assert.Equal(t, request, gotReq)
-		restoredSC := trace.SpanContextFromContext(gotCtx)
-		assert.False(t, restoredSC.IsValid())
-	})
-
-	t.Run("corrupted span_context field", func(t *testing.T) {
-		// Manually create a bad envelope using the new binary format
-		requestBytes := []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
-		badSpanContext := []byte(`{"TraceID":123}`) // invalid TraceID
-		buf := make([]byte, 0, 8+len(requestBytes)+len(badSpanContext))
-		//nolint:gosec // G115: integer overflow conversion int -> uint32
-		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(requestBytes)))
-		buf = append(buf, requestBytes...)
-		//nolint:gosec // G115: integer overflow conversion int -> uint32
-		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(badSpanContext)))
-		buf = append(buf, badSpanContext...)
-		_, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, buf)
-		require.NoError(t, err)
-		// Should not panic, should return background context
-		restoredSC := trace.SpanContextFromContext(gotCtx)
-		assert.False(t, restoredSC.IsValid())
-	})
-
-	t.Run("valid binary, invalid RequestBytes returns error", func(t *testing.T) {
-		requestBytes := []byte{0x01, 0x02} // too short for uint64Encoding.Unmarshal
-		badSpanContext := []byte{}
-		buf := make([]byte, 0, 8+len(requestBytes)+len(badSpanContext))
-		//nolint:gosec // G115: integer overflow conversion int -> uint32
-		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(requestBytes)))
-		buf = append(buf, requestBytes...)
-		//nolint:gosec // G115: integer overflow conversion int -> uint32
-		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(badSpanContext)))
-		buf = append(buf, badSpanContext...)
-		_, _, err := unmarshalRequestWithSpanContext(uint64Encoding{}, buf)
-		require.Error(t, err)
-	})
-}
-
-type errorEncoding struct{}
-
-func (errorEncoding) Marshal(_ uint64) ([]byte, error) {
-	return nil, errors.New("marshal error")
-}
-
-func (errorEncoding) Unmarshal(_ []byte) (uint64, error) {
-	return 0, nil
-}
-
-func TestMarshalRequestWithSpanContext_MarshalError(t *testing.T) {
-	ctx := context.Background()
-	_, err := marshalRequestWithSpanContext(ctx, errorEncoding{}, uint64(123))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "marshal error")
 }
