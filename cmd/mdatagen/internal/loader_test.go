@@ -179,12 +179,20 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "map_attr",
 					},
-					"optional_attr": {
-						Description: "An optional attribute",
+					"optional_int_attr": {
+						Description: "An optional attribute with an integer value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeInt,
+						},
+						FullName: "optional_int_attr",
+						Optional: true,
+					},
+					"optional_string_attr": {
+						Description: "An optional attribute with any string value",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
-						FullName: "optional_attr",
+						FullName: "optional_string_attr",
 						Optional: true,
 					},
 				},
