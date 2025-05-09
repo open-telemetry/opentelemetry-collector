@@ -41,6 +41,7 @@ func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(from reflect.Value, 
 	switch f := typedDecodeHook(raw).(type) {
 	case mapstructure.DecodeHookFuncType:
 		return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+			// CHANGE FROM UPSTREAM: check if from is valid and return nil if not
 			if !from.IsValid() {
 				return nil, nil
 			}
@@ -48,6 +49,7 @@ func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(from reflect.Value, 
 		}
 	case mapstructure.DecodeHookFuncKind:
 		return func(from reflect.Value, to reflect.Value) (interface{}, error) {
+			// CHANGE FROM UPSTREAM: check if from is valid and return nil if not
 			if !from.IsValid() {
 				return nil, nil
 			}
@@ -79,6 +81,8 @@ func ComposeDecodeHookFunc(fs ...mapstructure.DecodeHookFunc) mapstructure.Decod
 	}
 	return func(f reflect.Value, t reflect.Value) (interface{}, error) {
 		var err error
+
+		// CHANGE FROM UPSTREAM: check if f is valid before calling f.Interface()
 		var data any
 		if f.IsValid() {
 			data = f.Interface()
