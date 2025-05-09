@@ -27,3 +27,29 @@ func writeAttributesString(attributesMap pcommon.Map) (attributesString string) 
 	}
 	return attributesString
 }
+
+func writeResourceDetails(schemaUrl string) (resourceDetails string) {
+	if len(schemaUrl) > 0 {
+		resourceDetails = " [" + schemaUrl + "]"
+	}
+	return resourceDetails
+}
+
+func writeScopeDetails(name string, version string, schemaUrl string) (scopeDetails string) {
+	if len(name) > 0 {
+		scopeDetails += name
+	}
+	if len(version) > 0 {
+		scopeDetails += "@" + version
+	}
+	if len(schemaUrl) > 0 {
+		if len(scopeDetails) > 0 {
+			scopeDetails += " "
+		}
+		scopeDetails += "[" + schemaUrl + "]"
+	}
+	if len(scopeDetails) > 0 {
+		scopeDetails = " " + scopeDetails
+	}
+	return scopeDetails
+}

@@ -26,14 +26,12 @@ func (normalTracesMarshaler) MarshalTraces(md ptrace.Traces) ([]byte, error) {
 	for i := 0; i < md.ResourceSpans().Len(); i++ {
 		resourceTraces := md.ResourceSpans().At(i)
 
-		resourceAttributesString := writeAttributesString(resourceTraces.Resource().Attributes())
-		buffer.WriteString(fmt.Sprintf("ResourceTraces #%d SchemaUrl=%s%s\n", i, resourceTraces.SchemaUrl(), resourceAttributesString))
+		buffer.WriteString(fmt.Sprintf("ResourceTraces #%d%s%s\n", i, writeResourceDetails(resourceTraces.SchemaUrl()), writeAttributesString(resourceTraces.Resource().Attributes())))
 
 		for j := 0; j < resourceTraces.ScopeSpans().Len(); j++ {
 			scopeTraces := resourceTraces.ScopeSpans().At(j)
 
-			scopeAttributesString := writeAttributesString(scopeTraces.Scope().Attributes())
-			buffer.WriteString(fmt.Sprintf("ScopeTraces #%d SchemaUrl=%s Name=%s Version=%s%s\n", i, scopeTraces.SchemaUrl(), scopeTraces.Scope().Name(), scopeTraces.Scope().Version(), scopeAttributesString))
+			buffer.WriteString(fmt.Sprintf("ScopeTraces #%d%s%s\n", i, writeScopeDetails(scopeTraces.Scope().Name(), scopeTraces.Scope().Version(), scopeTraces.SchemaUrl()), writeAttributesString(scopeTraces.Scope().Attributes())))
 
 			for k := 0; k < scopeTraces.Spans().Len(); k++ {
 				span := scopeTraces.Spans().At(k)

@@ -74,8 +74,8 @@ Here's an example output:
 
 ```console
 2025-05-09T19:57:16.332+0200    info    Traces  {"resource": {}, "otelcol.component.id": "debug/normal", "otelcol.component.kind": "exporter", "otelcol.signal": "traces", "resource spans": 1, "spans": 2}
-2025-05-09T19:57:16.332+0200    info    ResourceTraces #0 SchemaUrl=https://opentelemetry.io/schemas/1.25.0 service.name=telemetrygen
-ScopeTraces #0 SchemaUrl= Name=telemetrygen Version=
+2025-05-09T19:57:16.332+0200    info    ResourceTraces #0 [https://opentelemetry.io/schemas/1.25.0] service.name=telemetrygen
+ScopeTraces #0 telemetrygen
 okey-dokey-0 ab1030bd4ee554af936542b01d7b4807 1d8c93663d043aa8 net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-client
 lets-go ab1030bd4ee554af936542b01d7b4807 0d238e8a2f97733f net.sock.peer.addr=1.2.3.4 peer.service=telemetrygen-server
         {"resource": {}, "otelcol.component.id": "debug/normal", "otelcol.component.kind": "exporter", "otelcol.signal": "traces"}

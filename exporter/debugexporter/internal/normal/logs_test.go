@@ -38,8 +38,8 @@ func TestMarshalLogs(t *testing.T) {
 				logRecord.Attributes().PutStr("key2", "value2")
 				return logs
 			}(),
-			expected: `ResourceLog #0 SchemaUrl=
-ScopeLog #0 SchemaUrl= Name= Version=
+			expected: `ResourceLog #0
+ScopeLog #0
 Single line log message key1=value1 key2=value2
 `,
 		},
@@ -66,8 +66,8 @@ Single line log message key1=value1 key2=value2
 				logRecord.Attributes().PutStr("key2", "value2")
 				return logs
 			}(),
-			expected: `ResourceLog #0 SchemaUrl=https://opentelemetry.io/resource-schema-url resourceKey1=resourceValue1 resourceKey2=false
-ScopeLog #0 SchemaUrl=http://opentelemetry.io/scope-schema-url Name=scope-name Version=1.2.3 scopeKey1=scopeValue1 scopeKey2=true
+			expected: `ResourceLog #0 [https://opentelemetry.io/resource-schema-url] resourceKey1=resourceValue1 resourceKey2=false
+ScopeLog #0 scope-name@1.2.3 [http://opentelemetry.io/scope-schema-url] scopeKey1=scopeValue1 scopeKey2=true
 Single line log message key1=value1 key2=value2
 `,
 		},
@@ -84,8 +84,8 @@ Single line log message key1=value1 key2=value2
 				logRecord.Attributes().PutStr("key2", "value2")
 				return logs
 			}(),
-			expected: `ResourceLog #0 SchemaUrl=
-ScopeLog #0 SchemaUrl= Name= Version=
+			expected: `ResourceLog #0
+ScopeLog #0
 First line of the log message
   second line of the log message key1=value1 key2=value2
 `,
@@ -110,8 +110,8 @@ First line of the log message
 				logRecord.Attributes().PutStr("mykey1", "myvalue1")
 				return logs
 			}(),
-			expected: `ResourceLog #0 SchemaUrl=
-ScopeLog #0 SchemaUrl= Name= Version=
+			expected: `ResourceLog #0
+ScopeLog #0
 Single line log message key1=value1 key2=value2
 Multi-line
 log message mykey2=myvalue2 mykey1=myvalue1
@@ -139,8 +139,8 @@ log message mykey2=myvalue2 mykey1=myvalue1
 				logRecord.Attributes().PutStr("service", "payments")
 				return logs
 			}(),
-			expected: `ResourceLog #0 SchemaUrl=
-ScopeLog #0 SchemaUrl= Name= Version=
+			expected: `ResourceLog #0
+ScopeLog #0
 {"app":"CurrencyConverter","event":{"operation":"convert","result":"success"}} conversion={"destination":{"currency":"EUR"},"source":{"amount":34.22,"currency":"USD"}} service=payments
 `,
 		},

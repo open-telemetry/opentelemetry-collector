@@ -35,8 +35,8 @@ func TestMarshalMetrics(t *testing.T) {
 				dataPoint.Attributes().PutStr("cpu", "0")
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=
-ScopeMetrics #0 SchemaUrl= Name= Version=
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
 system.cpu.time{state=user,cpu=0} 123.456
 `,
 		},
@@ -62,8 +62,8 @@ system.cpu.time{state=user,cpu=0} 123.456
 				dataPoint.Attributes().PutStr("cpu", "0")
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=https://opentelemetry.io/resource-schema-url resourceKey1=resourceValue1 resourceKey2=false
-ScopeMetrics #0 SchemaUrl=http://opentelemetry.io/scope-schema-url Name=scope-name Version=1.2.3 scopeKey1=scopeValue1 scopeKey2=true
+			expected: `ResourceMetrics #0 [https://opentelemetry.io/resource-schema-url] resourceKey1=resourceValue1 resourceKey2=false
+ScopeMetrics #0 scope-name@1.2.3 [http://opentelemetry.io/scope-schema-url] scopeKey1=scopeValue1 scopeKey2=true
 system.cpu.time{state=user,cpu=0} 123.456
 `,
 		},
@@ -79,8 +79,8 @@ system.cpu.time{state=user,cpu=0} 123.456
 				dataPoint.Attributes().PutStr("cpu", "8")
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=
-ScopeMetrics #0 SchemaUrl= Name= Version=
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
 system.cpu.utilization{state=free,cpu=8} 78.901234567
 `,
 		},
@@ -101,8 +101,8 @@ system.cpu.utilization{state=free,cpu=8} 78.901234567
 				dataPoint.SetMax(8.13)
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=
-ScopeMetrics #0 SchemaUrl= Name= Version=
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
 http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13 le0.125=1324 le0.5=13 le1=0 le3=2 1
 `,
 		},
@@ -121,8 +121,8 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 				dataPoint.SetMax(8.13)
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=
-ScopeMetrics #0 SchemaUrl= Name= Version=
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
 http.server.request.duration{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573 min=0.017 max=8.13
 `,
 		},
@@ -142,8 +142,8 @@ http.server.request.duration{http.response.status_code=200,http.request.method=G
 				quantile.SetValue(15)
 				return metrics
 			}(),
-			expected: `ResourceMetrics #0 SchemaUrl=
-ScopeMetrics #0 SchemaUrl= Name= Version=
+			expected: `ResourceMetrics #0
+ScopeMetrics #0
 summary{http.response.status_code=200,http.request.method=GET} count=1340 sum=99.573000 q0.01=15
 `,
 		},

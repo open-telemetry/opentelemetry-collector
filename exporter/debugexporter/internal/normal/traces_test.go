@@ -45,8 +45,8 @@ func TestMarshalTraces(t *testing.T) {
 				span.Attributes().PutStr("key2", "value2")
 				return traces
 			}(),
-			expected: `ResourceTraces #0 SchemaUrl=https://opentelemetry.io/resource-schema-url resourceKey1=resourceValue1 resourceKey2=false
-ScopeTraces #0 SchemaUrl=http://opentelemetry.io/scope-schema-url Name=scope-name Version=1.2.3 scopeKey1=scopeValue1 scopeKey2=true
+			expected: `ResourceTraces #0 [https://opentelemetry.io/resource-schema-url] resourceKey1=resourceValue1 resourceKey2=false
+ScopeTraces #0 scope-name@1.2.3 [http://opentelemetry.io/scope-schema-url] scopeKey1=scopeValue1 scopeKey2=true
 span-name 0102030405060708090a0b0c0d0e0f10 1112131415161718 key1=value1 key2=value2
 `,
 		},
@@ -62,8 +62,8 @@ span-name 0102030405060708090a0b0c0d0e0f10 1112131415161718 key1=value1 key2=val
 				span.Attributes().PutStr("key2", "value2")
 				return traces
 			}(),
-			expected: `ResourceTraces #0 SchemaUrl=
-ScopeTraces #0 SchemaUrl= Name= Version=
+			expected: `ResourceTraces #0
+ScopeTraces #0
 span-name 0102030405060708090a0b0c0d0e0f10 1112131415161718 key1=value1 key2=value2
 `,
 		},

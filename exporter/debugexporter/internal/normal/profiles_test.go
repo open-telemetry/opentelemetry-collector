@@ -43,8 +43,8 @@ func TestMarshalProfiles(t *testing.T) {
 				a.Value().SetStr("value1")
 				return profiles
 			}(),
-			expected: `ResourceProfiles #0 SchemaUrl=https://example.com/resource resourceKey=resourceValue
-ScopeProfiles #0 SchemaUrl=https://example.com/scope Name=scope-name Version=1.2.3 scopeKey=scopeValue
+			expected: `ResourceProfiles #0 [https://example.com/resource] resourceKey=resourceValue
+ScopeProfiles #0 scope-name@1.2.3 [https://example.com/scope] scopeKey=scopeValue
 0102030405060708090a0b0c0d0e0f10 samples=2 key1=value1
 `,
 		},
