@@ -19,10 +19,10 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
-	tb.ScraperErroredLogRecords.Add(context.Background(), 1)
-	tb.ScraperErroredMetricPoints.Add(context.Background(), 1)
-	tb.ScraperScrapedLogRecords.Add(context.Background(), 1)
-	tb.ScraperScrapedMetricPoints.Add(context.Background(), 1)
+	tb.AddScraperErroredLogRecords(context.Background(), 1)
+	tb.AddScraperErroredMetricPoints(context.Background(), 1)
+	tb.AddScraperScrapedLogRecords(context.Background(), 1)
+	tb.AddScraperScrapedMetricPoints(context.Background(), 1)
 	AssertEqualScraperErroredLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

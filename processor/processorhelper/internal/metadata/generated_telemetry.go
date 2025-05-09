@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -72,4 +73,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (builder *TelemetryBuilder) AddProcessorIncomingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorIncomingItems.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorOutgoingItems(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorOutgoingItems.Add(ctx, val, opts...)
 }

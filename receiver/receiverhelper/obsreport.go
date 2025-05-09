@@ -197,19 +197,15 @@ func (rec *ObsReport) endOp(
 }
 
 func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused int) {
-	var acceptedMeasure, refusedMeasure metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
+		rec.telemetryBuilder.AddReceiverAcceptedSpans(receiverCtx, int64(numAccepted), rec.otelAttrs)
+		rec.telemetryBuilder.AddReceiverRefusedSpans(receiverCtx, int64(numRefused), rec.otelAttrs)
 	case pipeline.SignalMetrics:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
+		rec.telemetryBuilder.AddReceiverAcceptedMetricPoints(receiverCtx, int64(numAccepted), rec.otelAttrs)
+		rec.telemetryBuilder.AddReceiverRefusedMetricPoints(receiverCtx, int64(numRefused), rec.otelAttrs)
 	case pipeline.SignalLogs:
-		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
-		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
+		rec.telemetryBuilder.AddReceiverAcceptedLogRecords(receiverCtx, int64(numAccepted), rec.otelAttrs)
+		rec.telemetryBuilder.AddReceiverRefusedLogRecords(receiverCtx, int64(numRefused), rec.otelAttrs)
 	}
-
-	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
-	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
 }

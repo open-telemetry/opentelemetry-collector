@@ -36,11 +36,11 @@ func newObsReport(set processor.Settings) (*obsReport, error) {
 func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:
-		or.telemetryBuilder.ProcessorAcceptedSpans.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorAcceptedSpans(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalMetrics:
-		or.telemetryBuilder.ProcessorAcceptedMetricPoints.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorAcceptedMetricPoints(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalLogs:
-		or.telemetryBuilder.ProcessorAcceptedLogRecords.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorAcceptedLogRecords(ctx, int64(num), or.otelAttrs)
 	}
 }
 
@@ -48,10 +48,10 @@ func (or *obsReport) accepted(ctx context.Context, num int, signal pipeline.Sign
 func (or *obsReport) refused(ctx context.Context, num int, signal pipeline.Signal) {
 	switch signal {
 	case pipeline.SignalTraces:
-		or.telemetryBuilder.ProcessorRefusedSpans.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorRefusedSpans(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalMetrics:
-		or.telemetryBuilder.ProcessorRefusedMetricPoints.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorRefusedMetricPoints(ctx, int64(num), or.otelAttrs)
 	case pipeline.SignalLogs:
-		or.telemetryBuilder.ProcessorRefusedLogRecords.Add(ctx, int64(num), or.otelAttrs)
+		or.telemetryBuilder.AddProcessorRefusedLogRecords(ctx, int64(num), or.otelAttrs)
 	}
 }
