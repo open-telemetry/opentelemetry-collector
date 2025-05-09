@@ -69,7 +69,7 @@ func newQueueBatch(
 			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
 				sizerType:   request.SizerTypeItems,
 				sizer:       request.NewItemsSizer(),
-				partitioner: nil,
+				partitioner: set.Partitioner,
 				next:        next,
 				maxWorkers:  cfg.NumConsumers,
 			})
