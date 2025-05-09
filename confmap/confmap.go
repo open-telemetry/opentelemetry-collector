@@ -307,6 +307,10 @@ func isStringyStructure(t reflect.Type) bool {
 	return false
 }
 
+// safeWrapDecodeHookFunc wraps a DecodeHookFuncValue to ensure that it is safe to call all
+// methods in fromVal.
+//
+// Use this only if the hook does not need to be called on nil values.
 func safeWrapDecodeHookFunc(
 	f mapstructure.DecodeHookFuncValue,
 ) mapstructure.DecodeHookFuncValue {
