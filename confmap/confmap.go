@@ -18,8 +18,8 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
 
-	"go.opentelemetry.io/collector/confmap/internal"
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 )
 
 const (
@@ -235,7 +235,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		TagName:          MapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
-		DecodeHook: internal.ComposeDecodeHookFunc(
+		DecodeHook: composehook.ComposeDecodeHookFunc(
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
