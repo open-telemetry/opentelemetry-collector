@@ -78,7 +78,7 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 			stopWG:      sync.WaitGroup{},
 			shutdownCh:  make(chan struct{}, 1),
 		}
-		_ = s.Start(ctx, nil)
+		s.start(ctx, nil)
 		return s
 	})
 	return result
@@ -86,7 +86,7 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 
 func (mb *multiBatcher) Start(ctx context.Context, host component.Host) error {
 	if mb.singleShard != nil {
-		return mb.singleShard.Start(ctx, host)
+		mb.singleShard.start(ctx, host)
 	}
 	return nil
 }
@@ -98,13 +98,13 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done D
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	if mb.singleShard != nil {
-		return mb.singleShard.Shutdown(ctx)
+		return mb.singleShard.shutdown(ctx)
 	}
 
 	var g errgroup.Group
 	mb.shards.Range(func(key string, shard *shardBatcher) bool {
 		g.Go(func() error {
-			if err := shard.Shutdown(ctx); err != nil {
+			if err := shard.shutdown(ctx); err != nil {
 				return fmt.Errorf("failed to shutdown partition %s: %w", key, err)
 			}
 			return nil
