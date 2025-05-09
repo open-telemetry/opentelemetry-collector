@@ -6,7 +6,6 @@ package queuebatch
 import (
 	"context"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -1441,28 +1440,34 @@ func TestMarshalUnmarshalRequestWithSpanContext(t *testing.T) {
 	})
 
 	t.Run("corrupted span_context field", func(t *testing.T) {
-		// Manually create a bad envelope
-		envelope := marshaledRequestWithSpanContext{
-			RequestBytes:    []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-			SpanContextJSON: []byte(`{"TraceID":123}`), // invalid TraceID
-		}
-		data, err := json.Marshal(envelope)
-		require.NoError(t, err)
-		_, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+		// Manually create a bad envelope using the new binary format
+		requestBytes := []byte{0x2a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+		badSpanContext := []byte(`{"TraceID":123}`) // invalid TraceID
+		buf := make([]byte, 0, 8+len(requestBytes)+len(badSpanContext))
+		//nolint:gosec // G115: integer overflow conversion int -> uint32
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(requestBytes)))
+		buf = append(buf, requestBytes...)
+		//nolint:gosec // G115: integer overflow conversion int -> uint32
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(badSpanContext)))
+		buf = append(buf, badSpanContext...)
+		_, gotCtx, err := unmarshalRequestWithSpanContext(uint64Encoding{}, buf)
 		require.NoError(t, err)
 		// Should not panic, should return background context
 		restoredSC := trace.SpanContextFromContext(gotCtx)
 		assert.False(t, restoredSC.IsValid())
 	})
 
-	t.Run("valid JSON, invalid RequestBytes returns error", func(t *testing.T) {
-		envelope := marshaledRequestWithSpanContext{
-			RequestBytes:    []byte{0x01, 0x02}, // too short for uint64Encoding.Unmarshal
-			SpanContextJSON: nil,
-		}
-		data, err := json.Marshal(envelope)
-		require.NoError(t, err)
-		_, _, err = unmarshalRequestWithSpanContext(uint64Encoding{}, data)
+	t.Run("valid binary, invalid RequestBytes returns error", func(t *testing.T) {
+		requestBytes := []byte{0x01, 0x02} // too short for uint64Encoding.Unmarshal
+		badSpanContext := []byte{}
+		buf := make([]byte, 0, 8+len(requestBytes)+len(badSpanContext))
+		//nolint:gosec // G115: integer overflow conversion int -> uint32
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(requestBytes)))
+		buf = append(buf, requestBytes...)
+		//nolint:gosec // G115: integer overflow conversion int -> uint32
+		buf = binary.LittleEndian.AppendUint32(buf, uint32(len(badSpanContext)))
+		buf = append(buf, badSpanContext...)
+		_, _, err := unmarshalRequestWithSpanContext(uint64Encoding{}, buf)
 		require.Error(t, err)
 	})
 }

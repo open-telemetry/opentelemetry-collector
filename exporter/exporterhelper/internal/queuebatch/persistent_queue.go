@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"sync"
 
@@ -248,11 +249,6 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	return pq.putInternal(ctx, req)
 }
 
-type marshaledRequestWithSpanContext struct {
-	RequestBytes    []byte          `json:"request"`
-	SpanContextJSON json.RawMessage `json:"span_context,omitempty"`
-}
-
 type spanContextConfigWrapper struct {
 	TraceID    string
 	SpanID     string
@@ -294,31 +290,42 @@ func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*trace.SpanContex
 	return &sc, nil
 }
 
-// unmarshalRequestWithSpanContext unmarshals a marshaledRequestWithSpanContext from bytes, returning the request
-// and a context with the restored SpanContext (if present).
+// unmarshalRequestWithSpanContext unmarshals a binary envelope, returning the request and a context with the restored SpanContext (if present).
 func unmarshalRequestWithSpanContext[T any](encoding Encoding[T], value []byte) (T, context.Context, error) {
 	var req T
 	restoredContext := context.Background()
-	var envelope marshaledRequestWithSpanContext
-	if err := json.Unmarshal(value, &envelope); err != nil {
-		return req, restoredContext, err
+	if len(value) < 8 {
+		return req, restoredContext, errors.New("envelope too short")
 	}
-	request, err := encoding.Unmarshal(envelope.RequestBytes)
+	reqLen := binary.LittleEndian.Uint32(value[:4])
+	if len(value) < int(4+reqLen+4) {
+		return req, restoredContext, errors.New("envelope too short for request")
+	}
+	reqBytes := value[4 : 4+reqLen]
+	scLen := binary.LittleEndian.Uint32(value[4+reqLen : 8+reqLen])
+	if len(value) < int(8+reqLen+scLen) {
+		return req, restoredContext, errors.New("envelope too short for span context")
+	}
+	scBytes := value[8+reqLen : 8+reqLen+scLen]
+	// Unmarshal request
+	r, err := encoding.Unmarshal(reqBytes)
 	if err != nil {
 		return req, restoredContext, err
 	}
-	if len(envelope.SpanContextJSON) > 0 {
+	req = r
+	// Unmarshal span context if present
+	if scLen > 0 {
 		var wrapper spanContextConfigWrapper
-		if err := json.Unmarshal(envelope.SpanContextJSON, &wrapper); err == nil {
+		if err := json.Unmarshal(scBytes, &wrapper); err == nil {
 			if sc, err := spanContextFromWrapper(wrapper); err == nil && sc != nil {
 				restoredContext = trace.ContextWithSpanContext(restoredContext, *sc)
 			}
 		}
 	}
-	return request, restoredContext, nil
+	return req, restoredContext, nil
 }
 
-// marshalRequestWithSpanContext marshals the request and the SpanContext from ctx into a marshaledRequestWithSpanContext envelope as bytes.
+// marshalRequestWithSpanContext marshals the request and the SpanContext from ctx into a binary envelope as bytes.
 func marshalRequestWithSpanContext[T any](ctx context.Context, encoding Encoding[T], req T) ([]byte, error) {
 	reqBuf, err := encoding.Marshal(req)
 	if err != nil {
@@ -331,14 +338,22 @@ func marshalRequestWithSpanContext[T any](ctx context.Context, encoding Encoding
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		scJSON = nil // Will be omitted due to omitempty
 	}
-	envelope := marshaledRequestWithSpanContext{
-		RequestBytes:    reqBuf,
-		SpanContextJSON: scJSON,
+	if len(reqBuf) > int(math.MaxInt32) {
+		return nil, fmt.Errorf("request too large to encode: %d bytes", len(reqBuf))
 	}
-	return json.Marshal(envelope)
+	if len(scJSON) > int(math.MaxInt32) {
+		return nil, fmt.Errorf("span context too large to encode: %d bytes", len(scJSON))
+	}
+	// Compose binary envelope: [4 bytes reqLen][req][4 bytes scLen][scJSON]
+	buf := make([]byte, 0, 8+len(reqBuf)+len(scJSON))
+	//nolint:gosec // G115: integer overflow conversion int -> uint32
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(reqBuf)))
+	buf = append(buf, reqBuf...)
+	//nolint:gosec // G115: integer overflow conversion int -> uint32
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(len(scJSON)))
+	buf = append(buf, scJSON...)
+	return buf, nil
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
