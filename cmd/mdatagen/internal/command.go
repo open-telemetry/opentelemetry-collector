@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -217,7 +218,7 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
-				"eventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
@@ -230,9 +231,12 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 							}
 						}
 					}
+					sort.Slice(used, func(i, j int) bool {
+						return string(used[i]) < string(used[j])
+					})
 					return used
 				},
-				"metricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
@@ -245,6 +249,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 							}
 						}
 					}
+					sort.Slice(used, func(i, j int) bool {
+						return string(used[i]) < string(used[j])
+					})
 					return used
 				},
 				"metricInfo": func(mn MetricName) Metric {

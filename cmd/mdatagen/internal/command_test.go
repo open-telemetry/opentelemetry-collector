@@ -34,6 +34,7 @@ func TestRunContents(t *testing.T) {
 		yml                             string
 		wantMetricsGenerated            bool
 		wantMetricsContext              bool
+		wantLogsGenerated               bool
 		wantConfigGenerated             bool
 		wantTelemetryGenerated          bool
 		wantResourceAttributesGenerated bool
@@ -64,6 +65,7 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
+			wantLogsGenerated:          true,
 		},
 		{
 			yml:                 "basic_pkg.yaml",
@@ -86,6 +88,7 @@ func TestRunContents(t *testing.T) {
 			wantResourceAttributesGenerated: true,
 			wantReadmeGenerated:             true,
 			wantComponentTestGenerated:      true,
+			wantLogsGenerated:               true,
 		},
 		{
 			yml:                        "status_only.yaml",
@@ -98,6 +101,7 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
+			wantLogsGenerated:          true,
 		},
 		{
 			yml:                        "with_tests_exporter.yaml",
@@ -158,6 +162,7 @@ func TestRunContents(t *testing.T) {
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
 			wantAttributes:             []string{"name"},
+			wantLogsGenerated:          true,
 		},
 		{
 			yml:                        "invalid_telemetry_missing_value_type_for_histogram.yaml",
@@ -177,6 +182,16 @@ func TestRunContents(t *testing.T) {
 			yml:                        "custom_generated_package_name.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantLogsGenerated:          true,
+		},
+		{
+			yml:                        "with_optional_attribute.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantMetricsGenerated:       true,
+			wantLogsGenerated:          true,
+			wantConfigGenerated:        true,
 			wantComponentTestGenerated: true,
 		},
 	}
@@ -230,6 +245,16 @@ foo
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
+			}
+
+			if tt.wantLogsGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
+				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
+				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go")) //nolint:gosec
+				require.NoError(t, err)
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
 			}
 
 			if tt.wantConfigGenerated {

@@ -122,9 +122,6 @@ func (m Metric) Data() MetricData {
 }
 
 func (m Metric) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
-	if len(m.Attributes) == 0 {
-		return false
-	}
 	for _, attr := range m.Attributes {
 		if v, exists := attrs[attr]; exists && v.Optional {
 			return true

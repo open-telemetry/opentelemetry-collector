@@ -74,7 +74,7 @@ type metricInfo struct {
     Name string
 }
 
-{{ if metricOptionalAttributes .Attributes }}
+{{ if getMetricOptionalAttributes .Attributes }}
 type MetricAttributeOption interface {
 	apply(pmetric.NumberDataPoint)
 }
@@ -85,7 +85,7 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 	maof(dp)
 }
 
-{{ range metricOptionalAttributes .Attributes }}
+{{ range getMetricOptionalAttributes .Attributes }}
 func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
 		{{- template "putAttribute" . }}

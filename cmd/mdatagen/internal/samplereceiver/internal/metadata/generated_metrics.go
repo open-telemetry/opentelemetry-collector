@@ -85,15 +85,15 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 	maof(dp)
 }
 
-func WithOptionalStringAttrMetricAttribute(optionalStringAttrAttributeValue string) MetricAttributeOption {
-	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		dp.Attributes().PutStr("optional_string_attr", optionalStringAttrAttributeValue)
-	})
-}
-
 func WithOptionalIntAttrMetricAttribute(optionalIntAttrAttributeValue int64) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
 		dp.Attributes().PutInt("optional_int_attr", optionalIntAttrAttributeValue)
+	})
+}
+
+func WithOptionalStringAttrMetricAttribute(optionalStringAttrAttributeValue string) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		dp.Attributes().PutStr("optional_string_attr", optionalStringAttrAttributeValue)
 	})
 }
 
