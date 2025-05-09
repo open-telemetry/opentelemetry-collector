@@ -3,12 +3,13 @@
 package metadata
 
 import (
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
 type eventDefaultEvent struct {

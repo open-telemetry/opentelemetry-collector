@@ -80,7 +80,7 @@ replace (
 	go.opentelemetry.io/collector/receiver => ../../receiver
 	go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 	go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
-	go.opentelemetry.io/collector/semconv => ../../semconv
+
 	go.opentelemetry.io/collector/service => ..
 )
 

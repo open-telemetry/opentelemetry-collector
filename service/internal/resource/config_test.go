@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
 const (
@@ -125,21 +125,21 @@ func TestBuildResource(t *testing.T) {
 	res := pdataFromSdk(otelRes)
 
 	assert.Equal(t, 3, res.Attributes().Len())
-	value, ok := res.Attributes().Get(semconv.AttributeServiceName)
+	value, ok := res.Attributes().Get("service.name")
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Command, value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
+	value, ok = res.Attributes().Get("service.version")
 	assert.True(t, ok)
 	assert.Equal(t, buildInfo.Version, value.AsString())
 
-	_, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
+	_, ok = res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)
 
 	// Check override by nil
 	resMap = map[string]*string{
-		semconv.AttributeServiceName:       nil,
-		semconv.AttributeServiceVersion:    nil,
-		semconv.AttributeServiceInstanceID: nil,
+		string(semconv.ServiceNameKey):       nil,
+		string(semconv.ServiceVersionKey):    nil,
+		string(semconv.ServiceInstanceIDKey): nil,
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
@@ -150,21 +150,21 @@ func TestBuildResource(t *testing.T) {
 	// Check override values
 	strPtr := func(v string) *string { return &v }
 	resMap = map[string]*string{
-		semconv.AttributeServiceName:       strPtr("a"),
-		semconv.AttributeServiceVersion:    strPtr("b"),
-		semconv.AttributeServiceInstanceID: strPtr("c"),
+		string(semconv.ServiceNameKey):       strPtr("a"),
+		string(semconv.ServiceVersionKey):    strPtr("b"),
+		string(semconv.ServiceInstanceIDKey): strPtr("c"),
 	}
 	otelRes = New(buildInfo, resMap)
 	res = pdataFromSdk(otelRes)
 
 	assert.Equal(t, 3, res.Attributes().Len())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceName)
+	value, ok = res.Attributes().Get("service.name")
 	assert.True(t, ok)
 	assert.Equal(t, "a", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceVersion)
+	value, ok = res.Attributes().Get("service.version")
 	assert.True(t, ok)
 	assert.Equal(t, "b", value.AsString())
-	value, ok = res.Attributes().Get(semconv.AttributeServiceInstanceID)
+	value, ok = res.Attributes().Get("service.instance.id")
 	assert.True(t, ok)
 	assert.Equal(t, "c", value.AsString())
 }
