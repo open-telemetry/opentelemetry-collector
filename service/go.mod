@@ -44,7 +44,6 @@ require (
 	go.opentelemetry.io/collector/receiver v1.31.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.0
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.0
-	go.opentelemetry.io/collector/semconv v0.125.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.125.0
 	go.opentelemetry.io/contrib/otelconf v0.15.0
 	go.opentelemetry.io/contrib/propagators/b3 v1.35.0
@@ -178,8 +177,6 @@ replace go.opentelemetry.io/collector/processor => ../processor
 replace go.opentelemetry.io/collector/processor/processortest => ../processor/processortest
 
 replace go.opentelemetry.io/collector/consumer => ../consumer
-
-replace go.opentelemetry.io/collector/semconv => ../semconv
 
 replace go.opentelemetry.io/collector/service/hostcapabilities => ./hostcapabilities
 
