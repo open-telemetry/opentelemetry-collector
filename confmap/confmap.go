@@ -307,8 +307,8 @@ func isStringyStructure(t reflect.Type) bool {
 	return false
 }
 
-// safeWrapDecodeHookFunc wraps a DecodeHookFuncValue to ensure that it is safe to call all
-// methods in fromVal.
+// safeWrapDecodeHookFunc wraps a DecodeHookFuncValue to ensure fromVal is a valid `reflect.Value`
+// object and therefore it is safe to call `reflect.Value` methods on fromVal.
 //
 // Use this only if the hook does not need to be called on untyped nil values.
 // Typed nil values are safe to call and will be passed to the hook.
