@@ -9,16 +9,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-type EventAttributeOption interface {
-	apply(plog.LogRecord)
-}
-
-type eventAttributeOptionFunc func(plog.LogRecord)
-
-func (eaof eventAttributeOptionFunc) apply(lr plog.LogRecord) {
-	eaof(lr)
-}
-
 // LogsBuilder provides an interface for scrapers to report logs while taking care of all the transformations
 // required to produce log representation defined in metadata and user config.
 type LogsBuilder struct {

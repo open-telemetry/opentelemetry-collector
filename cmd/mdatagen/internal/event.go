@@ -55,3 +55,15 @@ func (l *Event) Unmarshal(parser *confmap.Conf) error {
 	}
 	return parser.Unmarshal(l)
 }
+
+func (l Event) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+	if len(l.Attributes) == 0 {
+		return false
+	}
+	for _, attr := range l.Attributes {
+		if v, exists := attrs[attr]; exists && v.Optional {
+			return true
+		}
+	}
+	return false
+}

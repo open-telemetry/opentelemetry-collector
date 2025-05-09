@@ -217,13 +217,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
-				"eventAttributes": func() []AttributeName {
+				"eventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Events {
 						for _, attribute := range event.Attributes {
-							if !seen[attribute] {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}
@@ -231,13 +232,14 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 					}
 					return used
 				},
-				"metricAttributes": func() []AttributeName {
+				"metricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
 					seen := make(map[AttributeName]bool)
 					used := make([]AttributeName, 0)
 
 					for _, event := range md.Metrics {
 						for _, attribute := range event.Attributes {
-							if !seen[attribute] {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
 								used = append(used, attribute)
 								seen[attribute] = true
 							}

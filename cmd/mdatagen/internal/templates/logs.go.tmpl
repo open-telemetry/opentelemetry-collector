@@ -15,6 +15,7 @@ import (
 )
 
 
+{{ if eventOptionalAttributes .Attributes }}
 type EventAttributeOption interface {
 	apply(plog.LogRecord)
 }
@@ -25,15 +26,14 @@ func (eaof eventAttributeOptionFunc) apply(lr plog.LogRecord) {
 	eaof(lr)
 }
 
-{{ range eventAttributes }}
-{{ if (attributeInfo .).Optional }}
+{{ range eventOptionalAttributes .Attributes }}
 func With{{ .Render }}EventAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) EventAttributeOption {
 	return eventAttributeOptionFunc(func(dp plog.LogRecord) {
 		{{- template "putAttribute" . }}
 	})
 }
-{{- end }}
-{{- end }}
+{{ end }}
+{{ end }}
 
 {{ range $name, $event := .Events -}}
 type event{{ $name.Render }} struct {
@@ -42,7 +42,7 @@ type event{{ $name.Render }} struct {
 }
 
 func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
-{{- range $event.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{end}}, options ...EventAttributeOption) {
+{{- range $event.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{end}}{{- if $event.HasOptionalAttribute $.Attributes -}}, options ...EventAttributeOption{{- end -}}) {
 	if !e.config.Enabled {
 		return
 	}
@@ -55,9 +55,11 @@ func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
 	{{- end }}
 	{{- end }}
 
+    {{ if $event.HasOptionalAttribute $.Attributes }}
 	for _, op := range options {
 		op.apply(dp)
 	}
+	{{- end }}
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -260,13 +262,17 @@ func (lb *LogsBuilder) Record{{ $name.Render }}Event(timestamp pcommon.Timestamp
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
 	{{- end -}}
 	{{- end -}}
-	, options... EventAttributeOption) {
+	{{- if $event.HasOptionalAttribute $.Attributes -}}
+	, options... EventAttributeOption
+	{{- end -}}) {
 	lb.event{{ $name.Render }}.recordEvent(timestamp
 		{{- range $event.Attributes -}}
 		{{- if not (attributeInfo .).Optional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end -}}
 		{{- end -}}
-		, options...)
+		{{- if $event.HasOptionalAttribute $.Attributes -}}
+		, options...
+		{{- end -}})
 }
 {{ end }}
