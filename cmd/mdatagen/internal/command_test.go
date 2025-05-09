@@ -250,8 +250,6 @@ foo
 			if tt.wantLogsGenerated {
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
 				require.FileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
-				contents, err = os.ReadFile(filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go")) //nolint:gosec
-				require.NoError(t, err)
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_logs_test.go"))
