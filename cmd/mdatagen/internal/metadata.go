@@ -304,6 +304,8 @@ type Attribute struct {
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
+	// Optional defines whether the attribute is required.
+	Optional bool `mapstructure:"optional"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.

@@ -152,13 +152,13 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDefaultEventEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			lb.RecordDefaultEventEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrEventAttribute(17), WithOptionalStringAttrEventAttribute("optional_string_attr-val"))
 			defaultEventsCount++
 			allEventsCount++
 			lb.RecordDefaultEventToBeRemovedEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allEventsCount++
-			lb.RecordDefaultEventToBeRenamedEvent(timestamp, "string_attr-val", true, false)
+			lb.RecordDefaultEventToBeRenamedEvent(timestamp, "string_attr-val", true, false, WithOptionalStringAttrEventAttribute("optional_string_attr-val"))
 
 			rb := lb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -211,6 +211,12 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("map_attr")
 					assert.True(t, ok)
 					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					attrVal, ok = lr.Attributes().Get("optional_int_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, 17, attrVal.Int())
+					attrVal, ok = lr.Attributes().Get("optional_string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
 				case "default.event.to_be_removed":
 					assert.False(t, validatedEvents["default.event.to_be_removed"], "Found a duplicate in the events slice: default.event.to_be_removed")
 					validatedEvents["default.event.to_be_removed"] = true
@@ -245,6 +251,9 @@ func TestLogsBuilder(t *testing.T) {
 					attrVal, ok = lr.Attributes().Get("boolean_attr2")
 					assert.True(t, ok)
 					assert.False(t, attrVal.Bool())
+					attrVal, ok = lr.Attributes().Get("optional_string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
 				}
 			}
 		})

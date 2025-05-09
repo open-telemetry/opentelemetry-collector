@@ -1,0 +1,15 @@
+{{- define "putAttribute" -}}
+	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
+	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
+	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
+	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- else }}
+	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+	{{- end }}
+{{- end -}}
+
+{{- define "getAttributeValue" -}}
+{{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
+{{- end -}}
