@@ -10,12 +10,17 @@ import (
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 var _ xconsumer.Profiles = profiles{}
 
 func NewProfiles(consumer xconsumer.Profiles, itemCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
+	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		return consumer
+	}
+
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)

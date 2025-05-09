@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 )
@@ -32,7 +33,16 @@ func (m *mockTracesConsumer) Capabilities() consumer.Capabilities {
 	return m.capabilities
 }
 
+func TestTracesNopWhenGateDisabled(t *testing.T) {
+	setGateForTest(t, false)
+
+	consumer := consumertest.NewNop()
+	require.Equal(t, consumer, obsconsumer.NewTraces(consumer, nil))
+}
+
 func TestTracesConsumeSuccess(t *testing.T) {
+	setGateForTest(t, true)
+
 	ctx := context.Background()
 	mockConsumer := &mockTracesConsumer{}
 
@@ -73,6 +83,7 @@ func TestTracesConsumeSuccess(t *testing.T) {
 }
 
 func TestTracesConsumeFailure(t *testing.T) {
+	setGateForTest(t, true)
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
 	mockConsumer := &mockTracesConsumer{err: expectedErr}
@@ -114,6 +125,7 @@ func TestTracesConsumeFailure(t *testing.T) {
 }
 
 func TestTracesWithStaticAttributes(t *testing.T) {
+	setGateForTest(t, true)
 	ctx := context.Background()
 	mockConsumer := &mockTracesConsumer{}
 
@@ -158,6 +170,7 @@ func TestTracesWithStaticAttributes(t *testing.T) {
 }
 
 func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
+	setGateForTest(t, true)
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
 	mockConsumer := &mockTracesConsumer{}
@@ -237,6 +250,8 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 }
 
 func TestTracesCapabilities(t *testing.T) {
+	setGateForTest(t, true)
+
 	mockConsumer := &mockTracesConsumer{
 		capabilities: consumer.Capabilities{MutatesData: true},
 	}
