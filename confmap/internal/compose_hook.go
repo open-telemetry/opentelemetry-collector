@@ -36,8 +36,8 @@ func typedDecodeHook(h mapstructure.DecodeHookFunc) mapstructure.DecodeHookFunc 
 
 // cachedDecodeHook takes a raw DecodeHookFunc (an any) and turns
 // it into a closure to be used directly
-// if the type fails to convert we return a closure always erroring to keep the previous behaviour
-func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(from reflect.Value, to reflect.Value) (any, error) {
+// if the type fails to convert we return a closure always erroring to keep the previous behavior
+func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(reflect.Value, reflect.Value) (any, error) {
 	switch f := typedDecodeHook(raw).(type) {
 	case mapstructure.DecodeHookFuncType:
 		return func(from reflect.Value, to reflect.Value) (any, error) {
@@ -60,7 +60,7 @@ func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(from reflect.Value, 
 			return f(from, to)
 		}
 	default:
-		return func(from reflect.Value, to reflect.Value) (any, error) {
+		return func(reflect.Value, reflect.Value) (any, error) {
 			return nil, errors.New("invalid decode hook signature")
 		}
 	}
@@ -75,7 +75,7 @@ func cachedDecodeHook(raw mapstructure.DecodeHookFunc) func(from reflect.Value, 
 // This is a copy of [mapstructure.ComposeDecodeHookFunc] but with
 // validation added.
 func ComposeDecodeHookFunc(fs ...mapstructure.DecodeHookFunc) mapstructure.DecodeHookFunc {
-	cached := make([]func(from reflect.Value, to reflect.Value) (any, error), 0, len(fs))
+	cached := make([]func(reflect.Value, reflect.Value) (any, error), 0, len(fs))
 	for _, f := range fs {
 		cached = append(cached, cachedDecodeHook(f))
 	}
