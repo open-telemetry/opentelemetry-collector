@@ -1,8 +1,6 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-// This code is a modified version of https://github.com/go-viper/mapstructure
 // Copyright (c) 2013 Mitchell Hashimoto
+// SPDX-License-Identifier: MIT
+// This code is a modified version of https://github.com/go-viper/mapstructure
 
 package composehook // import "go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 
