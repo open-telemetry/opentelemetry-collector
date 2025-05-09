@@ -162,13 +162,11 @@ func (qb *shardBatcher) startTimeBasedFlushingGoroutine() {
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *shardBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *shardBatcher) start(_ context.Context, _ component.Host) {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
 		qb.startTimeBasedFlushingGoroutine()
 	}
-
-	return nil
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
@@ -203,7 +201,7 @@ func (qb *shardBatcher) flush(ctx context.Context, req request.Request, done Don
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *shardBatcher) Shutdown(_ context.Context) error {
+func (qb *shardBatcher) shutdown(_ context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
