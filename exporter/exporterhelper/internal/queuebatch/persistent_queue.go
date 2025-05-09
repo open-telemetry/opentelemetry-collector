@@ -260,14 +260,10 @@ func (sc *spanContext) UnmarshalJSON(data []byte) error {
 	var scc spanContextConfigWrapper
 	err := json.Unmarshal(data, &scc)
 	if err != nil {
-		fmt.Println("Error unmarshaling JSON into spanContextConfigWrapper:", err)
 		return err
 	}
-	fmt.Println("Unmarshaled spanContextConfigWrapper:", scc)
-
 	scfw, err := spanContextFromWrapper(scc)
 	if err != nil {
-		fmt.Println("Error converting spanContextConfigWrapper to spanContext:", err)
 		return err
 	}
 	*sc = *scfw
