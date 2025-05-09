@@ -231,9 +231,8 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 							}
 						}
 					}
-					sort.Slice(used, func(i, j int) bool {
-						return string(used[i]) < string(used[j])
-					})
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
 					return used
 				},
 				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
@@ -249,9 +248,8 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 							}
 						}
 					}
-					sort.Slice(used, func(i, j int) bool {
-						return string(used[i]) < string(used[j])
-					})
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
 					return used
 				},
 				"metricInfo": func(mn MetricName) Metric {
