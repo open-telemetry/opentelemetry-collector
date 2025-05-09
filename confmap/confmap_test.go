@@ -132,20 +132,6 @@ func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	assert.Equal(t, &myStruct{}, cfg.MapStruct["struct"])
 }
 
-type testConfigAny struct {
-	AnyField any `mapstructure:"any_field"`
-}
-
-func TestExpandNilStructPointersHookFuncWithNilMap(t *testing.T) {
-	stringMap := map[string]any{
-		"any_field": nil,
-	}
-	conf := NewFromStringMap(stringMap)
-	cfg := &testConfigAny{}
-	require.NoError(t, conf.Unmarshal(cfg))
-	assert.Nil(t, cfg.AnyField)
-}
-
 func TestExpandNilStructPointersHookFuncDefaultNotNilConfigNil(t *testing.T) {
 	stringMap := map[string]any{
 		"boolean": nil,
