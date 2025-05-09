@@ -253,9 +253,6 @@ type spanContextConfigWrapper struct {
 
 type spanContext trace.SpanContext
 
-//	func (sc *spanContext) MarshalJSON() ([]byte, error) {
-//		return json.Marshal(sc)
-//	}
 func (sc *spanContext) UnmarshalJSON(data []byte) error {
 	var scc spanContextConfigWrapper
 	err := json.Unmarshal(data, &scc)

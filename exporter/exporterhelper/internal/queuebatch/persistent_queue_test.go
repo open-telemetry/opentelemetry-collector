@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -1384,4 +1385,38 @@ func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
 	assert.Equal(t, req2, gotReq2)
 	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
 	assert.False(t, restoredSC2.IsValid())
+}
+
+func TestSpanContextUnmarshalJSON(t *testing.T) {
+	testCases := []struct {
+		name          string
+		expectErr     bool
+		marshaledData []byte
+	}{
+		{
+			name:          "Invalid JSON data",
+			expectErr:     true,
+			marshaledData: []byte(`{"invalid json}`),
+		},
+		{
+			name:          "Valid JSON but not valid spanContext",
+			expectErr:     true,
+			marshaledData: []byte(`{"foo":"bar"}`),
+		},
+		{
+			name:          "Valid JSON with spanContext fields but invalid SC",
+			expectErr:     true,
+			marshaledData: []byte(`{"TraceID": "00000000000000000000000000000000","SpanID":"00000000000000000","TraceFlags":"0","TraceState":"0","Remote":false}`),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var sc spanContext
+			err := json.Unmarshal(tc.marshaledData, &sc)
+			if tc.expectErr {
+				require.Error(t, err)
+			}
+		})
+	}
 }
