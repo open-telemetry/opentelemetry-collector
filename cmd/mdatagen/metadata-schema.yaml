@@ -51,7 +51,7 @@ resource_attributes:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
     enum: [string]
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes|slice|map>
+    type: <string|int|double|bool|bytes|slice|map|template>
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.
@@ -77,7 +77,7 @@ attributes:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
     enum: [string]
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes|slice|map>
+    type: <string|int|double|bool|bytes|slice|map|template>
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
