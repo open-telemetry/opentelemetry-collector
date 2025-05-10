@@ -5,30 +5,30 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ go install go.opentelemetry.io/collector/cmd/builder@v0.109.0
+$ go get --tool go.opentelemetry.io/collector/cmd/builder@v0.125.0
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.109.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.109.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.125.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.125.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.125.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.109.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.125.0
 
 providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
   - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.125.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.125.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.125.0
 EOF
-$ builder --config=otelcol-builder.yaml
+$ go tool builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
 receivers:
   otlp:
@@ -61,6 +61,7 @@ There are three supported ways to install the builder:
 1. Via official release Docker images (recommended)
 2. Via official release binaries (recommended)
 3. Through `go install` (not recommended)
+4. Through `go get --tool`
 
 ### Official release Docker image
 
@@ -88,6 +89,8 @@ Additional arguments may be passed to ocb on the command line as specified below
 
 This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
+Use `ocb --help` to learn about which flags are available.
+
 ### `go install`
 
 You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
@@ -96,7 +99,7 @@ You need to have a `go` compiler in your PATH. Run the following command to inst
 go install go.opentelemetry.io/collector/cmd/builder@latest
 ```
 
-If installing through this method the binary will be called `builder`.
+If installed through this method the binary will be called `builder`.
 
 In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
 
@@ -110,7 +113,25 @@ To build a default collector configuration, you can use [this](../otelcorecol/bu
 ocb --config=builder-config.yaml
 ```
 
-Use `ocb --help` to learn about which flags are available.
+### `go get --tool` (go version >= 1.24)
+
+You need to have a `go` compiler in your PATH, as well as a Go project containing a `go.mod` file.
+
+Run the following command to register the `builder` CLI as a go tool.
+
+```console
+go get --tool go.opentelemetry.io/collector/cmd/builder
+```
+
+If Installed through this method, the binary can be called with `go tool builder`. Note that it will only be accessible from within your Go project.
+
+The upside of using `go get --tool` over the other aforementioned method is that the go toolchain manages the binary like any other dependency.
+
+This has a couple upsides:
+
+- You can pin the version of the builder used to build your distribution, which also pins the version of the core Collector libraries used as part of it. This ensures compatibility with imports of OTel libraries within your component code.
+- Different go projects using different versions will use different `builder` managed automatically instead of forcing the user to download multiple versions of the binary.  
+
 
 ## Debug
 
