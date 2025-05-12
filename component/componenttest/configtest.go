@@ -4,12 +4,16 @@
 package componenttest // import "go.opentelemetry.io/collector/component/componenttest"
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 
 	"go.uber.org/multierr"
+	"gopkg.in/yaml.v3"
+
+	"go.opentelemetry.io/collector/confmap"
 )
 
 // The regular expression for valid config field tag.
@@ -30,7 +34,40 @@ func CheckConfigStruct(config any) error {
 		return fmt.Errorf("config must be a struct or a pointer to one, the passed object is a %s", t.Kind())
 	}
 
-	return validateConfigDataType(t)
+	err := validateConfigDataType(t)
+	if err != nil {
+		return err
+	}
+
+	err = validateJSONAndYAMLMarshal(config)
+	if err != nil {
+		return fmt.Errorf("config must be able to be marshaled to JSON and YAML, failed to marshal config: %w", err)
+	}
+
+	return nil
+}
+
+// validateJSONAndYAMLMarshal checks if the provided value can be marshaled into JSON/YAML.
+// It returns an error if the value can not be marshaled.
+func validateJSONAndYAMLMarshal(config any) error {
+	conf := confmap.New()
+	if err := conf.Marshal(config); err != nil {
+		return err
+	}
+
+	configMap := conf.ToStringMap()
+
+	_, err := json.Marshal(configMap)
+	if err != nil {
+		return err
+	}
+
+	_, err = yaml.Marshal(configMap)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // validateConfigDataType performs a descending validation of the given type.
