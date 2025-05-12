@@ -64,6 +64,12 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v1.29.0/v0.123.0
 
+### ❗ Known Issues ❗
+
+- This version increases memory usage by ~0.5 MB per component in the pipelines because a separate Zap Core logger is 
+  initialized for each component. The issue is partially fixed in v0.126.0 for users who write logs to stdout, but do
+  not export logs via OTLP. See https://github.com/open-telemetry/opentelemetry-collector/issues/13014 for more details.
+
 ### 🛑 Breaking changes 🛑
 
 - `service/telemetry`: Mark `telemetry.disableAddressFieldForInternalTelemetry` as beta, usage of deprecated service::telemetry::address are ignored (#25115)
