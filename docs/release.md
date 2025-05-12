@@ -26,6 +26,7 @@ Before the release, make sure there are no open release blockers in [core](https
 ## Releasing opentelemetry-collector
 
 1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
+   - While this PR is open, all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
@@ -177,20 +178,22 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - Changing the configuration to an easy to find value.
 2. The bug happens in common setups. To gauge this, maintainers can consider the following:
     - If the bug is specific to a certain platform, and if that platform is in [Tier 1](../docs/platform-support.md#tiered-platform-support-model).
-    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+    - The bug happens with the default configuration or with one that is known to be used in production.
 3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
     - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+    - The bug makes it difficult to troubleshoot or debug Collector setups
 
 We aim to provide a release that fixes security-related issues in at most 30 days since they are publicly announced; with the current release schedule this means security issues will typically not warrant a bugfix release. An exception is critical vulnerabilities (CVSSv3 score >= 9.0), which will warrant a release within five business days.
 
 The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug or security issue fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+If the maintainers are unable to reach consensus within one working day, we will lean towards releasing a bugfix version.
 
 ### Bugfix release procedure
 
-The following documents the procedure to release a bugfix
+The release manager of a minor version is responsible for releasing any bugfix versions on this release series. The following documents the procedure to release a bugfix
 
 1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.

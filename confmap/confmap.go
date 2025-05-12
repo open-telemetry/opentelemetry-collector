@@ -19,6 +19,7 @@ import (
 	"github.com/knadh/koanf/v2"
 
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
+	"go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 )
 
 const (
@@ -173,6 +174,10 @@ func (l *Conf) IsSet(key string) bool {
 // Merge merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 func (l *Conf) Merge(in *Conf) error {
+	if enableMergeAppendOption.IsEnabled() {
+		// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
+		return l.mergeAppend(in)
+	}
 	return l.k.Merge(in.k)
 }
 
@@ -230,7 +235,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		TagName:          MapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
-		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+		DecodeHook: composehook.ComposeDecodeHookFunc(
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
@@ -302,6 +307,23 @@ func isStringyStructure(t reflect.Type) bool {
 	return false
 }
 
+// safeWrapDecodeHookFunc wraps a DecodeHookFuncValue to ensure fromVal is a valid `reflect.Value`
+// object and therefore it is safe to call `reflect.Value` methods on fromVal.
+//
+// Use this only if the hook does not need to be called on untyped nil values.
+// Typed nil values are safe to call and will be passed to the hook.
+// See https://github.com/golang/go/issues/51649
+func safeWrapDecodeHookFunc(
+	f mapstructure.DecodeHookFuncValue,
+) mapstructure.DecodeHookFuncValue {
+	return func(fromVal reflect.Value, toVal reflect.Value) (any, error) {
+		if !fromVal.IsValid() {
+			return nil, nil
+		}
+		return f(fromVal, toVal)
+	}
+}
+
 // When a value has been loaded from an external source via a provider, we keep both the
 // parsed value and the original string value. This allows us to expand the value to its
 // original string representation when decoding into a string field, and use the original otherwise.
@@ -351,7 +373,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 // we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		// ensure we are dealing with map to map comparison
 		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
 			toElem := to.Type().Elem()
@@ -371,7 +393,7 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 			}
 		}
 		return from.Interface(), nil
-	}
+	})
 }
 
 // mapKeyStringToMapKeyTextUnmarshalerHookFunc returns a DecodeHookFuncType that checks that a conversion from
@@ -418,7 +440,7 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 // unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
 func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}
@@ -451,14 +473,14 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 			}
 		}
 		return fromAsMap, nil
-	}
+	})
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
@@ -491,14 +513,14 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		return unmarshaler, nil
-	}
+	})
 }
 
 // marshalerHookFunc returns a DecodeHookFuncValue that checks structs that aren't
 // the original to see if they implement the Marshaler interface.
 func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 	origType := reflect.TypeOf(orig)
-	return func(from reflect.Value, _ reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, _ reflect.Value) (any, error) {
 		if from.Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}
@@ -516,7 +538,7 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 			return nil, err
 		}
 		return conf.ToStringMap(), nil
-	}
+	})
 }
 
 // Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
@@ -558,7 +580,7 @@ type Marshaler interface {
 // 4. configuration have no `keys` field specified, the output should be default config
 //   - for example, input is {}, then output is Config{ Keys: ["a", "b"]}
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
-	return func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
 			if from.IsNil() {
 				// input slice is nil, set output slice to nil.
@@ -570,7 +592,7 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 		}
 
 		return from.Interface(), nil
-	}
+	})
 }
 
 type moduleFactory[T any, S any] interface {
