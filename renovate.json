@@ -136,7 +136,8 @@
     }
   ],
   "ignoreDeps": [
-    "github.com/mattn/go-ieproxy"
+    "github.com/mattn/go-ieproxy",
+    "github.com/shirou/gopsutil/v4"
   ],
   "prConcurrentLimit": 200,
   "suppressNotifications": [
