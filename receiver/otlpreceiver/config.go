@@ -12,13 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
-)
-
-const (
-	// Protocol values.
-	protoGRPC = "protocols::grpc"
-	protoHTTP = "protocols::http"
 )
 
 type HTTPConfig struct {
@@ -39,8 +34,8 @@ type HTTPConfig struct {
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
-	HTTP *HTTPConfig              `mapstructure:"http"`
+	GRPC configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
+	HTTP configoptional.Optional[HTTPConfig]              `mapstructure:"http"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -58,7 +53,7 @@ var (
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil && cfg.HTTP == nil {
+	if !cfg.GRPC.HasValue() && !cfg.HTTP.HasValue() {
 		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
 	return nil
@@ -72,24 +67,20 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if !conf.IsSet(protoGRPC) {
-		cfg.GRPC = nil
-	}
-
-	if !conf.IsSet(protoHTTP) {
-		cfg.HTTP = nil
-	} else {
+	if cfg.HTTP.HasValue() {
 		var err error
+		httpCfg := cfg.HTTP.Value()
 
-		if cfg.HTTP.TracesURLPath, err = sanitizeURLPath(cfg.HTTP.TracesURLPath); err != nil {
+		if httpCfg.TracesURLPath, err = sanitizeURLPath(httpCfg.TracesURLPath); err != nil {
 			return err
 		}
-		if cfg.HTTP.MetricsURLPath, err = sanitizeURLPath(cfg.HTTP.MetricsURLPath); err != nil {
+		if httpCfg.MetricsURLPath, err = sanitizeURLPath(httpCfg.MetricsURLPath); err != nil {
 			return err
 		}
-		if cfg.HTTP.LogsURLPath, err = sanitizeURLPath(cfg.HTTP.LogsURLPath); err != nil {
+		if httpCfg.LogsURLPath, err = sanitizeURLPath(httpCfg.LogsURLPath); err != nil {
 			return err
 		}
+		cfg.HTTP = configoptional.Some(httpCfg)
 	}
 
 	return nil
