@@ -28,12 +28,18 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ConnectorConsumedItems            metric.Int64Counter
+	ConnectorProducedItems            metric.Int64Counter
+	ExporterConsumedItems             metric.Int64Counter
 	ProcessCPUSeconds                 metric.Float64ObservableCounter
 	ProcessMemoryRss                  metric.Int64ObservableGauge
 	ProcessRuntimeHeapAllocBytes      metric.Int64ObservableGauge
 	ProcessRuntimeTotalAllocBytes     metric.Int64ObservableCounter
 	ProcessRuntimeTotalSysMemoryBytes metric.Int64ObservableGauge
 	ProcessUptime                     metric.Float64ObservableCounter
+	ProcessorConsumedItems            metric.Int64Counter
+	ProcessorProducedItems            metric.Int64Counter
+	ReceiverProducedItems             metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -175,6 +181,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ConnectorConsumedItems, err = builder.meter.Int64Counter(
+		"otelcol.connector.consumed.items",
+		metric.WithDescription("Number of items passed to the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ConnectorProducedItems, err = builder.meter.Int64Counter(
+		"otelcol.connector.produced.items",
+		metric.WithDescription("Number of items emitted from the connector."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterConsumedItems, err = builder.meter.Int64Counter(
+		"otelcol.exporter.consumed.items",
+		metric.WithDescription("Number of items passed to the exporter."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessCPUSeconds, err = builder.meter.Float64ObservableCounter(
 		"otelcol_process_cpu_seconds",
 		metric.WithDescription("Total CPU user and system time in seconds [alpha]"),
@@ -209,6 +233,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_process_uptime",
 		metric.WithDescription("Uptime of the process [alpha]"),
 		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorConsumedItems, err = builder.meter.Int64Counter(
+		"otelcol.processor.consumed.items",
+		metric.WithDescription("Number of items passed to the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorProducedItems, err = builder.meter.Int64Counter(
+		"otelcol.processor.produced.items",
+		metric.WithDescription("Number of items emitted from the processor."),
+		metric.WithUnit("{item}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ReceiverProducedItems, err = builder.meter.Int64Counter(
+		"otelcol.receiver.produced.items",
+		metric.WithDescription("Number of items emitted from the receiver."),
+		metric.WithUnit("{item}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
