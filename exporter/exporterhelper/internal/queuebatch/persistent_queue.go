@@ -258,9 +258,6 @@ type spanContextConfigWrapper struct {
 
 type spanContext trace.SpanContext
 
-//	func (sc *spanContext) MarshalJSON() ([]byte, error) {
-//		return json.Marshal(sc)
-//	}
 func (sc *spanContext) UnmarshalJSON(data []byte) error {
 	var scc spanContextConfigWrapper
 	err := json.Unmarshal(data, &scc)
@@ -388,7 +385,11 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.readIndex != pq.writeIndex {
-			index, req, consumed, restoredContext := pq.getNextItem(ctx)
+			index, req, consumed, restoredContext, err := pq.getNextItem(ctx)
+			if err != nil {
+				pq.logger.Error("Failed to get next item", zap.Error(err))
+				return restoredContext, req, nil, false
+			}
 			// Ensure the used size and the channel size are in sync.
 			if pq.readIndex == pq.writeIndex {
 				pq.queueSize = 0
@@ -410,7 +411,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with onDone to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool, context.Context) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool, context.Context, error) {
 	index := pq.readIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.readIndex++
@@ -429,7 +430,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 	if err == nil {
 		request, err = pq.set.encoding.Unmarshal(getOp.Value)
 		if err != nil {
-			return 0, request, false, restoredContext
+			return 0, request, false, ctx, err
 		}
 		var sc spanContext
 		if ctxOp.Value != nil {
@@ -447,14 +448,14 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return 0, request, false, restoredContext
+		return 0, request, false, restoredContext, err
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 
-	return index, request, true, restoredContext
+	return index, request, true, restoredContext, nil
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.

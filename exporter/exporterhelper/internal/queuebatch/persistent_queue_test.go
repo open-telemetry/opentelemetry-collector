@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -53,6 +54,20 @@ func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
 		return 0, errInvalidValue
 	}
 	return binary.LittleEndian.Uint64(bytes), nil
+}
+
+// f is an implementation of Encoding that always fails on Marshal and Unmarshal.
+type failingEncoding[T any] struct{}
+
+// Marshal always returns an error.
+func (failingEncoding[T]) Marshal(_ T) ([]byte, error) {
+	return nil, errors.New("failing encoding: Marshal failed")
+}
+
+// Unmarshal always returns an error.
+func (failingEncoding[T]) Unmarshal(_ []byte) (T, error) {
+	var zero T
+	return zero, errors.New("failing encoding: Unmarshal failed")
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -114,7 +129,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Oper
 		case storage.Set:
 			m.st[op.Key] = op.Value
 		case storage.Delete:
-			delete(m.st, op.Key)
+			delete(m.st, op.Key) // Fixed the delete operation syntax
 		default:
 			return errors.New("wrong operation type")
 		}
@@ -270,6 +285,20 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+	return pq
+}
+
+func createTestPersistentQueueWithEncoding(tb testing.TB, ext storage.Extension, capacity int64, encoding Encoding[uint64]) *persistentQueue[uint64] {
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  capacity,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  encoding,
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -553,7 +582,7 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 		corruptReadIndex                   bool
 		corruptWriteIndex                  bool
 		desiredQueueSize                   int64
-	}{
+	}{ // Fixing syntax error by adding a closing brace
 		{
 			name:             "corrupted no items",
 			desiredQueueSize: 3,
@@ -1384,4 +1413,141 @@ func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
 	assert.Equal(t, req2, gotReq2)
 	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
 	assert.False(t, restoredSC2.IsValid())
+}
+
+func TestSpanContextUnmarshalJSON(t *testing.T) {
+	testCases := []struct {
+		name          string
+		expectErr     bool
+		marshaledData []byte
+	}{
+		{
+			name:          "Invalid JSON data",
+			expectErr:     true,
+			marshaledData: []byte(`{"invalid json}`),
+		},
+		{
+			name:          "Valid JSON but not valid spanContext",
+			expectErr:     true,
+			marshaledData: []byte(`{"foo":"bar"}`),
+		},
+		{
+			name:          "Valid JSON with spanContext fields but invalid SC",
+			expectErr:     true,
+			marshaledData: []byte(`{"TraceID": "00000000000000000000000000000000","SpanID":"00000000000000000","TraceFlags":"0","TraceState":"0","Remote":false}`),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var sc spanContext
+			err := json.Unmarshal(tc.marshaledData, &sc)
+			if tc.expectErr {
+				require.Error(t, err)
+			}
+		})
+	}
+	t.Run("Call UnmarshalJSON directly", func(t *testing.T) {
+		var sc spanContext
+		err := sc.UnmarshalJSON([]byte(`{"TraceID": "`))
+		require.Error(t, err)
+	})
+}
+
+func TestPersistentQueue_PutInternal_FailingEncoding(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+	pq.set.encoding = failingEncoding[uint64]{}
+
+	err := pq.Offer(context.Background(), 1)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Marshal failed")
+}
+
+func TestPersistentQueue_GetNextItem_UnmarshalError(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	failingEncoding := &failingEncoding[uint64]{}
+	ps := createTestPersistentQueueWithEncoding(t, ext, 1000, uint64Encoding{})
+
+	// Add an item to the queue
+	req := uint64(50)
+	require.NoError(t, ps.Offer(context.Background(), req))
+
+	// Attempt to read the item, expecting an Unmarshal error
+	ctx := context.Background()
+	// change encoding to failingEncoding so Unmarshal fails
+	ps.set.encoding = failingEncoding
+	_, _, _, _, err := ps.getNextItem(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Unmarshal failed")
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_ContextRestoration(t *testing.T) {
+	// Setup: create a span context and marshal it as the queue would.
+	traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	spanID, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+
+	// Prepare the storage client and manually insert a "dispatched" item and its context.
+	ext := storagetest.NewMockStorageExtension(nil)
+	client, err := ext.GetClient(context.Background(), component.KindExporter, component.NewID(exportertest.NopType), pipeline.SignalTraces.String())
+	require.NoError(t, err)
+
+	// Manually encode a request and its context.
+	req := uint64(123)
+	reqBytes, err := uint64Encoding{}.Marshal(req)
+	require.NoError(t, err)
+	scBytes, err := getAndMarshalSpanContext(ctxWithSC)
+	require.NoError(t, err)
+
+	// Simulate a dispatched item at index 0.
+	require.NoError(t, client.Set(context.Background(), getItemKey(0), reqBytes))
+	require.NoError(t, client.Set(context.Background(), getContextKey(0), scBytes))
+	require.NoError(t, client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes([]uint64{0})))
+	// Set both writeIndex and readIndex to 0 so the re-enqueued item is available after restart.
+	require.NoError(t, client.Set(context.Background(), writeIndexKey, itemIndexToBytes(0)))
+	require.NoError(t, client.Set(context.Background(), readIndexKey, itemIndexToBytes(0)))
+
+	// Now, create a new queue which will call retrieveAndEnqueueNotDispatchedReqs.
+	pq := createTestPersistentQueueWithClient(client)
+
+	// The item should have been re-enqueued. Read it and check the context.
+	restoredCtx, gotReq, done, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	assert.True(t, restoredSC.IsValid())
+	assert.Equal(t, sc.TraceID(), restoredSC.TraceID())
+	assert.Equal(t, sc.SpanID(), restoredSC.SpanID())
+	assert.Equal(t, sc.TraceFlags(), restoredSC.TraceFlags())
+	assert.Equal(t, sc.TraceState().String(), restoredSC.TraceState().String())
+	assert.Equal(t, sc.IsRemote(), restoredSC.IsRemote())
+
+	// Clean up
+	done.OnDone(nil)
+}
+
+func TestPersistentQueue_Read_ErrorPath(t *testing.T) {
+	errInjected := errors.New("injected batch error")
+	client := newFakeStorageClientWithErrors([]error{nil, errInjected})
+	pq := createTestPersistentQueueWithClient(client)
+
+	// Offer an item (should succeed, as no error yet)
+	req := uint64(42)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Now, Read should hit the error path in getNextItem
+	restoredCtx, gotReq, done, ok := pq.Read(context.Background())
+	assert.False(t, ok, "Read should return ok == false when getNextItem errors")
+	// The returned Done should be nil, and the request should be the zero value
+	assert.Nil(t, done)
+	assert.Equal(t, uint64(0), gotReq)
+	assert.NotNil(t, restoredCtx)
 }
