@@ -44,7 +44,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
 	// the LoggerProvider, meaning that the attributes would be exported twice.
 	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-		fields := []zap.Field{}
+		var fields []zap.Field
 		for k, v := range cfg.Resource {
 			if v != nil {
 				f := zap.Stringp(k, v)
@@ -56,12 +56,23 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	}))
 
 	var lp log.LoggerProvider
-
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+			core = newSampledCore(core, cfg.Logs.Sampling)
+		}
+
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
 		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
 			lp = set.SDK.LoggerProvider()
+			wrapper := func(c zapcore.Core) zapcore.Core {
+				return c
+			}
+			if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+				wrapper = func(c zapcore.Core) zapcore.Core {
+					return newSampledCore(c, cfg.Logs.Sampling)
+				}
+			}
 
 			core = componentattribute.NewOTelTeeCoreWithAttributes(
 				core,
@@ -69,13 +80,8 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 				"go.opentelemetry.io/collector/service/telemetry",
 				cfg.Logs.Level,
 				attribute.NewSet(),
+				wrapper,
 			)
-		}
-
-		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-			core = componentattribute.NewWrapperCoreWithAttributes(core, func(c zapcore.Core) zapcore.Core {
-				return newSampledCore(c, cfg.Logs.Sampling)
-			})
 		}
 
 		return core
