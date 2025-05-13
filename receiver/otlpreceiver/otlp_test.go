@@ -721,9 +721,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	grpcCfg := DefaultGRPCServerConfig()
-	grpcCfg.NetAddr.Endpoint = addr
-	cfg.GRPC = configoptional.Some(grpcCfg)
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = addr
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -736,10 +734,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
-	grpcCfg = DefaultGRPCServerConfig()
-	grpcCfg.NetAddr.Endpoint = addr
-	grpcCfg.MaxRecvMsgSizeMiB = 100
-	cfg.GRPC = configoptional.Some(grpcCfg)
+	cfg.GRPC.GetOrInsertDefault().MaxRecvMsgSizeMiB = 100
 
 	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -832,19 +827,13 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	grpcCfg := DefaultGRPCServerConfig()
-	grpcCfg.NetAddr.Endpoint = endpoint
-	cfg.GRPC = configoptional.Some(grpcCfg)
-	cfg.HTTP = configoptional.None[HTTPConfig]()
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	httpCfg := DefaultHTTPConfig()
-	httpCfg.ServerConfig.Endpoint = endpoint
-	cfg.HTTP = configoptional.Some(httpCfg)
-	cfg.GRPC = configoptional.None[configgrpc.ServerConfig]()
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
@@ -1025,13 +1014,8 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	grpcCfg := DefaultGRPCServerConfig()
-	grpcCfg.NetAddr.Endpoint = endpointGrpc
-	cfg.GRPC = configoptional.Some(grpcCfg)
-
-	httpCfg := DefaultHTTPConfig()
-	httpCfg.ServerConfig.Endpoint = endpointHTTP
-	cfg.HTTP = configoptional.Some(httpCfg)
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpointGrpc
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = endpointHTTP
 
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID

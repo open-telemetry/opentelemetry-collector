@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,9 +36,7 @@ func testExporterConfig(endpoint string) component.Config {
 
 func testReceiverConfig(endpoint string) component.Config {
 	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
-	grpcCfg := otlpreceiver.DefaultGRPCServerConfig()
-	grpcCfg.NetAddr.Endpoint = endpoint
-	cfg.(*otlpreceiver.Config).GRPC = configoptional.Some(grpcCfg)
+	cfg.(*otlpreceiver.Config).GRPC.GetOrInsertDefault().NetAddr.Endpoint = endpoint
 	return cfg
 }
 

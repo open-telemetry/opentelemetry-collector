@@ -8,70 +8,83 @@ import (
 )
 
 // Optional is a type that can be used to represent a value that may or may not be present.
-// It supports three flavors: Some(value), None(), and WithDefault(defaultValue).
+// It supports three flavors: Some(value), and None(factory).
 type Optional[T any] struct {
-	hasValue bool
-	value    T
+	value T
 
+	// defaultFn returns a default value for the type T.
+	// It also acts as a flag to indicate whether the value is present or not.
+	// If defaultFn is nil, it means the value is present.
 	defaultFn *DefaultFunc[T]
 }
 
+// DefaultFunc is a function type that returns a default value of type T.
 type DefaultFunc[T any] func() T
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
-// Some creates an Optional with a value.
+// Some creates an Optional with a value and no factory.
 func Some[T any](value T) Optional[T] {
-	return Optional[T]{value: value, hasValue: true}
+	return Optional[T]{value: value}
 }
 
-// None creates an Optional with no value.
-func None[T any]() Optional[T] {
-	return Optional[T]{}
-}
-
+// Factory is an opaque type that can be used to create a default value for the type T.
+// Factories should be package variables.
 type Factory[T any] struct {
 	defaultFn *DefaultFunc[T]
 }
 
 // NewFactory creates a new Factory with the given default function.
-// Factories should be package variables
+// Factories should be package variables.
+// The reason we use a factory instead of passing a default T directly
+// is to allow this to work with T being a pointer,
+// because we wouldn't want to copy the value of a pointer
+// since it might reuse (and override) some shared state.
 func NewFactory[T any](defaultFn DefaultFunc[T]) Factory[T] {
 	return Factory[T]{defaultFn: &defaultFn}
 }
 
-// WithFactory creates an Optional which has no value
-// unless user config provides some, in which case
-// the factory is used to create the initial value,
-// which may be overridden by the user provided config.
+// None creates an Optional which has no value
+// and a factory to create a default value.
 //
-// The reason we pass a function instead of T directly
-// is to allow this to work with T being a pointer,
-// because we wouldn't want to copy the value of a pointer
-// since it might reuse (and override) some shared state.
-//
-// On unmarshal, the defaultFn is removed.
-func WithFactory[T any](factory Factory[T]) Optional[T] {
+// On successful unmarshal, the factory is erased.
+func None[T any](factory Factory[T]) Optional[T] {
 	return Optional[T]{defaultFn: factory.defaultFn}
 }
 
-func (o Optional[T]) HasValue() bool {
-	return o.hasValue
-}
-
-func (o Optional[T]) Value() T {
-	return o.value
-}
-
-func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
-	if o.defaultFn != nil {
+// GetOrInsertDefault returns the value of the Optional.
+// If the Optional is None(factory), it creates the default value.
+func (o *Optional[T]) GetOrInsertDefault() *T {
+	if !o.HasValue() {
 		o.value = (*o.defaultFn)()
-		o.hasValue = true
 		o.defaultFn = nil
 	}
+	return &o.value
+}
+
+// HasValue checks if the Optional has a value.
+func (o Optional[T]) HasValue() bool {
+	return o.defaultFn == nil
+}
+
+// Get returns the value of the Optional.
+// If the value is not present, it returns nil.
+func (o *Optional[T]) Get() *T {
+	if !o.HasValue() {
+		return nil
+	}
+	return &o.value
+}
+
+// Unmarshal the configuration into the Optional value.
+// If the value was None, on success, the factory is erased.
+func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
+	defaultFn := o.defaultFn
+	_ = o.GetOrInsertDefault()
 	if err := conf.Unmarshal(&o.value); err != nil {
+		// restore defaultFn if unmarshaling fails
+		o.defaultFn = defaultFn
 		return err
 	}
-	o.hasValue = true
 	return nil
 }

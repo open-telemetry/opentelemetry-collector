@@ -69,18 +69,15 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 
 	if cfg.HTTP.HasValue() {
 		var err error
-		httpCfg := cfg.HTTP.Value()
-
-		if httpCfg.TracesURLPath, err = sanitizeURLPath(httpCfg.TracesURLPath); err != nil {
+		if cfg.HTTP.Get().TracesURLPath, err = sanitizeURLPath(cfg.HTTP.Get().TracesURLPath); err != nil {
 			return err
 		}
-		if httpCfg.MetricsURLPath, err = sanitizeURLPath(httpCfg.MetricsURLPath); err != nil {
+		if cfg.HTTP.Get().MetricsURLPath, err = sanitizeURLPath(cfg.HTTP.Get().MetricsURLPath); err != nil {
 			return err
 		}
-		if httpCfg.LogsURLPath, err = sanitizeURLPath(httpCfg.LogsURLPath); err != nil {
+		if cfg.HTTP.Get().LogsURLPath, err = sanitizeURLPath(cfg.HTTP.Get().LogsURLPath); err != nil {
 			return err
 		}
-		cfg.HTTP = configoptional.Some(httpCfg)
 	}
 
 	return nil

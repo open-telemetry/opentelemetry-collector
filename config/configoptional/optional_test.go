@@ -34,29 +34,9 @@ func TestOptional(t *testing.T) {
 		expectedFoo string
 	}{
 		{
-			name: "no_default_no_config",
-			defaultCfg: Config{
-				Sub1: None[Sub](),
-			},
-			expectedSub: false,
-		},
-		{
-			name: "no_default_with_config",
-			config: map[string]any{
-				"sub": map[string]any{
-					"foo": "bar",
-				},
-			},
-			defaultCfg: Config{
-				Sub1: None[Sub](),
-			},
-			expectedSub: true,
-			expectedFoo: "bar",
-		},
-		{
 			name: "with_default_no_config",
 			defaultCfg: Config{
-				Sub1: WithFactory(subFactory),
+				Sub1: None(subFactory),
 			},
 			expectedSub: false,
 		},
@@ -68,7 +48,7 @@ func TestOptional(t *testing.T) {
 				},
 			},
 			defaultCfg: Config{
-				Sub1: WithFactory(subFactory),
+				Sub1: None(subFactory),
 			},
 			expectedSub: true,
 			expectedFoo: "bar", // input overrides default
@@ -82,7 +62,7 @@ func TestOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config{
-				Sub1: WithFactory(subFactory),
+				Sub1: None(subFactory),
 			},
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies
@@ -96,7 +76,7 @@ func TestOptional(t *testing.T) {
 			require.NoError(t, conf.Unmarshal(&cfg))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
-				require.Equal(t, test.expectedFoo, cfg.Sub1.Value().Foo)
+				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
 			}
 		})
 	}

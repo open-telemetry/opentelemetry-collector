@@ -38,43 +38,40 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func DefaultHTTPConfig() HTTPConfig {
-	httpCfg := confighttp.NewDefaultServerConfig()
-	httpCfg.Endpoint = "localhost:4318"
-	// For backward compatibility:
-	httpCfg.TLSSetting = nil
-	httpCfg.WriteTimeout = 0
-	httpCfg.ReadHeaderTimeout = 0
-	httpCfg.IdleTimeout = 0
-	return HTTPConfig{
-		ServerConfig:   httpCfg,
-		TracesURLPath:  defaultTracesURLPath,
-		MetricsURLPath: defaultMetricsURLPath,
-		LogsURLPath:    defaultLogsURLPath,
-	}
-}
-
-func DefaultGRPCServerConfig() configgrpc.ServerConfig {
-	grpcCfg := configgrpc.NewDefaultServerConfig()
-	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
-	grpcCfg.NetAddr.Endpoint = "localhost:4317"
-	grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
-	// We almost write 0 bytes, so no need to tune WriteBufferSize.
-	grpcCfg.ReadBufferSize = 512 * 1024
-	return *grpcCfg
-}
-
 var (
-	httpConfigFactory = configoptional.NewFactory(DefaultHTTPConfig)
-	grpcConfigFactory = configoptional.NewFactory(DefaultGRPCServerConfig)
+	httpConfigFactory = configoptional.NewFactory(func() HTTPConfig {
+		httpCfg := confighttp.NewDefaultServerConfig()
+		httpCfg.Endpoint = "localhost:4318"
+		// For backward compatibility:
+		httpCfg.TLSSetting = nil
+		httpCfg.WriteTimeout = 0
+		httpCfg.ReadHeaderTimeout = 0
+		httpCfg.IdleTimeout = 0
+		return HTTPConfig{
+			ServerConfig:   httpCfg,
+			TracesURLPath:  defaultTracesURLPath,
+			MetricsURLPath: defaultMetricsURLPath,
+			LogsURLPath:    defaultLogsURLPath,
+		}
+	})
+
+	grpcConfigFactory = configoptional.NewFactory(func() configgrpc.ServerConfig {
+		grpcCfg := configgrpc.NewDefaultServerConfig()
+		grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
+		grpcCfg.NetAddr.Endpoint = "localhost:4317"
+		grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
+		// We almost write 0 bytes, so no need to tune WriteBufferSize.
+		grpcCfg.ReadBufferSize = 512 * 1024
+		return *grpcCfg
+	})
 )
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: configoptional.WithFactory(grpcConfigFactory),
-			HTTP: configoptional.WithFactory(httpConfigFactory),
+			GRPC: configoptional.None(grpcConfigFactory),
+			HTTP: configoptional.None(httpConfigFactory),
 		},
 	}
 }

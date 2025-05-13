@@ -93,8 +93,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	var err error
-	grpcServerConfig := r.cfg.GRPC.Value()
-	if r.serverGRPC, err = grpcServerConfig.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = r.cfg.GRPC.Get().ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -114,9 +113,9 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
 	}
 
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.Value().NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.Get().NetAddr.Endpoint))
 	var gln net.Listener
-	if gln, err = grpcServerConfig.NetAddr.Listen(context.Background()); err != nil {
+	if gln, err = r.cfg.GRPC.Get().NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
@@ -140,21 +139,21 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
 		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.Get().TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.Get().MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
 		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.Value().LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(r.cfg.HTTP.Get().LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
@@ -167,14 +166,13 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	httpConfig := r.cfg.HTTP.Value()
-	if r.serverHTTP, err = httpConfig.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = r.cfg.HTTP.Get().ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpConfig.ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.Get().ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = httpConfig.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = r.cfg.HTTP.Get().ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 

@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
@@ -352,9 +351,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	httpCfg := otlpreceiver.DefaultHTTPConfig()
-	httpCfg.ServerConfig.Endpoint = addr
-	cfg.HTTP = configoptional.Some(httpCfg)
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = addr
 	return cfg
 }
 
