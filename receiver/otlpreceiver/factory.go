@@ -64,12 +64,15 @@ func defaultGRPCServerConfig() configgrpc.ServerConfig {
 	return *grpcCfg
 }
 
+var httpConfigFactory = configoptional.NewFactory(defaultHTTPConfig)
+var grpcConfigFactory = configoptional.NewFactory(defaultGRPCServerConfig)
+
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: configoptional.WithDefault(defaultGRPCServerConfig),
-			HTTP: configoptional.WithDefault(defaultHTTPConfig),
+			GRPC: configoptional.WithFactory(grpcConfigFactory),
+			HTTP: configoptional.WithFactory(httpConfigFactory),
 		},
 	}
 }

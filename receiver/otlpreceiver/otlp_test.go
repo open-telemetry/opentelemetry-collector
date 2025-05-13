@@ -696,8 +696,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 				},
 				TLSSetting: &configtls.ServerConfig{
 					Config: configtls.Config{
-						CertFile: "/path/to/valid/cert.pem",
-						KeyFile:  "/path/to/valid/key.pem",
+						CertFile: "willfail",
 					},
 				},
 			}),
@@ -722,8 +721,9 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.Ref().NetAddr.Endpoint = addr
-	cfg.HTTP = configoptional.None[HTTPConfig]()
+	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg.NetAddr.Endpoint = addr
+	cfg.GRPC = configoptional.Some(grpcCfg)
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -736,7 +736,10 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
-	cfg.GRPC.Ref().MaxRecvMsgSizeMiB = 1
+	grpcCfg = defaultGRPCServerConfig()
+	grpcCfg.NetAddr.Endpoint = addr
+	grpcCfg.MaxRecvMsgSizeMiB = 100
+	cfg.GRPC = configoptional.Some(grpcCfg)
 
 	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -1021,8 +1024,15 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.Ref().NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.Ref().ServerConfig.Endpoint = endpointHTTP
+
+	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg.NetAddr.Endpoint = endpointGrpc
+	cfg.GRPC = configoptional.Some(grpcCfg)
+
+	httpCfg := defaultHTTPConfig()
+	httpCfg.ServerConfig.Endpoint = endpointHTTP
+	cfg.HTTP = configoptional.Some(httpCfg)
+
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(

@@ -93,7 +93,8 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	var err error
-	if r.serverGRPC, err = r.cfg.GRPC.Ref().ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	grpcServerConfig := r.cfg.GRPC.Value()
+	if r.serverGRPC, err = grpcServerConfig.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -115,7 +116,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.Value().NetAddr.Endpoint))
 	var gln net.Listener
-	if gln, err = r.cfg.GRPC.Ref().NetAddr.Listen(context.Background()); err != nil {
+	if gln, err = grpcServerConfig.NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
@@ -166,13 +167,14 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.Ref().ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	httpConfig := r.cfg.HTTP.Value()
+	if r.serverHTTP, err = httpConfig.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.Value().ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpConfig.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.Ref().ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = httpConfig.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 

@@ -19,6 +19,12 @@ type Sub struct {
 	Foo string `mapstructure:"foo"`
 }
 
+var subFactory = NewFactory(func() Sub {
+	return Sub{
+		Foo: "foobar",
+	}
+})
+
 func TestOptional(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -27,54 +33,46 @@ func TestOptional(t *testing.T) {
 		expectedSub bool
 		expectedFoo string
 	}{
-		// {
-		// 	name: "no_default_no_config",
-		// 	defaultCfg: Config{
-		// 		Sub1: None[Sub](),
-		// 	},
-		// 	expectedSub: false,
-		// },
-		// {
-		// 	name: "no_default_with_config",
-		// 	config: map[string]any{
-		// 		"sub": map[string]any{
-		// 			"foo": "bar",
-		// 		},
-		// 	},
-		// 	defaultCfg: Config{
-		// 		Sub1: None[Sub](),
-		// 	},
-		// 	expectedSub: true,
-		// 	expectedFoo: "bar",
-		// },
-		// {
-		// 	name: "with_default_no_config",
-		// 	defaultCfg: Config{
-		// 		Sub1: WithDefault(func() Sub {
-		// 			return Sub{
-		// 				Foo: "foobar",
-		// 			}
-		// 		}),
-		// 	},
-		// 	expectedSub: false,
-		// },
-		// {
-		// 	name: "with_default_with_config",
-		// 	config: map[string]any{
-		// 		"sub": map[string]any{
-		// 			"foo": "bar",
-		// 		},
-		// 	},
-		// 	defaultCfg: Config{
-		// 		Sub1: WithDefault(func() Sub {
-		// 			return Sub{
-		// 				Foo: "foobar",
-		// 			}
-		// 		}),
-		// 	},
-		// 	expectedSub: true,
-		// 	expectedFoo: "bar", // input overrides default
-		// },
+		{
+			name: "no_default_no_config",
+			defaultCfg: Config{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "no_default_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config{
+				Sub1: None[Sub](),
+			},
+			expectedSub: true,
+			expectedFoo: "bar",
+		},
+		{
+			name: "with_default_no_config",
+			defaultCfg: Config{
+				Sub1: WithFactory(subFactory),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "with_default_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config{
+				Sub1: WithFactory(subFactory),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides default
+		},
 		{
 			// this test fails, because "sub:" is considered null value by mapstructure
 			// and no additional processing happens for it, including custom unmarshaler.
@@ -84,11 +82,7 @@ func TestOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config{
-				Sub1: WithDefault(func() Sub {
-					return Sub{
-						Foo: "foobar",
-					}
-				}),
+				Sub1: WithFactory(subFactory),
 			},
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies

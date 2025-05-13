@@ -13,7 +13,7 @@ type Optional[T any] struct {
 	hasValue bool
 	value    T
 
-	defaultFn DefaultFunc[T]
+	defaultFn *DefaultFunc[T]
 }
 
 type DefaultFunc[T any] func() T
@@ -30,9 +30,19 @@ func None[T any]() Optional[T] {
 	return Optional[T]{}
 }
 
-// WithDefault creates an Optional which has no value
+type Factory[T any] struct {
+	defaultFn *DefaultFunc[T]
+}
+
+// NewFactory creates a new Factory with the given default function.
+// Factories should be package variables
+func NewFactory[T any](defaultFn DefaultFunc[T]) Factory[T] {
+	return Factory[T]{defaultFn: &defaultFn}
+}
+
+// WithFactory creates an Optional which has no value
 // unless user config provides some, in which case
-// the defaultFn is used to create the initial value,
+// the factory is used to create the initial value,
 // which may be overridden by the user provided config.
 //
 // The reason we pass a function instead of T directly
@@ -41,8 +51,8 @@ func None[T any]() Optional[T] {
 // since it might reuse (and override) some shared state.
 //
 // On unmarshal, the defaultFn is removed.
-func WithDefault[T any](defaultFn DefaultFunc[T]) Optional[T] {
-	return Optional[T]{defaultFn: defaultFn}
+func WithFactory[T any](factory Factory[T]) Optional[T] {
+	return Optional[T]{defaultFn: factory.defaultFn}
 }
 
 func (o Optional[T]) HasValue() bool {
@@ -53,13 +63,9 @@ func (o Optional[T]) Value() T {
 	return o.value
 }
 
-func (o Optional[T]) Ref() *T {
-	return &o.value
-}
-
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	if o.defaultFn != nil {
-		o.value = o.defaultFn()
+		o.value = (*o.defaultFn)()
 		o.hasValue = true
 		o.defaultFn = nil
 	}
