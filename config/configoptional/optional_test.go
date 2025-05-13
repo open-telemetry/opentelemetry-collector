@@ -36,7 +36,7 @@ func TestOptional(t *testing.T) {
 		{
 			name: "none_no_config",
 			defaultCfg: Config{
-				Sub1: None(subFactory),
+				Sub1: None[Sub](),
 			},
 			expectedSub: false,
 		},
@@ -48,7 +48,7 @@ func TestOptional(t *testing.T) {
 				},
 			},
 			defaultCfg: Config{
-				Sub1: None(subFactory),
+				Sub1: None[Sub](),
 			},
 			expectedSub: true,
 			expectedFoo: "bar", // input overrides default
@@ -59,7 +59,76 @@ func TestOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config{
-				Sub1: None(subFactory),
+				Sub1: Default(subFactory),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "default_no_config",
+			defaultCfg: Config{
+				Sub1: Default(subFactory),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config{
+				Sub1: Default(subFactory),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides default
+		},
+		{
+			name: "default_with_config_no_foo",
+			config: map[string]any{
+				"sub": nil,
+			},
+			defaultCfg: Config{
+				Sub1: Default(subFactory),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "some_no_config",
+			defaultCfg: Config{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // value is not modified
+		},
+		{
+			name: "some_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides previous value
+		},
+		{
+			name: "some_with_config_no_foo",
+			config: map[string]any{
+				"sub": nil,
+			},
+			defaultCfg: Config{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
 			},
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies

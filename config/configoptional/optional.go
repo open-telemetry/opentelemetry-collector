@@ -8,7 +8,7 @@ import (
 )
 
 // Optional is a type that can be used to represent a value that may or may not be present.
-// It supports two flavors: Some(value), and None(factory).
+// It supports two flavors: Some(value), and Default(factory).
 type Optional[T any] struct {
 	value T
 
@@ -35,21 +35,23 @@ type Factory[T any] struct {
 }
 
 // NewFactory creates a new Factory with the given default function.
-// Factories should be package variables.
-// The reason we use a factory instead of passing a default T directly
-// is to allow this to work with T being a pointer,
-// because we wouldn't want to copy the value of a pointer
-// since it might reuse (and override) some shared state.
+// Factories should be package variables, to ensure the default function
+// is the same for all instances of the type T.
 func NewFactory[T any](defaultFn DefaultFunc[T]) Factory[T] {
 	return Factory[T]{defaultFn: &defaultFn}
 }
 
-// None creates an Optional which has no value
+// Default creates an Optional which has no value
 // and a factory to create a default value.
 //
 // On successful unmarshal, the factory is erased.
-func None[T any](factory Factory[T]) Optional[T] {
+func Default[T any](factory Factory[T]) Optional[T] {
 	return Optional[T]{defaultFn: factory.defaultFn}
+}
+
+// None is Default(zeroFactory) where zeroFactory creates a zero value of type T.
+func None[T any]() Optional[T] {
+	return Default(NewFactory(func() (zero T) { return }))
 }
 
 // GetOrInsertDefault returns the value of the Optional.

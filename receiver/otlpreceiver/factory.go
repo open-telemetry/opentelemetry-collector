@@ -70,8 +70,8 @@ var (
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: configoptional.None(grpcConfigFactory),
-			HTTP: configoptional.None(httpConfigFactory),
+			GRPC: configoptional.Default(grpcConfigFactory),
+			HTTP: configoptional.Default(httpConfigFactory),
 		},
 	}
 }
