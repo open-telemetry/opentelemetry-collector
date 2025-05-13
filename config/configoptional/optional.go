@@ -8,7 +8,7 @@ import (
 )
 
 // Optional is a type that can be used to represent a value that may or may not be present.
-// It supports three flavors: Some(value), and None(factory).
+// It supports two flavors: Some(value), and None(factory).
 type Optional[T any] struct {
 	value T
 

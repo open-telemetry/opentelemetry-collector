@@ -34,14 +34,14 @@ func TestOptional(t *testing.T) {
 		expectedFoo string
 	}{
 		{
-			name: "with_default_no_config",
+			name: "none_no_config",
 			defaultCfg: Config{
 				Sub1: None(subFactory),
 			},
 			expectedSub: false,
 		},
 		{
-			name: "with_default_with_config",
+			name: "none_with_config",
 			config: map[string]any{
 				"sub": map[string]any{
 					"foo": "bar",
@@ -54,10 +54,7 @@ func TestOptional(t *testing.T) {
 			expectedFoo: "bar", // input overrides default
 		},
 		{
-			// this test fails, because "sub:" is considered null value by mapstructure
-			// and no additional processing happens for it, including custom unmarshaler.
-			// https://github.com/go-viper/mapstructure/blob/0382e5b7e3987443c91311b7fdb60b92c69a47bf/mapstructure.go#L445
-			name: "with_default_with_config_no_foo",
+			name: "none_with_config_no_foo",
 			config: map[string]any{
 				"sub": nil,
 			},
