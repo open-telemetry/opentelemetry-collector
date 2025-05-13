@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
@@ -505,31 +506,31 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLSSetting: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
-				},
+				}),
 			},
 		},
 		{
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLSSetting: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
-				},
+				}),
 			},
 		},
 		{
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLSSetting: configoptional.Some(configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
-				},
+				}),
 			},
 		},
 	}
@@ -666,9 +667,13 @@ func TestHttpReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tlsServerCreds := configoptional.None[configtls.ServerConfig]()
+			if tt.tlsServerCreds != nil {
+				tlsServerCreds = configoptional.Some(*tt.tlsServerCreds)
+			}
 			hss := &ServerConfig{
 				Endpoint:   "localhost:0",
-				TLSSetting: tt.tlsServerCreds,
+				TLSSetting: tlsServerCreds,
 			}
 			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
@@ -778,9 +783,14 @@ func TestHttpCors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			cors := configoptional.None[CORSConfig]()
+			if tt.CORSConfig != nil {
+				cors = configoptional.Some(*tt.CORSConfig)
+			}
 			hss := &ServerConfig{
 				Endpoint: "localhost:0",
-				CORS:     tt.CORSConfig,
+				CORS:     cors,
 			}
 
 			ln, err := hss.ToListener(context.Background())
@@ -823,7 +833,7 @@ func TestHttpCors(t *testing.T) {
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
+		CORS:     configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
@@ -840,14 +850,14 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 func TestHttpCorsWithSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS: &CORSConfig{
+		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
-		},
-		Auth: &AuthConfig{
+		}),
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{
@@ -1153,11 +1163,11 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{
@@ -1187,11 +1197,11 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: nonExistingID,
 			},
-		},
+		}),
 	}
 
 	srv, err := hss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
@@ -1203,11 +1213,11 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -1233,11 +1243,11 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -1418,12 +1428,12 @@ func TestAuthWithQueryParams(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			RequestParameters: []string{"auth"},
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{
@@ -1490,13 +1500,6 @@ func BenchmarkHttpRequest(b *testing.B) {
 		},
 	}
 
-	tlsServerCreds := &configtls.ServerConfig{
-		Config: configtls.Config{
-			CAFile:   filepath.Join("testdata", "ca.crt"),
-			CertFile: filepath.Join("testdata", "server.crt"),
-			KeyFile:  filepath.Join("testdata", "server.key"),
-		},
-	}
 	tlsClientCreds := &configtls.ClientConfig{
 		Config: configtls.Config{
 			CAFile: filepath.Join("testdata", "ca.crt"),
@@ -1505,8 +1508,14 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	hss := &ServerConfig{
-		Endpoint:   "localhost:0",
-		TLSSetting: tlsServerCreds,
+		Endpoint: "localhost:0",
+		TLSSetting: configoptional.Some(configtls.ServerConfig{
+			Config: configtls.Config{
+				CAFile:   filepath.Join("testdata", "ca.crt"),
+				CertFile: filepath.Join("testdata", "server.crt"),
+				KeyFile:  filepath.Join("testdata", "server.key"),
+			},
+		}),
 	}
 
 	s, err := hss.ToServer(

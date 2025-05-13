@@ -190,6 +190,8 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
 
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
 replace go.opentelemetry.io/collector/config/configauth => ../../config/configauth
 
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls

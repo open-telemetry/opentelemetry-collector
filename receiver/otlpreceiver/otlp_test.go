@@ -758,11 +758,11 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLSSetting: &configtls.ServerConfig{
+					TLSSetting: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
 						},
-					},
+					}),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,

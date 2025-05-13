@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
@@ -43,7 +44,7 @@ var (
 		httpCfg := confighttp.NewDefaultServerConfig()
 		httpCfg.Endpoint = "localhost:4318"
 		// For backward compatibility:
-		httpCfg.TLSSetting = nil
+		httpCfg.TLSSetting = configoptional.None[configtls.ServerConfig]()
 		httpCfg.WriteTimeout = 0
 		httpCfg.ReadHeaderTimeout = 0
 		httpCfg.IdleTimeout = 0

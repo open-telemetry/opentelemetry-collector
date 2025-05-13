@@ -18,12 +18,18 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/knadh/koanf/maps v0.1.2 // indirect
+	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.0 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -34,7 +40,9 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.32.0 // indirect
 	go.opentelemetry.io/collector/config/configmiddleware v0.126.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.32.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.32.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.31.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.32.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.126.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.32.0 // indirect
@@ -55,6 +63,7 @@ require (
 	google.golang.org/grpc v1.72.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace go.opentelemetry.io/collector/config/confighttp => ../../confighttp
@@ -74,6 +83,8 @@ replace go.opentelemetry.io/collector/pdata => ../../../pdata
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../configopaque
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../configoptional
 
 replace go.opentelemetry.io/collector/component => ../../../component
 
