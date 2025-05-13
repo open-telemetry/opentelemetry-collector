@@ -105,3 +105,5 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../../
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/confmap => ../../../confmap

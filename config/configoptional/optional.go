@@ -60,8 +60,9 @@ func (o *Optional[T]) GetOrInsertDefault() *T {
 	if !o.HasValue() && o.defaultFn != nil {
 		o.value = (*o.defaultFn)()
 		o.defaultFn = nil
-		o.hasValue = true
 	}
+
+	o.hasValue = true
 	return &o.value
 }
 

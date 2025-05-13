@@ -106,3 +106,5 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/confmap => ../../confmap
