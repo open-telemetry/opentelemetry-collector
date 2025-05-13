@@ -88,15 +88,21 @@ func (n *connectorNode) buildTraces(
 
 	consumers := make(map[pipeline.ID]consumer.Traces, len(nexts))
 	for _, next := range nexts {
-		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewTraces(
-			next.(consumer.Traces),
-			tb.ConnectorProducedItems,
+		producedOpts := []obsconsumer.Option{
+			obsconsumer.WithTracesItemCounter(&tb.ConnectorProducedItems),
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
 					next.(*capabilitiesNode).pipelineID.String(),
 				),
 			),
+		}
+		if isEnabled(tb.ConnectorProducedSize) {
+			producedOpts = append(producedOpts, obsconsumer.WithTracesSizeCounter(&tb.ConnectorProducedSize))
+		}
+		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewTraces(
+			next.(consumer.Traces),
+			producedOpts...,
 		)
 	}
 	next := connector.NewTracesRouter(consumers)
@@ -107,32 +113,61 @@ func (n *connectorNode) buildTraces(
 		if err != nil {
 			return err
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithTracesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithTracesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewTraces(
 			capabilityconsumer.NewTraces(
 				n.Component.(consumer.Traces),
 				aggregateCap(n.Component.(consumer.Traces), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			consumedOpts...,
 		)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedOpts...)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedOpts...)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithProfilesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedOpts...)
 	}
 	return nil
 }
@@ -150,15 +185,21 @@ func (n *connectorNode) buildMetrics(
 
 	consumers := make(map[pipeline.ID]consumer.Metrics, len(nexts))
 	for _, next := range nexts {
-		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewMetrics(
-			next.(consumer.Metrics),
-			tb.ConnectorProducedItems,
+		producedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ConnectorProducedItems),
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
 					next.(*capabilitiesNode).pipelineID.String(),
 				),
 			),
+		}
+		if isEnabled(tb.ConnectorProducedSize) {
+			producedOpts = append(producedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ConnectorProducedSize))
+		}
+		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewMetrics(
+			next.(consumer.Metrics),
+			producedOpts...,
 		)
 	}
 	next := connector.NewMetricsRouter(consumers)
@@ -169,32 +210,61 @@ func (n *connectorNode) buildMetrics(
 		if err != nil {
 			return err
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewMetrics(
 			capabilityconsumer.NewMetrics(
 				n.Component.(consumer.Metrics),
 				aggregateCap(n.Component.(consumer.Metrics), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			consumedOpts...,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedOpts...)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedOpts...)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithProfilesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedOpts...)
 	}
 	return nil
 }
@@ -212,16 +282,20 @@ func (n *connectorNode) buildLogs(
 
 	consumers := make(map[pipeline.ID]consumer.Logs, len(nexts))
 	for _, next := range nexts {
-		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewLogs(
-			next.(consumer.Logs),
-			tb.ConnectorProducedItems,
+		producedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorProducedSize),
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
 					next.(*capabilitiesNode).pipelineID.String(),
 				),
 			),
-		)
+		}
+		if isEnabled(tb.ConnectorProducedSize) {
+			producedOpts = append(producedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorProducedSize))
+		}
+		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewLogs(
+			next.(consumer.Logs), producedOpts...)
 	}
 	next := connector.NewLogsRouter(consumers)
 
@@ -231,32 +305,61 @@ func (n *connectorNode) buildLogs(
 		if err != nil {
 			return err
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewLogs(
 			capabilityconsumer.NewLogs(
 				n.Component.(consumer.Logs),
 				aggregateCap(n.Component.(consumer.Logs), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			consumedOpts...,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithTracesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithTracesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedOpts...)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedOpts...)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedOpts...)
 	}
 	return nil
 }
@@ -274,15 +377,21 @@ func (n *connectorNode) buildProfiles(
 
 	consumers := make(map[pipeline.ID]xconsumer.Profiles, len(nexts))
 	for _, next := range nexts {
-		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewProfiles(
-			next.(xconsumer.Profiles),
-			tb.ConnectorProducedItems,
+		producedOpts := []obsconsumer.Option{
+			obsconsumer.WithProfilesItemCounter(&tb.ConnectorProducedItems),
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
 					next.(*capabilitiesNode).pipelineID.String(),
 				),
 			),
+		}
+		if isEnabled(tb.ConnectorProducedSize) {
+			producedOpts = append(producedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ConnectorProducedSize))
+		}
+		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewProfiles(
+			next.(xconsumer.Profiles),
+			producedOpts...,
 		)
 	}
 	next := xconnector.NewProfilesRouter(consumers)
@@ -293,32 +402,61 @@ func (n *connectorNode) buildProfiles(
 		if err != nil {
 			return err
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithProfilesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewProfiles(
 			capabilityconsumer.NewProfiles(
 				n.Component.(xconsumer.Profiles),
 				aggregateCap(n.Component.(xconsumer.Profiles), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			consumedOpts...,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithTracesItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithTracesSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedOpts...)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedOpts...)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedItems),
+		}
+		if isEnabled(tb.ConnectorConsumedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ConnectorConsumedSize))
+		}
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedOpts...)
 	}
 	return nil
 }

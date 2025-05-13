@@ -13,31 +13,63 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var _ consumer.Metrics = metrics{}
+var (
+	_                consumer.Metrics = metricsItemCounter{}
+	_                consumer.Metrics = metricsSizeCounter{}
+	metricsMarshaler                  = &pmetric.ProtoMarshaler{}
+)
 
-func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
+func WithMetricsItemCounter(itemCounter *metric.Int64Counter) Option {
+	return func(opts *options) {
+		opts.metricsItemCounter = itemCounter
+	}
+}
+
+func WithMetricsSizeCounter(sizeCounter *metric.Int64Counter) Option {
+	return func(opts *options) {
+		opts.metricsSizeCounter = sizeCounter
+	}
+}
+
+func NewMetrics(cons consumer.Metrics, opts ...Option) consumer.Metrics {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		return consumer
+		return cons
 	}
 
 	o := options{}
 	for _, opt := range opts {
-		opt.apply(&o)
+		opt(&o)
 	}
-	return metrics{
-		consumer:        consumer,
-		itemCounter:     itemCounter,
-		compiledOptions: o.compile(),
+
+	if o.metricsItemCounter == nil && o.metricsSizeCounter == nil {
+		return cons
 	}
+
+	copts := o.compile()
+	if o.metricsItemCounter != nil {
+		cons = metricsItemCounter{
+			consumer:        cons,
+			itemCounter:     *o.metricsItemCounter,
+			compiledOptions: copts,
+		}
+	}
+	if o.metricsSizeCounter != nil {
+		cons = metricsSizeCounter{
+			consumer:        cons,
+			sizeCounter:     *o.metricsSizeCounter,
+			compiledOptions: copts,
+		}
+	}
+	return cons
 }
 
-type metrics struct {
+type metricsItemCounter struct {
 	consumer    consumer.Metrics
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (c metricsItemCounter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	// Measure before calling ConsumeMetrics because the data may be mutated downstream
 	itemCount := md.DataPointCount()
 	err := c.consumer.ConsumeMetrics(ctx, md)
@@ -49,6 +81,28 @@ func (c metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return err
 }
 
-func (c metrics) Capabilities() consumer.Capabilities {
+func (c metricsItemCounter) Capabilities() consumer.Capabilities {
+	return c.consumer.Capabilities()
+}
+
+type metricsSizeCounter struct {
+	consumer    consumer.Metrics
+	sizeCounter metric.Int64Counter
+	compiledOptions
+}
+
+func (c metricsSizeCounter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	// Measure before calling ConsumeMetrics because the data may be mutated downstream
+	byteCount := metricsMarshaler.MetricsSize(md)
+	err := c.consumer.ConsumeMetrics(ctx, md)
+	if err == nil {
+		c.sizeCounter.Add(ctx, int64(byteCount), c.withSuccessAttrs)
+	} else {
+		c.sizeCounter.Add(ctx, int64(byteCount), c.withFailureAttrs)
+	}
+	return err
+}
+
+func (c metricsSizeCounter) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

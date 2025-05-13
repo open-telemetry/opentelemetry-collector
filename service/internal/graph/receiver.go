@@ -61,29 +61,57 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Traces))
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithTracesItemCounter(&tb.ReceiverProducedItems),
+		}
+		if isEnabled(tb.ReceiverProducedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithTracesSizeCounter(&tb.ReceiverProducedSize))
+		}
 		n.Component, err = builder.CreateTraces(ctx, set,
-			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), tb.ReceiverProducedItems))
+			obsconsumer.NewTraces(fanoutconsumer.NewTraces(consumers), consumedOpts...))
 	case pipeline.SignalMetrics:
 		var consumers []consumer.Metrics
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Metrics))
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithMetricsItemCounter(&tb.ReceiverProducedItems),
+		}
+		if isEnabled(tb.ReceiverProducedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ReceiverProducedSize))
+		}
 		n.Component, err = builder.CreateMetrics(ctx, set,
-			obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), tb.ReceiverProducedItems))
+			obsconsumer.NewMetrics(fanoutconsumer.NewMetrics(consumers), consumedOpts...))
 	case pipeline.SignalLogs:
 		var consumers []consumer.Logs
 		for _, next := range nexts {
 			consumers = append(consumers, next.(consumer.Logs))
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithLogsSizeCounter(&tb.ReceiverProducedItems),
+		}
+		if isEnabled(tb.ReceiverProducedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ReceiverProducedSize))
+		}
 		n.Component, err = builder.CreateLogs(ctx, set,
-			obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), tb.ReceiverProducedItems))
+			obsconsumer.NewLogs(fanoutconsumer.NewLogs(consumers), consumedOpts...))
 	case xpipeline.SignalProfiles:
 		var consumers []xconsumer.Profiles
 		for _, next := range nexts {
 			consumers = append(consumers, next.(xconsumer.Profiles))
 		}
+
+		consumedOpts := []obsconsumer.Option{
+			obsconsumer.WithProfilesItemCounter(&tb.ReceiverProducedItems),
+		}
+		if isEnabled(tb.ReceiverProducedSize) {
+			consumedOpts = append(consumedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ReceiverProducedSize))
+		}
 		n.Component, err = builder.CreateProfiles(ctx, set,
-			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), tb.ReceiverProducedItems))
+			obsconsumer.NewProfiles(fanoutconsumer.NewProfiles(consumers), consumedOpts...))
 	default:
 		return fmt.Errorf("error creating receiver %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

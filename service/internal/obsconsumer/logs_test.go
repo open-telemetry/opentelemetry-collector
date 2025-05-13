@@ -37,10 +37,17 @@ func TestLogsNopWhenGateDisabled(t *testing.T) {
 	setGateForTest(t, false)
 
 	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewLogs(consumer, nil))
+	require.Equal(t, consumer, obsconsumer.NewLogs(consumer))
 }
 
-func TestLogsConsumeSuccess(t *testing.T) {
+func TestLogsNopWithoutCounters(t *testing.T) {
+	setGateForTest(t, true)
+
+	consumer := consumertest.NewNop()
+	require.Equal(t, consumer, obsconsumer.NewLogs(consumer))
+}
+
+func TestLogsItemsOnly(t *testing.T) {
 	setGateForTest(t, true)
 
 	ctx := context.Background()
@@ -49,10 +56,11 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+	itemCounter, err := meter.Int64Counter("item_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, counter)
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&itemCounter))
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -69,7 +77,7 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
 
 	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "test_counter", metric.Name)
+	require.Equal(t, "item_counter", metric.Name)
 
 	data := metric.Data.(metricdata.Sum[int64])
 	require.Len(t, data.DataPoints, 1)
@@ -78,6 +86,115 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	attrs := data.DataPoints[0].Attributes
 	require.Equal(t, 1, attrs.Len())
 	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	require.True(t, ok)
+	require.Equal(t, "success", val.Emit())
+}
+
+func TestLogsSizeOnly(t *testing.T) {
+	setGateForTest(t, true)
+
+	ctx := context.Background()
+	mockConsumer := &mockLogsConsumer{}
+
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	meter := mp.Meter("test")
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsSizeCounter(&sizeCounter))
+
+	ld := plog.NewLogs()
+	r := ld.ResourceLogs().AppendEmpty()
+	sl := r.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+
+	err = consumer.ConsumeLogs(ctx, ld)
+	require.NoError(t, err)
+
+	var rm metricdata.ResourceMetrics
+	err = reader.Collect(ctx, &rm)
+	require.NoError(t, err)
+	require.Len(t, rm.ScopeMetrics, 1)
+	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
+
+	metric := rm.ScopeMetrics[0].Metrics[0]
+	require.Equal(t, "size_counter", metric.Name)
+
+	data := metric.Data.(metricdata.Sum[int64])
+	require.Len(t, data.DataPoints, 1)
+	require.Positive(t, data.DataPoints[0].Value)
+
+	attrs := data.DataPoints[0].Attributes
+	require.Equal(t, 1, attrs.Len())
+	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	require.True(t, ok)
+	require.Equal(t, "success", val.Emit())
+}
+
+func TestLogsConsumeSuccess(t *testing.T) {
+	setGateForTest(t, true)
+
+	ctx := context.Background()
+	mockConsumer := &mockLogsConsumer{}
+
+	reader := sdkmetric.NewManualReader()
+	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	meter := mp.Meter("test")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&itemCounter),
+		obsconsumer.WithLogsSizeCounter(&sizeCounter))
+
+	ld := plog.NewLogs()
+	r := ld.ResourceLogs().AppendEmpty()
+	sl := r.ScopeLogs().AppendEmpty()
+	sl.LogRecords().AppendEmpty()
+
+	err = consumer.ConsumeLogs(ctx, ld)
+	require.NoError(t, err)
+
+	var rm metricdata.ResourceMetrics
+	err = reader.Collect(ctx, &rm)
+	require.NoError(t, err)
+	require.Len(t, rm.ScopeMetrics, 1)
+	require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
+
+	var itemMetric, sizeMetric metricdata.Metrics
+	for _, m := range rm.ScopeMetrics[0].Metrics {
+		switch m.Name {
+		case "item_counter":
+			itemMetric = m
+		case "size_counter":
+			sizeMetric = m
+		}
+	}
+	require.NotNil(t, itemMetric)
+	require.NotNil(t, sizeMetric)
+
+	itemData := itemMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, itemData.DataPoints, 1)
+	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
+
+	itemAttrs := itemData.DataPoints[0].Attributes
+	require.Equal(t, 1, itemAttrs.Len())
+	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	require.True(t, ok)
+	require.Equal(t, "success", val.Emit())
+
+	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, sizeData.DataPoints, 1)
+	require.Positive(t, sizeData.DataPoints[0].Value)
+
+	sizeAttrs := sizeData.DataPoints[0].Attributes
+	require.Equal(t, 1, sizeAttrs.Len())
+	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 }
@@ -92,10 +209,15 @@ func TestLogsConsumeFailure(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, counter)
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&itemCounter),
+		obsconsumer.WithLogsSizeCounter(&sizeCounter))
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -109,18 +231,38 @@ func TestLogsConsumeFailure(t *testing.T) {
 	err = reader.Collect(ctx, &rm)
 	require.NoError(t, err)
 	require.Len(t, rm.ScopeMetrics, 1)
-	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
+	require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
 
-	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "test_counter", metric.Name)
+	var itemMetric, sizeMetric metricdata.Metrics
+	for _, m := range rm.ScopeMetrics[0].Metrics {
+		switch m.Name {
+		case "item_counter":
+			itemMetric = m
+		case "size_counter":
+			sizeMetric = m
+		}
+	}
+	require.NotNil(t, itemMetric)
+	require.NotNil(t, sizeMetric)
 
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 1)
-	require.Equal(t, int64(1), data.DataPoints[0].Value)
+	itemData := itemMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, itemData.DataPoints, 1)
+	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
 
-	attrs := data.DataPoints[0].Attributes
-	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	itemAttrs := itemData.DataPoints[0].Attributes
+	require.Equal(t, 1, itemAttrs.Len())
+	val, ok := itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	require.True(t, ok)
+	require.Equal(t, "failure", val.Emit())
+
+	require.NotNil(t, sizeMetric)
+	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, sizeData.DataPoints, 1)
+	require.Positive(t, sizeData.DataPoints[0].Value)
+
+	sizeAttrs := sizeData.DataPoints[0].Attributes
+	require.Equal(t, 1, sizeAttrs.Len())
+	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
 }
@@ -134,11 +276,17 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewLogs(mockConsumer, counter, obsconsumer.WithStaticDataPointAttribute(staticAttr))
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&itemCounter),
+		obsconsumer.WithLogsSizeCounter(&sizeCounter),
+		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -152,21 +300,42 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	err = reader.Collect(ctx, &rm)
 	require.NoError(t, err)
 	require.Len(t, rm.ScopeMetrics, 1)
-	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
+	require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
 
-	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "test_counter", metric.Name)
+	var itemMetric, sizeMetric metricdata.Metrics
+	for _, m := range rm.ScopeMetrics[0].Metrics {
+		switch m.Name {
+		case "item_counter":
+			itemMetric = m
+		case "size_counter":
+			sizeMetric = m
+		}
+	}
+	require.NotNil(t, itemMetric)
 
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 1)
-	require.Equal(t, int64(1), data.DataPoints[0].Value)
+	itemData := itemMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, itemData.DataPoints, 1)
+	require.Equal(t, int64(1), itemData.DataPoints[0].Value)
 
-	attrs := data.DataPoints[0].Attributes
-	require.Equal(t, 2, attrs.Len())
-	val, ok := attrs.Value(attribute.Key("test"))
+	itemAttrs := itemData.DataPoints[0].Attributes
+	require.Equal(t, 2, itemAttrs.Len())
+	val, ok := itemAttrs.Value(attribute.Key("test"))
 	require.True(t, ok)
 	require.Equal(t, "value", val.Emit())
-	val, ok = attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	val, ok = itemAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
+	require.True(t, ok)
+	require.Equal(t, "success", val.Emit())
+
+	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, sizeData.DataPoints, 1)
+	require.Positive(t, sizeData.DataPoints[0].Value)
+
+	sizeAttrs := sizeData.DataPoints[0].Attributes
+	require.Equal(t, 2, sizeAttrs.Len())
+	val, ok = sizeAttrs.Value(attribute.Key("test"))
+	require.True(t, ok)
+	require.Equal(t, "value", val.Emit())
+	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
 }
@@ -181,10 +350,15 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, counter)
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&itemCounter),
+		obsconsumer.WithLogsSizeCounter(&sizeCounter))
 
 	// First batch: 2 successful items
 	ld1 := plog.NewLogs()
@@ -229,17 +403,27 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	err = reader.Collect(ctx, &rm)
 	require.NoError(t, err)
 	require.Len(t, rm.ScopeMetrics, 1)
-	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
+	require.Len(t, rm.ScopeMetrics[0].Metrics, 2)
 
-	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "test_counter", metric.Name)
+	var itemMetric, sizeMetric metricdata.Metrics
+	for _, m := range rm.ScopeMetrics[0].Metrics {
+		switch m.Name {
+		case "item_counter":
+			itemMetric = m
+		case "size_counter":
+			sizeMetric = m
+		}
+	}
+	require.NotNil(t, itemMetric)
+	require.NotNil(t, sizeMetric)
 
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 2)
+	itemData := itemMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, itemData.DataPoints, 2)
+	sizeData := sizeMetric.Data.(metricdata.Sum[int64])
+	require.Len(t, sizeData.DataPoints, 2)
 
-	// Find success and failure data points
 	var successDP, failureDP metricdata.DataPoint[int64]
-	for _, dp := range data.DataPoints {
+	for _, dp := range itemData.DataPoints {
 		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
 		if ok && val.Emit() == "success" {
 			successDP = dp
@@ -247,9 +431,20 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 			failureDP = dp
 		}
 	}
-
 	require.Equal(t, int64(4), successDP.Value)
 	require.Equal(t, int64(2), failureDP.Value)
+
+	var successSizeDP, failureSizeDP metricdata.DataPoint[int64]
+	for _, dp := range sizeData.DataPoints {
+		val, ok := dp.Attributes.Value(attribute.Key(obsconsumer.ComponentOutcome))
+		if ok && val.Emit() == "success" {
+			successSizeDP = dp
+		} else {
+			failureSizeDP = dp
+		}
+	}
+	require.Equal(t, int64(64), successSizeDP.Value)
+	require.Equal(t, int64(32), failureSizeDP.Value)
 }
 
 func TestLogsCapabilities(t *testing.T) {
@@ -264,6 +459,19 @@ func TestLogsCapabilities(t *testing.T) {
 	counter, err := meter.Int64Counter("test_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, counter)
+	// Test with item counter only
+	consumer := obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&counter))
+	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
+
+	// Test with size counter only
+	consumer = obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsSizeCounter(&counter))
+	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
+
+	// Test with both counters
+	consumer = obsconsumer.NewLogs(mockConsumer,
+		obsconsumer.WithLogsItemCounter(&counter),
+		obsconsumer.WithLogsSizeCounter(&counter))
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

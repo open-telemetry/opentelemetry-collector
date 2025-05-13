@@ -13,31 +13,62 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ consumer.Logs = logs{}
+var (
+	_             consumer.Logs = logsItemCounter{}
+	_             consumer.Logs = logsSizeCounter{}
+	logsMarshaler               = &plog.ProtoMarshaler{}
+)
 
-func NewLogs(consumer consumer.Logs, itemCounter metric.Int64Counter, opts ...Option) consumer.Logs {
+func WithLogsItemCounter(itemCounter *metric.Int64Counter) Option {
+	return func(opts *options) {
+		opts.logsItemCounter = itemCounter
+	}
+}
+
+func WithLogsSizeCounter(sizeCounter *metric.Int64Counter) Option {
+	return func(opts *options) {
+		opts.logsSizeCounter = sizeCounter
+	}
+}
+
+func NewLogs(cons consumer.Logs, opts ...Option) consumer.Logs {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		return consumer
+		return cons
 	}
 
 	o := options{}
 	for _, opt := range opts {
-		opt.apply(&o)
+		opt(&o)
 	}
-	return logs{
-		consumer:        consumer,
-		itemCounter:     itemCounter,
-		compiledOptions: o.compile(),
+	if o.logsItemCounter == nil && o.logsSizeCounter == nil {
+		return cons
 	}
+
+	copts := o.compile()
+	if o.logsItemCounter != nil {
+		cons = logsItemCounter{
+			consumer:        cons,
+			itemCounter:     *o.logsItemCounter,
+			compiledOptions: copts,
+		}
+	}
+	if o.logsSizeCounter != nil {
+		cons = logsSizeCounter{
+			consumer:        cons,
+			sizeCounter:     *o.logsSizeCounter,
+			compiledOptions: copts,
+		}
+	}
+	return cons
 }
 
-type logs struct {
+type logsItemCounter struct {
 	consumer    consumer.Logs
 	itemCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c logs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (c logsItemCounter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	// Measure before calling ConsumeLogs because the data may be mutated downstream
 	itemCount := ld.LogRecordCount()
 	err := c.consumer.ConsumeLogs(ctx, ld)
@@ -49,6 +80,28 @@ func (c logs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return err
 }
 
-func (c logs) Capabilities() consumer.Capabilities {
+func (c logsItemCounter) Capabilities() consumer.Capabilities {
+	return c.consumer.Capabilities()
+}
+
+type logsSizeCounter struct {
+	consumer    consumer.Logs
+	sizeCounter metric.Int64Counter
+	compiledOptions
+}
+
+func (c logsSizeCounter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	// Measure before calling ConsumeLogs because the data may be mutated downstream
+	byteCount := logsMarshaler.LogsSize(ld)
+	err := c.consumer.ConsumeLogs(ctx, ld)
+	if err == nil {
+		c.sizeCounter.Add(ctx, int64(byteCount), c.withSuccessAttrs)
+	} else {
+		c.sizeCounter.Add(ctx, int64(byteCount), c.withFailureAttrs)
+	}
+	return err
+}
+
+func (c logsSizeCounter) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }
