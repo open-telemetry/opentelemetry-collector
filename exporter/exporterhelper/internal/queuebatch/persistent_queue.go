@@ -258,6 +258,8 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	return pq.putInternal(ctx, req)
 }
 
+// necessary due to SpanContext and SpanContextConfig not supporting Unmarshal interface,
+// see https://github.com/open-telemetry/opentelemetry-go/issues/1819.
 type spanContextConfigWrapper struct {
 	TraceID    string
 	SpanID     string
@@ -286,6 +288,7 @@ func (sc *spanContext) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// reverse of code in trace library https://github.com/open-telemetry/opentelemetry-go/blob/v1.35.0/trace/trace.go#L143-L168
 func traceFlagsFromHex(hexStr string) (*trace.TraceFlags, error) {
 	decoded, err := hex.DecodeString(hexStr)
 	if err != nil {
@@ -594,6 +597,8 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 		}
 		restoredContext := ctx
 		req, err := pq.set.encoding.Unmarshal(op.Value)
+		// We will retrieve the context from the back half of the batch list, see  above:
+		// https://github.com/DataDog/opentelemetry-collector/blob/5d69954e38ea8c8219b6202f06ae8bac88a67c3e/exporter/exporterhelper/internal/queuebatch/persistent_queue.go#L561
 		if err == nil && persistRequestContextFeatureGate.IsEnabled() && idx+len(dispatchedItems) < len(retrieveBatch) {
 			nextOp := retrieveBatch[idx+len(dispatchedItems)]
 			if nextOp != nil && nextOp.Value != nil {
