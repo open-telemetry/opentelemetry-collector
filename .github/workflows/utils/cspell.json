@@ -430,6 +430,7 @@
       "testonly",
       "testprovider",
       "testutil",
+      "tlsconfig",
       "tocstop",
       "tpmrm",
       "tracecontext",
