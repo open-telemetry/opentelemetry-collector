@@ -721,7 +721,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg := DefaultGRPCServerConfig()
 	grpcCfg.NetAddr.Endpoint = addr
 	cfg.GRPC = configoptional.Some(grpcCfg)
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
@@ -736,7 +736,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
-	grpcCfg = defaultGRPCServerConfig()
+	grpcCfg = DefaultGRPCServerConfig()
 	grpcCfg.NetAddr.Endpoint = addr
 	grpcCfg.MaxRecvMsgSizeMiB = 100
 	cfg.GRPC = configoptional.Some(grpcCfg)
@@ -832,7 +832,7 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg := DefaultGRPCServerConfig()
 	grpcCfg.NetAddr.Endpoint = endpoint
 	cfg.GRPC = configoptional.Some(grpcCfg)
 	cfg.HTTP = configoptional.None[HTTPConfig]()
@@ -841,7 +841,7 @@ func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoin
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	httpCfg := defaultHTTPConfig()
+	httpCfg := DefaultHTTPConfig()
 	httpCfg.ServerConfig.Endpoint = endpoint
 	cfg.HTTP = configoptional.Some(httpCfg)
 	cfg.GRPC = configoptional.None[configgrpc.ServerConfig]()
@@ -1025,11 +1025,11 @@ func TestShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg := DefaultGRPCServerConfig()
 	grpcCfg.NetAddr.Endpoint = endpointGrpc
 	cfg.GRPC = configoptional.Some(grpcCfg)
 
-	httpCfg := defaultHTTPConfig()
+	httpCfg := DefaultHTTPConfig()
 	httpCfg.ServerConfig.Endpoint = endpointHTTP
 	cfg.HTTP = configoptional.Some(httpCfg)
 

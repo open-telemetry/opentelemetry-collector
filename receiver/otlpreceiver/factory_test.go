@@ -40,11 +40,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	grpcCfg := defaultGRPCServerConfig()
+	grpcCfg := DefaultGRPCServerConfig()
 	grpcCfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.GRPC = configoptional.Some(grpcCfg)
 
-	httpCfg := defaultHTTPConfig()
+	httpCfg := DefaultHTTPConfig()
 	httpCfg.ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.HTTP = configoptional.Some(httpCfg)
 

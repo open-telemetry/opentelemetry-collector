@@ -38,7 +38,7 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func defaultHTTPConfig() HTTPConfig {
+func DefaultHTTPConfig() HTTPConfig {
 	httpCfg := confighttp.NewDefaultServerConfig()
 	httpCfg.Endpoint = "localhost:4318"
 	// For backward compatibility:
@@ -54,7 +54,7 @@ func defaultHTTPConfig() HTTPConfig {
 	}
 }
 
-func defaultGRPCServerConfig() configgrpc.ServerConfig {
+func DefaultGRPCServerConfig() configgrpc.ServerConfig {
 	grpcCfg := configgrpc.NewDefaultServerConfig()
 	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
 	grpcCfg.NetAddr.Endpoint = "localhost:4317"
@@ -64,8 +64,10 @@ func defaultGRPCServerConfig() configgrpc.ServerConfig {
 	return *grpcCfg
 }
 
-var httpConfigFactory = configoptional.NewFactory(defaultHTTPConfig)
-var grpcConfigFactory = configoptional.NewFactory(defaultGRPCServerConfig)
+var (
+	httpConfigFactory = configoptional.NewFactory(DefaultHTTPConfig)
+	grpcConfigFactory = configoptional.NewFactory(DefaultGRPCServerConfig)
+)
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
