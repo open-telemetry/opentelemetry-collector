@@ -99,7 +99,7 @@ The last step of the release process creates artifacts for the new version of th
 1. Run the GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-2. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Update version from ..." commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
@@ -220,7 +220,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
 | 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
 | 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
@@ -230,3 +229,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
 | 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
+| 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
