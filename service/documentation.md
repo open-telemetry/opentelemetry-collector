@@ -6,6 +6,30 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol.connector.consumed.items
+
+Number of items passed to the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.connector.produced.items
+
+Number of items emitted from the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.exporter.consumed.items
+
+Number of items passed to the exporter.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
 ### otelcol_process_cpu_seconds
 
 Total CPU user and system time in seconds [alpha]
@@ -53,3 +77,27 @@ Uptime of the process [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Double | true |
+
+### otelcol.processor.consumed.items
+
+Number of items passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.processor.produced.items
+
+Number of items emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.receiver.produced.items
+
+Number of items emitted from the receiver.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |

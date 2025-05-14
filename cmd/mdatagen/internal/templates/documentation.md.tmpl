@@ -38,7 +38,7 @@
 {{- $metricName := . }}
 {{- $metric := $metricName | telemetryInfo -}}
 
-### otelcol_{{ $metricName }}
+### {{ if $metric.Prefix -}}{{ $metric.Prefix }}{{- else -}}otelcol_{{- end -}}{{ $metricName }}
 
 {{ $metric.Description }}{{ $metric.Stability }}
 

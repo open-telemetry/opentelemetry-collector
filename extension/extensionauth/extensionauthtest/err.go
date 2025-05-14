@@ -28,9 +28,6 @@ type errClient struct {
 	extensionauth.ServerAuthenticateFunc
 }
 
-// Deprecated: [v0.125.0] Use NewErr.
-var NewErrorClient = NewErr
-
 // NewErr returns a new [extension.Extension] that implements all
 // extensionauth interface and always returns an error.
 func NewErr(err error) extension.Extension {
