@@ -220,6 +220,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]
 				},
+				"eventInfo": func(en EventName) Event {
+					return md.Events[en]
+				},
 				"telemetryInfo": func(mn MetricName) Metric {
 					return md.Telemetry.Metrics[mn]
 				},
