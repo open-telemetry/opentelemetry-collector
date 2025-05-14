@@ -586,10 +586,9 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 
 	errCount := 0
+	// only need to iterate over first half of batch if spancontext is persisted as these items
+	// are at corresponding index in the second half of retrieveBatch
 	for idx := 0; idx < len(dispatchedItems); idx++ {
-		if idx >= len(retrieveBatch) {
-			break
-		}
 		op := retrieveBatch[idx]
 		if op.Value == nil {
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
@@ -600,10 +599,10 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 		// We will retrieve the context from the back half of the batch list, see  above:
 		// https://github.com/DataDog/opentelemetry-collector/blob/5d69954e38ea8c8219b6202f06ae8bac88a67c3e/exporter/exporterhelper/internal/queuebatch/persistent_queue.go#L561
 		if err == nil && persistRequestContextFeatureGate.IsEnabled() && idx+len(dispatchedItems) < len(retrieveBatch) {
-			nextOp := retrieveBatch[idx+len(dispatchedItems)]
-			if nextOp != nil && nextOp.Value != nil {
+			ctxOp := retrieveBatch[idx+len(dispatchedItems)]
+			if ctxOp != nil && ctxOp.Value != nil {
 				var sc spanContext
-				unmarshalErr := json.Unmarshal(nextOp.Value, &sc)
+				unmarshalErr := json.Unmarshal(ctxOp.Value, &sc)
 				if unmarshalErr == nil {
 					restoredContext = trace.ContextWithSpanContext(restoredContext, sc.SpanContext)
 				} else {

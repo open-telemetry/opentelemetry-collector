@@ -1769,3 +1769,176 @@ func TestPersistentQueue_FeatureGate_BatchOperations(t *testing.T) {
 		require.NoError(t, client.Batch(context.Background(), ops...))
 	})
 }
+
+func TestPersistentQueue_GetNextItem_BatchError(t *testing.T) {
+	// Create a storage client that will fail on Batch operations
+	client := &fakeStorageClientWithErrors{
+		errors: []error{errors.New("batch operation failed")},
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	ctx := context.Background()
+	restoredCtx, readReq, done, found := pq.Read(ctx)
+
+	// Should return false for found since the read failed
+	assert.False(t, found)
+	assert.Equal(t, uint64(0), readReq)
+	assert.Nil(t, done)
+	assert.Equal(t, ctx, restoredCtx)
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_SpanContextUnmarshal(t *testing.T) {
+	// Enable the feature gate
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+
+	t.Run("SuccessfulUnmarshal", func(t *testing.T) {
+		ext := storagetest.NewMockStorageExtension(nil)
+		pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Create a valid span context
+		validSC := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		})
+		ctx := trace.ContextWithSpanContext(context.Background(), validSC)
+
+		// Add items with the valid span context
+		req1 := uint64(50)
+		req2 := uint64(60)
+		require.NoError(t, pq.Offer(ctx, req1))
+		require.NoError(t, pq.Offer(ctx, req2))
+
+		// Manually mark items as dispatched (simulating them being read but not finished)
+		pq.mu.Lock()
+		pq.currentlyDispatchedItems = []uint64{0, 1}
+		// Update the storage with currently dispatched items
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		pq.mu.Unlock()
+
+		// Shutdown the queue
+		require.NoError(t, pq.Shutdown(context.Background()))
+
+		// Create a new queue from the same storage - this should trigger retrieveAndEnqueueNotDispatchedReqs
+		newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Verify items were moved back to the queue with context preserved
+		assert.Equal(t, int64(2), newPQ.Size())
+
+		// Read the first item and verify context is preserved
+		restoredCtx1, readReq1, done1, found1 := newPQ.Read(context.Background())
+		require.True(t, found1)
+		assert.Equal(t, req1, readReq1)
+		assert.NotNil(t, done1)
+
+		restoredSC1 := trace.SpanContextFromContext(restoredCtx1)
+		assert.True(t, restoredSC1.IsValid())
+		assert.Equal(t, validSC.TraceID(), restoredSC1.TraceID())
+		assert.Equal(t, validSC.SpanID(), restoredSC1.SpanID())
+
+		// Read the second item and verify context is preserved
+		restoredCtx2, readReq2, done2, found2 := newPQ.Read(context.Background())
+		require.True(t, found2)
+		assert.Equal(t, req2, readReq2)
+		assert.NotNil(t, done2)
+
+		restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+		assert.True(t, restoredSC2.IsValid())
+		assert.Equal(t, validSC.TraceID(), restoredSC2.TraceID())
+		assert.Equal(t, validSC.SpanID(), restoredSC2.SpanID())
+	})
+
+	t.Run("FailedUnmarshal", func(t *testing.T) {
+		ext := storagetest.NewMockStorageExtension(nil)
+		pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Create a valid span context
+		validSC := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		})
+		ctx := trace.ContextWithSpanContext(context.Background(), validSC)
+
+		// Add items with the valid span context
+		req1 := uint64(50)
+		req2 := uint64(60)
+		require.NoError(t, pq.Offer(ctx, req1))
+		require.NoError(t, pq.Offer(ctx, req2))
+
+		// Manually mark items as dispatched (simulating them being read but not finished)
+		pq.mu.Lock()
+		pq.currentlyDispatchedItems = []uint64{0, 1}
+		// Update the storage with currently dispatched items
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		pq.mu.Unlock()
+
+		// Corrupt the stored context data with invalid JSON
+		corruptedData := []byte(`{"invalid": "json"}`)
+		require.NoError(t, pq.client.Set(context.Background(), getContextKey(0), corruptedData))
+		require.NoError(t, pq.client.Set(context.Background(), getContextKey(1), corruptedData))
+
+		// Shutdown the queue
+		require.NoError(t, pq.Shutdown(context.Background()))
+
+		// Create a new queue from the same storage - this should trigger retrieveAndEnqueueNotDispatchedReqs
+		newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Verify items were moved back to the queue but context is not preserved
+		assert.Equal(t, int64(2), newPQ.Size())
+
+		// Read the first item and verify context is not preserved
+		restoredCtx1, readReq1, done1, found1 := newPQ.Read(context.Background())
+		require.True(t, found1)
+		assert.Equal(t, req1, readReq1)
+		assert.NotNil(t, done1)
+
+		restoredSC1 := trace.SpanContextFromContext(restoredCtx1)
+		assert.False(t, restoredSC1.IsValid())
+
+		// Read the second item and verify context is not preserved
+		restoredCtx2, readReq2, done2, found2 := newPQ.Read(context.Background())
+		require.True(t, found2)
+		assert.Equal(t, req2, readReq2)
+		assert.NotNil(t, done2)
+
+		restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+		assert.False(t, restoredSC2.IsValid())
+	})
+}
+
+func TestPersistentQueue_PutInternal_ContextTimeout(t *testing.T) {
+	// Create a blocking queue
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:           request.RequestsSizer[uint64]{},
+		capacity:        2,
+		blockOnOverflow: true,
+		signal:          pipeline.SignalTraces,
+		storageID:       component.ID{},
+		encoding:        uint64Encoding{},
+		id:              component.NewID(exportertest.NopType),
+		telemetry:       componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+
+	// Initialize with storage
+	ext := storagetest.NewMockStorageExtension(nil)
+	require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+
+	// Fill the queue to capacity
+	require.NoError(t, pq.Offer(context.Background(), uint64(1)))
+	require.NoError(t, pq.Offer(context.Background(), uint64(2)))
+
+	// Try to add another item with a very short timeout
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	// This should fail with context deadline exceeded
+	err := pq.Offer(timeoutCtx, uint64(3))
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
