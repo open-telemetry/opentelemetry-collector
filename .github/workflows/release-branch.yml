@@ -1,0 +1,68 @@
+name: Automation - Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-series:
+        description: 'Release series (e.g., v0.85.x). If blank (i.e. bugfix release), uses most recent release/v* branch'
+        required: false
+
+jobs:
+  release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: 1.23.9
+
+      - name: Setup Git config
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Find most recent release branch
+        id: find-release-branch
+        if: ${{ !inputs.release-series }}
+        run: |
+          MOST_RECENT_RELEASE=$(git branch -r | grep "origin/release/v" | sort -Vr | head -n 1 | sed 's|^[[:space:]]*origin/release/||')
+          if [ -z "$MOST_RECENT_RELEASE" ]; then
+            echo "No release branches found matching pattern 'release/v*'"
+            exit 1
+          fi
+          echo "Found most recent release branch: $MOST_RECENT_RELEASE"
+          echo "release_series=$MOST_RECENT_RELEASE" >> $GITHUB_OUTPUT
+
+      - name: Find latest "Prepare release" commit
+        id: find-prepare-commit
+        run: |
+          PREPARE_RELEASE_COMMIT=$(git log --grep="prepare release\|Prepare release" -i --pretty=format:"%H" -n 1)
+          if [ -z "$PREPARE_RELEASE_COMMIT" ]; then
+            echo "No 'Prepare release' commit found in git history"
+            PREPARE_RELEASE_COMMIT=""
+          else
+            echo "Found 'Prepare release' commit: $PREPARE_RELEASE_COMMIT"
+          fi
+          echo "commit_hash=$PREPARE_RELEASE_COMMIT" >> $GITHUB_OUTPUT
+
+      - name: Run release-branch.sh
+        run: |
+          PREPARE_RELEASE_COMMIT="${{ steps.find-prepare-commit.outputs.commit_hash }}"
+          PREPARE_RELEASE_ARG=""
+          if [ -n "$PREPARE_RELEASE_COMMIT" ]; then
+            PREPARE_RELEASE_ARG="$PREPARE_RELEASE_COMMIT"
+          fi
+          
+          RELEASE_SERIES="${{ inputs.release-series || steps.find-release-branch.outputs.release_series }}"
+          
+          ./.github/workflows/scripts/release-branch.sh "$RELEASE_SERIES" $PREPARE_RELEASE_ARG
+        env:
+          UPSTREAM_REMOTE_NAME: "origin"
+          MAIN_BRANCH_NAME: "main"
