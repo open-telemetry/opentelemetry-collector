@@ -105,6 +105,12 @@ metrics:
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
 
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
 ### default.event
 
 Example event enabled by default.
