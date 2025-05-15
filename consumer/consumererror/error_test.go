@@ -176,7 +176,7 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 		},
 		{
 			name: "No statuses set",
-			want: status.New(codes.Internal, errTest.Error()),
+			want: status.New(codes.Unknown, errTest.Error()),
 		},
 	}
 

@@ -100,7 +100,7 @@ func (e *Error) OTLPGRPCStatus() *status.Status {
 	if e.retryable {
 		return status.New(codes.Unavailable, e.Error())
 	}
-	return status.New(codes.Internal, e.Error())
+	return status.New(codes.Unknown, e.Error())
 }
 
 // Retryable returns true if the error was created with the WithRetryable set to true,
