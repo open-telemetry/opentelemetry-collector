@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Get changed files
         id: changes
         run: |
@@ -44,10 +45,13 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Link Checker
         id: lychee
         uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6
         with:
-          args: "--verbose --no-progress ${{needs.changedfiles.outputs.files}} --config .github/lychee.toml"
+          args: "--verbose --no-progress ${CHANGED_MD_FILES} --config .github/lychee.toml"
           failIfEmpty: false
+        env:
+          CHANGED_MD_FILES: ${{ needs.changedfiles.outputs.md }}

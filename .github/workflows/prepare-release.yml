@@ -1,5 +1,8 @@
 name: Automation - Prepare Release
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     # Determine the version number that will be assigned to the release. During the beta phase, we increment
@@ -18,8 +21,6 @@ on:
       current-beta:
         required: true
         description: Current version (beta, like 0.95.1). Don't include `v`.
-
-permissions: read-all
 
 jobs:
   validate-versions-format:
@@ -45,29 +46,39 @@ jobs:
             fi
           }
 
-          if [[ ! -z "${{ inputs.candidate-beta }}" ]]; then
-            validate_beta_version "${{ inputs.candidate-beta }}" "candidate-beta"
+          if [[ ! -z "${CANDIDATE_BETA}" ]]; then
+            validate_beta_version "${CANDIDATE_BETA}" "candidate-beta"
           fi
-          validate_beta_version "${{ inputs.current-beta }}" "current-beta"
+          validate_beta_version "${CURRENT_BETA}" "current-beta"
 
-          if [[ ! -z "${{ inputs.candidate-stable }}" ]]; then
-            validate_stable_version "${{ inputs.candidate-stable }}" "candidate-stable"
+          if [[ ! -z "${CANDIDATE_STABLE}" ]]; then
+            validate_stable_version "${CANDIDATE_STABLE}" "candidate-stable"
           fi
-          validate_stable_version "${{ inputs.current-stable }}" "current-stable"
+          validate_stable_version "${CURRENT_STABLE}" "current-stable"
 
-          if [[ -z "${{ inputs.candidate-beta }}" && -z "${{ inputs.candidate-stable }}" ]]; then
+          if [[ -z "${CANDIDATE_BETA}" && -z "${CANDIDATE_STABLE}" ]]; then
             echo "Candidate version is not set for beta or stable. Please set a version to proceed."
             exit 1
           fi
+        env:
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
+          CANDIDATE_STABLE: ${{ inputs.candidate-stable }}
+          CURRENT_STABLE: ${{ inputs.current-stable }}
 
   check-blockers:
     needs:
       - validate-versions-format
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       # Make sure that there are no open issues with release:blocker label in Core. The release has to be delayed until they are resolved.
       - name: Check blockers in core
         env:

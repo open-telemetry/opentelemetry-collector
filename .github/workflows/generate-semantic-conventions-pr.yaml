@@ -17,6 +17,8 @@ jobs:
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - id: check-versions
         name: Check versions
@@ -58,12 +60,15 @@ jobs:
       - check-versions
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Checkout semantic-convention
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: open-telemetry/semantic-conventions
           path: tmp-semantic-conventions
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Update version
         env:
@@ -82,7 +87,7 @@ jobs:
           VERSION: ${{ needs.check-versions.outputs.latest-version }}
           # not using secrets.GITHUB_TOKEN since pull requests from that token do not run workflows
           GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          
+
         run: |
           message="Add semantic conventions version $VERSION"
           body="Add semantic conventions version \`$VERSION\`. Related to #10842"
@@ -109,4 +114,4 @@ jobs:
           # The SC2034 warning is disabled because 'pull_request_number' is assigned but not used directly.
           # ShellCheck flags this as unused, but it's stored for potential external usage.
           # shellcheck disable=SC2034
-          pull_request_number=${url//*\//} 
+          pull_request_number=${url//*\//}
