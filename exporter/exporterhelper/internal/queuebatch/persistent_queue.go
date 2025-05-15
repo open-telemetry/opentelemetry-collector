@@ -260,7 +260,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 // necessary due to SpanContext and SpanContextConfig not supporting Unmarshal interface,
 // see https://github.com/open-telemetry/opentelemetry-go/issues/1819.
-type spanContextConfigWrapper struct {
+type spanContext struct {
 	TraceID    string
 	SpanID     string
 	TraceFlags string
@@ -268,23 +268,23 @@ type spanContextConfigWrapper struct {
 	Remote     bool
 }
 
-// spanContext wraps trace.SpanContext to allow for unmarshaling as well as
+// requestContext wraps trace.SpanContext to allow for unmarshaling as well as
 // future metadata key/value pairs to be added.
-type spanContext struct {
+type requestContext struct {
 	trace.SpanContext
 }
 
-func (sc *spanContext) UnmarshalJSON(data []byte) error {
-	var scc spanContextConfigWrapper
+func (rcc *requestContext) UnmarshalJSON(data []byte) error {
+	var scc spanContext
 	err := json.Unmarshal(data, &scc)
 	if err != nil {
 		return err
 	}
-	scfw, err := spanContextFromWrapper(scc)
+	scfw, err := requestContextFromSpanContextWrapper(scc)
 	if err != nil {
 		return err
 	}
-	sc.SpanContext = scfw.SpanContext
+	*rcc = *scfw
 	return nil
 }
 
@@ -301,7 +301,7 @@ func traceFlagsFromHex(hexStr string) (*trace.TraceFlags, error) {
 	return &traceFlags, nil
 }
 
-func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*spanContext, error) {
+func requestContextFromSpanContextWrapper(wrapper spanContext) (*requestContext, error) {
 	traceID, err := trace.TraceIDFromHex(wrapper.TraceID)
 	if err != nil {
 		return nil, err
@@ -319,7 +319,7 @@ func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*spanContext, err
 		return nil, err
 	}
 
-	sc := &spanContext{
+	rc := &requestContext{
 		SpanContext: trace.NewSpanContext(trace.SpanContextConfig{
 			TraceID:    traceID,
 			SpanID:     spanID,
@@ -328,18 +328,18 @@ func spanContextFromWrapper(wrapper spanContextConfigWrapper) (*spanContext, err
 			Remote:     wrapper.Remote,
 		}),
 	}
-	return sc, nil
+	return rc, nil
 }
 
 func getAndMarshalSpanContext(ctx context.Context) ([]byte, error) {
 	if !persistRequestContextFeatureGate.IsEnabled() {
 		return nil, nil
 	}
-	sc := trace.SpanContextFromContext(ctx)
-	if !sc.IsValid() {
+	rc := trace.SpanContextFromContext(ctx)
+	if !rc.IsValid() {
 		return nil, nil
 	}
-	return json.Marshal(spanContext{SpanContext: sc})
+	return json.Marshal(requestContext{SpanContext: rc})
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
@@ -457,11 +457,11 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 
 		// Only try to restore context if feature gate is enabled
 		if persistRequestContextFeatureGate.IsEnabled() {
-			var sc spanContext
+			var rc requestContext
 			if ctxOp.Value != nil {
-				unmarshalErr := json.Unmarshal(ctxOp.Value, &sc)
+				unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
 				if unmarshalErr == nil {
-					restoredContext = trace.ContextWithSpanContext(restoredContext, sc.SpanContext)
+					restoredContext = trace.ContextWithSpanContext(restoredContext, rc.SpanContext)
 				} else {
 					pq.logger.Debug("Failed to unmarshal request context", zap.Error(unmarshalErr))
 				}
@@ -601,10 +601,10 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 		if err == nil && persistRequestContextFeatureGate.IsEnabled() && idx+len(dispatchedItems) < len(retrieveBatch) {
 			ctxOp := retrieveBatch[idx+len(dispatchedItems)]
 			if ctxOp != nil && ctxOp.Value != nil {
-				var sc spanContext
-				unmarshalErr := json.Unmarshal(ctxOp.Value, &sc)
+				var rc requestContext
+				unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
 				if unmarshalErr == nil {
-					restoredContext = trace.ContextWithSpanContext(restoredContext, sc.SpanContext)
+					restoredContext = trace.ContextWithSpanContext(restoredContext, rc.SpanContext)
 				} else {
 					pq.logger.Debug("Failed to unmarshal request context", zap.Error(unmarshalErr))
 				}

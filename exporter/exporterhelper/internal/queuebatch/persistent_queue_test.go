@@ -1013,6 +1013,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	testCases := []struct {
 		name           string
 		featureEnabled bool
+		spanContext    trace.SpanContext
 	}{
 		{
 			name:           "FeatureGateDisabled",
@@ -1021,6 +1022,12 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 		{
 			name:           "FeatureGateEnabled",
 			featureEnabled: true,
+			spanContext: trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID{0x01},
+				SpanID:     trace.SpanID{0x02},
+				TraceFlags: trace.TraceFlags(0x03),
+				TraceState: trace.TraceState{},
+			}),
 		},
 	}
 
@@ -1036,8 +1043,8 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 			require.NoError(t, err)
 			lenMarshaled := len(marshaled)
 			if tc.featureEnabled {
-				sc := trace.SpanContextFromContext(context.Background())
-				m, marshalErr := json.Marshal(spanContext{SpanContext: sc})
+				ctx := trace.ContextWithSpanContext(context.Background(), tc.spanContext)
+				m, marshalErr := getAndMarshalSpanContext(ctx)
 				require.NoError(t, marshalErr)
 				lenMarshaled += len(m)
 			}
@@ -1337,7 +1344,7 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 func TestSpanContextFromWrapper(t *testing.T) {
 	testCases := []struct {
 		name          string
-		wrapper       spanContextConfigWrapper
+		wrapper       spanContext
 		expectErr     bool
 		errContains   string
 		expectNil     bool
@@ -1350,7 +1357,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 	}{
 		{
 			name: "invalid trace id",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "invalidtraceid",
 				SpanID:     "0102030405060708",
 				TraceFlags: "01",
@@ -1362,7 +1369,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 		},
 		{
 			name: "invalid span id",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
 				SpanID:     "invalidspanid",
 				TraceFlags: "01",
@@ -1374,7 +1381,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 		},
 		{
 			name: "invalid trace flags hex",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
 				SpanID:     "0102030405060708",
 				TraceFlags: "zz",
@@ -1386,7 +1393,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 		},
 		{
 			name: "invalid trace flags length",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
 				SpanID:     "0102030405060708",
 				TraceFlags: "0102",
@@ -1399,7 +1406,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 		},
 		{
 			name: "invalid trace state",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
 				SpanID:     "0102030405060708",
 				TraceFlags: "01",
@@ -1411,7 +1418,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 		},
 		{
 			name: "valid span context",
-			wrapper: spanContextConfigWrapper{
+			wrapper: spanContext{
 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
 				SpanID:     "0102030405060708",
 				TraceFlags: "01",
@@ -1431,7 +1438,7 @@ func TestSpanContextFromWrapper(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scc, err := spanContextFromWrapper(tc.wrapper)
+			scc, err := requestContextFromSpanContextWrapper(tc.wrapper)
 			if tc.expectErr {
 				require.Error(t, err)
 				if tc.errContains != "" {
@@ -1458,6 +1465,10 @@ func TestSpanContextFromWrapper(t *testing.T) {
 }
 
 func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
 	// Setup a minimal persistent queue using uint64Encoding and uint64
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
 		sizer:     request.RequestsSizer[uint64]{},
@@ -1537,16 +1548,16 @@ func TestSpanContextUnmarshalJSON(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var sc spanContext
-			err := json.Unmarshal(tc.marshaledData, &sc)
+			var rc requestContext
+			err := json.Unmarshal(tc.marshaledData, &rc)
 			if tc.expectErr {
 				require.Error(t, err)
 			}
 		})
 	}
 	t.Run("Call UnmarshalJSON directly", func(t *testing.T) {
-		var sc spanContext
-		err := sc.UnmarshalJSON([]byte(`{"TraceID": "`))
+		var rc requestContext
+		err := rc.UnmarshalJSON([]byte(`{"TraceID": "`))
 		require.Error(t, err)
 	})
 }
