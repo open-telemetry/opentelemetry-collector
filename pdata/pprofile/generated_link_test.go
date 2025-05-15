@@ -13,7 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -22,6 +22,8 @@ func TestLink_MoveTo(t *testing.T) {
 	dest := NewLink()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLink(), ms)
+	assert.Equal(t, generateTestLink(), dest)
+	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLink(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, &sharedState)) })

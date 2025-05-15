@@ -6,9 +6,10 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v3"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 // ProviderSettings are the settings to initialize a Provider.
@@ -18,6 +19,9 @@ type ProviderSettings struct {
 	// when instantiating a Provider with a ProviderFactory,
 	// nil Logger references should be replaced with a no-op Logger.
 	Logger *zap.Logger
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // ProviderFactory defines a factory that can be used to instantiate
@@ -63,7 +67,7 @@ type Provider interface {
 	//   - For testing, all implementation MUST check that confmaptest.ValidateProviderScheme returns no error.
 	//
 	// `watcher` callback is called when the config changes. watcher may be called from
-	// a different go routine. After watcher is called Retrieved.Get should be called
+	// a different go routine. After watcher is called, Provider.Retrieve should be called
 	// to get the new config. See description of Retrieved for more details.
 	// watcher may be nil, which indicates that the caller is not interested in
 	// knowing about the changes.
@@ -94,11 +98,14 @@ type ChangeEvent struct {
 	// Error is nil if the config is changed and needs to be re-fetched.
 	// Any non-nil error indicates that there was a problem with watching the config changes.
 	Error error
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Retrieved holds the result of a call to the Retrieve method of a Provider object.
 type Retrieved struct {
 	rawConf   any
+	errorHint error
 	closeFunc CloseFunc
 
 	stringRepresentation string
@@ -106,6 +113,7 @@ type Retrieved struct {
 }
 
 type retrievedSettings struct {
+	errorHint            error
 	stringRepresentation string
 	isSetString          bool
 	closeFunc            CloseFunc
@@ -137,6 +145,12 @@ func withStringRepresentation(stringRepresentation string) RetrievedOption {
 	})
 }
 
+func withErrorHint(errorHint error) RetrievedOption {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
+		settings.errorHint = errorHint
+	})
+}
+
 // NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
 // * yamlBytes the yaml bytes that will be deserialized.
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
@@ -145,7 +159,10 @@ func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		// If the string is not valid YAML, we try to use it verbatim as a string.
 		strRep := string(yamlBytes)
-		return NewRetrieved(strRep, append(opts, withStringRepresentation(strRep))...)
+		return NewRetrieved(strRep, append(opts,
+			withStringRepresentation(strRep),
+			withErrorHint(fmt.Errorf("assuming string type since contents are not valid YAML: %w", err)),
+		)...)
 	}
 
 	switch rawConf.(type) {
@@ -174,6 +191,7 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 	}
 	return &Retrieved{
 		rawConf:              rawConf,
+		errorHint:            set.errorHint,
 		closeFunc:            set.closeFunc,
 		stringRepresentation: set.stringRepresentation,
 		isSetString:          set.isSetString,
@@ -187,6 +205,9 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 	}
 	val, ok := r.rawConf.(map[string]any)
 	if !ok {
+		if r.errorHint != nil {
+			return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf: %w", r.rawConf, r.errorHint)
+		}
 		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
 	}
 	return NewFromStringMap(val), nil
@@ -235,7 +256,7 @@ func checkRawConfType(rawConf any) error {
 		return nil
 	}
 	switch rawConf.(type) {
-	case int, int32, int64, float32, float64, bool, string, []any, map[string]any:
+	case int, int32, int64, float32, float64, bool, string, []any, map[string]any, time.Time:
 		return nil
 	default:
 		return fmt.Errorf(

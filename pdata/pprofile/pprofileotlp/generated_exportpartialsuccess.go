@@ -8,7 +8,7 @@ package pprofileotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -41,6 +41,10 @@ func NewExportPartialSuccess() ExportPartialSuccess {
 func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpcollectorprofile.ExportProfilesPartialSuccess{}
 }

@@ -103,6 +103,13 @@ func TestScopeSpansSlice_MoveAndAppendTo(t *testing.T) {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
 		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+
+	dest.MoveAndAppendTo(dest)
+	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.Equal(t, expectedSlice.At(i), dest.At(i))
+		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func TestScopeSpansSlice_RemoveIf(t *testing.T) {
@@ -121,6 +128,18 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestScopeSpansSliceAll(t *testing.T) {
+	ms := generateTestScopeSpansSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
 func TestScopeSpansSlice_Sort(t *testing.T) {

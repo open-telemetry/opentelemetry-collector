@@ -12,9 +12,8 @@ receivers:
 
 - **Built-in scraping metrics receivers:** Receivers of this type emit a predefined set of metrics. However, the 
   metrics themselves are configurable via user settings. Examples of scrapings metrics receivers:
-
-- [Redis Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/redisreceiver)
-- [Zookeeper Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zookeeperreceiver)
+  - [Redis Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/redisreceiver)
+  - [Zookeeper Receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/zookeeperreceiver)
 
 This document covers built-in scraping metrics receivers. It defines which metrics these receivers can emit, 
 defines stability guarantees and provides guidelines for metric updates.
@@ -24,7 +23,7 @@ defines stability guarantees and provides guidelines for metric updates.
 Each built-in scraping metrics receiver has a `metadata.yaml` file that MUST define all the metrics emitted by the 
 receiver. The file is being used to generate an API for metrics recording, user settings to customize the emitted 
 metrics and user documentation. The file schema is defined in 
-https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml
+https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml
 Defining a metric in `metadata.yaml` DOES NOT guarantee that the metric will always be produced by the receiver. In
 some cases it may be impossible to fetch particular metrics from a system in a particular state.
 

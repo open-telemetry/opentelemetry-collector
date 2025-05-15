@@ -9,11 +9,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
-	"go.opentelemetry.io/collector/connector/connectorprofiles"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumerprofiles"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
+
+func errDataTypes(id component.ID, from, to pipeline.Signal) error {
+	return fmt.Errorf("connector %q cannot connect from %s to %s: %w", id, from, to, pipeline.ErrSignalNotSupported)
+}
 
 // ConnectorBuilder is a helper struct that given a set of Configs and Factories helps with creating connectors.
 type ConnectorBuilder struct {
@@ -84,7 +90,7 @@ func (b *ConnectorBuilder) CreateTracesToLogs(ctx context.Context, set connector
 }
 
 // CreateTracesToProfiles creates a Traces connector based on the settings and config.
-func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set connector.Settings, next consumerprofiles.Profiles) (connector.Traces, error) {
+func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set connector.Settings, next xconsumer.Profiles) (connector.Traces, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -93,9 +99,14 @@ func (b *ConnectorBuilder) CreateTracesToProfiles(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, pipeline.SignalTraces, xpipeline.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.TracesToProfilesStability())
@@ -160,7 +171,7 @@ func (b *ConnectorBuilder) CreateMetricsToLogs(ctx context.Context, set connecto
 }
 
 // CreateMetricsToProfiles creates a Metrics connector based on the settings and config.
-func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, next consumerprofiles.Profiles) (connector.Metrics, error) {
+func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set connector.Settings, next xconsumer.Profiles) (connector.Metrics, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -169,9 +180,14 @@ func (b *ConnectorBuilder) CreateMetricsToProfiles(ctx context.Context, set conn
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, pipeline.SignalMetrics, xpipeline.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.MetricsToProfilesStability())
@@ -236,7 +252,7 @@ func (b *ConnectorBuilder) CreateLogsToLogs(ctx context.Context, set connector.S
 }
 
 // CreateLogsToProfiles creates a Logs connector based on the settings and config.
-func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connector.Settings, next consumerprofiles.Profiles) (connector.Logs, error) {
+func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connector.Settings, next xconsumer.Profiles) (connector.Logs, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -245,9 +261,14 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, pipeline.SignalLogs, xpipeline.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.LogsToProfilesStability())
@@ -255,7 +276,7 @@ func (b *ConnectorBuilder) CreateLogsToProfiles(ctx context.Context, set connect
 }
 
 // CreateProfilesToTraces creates a Profiles connector based on the settings and config.
-func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (connectorprofiles.Profiles, error) {
+func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set connector.Settings, next consumer.Traces) (xconnector.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -264,9 +285,14 @@ func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set conne
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalTraces)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToTracesStability())
@@ -274,7 +300,7 @@ func (b *ConnectorBuilder) CreateProfilesToTraces(ctx context.Context, set conne
 }
 
 // CreateProfilesToMetrics creates a Profiles connector based on the settings and config.
-func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, next consumer.Metrics) (connectorprofiles.Profiles, error) {
+func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set connector.Settings, next consumer.Metrics) (xconnector.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -283,9 +309,14 @@ func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set conn
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalMetrics)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToMetricsStability())
@@ -293,7 +324,7 @@ func (b *ConnectorBuilder) CreateProfilesToMetrics(ctx context.Context, set conn
 }
 
 // CreateProfilesToLogs creates a Profiles connector based on the settings and config.
-func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connector.Settings, next consumer.Logs) (connectorprofiles.Profiles, error) {
+func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connector.Settings, next consumer.Logs) (xconnector.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -302,9 +333,14 @@ func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connect
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, pipeline.SignalLogs)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToLogsStability())
@@ -312,7 +348,7 @@ func (b *ConnectorBuilder) CreateProfilesToLogs(ctx context.Context, set connect
 }
 
 // CreateProfilesToProfiles creates a Profiles connector based on the settings and config.
-func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, next consumerprofiles.Profiles) (connectorprofiles.Profiles, error) {
+func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set connector.Settings, next xconsumer.Profiles) (xconnector.Profiles, error) {
 	if next == nil {
 		return nil, errNilNextConsumer
 	}
@@ -321,9 +357,14 @@ func (b *ConnectorBuilder) CreateProfilesToProfiles(ctx context.Context, set con
 		return nil, fmt.Errorf("connector %q is not configured", set.ID)
 	}
 
-	f, existsFactory := b.factories[set.ID.Type()]
+	connFact, existsFactory := b.factories[set.ID.Type()]
 	if !existsFactory {
 		return nil, fmt.Errorf("connector factory not available for: %q", set.ID)
+	}
+
+	f, ok := connFact.(xconnector.Factory)
+	if !ok {
+		return nil, errDataTypes(set.ID, xpipeline.SignalProfiles, xpipeline.SignalProfiles)
 	}
 
 	logStabilityLevel(set.Logger, f.ProfilesToProfilesStability())
@@ -345,13 +386,13 @@ func NewNopConnectorConfigsAndFactories() (map[component.ID]component.Config, ma
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
 	// configuration scenarios. Ambiguous IDs are detected in the 'otelcol' package,
 	// but lower level packages such as 'service' assume that IDs are disambiguated.
-	connID := component.NewIDWithName(nopType, "conn")
+	connID := component.NewIDWithName(NopType, "conn")
 
 	configs := map[component.ID]component.Config{
 		connID: nopFactory.CreateDefaultConfig(),
 	}
 	factories := map[component.Type]connector.Factory{
-		nopType: nopFactory,
+		NopType: nopFactory,
 	}
 
 	return configs, factories

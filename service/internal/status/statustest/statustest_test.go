@@ -7,7 +7,6 @@ import "testing"
 
 func TestNopStatusReporter(*testing.T) {
 	nop := NewNopStatusReporter()
-	nop.Ready()
 	nop.ReportOKIfStarting(nil)
 	nop.ReportStatus(nil, nil)
 }

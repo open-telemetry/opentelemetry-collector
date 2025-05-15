@@ -15,38 +15,38 @@ var _ http.Handler = (*clientInfoHandler)(nil)
 
 func TestParseIP(t *testing.T) {
 	testCases := []struct {
-		desc     string
+		name     string
 		input    string
 		expected *net.IPAddr
 	}{
 		{
-			desc:  "addr",
+			name:  "addr",
 			input: "1.2.3.4",
 			expected: &net.IPAddr{
 				IP: net.IPv4(1, 2, 3, 4),
 			},
 		},
 		{
-			desc:  "addr:port",
+			name:  "addr:port",
 			input: "1.2.3.4:33455",
 			expected: &net.IPAddr{
 				IP: net.IPv4(1, 2, 3, 4),
 			},
 		},
 		{
-			desc:     "protocol://addr:port",
+			name:     "protocol://addr:port",
 			input:    "http://1.2.3.4:33455",
 			expected: nil,
 		},
 		{
-			desc:     "addr/path",
+			name:     "addr/path",
 			input:    "1.2.3.4/orders",
 			expected: nil,
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.expected, parseIP(tC.input))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, parseIP(tt.input))
 		})
 	}
 }

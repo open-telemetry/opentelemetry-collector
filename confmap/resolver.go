@@ -12,6 +12,16 @@ import (
 
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var enableMergeAppendOption = featuregate.GlobalRegistry().MustRegister(
+	"confmap.enableMergeAppendOption",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.120.0"),
+	featuregate.WithRegisterDescription("Combines lists when resolving configs from different sources. This feature gate will not be stabilized 'as is'; the current behavior will remain the default."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/issues/8754"),
 )
 
 // follows drive-letter specification:
@@ -55,6 +65,9 @@ type ResolverSettings struct {
 	// ConverterSettings contains settings that will be passed to Converter
 	// factories when instantiating Converters.
 	ConverterSettings ConverterSettings
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewResolver returns a new Resolver that resolves configuration from multiple URIs.
@@ -170,7 +183,8 @@ func (mr *Resolver) Resolve(ctx context.Context) (*Conf, error) {
 		if err != nil {
 			return nil, err
 		}
-		if err = retMap.Merge(retCfgMap); err != nil {
+
+		if err := retMap.Merge(retCfgMap); err != nil {
 			return nil, err
 		}
 	}

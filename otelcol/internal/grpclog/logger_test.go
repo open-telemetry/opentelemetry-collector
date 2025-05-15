@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc/grpclog"
@@ -65,7 +66,7 @@ func TestGRPCLogger(t *testing.T) {
 
 			// create new collector zap logger
 			logger, err := test.cfg.Build(hook)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// create GRPCLogger
 			glogger := SetLogger(logger, test.cfg.Level.Level())
@@ -77,7 +78,7 @@ func TestGRPCLogger(t *testing.T) {
 			assert.Equal(t, obsInfo, test.infoLogged)
 			assert.Equal(t, obsWarn, test.warnLogged)
 			// match the file name and line number of Warning() call above
-			assert.Contains(t, callerInfo, "internal/grpclog/logger_test.go:76")
+			assert.Contains(t, callerInfo, "internal/grpclog/logger_test.go:77")
 		})
 	}
 }

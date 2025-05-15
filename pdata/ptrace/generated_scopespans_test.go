@@ -22,6 +22,8 @@ func TestScopeSpans_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeSpans(), ms)
 	assert.Equal(t, generateTestScopeSpans(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestScopeSpans(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
 	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).MoveTo(dest) })
@@ -47,7 +49,7 @@ func TestScopeSpans_Scope(t *testing.T) {
 
 func TestScopeSpans_SchemaUrl(t *testing.T) {
 	ms := NewScopeSpans()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly

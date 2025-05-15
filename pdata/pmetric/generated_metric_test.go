@@ -22,6 +22,8 @@ func TestMetric_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewMetric(), ms)
 	assert.Equal(t, generateTestMetric(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestMetric(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
 	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).MoveTo(dest) })
@@ -41,7 +43,7 @@ func TestMetric_CopyTo(t *testing.T) {
 
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly
@@ -50,7 +52,7 @@ func TestMetric_Name(t *testing.T) {
 
 func TestMetric_Description(t *testing.T) {
 	ms := NewMetric()
-	assert.Equal(t, "", ms.Description())
+	assert.Empty(t, ms.Description())
 	ms.SetDescription("test_description")
 	assert.Equal(t, "test_description", ms.Description())
 	sharedState := internal.StateReadOnly
@@ -59,7 +61,7 @@ func TestMetric_Description(t *testing.T) {
 
 func TestMetric_Unit(t *testing.T) {
 	ms := NewMetric()
-	assert.Equal(t, "", ms.Unit())
+	assert.Empty(t, ms.Unit())
 	ms.SetUnit("1")
 	assert.Equal(t, "1", ms.Unit())
 	sharedState := internal.StateReadOnly

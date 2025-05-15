@@ -1,0 +1,50 @@
+type: scraperhelper
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: pkg
+  stability:
+    beta: [metrics, logs]
+
+telemetry:
+  metrics:
+    scraper_scraped_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points successfully scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    scraper_errored_metric_points:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of metric points that were unable to be scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    scraper_scraped_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records successfully scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    scraper_errored_log_records:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of log records that were unable to be scraped.
+      unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true

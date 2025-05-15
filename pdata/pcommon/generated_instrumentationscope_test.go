@@ -16,11 +16,13 @@ import (
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
-	ms := InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	ms := generateTestInstrumentationScope()
 	dest := NewInstrumentationScope()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewInstrumentationScope(), ms)
-	assert.Equal(t, InstrumentationScope(internal.GenerateTestInstrumentationScope()), dest)
+	assert.Equal(t, generateTestInstrumentationScope(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestInstrumentationScope(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState)) })
 	assert.Panics(t, func() { newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).MoveTo(dest) })
@@ -31,7 +33,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	orig := NewInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	orig = InstrumentationScope(internal.GenerateTestInstrumentationScope())
+	orig = generateTestInstrumentationScope()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
@@ -40,7 +42,7 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly
@@ -49,7 +51,7 @@ func TestInstrumentationScope_Name(t *testing.T) {
 
 func TestInstrumentationScope_Version(t *testing.T) {
 	ms := NewInstrumentationScope()
-	assert.Equal(t, "", ms.Version())
+	assert.Empty(t, ms.Version())
 	ms.SetVersion("test_version")
 	assert.Equal(t, "test_version", ms.Version())
 	sharedState := internal.StateReadOnly
@@ -74,4 +76,8 @@ func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	assert.Panics(t, func() {
 		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
 	})
+}
+
+func generateTestInstrumentationScope() InstrumentationScope {
+	return InstrumentationScope(internal.GenerateTestInstrumentationScope())
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
@@ -24,7 +25,7 @@ var example = TestStruct{
 
 func TestConfMapMarshalConfigOpaque(t *testing.T) {
 	conf := confmap.New()
-	assert.NoError(t, conf.Marshal(example))
+	require.NoError(t, conf.Marshal(example))
 	assert.Equal(t, "[REDACTED]", conf.Get("opaque"))
 	assert.Equal(t, "plain", conf.Get("plain"))
 }

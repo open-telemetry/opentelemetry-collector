@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -42,6 +42,10 @@ func NewScopeProfiles() ScopeProfiles {
 func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ScopeProfiles{}
 }
@@ -63,8 +67,8 @@ func (ms ScopeProfiles) SetSchemaUrl(v string) {
 }
 
 // Profiles returns the Profiles associated with this ScopeProfiles.
-func (ms ScopeProfiles) Profiles() ProfilesContainersSlice {
-	return newProfilesContainersSlice(&ms.orig.Profiles, ms.state)
+func (ms ScopeProfiles) Profiles() ProfilesSlice {
+	return newProfilesSlice(&ms.orig.Profiles, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

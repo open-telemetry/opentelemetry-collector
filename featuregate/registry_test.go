@@ -23,17 +23,17 @@ func TestRegistry(t *testing.T) {
 
 	const id = "foo"
 	g, err := r.Register(id, StageBeta, WithRegisterDescription("Test Gate"))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	r.VisitAll(func(gate *Gate) {
 		assert.Equal(t, id, gate.ID())
 	})
 	assert.True(t, g.IsEnabled())
 
-	assert.NoError(t, r.Set(id, false))
+	require.NoError(t, r.Set(id, false))
 	assert.False(t, g.IsEnabled())
 
 	_, err = r.Register(id, StageBeta)
-	assert.ErrorIs(t, err, ErrAlreadyRegistered)
+	require.ErrorIs(t, err, ErrAlreadyRegistered)
 	assert.Panics(t, func() {
 		r.MustRegister(id, StageBeta)
 	})
@@ -41,20 +41,20 @@ func TestRegistry(t *testing.T) {
 
 func TestRegistryApplyError(t *testing.T) {
 	r := NewRegistry()
-	assert.Error(t, r.Set("foo", true))
+	require.Error(t, r.Set("foo", true))
 	r.MustRegister("bar", StageAlpha)
 
-	assert.Error(t, r.Set("foo", true))
+	require.Error(t, r.Set("foo", true))
 	_, err := r.Register("foo", StageStable)
-	assert.Error(t, err)
-	assert.Error(t, r.Set("foo", true))
+	require.Error(t, err)
+	require.Error(t, r.Set("foo", true))
 	r.MustRegister("foo", StageStable, WithRegisterToVersion("v1.0.0"))
-	assert.Error(t, r.Set("foo", false))
+	require.Error(t, r.Set("foo", false))
 
-	assert.Error(t, r.Set("deprecated", true))
+	require.Error(t, r.Set("deprecated", true))
 	_, err = r.Register("deprecated", StageDeprecated)
-	assert.Error(t, err)
-	assert.Error(t, r.Set("deprecated", true))
+	require.Error(t, err)
+	require.Error(t, r.Set("deprecated", true))
 	r.MustRegister("deprecated", StageDeprecated, WithRegisterToVersion("v1.0.0"))
 	assert.Error(t, r.Set("deprecated", true))
 }
@@ -63,7 +63,7 @@ func TestRegistryApply(t *testing.T) {
 	r := NewRegistry()
 	fooGate := r.MustRegister("foo", StageAlpha, WithRegisterDescription("Test Gate"))
 	assert.False(t, fooGate.IsEnabled())
-	assert.NoError(t, r.Set(fooGate.ID(), true))
+	require.NoError(t, r.Set(fooGate.ID(), true))
 	assert.True(t, fooGate.IsEnabled())
 }
 
@@ -195,7 +195,7 @@ func TestRegisterGateLifecycle(t *testing.T) {
 			r.MustRegister("existing.gate", StageBeta)
 			if tc.shouldErr {
 				_, err := r.Register(tc.id, tc.stage, tc.opts...)
-				assert.Error(t, err)
+				require.Error(t, err)
 				assert.Panics(t, func() {
 					r.MustRegister(tc.id, tc.stage, tc.opts...)
 				})

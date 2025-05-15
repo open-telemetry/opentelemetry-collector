@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -32,57 +33,57 @@ type mockReceiver struct {
 	consumer.Logs
 }
 
-// mockExporterFactory is a factory to create exporters sending data to the mockReceiver.
-type mockExporterFactory struct {
+// mockFactory is a factory to create exporters sending data to the mockReceiver.
+type mockFactory struct {
 	mr *mockReceiver
 	component.StartFunc
 	component.ShutdownFunc
 }
 
-func (mef *mockExporterFactory) createMockTracesExporter(
+func (mef *mockFactory) createMockTraces(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	return exporterhelper.NewTracesExporter(ctx, set, cfg,
-		mef.mr.Traces.ConsumeTraces,
+	return exporterhelper.NewTraces(ctx, set, cfg,
+		mef.mr.ConsumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
 	)
 }
 
-func (mef *mockExporterFactory) createMockMetricsExporter(
+func (mef *mockFactory) createMockMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	return exporterhelper.NewMetricsExporter(ctx, set, cfg,
-		mef.mr.Metrics.ConsumeMetrics,
+	return exporterhelper.NewMetrics(ctx, set, cfg,
+		mef.mr.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
 	)
 }
 
-func (mef *mockExporterFactory) createMockLogsExporter(
+func (mef *mockFactory) createMockLogs(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	return exporterhelper.NewLogsExporter(ctx, set, cfg,
-		mef.mr.Logs.ConsumeLogs,
+	return exporterhelper.NewLogs(ctx, set, cfg,
+		mef.mr.ConsumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(retryConfig),
 	)
 }
 
-func newMockExporterFactory(mr *mockReceiver) exporter.Factory {
-	mef := &mockExporterFactory{mr: mr}
+func newMockFactory(mr *mockReceiver) exporter.Factory {
+	mef := &mockFactory{mr: mr}
 	return exporter.NewFactory(
 		component.MustNewType("pass_through_exporter"),
 		func() component.Config { return &nopConfig{} },
-		exporter.WithTraces(mef.createMockTracesExporter, component.StabilityLevelBeta),
-		exporter.WithMetrics(mef.createMockMetricsExporter, component.StabilityLevelBeta),
-		exporter.WithLogs(mef.createMockLogsExporter, component.StabilityLevelBeta),
+		exporter.WithTraces(mef.createMockTraces, component.StabilityLevelBeta),
+		exporter.WithMetrics(mef.createMockMetrics, component.StabilityLevelBeta),
+		exporter.WithLogs(mef.createMockLogs, component.StabilityLevelBeta),
 	)
 }
 
@@ -108,8 +109,8 @@ func TestCheckConsumeContractLogs(t *testing.T) {
 	mr := &mockReceiver{}
 	params := CheckConsumeContractParams{
 		T:                    t,
-		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeLogs,
+		ExporterFactory:      newMockFactory(mr),
+		Signal:               pipeline.SignalLogs,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -122,8 +123,8 @@ func TestCheckConsumeContractMetrics(t *testing.T) {
 	mr := &mockReceiver{}
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
-		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeMetrics, // Change to the appropriate data type
+		ExporterFactory:      newMockFactory(mr),
+		Signal:               pipeline.SignalMetrics, // Change to the appropriate data type
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),
@@ -134,8 +135,8 @@ func TestCheckConsumeContractTraces(t *testing.T) {
 	mr := &mockReceiver{}
 	CheckConsumeContract(CheckConsumeContractParams{
 		T:                    t,
-		ExporterFactory:      newMockExporterFactory(mr),
-		DataType:             component.DataTypeTraces,
+		ExporterFactory:      newMockFactory(mr),
+		Signal:               pipeline.SignalTraces,
 		ExporterConfig:       nopConfig{},
 		NumberOfTestElements: 10,
 		ReceiverFactory:      newMockReceiverFactory(mr),

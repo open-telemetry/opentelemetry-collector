@@ -33,8 +33,7 @@ func TestLoadConf(t *testing.T) {
 func TestToStringMapSanitizeEmptySlice(t *testing.T) {
 	cfg, err := LoadConf(filepath.Join("testdata", "empty-slice.yaml"))
 	require.NoError(t, err)
-	var nilSlice []interface{}
-	assert.Equal(t, map[string]any{"slice": nilSlice}, cfg.ToStringMap())
+	assert.Equal(t, map[string]any{"slice": []any{}}, cfg.ToStringMap())
 }
 
 func TestValidateProviderScheme(t *testing.T) {
@@ -42,9 +41,9 @@ func TestValidateProviderScheme(t *testing.T) {
 	assert.NoError(t, ValidateProviderScheme(&schemeProvider{scheme: "s3"}))
 	assert.NoError(t, ValidateProviderScheme(&schemeProvider{scheme: "a.l-l+"}))
 	// Too short.
-	assert.Error(t, ValidateProviderScheme(&schemeProvider{scheme: "a"}))
+	require.Error(t, ValidateProviderScheme(&schemeProvider{scheme: "a"}))
 	// Invalid first character.
-	assert.Error(t, ValidateProviderScheme(&schemeProvider{scheme: "3s"}))
+	require.Error(t, ValidateProviderScheme(&schemeProvider{scheme: "3s"}))
 	// Invalid underscore character.
 	assert.Error(t, ValidateProviderScheme(&schemeProvider{scheme: "all_"}))
 }

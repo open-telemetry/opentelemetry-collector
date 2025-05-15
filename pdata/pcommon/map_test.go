@@ -7,50 +7,51 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
 func TestMap(t *testing.T) {
-	assert.EqualValues(t, 0, NewMap().Len())
+	assert.Equal(t, 0, NewMap().Len())
 
 	val, exist := NewMap().Get("test_key")
 	assert.False(t, exist)
 	state := internal.StateMutable
-	assert.EqualValues(t, newValue(nil, &state), val)
+	assert.Equal(t, newValue(nil, &state), val)
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), putString)
+	assert.Equal(t, Map(internal.GenerateTestMap()), putString)
 
 	putInt := NewMap()
 	putInt.PutInt("k", 123)
-	assert.EqualValues(t, generateTestIntMap(t), putInt)
+	assert.Equal(t, generateTestIntMap(t), putInt)
 
 	putDouble := NewMap()
 	putDouble.PutDouble("k", 12.3)
-	assert.EqualValues(t, generateTestDoubleMap(t), putDouble)
+	assert.Equal(t, generateTestDoubleMap(t), putDouble)
 
 	putBool := NewMap()
 	putBool.PutBool("k", true)
-	assert.EqualValues(t, generateTestBoolMap(t), putBool)
+	assert.Equal(t, generateTestBoolMap(t), putBool)
 
 	putBytes := NewMap()
 	putBytes.PutEmptyBytes("k").FromRaw([]byte{1, 2, 3, 4, 5})
-	assert.EqualValues(t, generateTestBytesMap(t), putBytes)
+	assert.Equal(t, generateTestBytesMap(t), putBytes)
 
 	putMap := NewMap()
 	putMap.PutEmptyMap("k")
-	assert.EqualValues(t, generateTestEmptyMap(t), putMap)
+	assert.Equal(t, generateTestEmptyMap(t), putMap)
 
 	putSlice := NewMap()
 	putSlice.PutEmptySlice("k")
-	assert.EqualValues(t, generateTestEmptySlice(t), putSlice)
+	assert.Equal(t, generateTestEmptySlice(t), putSlice)
 
 	removeMap := NewMap()
 	assert.False(t, removeMap.Remove("k"))
-	assert.EqualValues(t, NewMap(), removeMap)
+	assert.Equal(t, NewMap(), removeMap)
 }
 
 func TestMapReadOnly(t *testing.T) {
@@ -63,7 +64,7 @@ func TestMapReadOnly(t *testing.T) {
 
 	v, ok := m.Get("k1")
 	assert.True(t, ok)
-	assert.EqualValues(t, "v1", v.Str())
+	assert.Equal(t, "v1", v.Str())
 
 	m.Range(func(k string, v Value) bool {
 		assert.Equal(t, "k1", k)
@@ -94,12 +95,12 @@ func TestMapReadOnly(t *testing.T) {
 func TestMapPutEmpty(t *testing.T) {
 	m := NewMap()
 	v := m.PutEmpty("k1")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k1": nil,
 	}, m.AsRaw())
 
 	v.SetBool(true)
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k1": true,
 	}, m.AsRaw())
 
@@ -113,18 +114,18 @@ func TestMapPutEmpty(t *testing.T) {
 func TestMapPutEmptyMap(t *testing.T) {
 	m := NewMap()
 	childMap := m.PutEmptyMap("k1")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k1": map[string]any{},
 	}, m.AsRaw())
 	childMap.PutEmptySlice("k2").AppendEmpty().SetStr("val")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k1": map[string]any{
 			"k2": []any{"val"},
 		},
 	}, m.AsRaw())
 
 	childMap.PutEmptyMap("k2").PutInt("k3", 1)
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k1": map[string]any{
 			"k2": map[string]any{"k3": int64(1)},
 		},
@@ -134,22 +135,22 @@ func TestMapPutEmptyMap(t *testing.T) {
 func TestMapPutEmptySlice(t *testing.T) {
 	m := NewMap()
 	childSlice := m.PutEmptySlice("k")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k": []any{},
 	}, m.AsRaw())
 	childSlice.AppendEmpty().SetDouble(1.1)
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k": []any{1.1},
 	}, m.AsRaw())
 
 	m.PutEmptySlice("k")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k": []any{},
 	}, m.AsRaw())
 	childSliceVal, ok := m.Get("k")
 	assert.True(t, ok)
 	childSliceVal.Slice().AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("val")
-	assert.EqualValues(t, map[string]any{
+	assert.Equal(t, map[string]any{
 		"k": []any{[]any{"val"}},
 	}, m.AsRaw())
 }
@@ -191,73 +192,73 @@ func TestMapWithEmpty(t *testing.T) {
 	sm := newMap(&origWithNil, &state)
 	val, exist := sm.Get("test_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "test_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "test_value", val.Str())
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeEmpty, val.Type())
-	assert.EqualValues(t, "", val.Str())
+	assert.Equal(t, ValueTypeEmpty, val.Type())
+	assert.Empty(t, val.Str())
 
 	sm.PutStr("other_key_string", "other_value")
 	val, exist = sm.Get("other_key_string")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "other_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "other_value", val.Str())
 
 	sm.PutInt("other_key_int", 123)
 	val, exist = sm.Get("other_key_int")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeInt, val.Type())
+	assert.Equal(t, ValueTypeInt, val.Type())
 	assert.EqualValues(t, 123, val.Int())
 
 	sm.PutDouble("other_key_double", 1.23)
 	val, exist = sm.Get("other_key_double")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeDouble, val.Type())
+	assert.Equal(t, ValueTypeDouble, val.Type())
 	assert.InDelta(t, 1.23, val.Double(), 0.01)
 
 	sm.PutBool("other_key_bool", true)
 	val, exist = sm.Get("other_key_bool")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeBool, val.Type())
+	assert.Equal(t, ValueTypeBool, val.Type())
 	assert.True(t, val.Bool())
 
 	sm.PutEmptyBytes("other_key_bytes").FromRaw([]byte{7, 8, 9})
 	val, exist = sm.Get("other_key_bytes")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{7, 8, 9}, val.Bytes().AsRaw())
+	assert.Equal(t, ValueTypeBytes, val.Type())
+	assert.Equal(t, []byte{7, 8, 9}, val.Bytes().AsRaw())
 
 	sm.PutStr("another_key_string", "another_value")
 	val, exist = sm.Get("another_key_string")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "another_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "another_value", val.Str())
 
 	sm.PutInt("another_key_int", 456)
 	val, exist = sm.Get("another_key_int")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeInt, val.Type())
+	assert.Equal(t, ValueTypeInt, val.Type())
 	assert.EqualValues(t, 456, val.Int())
 
 	sm.PutDouble("another_key_double", 4.56)
 	val, exist = sm.Get("another_key_double")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeDouble, val.Type())
+	assert.Equal(t, ValueTypeDouble, val.Type())
 	assert.InDelta(t, 4.56, val.Double(), 0.01)
 
 	sm.PutBool("another_key_bool", false)
 	val, exist = sm.Get("another_key_bool")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeBool, val.Type())
+	assert.Equal(t, ValueTypeBool, val.Type())
 	assert.False(t, val.Bool())
 
 	sm.PutEmptyBytes("another_key_bytes").FromRaw([]byte{1})
 	val, exist = sm.Get("another_key_bytes")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeBytes, val.Type())
-	assert.EqualValues(t, []byte{1}, val.Bytes().AsRaw())
+	assert.Equal(t, ValueTypeBytes, val.Type())
+	assert.Equal(t, []byte{1}, val.Bytes().AsRaw())
 
 	assert.True(t, sm.Remove("other_key_string"))
 	assert.True(t, sm.Remove("other_key_int"))
@@ -276,13 +277,13 @@ func TestMapWithEmpty(t *testing.T) {
 	// Test that the initial key is still there.
 	val, exist = sm.Get("test_key")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "test_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "test_value", val.Str())
 
 	val, exist = sm.Get("test_key2")
 	assert.True(t, exist)
-	assert.EqualValues(t, ValueTypeEmpty, val.Type())
-	assert.EqualValues(t, "", val.Str())
+	assert.Equal(t, ValueTypeEmpty, val.Type())
+	assert.Empty(t, val.Str())
 
 	_, exist = sm.Get("test_key3")
 	assert.False(t, exist)
@@ -305,7 +306,7 @@ func TestMap_Range(t *testing.T) {
 		"k_empty":  nil,
 	}
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(rawMap))
+	require.NoError(t, am.FromRaw(rawMap))
 	assert.Equal(t, 5, am.Len())
 
 	calls := 0
@@ -323,19 +324,44 @@ func TestMap_Range(t *testing.T) {
 	assert.Empty(t, rawMap)
 }
 
+func TestMap_All(t *testing.T) {
+	rawMap := map[string]any{
+		"k_string": "123",
+		"k_int":    int64(123),
+		"k_double": float64(1.23),
+		"k_bool":   true,
+		"k_empty":  nil,
+	}
+	am := NewMap()
+	require.NoError(t, am.FromRaw(rawMap))
+	assert.Equal(t, 5, am.Len())
+
+	calls := 0
+	for range am.All() {
+		calls++
+	}
+	assert.Equal(t, am.Len(), calls)
+
+	for k, v := range am.All() {
+		assert.Equal(t, rawMap[k], v.AsRaw())
+		delete(rawMap, k)
+	}
+	assert.Empty(t, rawMap)
+}
+
 func TestMap_FromRaw(t *testing.T) {
 	am := NewMap()
-	assert.NoError(t, am.FromRaw(map[string]any{}))
+	require.NoError(t, am.FromRaw(map[string]any{}))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(nil))
+	require.NoError(t, am.FromRaw(nil))
 	assert.Equal(t, 0, am.Len())
 	am.PutEmpty("k")
 	assert.Equal(t, 1, am.Len())
 
-	assert.NoError(t, am.FromRaw(map[string]any{
+	require.NoError(t, am.FromRaw(map[string]any{
 		"k_string": "123",
 		"k_int":    123,
 		"k_double": 1.23,
@@ -384,12 +410,17 @@ func TestMap_MoveTo(t *testing.T) {
 	// Test MoveTo larger slice
 	src := Map(internal.GenerateTestMap())
 	src.MoveTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
 	assert.Equal(t, 0, src.Len())
 
 	// Test MoveTo from empty to non-empty
 	NewMap().MoveTo(dest)
 	assert.Equal(t, 0, dest.Len())
+
+	dest.PutStr("k", "v")
+	dest.MoveTo(dest)
+	assert.Equal(t, 1, dest.Len())
+	assert.Equal(t, map[string]any{"k": "v"}, dest.AsRaw())
 }
 
 func TestMap_CopyTo(t *testing.T) {
@@ -400,16 +431,16 @@ func TestMap_CopyTo(t *testing.T) {
 
 	// Test CopyTo larger slice
 	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
 
 	// Test CopyTo same size slice
 	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
 
 	// Test CopyTo with an empty Value in the destination
 	(*dest.getOrig())[0].Value = otlpcommon.AnyValue{}
 	Map(internal.GenerateTestMap()).CopyTo(dest)
-	assert.EqualValues(t, Map(internal.GenerateTestMap()), dest)
+	assert.Equal(t, Map(internal.GenerateTestMap()), dest)
 }
 
 func TestMap_EnsureCapacity_Zero(t *testing.T) {
@@ -562,4 +593,112 @@ func TestInvalidMap(t *testing.T) {
 	assert.Panics(t, func() { v.CopyTo(NewMap()) })
 	assert.Panics(t, func() { v.AsRaw() })
 	assert.Panics(t, func() { _ = v.FromRaw(map[string]any{"foo": "bar"}) })
+}
+
+func TestMapEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		val        Map
+		comparison Map
+		expected   bool
+	}{
+		{
+			name:       "with two empty maps",
+			val:        NewMap(),
+			comparison: NewMap(),
+			expected:   true,
+		},
+		{
+			name: "with two equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with multiple equal values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "with two different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with the same key and different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "with multiple different values",
+			val: func() Map {
+				m := NewMap()
+				m.PutStr("hello", "world")
+				m.PutStr("bonjour", "monde")
+				return m
+			}(),
+			comparison: func() Map {
+				m := NewMap()
+				m.PutStr("question", "unknown")
+				m.PutStr("answer", "42")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.val.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkMapEqual(b *testing.B) {
+	m := NewMap()
+	m.PutStr("hello", "world")
+	cmp := NewMap()
+	cmp.PutStr("hello", "world")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = m.Equal(cmp)
+	}
 }

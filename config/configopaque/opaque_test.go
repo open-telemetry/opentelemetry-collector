@@ -5,6 +5,7 @@ package configopaque // import "go.opentelemetry.io/collector/config/configopaqu
 
 import (
 	"encoding"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -43,7 +44,7 @@ var example = TestStruct{
 func TestStringJSON(t *testing.T) {
 	bytes, err := json.Marshal(example)
 	require.NoError(t, err)
-	assert.Equal(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
+	assert.JSONEq(t, `{"opaque":"[REDACTED]","plain":"plain"}`, string(bytes))
 }
 
 func TestStringFmt(t *testing.T) {
@@ -69,7 +70,7 @@ func TestStringFmt(t *testing.T) {
 				case "%q", "%#v":
 					expected = "\"" + string(example) + "\""
 				case "%x":
-					expected = fmt.Sprintf("%x", []byte(example))
+					expected = hex.EncodeToString([]byte(example))
 				default:
 					t.Errorf("unexpected verb %q", verb)
 				}

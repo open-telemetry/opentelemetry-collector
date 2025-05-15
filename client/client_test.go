@@ -8,6 +8,7 @@ package client
 import (
 	"context"
 	"net"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -15,11 +16,11 @@ import (
 
 func TestNewContext(t *testing.T) {
 	testCases := []struct {
-		desc string
+		name string
 		cl   Info
 	}{
 		{
-			desc: "valid client",
+			name: "valid client",
 			cl: Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
@@ -27,26 +28,26 @@ func TestNewContext(t *testing.T) {
 			},
 		},
 		{
-			desc: "nil client",
+			name: "nil client",
 			cl:   Info{},
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			ctx := NewContext(context.Background(), tC.cl)
-			assert.Equal(t, ctx.Value(ctxKey{}), tC.cl)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := NewContext(context.Background(), tt.cl)
+			assert.Equal(t, ctx.Value(ctxKey{}), tt.cl)
 		})
 	}
 }
 
 func TestFromContext(t *testing.T) {
 	testCases := []struct {
-		desc     string
+		name     string
 		input    context.Context
 		expected Info
 	}{
 		{
-			desc: "context with client",
+			name: "context with client",
 			input: context.WithValue(context.Background(), ctxKey{}, Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
@@ -59,19 +60,19 @@ func TestFromContext(t *testing.T) {
 			},
 		},
 		{
-			desc:     "context without client",
+			name:     "context without client",
 			input:    context.Background(),
 			expected: Info{},
 		},
 		{
-			desc:     "context with something else in the key",
+			name:     "context with something else in the key",
 			input:    context.WithValue(context.Background(), ctxKey{}, "unexpected!"),
 			expected: Info{},
 		},
 	}
-	for _, tC := range testCases {
-		t.Run(tC.desc, func(t *testing.T) {
-			assert.Equal(t, tC.expected, FromContext(tC.input))
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, FromContext(tt.input))
 		})
 	}
 }
@@ -79,6 +80,7 @@ func TestFromContext(t *testing.T) {
 func TestMetadata(t *testing.T) {
 	source := map[string][]string{"test-key": {"test-val"}, "TEST-KEY-2": {"test-val"}}
 	md := NewMetadata(source)
+	assert.Equal(t, []string{"test-key", "test-key-2"}, slices.Sorted(md.Keys()))
 	assert.Equal(t, []string{"test-val"}, md.Get("test-key"))
 	assert.Equal(t, []string{"test-val"}, md.Get("test-KEY"))   // case insensitive lookup
 	assert.Equal(t, []string{"test-val"}, md.Get("test-key-2")) // case insensitive lookup
@@ -93,5 +95,6 @@ func TestMetadata(t *testing.T) {
 
 func TestUninstantiatedMetadata(t *testing.T) {
 	i := Info{}
+	assert.Empty(t, slices.Collect(i.Metadata.Keys()))
 	assert.Empty(t, i.Metadata.Get("test"))
 }

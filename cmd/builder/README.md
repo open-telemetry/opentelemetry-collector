@@ -57,21 +57,48 @@ $ /tmp/dist/otelcol-custom --config=/tmp/otelcol.yaml
 
 ## Installation
 
-There are two supported ways to install the builder: via the official releases (recommended) and through `go install`.
+There are three supported ways to install the builder:
+1. Via official release Docker images (recommended)
+2. Via official release binaries (recommended)
+3. Through `go install` (not recommended)
 
-### Official releases 
+### Official release Docker image
 
-This is the recommended installation method. Download the binary for your respective platform under the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector/releases?q=builder) page.
+You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder). 
+
+Pull the image via tagged version number (e.g. v0.110.0) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
+
+```
+docker pull otel/opentelemetry-collector-builder:latest
+```
+
+The included builder configuration file/manifest should be replaced by mounting a file from your local filesystem to the docker container; the default location is `/build/builder-config.yaml`. If you mount a file at a different location inside the container, your `builder.config.yaml` must be specified as a command line argument to ocb. Additionally, the output folder must also be mounted from your local system to the docker container. This output directory must be specified in your `builder-config.yaml` file as it cannot be set via the command-line arguments.
+
+Assuming you are running this image in your working directory, have a `builder-config.yaml` file located in this folder, the `dist.output_path` item inside your `builder-config.yaml` is set to `./otelcol-dev`, and you wish to output the binary/go module files to a folder named `output`, the command would look as follows:
+
+```
+docker run -v "$(pwd)/builder-config.yaml:/build/builder-config.yaml" -v "$(pwd)/output:/build/otelcol-dev" otel/opentelemetry-collector-builder:latest --config=/build/builder-config.yaml
+```
+
+Please note that a `--config` flag must be passed to specify your custom manifest.yaml/builder-config.yaml file regardless of where you mount it inside the container, otherwise a default config is used that cannot be changed.
+
+Additional arguments may be passed to ocb on the command line as specified below, but if you wish to do this, you must make sure to pass the `--config` argument, as this is specified as an additional `CMD`, not an entrypoint. 
+
+### Official release binaries 
+
+This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
 ### `go install`
 
 You need to have a `go` compiler in your PATH. Run the following command to install the latest version:
 
-```
+```console
 go install go.opentelemetry.io/collector/cmd/builder@latest
 ```
 
-If installing through this method the binary will be called `builder`. Binaries installed through this method [will incorrectly show `dev` as their version](https://github.com/open-telemetry/opentelemetry-collector/issues/8691).
+If installing through this method the binary will be called `builder`.
+
+In order to successfully generate and build a collector using ocb, you must use [compatible Go version](../../README.md#compatibility).
 
 ## Running
 
@@ -80,20 +107,35 @@ You will need to specify at least one module (extension, exporter, receiver, pro
 To build a default collector configuration, you can use [this](../otelcorecol/builder-config.yaml) build configuration.
 
 ```console
-$ ocb --config=builder-config.yaml
+ocb --config=builder-config.yaml
 ```
 
 Use `ocb --help` to learn about which flags are available.
 
 ## Debug
 
-To keep the debug symbols in the resulting OpenTelemetry Collector binary, set the configuration property `debug_compilation` to true.
+### Debug symbols
+
+By default, the LDflags are set to `-s -w`, which strips debugging symbols to produce a smaller OpenTelemetry Collector binary. To retain debugging symbols and DWARF debugging data in the binary, override the LDflags as shown:
+
+```console 
+ocb --ldflags="" --config=builder-config.yaml.
+```
+
+### Debugging with Delve
+
+To ensure the code being executed matches the written code exactly, debugging symbols must be preserved, and compiler inlining and optimizations disabled. You can achieve this in two ways:
+
+1. Set the configuration property `debug_compilation` to true.
+2. Manually override the ldflags and gcflags `ocb --ldflags="" --gcflags="all=-N -l" --config=builder-config.yaml.`
 
 Then install `go-delve` and run OpenTelemetry Collector with `dlv` command as the following example:
+
 ```bash
 # go install github.com/go-delve/delve/cmd/dlv@latest
 # ~/go/bin/dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient --log exec .otel-collector-binary -- --config otel-collector-config.yaml
 ```
+
 Finally, load the OpenTelemetry Collector as a project in the IDE, configure debug for Go
 
 ## Configuration
@@ -101,7 +143,7 @@ Finally, load the OpenTelemetry Collector as a project in the IDE, configure deb
 The configuration file is composed of two main parts: `dist` and module types. All `dist` options can be specified via command line flags:
 
 ```console
-$ ocb --config=config.yaml --name="my-otelcol"
+ocb --config=config.yaml
 ```
 
 The module types are specified at the top-level, and might be: `extensions`, `exporters`, `receivers` and `processors`. They all accept a list of components, and each component is required to have at least the `gomod` entry. When not specified, the `import` value is inferred from the `gomod`. When not specified, the `name` is inferred from the `import`.
@@ -117,7 +159,6 @@ dist:
     module: github.com/open-telemetry/opentelemetry-collector # the module name for the new distribution, following Go mod conventions. Optional, but recommended.
     name: otelcol-custom # the binary name. Optional.
     description: "Custom OpenTelemetry Collector distribution" # a long name for the application. Optional.
-    otelcol_version: "0.40.0" # the OpenTelemetry Collector version to use as base for the distribution. Optional.
     output_path: /tmp/otelcol-distributionNNN # the path to write the output (sources and binary). Optional.
     version: "1.0.0" # the version for your custom OpenTelemetry Collector. Optional.
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
@@ -157,29 +198,32 @@ For instance, a code generation step could execute
 ```console
 ocb --skip-compilation --config=config.yaml
 ```
+
 then commit the code in a git repo. A CI can sync the code and execute
+
 ```console
 ocb --skip-generate --skip-get-modules --config=config.yaml
 ```
+
 to only execute the compilation step.
 
 ### Strict versioning checks
 
 The builder checks the relevant `go.mod`
-file for the following things after `go get`ing all components and calling 
+file for the following things after `go get`ing all components and calling
 `go mod tidy`:
 
-1. The `dist::otelcol_version` field in the build configuration must have 
-   matching major and minor versions as the core library version calculated by 
-   the Go toolchain, considering all components.  A mismatch could happen, for 
-   example, when the builder or one of the components depends on a newer release 
+1. The `dist::otelcol_version` field in the build configuration must have
+   matching major and minor versions as the core library version calculated by
+   the Go toolchain, considering all components.  A mismatch could happen, for
+   example, when the builder or one of the components depends on a newer release
    of the core collector library.
-2. For each component in the build configuration, the major and minor versions 
+2. For each component in the build configuration, the major and minor versions
    included in the `gomod` module specifier must match the one calculated by
    the Go toolchain, considering all components.  A mismatch could
    happen, for example, when the enclosing Go module uses a newer
    release of the core collector library.
-   
-The `--skip-strict-versioning` flag disables these versioning checks. 
-This flag is available temporarily and 
+
+The `--skip-strict-versioning` flag disables these versioning checks.
+This flag is available temporarily and
 **will be removed in a future minor version**.

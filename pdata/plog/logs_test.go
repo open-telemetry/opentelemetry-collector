@@ -9,6 +9,7 @@ import (
 
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
@@ -19,16 +20,16 @@ import (
 
 func TestLogRecordCount(t *testing.T) {
 	logs := NewLogs()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	rl := logs.ResourceLogs().AppendEmpty()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	ill := rl.ScopeLogs().AppendEmpty()
-	assert.EqualValues(t, 0, logs.LogRecordCount())
+	assert.Equal(t, 0, logs.LogRecordCount())
 
 	ill.LogRecords().AppendEmpty()
-	assert.EqualValues(t, 1, logs.LogRecordCount())
+	assert.Equal(t, 1, logs.LogRecordCount())
 
 	rms := logs.ResourceLogs()
 	rms.EnsureCapacity(3)
@@ -38,7 +39,7 @@ func TestLogRecordCount(t *testing.T) {
 		illl.AppendEmpty()
 	}
 	// 5 + 1 (from rms.At(0) initialized first)
-	assert.EqualValues(t, 6, logs.LogRecordCount())
+	assert.Equal(t, 6, logs.LogRecordCount())
 }
 
 func TestLogRecordCountWithEmpty(t *testing.T) {
@@ -69,8 +70,8 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 func TestToFromLogOtlp(t *testing.T) {
 	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
 	logs := newLogs(otlp)
-	assert.EqualValues(t, NewLogs(), logs)
-	assert.EqualValues(t, otlp, logs.getOrig())
+	assert.Equal(t, NewLogs(), logs)
+	assert.Equal(t, otlp, logs.getOrig())
 }
 
 func TestResourceLogsWireCompatibility(t *testing.T) {
@@ -84,27 +85,27 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 
 	// Marshal its underlying ProtoBuf to wire.
 	wire1, err := gogoproto.Marshal(logs.getOrig())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
 	// Unmarshal from the wire to OTLP Protobuf in goproto's representation.
 	var goprotoMessage emptypb.Empty
 	err = goproto.Unmarshal(wire1, &goprotoMessage)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Marshal to the wire again.
 	wire2, err := goproto.Marshal(&goprotoMessage)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, wire2)
 
 	// Unmarshal from the wire into gogoproto's representation.
 	var gogoprotoRS2 otlpcollectorlog.ExportLogsServiceRequest
 	err = gogoproto.Unmarshal(wire2, &gogoprotoRS2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.EqualValues(t, logs.getOrig(), &gogoprotoRS2)
+	assert.Equal(t, logs.getOrig(), &gogoprotoRS2)
 }
 
 func TestLogsCopyTo(t *testing.T) {
@@ -112,7 +113,7 @@ func TestLogsCopyTo(t *testing.T) {
 	fillTestResourceLogsSlice(logs.ResourceLogs())
 	logsCopy := NewLogs()
 	logs.CopyTo(logsCopy)
-	assert.EqualValues(t, logs, logsCopy)
+	assert.Equal(t, logs, logsCopy)
 }
 
 func TestReadOnlyLogsInvalidUsage(t *testing.T) {

@@ -1,0 +1,11 @@
+type: xreceiver
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: pkg
+  codeowners:
+    active:
+      - mx-psi
+      - dmathieu
+  stability:
+    development: [profiles]

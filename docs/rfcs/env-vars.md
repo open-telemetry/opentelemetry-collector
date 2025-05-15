@@ -104,9 +104,8 @@ environment variable whose name is stored in the URL
 The environment variable value is parsed by the yaml.v3 parser to an
 any-typed variable. The yaml.v3 parser mostly follows the YAML v1.2
 specification with [*some exceptions*](https://github.com/go-yaml/yaml#compatibility). 
-You can see
-how it works for some edge cases in this example:
-[`go.dev/play/p/RtPmH8aZA1X`](https://go.dev/play/p/RtPmH8aZA1X).
+You can see how it works for some edge cases in
+[this go.dev/play example](https://go.dev/play/p/3vNLznwSZQe).
 
 ### Issues of current behavior
 
@@ -149,7 +148,7 @@ expect the string to be `0123`).
 
 The Configuration WG defines an [*environment variable expansion feature
 for SDK
-configurations*](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/configuration/file-configuration.md#environment-variable-substitution).
+configurations*](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/configuration/data-model.md#environment-variable-substitution).
 This accepts only non empty alphanumeric + underscore identifiers
 starting with alphabetic or underscore. If the Configuration WG were to
 expand this in the future (e.g. to include other features present in

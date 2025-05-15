@@ -23,6 +23,8 @@ func TestSpan_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewSpan(), ms)
 	assert.Equal(t, generateTestSpan(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestSpan(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newSpan(&otlptrace.Span{}, &sharedState)) })
 	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).MoveTo(dest) })
@@ -72,7 +74,7 @@ func TestSpan_ParentSpanID(t *testing.T) {
 
 func TestSpan_Name(t *testing.T) {
 	ms := NewSpan()
-	assert.Equal(t, "", ms.Name())
+	assert.Empty(t, ms.Name())
 	ms.SetName("test_name")
 	assert.Equal(t, "test_name", ms.Name())
 	sharedState := internal.StateReadOnly

@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // Line details a specific line in a source code, linked to a function.
@@ -41,17 +41,21 @@ func NewLine() Line {
 func (ms Line) MoveTo(dest Line) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.Line{}
 }
 
 // FunctionIndex returns the functionindex associated with this Line.
-func (ms Line) FunctionIndex() uint64 {
+func (ms Line) FunctionIndex() int32 {
 	return ms.orig.FunctionIndex
 }
 
 // SetFunctionIndex replaces the functionindex associated with this Line.
-func (ms Line) SetFunctionIndex(v uint64) {
+func (ms Line) SetFunctionIndex(v int32) {
 	ms.state.AssertMutable()
 	ms.orig.FunctionIndex = v
 }

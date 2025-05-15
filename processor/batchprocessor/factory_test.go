@@ -25,18 +25,18 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	creationSet := processortest.NewNopSettings()
-	tp, err := factory.CreateTracesProcessor(context.Background(), creationSet, cfg, nil)
+	creationSet := processortest.NewNopSettings(factory.Type())
+	tp, err := factory.CreateTraces(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, tp)
 	assert.NoError(t, err, "cannot create trace processor")
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	mp, err := factory.CreateMetricsProcessor(context.Background(), creationSet, cfg, nil)
+	mp, err := factory.CreateMetrics(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, mp)
 	assert.NoError(t, err, "cannot create metric processor")
 	assert.NoError(t, mp.Shutdown(context.Background()))
 
-	lp, err := factory.CreateLogsProcessor(context.Background(), creationSet, cfg, nil)
+	lp, err := factory.CreateLogs(context.Background(), creationSet, cfg, nil)
 	assert.NotNil(t, lp)
 	assert.NoError(t, err, "cannot create logs processor")
 	assert.NoError(t, lp.Shutdown(context.Background()))

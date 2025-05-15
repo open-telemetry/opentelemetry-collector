@@ -1,0 +1,12 @@
+type: rfcs
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: docs
+  codeowners:
+    active:
+      - codeboten
+      - BogdanDrutu
+      - dmitryax
+      - mx-psi

@@ -9,12 +9,6 @@ receivers:
         logs: Stable
         metrics: Stable
         traces: Stable
-    - name: nop_logs
-      module: go.opentelemetry.io/collector/receiver/receivertest v1.2.3
-      stability:
-        logs: Stable
-        metrics: Undefined
-        traces: Undefined
 processors:
     - name: nop
       module: go.opentelemetry.io/collector/processor/processortest v1.2.3
@@ -47,3 +41,8 @@ extensions:
       module: go.opentelemetry.io/collector/extension/extensiontest v1.2.3
       stability:
         extension: Stable
+providers:
+    - scheme: nop
+      module: go.opentelemetry.io/collector/confmap/provider/testprovider v1.2.3
+converters:
+    - module: go.opentelemetry.io/collector/converter/testconverter v1.2.3

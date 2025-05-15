@@ -84,6 +84,17 @@ func TestConfigValidate(t *testing.T) {
 			},
 			err: errSpikeLimitPercentageOutOfRange,
 		},
+		{
+			name: "invalid gc intervals",
+			cfg: &Config{
+				CheckInterval:                100 * time.Millisecond,
+				MinGCIntervalWhenSoftLimited: 50 * time.Millisecond,
+				MinGCIntervalWhenHardLimited: 100 * time.Millisecond,
+				MemoryLimitMiB:               5722,
+				MemorySpikeLimitMiB:          1907,
+			},
+			err: errInconsistentGCMinInterval,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -98,7 +109,6 @@ func TestUnmarshalInvalidConfig(t *testing.T) {
 	require.NoError(t, err)
 	cfg := &Config{}
 	err = cm.Unmarshal(&cfg)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "cannot parse 'limit_mib', -2000 overflows uint")
-	require.Contains(t, err.Error(), "cannot parse 'spike_limit_mib', -2300 overflows uint")
+	require.ErrorContains(t, err, "cannot parse 'limit_mib', -2000 overflows uint")
+	require.ErrorContains(t, err, "cannot parse 'spike_limit_mib', -2300 overflows uint")
 }

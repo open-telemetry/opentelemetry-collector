@@ -5,21 +5,26 @@ package service
 
 import (
 	"errors"
-	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestConfigValidate(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		name     string // test case name (also file name containing config yaml)
 		cfgFn    func() *Config
 		expected error
@@ -42,43 +47,96 @@ func TestConfigValidate(t *testing.T) {
 			name: "duplicate-processor-reference",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				pipe := cfg.Pipelines[component.MustNewID("traces")]
+				pipe := cfg.Pipelines[pipeline.NewID(pipeline.SignalTraces)]
 				pipe.Processors = append(pipe.Processors, pipe.Processors...)
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, fmt.Errorf(`pipeline "traces": %w`, errors.New(`references processor "nop" multiple times`))),
+			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
 			name: "invalid-service-pipeline-type",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
-				cfg.Pipelines[component.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
+				cfg.Pipelines[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
 					Receivers:  []component.ID{component.MustNewID("nop")},
 					Processors: []component.ID{component.MustNewID("nop")},
 					Exporters:  []component.ID{component.MustNewID("nop")},
 				}
 				return cfg
 			},
-			expected: fmt.Errorf(`service::pipelines config validation failed: %w`, errors.New(`pipeline "wrongtype": unknown datatype "wrongtype"`)),
+			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
 		},
 		{
 			name: "invalid-telemetry-metric-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
 				cfg.Telemetry.Metrics.Level = configtelemetry.LevelBasic
-				cfg.Telemetry.Metrics.Address = ""
+				cfg.Telemetry.Metrics.Readers = nil
 				return cfg
 			},
-			expected: nil,
+			expected: errors.New("collector telemetry metrics reader should exist when metric level is not none"),
 		},
 	}
 
-	for _, test := range testCases {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := test.cfgFn()
-			assert.Equal(t, test.expected, cfg.Validate())
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := tt.cfgFn()
+			err := xconfmap.Validate(cfg)
+			if tt.expected != nil {
+				assert.ErrorContains(t, err, tt.expected.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
+}
+
+func TestConfmapMarshalConfig(t *testing.T) {
+	telFactory := telemetry.NewFactory()
+	defaultTelConfig := *telFactory.CreateDefaultConfig().(*telemetry.Config)
+	conf := confmap.New()
+
+	require.NoError(t, conf.Marshal(Config{
+		Telemetry: defaultTelConfig,
+	}))
+	assert.Equal(t, map[string]any{
+		"pipelines": map[string]any{},
+		"telemetry": map[string]any{
+			"logs": map[string]any{
+				"encoding":           "console",
+				"level":              "info",
+				"error_output_paths": []any{"stderr"},
+				"output_paths":       []any{"stderr"},
+				"sampling": map[string]any{
+					"enabled":    true,
+					"initial":    10,
+					"thereafter": 100,
+					"tick":       10 * time.Second,
+				},
+			},
+			"metrics": map[string]any{
+				"level": "Normal",
+				"readers": []any{
+					map[string]any{
+						"pull": map[string]any{
+							"exporter": map[string]any{
+								"prometheus": map[string]any{
+									"host": "localhost",
+									"port": 8888,
+									"with_resource_constant_labels": map[string]any{
+										"included": []any{},
+									},
+									"without_scope_info":  true,
+									"without_type_suffix": true,
+									"without_units":       true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, conf.ToStringMap())
 }
 
 func generateConfig() *Config {
@@ -95,13 +153,22 @@ func generateConfig() *Config {
 				InitialFields:     map[string]any{"fieldKey": "filed-value"},
 			},
 			Metrics: telemetry.MetricsConfig{
-				Level:   configtelemetry.LevelNormal,
-				Address: ":8080",
+				Level: configtelemetry.LevelNormal,
+				MeterProvider: config.MeterProvider{
+					Readers: []config.MetricReader{
+						{
+							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+								Host: newPtr("localhost"),
+								Port: newPtr(8080),
+							}}},
+						},
+					},
+				},
 			},
 		},
 		Extensions: extensions.Config{component.MustNewID("nop")},
 		Pipelines: pipelines.Config{
-			component.MustNewID("traces"): {
+			pipeline.NewID(pipeline.SignalTraces): {
 				Receivers:  []component.ID{component.MustNewID("nop")},
 				Processors: []component.ID{component.MustNewID("nop")},
 				Exporters:  []component.ID{component.MustNewID("nop")},

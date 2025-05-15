@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const tmplBody = `
@@ -36,8 +37,8 @@ func TestTemplateFuncs(t *testing.T) {
 		Index:   32,
 		Element: [2]string{"key", "value"},
 	}
-	assert.NoError(t, tmpl.Execute(buf, input))
-	assert.EqualValues(t, want, buf.String())
+	require.NoError(t, tmpl.Execute(buf, input))
+	assert.Equal(t, want, buf.String())
 }
 
 func TestNoCrash(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLine_MoveTo(t *testing.T) {
@@ -20,6 +20,8 @@ func TestLine_MoveTo(t *testing.T) {
 	dest := NewLine()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLine(), ms)
+	assert.Equal(t, generateTestLine(), dest)
+	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLine(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
@@ -40,11 +42,11 @@ func TestLine_CopyTo(t *testing.T) {
 
 func TestLine_FunctionIndex(t *testing.T) {
 	ms := NewLine()
-	assert.Equal(t, uint64(0), ms.FunctionIndex())
-	ms.SetFunctionIndex(uint64(1))
-	assert.Equal(t, uint64(1), ms.FunctionIndex())
+	assert.Equal(t, int32(0), ms.FunctionIndex())
+	ms.SetFunctionIndex(int32(1))
+	assert.Equal(t, int32(1), ms.FunctionIndex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetFunctionIndex(uint64(1)) })
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetFunctionIndex(int32(1)) })
 }
 
 func TestLine_Line(t *testing.T) {
@@ -72,7 +74,7 @@ func generateTestLine() Line {
 }
 
 func fillTestLine(tv Line) {
-	tv.orig.FunctionIndex = uint64(1)
+	tv.orig.FunctionIndex = int32(1)
 	tv.orig.Line = int64(1)
 	tv.orig.Column = int64(1)
 }

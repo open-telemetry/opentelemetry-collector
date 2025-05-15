@@ -6,6 +6,7 @@ package zpagesextension // import "go.opentelemetry.io/collector/extension/zpage
 import (
 	"context"
 	"errors"
+	"expvar"
 	"net/http"
 	"path"
 
@@ -18,7 +19,8 @@ import (
 )
 
 const (
-	tracezPath = "tracez"
+	tracezPath  = "tracez"
+	expvarzPath = "expvarz"
 )
 
 type zpagesExtension struct {
@@ -45,7 +47,6 @@ type registerableTracerProvider interface {
 }
 
 func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) error {
-
 	zPagesMux := http.NewServeMux()
 
 	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
@@ -55,6 +56,11 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 		zpe.telemetry.Logger.Info("Registered zPages span processor on tracer provider")
 	} else {
 		zpe.telemetry.Logger.Warn("zPages span processor registration is not available")
+	}
+
+	if zpe.config.Expvar.Enabled {
+		zPagesMux.Handle(path.Join("/debug", expvarzPath), expvar.Handler())
+		zpe.telemetry.Logger.Info("Registered zPages expvar handler")
 	}
 
 	hostZPages, ok := host.(interface {

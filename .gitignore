@@ -1,6 +1,7 @@
 bin/
 dist/
 .tools/
+local
 
 # GoLand IDEA
 /.idea/
@@ -23,6 +24,7 @@ coverage/*
 coverage.txt
 
 # Benchmarks
+**/benchmark.txt
 benchmarks.txt
 
 # Wix

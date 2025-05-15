@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1experimental"
+	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -20,6 +20,8 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	dest := NewExportPartialSuccess()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
+	assert.Equal(t, generateTestExportPartialSuccess(), dest)
+	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
@@ -57,7 +59,7 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
-	assert.Equal(t, "", ms.ErrorMessage())
+	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly

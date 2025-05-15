@@ -23,6 +23,8 @@ func TestLogRecord_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewLogRecord(), ms)
 	assert.Equal(t, generateTestLogRecord(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestLogRecord(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
 	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).MoveTo(dest) })
@@ -80,9 +82,18 @@ func TestLogRecord_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
+func TestLogRecord_EventName(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Empty(t, ms.EventName())
+	ms.SetEventName("")
+	assert.Empty(t, ms.EventName())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("") })
+}
+
 func TestLogRecord_SeverityText(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, "", ms.SeverityText())
+	assert.Empty(t, ms.SeverityText())
 	ms.SetSeverityText("INFO")
 	assert.Equal(t, "INFO", ms.SeverityText())
 	sharedState := internal.StateReadOnly
@@ -131,6 +142,7 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Flags = 1
+	tv.orig.EventName = ""
 	tv.orig.SeverityText = "INFO"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))

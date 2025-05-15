@@ -15,14 +15,15 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 )
 
 func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.TracesSink)
-	proc, err := factory.CreateTracesProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	proc, err := factory.CreateTraces(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)
@@ -39,14 +40,14 @@ func verifyTracesDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fac
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount, nextSink.SpanCount())
+	assert.Equal(t, generatedCount, nextSink.SpanCount())
 }
 
 func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.LogsSink)
-	proc, err := factory.CreateLogsProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	proc, err := factory.CreateLogs(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)
@@ -63,14 +64,14 @@ func verifyLogsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Facto
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount, nextSink.LogRecordCount())
+	assert.Equal(t, generatedCount, nextSink.LogRecordCount())
 }
 
 func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Factory, cfg component.Config) {
 	// Create a proc and output its produce to a sink.
 	nextSink := new(consumertest.MetricsSink)
-	proc, err := factory.CreateMetricsProcessor(context.Background(), NewNopSettings(), cfg, nextSink)
-	if errors.Is(err, component.ErrDataTypeIsNotSupported) {
+	proc, err := factory.CreateMetrics(context.Background(), NewNopSettings(factory.Type()), cfg, nextSink)
+	if errors.Is(err, pipeline.ErrSignalNotSupported) {
 		return
 	}
 	require.NoError(t, err)
@@ -87,7 +88,7 @@ func verifyMetricsDoesNotProduceAfterShutdown(t *testing.T, factory processor.Fa
 
 	// The Shutdown() is done. It means the proc must have sent everything we
 	// gave it to the next sink.
-	assert.EqualValues(t, generatedCount*2, nextSink.DataPointCount())
+	assert.Equal(t, generatedCount*2, nextSink.DataPointCount())
 }
 
 // VerifyShutdown verifies the processor doesn't produce telemetry data after shutdown.

@@ -13,63 +13,92 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
-	"go.opentelemetry.io/collector/exporter/internal/queue"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
-var metricsMarshaler = &pmetric.ProtoMarshaler{}
-var metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+var (
+	metricsMarshaler   = &pmetric.ProtoMarshaler{}
+	metricsUnmarshaler = &pmetric.ProtoUnmarshaler{}
+)
+
+// NewMetricsQueueBatchSettings returns a new QueueBatchSettings to configure to WithQueueBatch when using pmetric.Metrics.
+// Experimental: This API is at the early stage of development and may change without backward compatibility
+// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+func NewMetricsQueueBatchSettings() QueueBatchSettings {
+	return QueueBatchSettings{
+		Encoding: metricsEncoding{},
+		Sizers: map[RequestSizerType]request.Sizer[Request]{
+			RequestSizerTypeRequests: NewRequestsSizer(),
+			RequestSizerTypeItems:    request.NewItemsSizer(),
+			RequestSizerTypeBytes: request.BaseSizer{
+				SizeofFunc: func(req request.Request) int64 {
+					return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
+				},
+			},
+		},
+	}
+}
 
 type metricsRequest struct {
-	md     pmetric.Metrics
-	pusher consumer.ConsumeMetricsFunc
+	md         pmetric.Metrics
+	cachedSize int
 }
 
-func newMetricsRequest(md pmetric.Metrics, pusher consumer.ConsumeMetricsFunc) Request {
+func newMetricsRequest(md pmetric.Metrics) Request {
 	return &metricsRequest{
-		md:     md,
-		pusher: pusher,
+		md:         md,
+		cachedSize: -1,
 	}
 }
 
-func newMetricsRequestUnmarshalerFunc(pusher consumer.ConsumeMetricsFunc) exporterqueue.Unmarshaler[Request] {
-	return func(bytes []byte) (Request, error) {
-		metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
-		if err != nil {
-			return nil, err
-		}
-		return newMetricsRequest(metrics, pusher), nil
+type metricsEncoding struct{}
+
+func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
+	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
+	if err != nil {
+		return nil, err
 	}
+	return newMetricsRequest(metrics), nil
 }
 
-func metricsRequestMarshaler(req Request) ([]byte, error) {
+func (metricsEncoding) Marshal(req Request) ([]byte, error) {
 	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
 }
 
 func (req *metricsRequest) OnError(err error) Request {
 	var metricsError consumererror.Metrics
 	if errors.As(err, &metricsError) {
-		return newMetricsRequest(metricsError.Data(), req.pusher)
+		return newMetricsRequest(metricsError.Data())
 	}
 	return req
-}
-
-func (req *metricsRequest) Export(ctx context.Context) error {
-	return req.pusher(ctx, req.md)
 }
 
 func (req *metricsRequest) ItemsCount() int {
 	return req.md.DataPointCount()
 }
 
+func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
+	if req.cachedSize == -1 {
+		req.cachedSize = sizer.MetricsSize(req.md)
+	}
+	return req.cachedSize
+}
+
+func (req *metricsRequest) setCachedSize(count int) {
+	req.cachedSize = count
+}
+
 type metricsExporter struct {
-	*baseExporter
+	*internal.BaseExporter
 	consumer.Metrics
 }
 
-// NewMetricsExporter creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
-func NewMetricsExporter(
+// NewMetrics creates an exporter.Metrics that records observability metrics and wraps every request with a Span.
+func NewMetrics(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -80,34 +109,34 @@ func NewMetricsExporter(
 		return nil, errNilConfig
 	}
 	if pusher == nil {
-		return nil, errNilPushMetricsData
+		return nil, errNilPushMetrics
 	}
-	metricsOpts := []Option{
-		withMarshaler(metricsRequestMarshaler), withUnmarshaler(newMetricsRequestUnmarshalerFunc(pusher)),
-		withBatchFuncs(mergeMetrics, mergeSplitMetrics),
-	}
-	return NewMetricsRequestExporter(ctx, set, requestFromMetrics(pusher), append(metricsOpts, options...)...)
+	return NewMetricsRequest(ctx, set, requestFromMetrics(), requestConsumeFromMetrics(pusher),
+		append([]Option{internal.WithQueueBatchSettings(NewMetricsQueueBatchSettings())}, options...)...)
 }
 
-// RequestFromMetricsFunc converts pdata.Metrics into a user-defined request.
-// Experimental: This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-type RequestFromMetricsFunc func(context.Context, pmetric.Metrics) (Request, error)
+// requestConsumeFromMetrics returns a RequestConsumeFunc that consumes pmetric.Metrics.
+func requestConsumeFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestConsumeFunc {
+	return func(ctx context.Context, request Request) error {
+		return pusher.ConsumeMetrics(ctx, request.(*metricsRequest).md)
+	}
+}
 
 // requestFromMetrics returns a RequestFromMetricsFunc that converts pdata.Metrics into a Request.
-func requestFromMetrics(pusher consumer.ConsumeMetricsFunc) RequestFromMetricsFunc {
+func requestFromMetrics() RequestConverterFunc[pmetric.Metrics] {
 	return func(_ context.Context, md pmetric.Metrics) (Request, error) {
-		return newMetricsRequest(md, pusher), nil
+		return newMetricsRequest(md), nil
 	}
 }
 
-// NewMetricsRequestExporter creates a new metrics exporter based on a custom MetricsConverter and RequestSender.
+// NewMetricsRequest creates a new metrics exporter based on a custom MetricsConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func NewMetricsRequestExporter(
+func NewMetricsRequest(
 	_ context.Context,
 	set exporter.Settings,
-	converter RequestFromMetricsFunc,
+	converter RequestConverterFunc[pmetric.Metrics],
+	pusher RequestConsumeFunc,
 	options ...Option,
 ) (exporter.Metrics, error) {
 	if set.Logger == nil {
@@ -118,45 +147,32 @@ func NewMetricsRequestExporter(
 		return nil, errNilMetricsConverter
 	}
 
-	be, err := newBaseExporter(set, component.DataTypeMetrics, newMetricsSenderWithObservability, options...)
+	if pusher == nil {
+		return nil, errNilConsumeRequest
+	}
+
+	be, err := internal.NewBaseExporter(set, pipeline.SignalMetrics, pusher, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	mc, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
-		req, cErr := converter(ctx, md)
-		if cErr != nil {
-			set.Logger.Error("Failed to convert metrics. Dropping data.",
+	mc, err := consumer.NewMetrics(newConsumeMetrics(converter, be, set.Logger), be.ConsumerOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsExporter{BaseExporter: be, Metrics: mc}, nil
+}
+
+func newConsumeMetrics(converter RequestConverterFunc[pmetric.Metrics], be *internal.BaseExporter, logger *zap.Logger) consumer.ConsumeMetricsFunc {
+	return func(ctx context.Context, md pmetric.Metrics) error {
+		req, err := converter(ctx, md)
+		if err != nil {
+			logger.Error("Failed to convert metrics. Dropping data.",
 				zap.Int("dropped_data_points", md.DataPointCount()),
 				zap.Error(err))
-			return consumererror.NewPermanent(cErr)
+			return consumererror.NewPermanent(err)
 		}
-		sErr := be.send(ctx, req)
-		if errors.Is(sErr, queue.ErrQueueIsFull) {
-			be.obsrep.recordEnqueueFailure(ctx, component.DataTypeMetrics, int64(req.ItemsCount()))
-		}
-		return sErr
-	}, be.consumerOptions...)
-
-	return &metricsExporter{
-		baseExporter: be,
-		Metrics:      mc,
-	}, err
-}
-
-type metricsSenderWithObservability struct {
-	baseRequestSender
-	obsrep *obsReport
-}
-
-func newMetricsSenderWithObservability(obsrep *obsReport) requestSender {
-	return &metricsSenderWithObservability{obsrep: obsrep}
-}
-
-func (mewo *metricsSenderWithObservability) send(ctx context.Context, req Request) error {
-	c := mewo.obsrep.startMetricsOp(ctx)
-	numMetricDataPoints := req.ItemsCount()
-	err := mewo.nextSender.send(c, req)
-	mewo.obsrep.endMetricsOp(c, numMetricDataPoints, err)
-	return err
+		return be.Send(ctx, req)
+	}
 }

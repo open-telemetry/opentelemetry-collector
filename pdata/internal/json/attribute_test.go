@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
@@ -39,7 +40,7 @@ func TestReadArray(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := readArray(iter)
-			assert.EqualValues(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -140,7 +141,7 @@ func TestReadKvlistValue(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := readKvlistValue(iter)
-			assert.EqualValues(t, tt.want, got)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -151,8 +152,8 @@ func TestReadAttributeUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.KeyValue{}, value)
+	require.NoError(t, iter.Error)
+	assert.Equal(t, otlpcommon.KeyValue{}, value)
 }
 
 func TestReadAttributeValueUnknownField(t *testing.T) {
@@ -162,8 +163,8 @@ func TestReadAttributeValueUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := ReadAttribute(iter)
 	//  unknown fields should not be an error
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, otlpcommon.KeyValue{Key: "test"}, value)
+	require.NoError(t, iter.Error)
+	assert.Equal(t, otlpcommon.KeyValue{Key: "test"}, value)
 }
 
 func TestReadValueUnknownField(t *testing.T) {
@@ -172,8 +173,8 @@ func TestReadValueUnknownField(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{}, value)
+	require.NoError(t, iter.Error)
+	assert.Equal(t, &otlpcommon.AnyValue{}, value)
 }
 
 func TestReadValueInvliadBytesValue(t *testing.T) {
@@ -182,9 +183,7 @@ func TestReadValueInvliadBytesValue(t *testing.T) {
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 
 	ReadValue(iter, &otlpcommon.AnyValue{})
-	if assert.Error(t, iter.Error) {
-		assert.Contains(t, iter.Error.Error(), "base64")
-	}
+	assert.ErrorContains(t, iter.Error, "base64")
 }
 
 func TestReadArrayUnknownField(t *testing.T) {
@@ -192,8 +191,8 @@ func TestReadArrayUnknownField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readArray(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.ArrayValue{}, value)
+	require.NoError(t, iter.Error)
+	assert.Equal(t, &otlpcommon.ArrayValue{}, value)
 }
 
 func TestReadKvlistValueUnknownField(t *testing.T) {
@@ -201,8 +200,8 @@ func TestReadKvlistValueUnknownField(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	value := readKvlistValue(iter)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.KeyValueList{}, value)
+	require.NoError(t, iter.Error)
+	assert.Equal(t, &otlpcommon.KeyValueList{}, value)
 }
 
 func TestReadArrayValueInvalidArrayValue(t *testing.T) {
@@ -212,8 +211,8 @@ func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{
+	require.NoError(t, iter.Error)
+	assert.Equal(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
 		},
@@ -227,8 +226,8 @@ func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 
 	value := &otlpcommon.AnyValue{}
 	ReadValue(iter, value)
-	assert.NoError(t, iter.Error)
-	assert.EqualValues(t, &otlpcommon.AnyValue{
+	require.NoError(t, iter.Error)
+	assert.Equal(t, &otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},
 		},

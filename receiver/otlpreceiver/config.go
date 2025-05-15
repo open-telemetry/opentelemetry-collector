@@ -22,7 +22,7 @@ const (
 )
 
 type HTTPConfig struct {
-	*confighttp.ServerConfig `mapstructure:",squash"`
+	ServerConfig confighttp.ServerConfig `mapstructure:",squash"`
 
 	// The URL path to receive traces on. If omitted "/v1/traces" will be used.
 	TracesURLPath string `mapstructure:"traces_url_path,omitempty"`
@@ -32,12 +32,17 @@ type HTTPConfig struct {
 
 	// The URL path to receive logs on. If omitted "/v1/logs" will be used.
 	LogsURLPath string `mapstructure:"logs_url_path,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
 	HTTP *HTTPConfig              `mapstructure:"http"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines configuration for OTLP receiver.
@@ -46,8 +51,10 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 }
 
-var _ component.Config = (*Config)(nil)
-var _ confmap.Unmarshaler = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {

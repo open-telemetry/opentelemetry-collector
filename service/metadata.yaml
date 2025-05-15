@@ -2,6 +2,7 @@ type: service
 github_project: open-telemetry/opentelemetry-collector
 
 status:
+  disable_codecov_badge: true
   class: pkg
   stability:
     development: [traces, metrics, logs]
@@ -11,6 +12,8 @@ telemetry:
   metrics:
     process_uptime:
       enabled: true
+      stability:
+        level: alpha
       description: Uptime of the process
       unit: s
       sum:
@@ -20,6 +23,8 @@ telemetry:
 
     process_runtime_heap_alloc_bytes:
       enabled: true
+      stability:
+        level: alpha
       description: Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
       unit: By
       gauge:
@@ -28,6 +33,8 @@ telemetry:
 
     process_runtime_total_alloc_bytes:
       enabled: true
+      stability:
+        level: alpha
       description: Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
       unit: By
       sum:
@@ -37,6 +44,8 @@ telemetry:
 
     process_runtime_total_sys_memory_bytes:
       enabled: true
+      stability:
+        level: alpha
       description: Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
       unit: By
       gauge:
@@ -45,6 +54,8 @@ telemetry:
 
     process_cpu_seconds:
       enabled: true
+      stability:
+        level: alpha
       description: Total CPU user and system time in seconds
       unit: s
       sum:
@@ -54,8 +65,59 @@ telemetry:
 
     process_memory_rss:
       enabled: true
+      stability:
+        level: alpha
       description: Total physical memory (resident set size)
       unit: By
       gauge:
         async: true
         value_type: int
+
+    receiver.produced.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items emitted from the receiver.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items passed to the processor.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor.produced.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items emitted from the processor.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    connector.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items passed to the connector.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    connector.produced.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items emitted from the connector.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter.consumed.items:
+      prefix: otelcol.
+      enabled: true
+      description: Number of items passed to the exporter.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true

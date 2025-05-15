@@ -8,18 +8,19 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestLineSlice(t *testing.T) {
 	es := NewLineSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newLineSlice(&[]otlpprofiles.Line{}, &state)
+	es = newLineSlice(&[]*otlpprofiles.Line{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLine()
@@ -35,7 +36,7 @@ func TestLineSlice(t *testing.T) {
 
 func TestLineSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newLineSlice(&[]otlpprofiles.Line{}, &sharedState)
+	es := newLineSlice(&[]*otlpprofiles.Line{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -102,6 +103,13 @@ func TestLineSlice_MoveAndAppendTo(t *testing.T) {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
 		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+
+	dest.MoveAndAppendTo(dest)
+	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.Equal(t, expectedSlice.At(i), dest.At(i))
+		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func TestLineSlice_RemoveIf(t *testing.T) {
@@ -122,6 +130,34 @@ func TestLineSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLineSliceAll(t *testing.T) {
+	ms := generateTestLineSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestLineSlice_Sort(t *testing.T) {
+	es := generateTestLineSlice()
+	es.Sort(func(a, b Line) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b Line) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestLineSlice() LineSlice {
 	es := NewLineSlice()
 	fillTestLineSlice(es)
@@ -129,9 +165,9 @@ func generateTestLineSlice() LineSlice {
 }
 
 func fillTestLineSlice(es LineSlice) {
-	*es.orig = make([]otlpprofiles.Line, 7)
+	*es.orig = make([]*otlpprofiles.Line, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.Line{}
-		fillTestLine(newLine(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Line{}
+		fillTestLine(newLine((*es.orig)[i], es.state))
 	}
 }

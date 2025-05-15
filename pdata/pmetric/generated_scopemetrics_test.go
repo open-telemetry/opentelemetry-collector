@@ -22,6 +22,8 @@ func TestScopeMetrics_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeMetrics(), ms)
 	assert.Equal(t, generateTestScopeMetrics(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestScopeMetrics(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
 	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).MoveTo(dest) })
@@ -47,7 +49,7 @@ func TestScopeMetrics_Scope(t *testing.T) {
 
 func TestScopeMetrics_SchemaUrl(t *testing.T) {
 	ms := NewScopeMetrics()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly

@@ -134,9 +134,17 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | true |
 
+### otelcol_queue_capacity
+
+Queue capacity - sync gauge example.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {items} | Gauge | Int |
+
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder.
+This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
 
 For example this metric only exists if feature A is enabled.
 

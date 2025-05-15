@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -39,7 +40,7 @@ func TestExport(t *testing.T) {
 
 	mds := metricSink.AllMetrics()
 	require.Len(t, mds, 1)
-	assert.EqualValues(t, md, mds[0])
+	assert.Equal(t, md, mds[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
@@ -56,7 +57,7 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
@@ -67,7 +68,7 @@ func TestExport_PermanentErrorConsumer(t *testing.T) {
 
 	metricsClient := makeMetricsServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := metricsClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
+	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, pmetricotlp.ExportResponse{}, resp)
 }
@@ -92,7 +93,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, mc consumer.Metrics) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("otlp", "metrics")
 	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,

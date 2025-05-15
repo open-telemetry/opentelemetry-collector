@@ -21,6 +21,8 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
 		ms.MoveTo(newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState))
@@ -57,7 +59,7 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
-	assert.Equal(t, "", ms.ErrorMessage())
+	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("error message")
 	assert.Equal(t, "error message", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly

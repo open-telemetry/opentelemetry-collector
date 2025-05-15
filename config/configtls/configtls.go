@@ -33,43 +33,51 @@ type Config struct {
 	// Path to the CA cert. For a client this verifies the server certificate.
 	// For a server this verifies client certificates. If empty uses system root CA.
 	// (optional)
-	CAFile string `mapstructure:"ca_file"`
+	CAFile string `mapstructure:"ca_file,omitempty"`
 
 	// In memory PEM encoded cert. (optional)
-	CAPem configopaque.String `mapstructure:"ca_pem"`
+	CAPem configopaque.String `mapstructure:"ca_pem,omitempty"`
 
 	// If true, load system CA certificates pool in addition to the certificates
 	// configured in this struct.
-	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool"`
+	IncludeSystemCACertsPool bool `mapstructure:"include_system_ca_certs_pool,omitempty"`
 
 	// Path to the TLS cert to use for TLS required connections. (optional)
-	CertFile string `mapstructure:"cert_file"`
+	CertFile string `mapstructure:"cert_file,omitempty"`
 
 	// In memory PEM encoded TLS cert to use for TLS required connections. (optional)
-	CertPem configopaque.String `mapstructure:"cert_pem"`
+	CertPem configopaque.String `mapstructure:"cert_pem,omitempty"`
 
 	// Path to the TLS key to use for TLS required connections. (optional)
-	KeyFile string `mapstructure:"key_file"`
+	KeyFile string `mapstructure:"key_file,omitempty"`
 
 	// In memory PEM encoded TLS key to use for TLS required connections. (optional)
-	KeyPem configopaque.String `mapstructure:"key_pem"`
+	KeyPem configopaque.String `mapstructure:"key_pem,omitempty"`
 
 	// MinVersion sets the minimum TLS version that is acceptable.
 	// If not set, TLS 1.2 will be used. (optional)
-	MinVersion string `mapstructure:"min_version"`
+	MinVersion string `mapstructure:"min_version,omitempty"`
 
 	// MaxVersion sets the maximum TLS version that is acceptable.
 	// If not set, refer to crypto/tls for defaults. (optional)
-	MaxVersion string `mapstructure:"max_version"`
+	MaxVersion string `mapstructure:"max_version,omitempty"`
 
 	// CipherSuites is a list of TLS cipher suites that the TLS transport can use.
 	// If left blank, a safe default list is used.
 	// See https://go.dev/src/crypto/tls/cipher_suites.go for a list of supported cipher suites.
-	CipherSuites []string `mapstructure:"cipher_suites"`
+	CipherSuites []string `mapstructure:"cipher_suites,omitempty"`
 
 	// ReloadInterval specifies the duration after which the certificate will be reloaded
 	// If not set, it will never be reloaded (optional)
-	ReloadInterval time.Duration `mapstructure:"reload_interval"`
+	ReloadInterval time.Duration `mapstructure:"reload_interval,omitempty"`
+
+	// contains the elliptic curves that will be used in
+	// an ECDHE handshake, in preference order
+	// Defaults to empty list and "crypto/tls" defaults are used, internally.
+	CurvePreferences []string `mapstructure:"curve_preferences,omitempty"`
+
+	// Trusted platform module configuration
+	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
 }
 
 // NewDefaultConfig creates a new TLSSetting with any default values set.
@@ -90,13 +98,15 @@ type ClientConfig struct {
 	// See https://godoc.org/google.golang.org/grpc#WithInsecure for gRPC.
 	// Please refer to https://godoc.org/crypto/tls#Config for more information.
 	// (optional, default false)
-	Insecure bool `mapstructure:"insecure"`
+	Insecure bool `mapstructure:"insecure,omitempty"`
 	// InsecureSkipVerify will enable TLS but not verify the certificate.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
+	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify,omitempty"`
 	// ServerName requested by client for virtual hosting.
 	// This sets the ServerName in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
-	ServerName string `mapstructure:"server_name_override"`
+	ServerName string `mapstructure:"server_name_override,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
@@ -118,11 +128,13 @@ type ServerConfig struct {
 	// Path to the TLS cert to use by the server to verify a client certificate. (optional)
 	// This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to
 	// https://godoc.org/crypto/tls#Config for more information. (optional)
-	ClientCAFile string `mapstructure:"client_ca_file"`
+	ClientCAFile string `mapstructure:"client_ca_file,omitempty"`
 
 	// Reload the ClientCAs file when it is modified
 	// (optional, default false)
-	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload"`
+	ReloadClientCAFile bool `mapstructure:"client_ca_file_reload,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultServerConfig creates a new TLSServerSetting with any default values set.
@@ -179,7 +191,7 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 
 func (c Config) Validate() error {
 	if c.hasCAFile() && c.hasCAPem() {
-		return fmt.Errorf("provide either a CA file or the PEM-encoded string, but not both")
+		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
@@ -231,6 +243,14 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	curvePreferences := make([]tls.CurveID, 0, len(c.CurvePreferences))
+	for _, curve := range c.CurvePreferences {
+		curveID, ok := tlsCurveTypes[curve]
+		if !ok {
+			return nil, fmt.Errorf("invalid curve type: %s. Expected values are [P-256, P-384, P-521, X25519]", curveID)
+		}
+		curvePreferences = append(curvePreferences, curveID)
+	}
 
 	return &tls.Config{
 		RootCAs:              certPool,
@@ -239,6 +259,7 @@ func (c Config) loadTLSConfig() (*tls.Config, error) {
 		MinVersion:           minTLS,
 		MaxVersion:           maxTLS,
 		CipherSuites:         cipherSuites,
+		CurvePreferences:     curvePreferences,
 	}, nil
 }
 
@@ -269,7 +290,7 @@ func (c Config) loadCACertPool() (*x509.CertPool, error) {
 
 	switch {
 	case c.hasCAFile() && c.hasCAPem():
-		return nil, fmt.Errorf("failed to load CA CertPool: provide either a CA file or the PEM-encoded string, but not both")
+		return nil, errors.New("failed to load CA CertPool: provide either a CA file or the PEM-encoded string, but not both")
 	case c.hasCAFile():
 		// Set up user specified truststore from file
 		certPool, err = c.loadCertFile(c.CAFile)
@@ -308,7 +329,7 @@ func (c Config) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 		}
 	}
 	if !certPool.AppendCertsFromPEM(certPem) {
-		return nil, fmt.Errorf("failed to parse cert")
+		return nil, errors.New("failed to parse cert")
 	}
 	return certPool, nil
 }
@@ -316,13 +337,13 @@ func (c Config) loadCertPem(certPem []byte) (*x509.CertPool, error) {
 func (c Config) loadCertificate() (tls.Certificate, error) {
 	switch {
 	case c.hasCert() != c.hasKey():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide both certificate and key, or neither")
+		return tls.Certificate{}, errors.New("for auth via TLS, provide both certificate and key, or neither")
 	case !c.hasCert() && !c.hasKey():
 		return tls.Certificate{}, nil
 	case c.hasCertFile() && c.hasCertPem():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide either a certificate or the PEM-encoded string, but not both")
+		return tls.Certificate{}, errors.New("for auth via TLS, provide either a certificate or the PEM-encoded string, but not both")
 	case c.hasKeyFile() && c.hasKeyPem():
-		return tls.Certificate{}, fmt.Errorf("for auth via TLS, provide either a key or the PEM-encoded string, but not both")
+		return tls.Certificate{}, errors.New("for auth via TLS, provide either a key or the PEM-encoded string, but not both")
 	}
 
 	var certPem, keyPem []byte
@@ -345,11 +366,18 @@ func (c Config) loadCertificate() (tls.Certificate, error) {
 		keyPem = []byte(c.KeyPem)
 	}
 
-	certificate, err := tls.X509KeyPair(certPem, keyPem)
-	if err != nil {
-		return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", err)
+	if c.TPMConfig.Enabled {
+		certificate, errTPM := c.TPMConfig.tpmCertificate(keyPem, certPem, openTPM(c.TPMConfig.Path))
+		if errTPM != nil {
+			return tls.Certificate{}, fmt.Errorf("failed to load private key from TPM: %w", errTPM)
+		}
+		return certificate, nil
 	}
 
+	certificate, errKeyPair := tls.X509KeyPair(certPem, keyPem)
+	if errKeyPair != nil {
+		return tls.Certificate{}, fmt.Errorf("failed to load TLS cert and key PEMs: %w", errKeyPair)
+	}
 	return certificate, err
 }
 
@@ -447,4 +475,11 @@ var tlsVersions = map[string]uint16{
 	"1.1": tls.VersionTLS11,
 	"1.2": tls.VersionTLS12,
 	"1.3": tls.VersionTLS13,
+}
+
+var tlsCurveTypes = map[string]tls.CurveID{
+	"P256":   tls.CurveP256,
+	"P384":   tls.CurveP384,
+	"P521":   tls.CurveP521,
+	"X25519": tls.X25519,
 }

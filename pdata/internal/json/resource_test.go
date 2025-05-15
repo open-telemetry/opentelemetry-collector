@@ -8,6 +8,7 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
@@ -60,7 +61,7 @@ func TestReadResource(t *testing.T) {
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := &otlpresource.Resource{}
 			ReadResource(iter, got)
-			assert.NoError(t, iter.Error)
+			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, got)
 		})
 	}

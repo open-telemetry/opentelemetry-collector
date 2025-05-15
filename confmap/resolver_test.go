@@ -5,8 +5,11 @@ package confmap
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -14,6 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	yaml "sigs.k8s.io/yaml/goyaml.v3"
+
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 type mockProvider struct {
@@ -60,9 +66,9 @@ type fakeProvider struct {
 	logger *zap.Logger
 }
 
-func newFileProvider(t testing.TB) ProviderFactory {
+func newFileProvider(tb testing.TB) ProviderFactory {
 	return newFakeProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(newConfFromFile(t, uri[5:]))
+		return NewRetrieved(newConfFromFile(tb, uri[5:]))
 	})
 }
 
@@ -76,9 +82,9 @@ func newFakeProvider(scheme string, ret func(ctx context.Context, uri string, wa
 	})
 }
 
-func newObservableFileProvider(t testing.TB) (ProviderFactory, *fakeProvider) {
+func newObservableFileProvider(tb testing.TB) (ProviderFactory, *fakeProvider) {
 	return newObservableProvider("file", func(_ context.Context, uri string, _ WatcherFunc) (*Retrieved, error) {
-		return NewRetrieved(newConfFromFile(t, uri[5:]))
+		return NewRetrieved(newConfFromFile(tb, uri[5:]))
 	})
 }
 
@@ -162,7 +168,7 @@ func TestResolverErrors(t *testing.T) {
 			expectResolveErr: true,
 		},
 		{
-			name:      "retrieve location not convertable to Conf",
+			name:      "retrieve location not convertible to Conf",
 			locations: []string{"mock:", "err:"},
 			providers: []Provider{
 				&mockProvider{},
@@ -274,8 +280,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "windows_C",
-			location:   `C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:       "windows_z",
@@ -284,8 +290,8 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 		},
 		{
 			name:       "file_windows",
-			location:   `file:C:\test`,
-			errMessage: `file:C:\test`,
+			location:   `file:c:\test`,
+			errMessage: `file:c:\test`,
 		},
 		{
 			name:           "invalid_scheme",
@@ -302,14 +308,15 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 						return nil, errors.New(uri)
 					}),
 				},
-				ConverterFactories: nil})
+				ConverterFactories: nil,
+			})
 			if tt.expectBuildErr {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
 			_, err = resolver.Resolve(context.Background())
-			assert.Contains(t, err.Error(), tt.errMessage, tt.name)
+			assert.ErrorContains(t, err, tt.errMessage, tt.name)
 		})
 	}
 }
@@ -324,30 +331,31 @@ func TestResolver(t *testing.T) {
 				return nil
 			}}),
 		},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(0), numCalls.Load())
 
 	errW := <-resolver.Watch()
-	assert.NoError(t, errW)
+	require.NoError(t, errW)
 
 	// Repeat Resolve/Watch.
 
 	_, errN = resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(1), numCalls.Load())
 
 	errW = <-resolver.Watch()
-	assert.NoError(t, errW)
+	require.NoError(t, errW)
 
 	_, errN = resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 	assert.Equal(t, int32(2), numCalls.Load())
 
 	errC := resolver.Shutdown(context.Background())
-	assert.NoError(t, errC)
+	require.NoError(t, errC)
 	assert.Equal(t, int32(3), numCalls.Load())
 }
 
@@ -355,7 +363,8 @@ func TestResolverNewLinesInOpaqueValue(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{"mock:receivers:\n nop:\n"},
 		ProviderFactories:  []ProviderFactory{newMockProvider(&mockProvider{retM: map[string]any{}})},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.NoError(t, err)
 }
 
@@ -363,7 +372,8 @@ func TestResolverNoLocations(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{},
 		ProviderFactories:  []ProviderFactory{newMockProvider(&mockProvider{})},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.Error(t, err)
 }
 
@@ -371,7 +381,8 @@ func TestResolverNoProviders(t *testing.T) {
 	_, err := NewResolver(ResolverSettings{
 		URIs:               []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories:  nil,
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	assert.Error(t, err)
 }
 
@@ -379,10 +390,11 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{
 		URIs:               []string{filepath.Join("testdata", "config.yaml")},
 		ProviderFactories:  []ProviderFactory{newFileProvider(t)},
-		ConverterFactories: nil})
+		ConverterFactories: nil,
+	})
 	require.NoError(t, err)
 	_, errN := resolver.Resolve(context.Background())
-	assert.NoError(t, errN)
+	require.NoError(t, errN)
 
 	var watcherWG sync.WaitGroup
 	watcherWG.Add(1)
@@ -394,7 +406,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	assert.NoError(t, resolver.Shutdown(context.Background()))
+	require.NoError(t, resolver.Shutdown(context.Background()))
 	watcherWG.Wait()
 }
 
@@ -425,4 +437,78 @@ func TestResolverDefaultProviderSet(t *testing.T) {
 	assert.NotNil(t, r.defaultScheme)
 	_, ok := r.providers["env"]
 	assert.True(t, ok)
+}
+
+type mergeTest struct {
+	Name        string           `yaml:"name"`
+	AppendPaths []string         `yaml:"append_paths"`
+	Configs     []map[string]any `yaml:"configs"`
+	Expected    map[string]any   `yaml:"expected"`
+}
+
+func TestMergeFunctionality(t *testing.T) {
+	tests := []struct {
+		name         string
+		scenarioFile string
+		flagEnabled  bool
+	}{
+		{
+			name:         "feature-flag-enabled",
+			scenarioFile: "testdata/merge-append-scenarios.yaml",
+			flagEnabled:  true,
+		},
+		{
+			name:         "feature-flag-disabled",
+			scenarioFile: "testdata/merge-append-scenarios-featuregate-disabled.yaml",
+			flagEnabled:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.flagEnabled {
+				require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
+				defer func() {
+					// Restore previous value.
+					require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
+				}()
+			}
+			runScenario(t, tt.scenarioFile)
+		})
+	}
+}
+
+func runScenario(t *testing.T, path string) {
+	yamlData, err := os.ReadFile(filepath.Clean(path))
+	require.NoError(t, err)
+	var testcases []*mergeTest
+	err = yaml.Unmarshal(yamlData, &testcases)
+	require.NoError(t, err)
+	for _, tt := range testcases {
+		t.Run(tt.Name, func(t *testing.T) {
+			configFiles := make([]string, 0)
+			for _, c := range tt.Configs {
+				// store configs into a temp file. This makes it easier for us to test feature gate functionality
+				file, err := os.CreateTemp(t.TempDir(), "*.yaml")
+				defer func() { require.NoError(t, file.Close()) }()
+				require.NoError(t, err)
+				b, err := json.Marshal(c)
+				require.NoError(t, err)
+				n, err := file.Write(b)
+				require.NoError(t, err)
+				require.Positive(t, n)
+				configFiles = append(configFiles, file.Name())
+			}
+
+			resolver, err := NewResolver(ResolverSettings{
+				URIs:              configFiles,
+				ProviderFactories: []ProviderFactory{newFileProvider(t)},
+				DefaultScheme:     "file",
+			})
+			require.NoError(t, err)
+			conf, err := resolver.Resolve(context.Background())
+			require.NoError(t, err)
+			mergedConf := conf.ToStringMap()
+			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
+		})
+	}
 }

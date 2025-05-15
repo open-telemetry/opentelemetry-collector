@@ -7,6 +7,13 @@ all_set:
       enabled: true
     {{- end }}
   {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
   {{- if .ResourceAttributes }}
   resource_attributes:
     {{- range $name, $_ := .ResourceAttributes }}
@@ -22,6 +29,13 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
+  {{- if .Events }}
+  events:
+    {{- range $name, $_ := .Events }}
+    {{ $name }}:
+      enabled: false
+    {{- end }}
+  {{- end }}
   {{- if .ResourceAttributes }}
   resource_attributes:
     {{- range $name, $_ := .ResourceAttributes }}
@@ -29,25 +43,41 @@ none_set:
       enabled: false
     {{- end }}
   {{- end }}
-{{- if and .Metrics .ResourceAttributes }}
+{{- if and (or .Metrics .Events) .ResourceAttributes }}
 filter_set_include:
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if $.Metrics }}
       metrics_include:
         - regexp: ".*"
+      {{- end }}
+      {{- if $.Events }}
+      events_include:
+        - regexp: ".*"
+      {{- end }}
     {{- end }}
 filter_set_exclude:
   resource_attributes:
     {{- range $name, $attr := .ResourceAttributes }}
     {{ $name }}:
       enabled: true
+      {{- if $.Metrics }}
       metrics_exclude:
         {{- if eq $attr.Type.String "Str" }}
         - strict: {{ $attr.TestValue }}
         {{- else }}
         - regexp: ".*"
         {{- end }}
+      {{- end }}
+      {{- if $.Events }}
+      events_exclude:
+        {{- if eq $attr.Type.String "Str" }}
+        - strict: {{ $attr.TestValue }}
+        {{- else }}
+        - regexp: ".*"
+        {{- end }}
+      {{- end }}
     {{- end }}
 {{- end }}

@@ -10,19 +10,17 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
-var (
-	// supportedLevels in this exporter's configuration.
-	// configtelemetry.LevelNone and other future values are not supported.
-	supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
-		configtelemetry.LevelBasic:    {},
-		configtelemetry.LevelNormal:   {},
-		configtelemetry.LevelDetailed: {},
-	}
-)
+// supportedLevels in this exporter's configuration.
+// configtelemetry.LevelNone and other future values are not supported.
+var supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Level]struct{}{
+	configtelemetry.LevelBasic:    {},
+	configtelemetry.LevelNormal:   {},
+	configtelemetry.LevelDetailed: {},
+}
 
-// Config defines configuration for logging exporter.
+// Config defines configuration for debug exporter.
 type Config struct {
-	// Verbosity defines the logging exporter verbosity.
+	// Verbosity defines the debug exporter verbosity.
 	Verbosity configtelemetry.Level `mapstructure:"verbosity,omitempty"`
 
 	// SamplingInitial defines how many samples are initially logged during each second.
@@ -33,6 +31,9 @@ type Config struct {
 
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

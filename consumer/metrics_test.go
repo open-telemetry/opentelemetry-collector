@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -45,6 +46,6 @@ func TestConsumeMetrics(t *testing.T) {
 func TestConsumeMetrics_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	cp, err := NewMetrics(func(context.Context, pmetric.Metrics) error { return want })
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, want, cp.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
 }

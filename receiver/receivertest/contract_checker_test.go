@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 )
 
@@ -229,7 +230,6 @@ func createLog(
 // TestConsumeContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeContract(t *testing.T) {
-
 	// Number of log records to send per scenario.
 	const logsPerTest = 100
 
@@ -239,7 +239,7 @@ func TestConsumeContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeLogs,
+		Signal:        pipeline.SignalLogs,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: logsPerTest,
@@ -252,7 +252,6 @@ func TestConsumeContract(t *testing.T) {
 // TestConsumeMetricsContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeMetricsContract(t *testing.T) {
-
 	// Number of metric data points to send per scenario.
 	const metricsPerTest = 100
 
@@ -262,7 +261,7 @@ func TestConsumeMetricsContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeMetrics,
+		Signal:        pipeline.SignalMetrics,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: metricsPerTest,
@@ -275,7 +274,6 @@ func TestConsumeMetricsContract(t *testing.T) {
 // TestConsumeTracesContract is an example of testing of the receiver for the contract between the
 // receiver and next consumer.
 func TestConsumeTracesContract(t *testing.T) {
-
 	// Number of trace spans to send per scenario.
 	const spansPerTest = 100
 
@@ -285,7 +283,7 @@ func TestConsumeTracesContract(t *testing.T) {
 	params := CheckConsumeContractParams{
 		T:             t,
 		Factory:       newExampleFactory(),
-		DataType:      component.DataTypeTraces,
+		Signal:        pipeline.SignalTraces,
 		Config:        cfg,
 		Generator:     generator,
 		GenerateCount: spansPerTest,

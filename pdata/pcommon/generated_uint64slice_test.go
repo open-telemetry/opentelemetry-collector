@@ -43,6 +43,9 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, uint64(1), mv.At(0))
 }
 
 func TestUInt64SliceReadOnly(t *testing.T) {
@@ -80,4 +83,43 @@ func TestUInt64SliceEnsureCapacity(t *testing.T) {
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
+}
+
+func TestUInt64SliceAll(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms.FromRaw([]uint64{1, 2, 3})
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestUInt64SliceEqual(t *testing.T) {
+	ms := NewUInt64Slice()
+	ms2 := NewUInt64Slice()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append(1, 2, 3)
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2))
+}
+
+func BenchmarkUInt64SliceEqual(b *testing.B) {
+	ms := NewUInt64Slice()
+	ms.Append(1, 2, 3)
+	cmp := NewUInt64Slice()
+	cmp.Append(1, 2, 3)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
 }

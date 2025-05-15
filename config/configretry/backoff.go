@@ -7,7 +7,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 )
 
 // NewDefaultBackOffConfig returns the default settings for RetryConfig.
@@ -40,6 +40,8 @@ type BackOffConfig struct {
 	// MaxElapsedTime is the maximum amount of time (including retries) spent trying to send a request/batch.
 	// Once this value is reached, the data is discarded. If set to 0, the retries are never stopped.
 	MaxElapsedTime time.Duration `mapstructure:"max_elapsed_time"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (bs *BackOffConfig) Validate() error {
@@ -68,7 +70,6 @@ func (bs *BackOffConfig) Validate() error {
 		if bs.MaxElapsedTime < bs.MaxInterval {
 			return errors.New("'max_elapsed_time' must not be less than 'max_interval'")
 		}
-
 	}
 	return nil
 }

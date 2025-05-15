@@ -8,18 +8,19 @@ package pprofile
 
 import (
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func TestMappingSlice(t *testing.T) {
 	es := NewMappingSlice()
 	assert.Equal(t, 0, es.Len())
 	state := internal.StateMutable
-	es = newMappingSlice(&[]otlpprofiles.Mapping{}, &state)
+	es = newMappingSlice(&[]*otlpprofiles.Mapping{}, &state)
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewMapping()
@@ -35,7 +36,7 @@ func TestMappingSlice(t *testing.T) {
 
 func TestMappingSliceReadOnly(t *testing.T) {
 	sharedState := internal.StateReadOnly
-	es := newMappingSlice(&[]otlpprofiles.Mapping{}, &sharedState)
+	es := newMappingSlice(&[]*otlpprofiles.Mapping{}, &sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })
@@ -102,6 +103,13 @@ func TestMappingSlice_MoveAndAppendTo(t *testing.T) {
 		assert.Equal(t, expectedSlice.At(i), dest.At(i))
 		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
 	}
+
+	dest.MoveAndAppendTo(dest)
+	assert.Equal(t, 2*expectedSlice.Len(), dest.Len())
+	for i := 0; i < expectedSlice.Len(); i++ {
+		assert.Equal(t, expectedSlice.At(i), dest.At(i))
+		assert.Equal(t, expectedSlice.At(i), dest.At(i+expectedSlice.Len()))
+	}
 }
 
 func TestMappingSlice_RemoveIf(t *testing.T) {
@@ -122,6 +130,34 @@ func TestMappingSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestMappingSliceAll(t *testing.T) {
+	ms := generateTestMappingSlice()
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestMappingSlice_Sort(t *testing.T) {
+	es := generateTestMappingSlice()
+	es.Sort(func(a, b Mapping) bool {
+		return uintptr(unsafe.Pointer(a.orig)) < uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Less(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+	es.Sort(func(a, b Mapping) bool {
+		return uintptr(unsafe.Pointer(a.orig)) > uintptr(unsafe.Pointer(b.orig))
+	})
+	for i := 1; i < es.Len(); i++ {
+		assert.Greater(t, uintptr(unsafe.Pointer(es.At(i-1).orig)), uintptr(unsafe.Pointer(es.At(i).orig)))
+	}
+}
+
 func generateTestMappingSlice() MappingSlice {
 	es := NewMappingSlice()
 	fillTestMappingSlice(es)
@@ -129,9 +165,9 @@ func generateTestMappingSlice() MappingSlice {
 }
 
 func fillTestMappingSlice(es MappingSlice) {
-	*es.orig = make([]otlpprofiles.Mapping, 7)
+	*es.orig = make([]*otlpprofiles.Mapping, 7)
 	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpprofiles.Mapping{}
-		fillTestMapping(newMapping(&(*es.orig)[i], es.state))
+		(*es.orig)[i] = &otlpprofiles.Mapping{}
+		fillTestMapping(newMapping((*es.orig)[i], es.state))
 	}
 }

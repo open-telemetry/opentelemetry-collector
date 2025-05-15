@@ -169,12 +169,16 @@ const accessorsOneOfPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .acce
 	ms := New{{ .structName }}()
 	{{- if eq .returnType "float64"}}
 	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .defaultVal "\"\"") }}
+	assert.Empty(t, ms.{{ .accessorFieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .accessorFieldName }}())
 	{{- end }}
 	ms.Set{{ .accessorFieldName }}({{ .testValue }})
 	{{- if eq .returnType "float64" }}
 	assert.InDelta(t, {{ .testValue }}, ms.{{ .accessorFieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .testValue "\"\"") }}
+	assert.Empty(t, ms.{{ .accessorFieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .accessorFieldName }}())
 	{{- end }}
@@ -189,6 +193,8 @@ const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	assert.{{- if eq .defaultVal "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
 	{{- else if eq .returnType "float64" }}
 	assert.InDelta(t, {{ .defaultVal }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .defaultVal "\"\"") }}
+	assert.Empty(t, ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .defaultVal }}, ms.{{ .fieldName }}())
 	{{- end }}
@@ -197,6 +203,8 @@ const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName
 	assert.{{- if eq .testValue "true" }}True{{- else }}False{{- end }}(t, ms.{{ .fieldName }}())
 	{{- else if eq .returnType "float64"}}
 	assert.InDelta(t, {{ .testValue }}, ms.{{ .fieldName }}(), 0.01)
+	{{- else if and (eq .returnType "string") (eq .testValue "\"\"") }}
+	assert.Empty(t, ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, {{ .testValue }}, ms.{{ .fieldName }}())
 	{{- end }}
@@ -329,8 +337,8 @@ func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
 			return ""
 		}(),
 		"returnType":         sf.returnSlice.getName(),
-		"origAccessor":       origAccessor(ms),
-		"stateAccessor":      stateAccessor(ms),
+		"origAccessor":       origAccessor(ms.packageName),
+		"stateAccessor":      stateAccessor(ms.packageName),
 		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),
 		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
 		"originFieldName": func() string {
@@ -394,8 +402,8 @@ func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]a
 			}
 			return ""
 		}(),
-		"origAccessor":  origAccessor(ms),
-		"stateAccessor": stateAccessor(ms),
+		"origAccessor":  origAccessor(ms.packageName),
+		"stateAccessor": stateAccessor(ms.packageName),
 	}
 }
 
@@ -448,8 +456,8 @@ func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any 
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
 		"testValue":        pf.testVal,
 		"returnType":       pf.returnType,
-		"origAccessor":     origAccessor(ms),
-		"stateAccessor":    stateAccessor(ms),
+		"origAccessor":     origAccessor(ms.packageName),
+		"stateAccessor":    stateAccessor(ms.packageName),
 		"originStructName": ms.originFullName,
 		"originFieldName": func() string {
 			if pf.originFieldName == "" {
@@ -583,8 +591,8 @@ func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[strin
 		"fieldName":      psf.fieldName,
 		"lowerFieldName": strings.ToLower(psf.fieldName),
 		"testValue":      psf.testVal,
-		"origAccessor":   origAccessor(ms),
-		"stateAccessor":  stateAccessor(ms),
+		"origAccessor":   origAccessor(ms.packageName),
+		"stateAccessor":  stateAccessor(ms.packageName),
 	}
 }
 
@@ -647,8 +655,8 @@ func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms),
-		"stateAccessor":        stateAccessor(ms),
+		"origAccessor":         origAccessor(ms.packageName),
+		"stateAccessor":        stateAccessor(ms.packageName),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
@@ -846,15 +854,15 @@ func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[st
 
 var _ baseField = (*optionalPrimitiveValue)(nil)
 
-func origAccessor(bs *messageValueStruct) string {
-	if usedByOtherDataTypes(bs.packageName) {
+func origAccessor(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
 		return "getOrig()"
 	}
 	return "orig"
 }
 
-func stateAccessor(bs *messageValueStruct) string {
-	if usedByOtherDataTypes(bs.packageName) {
+func stateAccessor(packageName string) string {
+	if usedByOtherDataTypes(packageName) {
 		return "getState()"
 	}
 	return "state"

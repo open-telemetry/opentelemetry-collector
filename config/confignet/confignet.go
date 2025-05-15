@@ -59,7 +59,9 @@ func (tt *TransportType) UnmarshalText(in []byte) error {
 type DialerConfig struct {
 	// Timeout is the maximum amount of time a dial will wait for
 	// a connect to complete. The default is no timeout.
-	Timeout time.Duration `mapstructure:"timeout"`
+	Timeout time.Duration `mapstructure:"timeout,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultDialerConfig creates a new DialerConfig with any default values set
@@ -74,14 +76,16 @@ type AddrConfig struct {
 	// or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// Transport to use. Allowed protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only),
 	// "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".
-	Transport TransportType `mapstructure:"transport"`
+	Transport TransportType `mapstructure:"transport,omitempty"`
 
 	// DialerConfig contains options for connecting to an address.
-	DialerConfig DialerConfig `mapstructure:"dialer"`
+	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultAddrConfig creates a new AddrConfig with any default values set
@@ -130,10 +134,12 @@ type TCPAddrConfig struct {
 	// resolved to IP addresses. The port must be a literal port number or a service name.
 	// If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or
 	// "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.
-	Endpoint string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// DialerConfig contains options for connecting to an address.
-	DialerConfig DialerConfig `mapstructure:"dialer"`
+	DialerConfig DialerConfig `mapstructure:"dialer,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewDefaultTCPAddrConfig creates a new TCPAddrConfig with any default values set

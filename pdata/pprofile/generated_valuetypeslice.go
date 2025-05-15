@@ -7,8 +7,11 @@
 package pprofile
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ValueTypeSlice logically represents a slice of ValueType.
@@ -19,18 +22,18 @@ import (
 // Must use NewValueTypeSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ValueTypeSlice struct {
-	orig  *[]otlpprofiles.ValueType
+	orig  *[]*otlpprofiles.ValueType
 	state *internal.State
 }
 
-func newValueTypeSlice(orig *[]otlpprofiles.ValueType, state *internal.State) ValueTypeSlice {
+func newValueTypeSlice(orig *[]*otlpprofiles.ValueType, state *internal.State) ValueTypeSlice {
 	return ValueTypeSlice{orig: orig, state: state}
 }
 
 // NewValueTypeSlice creates a ValueTypeSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewValueTypeSlice() ValueTypeSlice {
-	orig := []otlpprofiles.ValueType(nil)
+	orig := []*otlpprofiles.ValueType(nil)
 	state := internal.StateMutable
 	return newValueTypeSlice(&orig, &state)
 }
@@ -51,7 +54,22 @@ func (es ValueTypeSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es ValueTypeSlice) At(i int) ValueType {
-	return newValueType(&(*es.orig)[i], es.state)
+	return newValueType((*es.orig)[i], es.state)
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es ValueTypeSlice) All() iter.Seq2[int, ValueType] {
+	return func(yield func(int, ValueType) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +91,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.ValueType, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.ValueType, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +100,7 @@ func (es ValueTypeSlice) EnsureCapacity(newCap int) {
 // It returns the newly added ValueType.
 func (es ValueTypeSlice) AppendEmpty() ValueType {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.ValueType{})
+	*es.orig = append(*es.orig, &otlpprofiles.ValueType{})
 	return es.At(es.Len() - 1)
 }
 
@@ -91,6 +109,10 @@ func (es ValueTypeSlice) AppendEmpty() ValueType {
 func (es ValueTypeSlice) MoveAndAppendTo(dest ValueTypeSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -127,10 +149,24 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.ValueType, srcLen)
+		for i := range *es.orig {
+			newValueType((*es.orig)[i], es.state).CopyTo(newValueType((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.ValueType, srcLen)
+	wrappers := make([]*otlpprofiles.ValueType, srcLen)
 	for i := range *es.orig {
-		newValueType(&(*es.orig)[i], es.state).CopyTo(newValueType(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newValueType((*es.orig)[i], es.state).CopyTo(newValueType(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the ValueType elements within ValueTypeSlice given the
+// provided less function so that two instances of ValueTypeSlice
+// can be compared.
+func (es ValueTypeSlice) Sort(less func(a, b ValueType) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

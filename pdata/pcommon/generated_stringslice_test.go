@@ -43,6 +43,9 @@ func TestNewStringSlice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, string("a"), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, string("a"), mv.At(0))
 }
 
 func TestStringSliceReadOnly(t *testing.T) {
@@ -80,4 +83,43 @@ func TestStringSliceEnsureCapacity(t *testing.T) {
 	assert.Equal(t, 4, cap(*ms.getOrig()))
 	ms.EnsureCapacity(2)
 	assert.Equal(t, 4, cap(*ms.getOrig()))
+}
+
+func TestStringSliceAll(t *testing.T) {
+	ms := NewStringSlice()
+	ms.FromRaw([]string{"a", "b", "c"})
+	assert.NotEmpty(t, ms.Len())
+
+	var c int
+	for i, v := range ms.All() {
+		assert.Equal(t, ms.At(i), v, "element should match")
+		c++
+	}
+	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestStringSliceEqual(t *testing.T) {
+	ms := NewStringSlice()
+	ms2 := NewStringSlice()
+	assert.True(t, ms.Equal(ms2))
+
+	ms.Append("a", "b", "c")
+	assert.False(t, ms.Equal(ms2))
+
+	ms2.Append("a", "b", "c")
+	assert.True(t, ms.Equal(ms2))
+}
+
+func BenchmarkStringSliceEqual(b *testing.B) {
+	ms := NewStringSlice()
+	ms.Append("a", "b", "c")
+	cmp := NewStringSlice()
+	cmp.Append("a", "b", "c")
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		_ = ms.Equal(cmp)
+	}
 }

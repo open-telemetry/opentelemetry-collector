@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -37,14 +38,14 @@ func TestExport(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, td, traceSink.AllTraces()[0])
+	assert.Equal(t, td, traceSink.AllTraces()[0])
 }
 
 func TestExport_EmptyRequest(t *testing.T) {
 	traceSink := new(consumertest.TracesSink)
 	traceClient := makeTraceServiceClient(t, traceSink)
 	resp, err := traceClient.Export(context.Background(), ptraceotlp.NewExportRequest())
-	assert.NoError(t, err, "Failed to export trace: %v", err)
+	require.NoError(t, err, "Failed to export trace: %v", err)
 	assert.NotNil(t, resp, "The response is missing")
 }
 
@@ -54,17 +55,18 @@ func TestExport_NonPermanentErrorConsumer(t *testing.T) {
 
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(errors.New("my error")))
 	resp, err := traceClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
+	require.EqualError(t, err, "rpc error: code = Unavailable desc = my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
+
 func TestExport_PermanentErrorConsumer(t *testing.T) {
 	ld := testdata.GenerateTraces(1)
 	req := ptraceotlp.NewExportRequestFromTraces(ld)
 
 	traceClient := makeTraceServiceClient(t, consumertest.NewErr(consumererror.NewPermanent(errors.New("my error"))))
 	resp, err := traceClient.Export(context.Background(), req)
-	assert.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
+	require.EqualError(t, err, "rpc error: code = Internal desc = Permanent error: my error")
 	assert.IsType(t, status.Error(codes.Unknown, ""), err)
 	assert.Equal(t, ptraceotlp.ExportResponse{}, resp)
 }
@@ -88,7 +90,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) net.Addr {
 		require.NoError(t, ln.Close())
 	})
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = component.MustNewIDWithName("otlp", "trace")
 	obsreport, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,

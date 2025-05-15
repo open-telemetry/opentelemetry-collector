@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +21,8 @@ func TestScopeProfiles_MoveTo(t *testing.T) {
 	dest := NewScopeProfiles()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewScopeProfiles(), ms)
+	assert.Equal(t, generateTestScopeProfiles(), dest)
+	dest.MoveTo(dest)
 	assert.Equal(t, generateTestScopeProfiles(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
@@ -47,7 +49,7 @@ func TestScopeProfiles_Scope(t *testing.T) {
 
 func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	ms := NewScopeProfiles()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
@@ -58,9 +60,9 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
-	assert.Equal(t, NewProfilesContainersSlice(), ms.Profiles())
-	fillTestProfilesContainersSlice(ms.Profiles())
-	assert.Equal(t, generateTestProfilesContainersSlice(), ms.Profiles())
+	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
+	fillTestProfilesSlice(ms.Profiles())
+	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
@@ -72,5 +74,5 @@ func generateTestScopeProfiles() ScopeProfiles {
 func fillTestScopeProfiles(tv ScopeProfiles) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfilesContainersSlice(newProfilesContainersSlice(&tv.orig.Profiles, tv.state))
+	fillTestProfilesSlice(newProfilesSlice(&tv.orig.Profiles, tv.state))
 }

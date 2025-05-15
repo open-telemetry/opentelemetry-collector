@@ -2,16 +2,21 @@ type: exporterhelper
 github_project: open-telemetry/opentelemetry-collector
 
 status:
-  class: exporter
-  not_component: true
+  disable_codecov_badge: true
+  codeowners:
+    active:
+      - BogdanDrutu
+      - dmitryax
+  class: pkg
   stability:
     beta: [traces, metrics, logs]
-  distributions: [core, contrib]
 
 telemetry:
   metrics:
     exporter_sent_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans successfully sent to destination.
       unit: "{spans}"
       sum:
@@ -20,6 +25,8 @@ telemetry:
 
     exporter_send_failed_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans in failed attempts to send to destination.
       unit: "{spans}"
       sum:
@@ -28,6 +35,8 @@ telemetry:
 
     exporter_enqueue_failed_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans failed to be added to the sending queue.
       unit: "{spans}"
       sum:
@@ -36,6 +45,8 @@ telemetry:
 
     exporter_sent_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points successfully sent to destination.
       unit: "{datapoints}"
       sum:
@@ -44,6 +55,8 @@ telemetry:
 
     exporter_send_failed_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points in failed attempts to send to destination.
       unit: "{datapoints}"
       sum:
@@ -52,6 +65,8 @@ telemetry:
 
     exporter_enqueue_failed_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points failed to be added to the sending queue.
       unit: "{datapoints}"
       sum:
@@ -60,6 +75,8 @@ telemetry:
 
     exporter_sent_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: Number of log record successfully sent to destination.
       unit: "{records}"
       sum:
@@ -68,6 +85,8 @@ telemetry:
 
     exporter_send_failed_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: Number of log records in failed attempts to send to destination.
       unit: "{records}"
       sum:
@@ -76,6 +95,8 @@ telemetry:
 
     exporter_enqueue_failed_log_records:
       enabled: true
+      stability:
+        level: alpha
       description: Number of log records failed to be added to the sending queue.
       unit: "{records}"
       sum:
@@ -84,18 +105,20 @@ telemetry:
 
     exporter_queue_size:
       enabled: true
+      stability:
+        level: alpha
       description: Current size of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true
 
     exporter_queue_capacity:
       enabled: true
+      stability:
+        level: alpha
       description: Fixed capacity of the retry queue (in batches)
       unit: "{batches}"
-      optional: true
       gauge:
         value_type: int
         async: true

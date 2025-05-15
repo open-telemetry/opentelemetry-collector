@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -21,6 +21,8 @@ func TestMapping_MoveTo(t *testing.T) {
 	dest := NewMapping()
 	ms.MoveTo(dest)
 	assert.Equal(t, NewMapping(), ms)
+	assert.Equal(t, generateTestMapping(), dest)
+	dest.MoveTo(dest)
 	assert.Equal(t, generateTestMapping(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
@@ -37,15 +39,6 @@ func TestMapping_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
-}
-
-func TestMapping_ID(t *testing.T) {
-	ms := NewMapping()
-	assert.Equal(t, uint64(0), ms.ID())
-	ms.SetID(uint64(1))
-	assert.Equal(t, uint64(1), ms.ID())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetID(uint64(1)) })
 }
 
 func TestMapping_MemoryStart(t *testing.T) {
@@ -75,38 +68,20 @@ func TestMapping_FileOffset(t *testing.T) {
 	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFileOffset(uint64(1)) })
 }
 
-func TestMapping_Filename(t *testing.T) {
+func TestMapping_FilenameStrindex(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, int64(0), ms.Filename())
-	ms.SetFilename(int64(1))
-	assert.Equal(t, int64(1), ms.Filename())
+	assert.Equal(t, int32(0), ms.FilenameStrindex())
+	ms.SetFilenameStrindex(int32(1))
+	assert.Equal(t, int32(1), ms.FilenameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFilename(int64(1)) })
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFilenameStrindex(int32(1)) })
 }
 
-func TestMapping_BuildID(t *testing.T) {
+func TestMapping_AttributeIndices(t *testing.T) {
 	ms := NewMapping()
-	assert.Equal(t, int64(0), ms.BuildID())
-	ms.SetBuildID(int64(1))
-	assert.Equal(t, int64(1), ms.BuildID())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetBuildID(int64(1)) })
-}
-
-func TestMapping_BuildIDKind(t *testing.T) {
-	ms := NewMapping()
-	assert.Equal(t, otlpprofiles.BuildIdKind(0), ms.BuildIDKind())
-	ms.SetBuildIDKind(otlpprofiles.BuildIdKind(1))
-	assert.Equal(t, otlpprofiles.BuildIdKind(1), ms.BuildIDKind())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetBuildIDKind(otlpprofiles.BuildIdKind(1)) })
-}
-
-func TestMapping_Attributes(t *testing.T) {
-	ms := NewMapping()
-	assert.Equal(t, pcommon.NewUInt64Slice(), ms.Attributes())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.Attributes()))
-	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.Attributes())
+	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
+	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func TestMapping_HasFunctions(t *testing.T) {
@@ -152,14 +127,11 @@ func generateTestMapping() Mapping {
 }
 
 func fillTestMapping(tv Mapping) {
-	tv.orig.Id = uint64(1)
 	tv.orig.MemoryStart = uint64(1)
 	tv.orig.MemoryLimit = uint64(1)
 	tv.orig.FileOffset = uint64(1)
-	tv.orig.Filename = int64(1)
-	tv.orig.BuildId = int64(1)
-	tv.orig.BuildIdKind = otlpprofiles.BuildIdKind(1)
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.Attributes, tv.state))
+	tv.orig.FilenameStrindex = int32(1)
+	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 	tv.orig.HasFunctions = true
 	tv.orig.HasFilenames = true
 	tv.orig.HasLineNumbers = true

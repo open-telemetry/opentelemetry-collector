@@ -7,133 +7,159 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// mergeTraces merges two traces requests into one.
-func mergeTraces(_ context.Context, r1 Request, r2 Request) (Request, error) {
-	tr1, ok1 := r1.(*tracesRequest)
-	tr2, ok2 := r2.(*tracesRequest)
-	if !ok1 || !ok2 {
-		return nil, errors.New("invalid input type")
+// MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
+// conforming with the MaxSizeConfig.
+func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
+	var sz sizer.TracesSizer
+	switch szt {
+	case RequestSizerTypeItems:
+		sz = &sizer.TracesCountSizer{}
+	case RequestSizerTypeBytes:
+		sz = &sizer.TracesBytesSizer{}
+	default:
+		return nil, errors.New("unknown sizer type")
 	}
-	tr2.td.ResourceSpans().MoveAndAppendTo(tr1.td.ResourceSpans())
-	return tr1, nil
-}
 
-// mergeSplitTraces splits and/or merges the traces into multiple requests based on the MaxSizeConfig.
-func mergeSplitTraces(_ context.Context, cfg exporterbatcher.MaxSizeConfig, r1 Request, r2 Request) ([]Request, error) {
-	var (
-		res          []Request
-		destReq      *tracesRequest
-		capacityLeft = cfg.MaxSizeItems
-	)
-	for _, req := range []Request{r1, r2} {
-		if req == nil {
-			continue
-		}
-		srcReq, ok := req.(*tracesRequest)
+	if r2 != nil {
+		req2, ok := r2.(*tracesRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		if srcReq.td.SpanCount() <= capacityLeft {
-			if destReq == nil {
-				destReq = srcReq
-			} else {
-				srcReq.td.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-			capacityLeft -= destReq.td.SpanCount()
-			continue
-		}
-
-		for {
-			extractedTraces := extractTraces(srcReq.td, capacityLeft)
-			if extractedTraces.SpanCount() == 0 {
-				break
-			}
-			capacityLeft -= extractedTraces.SpanCount()
-			if destReq == nil {
-				destReq = &tracesRequest{td: extractedTraces, pusher: srcReq.pusher}
-			} else {
-				extractedTraces.ResourceSpans().MoveAndAppendTo(destReq.td.ResourceSpans())
-			}
-			// Create new batch once capacity is reached.
-			if capacityLeft == 0 {
-				res = append(res, destReq)
-				destReq = nil
-				capacityLeft = cfg.MaxSizeItems
-			}
-		}
+		req2.mergeTo(req, sz)
 	}
 
-	if destReq != nil {
-		res = append(res, destReq)
+	// If no limit we can simply merge the new request into the current and return.
+	if maxSize == 0 {
+		return []Request{req}, nil
 	}
-	return res, nil
+	return req.split(maxSize, sz), nil
+}
+
+func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
+	if sz != nil {
+		dst.setCachedSize(dst.size(sz) + req.size(sz))
+		req.setCachedSize(0)
+	}
+	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
+}
+
+func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
+	var res []Request
+	for req.size(sz) > maxSize {
+		td, rmSize := extractTraces(req.td, maxSize, sz)
+		req.setCachedSize(req.size(sz) - rmSize)
+		res = append(res, newTracesRequest(td))
+	}
+	res = append(res, req)
+	return res
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.
-func extractTraces(srcTraces ptrace.Traces, count int) ptrace.Traces {
+func extractTraces(srcTraces ptrace.Traces, capacity int, sz sizer.TracesSizer) (ptrace.Traces, int) {
 	destTraces := ptrace.NewTraces()
+	capacityLeft := capacity - sz.TracesSize(destTraces)
+	removedSize := 0
 	srcTraces.ResourceSpans().RemoveIf(func(srcRS ptrace.ResourceSpans) bool {
-		if count == 0 {
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
 			return false
 		}
-		needToExtract := resourceTracesCount(srcRS) > count
-		if needToExtract {
-			srcRS = extractResourceSpans(srcRS, count)
+		rawRsSize := sz.ResourceSpansSize(srcRS)
+		rsSize := sz.DeltaSize(rawRsSize)
+
+		if rsSize > capacityLeft {
+			extSrcRS, extRsSize := extractResourceSpans(srcRS, capacityLeft, sz)
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			removedSize += extRsSize
+			// There represents the delta between the delta sizes.
+			removedSize += rsSize - rawRsSize - (sz.DeltaSize(rawRsSize-extRsSize) - (rawRsSize - extRsSize))
+			// It is possible that for the bytes scenario, the extracted field contains no spans.
+			// Do not add it to the destination if that is the case.
+			if extSrcRS.ScopeSpans().Len() > 0 {
+				extSrcRS.MoveTo(destTraces.ResourceSpans().AppendEmpty())
+			}
+			return extSrcRS.ScopeSpans().Len() != 0
 		}
-		count -= resourceTracesCount(srcRS)
+		capacityLeft -= rsSize
+		removedSize += rsSize
+
 		srcRS.MoveTo(destTraces.ResourceSpans().AppendEmpty())
-		return !needToExtract
+		return true
 	})
-	return destTraces
+	return destTraces, removedSize
 }
 
 // extractResourceSpans extracts spans and returns a new resource spans with the specified number of spans.
-func extractResourceSpans(srcRS ptrace.ResourceSpans, count int) ptrace.ResourceSpans {
+func extractResourceSpans(srcRS ptrace.ResourceSpans, capacity int, sz sizer.TracesSizer) (ptrace.ResourceSpans, int) {
 	destRS := ptrace.NewResourceSpans()
 	destRS.SetSchemaUrl(srcRS.SchemaUrl())
 	srcRS.Resource().CopyTo(destRS.Resource())
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ResourceSpansSize(destRS)
+	removedSize := 0
 	srcRS.ScopeSpans().RemoveIf(func(srcSS ptrace.ScopeSpans) bool {
-		if count == 0 {
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
 			return false
 		}
-		needToExtract := srcSS.Spans().Len() > count
-		if needToExtract {
-			srcSS = extractScopeSpans(srcSS, count)
+
+		rawSlSize := sz.ScopeSpansSize(srcSS)
+		ssSize := sz.DeltaSize(rawSlSize)
+		if ssSize > capacityLeft {
+			extSrcSS, extSsSize := extractScopeSpans(srcSS, capacityLeft, sz)
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			removedSize += extSsSize
+			// There represents the delta between the delta sizes.
+			removedSize += ssSize - rawSlSize - (sz.DeltaSize(rawSlSize-extSsSize) - (rawSlSize - extSsSize))
+			// It is possible that for the bytes scenario, the extracted field contains no spans.
+			// Do not add it to the destination if that is the case.
+			if extSrcSS.Spans().Len() > 0 {
+				extSrcSS.MoveTo(destRS.ScopeSpans().AppendEmpty())
+			}
+			return extSrcSS.Spans().Len() != 0
 		}
-		count -= srcSS.Spans().Len()
+		capacityLeft -= ssSize
+		removedSize += ssSize
+
 		srcSS.MoveTo(destRS.ScopeSpans().AppendEmpty())
-		return !needToExtract
+		return true
 	})
-	srcRS.Resource().CopyTo(destRS.Resource())
-	return destRS
+	return destRS, removedSize
 }
 
 // extractScopeSpans extracts spans and returns a new scope spans with the specified number of spans.
-func extractScopeSpans(srcSS ptrace.ScopeSpans, count int) ptrace.ScopeSpans {
+func extractScopeSpans(srcSS ptrace.ScopeSpans, capacity int, sz sizer.TracesSizer) (ptrace.ScopeSpans, int) {
 	destSS := ptrace.NewScopeSpans()
 	destSS.SetSchemaUrl(srcSS.SchemaUrl())
 	srcSS.Scope().CopyTo(destSS.Scope())
+	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.ScopeSpansSize(destSS)
+	removedSize := 0
 	srcSS.Spans().RemoveIf(func(srcSpan ptrace.Span) bool {
-		if count == 0 {
+		// If the no more capacity left just return.
+		if capacityLeft == 0 {
 			return false
 		}
+		rsSize := sz.DeltaSize(sz.SpanSize(srcSpan))
+		if rsSize > capacityLeft {
+			// This cannot make it to exactly 0 for the bytes,
+			// force it to be 0 since that is the stopping condition.
+			capacityLeft = 0
+			return false
+		}
+
+		capacityLeft -= rsSize
+		removedSize += rsSize
 		srcSpan.MoveTo(destSS.Spans().AppendEmpty())
-		count--
 		return true
 	})
-	return destSS
-}
-
-// resourceTracesCount calculates the total number of spans in the pdata.ResourceSpans.
-func resourceTracesCount(rs ptrace.ResourceSpans) int {
-	count := 0
-	rs.ScopeSpans().RemoveIf(func(ss ptrace.ScopeSpans) bool {
-		count += ss.Spans().Len()
-		return false
-	})
-	return count
+	return destSS, removedSize
 }

@@ -1,0 +1,10 @@
+type: builder
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: cmd
+  stability:
+    alpha: [metrics]
+  codeowners:
+    active: []

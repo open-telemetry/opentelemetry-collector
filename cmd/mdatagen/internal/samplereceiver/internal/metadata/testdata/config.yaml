@@ -11,6 +11,13 @@ all_set:
       enabled: true
     optional.metric.empty_unit:
       enabled: true
+  events:
+    default.event:
+      enabled: true
+    default.event.to_be_removed:
+      enabled: true
+    default.event.to_be_renamed:
+      enabled: true
   resource_attributes:
     map.resource.attr:
       enabled: true
@@ -40,6 +47,13 @@ none_set:
       enabled: false
     optional.metric.empty_unit:
       enabled: false
+  events:
+    default.event:
+      enabled: false
+    default.event.to_be_removed:
+      enabled: false
+    default.event.to_be_renamed:
+      enabled: false
   resource_attributes:
     map.resource.attr:
       enabled: false
@@ -63,33 +77,49 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     optional.resource.attr:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     slice.resource.attr:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     string.enum.resource.attr:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     string.resource.attr:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     string.resource.attr_disable_warning:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
     string.resource.attr_remove_warning:
       enabled: true
       metrics_include:
         - regexp: ".*"
+      events_include:
+        - regexp: ".*"
     string.resource.attr_to_be_removed:
       enabled: true
       metrics_include:
+        - regexp: ".*"
+      events_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
@@ -97,31 +127,47 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     optional.resource.attr:
       enabled: true
       metrics_exclude:
+        - strict: "optional.resource.attr-val"
+      events_exclude:
         - strict: "optional.resource.attr-val"
     slice.resource.attr:
       enabled: true
       metrics_exclude:
         - regexp: ".*"
+      events_exclude:
+        - regexp: ".*"
     string.enum.resource.attr:
       enabled: true
       metrics_exclude:
+        - strict: "one"
+      events_exclude:
         - strict: "one"
     string.resource.attr:
       enabled: true
       metrics_exclude:
         - strict: "string.resource.attr-val"
+      events_exclude:
+        - strict: "string.resource.attr-val"
     string.resource.attr_disable_warning:
       enabled: true
       metrics_exclude:
+        - strict: "string.resource.attr_disable_warning-val"
+      events_exclude:
         - strict: "string.resource.attr_disable_warning-val"
     string.resource.attr_remove_warning:
       enabled: true
       metrics_exclude:
         - strict: "string.resource.attr_remove_warning-val"
+      events_exclude:
+        - strict: "string.resource.attr_remove_warning-val"
     string.resource.attr_to_be_removed:
       enabled: true
       metrics_exclude:
+        - strict: "string.resource.attr_to_be_removed-val"
+      events_exclude:
         - strict: "string.resource.attr_to_be_removed-val"

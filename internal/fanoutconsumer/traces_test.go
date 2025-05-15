@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -46,18 +47,18 @@ func TestTracesMultiplexingNonMutating(t *testing.T) {
 
 	assert.Equal(t, td, p1.AllTraces()[0])
 	assert.Equal(t, td, p1.AllTraces()[1])
-	assert.EqualValues(t, td, p1.AllTraces()[0])
-	assert.EqualValues(t, td, p1.AllTraces()[1])
+	assert.Equal(t, td, p1.AllTraces()[0])
+	assert.Equal(t, td, p1.AllTraces()[1])
 
 	assert.Equal(t, td, p2.AllTraces()[0])
 	assert.Equal(t, td, p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 
 	assert.Equal(t, td, p3.AllTraces()[0])
 	assert.Equal(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 
 	// The data should be marked as read only.
 	assert.True(t, td.IsReadOnly())
@@ -80,21 +81,21 @@ func TestTracesMultiplexingMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
-	assert.EqualValues(t, td, p1.AllTraces()[0])
-	assert.EqualValues(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
+	assert.Equal(t, td, p1.AllTraces()[0])
+	assert.Equal(t, td, p1.AllTraces()[1])
 
-	assert.NotSame(t, td, p2.AllTraces()[0])
-	assert.NotSame(t, td, p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.NotSame(t, &td, &p2.AllTraces()[0])
+	assert.NotSame(t, &td, &p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllTraces()[0])
 	assert.Equal(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -124,18 +125,18 @@ func TestReadOnlyTracesMultiplexingMutating(t *testing.T) {
 
 	assert.NotEqual(t, td, p1.AllTraces()[0])
 	assert.NotEqual(t, td, p1.AllTraces()[1])
-	assert.EqualValues(t, tdOrig, p1.AllTraces()[0])
-	assert.EqualValues(t, tdOrig, p1.AllTraces()[1])
+	assert.Equal(t, tdOrig, p1.AllTraces()[0])
+	assert.Equal(t, tdOrig, p1.AllTraces()[1])
 
 	assert.NotEqual(t, td, p2.AllTraces()[0])
 	assert.NotEqual(t, td, p2.AllTraces()[1])
-	assert.EqualValues(t, tdOrig, p2.AllTraces()[0])
-	assert.EqualValues(t, tdOrig, p2.AllTraces()[1])
+	assert.Equal(t, tdOrig, p2.AllTraces()[0])
+	assert.Equal(t, tdOrig, p2.AllTraces()[1])
 
 	assert.NotEqual(t, td, p3.AllTraces()[0])
 	assert.NotEqual(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, tdOrig, p3.AllTraces()[0])
-	assert.EqualValues(t, tdOrig, p3.AllTraces()[1])
+	assert.Equal(t, tdOrig, p3.AllTraces()[0])
+	assert.Equal(t, tdOrig, p3.AllTraces()[1])
 }
 
 func TestTracesMultiplexingMixLastMutating(t *testing.T) {
@@ -155,22 +156,22 @@ func TestTracesMultiplexingMixLastMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
-	assert.EqualValues(t, td, p1.AllTraces()[0])
-	assert.EqualValues(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
+	assert.Equal(t, td, p1.AllTraces()[0])
+	assert.Equal(t, td, p1.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p2.AllTraces()[0])
 	assert.Equal(t, td, p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will clone the initial data.
-	assert.NotSame(t, td, p3.AllTraces()[0])
-	assert.NotSame(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.NotSame(t, &td, &p3.AllTraces()[0])
+	assert.NotSame(t, &td, &p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -193,21 +194,21 @@ func TestTracesMultiplexingMixLastNonMutating(t *testing.T) {
 		}
 	}
 
-	assert.NotSame(t, td, p1.AllTraces()[0])
-	assert.NotSame(t, td, p1.AllTraces()[1])
-	assert.EqualValues(t, td, p1.AllTraces()[0])
-	assert.EqualValues(t, td, p1.AllTraces()[1])
+	assert.NotSame(t, &td, &p1.AllTraces()[0])
+	assert.NotSame(t, &td, &p1.AllTraces()[1])
+	assert.Equal(t, td, p1.AllTraces()[0])
+	assert.Equal(t, td, p1.AllTraces()[1])
 
-	assert.NotSame(t, td, p2.AllTraces()[0])
-	assert.NotSame(t, td, p2.AllTraces()[1])
-	assert.EqualValues(t, td, p2.AllTraces()[0])
-	assert.EqualValues(t, td, p2.AllTraces()[1])
+	assert.NotSame(t, &td, &p2.AllTraces()[0])
+	assert.NotSame(t, &td, &p2.AllTraces()[1])
+	assert.Equal(t, td, p2.AllTraces()[0])
+	assert.Equal(t, td, p2.AllTraces()[1])
 
 	// For this consumer, will receive the initial data.
 	assert.Equal(t, td, p3.AllTraces()[0])
 	assert.Equal(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 
 	// The data should not be marked as read only.
 	assert.False(t, td.IsReadOnly())
@@ -222,13 +223,13 @@ func TestTracesWhenErrors(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 
 	for i := 0; i < 2; i++ {
-		assert.Error(t, tfc.ConsumeTraces(context.Background(), td))
+		require.Error(t, tfc.ConsumeTraces(context.Background(), td))
 	}
 
 	assert.Equal(t, td, p3.AllTraces()[0])
 	assert.Equal(t, td, p3.AllTraces()[1])
-	assert.EqualValues(t, td, p3.AllTraces()[0])
-	assert.EqualValues(t, td, p3.AllTraces()[1])
+	assert.Equal(t, td, p3.AllTraces()[0])
+	assert.Equal(t, td, p3.AllTraces()[1])
 }
 
 type mutatingTracesSink struct {

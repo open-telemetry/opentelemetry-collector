@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"runtime"
-	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -17,13 +16,17 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/internal/statusutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
+	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
@@ -33,12 +36,13 @@ type baseExporter struct {
 	config *Config
 
 	// gRPC clients and connection.
-	traceExporter  ptraceotlp.GRPCClient
-	metricExporter pmetricotlp.GRPCClient
-	logExporter    plogotlp.GRPCClient
-	clientConn     *grpc.ClientConn
-	metadata       metadata.MD
-	callOptions    []grpc.CallOption
+	traceExporter   ptraceotlp.GRPCClient
+	metricExporter  pmetricotlp.GRPCClient
+	logExporter     plogotlp.GRPCClient
+	profileExporter pprofileotlp.GRPCClient
+	clientConn      *grpc.ClientConn
+	metadata        metadata.MD
+	callOptions     []grpc.CallOption
 
 	settings component.TelemetrySettings
 
@@ -49,6 +53,10 @@ type baseExporter struct {
 func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 	oCfg := cfg.(*Config)
 
+	if oCfg.hasBatcher {
+		set.Logger.Warn("using deprecated field: batcher")
+	}
+
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
@@ -58,12 +66,14 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
 func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings, agentOpt); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
+	e.profileExporter = pprofileotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
 	for k, v := range e.config.ClientConfig.Headers {
 		headers[k] = string(v)
@@ -85,12 +95,12 @@ func (e *baseExporter) shutdown(context.Context) error {
 
 func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 	req := ptraceotlp.NewExportRequestFromTraces(td)
-	resp, respErr := e.traceExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.traceExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_spans", resp.PartialSuccess().RejectedSpans()),
@@ -101,12 +111,12 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 
 func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	req := pmetricotlp.NewExportRequestFromMetrics(md)
-	resp, respErr := e.metricExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.metricExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_data_points", resp.PartialSuccess().RejectedDataPoints()),
@@ -117,12 +127,12 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	req := plogotlp.NewExportRequestFromLogs(ld)
-	resp, respErr := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	resp, respErr := e.logExporter.Export(ctx, req, e.callOptions...)
 	if err := processError(respErr); err != nil {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
 		e.settings.Logger.Warn("Partial success response",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
 			zap.Int64("dropped_log_records", resp.PartialSuccess().RejectedLogRecords()),
@@ -131,11 +141,20 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *baseExporter) enhanceContext(ctx context.Context) context.Context {
-	if e.metadata.Len() > 0 {
-		return metadata.NewOutgoingContext(ctx, e.metadata)
+func (e *baseExporter) pushProfiles(ctx context.Context, td pprofile.Profiles) error {
+	req := pprofileotlp.NewExportRequestFromProfiles(td)
+	resp, respErr := e.profileExporter.Export(ctx, req, e.callOptions...)
+	if err := processError(respErr); err != nil {
+		return err
 	}
-	return ctx
+	partialSuccess := resp.PartialSuccess()
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedProfiles() != 0 {
+		e.settings.Logger.Warn("Partial success response",
+			zap.String("message", resp.PartialSuccess().ErrorMessage()),
+			zap.Int64("dropped_profiles", resp.PartialSuccess().RejectedProfiles()),
+		)
+	}
+	return nil
 }
 
 func processError(err error) error {
@@ -152,7 +171,7 @@ func processError(err error) error {
 	}
 
 	// Now, this is a real error.
-	retryInfo := getRetryInfo(st)
+	retryInfo := statusutil.GetRetryInfo(st)
 
 	if !shouldRetry(st.Code(), retryInfo) {
 		// It is not a retryable error, we should not retry.
@@ -160,7 +179,7 @@ func processError(err error) error {
 	}
 
 	// Check if server returned throttling information.
-	throttleDuration := getThrottleDuration(retryInfo)
+	throttleDuration := retryInfo.GetRetryDelay().AsDuration()
 	if throttleDuration != 0 {
 		// We are throttled. Wait before retrying as requested by the server.
 		return exporterhelper.NewThrottleRetry(err, throttleDuration)
@@ -187,23 +206,4 @@ func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
 	}
 	// Don't retry on any other code.
 	return false
-}
-
-func getRetryInfo(status *status.Status) *errdetails.RetryInfo {
-	for _, detail := range status.Details() {
-		if t, ok := detail.(*errdetails.RetryInfo); ok {
-			return t
-		}
-	}
-	return nil
-}
-
-func getThrottleDuration(t *errdetails.RetryInfo) time.Duration {
-	if t == nil || t.RetryDelay == nil {
-		return 0
-	}
-	if t.RetryDelay.Seconds > 0 || t.RetryDelay.Nanos > 0 {
-		return time.Duration(t.RetryDelay.Seconds)*time.Second + time.Duration(t.RetryDelay.Nanos)*time.Nanosecond
-	}
-	return 0
 }

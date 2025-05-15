@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // ValueType describes the type and units of a value, with an optional aggregation temporality.
@@ -41,47 +41,51 @@ func NewValueType() ValueType {
 func (ms ValueType) MoveTo(dest ValueType) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ValueType{}
 }
 
-// Type returns the type associated with this ValueType.
-func (ms ValueType) Type() int64 {
-	return ms.orig.Type
+// TypeStrindex returns the typestrindex associated with this ValueType.
+func (ms ValueType) TypeStrindex() int32 {
+	return ms.orig.TypeStrindex
 }
 
-// SetType replaces the type associated with this ValueType.
-func (ms ValueType) SetType(v int64) {
+// SetTypeStrindex replaces the typestrindex associated with this ValueType.
+func (ms ValueType) SetTypeStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Type = v
+	ms.orig.TypeStrindex = v
 }
 
-// Unit returns the unit associated with this ValueType.
-func (ms ValueType) Unit() int64 {
-	return ms.orig.Unit
+// UnitStrindex returns the unitstrindex associated with this ValueType.
+func (ms ValueType) UnitStrindex() int32 {
+	return ms.orig.UnitStrindex
 }
 
-// SetUnit replaces the unit associated with this ValueType.
-func (ms ValueType) SetUnit(v int64) {
+// SetUnitStrindex replaces the unitstrindex associated with this ValueType.
+func (ms ValueType) SetUnitStrindex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.Unit = v
+	ms.orig.UnitStrindex = v
 }
 
 // AggregationTemporality returns the aggregationtemporality associated with this ValueType.
-func (ms ValueType) AggregationTemporality() otlpprofiles.AggregationTemporality {
-	return ms.orig.AggregationTemporality
+func (ms ValueType) AggregationTemporality() AggregationTemporality {
+	return AggregationTemporality(ms.orig.AggregationTemporality)
 }
 
 // SetAggregationTemporality replaces the aggregationtemporality associated with this ValueType.
-func (ms ValueType) SetAggregationTemporality(v otlpprofiles.AggregationTemporality) {
+func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
-	ms.orig.AggregationTemporality = v
+	ms.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	dest.SetType(ms.Type())
-	dest.SetUnit(ms.Unit())
+	dest.SetTypeStrindex(ms.TypeStrindex())
+	dest.SetUnitStrindex(ms.UnitStrindex())
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 }

@@ -10,9 +10,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/zpagesextension/internal/metadata"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -25,17 +27,19 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	},
 		cfg)
 
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	require.NoError(t, componenttest.CheckConfigStruct(cfg))
+	ext, err := create(context.Background(), extensiontest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
 
-func TestFactory_CreateExtension(t *testing.T) {
+func TestFactoryCreate(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	set.ID = component.NewID(NewFactory().Type())
+	ext, err := create(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

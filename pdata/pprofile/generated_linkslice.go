@@ -7,8 +7,11 @@
 package pprofile
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // LinkSlice logically represents a slice of Link.
@@ -19,18 +22,18 @@ import (
 // Must use NewLinkSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type LinkSlice struct {
-	orig  *[]otlpprofiles.Link
+	orig  *[]*otlpprofiles.Link
 	state *internal.State
 }
 
-func newLinkSlice(orig *[]otlpprofiles.Link, state *internal.State) LinkSlice {
+func newLinkSlice(orig *[]*otlpprofiles.Link, state *internal.State) LinkSlice {
 	return LinkSlice{orig: orig, state: state}
 }
 
 // NewLinkSlice creates a LinkSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLinkSlice() LinkSlice {
-	orig := []otlpprofiles.Link(nil)
+	orig := []*otlpprofiles.Link(nil)
 	state := internal.StateMutable
 	return newLinkSlice(&orig, &state)
 }
@@ -51,7 +54,22 @@ func (es LinkSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es LinkSlice) At(i int) Link {
-	return newLink(&(*es.orig)[i], es.state)
+	return newLink((*es.orig)[i], es.state)
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es LinkSlice) All() iter.Seq2[int, Link] {
+	return func(yield func(int, Link) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +91,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Link, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Link, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +100,7 @@ func (es LinkSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Link.
 func (es LinkSlice) AppendEmpty() Link {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Link{})
+	*es.orig = append(*es.orig, &otlpprofiles.Link{})
 	return es.At(es.Len() - 1)
 }
 
@@ -91,6 +109,10 @@ func (es LinkSlice) AppendEmpty() Link {
 func (es LinkSlice) MoveAndAppendTo(dest LinkSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -127,10 +149,24 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.Link, srcLen)
+		for i := range *es.orig {
+			newLink((*es.orig)[i], es.state).CopyTo(newLink((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.Link, srcLen)
+	wrappers := make([]*otlpprofiles.Link, srcLen)
 	for i := range *es.orig {
-		newLink(&(*es.orig)[i], es.state).CopyTo(newLink(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newLink((*es.orig)[i], es.state).CopyTo(newLink(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Link elements within LinkSlice given the
+// provided less function so that two instances of LinkSlice
+// can be compared.
+func (es LinkSlice) Sort(less func(a, b Link) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

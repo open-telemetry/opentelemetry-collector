@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewDefaultBackOffSettings(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	assert.Equal(t,
 		BackOffConfig{
 			Enabled:             true,
@@ -26,23 +27,23 @@ func TestNewDefaultBackOffSettings(t *testing.T) {
 
 func TestInvalidInitialInterval(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.InitialInterval = -1
 	assert.Error(t, cfg.Validate())
 }
 
 func TestInvalidRandomizationFactor(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.RandomizationFactor = -1
-	assert.Error(t, cfg.Validate())
+	require.Error(t, cfg.Validate())
 	cfg.RandomizationFactor = 2
 	assert.Error(t, cfg.Validate())
 }
 
 func TestInvalidMultiplier(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.Multiplier = -1
 	assert.Error(t, cfg.Validate())
 }
@@ -56,22 +57,22 @@ func TestZeroMultiplierIsValid(t *testing.T) {
 
 func TestInvalidMaxInterval(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.MaxInterval = -1
 	assert.Error(t, cfg.Validate())
 }
 
 func TestInvalidMaxElapsedTime(t *testing.T) {
 	cfg := NewDefaultBackOffConfig()
-	assert.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 	cfg.MaxElapsedTime = -1
-	assert.Error(t, cfg.Validate())
+	require.Error(t, cfg.Validate())
 	cfg.MaxElapsedTime = 60
 	// MaxElapsedTime is 60, InitialInterval is 5s, so it should be invalid
-	assert.Error(t, cfg.Validate())
+	require.Error(t, cfg.Validate())
 	cfg.InitialInterval = 0
 	// MaxElapsedTime is 60, MaxInterval is 30s, so it should be invalid
-	assert.Error(t, cfg.Validate())
+	require.Error(t, cfg.Validate())
 	cfg.MaxInterval = 0
 	assert.NoError(t, cfg.Validate())
 	cfg.InitialInterval = 50

@@ -1,0 +1,14 @@
+readers:
+  - periodic:
+      exporter:
+        otlp:
+          protocol: http/protobuf
+          endpoint: 127.0.0.1:4317
+          headers:
+            "key1": "value1"
+            "key2": "value2"
+  - pull:
+      exporter:
+        prometheus:
+          host: 127.0.0.1
+          port: 8902

@@ -8,96 +8,73 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/exporter/internal/experr"
+	"go.opentelemetry.io/collector/pipeline"
+)
+
+var (
+	testType = component.MustNewType("test")
+	testID   = component.NewID(testType)
 )
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
-	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
-	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.Error(t, err)
+	assert.Equal(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDevelopment),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
 		WithLogs(createLogs, component.StabilityLevelDeprecated))
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	assert.Equal(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.TracesExporterStability())
-	_, err := factory.CreateTracesExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := experr.ErrIDMismatch(wrongID, testType).Error()
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsExporterStability())
-	_, err = factory.CreateMetricsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	assert.Equal(t, component.StabilityLevelDevelopment, f.TracesStability())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.NoError(t, err)
+	_, err = f.CreateTraces(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
 
-	assert.Equal(t, component.StabilityLevelDeprecated, factory.LogsExporterStability())
-	_, err = factory.CreateLogsExporter(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	assert.Equal(t, component.StabilityLevelAlpha, f.MetricsStability())
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.NoError(t, err)
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
+
+	assert.Equal(t, component.StabilityLevelDeprecated, f.LogsStability())
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg)
+	require.NoError(t, err)
+	_, err = f.CreateLogs(context.Background(), Settings{ID: wrongID}, &defaultCfg)
+	require.EqualError(t, err, wrongIDErrStr)
 }
 
-func TestMakeFactoryMap(t *testing.T) {
-	type testCase struct {
-		name string
-		in   []Factory
-		out  map[component.Type]Factory
-	}
-
-	p1 := NewFactory(component.MustNewType("p1"), nil)
-	p2 := NewFactory(component.MustNewType("p2"), nil)
-	testCases := []testCase{
-		{
-			name: "different names",
-			in:   []Factory{p1, p2},
-			out: map[component.Type]Factory{
-				p1.Type(): p1,
-				p2.Type(): p2,
-			},
-		},
-		{
-			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil)},
-		},
-	}
-
-	for i := range testCases {
-		tt := testCases[i]
-		t.Run(tt.name, func(t *testing.T) {
-			out, err := MakeFactoryMap(tt.in...)
-			if tt.out == nil {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.out, out)
-		})
-	}
-}
-
-var nopInstance = &nopExporter{
+var nopInstance = &nop{
 	Consumer: consumertest.NewNop(),
 }
 
-// nopExporter stores consumed traces and metrics for testing purposes.
-type nopExporter struct {
+// nop stores consumed traces and metrics for testing purposes.
+type nop struct {
 	component.StartFunc
 	component.ShutdownFunc
 	consumertest.Consumer

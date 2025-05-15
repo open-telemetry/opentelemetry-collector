@@ -7,8 +7,11 @@
 package pprofile
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // AttributeUnitSlice logically represents a slice of AttributeUnit.
@@ -19,18 +22,18 @@ import (
 // Must use NewAttributeUnitSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type AttributeUnitSlice struct {
-	orig  *[]otlpprofiles.AttributeUnit
+	orig  *[]*otlpprofiles.AttributeUnit
 	state *internal.State
 }
 
-func newAttributeUnitSlice(orig *[]otlpprofiles.AttributeUnit, state *internal.State) AttributeUnitSlice {
+func newAttributeUnitSlice(orig *[]*otlpprofiles.AttributeUnit, state *internal.State) AttributeUnitSlice {
 	return AttributeUnitSlice{orig: orig, state: state}
 }
 
 // NewAttributeUnitSlice creates a AttributeUnitSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeUnitSlice() AttributeUnitSlice {
-	orig := []otlpprofiles.AttributeUnit(nil)
+	orig := []*otlpprofiles.AttributeUnit(nil)
 	state := internal.StateMutable
 	return newAttributeUnitSlice(&orig, &state)
 }
@@ -51,7 +54,22 @@ func (es AttributeUnitSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es AttributeUnitSlice) At(i int) AttributeUnit {
-	return newAttributeUnit(&(*es.orig)[i], es.state)
+	return newAttributeUnit((*es.orig)[i], es.state)
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es AttributeUnitSlice) All() iter.Seq2[int, AttributeUnit] {
+	return func(yield func(int, AttributeUnit) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +91,7 @@ func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.AttributeUnit, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.AttributeUnit, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +100,7 @@ func (es AttributeUnitSlice) EnsureCapacity(newCap int) {
 // It returns the newly added AttributeUnit.
 func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.AttributeUnit{})
+	*es.orig = append(*es.orig, &otlpprofiles.AttributeUnit{})
 	return es.At(es.Len() - 1)
 }
 
@@ -91,6 +109,10 @@ func (es AttributeUnitSlice) AppendEmpty() AttributeUnit {
 func (es AttributeUnitSlice) MoveAndAppendTo(dest AttributeUnitSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -127,10 +149,24 @@ func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.AttributeUnit, srcLen)
+		for i := range *es.orig {
+			newAttributeUnit((*es.orig)[i], es.state).CopyTo(newAttributeUnit((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.AttributeUnit, srcLen)
+	wrappers := make([]*otlpprofiles.AttributeUnit, srcLen)
 	for i := range *es.orig {
-		newAttributeUnit(&(*es.orig)[i], es.state).CopyTo(newAttributeUnit(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newAttributeUnit((*es.orig)[i], es.state).CopyTo(newAttributeUnit(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
+// provided less function so that two instances of AttributeUnitSlice
+// can be compared.
+func (es AttributeUnitSlice) Sort(less func(a, b AttributeUnit) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

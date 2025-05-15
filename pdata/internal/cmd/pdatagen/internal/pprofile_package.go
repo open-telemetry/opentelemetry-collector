@@ -4,38 +4,37 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 var pprofile = &Package{
-	name: "pprofile",
-	path: "pprofile",
-	imports: []string{
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`"go.opentelemetry.io/collector/pdata/internal/data"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
-	},
-	testImports: []string{
-		`"testing"`,
-		`"unsafe"`,
-		``,
-		`"github.com/stretchr/testify/assert"`,
-		``,
-		`"go.opentelemetry.io/collector/pdata/internal"`,
-		`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"`,
-		`"go.opentelemetry.io/collector/pdata/pcommon"`,
+	info: &PackageInfo{
+		name: "pprofile",
+		path: "pprofile",
+		imports: []string{
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
+		testImports: []string{
+			`"testing"`,
+			`"unsafe"`,
+			``,
+			`"github.com/stretchr/testify/assert"`,
+			``,
+			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
+			`"go.opentelemetry.io/collector/pdata/pcommon"`,
+		},
 	},
 	structs: []baseStruct{
 		resourceProfilesSlice,
 		resourceProfiles,
 		scopeProfilesSlice,
 		scopeProfiles,
-		profilesContainersSlice,
-		profileContainer,
+		profilesSlice,
 		profile,
 		valueTypeSlice,
 		valueType,
 		sampleSlice,
 		sample,
-		labelSlice,
-		label,
 		mappingSlice,
 		mapping,
 		locationSlice,
@@ -44,6 +43,8 @@ var pprofile = &Package{
 		line,
 		functionSlice,
 		function,
+		attributeTableSlice,
+		attribute,
 		attributeUnitSlice,
 		attributeUnit,
 		linkSlice,
@@ -84,48 +85,14 @@ var scopeProfiles = &messageValueStruct{
 		schemaURLField,
 		&sliceField{
 			fieldName:   "Profiles",
-			returnSlice: profilesContainersSlice,
+			returnSlice: profilesSlice,
 		},
 	},
 }
 
-var profilesContainersSlice = &sliceOfPtrs{
-	structName: "ProfilesContainersSlice",
-	element:    profileContainer,
-}
-
-var profileContainer = &messageValueStruct{
-	structName:     "ProfileContainer",
-	description:    "// ProfileContainer are an experimental implementation of the OpenTelemetry Profiles Data Model.\n",
-	originFullName: "otlpprofiles.ProfileContainer",
-	fields: []baseField{
-		&primitiveTypedField{
-			fieldName:       "ProfileID",
-			originFieldName: "ProfileId",
-			returnType: &primitiveType{
-				structName: "ProfileID",
-				rawType:    "data.ProfileID",
-				defaultVal: "data.ProfileID([16]byte{})",
-				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
-			},
-		},
-		&primitiveTypedField{
-			fieldName:       "StartTime",
-			originFieldName: "StartTimeUnixNano",
-			returnType:      timestampType,
-		},
-		&primitiveTypedField{
-			fieldName:       "EndTime",
-			originFieldName: "EndTimeUnixNano",
-			returnType:      timestampType,
-		},
-		attributes,
-		droppedAttributesCount,
-		&messageValueField{
-			fieldName:     "Profile",
-			returnMessage: profile,
-		},
-	},
+var profilesSlice = &sliceOfPtrs{
+	structName: "ProfilesSlice",
+	element:    profile,
 }
 
 var profile = &messageValueStruct{
@@ -142,24 +109,24 @@ var profile = &messageValueStruct{
 			returnSlice: sampleSlice,
 		},
 		&sliceField{
-			fieldName:   "Mapping",
+			fieldName:   "MappingTable",
 			returnSlice: mappingSlice,
 		},
 		&sliceField{
-			fieldName:   "Location",
+			fieldName:   "LocationTable",
 			returnSlice: locationSlice,
 		},
 		&sliceField{
 			fieldName:   "LocationIndices",
-			returnSlice: int64Slice,
+			returnSlice: int32Slice,
 		},
 		&sliceField{
-			fieldName:   "Function",
+			fieldName:   "FunctionTable",
 			returnSlice: functionSlice,
 		},
 		&sliceField{
 			fieldName:   "AttributeTable",
-			returnSlice: mapStruct,
+			returnSlice: attributeTableSlice,
 		},
 		&sliceField{
 			fieldName:   "AttributeUnits",
@@ -173,20 +140,8 @@ var profile = &messageValueStruct{
 			fieldName:   "StringTable",
 			returnSlice: stringSlice,
 		},
-		&primitiveField{
-			fieldName:  "DropFrames",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:  "KeepFrames",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
 		&primitiveTypedField{
-			fieldName:       "StartTime",
+			fieldName:       "Time",
 			originFieldName: "TimeNanos",
 			returnType: &primitiveType{
 				structName:  "Timestamp",
@@ -207,6 +162,17 @@ var profile = &messageValueStruct{
 				testVal:     "1234567890",
 			},
 		},
+		&primitiveTypedField{
+			fieldName:       "StartTime",
+			originFieldName: "TimeNanos",
+			returnType: &primitiveType{
+				structName:  "Timestamp",
+				packageName: "pcommon",
+				rawType:     "int64",
+				defaultVal:  "0",
+				testVal:     "1234567890",
+			},
+		},
 		&messageValueField{
 			fieldName:     "PeriodType",
 			returnMessage: valueType,
@@ -218,19 +184,84 @@ var profile = &messageValueStruct{
 			testVal:    "int64(1)",
 		},
 		&sliceField{
-			fieldName:   "Comment",
-			returnSlice: int64Slice,
+			fieldName:   "CommentStrindices",
+			returnSlice: int32Slice,
 		},
 		&primitiveField{
-			fieldName:  "DefaultSampleType",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "DefaultSampleTypeStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
+		},
+		&primitiveTypedField{
+			fieldName:       "ProfileID",
+			originFieldName: "ProfileId",
+			returnType: &primitiveType{
+				structName: "ProfileID",
+				rawType:    "data.ProfileID",
+				defaultVal: "data.ProfileID([16]byte{})",
+				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+			},
+		},
+		&sliceField{
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
+		},
+		droppedAttributesCount,
+		&primitiveField{
+			fieldName:  "OriginalPayloadFormat",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"original payload"`,
+		},
+		&sliceField{
+			fieldName:   "OriginalPayload",
+			returnSlice: byteSlice,
 		},
 	},
 }
 
-var valueTypeSlice = &sliceOfValues{
+var attributeUnitSlice = &sliceOfPtrs{
+	structName: "AttributeUnitSlice",
+	element:    attributeUnit,
+}
+
+var attributeUnit = &messageValueStruct{
+	structName:     "AttributeUnit",
+	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
+	originFullName: "otlpprofiles.AttributeUnit",
+	fields: []baseField{
+		&primitiveField{
+			fieldName:  "AttributeKeyStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
+		},
+		&primitiveField{
+			fieldName:  "UnitStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
+		},
+	},
+}
+
+var linkSlice = &sliceOfPtrs{
+	structName: "LinkSlice",
+	element:    link,
+}
+
+var link = &messageValueStruct{
+	structName:     "Link",
+	description:    "// Link represents a pointer from a profile Sample to a trace Span.",
+	originFullName: "otlpprofiles.Link",
+	fields: []baseField{
+		traceIDField,
+		spanIDField,
+	},
+}
+
+var valueTypeSlice = &sliceOfPtrs{
 	structName: "ValueTypeSlice",
 	element:    valueType,
 }
@@ -241,27 +272,30 @@ var valueType = &messageValueStruct{
 	originFullName: "otlpprofiles.ValueType",
 	fields: []baseField{
 		&primitiveField{
-			fieldName:  "Type",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "TypeStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
-			fieldName:  "Unit",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "UnitStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
-		&primitiveField{
-			fieldName:  "AggregationTemporality",
-			returnType: "otlpprofiles.AggregationTemporality",
-			defaultVal: "otlpprofiles.AggregationTemporality(0)",
-			testVal:    "otlpprofiles.AggregationTemporality(1)",
+		&primitiveTypedField{
+			fieldName: "AggregationTemporality",
+			returnType: &primitiveType{
+				structName: "AggregationTemporality",
+				rawType:    "otlpprofiles.AggregationTemporality",
+				defaultVal: "otlpprofiles.AggregationTemporality(0)",
+				testVal:    "otlpprofiles.AggregationTemporality(1)",
+			},
 		},
 	},
 }
 
-var sampleSlice = &sliceOfValues{
+var sampleSlice = &sliceOfPtrs{
 	structName: "SampleSlice",
 	element:    sample,
 }
@@ -271,45 +305,31 @@ var sample = &messageValueStruct{
 	description:    "// Sample represents each record value encountered within a profiled program.",
 	originFullName: "otlpprofiles.Sample",
 	fields: []baseField{
-		&sliceField{
-			fieldName:   "LocationIndex",
-			returnSlice: uInt64Slice,
-		},
 		&primitiveField{
 			fieldName:  "LocationsStartIndex",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
 			fieldName:  "LocationsLength",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
-		},
-		&primitiveField{
-			fieldName:  "StacktraceIdIndex",
-			returnType: "uint32",
-			defaultVal: "uint32(0)",
-			testVal:    "uint32(1)",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&sliceField{
 			fieldName:   "Value",
 			returnSlice: int64Slice,
 		},
 		&sliceField{
-			fieldName:   "Label",
-			returnSlice: labelSlice,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
-		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: uInt64Slice,
-		},
-		&primitiveField{
-			fieldName:  "Link",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+		&optionalPrimitiveValue{
+			fieldName:  "LinkIndex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&sliceField{
 			fieldName:   "TimestampsUnixNano",
@@ -318,44 +338,7 @@ var sample = &messageValueStruct{
 	},
 }
 
-var labelSlice = &sliceOfValues{
-	structName: "LabelSlice",
-	element:    label,
-}
-
-var label = &messageValueStruct{
-	structName:     "Label",
-	description:    "// Label provided additional context for a sample",
-	originFullName: "otlpprofiles.Label",
-	fields: []baseField{
-		&primitiveField{
-			fieldName:  "Key",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:  "Str",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:  "Num",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:  "NumUnit",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-	},
-}
-
-var mappingSlice = &sliceOfValues{
+var mappingSlice = &sliceOfPtrs{
 	structName: "MappingSlice",
 	element:    mapping,
 }
@@ -365,13 +348,6 @@ var mapping = &messageValueStruct{
 	description:    "// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID",
 	originFullName: "otlpprofiles.Mapping",
 	fields: []baseField{
-		&primitiveField{
-			fieldName:       "ID",
-			originFieldName: "Id",
-			returnType:      "uint64",
-			defaultVal:      "uint64(0)",
-			testVal:         "uint64(1)",
-		},
 		&primitiveField{
 			fieldName:  "MemoryStart",
 			returnType: "uint64",
@@ -391,28 +367,14 @@ var mapping = &messageValueStruct{
 			testVal:    "uint64(1)",
 		},
 		&primitiveField{
-			fieldName:  "Filename",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:       "BuildID",
-			originFieldName: "BuildId",
-			returnType:      "int64",
-			defaultVal:      "int64(0)",
-			testVal:         "int64(1)",
-		},
-		&primitiveField{
-			fieldName:       "BuildIDKind",
-			originFieldName: "BuildIdKind",
-			returnType:      "otlpprofiles.BuildIdKind",
-			defaultVal:      "otlpprofiles.BuildIdKind(0)",
-			testVal:         "otlpprofiles.BuildIdKind(1)",
+			fieldName:  "FilenameStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: uInt64Slice,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 		&primitiveField{
 			fieldName:  "HasFunctions",
@@ -441,27 +403,21 @@ var mapping = &messageValueStruct{
 	},
 }
 
-var locationSlice = &sliceOfValues{
+var locationSlice = &sliceOfPtrs{
 	structName: "LocationSlice",
 	element:    location,
 }
+
 var location = &messageValueStruct{
 	structName:     "Location",
 	description:    "// Location describes function and line table debug information.",
 	originFullName: "otlpprofiles.Location",
 	fields: []baseField{
-		&primitiveField{
-			fieldName:       "ID",
-			originFieldName: "Id",
-			returnType:      "uint64",
-			defaultVal:      "uint64(0)",
-			testVal:         "uint64(1)",
-		},
-		&primitiveField{
+		&optionalPrimitiveValue{
 			fieldName:  "MappingIndex",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
 			fieldName:  "Address",
@@ -479,20 +435,14 @@ var location = &messageValueStruct{
 			defaultVal: "false",
 			testVal:    "true",
 		},
-		&primitiveField{
-			fieldName:  "TypeIndex",
-			returnType: "uint32",
-			defaultVal: "uint32(0)",
-			testVal:    "uint32(1)",
-		},
 		&sliceField{
-			fieldName:   "Attributes",
-			returnSlice: uInt64Slice,
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 	},
 }
 
-var lineSlice = &sliceOfValues{
+var lineSlice = &sliceOfPtrs{
 	structName: "LineSlice",
 	element:    line,
 }
@@ -504,9 +454,9 @@ var line = &messageValueStruct{
 	fields: []baseField{
 		&primitiveField{
 			fieldName:  "FunctionIndex",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
 			fieldName:  "Line",
@@ -523,7 +473,7 @@ var line = &messageValueStruct{
 	},
 }
 
-var functionSlice = &sliceOfValues{
+var functionSlice = &sliceOfPtrs{
 	structName: "FunctionSlice",
 	element:    function,
 }
@@ -534,29 +484,22 @@ var function = &messageValueStruct{
 	originFullName: "otlpprofiles.Function",
 	fields: []baseField{
 		&primitiveField{
-			fieldName:       "ID",
-			originFieldName: "Id",
-			returnType:      "uint64",
-			defaultVal:      "uint64(0)",
-			testVal:         "uint64(1)",
+			fieldName:  "NameStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
-			fieldName:  "Name",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "SystemNameStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
-			fieldName:  "SystemName",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
-		},
-		&primitiveField{
-			fieldName:  "Filename",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "FilenameStrindex",
+			returnType: "int32",
+			defaultVal: "int32(0)",
+			testVal:    "int32(1)",
 		},
 		&primitiveField{
 			fieldName:  "StartLine",
@@ -567,42 +510,25 @@ var function = &messageValueStruct{
 	},
 }
 
-var attributeUnitSlice = &sliceOfValues{
-	structName: "AttributeUnitSlice",
-	element:    attributeUnit,
+var attributeTableSlice = &sliceOfValues{
+	structName: "AttributeTableSlice",
+	element:    attribute,
 }
 
-var attributeUnit = &messageValueStruct{
-	structName:     "AttributeUnit",
-	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
-	originFullName: "otlpprofiles.AttributeUnit",
+var attribute = &messageValueStruct{
+	structName:     "Attribute",
+	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
+	originFullName: "v1.KeyValue",
 	fields: []baseField{
 		&primitiveField{
-			fieldName:  "AttributeKey",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName:  "Key",
+			returnType: "string",
+			defaultVal: `""`,
+			testVal:    `"key"`,
 		},
-		&primitiveField{
-			fieldName:  "Unit",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+		&messageValueField{
+			fieldName:     "Value",
+			returnMessage: anyValue,
 		},
-	},
-}
-
-var linkSlice = &sliceOfValues{
-	structName: "LinkSlice",
-	element:    link,
-}
-
-var link = &messageValueStruct{
-	structName:     "Link",
-	description:    "// Link represents a pointer from a profile Sample to a trace Span.",
-	originFullName: "otlpprofiles.Link",
-	fields: []baseField{
-		traceIDField,
-		spanIDField,
 	},
 }

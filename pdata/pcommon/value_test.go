@@ -17,48 +17,48 @@ import (
 
 func TestValue(t *testing.T) {
 	v := NewValueStr("abc")
-	assert.EqualValues(t, ValueTypeStr, v.Type())
-	assert.EqualValues(t, "abc", v.Str())
+	assert.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "abc", v.Str())
 
 	v = NewValueInt(123)
-	assert.EqualValues(t, ValueTypeInt, v.Type())
+	assert.Equal(t, ValueTypeInt, v.Type())
 	assert.EqualValues(t, 123, v.Int())
 
 	v = NewValueDouble(3.4)
-	assert.EqualValues(t, ValueTypeDouble, v.Type())
+	assert.Equal(t, ValueTypeDouble, v.Type())
 	assert.InDelta(t, 3.4, v.Double(), 0.01)
 
 	v = NewValueBool(true)
-	assert.EqualValues(t, ValueTypeBool, v.Type())
+	assert.Equal(t, ValueTypeBool, v.Type())
 	assert.True(t, v.Bool())
 
 	v = NewValueBytes()
-	assert.EqualValues(t, ValueTypeBytes, v.Type())
+	assert.Equal(t, ValueTypeBytes, v.Type())
 
 	v = NewValueEmpty()
-	assert.EqualValues(t, ValueTypeEmpty, v.Type())
+	assert.Equal(t, ValueTypeEmpty, v.Type())
 
 	v = NewValueMap()
-	assert.EqualValues(t, ValueTypeMap, v.Type())
+	assert.Equal(t, ValueTypeMap, v.Type())
 
 	v = NewValueSlice()
-	assert.EqualValues(t, ValueTypeSlice, v.Type())
+	assert.Equal(t, ValueTypeSlice, v.Type())
 }
 
 func TestValueReadOnly(t *testing.T) {
 	state := internal.StateReadOnly
 	v := newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}, &state)
 
-	assert.EqualValues(t, ValueTypeStr, v.Type())
-	assert.EqualValues(t, "v", v.Str())
+	assert.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "v", v.Str())
 	assert.EqualValues(t, 0, v.Int())
 	assert.InDelta(t, 0, v.Double(), 0.01)
 	assert.False(t, v.Bool())
-	assert.EqualValues(t, ByteSlice{}, v.Bytes())
-	assert.EqualValues(t, Map{}, v.Map())
-	assert.EqualValues(t, Slice{}, v.Slice())
+	assert.Equal(t, ByteSlice{}, v.Bytes())
+	assert.Equal(t, Map{}, v.Map())
+	assert.Equal(t, Slice{}, v.Slice())
 
-	assert.EqualValues(t, "v", v.AsString())
+	assert.Equal(t, "v", v.AsString())
 
 	assert.Panics(t, func() { v.SetStr("abc") })
 	assert.Panics(t, func() { v.SetInt(123) })
@@ -72,19 +72,18 @@ func TestValueReadOnly(t *testing.T) {
 	v.CopyTo(v2)
 	assert.Equal(t, v.AsRaw(), v2.AsRaw())
 	assert.Panics(t, func() { v2.CopyTo(v) })
-
 }
 
 func TestValueType(t *testing.T) {
-	assert.EqualValues(t, "Empty", ValueTypeEmpty.String())
-	assert.EqualValues(t, "Str", ValueTypeStr.String())
-	assert.EqualValues(t, "Bool", ValueTypeBool.String())
-	assert.EqualValues(t, "Int", ValueTypeInt.String())
-	assert.EqualValues(t, "Double", ValueTypeDouble.String())
-	assert.EqualValues(t, "Map", ValueTypeMap.String())
-	assert.EqualValues(t, "Slice", ValueTypeSlice.String())
-	assert.EqualValues(t, "Bytes", ValueTypeBytes.String())
-	assert.EqualValues(t, "", ValueType(100).String())
+	assert.Equal(t, "Empty", ValueTypeEmpty.String())
+	assert.Equal(t, "Str", ValueTypeStr.String())
+	assert.Equal(t, "Bool", ValueTypeBool.String())
+	assert.Equal(t, "Int", ValueTypeInt.String())
+	assert.Equal(t, "Double", ValueTypeDouble.String())
+	assert.Equal(t, "Map", ValueTypeMap.String())
+	assert.Equal(t, "Slice", ValueTypeSlice.String())
+	assert.Equal(t, "Bytes", ValueTypeBytes.String())
+	assert.Empty(t, ValueType(100).String())
 }
 
 func TestValueMap(t *testing.T) {
@@ -111,7 +110,7 @@ func TestValueMap(t *testing.T) {
 	assert.Equal(t, NewValueStr("somestr"), got)
 
 	// Insert the second map as a child. This should perform a deep copy.
-	assert.EqualValues(t, 2, m1.Map().Len())
+	assert.Equal(t, 2, m1.Map().Len())
 	got, exists = m1.Map().Get("double_key")
 	assert.True(t, exists)
 	assert.Equal(t, NewValueDouble(123), got)
@@ -121,7 +120,7 @@ func TestValueMap(t *testing.T) {
 
 	// Modify the source map m2 that was inserted into m1.
 	m2.PutStr("key_in_child", "somestr2")
-	assert.EqualValues(t, 1, m2.Len())
+	assert.Equal(t, 1, m2.Len())
 	got, exists = m2.Get("key_in_child")
 	assert.True(t, exists)
 	assert.Equal(t, NewValueStr("somestr2"), got)
@@ -135,7 +134,7 @@ func TestValueMap(t *testing.T) {
 
 	// Now modify the inserted map (not the source)
 	childMap.Map().PutStr("key_in_child", "somestr3")
-	assert.EqualValues(t, 1, childMap.Map().Len())
+	assert.Equal(t, 1, childMap.Map().Len())
 	got, exists = childMap.Map().Get("key_in_child")
 	require.True(t, exists)
 	assert.Equal(t, NewValueStr("somestr3"), got)
@@ -147,13 +146,13 @@ func TestValueMap(t *testing.T) {
 
 	removed := m1.Map().Remove("double_key")
 	assert.True(t, removed)
-	assert.EqualValues(t, 1, m1.Map().Len())
+	assert.Equal(t, 1, m1.Map().Len())
 	_, exists = m1.Map().Get("double_key")
 	assert.False(t, exists)
 
 	removed = m1.Map().Remove("child_map")
 	assert.True(t, removed)
-	assert.EqualValues(t, 0, m1.Map().Len())
+	assert.Equal(t, 0, m1.Map().Len())
 	_, exists = m1.Map().Get("child_map")
 	assert.False(t, exists)
 
@@ -161,51 +160,51 @@ func TestValueMap(t *testing.T) {
 	orig := &otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{KvlistValue: nil}}
 	state := internal.StateMutable
 	m1 = newValue(orig, &state)
-	assert.EqualValues(t, Map{}, m1.Map())
+	assert.Equal(t, Map{}, m1.Map())
 }
 
 func TestValueSlice(t *testing.T) {
 	a1 := NewValueSlice()
-	assert.EqualValues(t, ValueTypeSlice, a1.Type())
-	assert.EqualValues(t, NewSlice(), a1.Slice())
-	assert.EqualValues(t, 0, a1.Slice().Len())
+	assert.Equal(t, ValueTypeSlice, a1.Type())
+	assert.Equal(t, NewSlice(), a1.Slice())
+	assert.Equal(t, 0, a1.Slice().Len())
 
 	a1.Slice().AppendEmpty().SetDouble(123)
-	assert.EqualValues(t, 1, a1.Slice().Len())
-	assert.EqualValues(t, NewValueDouble(123), a1.Slice().At(0))
+	assert.Equal(t, 1, a1.Slice().Len())
+	assert.Equal(t, NewValueDouble(123), a1.Slice().At(0))
 	// Create a second array.
 	a2 := NewValueSlice()
-	assert.EqualValues(t, 0, a2.Slice().Len())
+	assert.Equal(t, 0, a2.Slice().Len())
 
 	a2.Slice().AppendEmpty().SetStr("somestr")
-	assert.EqualValues(t, 1, a2.Slice().Len())
-	assert.EqualValues(t, NewValueStr("somestr"), a2.Slice().At(0))
+	assert.Equal(t, 1, a2.Slice().Len())
+	assert.Equal(t, NewValueStr("somestr"), a2.Slice().At(0))
 
 	// Insert the second array as a child.
 	a2.CopyTo(a1.Slice().AppendEmpty())
-	assert.EqualValues(t, 2, a1.Slice().Len())
-	assert.EqualValues(t, NewValueDouble(123), a1.Slice().At(0))
-	assert.EqualValues(t, a2, a1.Slice().At(1))
+	assert.Equal(t, 2, a1.Slice().Len())
+	assert.Equal(t, NewValueDouble(123), a1.Slice().At(0))
+	assert.Equal(t, a2, a1.Slice().At(1))
 
 	// Check that the array was correctly inserted.
 	childArray := a1.Slice().At(1)
-	assert.EqualValues(t, ValueTypeSlice, childArray.Type())
-	assert.EqualValues(t, 1, childArray.Slice().Len())
+	assert.Equal(t, ValueTypeSlice, childArray.Type())
+	assert.Equal(t, 1, childArray.Slice().Len())
 
 	v := childArray.Slice().At(0)
-	assert.EqualValues(t, ValueTypeStr, v.Type())
-	assert.EqualValues(t, "somestr", v.Str())
+	assert.Equal(t, ValueTypeStr, v.Type())
+	assert.Equal(t, "somestr", v.Str())
 
 	// Test nil values case for Slice() func.
 	state := internal.StateMutable
 	a1 = newValue(&otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{ArrayValue: nil}}, &state)
-	assert.EqualValues(t, newSlice(nil, nil), a1.Slice())
+	assert.Equal(t, newSlice(nil, nil), a1.Slice())
 }
 
 func TestNilOrigSetValue(t *testing.T) {
 	av := NewValueEmpty()
 	av.SetStr("abc")
-	assert.EqualValues(t, "abc", av.Str())
+	assert.Equal(t, "abc", av.Str())
 
 	av = NewValueEmpty()
 	av.SetInt(123)
@@ -224,12 +223,30 @@ func TestNilOrigSetValue(t *testing.T) {
 	assert.Equal(t, []byte{1, 2, 3}, av.Bytes().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
+	require.NoError(t, av.SetEmptyMap().FromRaw(map[string]any{"k": "v"}))
 	assert.Equal(t, map[string]any{"k": "v"}, av.Map().AsRaw())
 
 	av = NewValueEmpty()
-	assert.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
+	require.NoError(t, av.SetEmptySlice().FromRaw([]any{int64(1), "val"}))
 	assert.Equal(t, []any{int64(1), "val"}, av.Slice().AsRaw())
+}
+
+func TestValue_MoveTo(t *testing.T) {
+	src := NewValueMap()
+	src.Map().PutStr("key", "value")
+
+	dest := NewValueEmpty()
+	assert.True(t, dest.Equal(NewValueEmpty()))
+
+	src.MoveTo(dest)
+	assert.True(t, src.Equal(NewValueEmpty()))
+
+	expected := NewValueMap()
+	expected.Map().PutStr("key", "value")
+	assert.True(t, dest.Equal(expected))
+
+	dest.MoveTo(dest)
+	assert.True(t, dest.Equal(expected))
 }
 
 func TestValue_CopyTo(t *testing.T) {
@@ -267,17 +284,17 @@ func TestSliceWithNilValues(t *testing.T) {
 	sm := newSlice(&origWithNil, &state)
 
 	val := sm.At(0)
-	assert.EqualValues(t, ValueTypeEmpty, val.Type())
-	assert.EqualValues(t, "", val.Str())
+	assert.Equal(t, ValueTypeEmpty, val.Type())
+	assert.Empty(t, val.Str())
 
 	val = sm.At(1)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "test_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "test_value", val.Str())
 
 	sm.AppendEmpty().SetStr("other_value")
 	val = sm.At(2)
-	assert.EqualValues(t, ValueTypeStr, val.Type())
-	assert.EqualValues(t, "other_value", val.Str())
+	assert.Equal(t, ValueTypeStr, val.Type())
+	assert.Equal(t, "other_value", val.Str())
 }
 
 func TestValueAsString(t *testing.T) {
@@ -347,10 +364,10 @@ func TestValueAsString(t *testing.T) {
 			expected: base64.StdEncoding.EncodeToString([]byte("String bytes")),
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsString()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsString()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -405,10 +422,10 @@ func TestValueAsRaw(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := test.input.AsRaw()
-			assert.Equal(t, test.expected, actual)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := tt.input.AsRaw()
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -545,7 +562,7 @@ func TestNewValueFromRaw(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := NewValueEmpty()
-			assert.NoError(t, actual.FromRaw(tt.input))
+			require.NoError(t, actual.FromRaw(tt.input))
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
@@ -561,7 +578,7 @@ func TestInvalidValue(t *testing.T) {
 	assert.False(t, v.Bool())
 	assert.Equal(t, int64(0), v.Int())
 	assert.InDelta(t, float64(0), v.Double(), 0.01)
-	assert.Equal(t, "", v.Str())
+	assert.Empty(t, v.Str())
 	assert.Equal(t, ByteSlice{}, v.Bytes())
 	assert.Equal(t, Map{}, v.Map())
 	assert.Equal(t, Slice{}, v.Slice())
@@ -577,6 +594,246 @@ func TestInvalidValue(t *testing.T) {
 	assert.Panics(t, func() { v.SetEmptyMap() })
 	assert.Panics(t, func() { v.SetEmptySlice() })
 	assert.Panics(t, func() { v.CopyTo(NewValueEmpty()) })
+}
+
+func TestValueEqual(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		value      Value
+		comparison Value
+		expected   bool
+	}{
+		{
+			name:       "different types",
+			value:      NewValueEmpty(),
+			comparison: NewValueStr("test"),
+			expected:   false,
+		},
+		{
+			name:       "same empty",
+			value:      NewValueEmpty(),
+			comparison: NewValueEmpty(),
+			expected:   true,
+		},
+		{
+			name:       "same strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("test"),
+			expected:   true,
+		},
+		{
+			name:       "different strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("non-test"),
+			expected:   false,
+		},
+		{
+			name:       "same booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(true),
+			expected:   true,
+		},
+		{
+			name:       "different booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(false),
+			expected:   false,
+		},
+		{
+			name:       "same int",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(42),
+			expected:   true,
+		},
+		{
+			name:       "different ints",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(1701),
+			expected:   false,
+		},
+		{
+			name:       "same double",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(13.37),
+			expected:   true,
+		},
+		{
+			name:       "different doubles",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(17.01),
+			expected:   false,
+		},
+		{
+			name: "same byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different byte slice",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 7, 0, 1})
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "same slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different slice",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(t, m.Slice().FromRaw([]any{1701}))
+				return m
+			}(),
+			expected: false,
+		},
+		{
+			name: "same map",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			expected: true,
+		},
+		{
+			name: "different maps",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("bonjour", "monde")
+				return m
+			}(),
+			expected: false,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.value.Equal(tt.comparison))
+		})
+	}
+}
+
+func BenchmarkValueEqual(b *testing.B) {
+	for _, bb := range []struct {
+		name       string
+		value      Value
+		comparison Value
+	}{
+		{
+			name:       "nil",
+			value:      NewValueEmpty(),
+			comparison: NewValueEmpty(),
+		},
+		{
+			name:       "strings",
+			value:      NewValueStr("test"),
+			comparison: NewValueStr("test"),
+		},
+		{
+			name:       "booleans",
+			value:      NewValueBool(true),
+			comparison: NewValueBool(true),
+		},
+		{
+			name:       "ints",
+			value:      NewValueInt(42),
+			comparison: NewValueInt(42),
+		},
+		{
+			name:       "doubles",
+			value:      NewValueDouble(13.37),
+			comparison: NewValueDouble(13.37),
+		},
+		{
+			name: "byte slices",
+			value: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueBytes()
+				m.Bytes().FromRaw([]byte{1, 3, 3, 7})
+				return m
+			}(),
+		},
+		{
+			name: "slices",
+			value: func() Value {
+				m := NewValueSlice()
+				require.NoError(b, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueSlice()
+				require.NoError(b, m.Slice().FromRaw([]any{1337}))
+				return m
+			}(),
+		},
+		{
+			name: "maps",
+			value: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+			comparison: func() Value {
+				m := NewValueMap()
+				m.Map().PutStr("hello", "world")
+				return m
+			}(),
+		},
+	} {
+		b.Run(bb.name, func(b *testing.B) {
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for n := 0; n < b.N; n++ {
+				_ = bb.value.Equal(bb.comparison)
+			}
+		})
+	}
 }
 
 func generateTestValueMap() Value {

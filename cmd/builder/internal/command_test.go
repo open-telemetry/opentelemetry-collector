@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
@@ -36,259 +36,90 @@ func TestCommand(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := Command()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Command() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if !tt.wantErr {
+				require.NoErrorf(t, err, "Command()")
+				assert.Equal(t, tt.want.Aliases, got.Aliases)
+				assert.Equal(t, tt.want.Annotations, got.Annotations)
+				assert.Equal(t, tt.want.ValidArgs, got.ValidArgs)
+				assert.Equal(t, tt.want.ArgAliases, got.ArgAliases)
+				assert.Equal(t, tt.want.Use, got.Use)
+				assert.Equal(t, tt.want.SilenceUsage, got.SilenceUsage)
+				assert.Equal(t, tt.want.SilenceErrors, got.SilenceErrors)
+				assert.True(t, strings.HasPrefix(got.Long, tt.want.Long))
+				assert.Empty(t, got.Short)
+				assert.NotEqual(t, tt.want.HasFlags(), got.Flags().HasFlags())
+			} else {
+				require.Error(t, err)
 			}
-			assert.Equal(t, tt.want.Aliases, got.Aliases)
-			assert.Equal(t, tt.want.Annotations, got.Annotations)
-			assert.Equal(t, tt.want.ValidArgs, got.ValidArgs)
-			assert.Equal(t, tt.want.ArgAliases, got.ArgAliases)
-			assert.Equal(t, tt.want.Use, got.Use)
-			assert.Equal(t, tt.want.SilenceUsage, got.SilenceUsage)
-			assert.Equal(t, tt.want.SilenceErrors, got.SilenceErrors)
-			assert.True(t, strings.HasPrefix(got.Long, tt.want.Long))
-			assert.Empty(t, got.Short)
-			assert.NotEqual(t, tt.want.HasFlags(), got.Flags().HasFlags())
 		})
 	}
 }
 
-func Test_applyCfgFromFile(t *testing.T) {
-	testDistribution := builder.Distribution{
-		Module:           "testModule",
-		Name:             "testName",
-		Go:               "testGO",
-		Description:      "testDescription",
-		OtelColVersion:   "testOtelColVersion",
-		OutputPath:       "testOutputPath",
-		Version:          "testVersion",
-		BuildTags:        "",
-		DebugCompilation: true,
-	}
-	testStringTable := []string{"A", "B", "C"}
-	testModule := builder.Module{
-		Name:   "testName",
-		GoMod:  "testGoMod",
-		Import: "testImport",
-		Path:   "testPath",
-	}
-	type args struct {
-		flags       *flag.FlagSet
-		cfgFromFile builder.Config
-	}
+func TestApplyFlags(t *testing.T) {
 	tests := []struct {
-		name    string
-		args    args
-		want    builder.Config
-		wantErr bool
+		name  string
+		flags []string
+		want  *builder.Config
 	}{
 		{
-			name: "distribution, scheme, excludes, exporters, receivers, processors, replaces are applied correctly",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:       zap.NewNop(),
-					Distribution: testDistribution,
-					Excludes:     testStringTable,
-					Processors:   []builder.Module{testModule},
-					Receivers:    []builder.Module{testModule},
-					Exporters:    []builder.Module{testModule},
-					Replaces:     testStringTable,
-					ConfResolver: builder.ConfResolver{
-						DefaultURIScheme: "env",
-					},
-				},
-			},
-			want: builder.Config{
-				Logger:       zap.NewNop(),
-				Distribution: testDistribution,
-				ConfResolver: builder.ConfResolver{
-					DefaultURIScheme: "env",
-				},
-				Excludes:   testStringTable,
-				Processors: []builder.Module{testModule},
-				Receivers:  []builder.Module{testModule},
-				Exporters:  []builder.Module{testModule},
-				Replaces:   testStringTable,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip compilation false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:       zap.NewNop(),
-					Distribution: testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: false,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip compilation true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip get modules false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				SkipGetModules:  false,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip get modules true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:          zap.NewNop(),
-				SkipCompilation: true,
-				SkipGetModules:  true,
-				Distribution:    testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip strict versioning true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:               zap.NewNop(),
-					SkipCompilation:      true,
-					SkipStrictVersioning: true,
-					Distribution:         testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipCompilation:      true,
-				SkipGetModules:       true,
+			name: "Default flag values",
+			want: &builder.Config{
 				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
 			},
-			wantErr: false,
 		},
 		{
-			name: "Skip generate false",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    false,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
-				SkipGenerate:         false,
-				SkipCompilation:      true,
-				SkipGetModules:       true,
-				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
-			},
-			wantErr: false,
-		},
-		{
-			name: "Skip generate true",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-				cfgFromFile: builder.Config{
-					Logger:          zap.NewNop(),
-					SkipGenerate:    true,
-					SkipCompilation: true,
-					SkipGetModules:  true,
-					Distribution:    testDistribution,
-				},
-			},
-			want: builder.Config{
-				Logger:               zap.NewNop(),
+			name:  "All flag values",
+			flags: []string{"--skip-generate=true", "--skip-compilation=true", "--skip-get-modules=true", "--skip-strict-versioning=true", "--ldflags=test", "--gcflags=test", "--verbose=true"},
+			want: &builder.Config{
 				SkipGenerate:         true,
 				SkipCompilation:      true,
 				SkipGetModules:       true,
 				SkipStrictVersioning: true,
-				Distribution:         testDistribution,
+				LDFlags:              "test",
+				GCFlags:              "test",
+				Verbose:              true,
 			},
-			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			applyCfgFromFile(tt.args.flags, tt.args.cfgFromFile)
-			assert.Equal(t, tt.want.ConfResolver.DefaultURIScheme, cfg.ConfResolver.DefaultURIScheme)
-			assert.Equal(t, tt.want.Distribution, cfg.Distribution)
+			flags := flag.NewFlagSet("version=1.0.0", 1)
+			require.NoError(t, initFlags(flags))
+			require.NoError(t, flags.Parse(tt.flags))
+			cfg, err := builder.NewDefaultConfig()
+			require.NoError(t, err)
+			require.NoError(t, applyFlags(flags, cfg))
 			assert.Equal(t, tt.want.SkipGenerate, cfg.SkipGenerate)
 			assert.Equal(t, tt.want.SkipCompilation, cfg.SkipCompilation)
 			assert.Equal(t, tt.want.SkipGetModules, cfg.SkipGetModules)
-			assert.True(t, cfg.SkipStrictVersioning)
-			assert.Equal(t, tt.want.Excludes, cfg.Excludes)
-			assert.Equal(t, tt.want.Exporters, cfg.Exporters)
-			assert.Equal(t, tt.want.Receivers, cfg.Receivers)
-			assert.Equal(t, tt.want.Processors, cfg.Processors)
-			assert.Equal(t, tt.want.Replaces, cfg.Replaces)
+			assert.Equal(t, tt.want.SkipStrictVersioning, cfg.SkipStrictVersioning)
+			assert.Equal(t, tt.want.LDFlags, cfg.LDFlags)
+			assert.Equal(t, tt.want.Verbose, cfg.Verbose)
 		})
 	}
 }
 
-func Test_initConfig(t *testing.T) {
-	type args struct {
-		flags *flag.FlagSet
-	}
+func TestInitConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
+		flags   *flag.FlagSet
 		wantErr bool
 	}{
 		{
-			name: "initConfig created correctly",
-			args: args{
-				flags: flag.NewFlagSet("version=1.0.0", 1),
-			},
+			name:    "initConfig created correctly",
+			flags:   flag.NewFlagSet("version=1.0.0", 1),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := initConfig(tt.args.flags); (err != nil) != tt.wantErr {
-				t.Errorf("initConfig() error = %v, wantErr %v", err, tt.wantErr)
+			require.NoError(t, initFlags(tt.flags))
+			_, err := initConfig(tt.flags)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
 		})
 	}
 }

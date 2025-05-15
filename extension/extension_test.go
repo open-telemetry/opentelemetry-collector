@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 )
@@ -19,7 +20,7 @@ type nopExtension struct {
 }
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
+	testType := component.MustNewType("test")
 	defaultCfg := struct{}{}
 	nopExtensionInstance := new(nopExtension)
 
@@ -30,48 +31,14 @@ func TestNewFactory(t *testing.T) {
 			return nopExtensionInstance, nil
 		},
 		component.StabilityLevelDevelopment)
-	assert.EqualValues(t, testType, factory.Type())
+	assert.Equal(t, testType, factory.Type())
 	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDevelopment, factory.ExtensionStability())
-	ext, err := factory.CreateExtension(context.Background(), Settings{}, &defaultCfg)
-	assert.NoError(t, err)
+	assert.Equal(t, component.StabilityLevelDevelopment, factory.Stability())
+	ext, err := factory.Create(context.Background(), Settings{ID: component.NewID(testType)}, &defaultCfg)
+	require.NoError(t, err)
 	assert.Same(t, nopExtensionInstance, ext)
-}
 
-func TestMakeFactoryMap(t *testing.T) {
-	type testCase struct {
-		name string
-		in   []Factory
-		out  map[component.Type]Factory
-	}
-
-	p1 := NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)
-	p2 := NewFactory(component.MustNewType("p2"), nil, nil, component.StabilityLevelAlpha)
-	testCases := []testCase{
-		{
-			name: "different names",
-			in:   []Factory{p1, p2},
-			out: map[component.Type]Factory{
-				p1.Type(): p1,
-				p2.Type(): p2,
-			},
-		},
-		{
-			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil, nil, component.StabilityLevelAlpha)},
-		},
-	}
-	for i := range testCases {
-		tt := testCases[i]
-		t.Run(tt.name, func(t *testing.T) {
-			out, err := MakeFactoryMap(tt.in...)
-			if tt.out == nil {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.out, out)
-		})
-	}
+	_, err = factory.Create(context.Background(), Settings{ID: component.NewID(component.MustNewType("mismatch"))}, &defaultCfg)
+	require.Error(t, err)
 }

@@ -7,15 +7,16 @@ import (
 	"strconv"
 	"time"
 
+	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
-// AttributeEnumAttr specifies the a value enum_attr attribute.
+// AttributeEnumAttr specifies the value enum_attr attribute.
 type AttributeEnumAttr int
 
 const (
@@ -43,6 +44,36 @@ var MapAttributeEnumAttr = map[string]AttributeEnumAttr{
 	"red":   AttributeEnumAttrRed,
 	"green": AttributeEnumAttrGreen,
 	"blue":  AttributeEnumAttrBlue,
+}
+
+var MetricsInfo = metricsInfo{
+	DefaultMetric: metricInfo{
+		Name: "default.metric",
+	},
+	DefaultMetricToBeRemoved: metricInfo{
+		Name: "default.metric.to_be_removed",
+	},
+	MetricInputType: metricInfo{
+		Name: "metric.input_type",
+	},
+	OptionalMetric: metricInfo{
+		Name: "optional.metric",
+	},
+	OptionalMetricEmptyUnit: metricInfo{
+		Name: "optional.metric.empty_unit",
+	},
+}
+
+type metricsInfo struct {
+	DefaultMetric            metricInfo
+	DefaultMetricToBeRemoved metricInfo
+	MetricInputType          metricInfo
+	OptionalMetric           metricInfo
+	OptionalMetricEmptyUnit  metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricDefaultMetric struct {
@@ -349,7 +380,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	if !mbc.Metrics.DefaultMetric.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.")
@@ -500,7 +530,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("go.opentelemetry.io/collector/internal/receiver/samplereceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricDefaultMetric.emit(ils.Metrics())

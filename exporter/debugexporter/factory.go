@@ -15,8 +15,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/internal/otlptext"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // The value of "type" key in configuration.
@@ -29,12 +31,13 @@ const (
 
 // NewFactory creates a factory for Debug exporter
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		componentType,
 		createDefaultConfig,
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTraces, metadata.TracesStability),
+		xexporter.WithMetrics(createMetrics, metadata.MetricsStability),
+		xexporter.WithLogs(createLogs, metadata.LogsStability),
+		xexporter.WithProfiles(createProfiles, metadata.ProfilesStability),
 	)
 }
 
@@ -47,36 +50,48 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
+func createTraces(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewTracesExporter(ctx, set, config,
-		debugExporter.pushTraces,
+	exporterLogger := createLogger(cfg, set.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewTraces(ctx, set, config,
+		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
+func createMetrics(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewMetricsExporter(ctx, set, config,
-		debugExporter.pushMetrics,
+	exporterLogger := createLogger(cfg, set.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewMetrics(ctx, set, config,
+		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
 }
 
-func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
+func createLogs(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
-	exporterLogger := createLogger(cfg, set.TelemetrySettings.Logger)
-	debugExporter := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewLogsExporter(ctx, set, config,
-		debugExporter.pushLogs,
+	exporterLogger := createLogger(cfg, set.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return exporterhelper.NewLogs(ctx, set, config,
+		debug.pushLogs,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
+		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
+	)
+}
+
+func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
+	cfg := config.(*Config)
+	exporterLogger := createLogger(cfg, set.Logger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	return xexporterhelper.NewProfilesExporter(ctx, set, config,
+		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),

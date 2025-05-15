@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/internal/memorylimiter"
@@ -25,7 +26,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateExtension(t *testing.T) {
+func TestCreate(t *testing.T) {
 	factory := NewFactory()
 	require.NotNil(t, factory)
 
@@ -37,11 +38,14 @@ func TestCreateExtension(t *testing.T) {
 	pCfg.MemorySpikeLimitMiB = 1907
 	pCfg.CheckInterval = 100 * time.Millisecond
 
-	tp, err := factory.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
-	assert.NoError(t, err)
+	set := extensiontest.NewNopSettings(factory.Type())
+	set.ID = component.NewID(factory.Type())
+
+	tp, err := factory.Create(context.Background(), set, cfg)
+	require.NoError(t, err)
 	assert.NotNil(t, tp)
 	// test if we can shutdown a monitoring routine that has not started
-	assert.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
+	require.ErrorIs(t, tp.Shutdown(context.Background()), memorylimiter.ErrShutdownNotStarted)
 	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
 
 	assert.NoError(t, tp.Shutdown(context.Background()))

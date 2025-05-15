@@ -1,0 +1,9 @@
+type: yaml
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: provider
+  stability:
+    stable: [provider]
+  distributions: [core, contrib, k8s]

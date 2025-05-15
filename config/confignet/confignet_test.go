@@ -41,7 +41,7 @@ func TestAddrConfigTimeout(t *testing.T) {
 		},
 	}
 	_, err := nac.Dial(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
 		assert.True(t, netErr.Timeout())
@@ -58,7 +58,7 @@ func TestTCPAddrConfigTimeout(t *testing.T) {
 		},
 	}
 	_, err := nac.Dial(context.Background())
-	assert.Error(t, err)
+	require.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
 		assert.True(t, netErr.Timeout())
@@ -73,7 +73,7 @@ func TestAddrConfig(t *testing.T) {
 		Transport: TransportTypeTCP,
 	}
 	ln, err := nas.Listen(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	done := make(chan bool, 1)
 
 	go func() {
@@ -94,7 +94,7 @@ func TestAddrConfig(t *testing.T) {
 	}
 	var conn net.Conn
 	conn, err = nac.Dial(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
 	assert.NoError(t, conn.Close())
@@ -106,12 +106,12 @@ func Test_NetAddr_Validate(t *testing.T) {
 	na := &AddrConfig{
 		Transport: TransportTypeTCP,
 	}
-	assert.NoError(t, na.Validate())
+	require.NoError(t, na.Validate())
 
 	na = &AddrConfig{
 		Transport: transportTypeEmpty,
 	}
-	assert.Error(t, na.Validate())
+	require.Error(t, na.Validate())
 
 	na = &AddrConfig{
 		Transport: "random string",
@@ -124,7 +124,7 @@ func TestTCPAddrConfig(t *testing.T) {
 		Endpoint: "localhost:0",
 	}
 	ln, err := nas.Listen(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	done := make(chan bool, 1)
 
 	go func() {
@@ -144,7 +144,7 @@ func TestTCPAddrConfig(t *testing.T) {
 	}
 	var conn net.Conn
 	conn, err = nac.Dial(context.Background())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
 	assert.NoError(t, conn.Close())

@@ -12,7 +12,7 @@ The system defines six statuses, listed in the table below:
 | OK               | The component is running without issue.                                                                                                            |
 | RecoverableError | The component has experienced a transient error and may recover.                                                                                   |
 | PermanentError   | The component has detected a condition at runtime that will need human intervention to fix. The collector will continue to run in a degraded mode. |
-| FatalError       | A component has experienced a fatal error and the collecctor will shutdown.                                                                        |
+| FatalError       | A component has experienced a fatal error and the collector will shutdown.                                                                        |
 | Stopping         | The component is in the process of shutting down.                                                                                                  |
 | Stopped          | The component has completed shutdown.                                                                                                              |
 
@@ -36,7 +36,7 @@ There is a finite state machine underlying the status reporting API that governs
 
 ![State Diagram](img/component-status-state-diagram.png)
 
-The finite state machine ensures that components progress through the lifecycle properly and it manages transitions through runtime states so that components do not need to track their state internally. Only changes in status result in new events being generated; repeat reports of the same status are ignored. PermanentError and FatalError are permanent runtime states. A component in these states cannot make any further state transitions.
+The finite state machine ensures that components progress through the lifecycle properly and it manages transitions through runtime states so that components do not need to track their state internally. Only changes in status result in new events being generated; repeat reports of the same status are ignored. PermanentError is a permanent runtime state. A component in a PermanentError state cannot transition to OK or RecoverableError, but it can transition to Stopping. FatalError is a final state. A component in a FatalError state cannot make any further state transitions.
 
 ![Status Event Generation](img/component-status-event-generation.png)
 
@@ -61,6 +61,7 @@ Under most circumstances, a component does not need to report explicit status du
 **Runtime**
 
 ![Runtime State Diagram](img/component-status-runtime-states.png)
+
 During runtime a component should not have to keep track of its state. A component should report status as operations succeed or fail and the finite state machine will handle the rest. Changes in status will result in new status events being emitted. Repeat reports of the same status will no-op. Similarly, attempts to make an invalid state transition, such as PermanentError to OK, will have no effect.
 
 We intend to define guidelines to help component authors distinguish between recoverable and permanent errors on a per-component type basis and we'll update this document as we make decisions. See [this issue](https://github.com/open-telemetry/opentelemetry-collector/issues/9957) for current thoughts and discussions.

@@ -6,9 +6,33 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol.connector.consumed.items
+
+Number of items passed to the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.connector.produced.items
+
+Number of items emitted from the connector.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.exporter.consumed.items
+
+Number of items passed to the exporter.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
 ### otelcol_process_cpu_seconds
 
-Total CPU user and system time in seconds
+Total CPU user and system time in seconds [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,7 +40,7 @@ Total CPU user and system time in seconds
 
 ### otelcol_process_memory_rss
 
-Total physical memory (resident set size)
+Total physical memory (resident set size) [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -24,7 +48,7 @@ Total physical memory (resident set size)
 
 ### otelcol_process_runtime_heap_alloc_bytes
 
-Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
+Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc') [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -32,7 +56,7 @@ Bytes of allocated heap objects (see 'go doc runtime.MemStats.HeapAlloc')
 
 ### otelcol_process_runtime_total_alloc_bytes
 
-Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')
+Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc') [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +64,7 @@ Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalA
 
 ### otelcol_process_runtime_total_sys_memory_bytes
 
-Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
+Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys') [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -48,8 +72,32 @@ Total bytes of memory obtained from the OS (see 'go doc runtime.MemStats.Sys')
 
 ### otelcol_process_uptime
 
-Uptime of the process
+Uptime of the process [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Double | true |
+
+### otelcol.processor.consumed.items
+
+Number of items passed to the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.processor.produced.items
+
+Number of items emitted from the processor.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |
+
+### otelcol.receiver.produced.items
+
+Number of items emitted from the receiver.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {item} | Sum | Int | true |

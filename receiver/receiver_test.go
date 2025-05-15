@@ -8,89 +8,66 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/collector/receiver/internal"
+)
+
+var (
+	testType = component.MustNewType("test")
+	testID   = component.NewID(testType)
 )
 
 func TestNewFactory(t *testing.T) {
-	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg })
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
-	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
-	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
-	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, consumertest.NewNop())
-	assert.Error(t, err)
+	assert.Equal(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg, consumertest.NewNop())
+	require.ErrorIs(t, err, pipeline.ErrSignalNotSupported)
 }
 
 func TestNewFactoryWithOptions(t *testing.T) {
-	var testType = component.MustNewType("test")
 	defaultCfg := struct{}{}
-	factory := NewFactory(
+	f := NewFactory(
 		testType,
 		func() component.Config { return &defaultCfg },
 		WithTraces(createTraces, component.StabilityLevelDeprecated),
 		WithMetrics(createMetrics, component.StabilityLevelAlpha),
 		WithLogs(createLogs, component.StabilityLevelStable))
-	assert.EqualValues(t, testType, factory.Type())
-	assert.EqualValues(t, &defaultCfg, factory.CreateDefaultConfig())
+	assert.Equal(t, testType, f.Type())
+	assert.EqualValues(t, &defaultCfg, f.CreateDefaultConfig())
 
-	assert.Equal(t, component.StabilityLevelDeprecated, factory.TracesReceiverStability())
-	_, err := factory.CreateTracesReceiver(context.Background(), Settings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
+	wrongID := component.MustNewID("wrong")
+	wrongIDErrStr := internal.ErrIDMismatch(wrongID, testType).Error()
 
-	assert.Equal(t, component.StabilityLevelAlpha, factory.MetricsReceiverStability())
-	_, err = factory.CreateMetricsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
+	assert.Equal(t, component.StabilityLevelDeprecated, f.TracesStability())
+	_, err := f.CreateTraces(context.Background(), Settings{ID: testID}, &defaultCfg, nil)
+	require.NoError(t, err)
+	_, err = f.CreateTraces(context.Background(), Settings{ID: wrongID}, &defaultCfg, nil)
+	require.EqualError(t, err, wrongIDErrStr)
 
-	assert.Equal(t, component.StabilityLevelStable, factory.LogsReceiverStability())
-	_, err = factory.CreateLogsReceiver(context.Background(), Settings{}, &defaultCfg, nil)
-	assert.NoError(t, err)
-}
+	assert.Equal(t, component.StabilityLevelAlpha, f.MetricsStability())
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: testID}, &defaultCfg, nil)
+	require.NoError(t, err)
+	_, err = f.CreateMetrics(context.Background(), Settings{ID: wrongID}, &defaultCfg, nil)
+	require.EqualError(t, err, wrongIDErrStr)
 
-func TestMakeFactoryMap(t *testing.T) {
-	type testCase struct {
-		name string
-		in   []Factory
-		out  map[component.Type]Factory
-	}
-
-	p1 := NewFactory(component.MustNewType("p1"), nil)
-	p2 := NewFactory(component.MustNewType("p2"), nil)
-	testCases := []testCase{
-		{
-			name: "different names",
-			in:   []Factory{p1, p2},
-			out: map[component.Type]Factory{
-				p1.Type(): p1,
-				p2.Type(): p2,
-			},
-		},
-		{
-			name: "same name",
-			in:   []Factory{p1, p2, NewFactory(component.MustNewType("p1"), nil)},
-		},
-	}
-
-	for i := range testCases {
-		tt := testCases[i]
-		t.Run(tt.name, func(t *testing.T) {
-			out, err := MakeFactoryMap(tt.in...)
-			if tt.out == nil {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.out, out)
-		})
-	}
+	assert.Equal(t, component.StabilityLevelStable, f.LogsStability())
+	_, err = f.CreateLogs(context.Background(), Settings{ID: testID}, &defaultCfg, nil)
+	require.NoError(t, err)
+	_, err = f.CreateLogs(context.Background(), Settings{ID: wrongID}, &defaultCfg, nil)
+	require.EqualError(t, err, wrongIDErrStr)
 }
 
 var nopInstance = &nopReceiver{

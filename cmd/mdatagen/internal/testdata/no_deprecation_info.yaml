@@ -1,0 +1,7 @@
+type: file
+status:
+  class: receiver
+  stability:
+    beta: [logs]
+    stable: [metrics]
+    deprecated: [traces]

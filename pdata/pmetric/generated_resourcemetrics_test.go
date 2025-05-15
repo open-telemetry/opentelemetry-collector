@@ -22,6 +22,8 @@ func TestResourceMetrics_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewResourceMetrics(), ms)
 	assert.Equal(t, generateTestResourceMetrics(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestResourceMetrics(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
 	assert.Panics(t, func() { newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).MoveTo(dest) })
@@ -47,7 +49,7 @@ func TestResourceMetrics_Resource(t *testing.T) {
 
 func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	ms := NewResourceMetrics()
-	assert.Equal(t, "", ms.SchemaUrl())
+	assert.Empty(t, ms.SchemaUrl())
 	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
 	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly

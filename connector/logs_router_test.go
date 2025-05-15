@@ -10,12 +10,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type mutatingLogsSink struct {
@@ -27,10 +28,10 @@ func (mts *mutatingLogsSink) Capabilities() consumer.Capabilities {
 }
 
 func TestLogsRouterMultiplexing(t *testing.T) {
-	var max = 20
-	for numIDs := 1; numIDs < max; numIDs++ {
-		for numCons := 1; numCons < max; numCons++ {
-			for numLogs := 1; numLogs < max; numLogs++ {
+	num := 20
+	for numIDs := 1; numIDs < num; numIDs++ {
+		for numCons := 1; numCons < num; numCons++ {
+			for numLogs := 1; numLogs < num; numLogs++ {
 				t.Run(
 					fmt.Sprintf("%d-ids/%d-cons/%d-logs", numIDs, numCons, numLogs),
 					fuzzLogs(numIDs, numCons, numLogs),
@@ -42,13 +43,13 @@ func TestLogsRouterMultiplexing(t *testing.T) {
 
 func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 	return func(t *testing.T) {
-		allIDs := make([]component.ID, 0, numCons)
+		allIDs := make([]pipeline.ID, 0, numCons)
 		allCons := make([]consumer.Logs, 0, numCons)
-		allConsMap := make(map[component.ID]consumer.Logs)
+		allConsMap := make(map[pipeline.ID]consumer.Logs)
 
 		// If any consumer is mutating, the router must report mutating
 		for i := 0; i < numCons; i++ {
-			allIDs = append(allIDs, component.MustNewIDWithName("sink", strconv.Itoa(numCons)))
+			allIDs = append(allIDs, pipeline.NewIDWithName(pipeline.SignalLogs, "sink_"+strconv.Itoa(numCons)))
 			// Random chance for each consumer to be mutating
 			if (numCons+numLogs+i)%4 == 0 {
 				allCons = append(allCons, &mutatingLogsSink{LogsSink: new(consumertest.LogsSink)})
@@ -63,11 +64,11 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 
 		// Keep track of how many logs each consumer should receive.
 		// This will be validated after every call to RouteLogs.
-		expected := make(map[component.ID]int, numCons)
+		expected := make(map[pipeline.ID]int, numCons)
 
 		for i := 0; i < numLogs; i++ {
 			// Build a random set of ids (no duplicates)
-			randCons := make(map[component.ID]bool, numIDs)
+			randCons := make(map[pipeline.ID]bool, numIDs)
 			for j := 0; j < numIDs; j++ {
 				// This number should be pretty random and less than numCons
 				conNum := (numCons + numIDs + i + j) % numCons
@@ -75,7 +76,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 			}
 
 			// Convert to slice, update expectations
-			conIDs := make([]component.ID, 0, len(randCons))
+			conIDs := make([]pipeline.ID, 0, len(randCons))
 			for id := range randCons {
 				conIDs = append(conIDs, id)
 				expected[id]++
@@ -97,7 +98,7 @@ func fuzzLogs(numIDs, numCons, numLogs int) func(*testing.T) {
 				}
 				assert.Len(t, logs, expected[id])
 				for n := 0; n < len(logs); n++ {
-					assert.EqualValues(t, ld, logs[n])
+					assert.Equal(t, ld, logs[n])
 				}
 			}
 		}
@@ -108,16 +109,16 @@ func TestLogsRouterConsumers(t *testing.T) {
 	ctx := context.Background()
 	ld := testdata.GenerateLogs(1)
 
-	fooID := component.MustNewID("foo")
-	barID := component.MustNewID("bar")
+	fooID := pipeline.NewIDWithName(pipeline.SignalLogs, "foo")
+	barID := pipeline.NewIDWithName(pipeline.SignalLogs, "bar")
 
 	foo := new(consumertest.LogsSink)
 	bar := new(consumertest.LogsSink)
-	r := NewLogsRouter(map[component.ID]consumer.Logs{fooID: foo, barID: bar})
+	r := NewLogsRouter(map[pipeline.ID]consumer.Logs{fooID: foo, barID: bar})
 
 	rcs := r.PipelineIDs()
 	assert.Len(t, rcs, 2)
-	assert.ElementsMatch(t, []component.ID{fooID, barID}, rcs)
+	assert.ElementsMatch(t, []pipeline.ID{fooID, barID}, rcs)
 
 	assert.Empty(t, foo.AllLogs())
 	assert.Empty(t, bar.AllLogs())
@@ -148,9 +149,9 @@ func TestLogsRouterConsumers(t *testing.T) {
 
 	none, err := r.Consumer()
 	assert.Nil(t, none)
-	assert.Error(t, err)
+	require.Error(t, err)
 
-	fake, err := r.Consumer(component.MustNewID("fake"))
+	fake, err := r.Consumer(pipeline.NewIDWithName(pipeline.SignalLogs, "fake"))
 	assert.Nil(t, fake)
 	assert.Error(t, err)
 }

@@ -8,7 +8,7 @@
 | Warnings      | [The zPages extension is incompatible with `service::telemetry::traces::level` set to `none`](#warnings) |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fzpages%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fzpages) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fzpages%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fzpages) |
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [k8s]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-k8s
@@ -27,13 +27,18 @@ The following settings are required:
 zPages. Use localhost:<port> to make it available only locally, or ":<port>" to
 make it available on all network interfaces.
 
+The following settings can be optionally configured:
+
+- `expvar`
+  - `enabled` (default = false): Enable the expvar services. For detail see [ExpvarZ](#expvarz).
+
 Example:
 ```yaml
 extensions:
   zpages:
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go)
+The full list of settings exposed for this extension are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
 ## Exposed zPages routes
@@ -77,6 +82,12 @@ example
 They also allow you to quickly examine error samples
 
 Example URL: http://localhost:55679/debug/tracez
+
+### ExpvarZ
+
+The ExpvarZ exposes the useful information about Go runtime, OTel components could leverage [expvar](https://pkg.go.dev/expvar) library to expose their own state.
+
+Example URL: http://localhost:55679/debug/expvarz
 
 ## Warnings
 

@@ -9,10 +9,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var _ json.Unmarshaler = ExportRequest{}
-var _ json.Marshaler = ExportRequest{}
+var (
+	_ json.Unmarshaler = ExportRequest{}
+	_ json.Marshaler   = ExportRequest{}
+)
 
 var logsRequestJSON = []byte(`
 	{
@@ -46,10 +49,10 @@ func TestRequestToPData(t *testing.T) {
 
 func TestRequestJSON(t *testing.T) {
 	lr := NewExportRequest()
-	assert.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
+	require.NoError(t, lr.UnmarshalJSON(logsRequestJSON))
 	assert.Equal(t, "test_log_record", lr.Logs().ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
 
 	got, err := lr.MarshalJSON()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, strings.Join(strings.Fields(string(logsRequestJSON)), ""), string(got))
 }

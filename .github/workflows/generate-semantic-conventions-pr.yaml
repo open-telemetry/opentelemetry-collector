@@ -6,8 +6,7 @@ on:
     - cron: "30 1 * * *"
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: read-all
 
 jobs:
   check-versions:
@@ -17,7 +16,7 @@ jobs:
       already-added: ${{ steps.check-versions.outputs.already-added }}
       already-opened: ${{ steps.check-versions.outputs.already-opened }}
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - id: check-versions
         name: Check versions
@@ -58,9 +57,9 @@ jobs:
     needs:
       - check-versions
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Checkout semantic-convention
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: open-telemetry/semantic-conventions
           path: tmp-semantic-conventions
@@ -83,6 +82,7 @@ jobs:
           VERSION: ${{ needs.check-versions.outputs.latest-version }}
           # not using secrets.GITHUB_TOKEN since pull requests from that token do not run workflows
           GH_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          
         run: |
           message="Add semantic conventions version $VERSION"
           body="Add semantic conventions version \`$VERSION\`. Related to #10842"
@@ -106,5 +106,7 @@ jobs:
           url=$(gh pr create --title "$message" \
                              --body "$body" \
                              --base main)
-
-          pull_request_number=${url//*\//}
+          # The SC2034 warning is disabled because 'pull_request_number' is assigned but not used directly.
+          # ShellCheck flags this as unused, but it's stored for potential external usage.
+          # shellcheck disable=SC2034
+          pull_request_number=${url//*\//} 

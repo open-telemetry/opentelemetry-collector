@@ -7,8 +7,11 @@
 package pprofile
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1experimental"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 // FunctionSlice logically represents a slice of Function.
@@ -19,18 +22,18 @@ import (
 // Must use NewFunctionSlice function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type FunctionSlice struct {
-	orig  *[]otlpprofiles.Function
+	orig  *[]*otlpprofiles.Function
 	state *internal.State
 }
 
-func newFunctionSlice(orig *[]otlpprofiles.Function, state *internal.State) FunctionSlice {
+func newFunctionSlice(orig *[]*otlpprofiles.Function, state *internal.State) FunctionSlice {
 	return FunctionSlice{orig: orig, state: state}
 }
 
 // NewFunctionSlice creates a FunctionSlice with 0 elements.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewFunctionSlice() FunctionSlice {
-	orig := []otlpprofiles.Function(nil)
+	orig := []*otlpprofiles.Function(nil)
 	state := internal.StateMutable
 	return newFunctionSlice(&orig, &state)
 }
@@ -51,7 +54,22 @@ func (es FunctionSlice) Len() int {
 //	    ... // Do something with the element
 //	}
 func (es FunctionSlice) At(i int) Function {
-	return newFunction(&(*es.orig)[i], es.state)
+	return newFunction((*es.orig)[i], es.state)
+}
+
+// All returns an iterator over index-value pairs in the slice.
+//
+//	for i, v := range es.All() {
+//	    ... // Do something with index-value pair
+//	}
+func (es FunctionSlice) All() iter.Seq2[int, Function] {
+	return func(yield func(int, Function) bool) {
+		for i := 0; i < es.Len(); i++ {
+			if !yield(i, es.At(i)) {
+				return
+			}
+		}
+	}
 }
 
 // EnsureCapacity is an operation that ensures the slice has at least the specified capacity.
@@ -73,7 +91,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 		return
 	}
 
-	newOrig := make([]otlpprofiles.Function, len(*es.orig), newCap)
+	newOrig := make([]*otlpprofiles.Function, len(*es.orig), newCap)
 	copy(newOrig, *es.orig)
 	*es.orig = newOrig
 }
@@ -82,7 +100,7 @@ func (es FunctionSlice) EnsureCapacity(newCap int) {
 // It returns the newly added Function.
 func (es FunctionSlice) AppendEmpty() Function {
 	es.state.AssertMutable()
-	*es.orig = append(*es.orig, otlpprofiles.Function{})
+	*es.orig = append(*es.orig, &otlpprofiles.Function{})
 	return es.At(es.Len() - 1)
 }
 
@@ -91,6 +109,10 @@ func (es FunctionSlice) AppendEmpty() Function {
 func (es FunctionSlice) MoveAndAppendTo(dest FunctionSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -127,10 +149,24 @@ func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	destCap := cap(*dest.orig)
 	if srcLen <= destCap {
 		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]otlpprofiles.Function, srcLen)
+		for i := range *es.orig {
+			newFunction((*es.orig)[i], es.state).CopyTo(newFunction((*dest.orig)[i], dest.state))
+		}
+		return
 	}
+	origs := make([]otlpprofiles.Function, srcLen)
+	wrappers := make([]*otlpprofiles.Function, srcLen)
 	for i := range *es.orig {
-		newFunction(&(*es.orig)[i], es.state).CopyTo(newFunction(&(*dest.orig)[i], dest.state))
+		wrappers[i] = &origs[i]
+		newFunction((*es.orig)[i], es.state).CopyTo(newFunction(wrappers[i], dest.state))
 	}
+	*dest.orig = wrappers
+}
+
+// Sort sorts the Function elements within FunctionSlice given the
+// provided less function so that two instances of FunctionSlice
+// can be compared.
+func (es FunctionSlice) Sort(less func(a, b Function) bool) {
+	es.state.AssertMutable()
+	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }

@@ -7,13 +7,8 @@ package component // import "go.opentelemetry.io/collector/component"
 
 import (
 	"context"
-	"errors"
-)
-
-var (
-	// ErrDataTypeIsNotSupported can be returned by receiver, exporter, processor or connector factory funcs that create the
-	// Component if the particular telemetry data type is not supported by the receiver, exporter, processor or connector factory.
-	ErrDataTypeIsNotSupported = errors.New("telemetry type is not supported")
+	"fmt"
+	"strings"
 )
 
 // Component is either a receiver, exporter, processor, connector, or an extension.
@@ -83,37 +78,26 @@ func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 }
 
 // Kind represents component kinds.
-type Kind int
+type Kind struct {
+	name string
+}
 
-const (
-	_ Kind = iota // skip 0, start types from 1.
-	KindReceiver
-	KindProcessor
-	KindExporter
-	KindExtension
-	KindConnector
+var (
+	KindReceiver  = Kind{name: "Receiver"}
+	KindProcessor = Kind{name: "Processor"}
+	KindExporter  = Kind{name: "Exporter"}
+	KindExtension = Kind{name: "Extension"}
+	KindConnector = Kind{name: "Connector"}
 )
 
 func (k Kind) String() string {
-	switch k {
-	case KindReceiver:
-		return "Receiver"
-	case KindProcessor:
-		return "Processor"
-	case KindExporter:
-		return "Exporter"
-	case KindExtension:
-		return "Extension"
-	case KindConnector:
-		return "Connector"
-	}
-	return ""
+	return k.name
 }
 
 // StabilityLevel represents the stability level of the component created by the factory.
 // The stability level is used to determine if the component should be used in production
 // or not. For more details see:
-// https://github.com/open-telemetry/opentelemetry-collector#stability-levels
+// https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#stability-levels
 type StabilityLevel int
 
 const (
@@ -125,6 +109,29 @@ const (
 	StabilityLevelBeta
 	StabilityLevelStable
 )
+
+func (sl *StabilityLevel) UnmarshalText(in []byte) error {
+	str := strings.ToLower(string(in))
+	switch str {
+	case "undefined":
+		*sl = StabilityLevelUndefined
+	case "unmaintained":
+		*sl = StabilityLevelUnmaintained
+	case "deprecated":
+		*sl = StabilityLevelDeprecated
+	case "development":
+		*sl = StabilityLevelDevelopment
+	case "alpha":
+		*sl = StabilityLevelAlpha
+	case "beta":
+		*sl = StabilityLevelBeta
+	case "stable":
+		*sl = StabilityLevelStable
+	default:
+		return fmt.Errorf("unsupported stability level: %q", string(in))
+	}
+	return nil
+}
 
 func (sl StabilityLevel) String() string {
 	switch sl {
@@ -149,7 +156,7 @@ func (sl StabilityLevel) String() string {
 func (sl StabilityLevel) LogMessage() string {
 	switch sl {
 	case StabilityLevelUnmaintained:
-		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 6 months of remaining unmaintained."
+		return "Unmaintained component. Actively looking for contributors. Component will become deprecated after 3 months of remaining unmaintained."
 	case StabilityLevelDeprecated:
 		return "Deprecated component. Will be removed in future releases."
 	case StabilityLevelDevelopment:
@@ -160,8 +167,9 @@ func (sl StabilityLevel) LogMessage() string {
 		return "Beta component. May change in the future."
 	case StabilityLevelStable:
 		return "Stable component."
+	default:
+		return "Stability level of component is undefined"
 	}
-	return "Stability level of component is undefined"
 }
 
 // Factory is implemented by all Component factories.

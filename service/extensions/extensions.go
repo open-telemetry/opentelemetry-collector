@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/internal/telemetry"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
-	"go.opentelemetry.io/collector/service/internal/components"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
@@ -38,7 +40,8 @@ type Extensions struct {
 func (bes *Extensions) Start(ctx context.Context, host component.Host) error {
 	bes.telemetry.Logger.Info("Starting extensions...")
 	for _, extID := range bes.extensionIDs {
-		extLogger := components.ExtensionLogger(bes.telemetry.Logger, extID)
+		extLogger := componentattribute.ZapLoggerWithAttributes(bes.telemetry.Logger,
+			*attribute.Extension(extID).Set())
 		extLogger.Info("Extension is starting...")
 		instanceID := bes.instanceIDs[extID]
 		ext := bes.extMap[extID]
@@ -170,9 +173,8 @@ func (bes *Extensions) HandleZPages(w http.ResponseWriter, r *http.Request) {
 
 // Settings holds configuration for building Extensions.
 type Settings struct {
-	Telemetry  component.TelemetrySettings
-	BuildInfo  component.BuildInfo
-	ModuleInfo extension.ModuleInfo
+	Telemetry component.TelemetrySettings
+	BuildInfo component.BuildInfo
 
 	// Extensions builder for extensions.
 	Extensions builders.Extension
@@ -212,11 +214,9 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
-			TelemetrySettings: set.Telemetry,
+			TelemetrySettings: telemetry.WithAttributeSet(set.Telemetry, *attribute.Extension(extID).Set()),
 			BuildInfo:         set.BuildInfo,
-			ModuleInfo:        set.ModuleInfo,
 		}
-		extSet.TelemetrySettings.Logger = components.ExtensionLogger(set.Telemetry.Logger, extID)
 
 		ext, err := set.Extensions.Create(ctx, extSet)
 		if err != nil {

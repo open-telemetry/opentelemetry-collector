@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service"
+	"go.opentelemetry.io/collector/service/pipelines"
 )
 
 var (
@@ -35,6 +36,9 @@ type Config struct {
 	Extensions map[component.ID]component.Config `mapstructure:"extensions"`
 
 	Service service.Config `mapstructure:"service"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate returns an error if the config is invalid.
@@ -50,43 +54,18 @@ func (cfg *Config) Validate() error {
 
 	// Currently, there is no default receiver enabled.
 	// The configuration must specify at least one receiver to be valid.
-	if len(cfg.Receivers) == 0 {
+	if !pipelines.AllowNoPipelines.IsEnabled() && len(cfg.Receivers) == 0 {
 		return errMissingReceivers
-	}
-
-	// Validate the receiver configuration.
-	for recvID, recvCfg := range cfg.Receivers {
-		if err := component.ValidateConfig(recvCfg); err != nil {
-			return fmt.Errorf("receivers::%s: %w", recvID, err)
-		}
 	}
 
 	// Currently, there is no default exporter enabled.
 	// The configuration must specify at least one exporter to be valid.
-	if len(cfg.Exporters) == 0 {
+	if !pipelines.AllowNoPipelines.IsEnabled() && len(cfg.Exporters) == 0 {
 		return errMissingExporters
 	}
 
-	// Validate the exporter configuration.
-	for expID, expCfg := range cfg.Exporters {
-		if err := component.ValidateConfig(expCfg); err != nil {
-			return fmt.Errorf("exporters::%s: %w", expID, err)
-		}
-	}
-
-	// Validate the processor configuration.
-	for procID, procCfg := range cfg.Processors {
-		if err := component.ValidateConfig(procCfg); err != nil {
-			return fmt.Errorf("processors::%s: %w", procID, err)
-		}
-	}
-
 	// Validate the connector configuration.
-	for connID, connCfg := range cfg.Connectors {
-		if err := component.ValidateConfig(connCfg); err != nil {
-			return fmt.Errorf("connectors::%s: %w", connID, err)
-		}
-
+	for connID := range cfg.Connectors {
 		if _, ok := cfg.Exporters[connID]; ok {
 			return fmt.Errorf("connectors::%s: ambiguous ID: Found both %q exporter and %q connector. "+
 				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
@@ -97,17 +76,6 @@ func (cfg *Config) Validate() error {
 				"Change one of the components' IDs to eliminate ambiguity (e.g. rename %q connector to %q)",
 				connID, connID, connID, connID, connID.String()+"/connector")
 		}
-	}
-
-	// Validate the extension configuration.
-	for extID, extCfg := range cfg.Extensions {
-		if err := component.ValidateConfig(extCfg); err != nil {
-			return fmt.Errorf("extensions::%s: %w", extID, err)
-		}
-	}
-
-	if err := cfg.Service.Validate(); err != nil {
-		return err
 	}
 
 	// Check that all enabled extensions in the service are configured.
@@ -130,14 +98,14 @@ func (cfg *Config) Validate() error {
 			if _, ok := cfg.Connectors[ref]; ok {
 				continue
 			}
-			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references receiver %q which is not configured", pipelineID.String(), ref)
 		}
 
 		// Validate pipeline processor name references.
 		for _, ref := range pipeline.Processors {
 			// Check that the name referenced in the pipeline's processors exists in the top-level processors.
 			if cfg.Processors[ref] == nil {
-				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID, ref)
+				return fmt.Errorf("service::pipelines::%s: references processor %q which is not configured", pipelineID.String(), ref)
 			}
 		}
 
@@ -150,7 +118,7 @@ func (cfg *Config) Validate() error {
 			if _, ok := cfg.Connectors[ref]; ok {
 				continue
 			}
-			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID, ref)
+			return fmt.Errorf("service::pipelines::%s: references exporter %q which is not configured", pipelineID.String(), ref)
 		}
 	}
 	return nil

@@ -19,7 +19,7 @@ import (
 
 func TestUnmarshalEmpty(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = unmarshal(confmap.New(), factories)
 	assert.NoError(t, err)
@@ -27,7 +27,7 @@ func TestUnmarshalEmpty(t *testing.T) {
 
 func TestUnmarshalEmptyAllSections(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]any{
 		"receivers":  nil,
@@ -38,7 +38,7 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 		"service":    nil,
 	})
 	cfg, err := unmarshal(conf, factories)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	zapProdCfg := zap.NewProductionConfig()
 	assert.Equal(t, telemetry.LogsConfig{
@@ -61,18 +61,17 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 
 func TestUnmarshalUnknownTopLevel(t *testing.T) {
 	factories, err := nopFactories()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	conf := confmap.NewFromStringMap(map[string]any{
 		"unknown_section": nil,
 	})
 	_, err = unmarshal(conf, factories)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "'' has invalid keys: unknown_section")
+	assert.ErrorContains(t, err, "'' has invalid keys: unknown_section")
 }
 
 func TestPipelineConfigUnmarshalError(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		// test case name (also file name containing config yaml)
 		name string
 		conf *confmap.Conf
@@ -136,14 +135,13 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pips := new(pipelines.Config)
 			err := tt.conf.Unmarshal(&pips)
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectError)
+			assert.ErrorContains(t, err, tt.expectError)
 		})
 	}
 }
 
 func TestServiceUnmarshalError(t *testing.T) {
-	var testCases = []struct {
+	testCases := []struct {
 		// test case name (also file name containing config yaml)
 		name string
 		conf *confmap.Conf
@@ -159,7 +157,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry.logs.level': unrecognized level: \"UNKNOWN\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'logs': decoding failed due to the following error(s):\n\nerror decoding 'level': unrecognized level: \"UNKNOWN\"",
 		},
 		{
 			name: "invalid-metrics-level",
@@ -170,7 +168,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "error decoding 'telemetry.metrics.level': unknown metrics level \"unknown\"",
+			expectError: "error decoding 'telemetry': decoding failed due to the following error(s):\n\nerror decoding 'metrics': decoding failed due to the following error(s):\n\nerror decoding 'level': unknown metrics level \"unknown\"",
 		},
 		{
 			name: "invalid-service-extensions-section",
@@ -204,8 +202,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.conf.Unmarshal(&service.Config{})
-			require.Error(t, err)
-			assert.Contains(t, err.Error(), tt.expectError)
+			require.ErrorContains(t, err, tt.expectError)
 		})
 	}
 }

@@ -10,11 +10,11 @@ import (
 )
 
 func TestSpanKindString(t *testing.T) {
-	assert.EqualValues(t, "Unspecified", SpanKindUnspecified.String())
-	assert.EqualValues(t, "Internal", SpanKindInternal.String())
-	assert.EqualValues(t, "Server", SpanKindServer.String())
-	assert.EqualValues(t, "Client", SpanKindClient.String())
-	assert.EqualValues(t, "Producer", SpanKindProducer.String())
-	assert.EqualValues(t, "Consumer", SpanKindConsumer.String())
-	assert.EqualValues(t, "", SpanKind(100).String())
+	assert.Equal(t, "Unspecified", SpanKindUnspecified.String())
+	assert.Equal(t, "Internal", SpanKindInternal.String())
+	assert.Equal(t, "Server", SpanKindServer.String())
+	assert.Equal(t, "Client", SpanKindClient.String())
+	assert.Equal(t, "Producer", SpanKindProducer.String())
+	assert.Equal(t, "Consumer", SpanKindConsumer.String())
+	assert.Empty(t, SpanKind(100).String())
 }

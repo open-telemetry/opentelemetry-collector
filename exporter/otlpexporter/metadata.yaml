@@ -2,11 +2,12 @@ type: otlp
 github_project: open-telemetry/opentelemetry-collector
 
 status:
+  disable_codecov_badge: true
   class: exporter
   stability:
-    stable: [traces, metrics]
-    beta: [logs]
-  distributions: [core, contrib, k8s]
+    stable: [traces, metrics, logs]
+    development: [profiles]
+  distributions: [core, contrib, k8s, otlp]
 
 tests:
   config:
