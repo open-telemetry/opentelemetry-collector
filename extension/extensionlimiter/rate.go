@@ -14,7 +14,7 @@ import (
 // Limiters are covered by configmiddleware configuration, which is
 // able to construct LimiterWrappers from these providers.
 type RateLimiterProvider interface {
-	CheckerProvider
+	BaseLimiterProvider
 
 	// GetRateLimiter returns a rate limiter for a weight key.
 	GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)
@@ -34,7 +34,7 @@ func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateL
 
 var _ RateLimiterProvider = struct {
 	GetRateLimiterFunc
-	GetCheckerFunc
+	GetBaseLimiterFunc
 }{}
 
 // RateLimiter is an interface that an implementation makes available

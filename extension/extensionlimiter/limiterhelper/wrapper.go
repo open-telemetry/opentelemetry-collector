@@ -14,7 +14,7 @@ import (
 // function call, because for wrapped calls there is no distinction
 // between rate limiters and resource limiters.
 type LimiterWrapperProvider interface {
-	extensionlimiter.CheckerProvider
+	extensionlimiter.BaseLimiterProvider
 
 	GetLimiterWrapper(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
 }
@@ -32,7 +32,7 @@ func (f GetLimiterWrapperFunc) GetLimiterWrapper(key extensionlimiter.WeightKey,
 
 var _ LimiterWrapperProvider = struct {
 	GetLimiterWrapperFunc
-	extensionlimiter.GetCheckerFunc
+	extensionlimiter.GetBaseLimiterFunc
 }{}
 
 // LimiterWrapper is a general-purpose interface for limiter consumers
@@ -79,14 +79,14 @@ func PassThroughWrapper() LimiterWrapper {
 // the underlying limter types.
 type wrapperProvider struct {
 	GetLimiterWrapperFunc
-	extensionlimiter.GetCheckerFunc
+	extensionlimiter.GetBaseLimiterFunc
 }
 
 // NewResourceLimiterWrapperProvider constructs a
 // LimiterWrapperProvider for a resource limiter extension.
 func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
 	return wrapperProvider{
-		GetCheckerFunc: rp.GetChecker,
+		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetResourceLimiter(key, opts...)
 			if err == nil {
@@ -108,7 +108,7 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 // for a rate limiter extension.
 func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
 	return wrapperProvider{
-		GetCheckerFunc: rp.GetChecker,
+		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetRateLimiter(key, opts...)
 			if err == nil {

@@ -10,13 +10,13 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
-// MultiChecker returns MustDeny when any element returns MustDeny.
-type MultiChecker []extensionlimiter.Checker
+// MultiBaseLimiter returns MustDeny when any element returns MustDeny.
+type MultiBaseLimiter []extensionlimiter.BaseLimiter
 
-var _ extensionlimiter.Checker = MultiChecker{}
+var _ extensionlimiter.BaseLimiter = MultiBaseLimiter{}
 
-// MustDeny implements Checker.
-func (ls MultiChecker) MustDeny(ctx context.Context) error {
+// MustDeny implements BaseLimiter.
+func (ls MultiBaseLimiter) MustDeny(ctx context.Context) error {
 	var err error
 	for _, lim := range ls {
 		if lim == nil {
@@ -27,7 +27,7 @@ func (ls MultiChecker) MustDeny(ctx context.Context) error {
 	return err
 }
 
-// NeverDeny returns a Checker that never denies.
-func NeverDeny() extensionlimiter.Checker {
+// NeverDeny returns a BaseLimiter that never denies.
+func NeverDeny() extensionlimiter.BaseLimiter {
 	return extensionlimiter.MustDenyFunc(nil)
 }

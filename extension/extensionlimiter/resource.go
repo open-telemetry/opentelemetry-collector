@@ -14,7 +14,7 @@ import (
 // Limiters are covered by configmiddleware configuration, which
 // is able to construct LimiterWrappers from these providers.
 type ResourceLimiterProvider interface {
-	CheckerProvider
+	BaseLimiterProvider
 
 	GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
 }
@@ -33,7 +33,7 @@ func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option
 
 var _ ResourceLimiterProvider = struct {
 	GetResourceLimiterFunc
-	GetCheckerFunc
+	GetBaseLimiterFunc
 }{}
 
 // ResourceLimiter is an interface that an implementation makes

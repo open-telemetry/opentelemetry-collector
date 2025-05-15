@@ -142,16 +142,16 @@ func limitOne[P any, C any](
 	}, opts...)
 }
 
-// applyChecker gets a Checker and wraps the pipeline in a MustDeny
+// applyBaseLimiter gets a BaseLimiter and wraps the pipeline in a MustDeny
 // check.
-func applyChecker[P any, C any](
+func applyBaseLimiter[P any, C any](
 	next C,
 	keys extensionlimiter.WeightSet,
 	provider LimiterWrapperProvider,
 	m traits[P, C],
 	opts []consumer.Option,
 ) (C, error) {
-	ck, err := provider.GetChecker()
+	ck, err := provider.GetBaseLimiter()
 	if err != nil {
 		return next, err
 	}
@@ -188,7 +188,7 @@ func newLimited[P any, C any](
 		func(_ P) uint64 {
 			return 1
 		})
-	next, err4 = applyChecker(next, keys, provider, m, opts)
+	next, err4 = applyBaseLimiter(next, keys, provider, m, opts)
 	return next, errors.Join(err1, err2, err3, err4)
 }
 

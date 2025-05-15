@@ -109,11 +109,11 @@ var _ LimiterWrapperProvider = MultiLimiterWrapperProvider{}
 
 // GetLimiterWrapper implements LimiterWrapperProvider, combining
 // checkers for all wrappers in a sequence.
-func (ps MultiLimiterWrapperProvider) GetChecker(opts ...extensionlimiter.Option) (extensionlimiter.Checker, error) {
+func (ps MultiLimiterWrapperProvider) GetBaseLimiter(opts ...extensionlimiter.Option) (extensionlimiter.BaseLimiter, error) {
 	var retErr error
-	var cks MultiChecker
+	var cks MultiBaseLimiter
 	for _, provider := range ps {
-		ck, err := provider.GetChecker(opts...)
+		ck, err := provider.GetBaseLimiter(opts...)
 		retErr = errors.Join(retErr, err)
 		if ck == nil {
 			continue

@@ -17,9 +17,9 @@ type Option interface {
 	apply()
 }
 
-// Checker is for checking when a limit is saturated.  This can be
+// BaseLimiter is for checking when a limit is saturated.  This can be
 // called prior to the start of work to check for limiter saturation.
-type Checker interface {
+type BaseLimiter interface {
 	// MustDeny is a request to apply a hard limit. If this
 	// returns non-nil, the caller must not begin new work in this
 	// context.
@@ -29,10 +29,10 @@ type Checker interface {
 // MustDenyFunc is a functional way to build MustDeny functions.
 type MustDenyFunc func(context.Context) error
 
-// A MustDeny function is a complete Checker.
-var _ Checker = MustDenyFunc(nil)
+// A MustDeny function is a complete BaseLimiter.
+var _ BaseLimiter = MustDenyFunc(nil)
 
-// MustDeny implements Checker.
+// MustDeny implements BaseLimiter.
 func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	if f == nil {
 		return nil
@@ -40,19 +40,19 @@ func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	return f(ctx)
 }
 
-// CheckerProvider is an interface to obtain checkers for a group of
+// BaseLimiterProvider is an interface to obtain checkers for a group of
 // weight keys.
-type CheckerProvider interface {
-	// GetChecker returns a checker for a group of weight keys.
-	GetChecker(...Option) (Checker, error)
+type BaseLimiterProvider interface {
+	// GetBaseLimiter returns a checker for a group of weight keys.
+	GetBaseLimiter(...Option) (BaseLimiter, error)
 }
 
-// GetCheckerFunc is a functional way to construct GetChecker
+// GetBaseLimiterFunc is a functional way to construct GetBaseLimiter
 // functions, used in limiter providers.
-type GetCheckerFunc func(...Option) (Checker, error)
+type GetBaseLimiterFunc func(...Option) (BaseLimiter, error)
 
-// Checker implements CheckerProvider.
-func (f GetCheckerFunc) GetChecker(opts ...Option) (Checker, error) {
+// BaseLimiter implements BaseLimiterProvider.
+func (f GetBaseLimiterFunc) GetBaseLimiter(opts ...Option) (BaseLimiter, error) {
 	if f == nil {
 		return nil, nil
 	}
