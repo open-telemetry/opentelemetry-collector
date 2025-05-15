@@ -100,6 +100,7 @@ metrics:
 | ---- | ----------- | ------ |
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
+
 ## Default Events
 
 The following events are emitted by default. Each of them can be disabled by applying the following configuration:
