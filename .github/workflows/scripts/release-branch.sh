@@ -9,6 +9,7 @@ PREPARE_RELEASE_COMMIT_HASH="$2" # Optional: Specific commit hash for "Prepare r
 UPSTREAM_REMOTE_NAME=${UPSTREAM_REMOTE_NAME:-"upstream"} # Your upstream remote name for open-telemetry/opentelemetry-collector
 MAIN_BRANCH_NAME=${MAIN_BRANCH_NAME:-"main"}
 LOCAL_MAIN_BRANCH_NAME=${LOCAL_MAIN_BRANCH_NAME:-"${MAIN_BRANCH_NAME}"}
+# These variables are only used if git user.name and git user.email are not configured
 GIT_CONFIG_USER_NAME=${GIT_CONFIG_USER_NAME:-"opentelemetrybot"}
 GIT_CONFIG_USER_EMAIL=${GIT_CONFIG_USER_EMAIL:-"107717825+opentelemetrybot@users.noreply.github.com"}
 
@@ -47,8 +48,23 @@ echo "=== Step 4: Preparing and Pushing Release Branch ==="
 
 # 1. Checkout main
 echo "1. Checking out '${MAIN_BRANCH_NAME}' branch..."
-git config user.name "${GIT_CONFIG_USER_NAME}"
-git config user.email "${GIT_CONFIG_USER_EMAIL}"
+
+# Check if Git user.name is configured
+if ! git config user.name > /dev/null 2>&1; then
+  echo "Git user.name not configured. Setting to ${GIT_CONFIG_USER_NAME}"
+  git config user.name "${GIT_CONFIG_USER_NAME}"
+else
+  echo "Git user.name already configured: $(git config user.name)"
+fi
+
+# Check if Git user.email is configured
+if ! git config user.email > /dev/null 2>&1; then
+  echo "Git user.email not configured. Setting to ${GIT_CONFIG_USER_EMAIL}"
+  git config user.email "${GIT_CONFIG_USER_EMAIL}"
+else
+  echo "Git user.email already configured: $(git config user.email)"
+fi
+
 git checkout "${LOCAL_MAIN_BRANCH_NAME}"
 check_command_success "git checkout ${LOCAL_MAIN_BRANCH_NAME}"
 
