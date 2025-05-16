@@ -3,7 +3,7 @@
 
 package extensionlimiter // import "go.opentelemetry.io/collector/extension/extensionlimiter"
 
-import "slices" // WeightKey is an enum type for common rate limits.  The
+// WeightKey is an enum type for common rate limits.  The
 // StandardAllKeys, StandardMiddlewareKeys, and
 // StandardNotMiddlewareKeys methods return the list of middleware
 // keys that can be automatically configured through middleware and
@@ -38,21 +38,10 @@ const (
 	WeightKeyMemorySize WeightKey = "memory_size"
 )
 
-// WeightSet are a group of weights to be tested.  The purpose of this
-// type is to be explicit about a group of weights that have to be
-// checked at a certain stage.  The receiver and middleware can both
-// be responsible for applying limits, and this type helps ensure
-// limits are applied only across cooperating sub-components.
-type WeightSet []WeightKey
-
-func (ws WeightSet) Contains(w WeightKey) bool {
-	return slices.Contains(ws, w)
-}
-
 // StandardAllKeys is all the keys that can be automatically
 // implemented by middleware and/or limiterhelper.
-func StandardAllKeys() WeightSet {
-	return WeightSet{
+func StandardAllKeys() []WeightKey {
+	return []WeightKey{
 		WeightKeyNetworkBytes,
 		WeightKeyRequestCount,
 		WeightKeyRequestItems,
@@ -64,8 +53,8 @@ func StandardAllKeys() WeightSet {
 // protocols that support it.  Receivers should be careful not to
 // re-apply these limits, especially not to twice-limit by
 // WeightKeyRequestItems.
-func StandardMiddlewareKeys() WeightSet {
-	return WeightSet{
+func StandardMiddlewareKeys() []WeightKey {
+	return []WeightKey{
 		WeightKeyNetworkBytes,
 		WeightKeyRequestCount,
 	}
@@ -74,8 +63,8 @@ func StandardMiddlewareKeys() WeightSet {
 // StandardNotMiddlewareKeys are the keys that are typically not
 // handled through middlware because they are protocol specific and
 // generally easier to handle after the input has become pdata.
-func StandardNotMiddlewareKeys() WeightSet {
-	return WeightSet{
+func StandardNotMiddlewareKeys() []WeightKey {
+	return []WeightKey{
 		WeightKeyRequestItems,
 		WeightKeyMemorySize,
 	}
