@@ -6,7 +6,8 @@ on:
     - cron: "30 1 * * *"
   workflow_dispatch:
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   check-versions:

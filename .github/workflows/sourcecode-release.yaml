@@ -5,14 +5,21 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
         # Extract title from latest version title in CHANGELOG.md
       - name: Prepare release title
@@ -23,7 +30,7 @@ jobs:
       - name: Prepare release notes
         run: |
           touch release-notes.md
-          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${{ github.ref_name }}" >> release-notes.md
+          echo "### Images and binaries here: https://github.com/open-telemetry/opentelemetry-collector-releases/releases/tag/${GH_REF_NAME}" >> release-notes.md
           echo "" >> release-notes.md
           echo "## End User Changelog" >> release-notes.md
 
@@ -35,12 +42,16 @@ jobs:
 
           awk '/<!-- next version -->/,/<!-- previous-version -->/' CHANGELOG-API.md > tmp-chlog-api.md # select changelog of latest version only
           sed '1,3d' tmp-chlog-api.md >> release-notes.md # delete first 3 lines of file
+        env:
+          GH_REF_NAME: ${{ github.ref_name }}
 
       - name: Create Github Release
         run: |
-          gh release create ${{ github.ref_name }} -t ${{ steps.release-title.outputs.title }} -F release-notes.md
+          gh release create ${GH_REF_NAME} -t ${RELEASE_TITLE} -F release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          RELEASE_TITLE: ${{ steps.release-title.outputs.title }}
       - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
@@ -55,7 +66,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   milestone_number: milestone.number,
-                  title: "${{ github.ref_name }}"
+                  title: "${GH_REF_NAME}"
                 });
                 await github.rest.issues.createMilestone({
                   owner: context.repo.owner,
@@ -65,3 +76,5 @@ jobs:
                 return
               }
             }
+        env:
+          GH_REF_NAME: ${{ github.ref_name }}
