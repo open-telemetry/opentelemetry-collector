@@ -36,15 +36,15 @@ func (m *mockLogsConsumer) Capabilities() consumer.Capabilities {
 func TestLogsNopWhenGateDisabled(t *testing.T) {
 	setGateForTest(t, false)
 
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewLogs(consumer))
-}
+	mp := sdkmetric.NewMeterProvider()
+	meter := mp.Meter("test")
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
 
-func TestLogsNopWithoutCounters(t *testing.T) {
-	setGateForTest(t, true)
-
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewLogs(consumer))
+	cons := consumertest.NewNop()
+	require.Equal(t, cons, obsconsumer.NewLogs(cons, itemCounter, sizeCounter))
 }
 
 func TestLogsItemsOnly(t *testing.T) {
@@ -58,9 +58,11 @@ func TestLogsItemsOnly(t *testing.T) {
 	meter := mp.Meter("test")
 	itemCounter, err := meter.Int64Counter("item_counter")
 	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&itemCounter))
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounterDisabled)
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -90,49 +92,6 @@ func TestLogsItemsOnly(t *testing.T) {
 	require.Equal(t, "success", val.Emit())
 }
 
-func TestLogsSizeOnly(t *testing.T) {
-	setGateForTest(t, true)
-
-	ctx := context.Background()
-	mockConsumer := &mockLogsConsumer{}
-
-	reader := sdkmetric.NewManualReader()
-	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	meter := mp.Meter("test")
-	sizeCounter, err := meter.Int64Counter("size_counter")
-	require.NoError(t, err)
-
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsSizeCounter(&sizeCounter))
-
-	ld := plog.NewLogs()
-	r := ld.ResourceLogs().AppendEmpty()
-	sl := r.ScopeLogs().AppendEmpty()
-	sl.LogRecords().AppendEmpty()
-
-	err = consumer.ConsumeLogs(ctx, ld)
-	require.NoError(t, err)
-
-	var rm metricdata.ResourceMetrics
-	err = reader.Collect(ctx, &rm)
-	require.NoError(t, err)
-	require.Len(t, rm.ScopeMetrics, 1)
-	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-
-	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "size_counter", metric.Name)
-
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 1)
-	require.Positive(t, data.DataPoints[0].Value)
-
-	attrs := data.DataPoints[0].Attributes
-	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
-	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
-}
-
 func TestLogsConsumeSuccess(t *testing.T) {
 	setGateForTest(t, true)
 
@@ -148,9 +107,7 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&itemCounter),
-		obsconsumer.WithLogsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -215,9 +172,7 @@ func TestLogsConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&itemCounter),
-		obsconsumer.WithLogsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -283,9 +238,7 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&itemCounter),
-		obsconsumer.WithLogsSizeCounter(&sizeCounter),
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter,
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	ld := plog.NewLogs()
@@ -356,9 +309,7 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&itemCounter),
-		obsconsumer.WithLogsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
 
 	// First batch: 2 successful items
 	ld1 := plog.NewLogs()
@@ -456,22 +407,18 @@ func TestLogsCapabilities(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
 	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&counter))
-	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
-
-	// Test with size counter only
-	consumer = obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsSizeCounter(&counter))
+	consumer := obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounterDisabled)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewLogs(mockConsumer,
-		obsconsumer.WithLogsItemCounter(&counter),
-		obsconsumer.WithLogsSizeCounter(&counter))
+	consumer = obsconsumer.NewLogs(mockConsumer, itemCounter, sizeCounter)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

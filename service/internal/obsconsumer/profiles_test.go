@@ -36,15 +36,15 @@ func (m *mockProfilesConsumer) Capabilities() consumer.Capabilities {
 func TestProfilesNopWhenGateDisabled(t *testing.T) {
 	setGateForTest(t, false)
 
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewProfiles(consumer))
-}
+	mp := sdkmetric.NewMeterProvider()
+	meter := mp.Meter("test")
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
 
-func TestProfilesNopWithoutCounters(t *testing.T) {
-	setGateForTest(t, true)
-
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewProfiles(consumer))
+	cons := consumertest.NewNop()
+	require.Equal(t, cons, obsconsumer.NewProfiles(cons, itemCounter, sizeCounter))
 }
 
 func TestProfilesItemsOnly(t *testing.T) {
@@ -56,11 +56,14 @@ func TestProfilesItemsOnly(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
+
 	itemCounter, err := meter.Int64Counter("item_counter")
 	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter))
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounterDisabled)
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -90,49 +93,6 @@ func TestProfilesItemsOnly(t *testing.T) {
 	require.Equal(t, "success", val.Emit())
 }
 
-func TestProfilesSizeOnly(t *testing.T) {
-	setGateForTest(t, true)
-
-	ctx := context.Background()
-	mockConsumer := &mockProfilesConsumer{}
-
-	reader := sdkmetric.NewManualReader()
-	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	meter := mp.Meter("test")
-	sizeCounter, err := meter.Int64Counter("size_counter")
-	require.NoError(t, err)
-
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
-
-	pd := pprofile.NewProfiles()
-	r := pd.ResourceProfiles().AppendEmpty()
-	sp := r.ScopeProfiles().AppendEmpty()
-	sp.Profiles().AppendEmpty().Sample().AppendEmpty()
-
-	err = consumer.ConsumeProfiles(ctx, pd)
-	require.NoError(t, err)
-
-	var rm metricdata.ResourceMetrics
-	err = reader.Collect(ctx, &rm)
-	require.NoError(t, err)
-	require.Len(t, rm.ScopeMetrics, 1)
-	require.Len(t, rm.ScopeMetrics[0].Metrics, 1)
-
-	metric := rm.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "size_counter", metric.Name)
-
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 1)
-	require.Positive(t, data.DataPoints[0].Value)
-
-	attrs := data.DataPoints[0].Attributes
-	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
-	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
-}
-
 func TestProfilesConsumeSuccess(t *testing.T) {
 	setGateForTest(t, true)
 
@@ -148,9 +108,7 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter),
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -215,9 +173,7 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter),
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -282,9 +238,7 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter),
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter),
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter,
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	pd := pprofile.NewProfiles()
@@ -356,9 +310,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter),
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
 
 	// First batch: 2 successful items
 	pd1 := pprofile.NewProfiles()
@@ -461,20 +413,13 @@ func TestProfilesCapabilities(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	// Test with item counter
-	consumer := obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter))
-	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
-
-	// Test with size counter
-	consumer = obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
+	// Test with item counter only
+	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounterDisabled)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewProfiles(mockConsumer,
-		obsconsumer.WithProfilesItemCounter(&itemCounter),
-		obsconsumer.WithProfilesSizeCounter(&sizeCounter))
+	consumer = obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

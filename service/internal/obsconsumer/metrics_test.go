@@ -35,16 +35,15 @@ func (m *mockMetricsConsumer) Capabilities() consumer.Capabilities {
 
 func TestMetricsNopWhenGateDisabled(t *testing.T) {
 	setGateForTest(t, false)
+	mp := sdkmetric.NewMeterProvider()
+	meter := mp.Meter("test")
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
 
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewMetrics(consumer))
-}
-
-func TestMetricsNopWithoutCounters(t *testing.T) {
-	setGateForTest(t, true)
-
-	consumer := consumertest.NewNop()
-	require.Equal(t, consumer, obsconsumer.NewMetrics(consumer))
+	cons := consumertest.NewNop()
+	require.Equal(t, cons, obsconsumer.NewMetrics(cons, itemCounter, sizeCounter))
 }
 
 func TestMetricsItemsOnly(t *testing.T) {
@@ -55,11 +54,14 @@ func TestMetricsItemsOnly(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("item_counter")
-	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&counter))
+	itemCounter, err := meter.Int64Counter("item_counter")
+	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
+
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounterDisabled)
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -90,49 +92,6 @@ func TestMetricsItemsOnly(t *testing.T) {
 	require.Equal(t, "success", val.Emit())
 }
 
-func TestMetricsSizeOnly(t *testing.T) {
-	setGateForTest(t, true)
-	ctx := context.Background()
-	mockConsumer := &mockMetricsConsumer{}
-
-	reader := sdkmetric.NewManualReader()
-	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
-	meter := mp.Meter("test")
-	sizeCounter, err := meter.Int64Counter("size_counter")
-	require.NoError(t, err)
-
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsSizeCounter(&sizeCounter))
-
-	md := pmetric.NewMetrics()
-	rm := md.ResourceMetrics().AppendEmpty()
-	sm := rm.ScopeMetrics().AppendEmpty()
-	m := sm.Metrics().AppendEmpty()
-	m.SetEmptyGauge().DataPoints().AppendEmpty()
-
-	err = consumer.ConsumeMetrics(ctx, md)
-	require.NoError(t, err)
-
-	var metrics metricdata.ResourceMetrics
-	err = reader.Collect(ctx, &metrics)
-	require.NoError(t, err)
-	require.Len(t, metrics.ScopeMetrics, 1)
-	require.Len(t, metrics.ScopeMetrics[0].Metrics, 1)
-
-	metric := metrics.ScopeMetrics[0].Metrics[0]
-	require.Equal(t, "size_counter", metric.Name)
-
-	data := metric.Data.(metricdata.Sum[int64])
-	require.Len(t, data.DataPoints, 1)
-	require.Positive(t, data.DataPoints[0].Value)
-
-	attrs := data.DataPoints[0].Attributes
-	require.Equal(t, 1, attrs.Len())
-	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
-	require.True(t, ok)
-	require.Equal(t, "success", val.Emit())
-}
-
 func TestMetricsConsumeSuccess(t *testing.T) {
 	setGateForTest(t, true)
 
@@ -148,9 +107,7 @@ func TestMetricsConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&itemCounter),
-		obsconsumer.WithMetricsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
 
 	md := pmetric.NewMetrics()
 	r := md.ResourceMetrics().AppendEmpty()
@@ -216,9 +173,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&itemCounter),
-		obsconsumer.WithMetricsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
 
 	md := pmetric.NewMetrics()
 	r := md.ResourceMetrics().AppendEmpty()
@@ -285,9 +240,7 @@ func TestMetricsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&itemCounter),
-		obsconsumer.WithMetricsSizeCounter(&sizeCounter),
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter,
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	md := pmetric.NewMetrics()
@@ -361,9 +314,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&itemCounter),
-		obsconsumer.WithMetricsSizeCounter(&sizeCounter))
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
 
 	// First batch: 2 successful items
 	md1 := pmetric.NewMetrics()
@@ -464,22 +415,18 @@ func TestMetricsCapabilities(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	mp := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
 	meter := mp.Meter("test")
-	counter, err := meter.Int64Counter("test_counter")
+
+	itemCounter, err := meter.Int64Counter("item_counter")
 	require.NoError(t, err)
+	sizeCounter, err := meter.Int64Counter("size_counter")
+	require.NoError(t, err)
+	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&counter))
-	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
-
-	// Test with size counter only
-	consumer = obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsSizeCounter(&counter))
+	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounterDisabled)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewMetrics(mockConsumer,
-		obsconsumer.WithMetricsItemCounter(&counter),
-		obsconsumer.WithMetricsSizeCounter(&counter))
+	consumer = obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

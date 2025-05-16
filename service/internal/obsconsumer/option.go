@@ -17,14 +17,6 @@ type Option func(*options)
 
 type options struct {
 	staticDataPointAttributes []attribute.KeyValue
-	tracesItemCounter         *metric.Int64Counter
-	tracesSizeCounter         *metric.Int64Counter
-	metricsItemCounter        *metric.Int64Counter
-	metricsSizeCounter        *metric.Int64Counter
-	logsItemCounter           *metric.Int64Counter
-	logsSizeCounter           *metric.Int64Counter
-	profilesItemCounter       *metric.Int64Counter
-	profilesSizeCounter       *metric.Int64Counter
 }
 
 // WithStaticDataPointAttribute returns an Option that adds a static attribute to data points.

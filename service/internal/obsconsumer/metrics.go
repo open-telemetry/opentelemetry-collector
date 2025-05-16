@@ -14,24 +14,11 @@ import (
 )
 
 var (
-	_                consumer.Metrics = metricsItemCounter{}
-	_                consumer.Metrics = metricsSizeCounter{}
+	_                consumer.Metrics = obsMetrics{}
 	metricsMarshaler                  = &pmetric.ProtoMarshaler{}
 )
 
-func WithMetricsItemCounter(itemCounter *metric.Int64Counter) Option {
-	return func(opts *options) {
-		opts.metricsItemCounter = itemCounter
-	}
-}
-
-func WithMetricsSizeCounter(sizeCounter *metric.Int64Counter) Option {
-	return func(opts *options) {
-		opts.metricsSizeCounter = sizeCounter
-	}
-}
-
-func NewMetrics(cons consumer.Metrics, opts ...Option) consumer.Metrics {
+func NewMetrics(cons consumer.Metrics, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -41,68 +28,45 @@ func NewMetrics(cons consumer.Metrics, opts ...Option) consumer.Metrics {
 		opt(&o)
 	}
 
-	if o.metricsItemCounter == nil && o.metricsSizeCounter == nil {
-		return cons
+	return obsMetrics{
+		consumer:        cons,
+		itemCounter:     itemCounter,
+		sizeCounter:     sizeCounter,
+		compiledOptions: o.compile(),
 	}
-
-	copts := o.compile()
-	if o.metricsItemCounter != nil {
-		cons = metricsItemCounter{
-			consumer:        cons,
-			itemCounter:     *o.metricsItemCounter,
-			compiledOptions: copts,
-		}
-	}
-	if o.metricsSizeCounter != nil {
-		cons = metricsSizeCounter{
-			consumer:        cons,
-			sizeCounter:     *o.metricsSizeCounter,
-			compiledOptions: copts,
-		}
-	}
-	return cons
 }
 
-type metricsItemCounter struct {
+type obsMetrics struct {
 	consumer    consumer.Metrics
 	itemCounter metric.Int64Counter
-	compiledOptions
-}
-
-func (c metricsItemCounter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Measure before calling ConsumeMetrics because the data may be mutated downstream
-	itemCount := md.DataPointCount()
-	err := c.consumer.ConsumeMetrics(ctx, md)
-	if err == nil {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
-	} else {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
-	}
-	return err
-}
-
-func (c metricsItemCounter) Capabilities() consumer.Capabilities {
-	return c.consumer.Capabilities()
-}
-
-type metricsSizeCounter struct {
-	consumer    consumer.Metrics
 	sizeCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c metricsSizeCounter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Measure before calling ConsumeMetrics because the data may be mutated downstream
-	byteCount := metricsMarshaler.MetricsSize(md)
+// ConsumeMetrics measures telemetry before calling ConsumeMetrics because the data may be mutated downstream
+func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	// Use a pointer to so that deferred function can depend on the result of ConsumeMetrics
+	attrs := &c.withSuccessAttrs
+
+	itemCount := md.DataPointCount()
+	defer func() {
+		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+	}()
+
+	if isEnabled(ctx, c.sizeCounter) {
+		byteCount := int64(metricsMarshaler.MetricsSize(md))
+		defer func() {
+			c.sizeCounter.Add(ctx, byteCount, *attrs)
+		}()
+	}
+
 	err := c.consumer.ConsumeMetrics(ctx, md)
-	if err == nil {
-		c.sizeCounter.Add(ctx, int64(byteCount), c.withSuccessAttrs)
-	} else {
-		c.sizeCounter.Add(ctx, int64(byteCount), c.withFailureAttrs)
+	if err != nil {
+		attrs = &c.withFailureAttrs
 	}
 	return err
 }
 
-func (c metricsSizeCounter) Capabilities() consumer.Capabilities {
+func (c obsMetrics) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

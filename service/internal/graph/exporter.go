@@ -67,53 +67,25 @@ func (n *exporterNode) buildComponent(
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-
-		consumedOpts := []obsconsumer.Option{
-			obsconsumer.WithTracesItemCounter(&tb.ExporterConsumedItems),
-		}
-		if isEnabled(tb.ExporterConsumedSize) {
-			consumedOpts = append(consumedOpts, obsconsumer.WithTracesSizeCounter(&tb.ExporterConsumedSize))
-		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), consumedOpts...)
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-
-		consumedOpts := []obsconsumer.Option{
-			obsconsumer.WithMetricsItemCounter(&tb.ExporterConsumedItems),
-		}
-		if isEnabled(tb.ExporterConsumedSize) {
-			consumedOpts = append(consumedOpts, obsconsumer.WithMetricsSizeCounter(&tb.ExporterConsumedSize))
-		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), consumedOpts...)
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-
-		consumedOpts := []obsconsumer.Option{
-			obsconsumer.WithLogsSizeCounter(&tb.ExporterConsumedItems),
-		}
-		if isEnabled(tb.ExporterConsumedSize) {
-			consumedOpts = append(consumedOpts, obsconsumer.WithLogsSizeCounter(&tb.ExporterConsumedSize))
-		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), consumedOpts...)
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-
-		consumedOpts := []obsconsumer.Option{
-			obsconsumer.WithProfilesItemCounter(&tb.ExporterConsumedItems),
-		}
-		if isEnabled(tb.ExporterConsumedSize) {
-			consumedOpts = append(consumedOpts, obsconsumer.WithProfilesSizeCounter(&tb.ExporterConsumedSize))
-		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), consumedOpts...)
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}

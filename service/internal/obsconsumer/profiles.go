@@ -15,24 +15,11 @@ import (
 )
 
 var (
-	_                 xconsumer.Profiles = profilesItemCounter{}
-	_                 xconsumer.Profiles = profilesSizeCounter{}
+	_                 xconsumer.Profiles = obsProfiles{}
 	profilesMarshaler                    = pprofile.ProtoMarshaler{}
 )
 
-func WithProfilesItemCounter(itemCounter *metric.Int64Counter) Option {
-	return func(opts *options) {
-		opts.profilesItemCounter = itemCounter
-	}
-}
-
-func WithProfilesSizeCounter(sizeCounter *metric.Int64Counter) Option {
-	return func(opts *options) {
-		opts.profilesSizeCounter = sizeCounter
-	}
-}
-
-func NewProfiles(cons xconsumer.Profiles, opts ...Option) xconsumer.Profiles {
+func NewProfiles(cons xconsumer.Profiles, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -41,68 +28,46 @@ func NewProfiles(cons xconsumer.Profiles, opts ...Option) xconsumer.Profiles {
 	for _, opt := range opts {
 		opt(&o)
 	}
-	if o.profilesItemCounter == nil && o.profilesSizeCounter == nil {
-		return cons
-	}
 
-	copts := o.compile()
-	if o.profilesItemCounter != nil {
-		cons = profilesItemCounter{
-			consumer:        cons,
-			itemCounter:     *o.profilesItemCounter,
-			compiledOptions: copts,
-		}
+	return obsProfiles{
+		consumer:        cons,
+		itemCounter:     itemCounter,
+		sizeCounter:     sizeCounter,
+		compiledOptions: o.compile(),
 	}
-	if o.profilesSizeCounter != nil {
-		cons = profilesSizeCounter{
-			consumer:        cons,
-			sizeCounter:     *o.profilesSizeCounter,
-			compiledOptions: copts,
-		}
-	}
-	return cons
 }
 
-type profilesItemCounter struct {
+type obsProfiles struct {
 	consumer    xconsumer.Profiles
 	itemCounter metric.Int64Counter
-	compiledOptions
-}
-
-func (c profilesItemCounter) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
-	// Measure before calling ConsumeProfiles because the data may be mutated downstream
-	itemCount := pd.SampleCount()
-	err := c.consumer.ConsumeProfiles(ctx, pd)
-	if err == nil {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
-	} else {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
-	}
-	return err
-}
-
-func (c profilesItemCounter) Capabilities() consumer.Capabilities {
-	return c.consumer.Capabilities()
-}
-
-type profilesSizeCounter struct {
-	consumer    xconsumer.Profiles
 	sizeCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c profilesSizeCounter) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+// ConsumeProfiles measures telemetry before calling ConsumeProfiles because the data may be mutated downstream
+func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
 	// Measure before calling ConsumeProfiles because the data may be mutated downstream
-	byteCount := profilesMarshaler.ProfilesSize(pd)
+	attrs := &c.withSuccessAttrs
+
+	itemCount := pd.SampleCount()
+	defer func() {
+		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+	}()
+
+	if isEnabled(ctx, c.sizeCounter) {
+		byteCount := int64(profilesMarshaler.ProfilesSize(pd))
+		defer func() {
+			c.sizeCounter.Add(ctx, byteCount, *attrs)
+		}()
+	}
+
 	err := c.consumer.ConsumeProfiles(ctx, pd)
-	if err == nil {
-		c.sizeCounter.Add(ctx, int64(byteCount), c.withSuccessAttrs)
-	} else {
-		c.sizeCounter.Add(ctx, int64(byteCount), c.withFailureAttrs)
+	if err != nil {
+		attrs = &c.withFailureAttrs
 	}
 	return err
 }
 
-func (c profilesSizeCounter) Capabilities() consumer.Capabilities {
+func (c obsProfiles) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }
