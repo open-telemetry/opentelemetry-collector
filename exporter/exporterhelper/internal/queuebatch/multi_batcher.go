@@ -97,11 +97,12 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done D
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	if mb.singleShard != nil {
 		mb.singleShard.shutdown(ctx)
+		return nil
 	}
 
 	var wg sync.WaitGroup
 	wg.Add(mb.shards.Size())
-	mb.shards.Range(func(key string, shard *shardBatcher) bool {
+	mb.shards.Range(func(_ string, shard *shardBatcher) bool {
 		go func() {
 			shard.shutdown(ctx)
 			wg.Done()
