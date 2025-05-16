@@ -32,7 +32,7 @@ type batcherSettings[T any] struct {
 // shardBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type shardBatcher struct {
 	cfg            BatchConfig
-	workerPool     *chan struct{}
+	workerPool     chan struct{}
 	sizerType      request.SizerType
 	sizer          request.Sizer[request.Request]
 	consumeFunc    sender.SendFunc[request.Request]
@@ -189,24 +189,23 @@ func (qb *shardBatcher) flushCurrentBatchIfNecessary() {
 func (qb *shardBatcher) flush(ctx context.Context, req request.Request, done Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
-		<-*qb.workerPool
+		<-qb.workerPool
 	}
 	go func() {
 		defer qb.stopWG.Done()
 		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
-			*qb.workerPool <- struct{}{}
+			qb.workerPool <- struct{}{}
 		}
 	}()
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *shardBatcher) shutdown(_ context.Context) error {
+func (qb *shardBatcher) shutdown(_ context.Context) {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
 	qb.stopWG.Wait()
-	return nil
 }
 
 type multiDone []Done
