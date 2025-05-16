@@ -45,17 +45,12 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Check out main and ensure it has the "Prepare release" commit in your local
-   copy by pulling in the latest from `open-telemetry/opentelemetry-collector`
-   Use this commit to create a branch named `release/<release-series>` (e.g.
-   `release/v0.85.x`). Push the new branch to
-   `open-telemetry/opentelemetry-collector`. Assuming your upstream remote is
-   named `upstream`, you can try the following commands:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
-   - `git push -u upstream release/<release series>`
+4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will either use the existing release branch (for a bugfix, e.g. `v0.126.1`), or create a new branch (for a new release, e.g. `v0.127.0`).
+   - If you are doing a new release, make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
+   - If you are doing a bugfix release, you may leave it blank or specify the existing release series (e.g. `v0.126.x`).
+   - If preferred, the underlying script (./.github/workflows/scripts/release-branch.sh) can be ran locally passing appropriate variables for upstream name, release series, etc.
 
-5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
+5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
