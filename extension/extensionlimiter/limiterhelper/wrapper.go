@@ -93,7 +93,7 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 				return nil, err
 			}
 			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-				release, err := lim.Acquire(ctx, value)
+				release, err := lim.WaitForResource(ctx, value)
 				if err != nil {
 					return err
 				}
@@ -115,7 +115,7 @@ func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) Limi
 				return nil, err
 			}
 			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-				if err := lim.Limit(ctx, value); err != nil {
+				if err := lim.WaitForRate(ctx, value); err != nil {
 					return err
 				}
 				return call(ctx)

@@ -50,40 +50,105 @@ var _ ResourceLimiterProvider = struct {
 //
 // See the README for more recommendations.
 type ResourceLimiter interface {
-	// Acquire attempts to acquire a quantified resource with the
-	// provided weight, based on the key that was given to the
-	// provider. The caller has these options:
+	// ReserveRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.ReserveN,
+	// without the time dimension.
 	//
-	// - Accept and let the request proceed by returning a release func and a nil error
-	// - Fail and return a non-nil error and a nil release func
-	// - Block until the resource becomes available, then accept
-	// - Block until the context times out, return the error.
+	// This is a non-blocking interface; use this interface for
+	// callers that cannot be blocked but will instead schedule a
+	// resume after DelayFrom(). The context is provided for
+	// access to instrumentation and client metadata; the Context
+	// deadline is not used.
+	ReserveResource(context.Context, uint64) (ResourceReservation, error)
+
+	// WaitForRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.WaitN,
+	// without the time dimension.
 	//
-	// See the README for more recommendations.
-	//
-	// On success, it returns a ReleaseFunc that should be called
-	// after the resources is no longer in use.
-	Acquire(ctx context.Context, value uint64) (ReleaseFunc, error)
+	// This is a blocking interface. Use this interface for
+	// callers that are constrained by a Context deadline, which
+	// will be incorporated into the limiter decision.
+	WaitForResource(context.Context, uint64) (ReleaseFunc, error)
 }
+
+// ResourceReservation is modeled on pkg.go.dev/golang.org/x/time/rate#Reservation
+// without the time dimension.
+type ResourceReservation interface {
+	// Delay returns a channel that will be closed when the
+	// reservation request is granted. This resembles a context
+	// Done channel.
+	Delay() <-chan struct{}
+
+	// Release is called after finishing with the reservation,
+	// whether the delay has been reached or not.
+	Release()
+}
+
+var _ ResourceReservation = struct {
+	DelayFunc
+	ReleaseFunc
+}{}
 
 // ReleaseFunc is called when resources have been released after use.
 //
-// RelaseFunc values are never nil values, even in the error case, for
-// safety. Users may unconditionally defer these.
-//
-// Implementations are not required to call a release func after
-// Acquire(0) is called, since there is nothing to release.
+// RelaseFunc values are never nil values, even in the error case for
+// safety. Users typically will immediately defer a call to this.
 type ReleaseFunc func()
 
-// AcquireFunc is a functional way to construct Acquire functions.
-type AcquireFunc func(ctx context.Context, value uint64) (ReleaseFunc, error)
-
-// Acquire implements part of ResourceLimiter.
-func (f AcquireFunc) Acquire(ctx context.Context, value uint64) (ReleaseFunc, error) {
+// Release calls this function.
+func (f ReleaseFunc) Release() {
 	if f == nil {
-		return func() {}, nil
+		return
+	}
+	f()
+}
+
+// DelayFunc returns a channel that is closed when the request is
+// permitted to go ahead.
+type DelayFunc func() <-chan struct{}
+
+// Delay calls this function.
+func (f DelayFunc) Delay() <-chan struct{} {
+	if f == nil {
+		return immediateChan
+	}
+	return f()
+}
+
+// immediateChan is a singleton channel, already closed, used when a DelayFunc is nil.
+var immediateChan = func() <-chan struct{} {
+	ic := make(chan struct{})
+	close(ic)
+	return ic
+}()
+
+// ReserveResourceFunc is a functional way to construct ReserveResource interface methods.
+type ReserveResourceFunc func(ctx context.Context, value uint64) (ResourceReservation, error)
+
+// ReserveResource implements a ReserveResource interface method.
+func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value uint64) (ResourceReservation, error) {
+	if f == nil {
+		return struct {
+			DelayFunc
+			ReleaseFunc
+		}{
+			DelayFunc(nil),
+			ReleaseFunc(nil),
+		}, nil
 	}
 	return f(ctx, value)
 }
 
-var _ ResourceLimiter = AcquireFunc(nil)
+// WaitForResourceFunc is a functional way to construct WaitForResource interface methods.
+type WaitForResourceFunc func(context.Context, uint64) (ReleaseFunc, error)
+
+// WaitForResource implements a WaitForResource interface method.
+func (f WaitForResourceFunc) WaitForResource(ctx context.Context, value uint64) (ReleaseFunc, error) {
+	if f == nil {
+		return ReleaseFunc(nil), nil
+	}
+	return f(ctx, value)
+}
+
+var _ ResourceLimiter = struct {
+	ReserveResourceFunc
+	WaitForResourceFunc
+}{}

@@ -5,6 +5,7 @@ package extensionlimiter // import "go.opentelemetry.io/collector/extension/exte
 
 import (
 	"context"
+	"time"
 )
 
 // RateLimiterProvider is a provider for rate limiters.
@@ -49,24 +50,87 @@ var _ RateLimiterProvider = struct {
 //
 // See the README for more recommendations.
 type RateLimiter interface {
-	// Limit attempts to apply rate limiting with the provided
-	// weight, based on the key that was given to the provider.
+	// ReserveRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.ReserveN
 	//
-	// This is expected to block the caller until the weight can
-	// be admitted, or when the limit is completely saturated,
-	// limiters may also return immediate errors.
-	Limit(ctx context.Context, value uint64) error
+	// This is a non-blocking interface; use this interface for
+	// callers that cannot be blocked but will instead schedule a
+	// resume after Delay(). The context is provided for access to
+	// instrumentation and client metadata; the Context deadline
+	// is not used, should be considered by the caller.
+	ReserveRate(context.Context, uint64) (RateReservation, error)
+
+	// WaitForRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.WaitN
+	//
+	// This is a blocking interface. Use this interface for
+	// callers that are constrained by a Context deadline, which
+	// will be incorporated into the limiter decision.
+	WaitForRate(context.Context, uint64) error
 }
 
-// LimitFunc is a functional way to construct Limit functions.
-type LimitFunc func(ctx context.Context, value uint64) error
+// A rate limiter can be made up of two functions.
+var _ RateLimiter = struct {
+	ReserveRateFunc
+	WaitForRateFunc
+}{}
 
-// Limit implements part of the RateLimiter interface.
-func (f LimitFunc) Limit(ctx context.Context, value uint64) error {
+// RateReservation is modeled on pkg.go.dev/golang.org/x/time/rate#Reservation
+type RateReservation interface {
+	// WaitTime returns the duration until this reservation may
+	// proceed. A typical implementation uses Reservation.DelayFrom(time.Now()),
+	// and callers typically/ use time.After or time.Timer to implement a delay.
+	WaitTime() time.Duration
+
+	// Cancel cancels the reservation before it is used. A typical
+	// implementation uses Reservation.CancelAt(time.Now()).
+	Cancel()
+}
+
+// ReserveRateFunc is a functional way to construct ReserveRate functions.
+type ReserveRateFunc func(context.Context, uint64) (RateReservation, error)
+
+// Reserve implements part of the RateReserveer interface.
+func (f ReserveRateFunc) ReserveRate(ctx context.Context, value uint64) (RateReservation, error) {
+	if f == nil {
+		return nil, nil
+	}
+	return f(ctx, value)
+}
+
+// WaitForRateFunc is a functional way to construct WaitForRate functions.
+type WaitForRateFunc func(context.Context, uint64) error
+
+// Reserve implements part of the RateReserveer interface.
+func (f WaitForRateFunc) WaitForRate(ctx context.Context, value uint64) error {
 	if f == nil {
 		return nil
 	}
 	return f(ctx, value)
 }
 
-var _ RateLimiter = LimitFunc(nil)
+// WaitTimeFunc is a functional way to construct WaitTime functions.
+type WaitTimeFunc func() time.Duration
+
+// WaitTime implements part of Reservation.
+func (f WaitTimeFunc) WaitTime() time.Duration {
+	if f == nil {
+		return 0
+	}
+	return f.WaitTime()
+}
+
+// CancelFunc is a functional way to construct Cancel functions.
+type CancelFunc func()
+
+// Reserve implements part of the RateReserveer interface.
+func (f CancelFunc) Cancel() {
+	if f == nil {
+		return
+	}
+	f.Cancel()
+}
+
+// A rate limiter can be made up of three functions.
+var _ RateReservation = struct {
+	WaitTimeFunc
+	CancelFunc
+}{}
