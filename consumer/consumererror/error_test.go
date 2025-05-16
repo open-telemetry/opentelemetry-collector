@@ -101,6 +101,7 @@ func TestError_OTLPHTTPStatus(t *testing.T) {
 		name       string
 		httpStatus int
 		grpcStatus *status.Status
+		retryable  bool
 		want       int
 		hasCode    bool
 	}{
@@ -124,6 +125,17 @@ func TestError_OTLPHTTPStatus(t *testing.T) {
 			hasCode:    true,
 		},
 		{
+			name:       "Passes through HTTP status when retryable also present",
+			httpStatus: serverErr,
+			retryable:  true,
+			want:       serverErr,
+		},
+		{
+			name:      "No statuses set with retryable",
+			retryable: true,
+			want:      http.StatusServiceUnavailable,
+		},
+		{
 			name: "No statuses set",
 			want: http.StatusInternalServerError,
 		},
@@ -135,6 +147,7 @@ func TestError_OTLPHTTPStatus(t *testing.T) {
 				error:      errTest,
 				httpStatus: tt.httpStatus,
 				grpcStatus: tt.grpcStatus,
+				retryable:  tt.retryable,
 			}
 
 			s := err.OTLPHTTPStatus()
@@ -152,6 +165,7 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 		name       string
 		httpStatus int
 		grpcStatus *status.Status
+		retryable  bool
 		want       *status.Status
 		hasCode    bool
 	}{
@@ -168,11 +182,22 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 			hasCode:    true,
 		},
 		{
-			name:       "Passes through gRPC status when gRPC status also present",
+			name:       "Passes through gRPC status when HTTP status also present",
 			httpStatus: otherOTLPHTTPStatus,
 			grpcStatus: serverErr,
 			want:       serverErr,
 			hasCode:    true,
+		},
+		{
+			name:       "Passes through gRPC status when retryable also present",
+			grpcStatus: serverErr,
+			retryable:  true,
+			want:       serverErr,
+		},
+		{
+			name:      "No statuses set with retryable",
+			retryable: true,
+			want:      status.New(codes.Unavailable, errTest.Error()),
 		},
 		{
 			name: "No statuses set",
@@ -186,11 +211,87 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 				error:      errTest,
 				httpStatus: tt.httpStatus,
 				grpcStatus: tt.grpcStatus,
+				retryable:  tt.retryable,
 			}
 
 			s := err.OTLPGRPCStatus()
 
 			require.Equal(t, tt.want, s)
+		})
+	}
+}
+
+func TestError_Retryable(t *testing.T) {
+	retryableCodes := []codes.Code{codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss}
+	retryableStatuses := []*status.Status{}
+
+	for _, code := range retryableCodes {
+		retryableStatuses = append(retryableStatuses, status.New(code, errTest.Error()))
+	}
+
+	nonretryableCodes := []codes.Code{codes.Unauthenticated, codes.Unknown, codes.NotFound, codes.InvalidArgument}
+	nonretryableStatuses := []*status.Status{}
+
+	for _, code := range nonretryableCodes {
+		nonretryableStatuses = append(nonretryableStatuses, status.New(code, errTest.Error()))
+	}
+
+	testCases := []struct {
+		name         string
+		httpStatuses []int
+		grpcStatuses []*status.Status
+		retryable    bool
+		want         bool
+	}{
+		{
+			name:         "HTTP statuses: retryable",
+			httpStatuses: []int{http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout},
+			grpcStatuses: []*status.Status{nil},
+			want:         true,
+		},
+		{
+			name:         "HTTP statuses: non-retryable",
+			httpStatuses: []int{0, http.StatusInternalServerError, http.StatusNotFound, http.StatusUnauthorized},
+			grpcStatuses: []*status.Status{nil},
+			want:         false,
+		},
+		{
+			name:         "gRPC statuses: retryable",
+			httpStatuses: []int{0},
+			grpcStatuses: retryableStatuses,
+			want:         true,
+		},
+		{
+			name:         "gRPC statuses: non-retryable",
+			httpStatuses: []int{0},
+			grpcStatuses: nonretryableStatuses,
+			want:         false,
+		},
+		{
+			name:         "Retryable set to true",
+			httpStatuses: []int{0},
+			grpcStatuses: []*status.Status{nil},
+			retryable:    true,
+			want:         true,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, httpStatus := range tt.httpStatuses {
+				for _, grpcStatus := range tt.grpcStatuses {
+					err := Error{
+						error:      errTest,
+						httpStatus: httpStatus,
+						grpcStatus: grpcStatus,
+						retryable:  tt.retryable,
+					}
+
+					isRetryable := err.Retryable()
+
+					require.Equal(t, tt.want, isRetryable)
+				}
+			}
 		})
 	}
 }
