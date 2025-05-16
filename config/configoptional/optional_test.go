@@ -1,0 +1,256 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package configoptional
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
+)
+
+type Config[T any] struct {
+	Sub1 Optional[T] `mapstructure:"sub"`
+}
+
+type Sub struct {
+	Foo string `mapstructure:"foo"`
+}
+
+var subDefault DefaultFunc[Sub] = func() Sub {
+	return Sub{
+		Foo: "foobar",
+	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+var pointerToSubDefault DefaultFunc[*Sub] = func() *Sub {
+	return ptr(subDefault())
+}
+
+var intDefault DefaultFunc[int] = func() int {
+	return 1
+}
+
+var pointerToIntDefault DefaultFunc[*int] = func() *int {
+	return ptr(intDefault())
+}
+
+func TestDefaultPanics(t *testing.T) {
+	assert.Panics(t, func() {
+		_ = Default(&intDefault)
+	})
+
+	assert.Panics(t, func() {
+		_ = Default(&pointerToIntDefault)
+	})
+
+	assert.Panics(t, func() {
+		_ = Default[Sub](nil)
+	})
+
+	assert.NotPanics(t, func() {
+		_ = Default(&subDefault)
+	})
+
+	assert.NotPanics(t, func() {
+		_ = Default(&pointerToSubDefault)
+	})
+}
+
+func TestEqualityDefault(t *testing.T) {
+	defaultOne := Default(&subDefault)
+	defaultTwo := Default(&subDefault)
+	assert.Equal(t, defaultOne, defaultTwo)
+}
+
+func TestNoneZeroVal(t *testing.T) {
+	var none Optional[Sub]
+	require.False(t, none.HasValue())
+	require.Nil(t, none.Get())
+}
+
+func TestNone(t *testing.T) {
+	none := None[Sub]()
+	require.False(t, none.HasValue())
+	require.Nil(t, none.Get())
+}
+
+func TestSome(t *testing.T) {
+	some := Some(Sub{
+		Foo: "foobar",
+	})
+	require.True(t, some.HasValue())
+	require.NotEqual(t, 1, *some.Get())
+}
+
+func TestDefault(t *testing.T) {
+	defaultSub := Default(&subDefault)
+	require.False(t, defaultSub.HasValue())
+	require.Nil(t, defaultSub.Get())
+}
+
+func TestUnmarshalOptional(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      map[string]any
+		defaultCfg  Config[Sub]
+		expectedSub bool
+		expectedFoo string
+	}{
+		{
+			name: "none_no_config",
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "none_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: None[Sub](),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides default
+		},
+		{
+			name: "none_with_config_no_foo",
+			config: map[string]any{
+				"sub": nil,
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(&subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "default_no_config",
+			defaultCfg: Config[Sub]{
+				Sub1: Default(&subDefault),
+			},
+			expectedSub: false,
+		},
+		{
+			name: "default_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(&subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides default
+		},
+		{
+			name: "default_with_config_no_foo",
+			config: map[string]any{
+				"sub": nil,
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(&subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "some_no_config",
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // value is not modified
+		},
+		{
+			name: "some_with_config",
+			config: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "bar", // input overrides previous value
+		},
+		{
+			name: "some_with_config_no_foo",
+			config: map[string]any{
+				"sub": nil,
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Some(Sub{
+					Foo: "foobar",
+				}),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := test.defaultCfg
+			conf := confmap.NewFromStringMap(test.config)
+			require.NoError(t, conf.Unmarshal(&cfg))
+			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
+			if test.expectedSub {
+				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
+			}
+		})
+	}
+}
+
+func TestUnmarshalConfigPointer(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"sub": map[string]any{
+			"foo": "bar",
+		},
+	})
+
+	var cfg Config[*Sub]
+	err := cm.Unmarshal(&cfg)
+	require.NoError(t, err)
+	assert.True(t, cfg.Sub1.HasValue())
+	assert.Equal(t, "bar", (*cfg.Sub1.Get()).Foo)
+}
+
+func TestUnmarshalErr(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"field": "value",
+	})
+
+	cfg := Config[Sub]{
+		Sub1: Default(&subDefault),
+	}
+
+	assert.NotNil(t, cfg.Sub1.defaultFn)
+	assert.False(t, cfg.Sub1.HasValue())
+
+	err := cm.Unmarshal(&cfg)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "has invalid keys: field")
+
+	// Check that the default function is still set
+	// when unmarshaling fails.
+	assert.NotNil(t, cfg.Sub1.defaultFn)
+	assert.False(t, cfg.Sub1.HasValue())
+}
