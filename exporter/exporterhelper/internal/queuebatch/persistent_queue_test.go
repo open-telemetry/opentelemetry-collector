@@ -6,6 +6,7 @@ package queuebatch
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -52,6 +55,20 @@ func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
 		return 0, errInvalidValue
 	}
 	return binary.LittleEndian.Uint64(bytes), nil
+}
+
+// f is an implementation of Encoding that always fails on Marshal and Unmarshal.
+type failingEncoding[T any] struct{}
+
+// Marshal always returns an error.
+func (failingEncoding[T]) Marshal(_ T) ([]byte, error) {
+	return nil, errors.New("failing encoding: Marshal failed")
+}
+
+// Unmarshal always returns an error.
+func (failingEncoding[T]) Unmarshal(_ []byte) (T, error) {
+	var zero T
+	return zero, errors.New("failing encoding: Unmarshal failed")
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -113,7 +130,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Oper
 		case storage.Set:
 			m.st[op.Key] = op.Value
 		case storage.Delete:
-			delete(m.st, op.Key)
+			delete(m.st, op.Key) // Fixed the delete operation syntax
 		default:
 			return errors.New("wrong operation type")
 		}
@@ -269,6 +286,20 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+	return pq
+}
+
+func createTestPersistentQueueWithEncoding(tb testing.TB, ext storage.Extension, capacity int64, encoding Encoding[uint64]) *persistentQueue[uint64] {
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  capacity,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  encoding,
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -552,35 +583,42 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 		corruptReadIndex                   bool
 		corruptWriteIndex                  bool
 		desiredQueueSize                   int64
+		featureGateEnabled                 bool
 	}{
 		{
-			name:             "corrupted no items",
-			desiredQueueSize: 3,
+			name:               "corrupted no items",
+			desiredQueueSize:   3,
+			featureGateEnabled: false,
 		},
 		{
-			name:             "corrupted all items",
-			corruptAllData:   true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name:               "corrupted all items",
+			corruptAllData:     true,
+			desiredQueueSize:   2, // - the dispatched item which was corrupted.
+			featureGateEnabled: false,
 		},
 		{
-			name:             "corrupted some items",
-			corruptSomeData:  true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name:               "corrupted some items",
+			corruptSomeData:    true,
+			desiredQueueSize:   2, // - the dispatched item which was corrupted.
+			featureGateEnabled: false,
 		},
 		{
 			name:                               "corrupted dispatched items key",
 			corruptCurrentlyDispatchedItemsKey: true,
 			desiredQueueSize:                   2,
+			featureGateEnabled:                 false,
 		},
 		{
-			name:             "corrupted read index",
-			corruptReadIndex: true,
-			desiredQueueSize: 1, // The dispatched item.
+			name:               "corrupted read index",
+			corruptReadIndex:   true,
+			desiredQueueSize:   1, // The dispatched item.
+			featureGateEnabled: false,
 		},
 		{
-			name:              "corrupted write index",
-			corruptWriteIndex: true,
-			desiredQueueSize:  1, // The dispatched item.
+			name:               "corrupted write index",
+			corruptWriteIndex:  true,
+			desiredQueueSize:   1, // The dispatched item.
+			featureGateEnabled: false,
 		},
 		{
 			name:                               "corrupted everything",
@@ -589,6 +627,52 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			corruptReadIndex:                   true,
 			corruptWriteIndex:                  true,
 			desiredQueueSize:                   0,
+			featureGateEnabled:                 false,
+		},
+		// Feature gate enabled test cases
+		{
+			name:               "corrupted no items with context",
+			desiredQueueSize:   3,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted all items with context",
+			corruptAllData:     true,
+			desiredQueueSize:   2,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted some items with context",
+			corruptSomeData:    true,
+			desiredQueueSize:   2,
+			featureGateEnabled: true,
+		},
+		{
+			name:                               "corrupted dispatched items key with context",
+			corruptCurrentlyDispatchedItemsKey: true,
+			desiredQueueSize:                   2,
+			featureGateEnabled:                 true,
+		},
+		{
+			name:               "corrupted read index with context",
+			corruptReadIndex:   true,
+			desiredQueueSize:   1,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted write index with context",
+			corruptWriteIndex:  true,
+			desiredQueueSize:   1,
+			featureGateEnabled: true,
+		},
+		{
+			name:                               "corrupted everything with context",
+			corruptAllData:                     true,
+			corruptCurrentlyDispatchedItemsKey: true,
+			corruptReadIndex:                   true,
+			corruptWriteIndex:                  true,
+			desiredQueueSize:                   0,
+			featureGateEnabled:                 true,
 		},
 	}
 
@@ -596,6 +680,12 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			// Set feature gate state
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", c.featureGateEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+			}()
+
 			ext := storagetest.NewMockStorageExtension(nil)
 			ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
@@ -612,10 +702,17 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			// We can corrupt data (in several ways) and not worry since we return ShutdownErr client will not be touched.
 			if c.corruptAllData || c.corruptSomeData {
 				require.NoError(t, ps.client.Set(context.Background(), "0", badBytes))
+				if c.featureGateEnabled {
+					require.NoError(t, ps.client.Set(context.Background(), "0_context", badBytes))
+				}
 			}
 			if c.corruptAllData {
 				require.NoError(t, ps.client.Set(context.Background(), "1", badBytes))
 				require.NoError(t, ps.client.Set(context.Background(), "2", badBytes))
+				if c.featureGateEnabled {
+					require.NoError(t, ps.client.Set(context.Background(), "1_context", badBytes))
+					require.NoError(t, ps.client.Set(context.Background(), "2_context", badBytes))
+				}
 			}
 
 			if c.corruptCurrentlyDispatchedItemsKey {
@@ -913,43 +1010,81 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
-	require.NoError(t, err)
-	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
-
-	client := newFakeBoundedStorageClient(maxSizeInBytes)
-	ps := createTestPersistentQueueWithClient(client)
-
-	// Put enough items in to fill the underlying storage
-	reqCount := int64(0)
-	for {
-		err = ps.Offer(context.Background(), uint64(50))
-		if errors.Is(err, syscall.ENOSPC) {
-			break
-		}
-		require.NoError(t, err)
-		reqCount++
+	testCases := []struct {
+		name           string
+		featureEnabled bool
+		spanContext    trace.SpanContext
+	}{
+		{
+			name:           "FeatureGateDisabled",
+			featureEnabled: false,
+		},
+		{
+			name:           "FeatureGateEnabled",
+			featureEnabled: true,
+			spanContext: trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID{0x01},
+				SpanID:     trace.SpanID{0x02},
+				TraceFlags: trace.TraceFlags(0x03),
+				TraceState: trace.TraceState{},
+			}),
+		},
 	}
 
-	// Check that the size is correct
-	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gate state
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", tc.featureEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+			}()
 
-	// Manually set the storage to only have a small amount of free space left (needs 24).
-	newMaxSize := client.GetSizeInBytes() + 23
-	client.SetMaxSizeInBytes(newMaxSize)
+			marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+			require.NoError(t, err)
+			lenMarshaled := len(marshaled)
+			if tc.featureEnabled {
+				ctx := trace.ContextWithSpanContext(context.Background(), tc.spanContext)
+				m, marshalErr := getAndMarshalSpanContext(ctx)
+				require.NoError(t, marshalErr)
+				lenMarshaled += len(m)
+			}
+			maxSizeInBytes := lenMarshaled * 5 // arbitrary small number
 
-	// Take out all the items
-	// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
-	// Subsequent items succeed, as deleting the first item frees enough space for the state update
-	reqCount--
-	for i := reqCount; i > 0; i-- {
-		require.True(t, consume(ps, func(context.Context, uint64) error { return nil }))
+			client := newFakeBoundedStorageClient(maxSizeInBytes)
+			ps := createTestPersistentQueueWithClient(client)
+
+			// Put enough items in to fill the underlying storage
+			reqCount := int64(0)
+			for {
+				err = ps.Offer(context.Background(), uint64(50))
+				if errors.Is(err, syscall.ENOSPC) {
+					break
+				}
+				require.NoError(t, err)
+				reqCount++
+			}
+
+			// Check that the size is correct
+			require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+
+			// Manually set the storage to only have a small amount of free space left (needs 24).
+			newMaxSize := client.GetSizeInBytes() + 23
+			client.SetMaxSizeInBytes(newMaxSize)
+
+			// Take out all the items
+			// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
+			// Subsequent items succeed, as deleting the first item frees enough space for the state update
+			reqCount--
+			for i := reqCount; i > 0; i-- {
+				require.True(t, consume(ps, func(context.Context, uint64) error { return nil }))
+			}
+			require.Equal(t, int64(0), ps.Size())
+
+			// We should be able to put a new item in
+			// However, this will fail if deleting items fails with full storage
+			require.NoError(t, ps.Offer(context.Background(), uint64(50)))
+		})
 	}
-	require.Equal(t, int64(0), ps.Size())
-
-	// We should be able to put a new item in
-	// However, this will fail if deleting items fails with full storage
-	require.NoError(t, ps.Offer(context.Background(), uint64(50)))
 }
 
 func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
@@ -1204,4 +1339,617 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
+}
+
+func TestSpanContextFromWrapper(t *testing.T) {
+	testCases := []struct {
+		name          string
+		wrapper       spanContext
+		expectErr     bool
+		errContains   string
+		expectNil     bool
+		expectValid   bool
+		expectTraceID string
+		expectSpanID  string
+		expectFlags   string
+		expectState   string
+		expectRemote  bool
+	}{
+		{
+			name: "invalid trace id",
+			wrapper: spanContext{
+				TraceID:    "invalidtraceid",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid span id",
+			wrapper: spanContext{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "invalidspanid",
+				TraceFlags: "01",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid trace flags hex",
+			wrapper: spanContext{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "zz",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "invalid trace flags length",
+			wrapper: spanContext{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "0102",
+				TraceState: "",
+				Remote:     false,
+			},
+			expectErr:   true,
+			expectNil:   true,
+			errContains: errInvalidTraceFlagsLength,
+		},
+		{
+			name: "invalid trace state",
+			wrapper: spanContext{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "invalid=tracestate,=bad",
+				Remote:     false,
+			},
+			expectErr: true,
+			expectNil: true,
+		},
+		{
+			name: "valid span context",
+			wrapper: spanContext{
+				TraceID:    "0102030405060708090a0b0c0d0e0f10",
+				SpanID:     "0102030405060708",
+				TraceFlags: "01",
+				TraceState: "vendor=value",
+				Remote:     true,
+			},
+			expectErr:     false,
+			expectNil:     false,
+			expectValid:   true,
+			expectTraceID: "0102030405060708090a0b0c0d0e0f10",
+			expectSpanID:  "0102030405060708",
+			expectFlags:   "01",
+			expectState:   "vendor=value",
+			expectRemote:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scc, err := requestContextFromSpanContextWrapper(tc.wrapper)
+			if tc.expectErr {
+				require.Error(t, err)
+				if tc.errContains != "" {
+					assert.Contains(t, err.Error(), tc.errContains)
+				}
+			} else {
+				require.NoError(t, err)
+			}
+			if tc.expectNil {
+				assert.Nil(t, scc)
+			} else {
+				assert.NotNil(t, scc)
+				if tc.expectValid {
+					assert.True(t, scc.IsValid())
+					assert.Equal(t, tc.expectTraceID, scc.TraceID().String())
+					assert.Equal(t, tc.expectSpanID, scc.SpanID().String())
+					assert.Equal(t, tc.expectFlags, scc.TraceFlags().String())
+					assert.Equal(t, tc.expectState, scc.TraceState().String())
+					assert.Equal(t, tc.expectRemote, scc.IsRemote())
+				}
+			}
+		})
+	}
+}
+
+func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+	// Setup a minimal persistent queue using uint64Encoding and uint64
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  10,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  uint64Encoding{},
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	client, err := ext.GetClient(context.Background(), component.KindExporter, pq.set.id, pq.set.signal.String())
+	require.NoError(t, err)
+	pq.initClient(context.Background(), client)
+
+	// Create a valid SpanContext
+	traceID, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	spanID, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+
+	// Offer a request with this context
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctxWithSC, req))
+
+	// Read the request and restored context
+	restoredCtx, gotReq, _, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	assert.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	assert.True(t, restoredSC.IsValid())
+	assert.Equal(t, sc.TraceID(), restoredSC.TraceID())
+	assert.Equal(t, sc.SpanID(), restoredSC.SpanID())
+	assert.Equal(t, sc.TraceFlags(), restoredSC.TraceFlags())
+	assert.Equal(t, sc.TraceState().String(), restoredSC.TraceState().String())
+	assert.Equal(t, sc.IsRemote(), restoredSC.IsRemote())
+
+	// Also test with a context with no SpanContext
+	req2 := uint64(99)
+	require.NoError(t, pq.Offer(context.Background(), req2))
+	restoredCtx2, gotReq2, _, ok2 := pq.Read(context.Background())
+	require.True(t, ok2)
+	assert.Equal(t, req2, gotReq2)
+	restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+	assert.False(t, restoredSC2.IsValid())
+}
+
+func TestSpanContextUnmarshalJSON(t *testing.T) {
+	testCases := []struct {
+		name          string
+		expectErr     bool
+		marshaledData []byte
+	}{
+		{
+			name:          "Invalid JSON data",
+			expectErr:     true,
+			marshaledData: []byte(`{"invalid json}`),
+		},
+		{
+			name:          "Valid JSON but not valid spanContext",
+			expectErr:     true,
+			marshaledData: []byte(`{"foo":"bar"}`),
+		},
+		{
+			name:          "Valid JSON with spanContext fields but invalid SC",
+			expectErr:     true,
+			marshaledData: []byte(`{"TraceID": "00000000000000000000000000000000","SpanID":"00000000000000000","TraceFlags":"0","TraceState":"0","Remote":false}`),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var rc requestContext
+			err := json.Unmarshal(tc.marshaledData, &rc)
+			if tc.expectErr {
+				require.Error(t, err)
+			}
+		})
+	}
+	t.Run("Call UnmarshalJSON directly", func(t *testing.T) {
+		var rc requestContext
+		err := rc.UnmarshalJSON([]byte(`{"TraceID": "`))
+		require.Error(t, err)
+	})
+}
+
+func TestPersistentQueue_PutInternal_FailingEncoding(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+	pq.set.encoding = failingEncoding[uint64]{}
+
+	err := pq.Offer(context.Background(), 1)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Marshal failed")
+}
+
+func TestPersistentQueue_GetNextItem_UnmarshalError(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	failingEncoding := &failingEncoding[uint64]{}
+	ps := createTestPersistentQueueWithEncoding(t, ext, 1000, uint64Encoding{})
+
+	// Add an item to the queue
+	req := uint64(50)
+	require.NoError(t, ps.Offer(context.Background(), req))
+
+	// Attempt to read the item, expecting an Unmarshal error
+	ctx := context.Background()
+	// change encoding to failingEncoding so Unmarshal fails
+	ps.set.encoding = failingEncoding
+	_, _, _, _, err := ps.getNextItem(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Unmarshal failed")
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_ContextRestoration(t *testing.T) {
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Simulate items being dispatched
+		pq.currentlyDispatchedItems = []uint64{0, 1, 2}
+
+		// Retrieve and enqueue
+		pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+		// Verify items were moved back to queue without context
+		for i := uint64(0); i < 3; i++ {
+			val, err := client.Get(context.Background(), getItemKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, val)
+
+			val, err = client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+			require.Empty(t, val)
+		}
+	})
+
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Simulate items being dispatched
+		pq.currentlyDispatchedItems = []uint64{0, 1, 2}
+
+		// Retrieve and enqueue
+		pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+		// Verify items were moved back to queue with context
+		for i := uint64(0); i < 3; i++ {
+			val, err := client.Get(context.Background(), getItemKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, val)
+
+			ctxVal, err := client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, ctxVal)
+		}
+	})
+}
+
+func TestPersistentQueue_FeatureGate_ContextPersistence(t *testing.T) {
+	// Test with feature gate disabled
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add an item with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		require.NoError(t, pq.putInternal(ctx, 1))
+
+		// Verify only request key exists, no context key
+		val, err := client.Get(context.Background(), getItemKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, val)
+
+		val, err = client.Get(context.Background(), getContextKey(0))
+		require.NoError(t, err)
+		require.Empty(t, val)
+	})
+
+	// Test with feature gate enabled
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add an item with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		require.NoError(t, pq.putInternal(ctx, 1))
+
+		// Verify both request and context keys exist
+		val, err := client.Get(context.Background(), getItemKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, val)
+
+		ctxVal, err := client.Get(context.Background(), getContextKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, ctxVal)
+	})
+}
+
+func TestPersistentQueue_FeatureGate_BatchOperations(t *testing.T) {
+	// Test with feature gate disabled
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add multiple items
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(context.Background(), i))
+		}
+
+		// Verify batch operations only include request keys
+		ops := make([]*storage.Operation, 0)
+		for i := uint64(0); i < 3; i++ {
+			ops = append(ops, storage.GetOperation(getItemKey(i)))
+		}
+		require.NoError(t, client.Batch(context.Background(), ops...))
+
+		// Verify no context keys exist
+		for i := uint64(0); i < 3; i++ {
+			_, err := client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+		}
+	})
+
+	// Test with feature gate enabled
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add multiple items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Verify batch operations include both request and context keys
+		ops := make([]*storage.Operation, 0)
+		for i := uint64(0); i < 3; i++ {
+			ops = append(ops, storage.GetOperation(getItemKey(i)))
+			ops = append(ops, storage.GetOperation(getContextKey(i)))
+		}
+		require.NoError(t, client.Batch(context.Background(), ops...))
+	})
+}
+
+func TestPersistentQueue_GetNextItem_BatchError(t *testing.T) {
+	// Create a storage client that will fail on Batch operations
+	client := &fakeStorageClientWithErrors{
+		errors: []error{errors.New("batch operation failed")},
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	ctx := context.Background()
+	restoredCtx, readReq, done, found := pq.Read(ctx)
+
+	// Should return false for found since the read failed
+	assert.False(t, found)
+	assert.Equal(t, uint64(0), readReq)
+	assert.Nil(t, done)
+	assert.Equal(t, ctx, restoredCtx)
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_SpanContextUnmarshal(t *testing.T) {
+	// Enable the feature gate
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+
+	t.Run("SuccessfulUnmarshal", func(t *testing.T) {
+		ext := storagetest.NewMockStorageExtension(nil)
+		pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Create a valid span context
+		validSC := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		})
+		ctx := trace.ContextWithSpanContext(context.Background(), validSC)
+
+		// Add items with the valid span context
+		req1 := uint64(50)
+		req2 := uint64(60)
+		require.NoError(t, pq.Offer(ctx, req1))
+		require.NoError(t, pq.Offer(ctx, req2))
+
+		// Manually mark items as dispatched (simulating them being read but not finished)
+		pq.mu.Lock()
+		pq.currentlyDispatchedItems = []uint64{0, 1}
+		// Update the storage with currently dispatched items
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		pq.mu.Unlock()
+
+		// Shutdown the queue
+		require.NoError(t, pq.Shutdown(context.Background()))
+
+		// Create a new queue from the same storage - this should trigger retrieveAndEnqueueNotDispatchedReqs
+		newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Verify items were moved back to the queue with context preserved
+		assert.Equal(t, int64(2), newPQ.Size())
+
+		// Read the first item and verify context is preserved
+		restoredCtx1, readReq1, done1, found1 := newPQ.Read(context.Background())
+		require.True(t, found1)
+		assert.Equal(t, req1, readReq1)
+		assert.NotNil(t, done1)
+
+		restoredSC1 := trace.SpanContextFromContext(restoredCtx1)
+		assert.True(t, restoredSC1.IsValid())
+		assert.Equal(t, validSC.TraceID(), restoredSC1.TraceID())
+		assert.Equal(t, validSC.SpanID(), restoredSC1.SpanID())
+
+		// Read the second item and verify context is preserved
+		restoredCtx2, readReq2, done2, found2 := newPQ.Read(context.Background())
+		require.True(t, found2)
+		assert.Equal(t, req2, readReq2)
+		assert.NotNil(t, done2)
+
+		restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+		assert.True(t, restoredSC2.IsValid())
+		assert.Equal(t, validSC.TraceID(), restoredSC2.TraceID())
+		assert.Equal(t, validSC.SpanID(), restoredSC2.SpanID())
+	})
+
+	t.Run("FailedUnmarshal", func(t *testing.T) {
+		ext := storagetest.NewMockStorageExtension(nil)
+		pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Create a valid span context
+		validSC := trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		})
+		ctx := trace.ContextWithSpanContext(context.Background(), validSC)
+
+		// Add items with the valid span context
+		req1 := uint64(50)
+		req2 := uint64(60)
+		require.NoError(t, pq.Offer(ctx, req1))
+		require.NoError(t, pq.Offer(ctx, req2))
+
+		// Manually mark items as dispatched (simulating them being read but not finished)
+		pq.mu.Lock()
+		pq.currentlyDispatchedItems = []uint64{0, 1}
+		// Update the storage with currently dispatched items
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		pq.mu.Unlock()
+
+		// Corrupt the stored context data with invalid JSON
+		corruptedData := []byte(`{"invalid": "json"}`)
+		require.NoError(t, pq.client.Set(context.Background(), getContextKey(0), corruptedData))
+		require.NoError(t, pq.client.Set(context.Background(), getContextKey(1), corruptedData))
+
+		// Shutdown the queue
+		require.NoError(t, pq.Shutdown(context.Background()))
+
+		// Create a new queue from the same storage - this should trigger retrieveAndEnqueueNotDispatchedReqs
+		newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+		// Verify items were moved back to the queue but context is not preserved
+		assert.Equal(t, int64(2), newPQ.Size())
+
+		// Read the first item and verify context is not preserved
+		restoredCtx1, readReq1, done1, found1 := newPQ.Read(context.Background())
+		require.True(t, found1)
+		assert.Equal(t, req1, readReq1)
+		assert.NotNil(t, done1)
+
+		restoredSC1 := trace.SpanContextFromContext(restoredCtx1)
+		assert.False(t, restoredSC1.IsValid())
+
+		// Read the second item and verify context is not preserved
+		restoredCtx2, readReq2, done2, found2 := newPQ.Read(context.Background())
+		require.True(t, found2)
+		assert.Equal(t, req2, readReq2)
+		assert.NotNil(t, done2)
+
+		restoredSC2 := trace.SpanContextFromContext(restoredCtx2)
+		assert.False(t, restoredSC2.IsValid())
+	})
+}
+
+func TestPersistentQueue_PutInternal_ContextTimeout(t *testing.T) {
+	// Create a blocking queue
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:           request.RequestsSizer[uint64]{},
+		capacity:        2,
+		blockOnOverflow: true,
+		signal:          pipeline.SignalTraces,
+		storageID:       component.ID{},
+		encoding:        uint64Encoding{},
+		id:              component.NewID(exportertest.NopType),
+		telemetry:       componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+
+	// Initialize with storage
+	ext := storagetest.NewMockStorageExtension(nil)
+	require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+
+	// Fill the queue to capacity
+	require.NoError(t, pq.Offer(context.Background(), uint64(1)))
+	require.NoError(t, pq.Offer(context.Background(), uint64(2)))
+
+	// Try to add another item with a very short timeout
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	// This should fail with context deadline exceeded
+	err := pq.Offer(timeoutCtx, uint64(3))
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 }
