@@ -543,6 +543,7 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 }
 
 // Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
+// Only types with struct or pointer to struct kind are supported.
 type Unmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
