@@ -1,0 +1,14 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+events:
+  event:
+    enabled: true
+    description: Description.

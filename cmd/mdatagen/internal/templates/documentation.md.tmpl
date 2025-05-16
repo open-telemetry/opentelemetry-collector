@@ -34,6 +34,36 @@
 
 {{- end -}}
 
+{{- define "event-documentation" -}}
+{{- $eventName := . }}
+{{- $event := $eventName | eventInfo -}}
+
+### {{ $eventName }}
+
+{{ $event.Description }}
+
+{{- if $event.ExtendedDocumentation }}
+
+{{ $event.ExtendedDocumentation }}
+
+{{- end }}
+
+{{- if $event.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+{{- range $event.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
+
 {{- define "telemetry-documentation" -}}
 {{- $metricName := . }}
 {{- $metric := $metricName | telemetryInfo -}}
@@ -120,6 +150,27 @@ metrics:
 
 {{ template "metric-documentation" $metricName }}
 
+{{- end }}
+{{- end }}
+
+{{- if .Events }}
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+{{- range $eventName, $event := .Events }}
+{{- if $event.Enabled }}
+
+{{ template "event-documentation" $eventName }}
+
+{{- end }}
 {{- end }}
 {{- end }}
 
