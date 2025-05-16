@@ -4,11 +4,9 @@
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/puzpuzpuz/xsync/v3"
-	"golang.org/x/sync/errgroup"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -17,7 +15,7 @@ import (
 
 type multiBatcher struct {
 	cfg         BatchConfig
-	workerPool  *chan struct{}
+	workerPool  chan struct{}
 	sizerType   request.SizerType
 	sizer       request.Sizer[request.Request]
 	partitioner Partitioner[request.Request]
@@ -39,7 +37,7 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 	}
 	mb := &multiBatcher{
 		cfg:         bCfg,
-		workerPool:  &workerPool,
+		workerPool:  workerPool,
 		sizerType:   bSet.sizerType,
 		sizer:       bSet.sizer,
 		partitioner: bSet.partitioner,
@@ -98,18 +96,18 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done D
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	if mb.singleShard != nil {
-		return mb.singleShard.shutdown(ctx)
+		mb.singleShard.shutdown(ctx)
 	}
 
-	var g errgroup.Group
+	var wg sync.WaitGroup
+	wg.Add(mb.shards.Size())
 	mb.shards.Range(func(key string, shard *shardBatcher) bool {
-		g.Go(func() error {
-			if err := shard.shutdown(ctx); err != nil {
-				return fmt.Errorf("failed to shutdown partition %s: %w", key, err)
-			}
-			return nil
-		})
+		go func() {
+			shard.shutdown(ctx)
+			wg.Done()
+		}()
 		return true
 	})
-	return g.Wait()
+	wg.Wait()
+	return nil
 }
