@@ -14,42 +14,60 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-var _ xconsumer.Profiles = profiles{}
+var (
+	_                 xconsumer.Profiles = obsProfiles{}
+	profilesMarshaler                    = pprofile.ProtoMarshaler{}
+)
 
-func NewProfiles(consumer xconsumer.Profiles, itemCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
+func NewProfiles(cons xconsumer.Profiles, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		return consumer
+		return cons
 	}
 
 	o := options{}
 	for _, opt := range opts {
-		opt.apply(&o)
+		opt(&o)
 	}
-	return profiles{
-		consumer:        consumer,
+
+	return obsProfiles{
+		consumer:        cons,
 		itemCounter:     itemCounter,
+		sizeCounter:     sizeCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type profiles struct {
+type obsProfiles struct {
 	consumer    xconsumer.Profiles
 	itemCounter metric.Int64Counter
+	sizeCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c profiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
+// ConsumeProfiles measures telemetry before calling ConsumeProfiles because the data may be mutated downstream
+func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) error {
 	// Measure before calling ConsumeProfiles because the data may be mutated downstream
+	attrs := &c.withSuccessAttrs
+
 	itemCount := pd.SampleCount()
+	defer func() {
+		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+	}()
+
+	if isEnabled(ctx, c.sizeCounter) {
+		byteCount := int64(profilesMarshaler.ProfilesSize(pd))
+		defer func() {
+			c.sizeCounter.Add(ctx, byteCount, *attrs)
+		}()
+	}
+
 	err := c.consumer.ConsumeProfiles(ctx, pd)
-	if err == nil {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
-	} else {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
+	if err != nil {
+		attrs = &c.withFailureAttrs
 	}
 	return err
 }
 
-func (c profiles) Capabilities() consumer.Capabilities {
+func (c obsProfiles) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

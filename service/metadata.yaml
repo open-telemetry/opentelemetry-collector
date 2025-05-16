@@ -121,3 +121,52 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    receiver.produced.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items emitted from the receiver, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items passed to the processor, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    processor.produced.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items emitted from the processor, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    connector.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items passed to the connector, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    connector.produced.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items emitted from the connector, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
+    exporter.consumed.size:
+      prefix: otelcol.
+      enabled: false
+      description: Size of items passed to the exporter, based on ProtoMarshaler.Sizer.
+      unit: "{item}"
+      sum:
+        value_type: int
+        monotonic: true
