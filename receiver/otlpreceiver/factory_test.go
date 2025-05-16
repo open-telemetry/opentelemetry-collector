@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -39,8 +40,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateSameReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
-	cfg.HTTP.ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPC.GetOrInsertDefault().NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
+
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	core, observer := observer.New(zapcore.DebugLevel)
 	attrs := attribute.NewSet(
@@ -84,7 +86,7 @@ func TestCreateSameReceiver(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := &configgrpc.ServerConfig{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
@@ -92,7 +94,7 @@ func TestCreateTraces(t *testing.T) {
 	}
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
-	defaultHTTPSettings := &HTTPConfig{
+	defaultHTTPSettings := HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
@@ -110,8 +112,8 @@ func TestCreateTraces(t *testing.T) {
 			name: "default",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -120,13 +122,13 @@ func TestCreateTraces(t *testing.T) {
 			name: "invalid_grpc_port",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.ServerConfig{
+					GRPC: configoptional.Some(configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
 							Transport: confignet.TransportTypeTCP,
 						},
-					},
-					HTTP: defaultHTTPSettings,
+					}),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -136,13 +138,13 @@ func TestCreateTraces(t *testing.T) {
 			name: "invalid_http_port",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
 						TracesURLPath: defaultTracesURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,
@@ -178,7 +180,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateMetric(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := &configgrpc.ServerConfig{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:0",
 			Transport: confignet.TransportTypeTCP,
@@ -186,7 +188,7 @@ func TestCreateMetric(t *testing.T) {
 	}
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = "127.0.0.1:0"
-	defaultHTTPSettings := &HTTPConfig{
+	defaultHTTPSettings := HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
@@ -204,8 +206,8 @@ func TestCreateMetric(t *testing.T) {
 			name: "default",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -214,13 +216,13 @@ func TestCreateMetric(t *testing.T) {
 			name: "invalid_grpc_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.ServerConfig{
+					GRPC: configoptional.Some(configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
 							Transport: confignet.TransportTypeTCP,
 						},
-					},
-					HTTP: defaultHTTPSettings,
+					}),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -230,13 +232,13 @@ func TestCreateMetric(t *testing.T) {
 			name: "invalid_http_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						MetricsURLPath: defaultMetricsURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,
@@ -272,7 +274,7 @@ func TestCreateMetric(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := &configgrpc.ServerConfig{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
@@ -280,7 +282,7 @@ func TestCreateLogs(t *testing.T) {
 	}
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
-	defaultHTTPSettings := &HTTPConfig{
+	defaultHTTPSettings := HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
@@ -298,8 +300,8 @@ func TestCreateLogs(t *testing.T) {
 			name: "default",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -308,13 +310,13 @@ func TestCreateLogs(t *testing.T) {
 			name: "invalid_grpc_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.ServerConfig{
+					GRPC: configoptional.Some(configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "327.0.0.1:1122",
 							Transport: confignet.TransportTypeTCP,
 						},
-					},
-					HTTP: defaultHTTPSettings,
+					}),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -324,13 +326,13 @@ func TestCreateLogs(t *testing.T) {
 			name: "invalid_http_address",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "327.0.0.1:1122",
 						},
 						LogsURLPath: defaultLogsURLPath,
-					},
+					}),
 				},
 			},
 			wantStartErr: true,
@@ -366,7 +368,7 @@ func TestCreateLogs(t *testing.T) {
 
 func TestCreateProfiles(t *testing.T) {
 	factory := NewFactory()
-	defaultGRPCSettings := &configgrpc.ServerConfig{
+	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  testutil.GetAvailableLocalAddress(t),
 			Transport: confignet.TransportTypeTCP,
@@ -374,7 +376,7 @@ func TestCreateProfiles(t *testing.T) {
 	}
 	defaultServerConfig := confighttp.NewDefaultServerConfig()
 	defaultServerConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
-	defaultHTTPSettings := &HTTPConfig{
+	defaultHTTPSettings := HTTPConfig{
 		ServerConfig:   defaultServerConfig,
 		TracesURLPath:  defaultTracesURLPath,
 		MetricsURLPath: defaultMetricsURLPath,
@@ -392,8 +394,8 @@ func TestCreateProfiles(t *testing.T) {
 			name: "default",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: defaultHTTPSettings,
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			sink: consumertest.NewNop(),
@@ -402,13 +404,13 @@ func TestCreateProfiles(t *testing.T) {
 			name: "invalid_grpc_port",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.ServerConfig{
+					GRPC: configoptional.Some(configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:112233",
 							Transport: confignet.TransportTypeTCP,
 						},
-					},
-					HTTP: defaultHTTPSettings,
+					}),
+					HTTP: configoptional.Some(defaultHTTPSettings),
 				},
 			},
 			wantStartErr: true,
@@ -418,12 +420,12 @@ func TestCreateProfiles(t *testing.T) {
 			name: "invalid_http_port",
 			cfg: &Config{
 				Protocols: Protocols{
-					GRPC: defaultGRPCSettings,
-					HTTP: &HTTPConfig{
+					GRPC: configoptional.Some(defaultGRPCSettings),
+					HTTP: configoptional.Some(HTTPConfig{
 						ServerConfig: confighttp.ServerConfig{
 							Endpoint: "localhost:112233",
 						},
-					},
+					}),
 				},
 			},
 			wantStartErr: true,

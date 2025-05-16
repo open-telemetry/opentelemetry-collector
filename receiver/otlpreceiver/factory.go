@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
@@ -37,32 +39,40 @@ func NewFactory() receiver.Factory {
 	)
 }
 
+var (
+	httpConfigFactory = configoptional.NewFactory(func() HTTPConfig {
+		httpCfg := confighttp.NewDefaultServerConfig()
+		httpCfg.Endpoint = "localhost:4318"
+		// For backward compatibility:
+		httpCfg.TLSSetting = configoptional.None[configtls.ServerConfig]()
+		httpCfg.WriteTimeout = 0
+		httpCfg.ReadHeaderTimeout = 0
+		httpCfg.IdleTimeout = 0
+		return HTTPConfig{
+			ServerConfig:   httpCfg,
+			TracesURLPath:  defaultTracesURLPath,
+			MetricsURLPath: defaultMetricsURLPath,
+			LogsURLPath:    defaultLogsURLPath,
+		}
+	})
+
+	grpcConfigFactory = configoptional.NewFactory(func() configgrpc.ServerConfig {
+		grpcCfg := configgrpc.NewDefaultServerConfig()
+		grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
+		grpcCfg.NetAddr.Endpoint = "localhost:4317"
+		grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
+		// We almost write 0 bytes, so no need to tune WriteBufferSize.
+		grpcCfg.ReadBufferSize = 512 * 1024
+		return *grpcCfg
+	})
+)
+
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	grpcCfg := configgrpc.NewDefaultServerConfig()
-	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
-	grpcCfg.NetAddr.Endpoint = "localhost:4317"
-	grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
-	// We almost write 0 bytes, so no need to tune WriteBufferSize.
-	grpcCfg.ReadBufferSize = 512 * 1024
-
-	httpCfg := confighttp.NewDefaultServerConfig()
-	httpCfg.Endpoint = "localhost:4318"
-	// For backward compatibility:
-	httpCfg.TLSSetting = nil
-	httpCfg.WriteTimeout = 0
-	httpCfg.ReadHeaderTimeout = 0
-	httpCfg.IdleTimeout = 0
-
 	return &Config{
 		Protocols: Protocols{
-			GRPC: grpcCfg,
-			HTTP: &HTTPConfig{
-				ServerConfig:   httpCfg,
-				TracesURLPath:  defaultTracesURLPath,
-				MetricsURLPath: defaultMetricsURLPath,
-				LogsURLPath:    defaultLogsURLPath,
-			},
+			GRPC: configoptional.Default(grpcConfigFactory),
+			HTTP: configoptional.Default(httpConfigFactory),
 		},
 	}
 }
