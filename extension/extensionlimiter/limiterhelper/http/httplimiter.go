@@ -14,7 +14,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-func NewHTTPClientLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPClient, error) {
+func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPClient, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
 	if err := multierr.Append(err1, err2); err != nil {
@@ -27,7 +27,6 @@ func NewHTTPClientLimiter(host component.Host, middleware configmiddleware.Confi
 	}
 
 	roundtrip := func(base http.RoundTripper) (http.RoundTripper, error) {
-
 		return extensionmiddlewaretest.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 			if requestLimiter == nil && bytesLimiter == nil {
 				// If no limiters are configured, return the base round tripper
@@ -85,7 +84,7 @@ func (rb *rateLimitedBody) Close() error {
 	return rb.body.Close()
 }
 
-func NewHTTPServerLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPServer, error) {
+func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPServer, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
 	if err := multierr.Append(err1, err2); err != nil {

@@ -3,102 +3,132 @@ package grpclimiter
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
+	"go.uber.org/multierr"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/stats"
-	"google.golang.org/grpc/status"
 )
 
-func (lm *limiterMiddleware) GetGRPCClientOptions() (options []grpc.DialOption, _ error) {
-	if resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount); resourceLimiter != nil {
-		options = append(options, grpc.WithUnaryInterceptor(
+func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.GRPCClient, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+	if err := multierr.Append(err1, err2); err != nil {
+		return nil, err
+	}
+	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+	if err := multierr.Append(err3, err4); err != nil {
+		return nil, err
+	}
+
+	var gopts []grpc.DialOption
+	if requestLimiter != nil {
+		gopts = append(gopts, grpc.WithUnaryInterceptor(
 			func(
-				ctx context.Context,
+				ctxIn context.Context,
 				method string,
 				req, reply any,
 				cc *grpc.ClientConn,
 				invoker grpc.UnaryInvoker,
 				opts ...grpc.CallOption,
 			) error {
-				release, err := resourceLimiter.Acquire(ctx, 1)
-				defer release()
-				if err != nil {
-					return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-				}
-				return invoker(ctx, method, req, reply, cc, opts...)
+				return requestLimiter.LimitCall(
+					ctxIn, 1,
+					func(ctx context.Context) error {
+						return invoker(ctx, method, req, reply, cc, opts...)
+					})
 			}),
 			grpc.WithStreamInterceptor(
 				func(
-					ctx context.Context,
+					ctxIn context.Context,
 					desc *grpc.StreamDesc,
 					cc *grpc.ClientConn,
 					method string,
 					streamer grpc.Streamer,
 					opts ...grpc.CallOption,
 				) (grpc.ClientStream, error) {
-					cstream, err := streamer(ctx, desc, cc, method, opts...)
+					cstream, err := streamer(ctxIn, desc, cc, method, opts...)
 					if err != nil {
 						return nil, err
 					}
-					return lm.wrapClientStream(cstream, method, resourceLimiter), nil
+					return wrapClientStream(cstream, method, requestLimiter), nil
 				}),
 		)
 	}
-	if rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes); rateLimiter != nil {
-		options = append(options, grpc.WithStatsHandler(
+	if bytesLimiter != nil {
+		gopts = append(gopts, grpc.WithStatsHandler(
 			&limiterStatsHandler{
-				rateLimiter: rateLimiter,
-				isClient:    true,
+				bytesLimiter: bytesLimiter,
+				isClient:     true,
 			}))
 	}
-	return options, nil
+	return extensionmiddleware.GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
+		return gopts, nil
+	}), nil
 }
 
-// ServerUnaryInterceptor returns a gRPC interceptor for unary server calls.
-func (lm *limiterMiddleware) GetGRPCServerOptions() (options []grpc.ServerOption, _ error) {
-	if resourceLimiter := lm.provider.ResourceLimiter(extensionlimiter.WeightKeyRequestCount); resourceLimiter != nil {
-		options = append(options, grpc.ChainUnaryInterceptor(
-			// The unary resource case
+func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.GRPCServer, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+	if err := multierr.Append(err1, err2); err != nil {
+		return nil, err
+	}
+	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+	if err := multierr.Append(err3, err4); err != nil {
+		return nil, err
+	}
+
+	var gopts []grpc.ServerOption
+	if requestLimiter != nil {
+		gopts = append(gopts, grpc.ChainUnaryInterceptor(
 			func(
-				ctx context.Context,
+				ctxIn context.Context,
 				req any,
 				info *grpc.UnaryServerInfo,
 				handler grpc.UnaryHandler,
 			) (any, error) {
-				release, err := resourceLimiter.Acquire(ctx, 1)
-				defer release()
-				if err != nil {
-					return nil, status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-				}
-				return handler(ctx, req)
+				var resp any
+				err := requestLimiter.LimitCall(
+					ctxIn, 1,
+					func(ctx context.Context) error {
+						var err error
+						resp, err = handler(ctx, req)
+						return err
+					})
+				return resp, err
 			}), grpc.ChainStreamInterceptor(
-			// The stream resource case
 			func(
 				srv interface{},
 				ss grpc.ServerStream,
 				info *grpc.StreamServerInfo,
 				handler grpc.StreamHandler,
 			) error {
-				return handler(srv, lm.wrapServerStream(ss, info, resourceLimiter))
+				return handler(srv, wrapServerStream(ss, info, requestLimiter))
 			}),
 		)
 	}
-	if rateLimiter := lm.provider.RateLimiter(extensionlimiter.WeightKeyNetworkBytes); rateLimiter != nil {
-		options = append(options, grpc.StatsHandler(
+	if bytesLimiter != nil {
+		gopts = append(gopts, grpc.StatsHandler(
 			&limiterStatsHandler{
-				rateLimiter: rateLimiter,
-				isClient:    false,
+				bytesLimiter: bytesLimiter,
+				isClient:     false,
 			}))
 	}
 
-	return options, nil
+	return extensionmiddleware.GetGRPCServerOptionsFunc(func() ([]grpc.ServerOption, error) {
+		return gopts, nil
+	}), nil
 }
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
 type limiterStatsHandler struct {
-	rateLimiter extensionlimiter.RateLimiter
-	isClient    bool
+	bytesLimiter extensionlimiter.RateLimiter
+	isClient     bool
 }
 
 func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
@@ -128,7 +158,8 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 		return
 	}
 	// Apply rate limiting based on network bytes
-	h.rateLimiter.Limit(ctx, uint64(wireBytes))
+	// TODO: How does the limiter break the stream?
+	_ = h.bytesLimiter.WaitForRate(ctx, uint64(wireBytes))
 }
 
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
@@ -140,21 +171,20 @@ func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats)
 
 type serverStream struct {
 	grpc.ServerStream
-	limiter extensionlimiter.ResourceLimiter
+	limiter limiterhelper.LimiterWrapper
 }
 
 // RecvMsg applies rate limiting to server stream message receiving.
 func (s *serverStream) RecvMsg(m any) error {
-	release, err := s.limiter.Acquire(s.Context(), 1)
-	defer release()
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-	}
-	return s.ServerStream.RecvMsg(m)
+	return s.limiter.LimitCall(
+		s.Context(), 1,
+		func(_ context.Context) error {
+			return s.ServerStream.RecvMsg(m)
+		})
 }
 
 // wrapServerStream wraps a gRPC server stream with rate limiting.
-func (lm *limiterMiddleware) wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter extensionlimiter.ResourceLimiter) grpc.ServerStream {
+func wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter limiterhelper.LimiterWrapper) grpc.ServerStream {
 	return &serverStream{
 		ServerStream: ss,
 		limiter:      limiter,
@@ -163,21 +193,20 @@ func (lm *limiterMiddleware) wrapServerStream(ss grpc.ServerStream, _ *grpc.Stre
 
 type clientStream struct {
 	grpc.ClientStream
-	limiter extensionlimiter.ResourceLimiter
+	limiter limiterhelper.LimiterWrapper
 }
 
 // SendMsg applies rate limiting to client stream message sending.
 func (s *clientStream) SendMsg(m any) error {
-	release, err := s.limiter.Acquire(s.Context(), 1)
-	defer release()
-	if err != nil {
-		return status.Errorf(codes.ResourceExhausted, "limit exceeded: %v", err)
-	}
-	return s.ClientStream.SendMsg(m)
+	return s.limiter.LimitCall(
+		s.Context(), 1,
+		func(_ context.Context) error {
+			return s.ClientStream.SendMsg(m)
+		})
 }
 
 // wrapClientStream wraps a gRPC client stream with rate limiting.
-func (lm *limiterMiddleware) wrapClientStream(cs grpc.ClientStream, _ string, limiter extensionlimiter.ResourceLimiter) grpc.ClientStream {
+func wrapClientStream(cs grpc.ClientStream, _ string, limiter limiterhelper.LimiterWrapper) grpc.ClientStream {
 	return &clientStream{
 		ClientStream: cs,
 		limiter:      limiter,
