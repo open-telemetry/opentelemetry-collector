@@ -49,10 +49,23 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) []Request {
 	var res []Request
-	for req.size(sz) > maxSize {
-		md, rmSize := extractMetrics(req.md, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newMetricsRequest(md))
+	var md pmetric.Metrics
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		md, rmSize = extractMetrics(req.md, maxSize, sz)
+		if md.DataPointCount() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newMetricsRequest(md))
+		}
+	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		// This means we cannot split the metric and is not possible
+		// to fit it into the max size.
+		return res
 	}
 	res = append(res, req)
 	return res

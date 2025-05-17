@@ -88,6 +88,10 @@ func (req *logsRequest) size(sizer sizer.LogsSizer) int {
 	return req.cachedSize
 }
 
+func (req *logsRequest) BytesSize() int {
+	return req.size(&sizer.LogsBytesSizer{})
+}
+
 func (req *logsRequest) setCachedSize(size int) {
 	req.cachedSize = size
 }

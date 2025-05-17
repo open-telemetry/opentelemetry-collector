@@ -28,6 +28,10 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ExporterBatchFailedLogRecords     metric.Int64Counter
+	ExporterBatchFailedMetricPoints   metric.Int64Counter
+	ExporterBatchFailedSpans          metric.Int64Counter
+	ExporterBatchSize                 metric.Int64ObservableGauge
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -50,6 +54,21 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+// RegisterExporterBatchSizeCallback sets callback for observable ExporterBatchSize metric.
+func (builder *TelemetryBuilder) RegisterExporterBatchSizeCallback(cb metric.Int64Callback) error {
+	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
+		cb(ctx, &observerInt64{inst: builder.ExporterBatchSize, obs: o})
+		return nil
+	}, builder.ExporterBatchSize)
+	if err != nil {
+		return err
+	}
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	builder.registrations = append(builder.registrations, reg)
+	return nil
 }
 
 // RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
@@ -110,6 +129,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterBatchFailedLogRecords, err = builder.meter.Int64Counter(
+		"otelcol_exporter_batch_failed_log_records",
+		metric.WithDescription("Number of log records in failed attempts to batch in the exporter. [alpha]"),
+		metric.WithUnit("{records}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchFailedMetricPoints, err = builder.meter.Int64Counter(
+		"otelcol_exporter_batch_failed_metric_points",
+		metric.WithDescription("Number of metric points in failed attempts to batch in the exporter. [alpha]"),
+		metric.WithUnit("{datapoints}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchFailedSpans, err = builder.meter.Int64Counter(
+		"otelcol_exporter_batch_failed_spans",
+		metric.WithDescription("Number of spans in failed attempts to batch in the exporter. [alpha]"),
+		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchSize, err = builder.meter.Int64ObservableGauge(
+		"otelcol_exporter_batch_size",
+		metric.WithDescription("Batches size in the queue [alpha]"),
+		metric.WithUnit("{bytes}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
