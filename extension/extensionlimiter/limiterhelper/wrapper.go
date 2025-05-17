@@ -25,7 +25,7 @@ type GetLimiterWrapperFunc func(extensionlimiter.WeightKey, ...extensionlimiter.
 // GetLimiterWrapper implements LimiterWrapperProvider.
 func (f GetLimiterWrapperFunc) GetLimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 	if f == nil {
-		return PassThroughWrapper(), nil
+		return LimiterWrapperFunc(nil), nil
 	}
 	return f(key, opts...)
 }
@@ -70,16 +70,20 @@ func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value uint64, call fu
 	return f(ctx, value, call)
 }
 
-// PassThroughWrapper returns a LimiterWrapper that imposes no limit.
-func PassThroughWrapper() LimiterWrapper {
-	return LimiterWrapperFunc(nil)
-}
-
 // wrapperProvider is a combinator for building wrapper providers from
 // the underlying limter types.
 type wrapperProvider struct {
 	GetLimiterWrapperFunc
 	extensionlimiter.GetBaseLimiterFunc
+}
+
+// NewBaseLimiterWrapperProvider constructs a LimiterWrapperProvider
+// for a rate limiter extension.
+func NewBaseLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) LimiterWrapperProvider {
+	return wrapperProvider{
+		GetBaseLimiterFunc:    rp.GetBaseLimiter,
+		GetLimiterWrapperFunc: GetLimiterWrapperFunc(nil),
+	}
 }
 
 // NewResourceLimiterWrapperProvider constructs a
@@ -89,8 +93,11 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetResourceLimiter(key, opts...)
-			if err == nil {
+			if err != nil {
 				return nil, err
+			}
+			if lim == nil {
+				return nil, nil
 			}
 			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
 				release, err := lim.WaitForResource(ctx, value)
@@ -99,7 +106,7 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 				}
 				defer release()
 				return call(ctx)
-			}), err
+			}), nil
 		},
 	}
 }
@@ -111,15 +118,18 @@ func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) Limi
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetRateLimiter(key, opts...)
-			if err == nil {
+			if err != nil {
 				return nil, err
+			}
+			if lim == nil {
+				return nil, nil
 			}
 			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
 				if err := lim.WaitForRate(ctx, value); err != nil {
 					return err
 				}
 				return call(ctx)
-			}), err
+			}), nil
 		},
 	}
 }

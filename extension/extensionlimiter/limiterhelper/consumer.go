@@ -147,7 +147,6 @@ func limitOne[P any, C any](
 // check.
 func applyBaseLimiter[P any, C any](
 	next C,
-	keys []extensionlimiter.WeightKey,
 	provider LimiterWrapperProvider,
 	m traits[P, C],
 	opts []consumer.Option,
@@ -189,7 +188,7 @@ func newLimited[P any, C any](
 		func(_ P) uint64 {
 			return 1
 		})
-	next, err4 = applyBaseLimiter(next, keys, provider, m, opts)
+	next, err4 = applyBaseLimiter(next, provider, m, opts)
 	return next, errors.Join(err1, err2, err3, err4)
 }
 

@@ -15,19 +15,12 @@ import (
 )
 
 var (
-	ErrNotALimiter       = errors.New("middleware is not a limiter")
-	ErrLimiterConflict   = errors.New("limiter implements both rate and resource-limiters")
-	ErrUnresolvedLimiter = errors.New("could not resolve middleware limiter")
+	ErrNotALimiter         = errors.New("middleware is not a limiter")
+	ErrNotARateLimiter     = errors.New("middleware is not a rate or base limiter")
+	ErrNotAResourceLimiter = errors.New("middleware is not a resource or base limiter")
+	ErrLimiterConflict     = errors.New("limiter implements both rate and resource-limiters")
+	ErrUnresolvedLimiter   = errors.New("could not resolve middleware limiter")
 )
-
-// MiddlewareIsLimiter returns true if a middleware configuration
-// represents a valid limiter, returns false for not found or invalid
-// cases. If the named extension is found but is not a limiter,
-// returns (false, nil).
-func MiddlewareIsLimiter(host component.Host, middleware configmiddleware.Config) (bool, error) {
-	_, ok, err := middlewareIsLimiter(host, middleware)
-	return ok, err
-}
 
 // MiddlewaresToLimiterWrapperProvider constructs a combined limiter
 // from an ordered list of middlewares. This constructor ignores
@@ -40,7 +33,7 @@ func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []confi
 	var retErr error
 	var providers []LimiterWrapperProvider
 	for _, mid := range middleware {
-		ok, err := MiddlewareIsLimiter(host, mid)
+		_, ok, err := MiddlewareIsLimiter(host, mid)
 		retErr = errors.Join(retErr, err)
 		if !ok {
 			continue
@@ -64,40 +57,66 @@ func MiddlewaresToLimiterWrapperProvider(host component.Host, middleware []confi
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
 func MiddlewareToLimiterWrapperProvider(host component.Host, middleware configmiddleware.Config) (LimiterWrapperProvider, error) {
-	ext, ok, err := middlewareIsLimiter(host, middleware)
+	ext, ok, err := MiddlewareIsLimiter(host, middleware)
 	if err != nil {
 		return nil, err
 	}
-	if ok {
-		if lim, ok := ext.(extensionlimiter.ResourceLimiterProvider); ok {
-			return NewResourceLimiterWrapperProvider(lim), nil
-		}
-		if lim, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
-			return NewRateLimiterWrapperProvider(lim), nil
-		}
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrNotALimiter, middleware.ID)
 	}
-	return nil, fmt.Errorf("%w: %s", ErrNotALimiter, ext)
+	if lim, ok := ext.(extensionlimiter.ResourceLimiterProvider); ok {
+		return NewResourceLimiterWrapperProvider(lim), nil
+	}
+	if lim, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
+		return NewRateLimiterWrapperProvider(lim), nil
+	}
+	if lim, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		return NewBaseLimiterWrapperProvider(lim), nil
+	}
+	// This is an internal error.
+	return nil, fmt.Errorf("%w: %s: unrecognized limiter", ErrNotALimiter, middleware.ID)
 }
 
-// middlewareIsLimiter applies consistency checks and returns a valid
-// limiter extensions.
-func middlewareIsLimiter(host component.Host, middleware configmiddleware.Config) (extension.Extension, bool, error) {
+// MiddlewareIsLimiter applies consistency checks and returns a valid
+// limiter extension of any known kind.
+func MiddlewareIsLimiter(host component.Host, middleware configmiddleware.Config) (extension.Extension, bool, error) {
 	exts := host.GetExtensions()
 	ext := exts[middleware.ID]
 	if ext == nil {
-		return nil, false, fmt.Errorf("%w: %s", ErrUnresolvedLimiter, ext)
+		return nil, false, fmt.Errorf("%w: %s", ErrUnresolvedLimiter, middleware.ID)
 	}
 	_, isResource := ext.(extensionlimiter.ResourceLimiterProvider)
 	_, isRate := ext.(extensionlimiter.RateLimiterProvider)
+	_, isBase := ext.(extensionlimiter.BaseLimiterProvider)
 
 	switch {
 	case isResource && isRate:
-		return nil, false, fmt.Errorf("%w: %s", ErrLimiterConflict, ext)
+		return ext, false, fmt.Errorf("%w: %s", ErrLimiterConflict, middleware.ID)
 	case isResource, isRate:
+		return ext, true, nil
+	case isBase:
 		return ext, true, nil
 	default:
 		return nil, false, nil
 	}
+}
+
+// MiddlewareToRateLimiterProvider allows a base limiter to act as a rate
+func MiddlewareToRateLimiterProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.RateLimiterProvider, error) {
+	ext, ok, err := MiddlewareIsLimiter(host, middleware)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, fmt.Errorf("%w: %s", ErrNotALimiter, middleware.ID)
+	}
+	if rlimp, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
+		return rlimp, nil
+	}
+	if blimp, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		return BaseToRateLimiterProvider(blimp)
+	}
+	return nil, fmt.Errorf("%w: %s", ErrNotARateLimiter, middleware.ID)
 }
 
 // MultiLimiterWrapperProvider combines multiple limiter wrappers
@@ -121,7 +140,7 @@ func (ps MultiLimiterWrapperProvider) GetBaseLimiter(opts ...extensionlimiter.Op
 		cks = append(cks, ck)
 	}
 	if len(cks) == 0 {
-		return NeverDeny(), retErr
+		return extensionlimiter.MustDenyFunc(nil), retErr
 	}
 	return cks, retErr
 }
@@ -144,7 +163,7 @@ func (ps MultiLimiterWrapperProvider) GetLimiterWrapper(key extensionlimiter.Wei
 	}
 
 	if len(lims) == 0 {
-		return PassThroughWrapper(), nil
+		return LimiterWrapper(nil), nil
 	}
 
 	return sequenceLimiters(lims), nil
