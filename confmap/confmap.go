@@ -235,6 +235,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 		TagName:          MapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
+		DecodeNil:        true,
 		DecodeHook: composehook.ComposeDecodeHookFunc(
 			useExpandValue(),
 			expandNilStructPointersHookFunc(),
@@ -542,6 +543,7 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 }
 
 // Unmarshaler interface may be implemented by types to customize their behavior when being unmarshaled from a Conf.
+// Only types with struct or pointer to struct kind are supported.
 type Unmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
@@ -582,10 +584,7 @@ type Marshaler interface {
 func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
-			if from.IsNil() {
-				// input slice is nil, set output slice to nil.
-				to.Set(reflect.Zero(to.Type()))
-			} else {
+			if !from.IsNil() {
 				// input slice is not nil, set the output slice to a new slice of the same type.
 				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 			}

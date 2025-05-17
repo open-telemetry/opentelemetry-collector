@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
 )
@@ -32,7 +33,16 @@ func (m *mockProfilesConsumer) Capabilities() consumer.Capabilities {
 	return m.capabilities
 }
 
+func TestProfilesNopWhenGateDisabled(t *testing.T) {
+	setGateForTest(t, false)
+
+	consumer := consumertest.NewNop()
+	require.Equal(t, consumer, obsconsumer.NewProfiles(consumer, nil))
+}
+
 func TestProfilesConsumeSuccess(t *testing.T) {
+	setGateForTest(t, true)
+
 	ctx := context.Background()
 	mockConsumer := &mockProfilesConsumer{}
 
@@ -73,6 +83,8 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 }
 
 func TestProfilesConsumeFailure(t *testing.T) {
+	setGateForTest(t, true)
+
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
 	mockConsumer := &mockProfilesConsumer{err: expectedErr}
@@ -114,6 +126,8 @@ func TestProfilesConsumeFailure(t *testing.T) {
 }
 
 func TestProfilesWithStaticAttributes(t *testing.T) {
+	setGateForTest(t, true)
+
 	ctx := context.Background()
 	mockConsumer := &mockProfilesConsumer{}
 
@@ -158,6 +172,8 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 }
 
 func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
+	setGateForTest(t, true)
+
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
 	mockConsumer := &mockProfilesConsumer{}
@@ -237,6 +253,8 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 }
 
 func TestProfilesCapabilities(t *testing.T) {
+	setGateForTest(t, true)
+
 	mockConsumer := &mockProfilesConsumer{
 		capabilities: consumer.Capabilities{MutatesData: true},
 	}

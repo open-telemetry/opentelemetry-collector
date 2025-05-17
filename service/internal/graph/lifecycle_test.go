@@ -31,6 +31,17 @@ import (
 )
 
 func TestGraphStartStop(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testGraphStartStop(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testGraphStartStop(t)
+	})
+}
+
+func testGraphStartStop(t *testing.T) {
 	testCases := []struct {
 		name  string
 		edges [][2]component.ID
@@ -117,6 +128,17 @@ func TestGraphStartStop(t *testing.T) {
 }
 
 func TestGraphStartStopCycle(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testGraphStartStopCycle(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testGraphStartStopCycle(t)
+	})
+}
+
+func testGraphStartStopCycle(t *testing.T) {
 	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 
 	r1 := &testNode{id: component.MustNewIDWithName("r", "1")}
@@ -144,6 +166,17 @@ func TestGraphStartStopCycle(t *testing.T) {
 }
 
 func TestGraphStartStopComponentError(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testGraphStartStopComponentError(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testGraphStartStopComponentError(t)
+	})
+}
+
+func testGraphStartStopComponentError(t *testing.T) {
 	pg := &Graph{componentGraph: simple.NewDirectedGraph()}
 	pg.telemetry = componenttest.NewNopTelemetrySettings()
 	r1 := &testNode{
@@ -169,6 +202,17 @@ func TestGraphStartStopComponentError(t *testing.T) {
 // This includes all tests from the previous implementation, plus a new one
 // relevant only to the new graph-based implementation.
 func TestGraphFailToStartAndShutdown(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testGraphFailToStartAndShutdown(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testGraphFailToStartAndShutdown(t)
+	})
+}
+
+func testGraphFailToStartAndShutdown(t *testing.T) {
 	errReceiverFactory := newErrReceiverFactory()
 	errProcessorFactory := newErrProcessorFactory()
 	errExporterFactory := newErrExporterFactory()
@@ -287,6 +331,17 @@ func TestGraphFailToStartAndShutdown(t *testing.T) {
 }
 
 func TestStatusReportedOnStartupShutdown(t *testing.T) {
+	t.Run("with_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, true)
+		testStatusReportedOnStartupShutdown(t)
+	})
+	t.Run("without_internal_telemetry", func(t *testing.T) {
+		setObsConsumerGateForTest(t, false)
+		testStatusReportedOnStartupShutdown(t)
+	})
+}
+
+func testStatusReportedOnStartupShutdown(t *testing.T) {
 	rNoErr := &testNode{id: component.MustNewIDWithName("r_no_err", "1")}
 	rStErr := &testNode{id: component.MustNewIDWithName("r_st_err", "1"), startErr: assert.AnError}
 	rSdErr := &testNode{id: component.MustNewIDWithName("r_sd_err", "1"), shutdownErr: assert.AnError}
