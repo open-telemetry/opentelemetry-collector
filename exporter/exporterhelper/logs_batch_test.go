@@ -219,14 +219,31 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				// Add a large attribute value to make the log unsplittable
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:      nil,
+			expected: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expected))
-			for i := range res {
-				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+			if tt.expected != nil {
+				assert.Len(t, res, len(tt.expected))
+				for i := range res {
+					assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+				}
+			} else {
+				assert.Empty(t, res)
 			}
 		})
 	}

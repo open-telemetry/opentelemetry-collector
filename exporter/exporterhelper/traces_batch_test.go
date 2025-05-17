@@ -231,6 +231,18 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_trace",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(1)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:      nil,
+			expected: []Request{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
