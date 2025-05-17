@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -100,4 +101,28 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (builder *TelemetryBuilder) AddProcessorAcceptedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorAcceptedLogRecords.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorAcceptedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorAcceptedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorAcceptedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorAcceptedSpans.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorRefusedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorRefusedLogRecords.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorRefusedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorRefusedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddProcessorRefusedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ProcessorRefusedSpans.Add(ctx, val, opts...)
 }
