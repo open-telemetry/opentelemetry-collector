@@ -329,44 +329,11 @@ func traceFlagsFromHex(hexStr string) (*trace.TraceFlags, error) {
 	return &traceFlags, nil
 }
 
-// func requestContextFromSpanContextWrapper(wrapper spanContext) (*requestContext, error) {
-// 	traceID, err := trace.TraceIDFromHex(wrapper.TraceID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	spanID, err := trace.SpanIDFromHex(wrapper.SpanID)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	traceFlags, err := traceFlagsFromHex(wrapper.TraceFlags)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	traceState, err := trace.ParseTraceState(wrapper.TraceState)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	rc := &requestContext{
-// 		SpanContext: json.Marshal(trace.NewSpanContext(trace.SpanContextConfig{
-// 			TraceID:    traceID,
-// 			SpanID:     spanID,
-// 			TraceFlags: *traceFlags,
-// 			TraceState: traceState,
-// 			Remote:     wrapper.Remote,
-// 		}),
-// 	}
-// 	return rc, nil
-// }
-
 func getAndMarshalSpanContext(ctx context.Context) ([]byte, error) {
 	if !persistRequestContextFeatureGate.IsEnabled() {
 		return nil, nil
 	}
 	rc := spanContextFromContext(ctx)
-	// if !rc.IsValid() {
-	// 	return nil, nil
-	// }
 	return json.Marshal(requestContext{SpanContext: rc})
 }
 

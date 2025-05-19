@@ -1341,128 +1341,70 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
 }
 
-// func TestSpanContextFromWrapper(t *testing.T) {
-// 	testCases := []struct {
-// 		name          string
-// 		wrapper       spanContext
-// 		expectErr     bool
-// 		errContains   string
-// 		expectNil     bool
-// 		expectValid   bool
-// 		expectTraceID string
-// 		expectSpanID  string
-// 		expectFlags   string
-// 		expectState   string
-// 		expectRemote  bool
-// 	}{
-// 		{
-// 			name: "invalid trace id",
-// 			wrapper: spanContext{
-// 				TraceID:    "invalidtraceid",
-// 				SpanID:     "0102030405060708",
-// 				TraceFlags: "01",
-// 				TraceState: "",
-// 				Remote:     false,
-// 			},
-// 			expectErr: true,
-// 			expectNil: true,
-// 		},
-// 		{
-// 			name: "invalid span id",
-// 			wrapper: spanContext{
-// 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-// 				SpanID:     "invalidspanid",
-// 				TraceFlags: "01",
-// 				TraceState: "",
-// 				Remote:     false,
-// 			},
-// 			expectErr: true,
-// 			expectNil: true,
-// 		},
-// 		{
-// 			name: "invalid trace flags hex",
-// 			wrapper: spanContext{
-// 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-// 				SpanID:     "0102030405060708",
-// 				TraceFlags: "zz",
-// 				TraceState: "",
-// 				Remote:     false,
-// 			},
-// 			expectErr: true,
-// 			expectNil: true,
-// 		},
-// 		{
-// 			name: "invalid trace flags length",
-// 			wrapper: spanContext{
-// 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-// 				SpanID:     "0102030405060708",
-// 				TraceFlags: "0102",
-// 				TraceState: "",
-// 				Remote:     false,
-// 			},
-// 			expectErr:   true,
-// 			expectNil:   true,
-// 			errContains: errInvalidTraceFlagsLength,
-// 		},
-// 		{
-// 			name: "invalid trace state",
-// 			wrapper: spanContext{
-// 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-// 				SpanID:     "0102030405060708",
-// 				TraceFlags: "01",
-// 				TraceState: "invalid=tracestate,=bad",
-// 				Remote:     false,
-// 			},
-// 			expectErr: true,
-// 			expectNil: true,
-// 		},
-// 		{
-// 			name: "valid span context",
-// 			wrapper: spanContext{
-// 				TraceID:    "0102030405060708090a0b0c0d0e0f10",
-// 				SpanID:     "0102030405060708",
-// 				TraceFlags: "01",
-// 				TraceState: "vendor=value",
-// 				Remote:     true,
-// 			},
-// 			expectErr:     false,
-// 			expectNil:     false,
-// 			expectValid:   true,
-// 			expectTraceID: "0102030405060708090a0b0c0d0e0f10",
-// 			expectSpanID:  "0102030405060708",
-// 			expectFlags:   "01",
-// 			expectState:   "vendor=value",
-// 			expectRemote:  true,
-// 		},
-// 	}
+func TestSpanContextFromContextAndBack(t *testing.T) {
+	tid := trace.TraceID{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	sid := trace.SpanID{1, 2, 3, 4, 5, 6, 7, 8}
+	flags := trace.FlagsSampled
+	state, _ := trace.ParseTraceState("foo=bar,baz=qux")
+	remote := true
 
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			scc := requestContext{SpanContext: tc.wrapper}
-// 			if tc.expectErr {
-// 				require.Error(t, err)
-// 				if tc.errContains != "" {
-// 					assert.Contains(t, err.Error(), tc.errContains)
-// 				}
-// 			} else {
-// 				require.NoError(t, err)
-// 			}
-// 			if tc.expectNil {
-// 				assert.Nil(t, scc)
-// 			} else {
-// 				assert.NotNil(t, scc)
-// 				if tc.expectValid {
-// 					assert.True(t, scc.SpanContext.IsValid())
-// 					assert.Equal(t, tc.expectTraceID, scc.SpanContext.TraceID().String())
-// 					assert.Equal(t, tc.expectSpanID, scc.SpanContext.SpanID().String())
-// 					assert.Equal(t, tc.expectFlags, scc.SpanContext.TraceFlags().String())
-// 					assert.Equal(t, tc.expectState, scc.SpanContext.TraceState().String())
-// 					assert.Equal(t, tc.expectRemote, scc.SpanContext.IsRemote())
-// 				}
-// 			}
-// 		})
-// 	}
-// }
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tid,
+		SpanID:     sid,
+		TraceFlags: flags,
+		TraceState: state,
+		Remote:     remote,
+	})
+	ctx := trace.ContextWithSpanContext(context.Background(), sc)
+
+	// Test spanContextFromContext
+	local := spanContextFromContext(ctx)
+	assert.Equal(t, tid.String(), local.TraceID)
+	assert.Equal(t, sid.String(), local.SpanID)
+	assert.Equal(t, flags.String(), local.TraceFlags)
+	assert.Equal(t, state.String(), local.TraceState)
+	assert.Equal(t, remote, local.Remote)
+
+	// Test contextWithLocalSpanContext
+	ctx2 := contextWithLocalSpanContext(context.Background(), local)
+	sc2 := trace.SpanContextFromContext(ctx2)
+	assert.Equal(t, tid, sc2.TraceID())
+	assert.Equal(t, sid, sc2.SpanID())
+	assert.Equal(t, flags, sc2.TraceFlags())
+	assert.Equal(t, state, sc2.TraceState())
+	assert.Equal(t, remote, sc2.IsRemote())
+}
+
+func TestLocalSpanContextFromTraceSpanContext(t *testing.T) {
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x00},
+		SpanID:     trace.SpanID{0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88},
+		TraceFlags: trace.FlagsSampled,
+		TraceState: trace.TraceState{},
+		Remote:     false,
+	})
+	local := localSpanContextFromTraceSpanContext(sc)
+	assert.Equal(t, sc.TraceID().String(), local.TraceID)
+	assert.Equal(t, sc.SpanID().String(), local.SpanID)
+	assert.Equal(t, sc.TraceFlags().String(), local.TraceFlags)
+	assert.Equal(t, sc.TraceState().String(), local.TraceState)
+	assert.Equal(t, sc.IsRemote(), local.Remote)
+}
+
+func TestContextWithLocalSpanContext_InvalidHex(t *testing.T) {
+	ctx := context.Background()
+	bad := spanContext{
+		TraceID:    "nothex",
+		SpanID:     "nothex",
+		TraceFlags: "nothex",
+		TraceState: "invalid=state",
+		Remote:     false,
+	}
+	ctx2 := contextWithLocalSpanContext(ctx, bad)
+	// Should return the original context (no span context injected)
+	sc := trace.SpanContextFromContext(ctx2)
+	assert.False(t, sc.IsValid())
+}
 
 func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
