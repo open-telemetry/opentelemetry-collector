@@ -254,3 +254,32 @@ func TestUnmarshalErr(t *testing.T) {
 	assert.NotNil(t, cfg.Sub1.defaultFn)
 	assert.False(t, cfg.Sub1.HasValue())
 }
+
+type MyIntConfig struct {
+	Val int `mapstructure:"my_int"`
+}
+type MyConfig struct {
+	Optional[MyIntConfig] `mapstructure:",squash"`
+}
+
+var myIntDefault DefaultFunc[MyIntConfig] = func() MyIntConfig {
+	return MyIntConfig{
+		Val: 1,
+	}
+}
+
+func TestSquashedOptional(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"my_int": 42,
+	})
+
+	cfg := MyConfig{
+		Default(&myIntDefault),
+	}
+
+	err := cm.Unmarshal(&cfg)
+	require.NoError(t, err)
+
+	assert.True(t, cfg.HasValue())
+	assert.Equal(t, 42, cfg.Get().Val)
+}
