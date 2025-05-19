@@ -32,7 +32,7 @@ jobs:
         id: find-release-branch
         if: ${{ !inputs.release-series }}
         run: |
-          MOST_RECENT_RELEASE=$(git branch -r | grep "origin/release/v" | sort -Vr | head -n 1 | sed 's|^[[:space:]]*origin/release/||')
+          MOST_RECENT_RELEASE=$(git branch -r --format='%(refname:short)' | grep "origin/release/v" | sort -Vr | head -n 1)
           if [ -z "$MOST_RECENT_RELEASE" ]; then
             echo "No release branches found matching pattern 'release/v*'"
             exit 1

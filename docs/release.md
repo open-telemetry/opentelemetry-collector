@@ -48,7 +48,7 @@ Before the release, make sure there are no open release blockers in [core](https
 4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will either use the existing release branch (for a bugfix, e.g. `v0.126.1`), or create a new branch (for a new release, e.g. `v0.127.0`).
    - If you are doing a new release, make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
    - If you are doing a bugfix release, you may leave it blank or specify the existing release series (e.g. `v0.126.x`).
-   - If preferred, the underlying script (./.github/workflows/scripts/release-branch.sh) can be ran locally passing appropriate variables for upstream name, release series, etc.
+   - If the above does not work, the underlying script (./.github/workflows/scripts/release-branch.sh) can be ran locally passing appropriate variables for upstream name, release series, etc.
 
 5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
 
