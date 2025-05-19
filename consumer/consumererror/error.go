@@ -20,9 +20,6 @@ import (
 // It may hold multiple errors from downstream components, and can be merged
 // with other errors as it travels upstream using `Combine`. The `Error` should
 // be obtained from a given `error` object using `errors.As`.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
 type Error struct {
 	error
 	httpStatus int
@@ -65,9 +62,6 @@ func (e *Error) Unwrap() error {
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for more details.
 //
 // If a http status code cannot be derived from these three sources then 500 is returned.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
 func (e *Error) OTLPHTTPStatus() int {
 	if e.httpStatus != 0 {
 		return e.httpStatus
@@ -87,9 +81,6 @@ func (e *Error) OTLPHTTPStatus() int {
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for more details.
 //
 // If a grpc code cannot be derived from these three sources then INTERNAL is returned.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
 func (e *Error) OTLPGRPCStatus() *status.Status {
 	if e.grpcStatus != nil {
 		return e.grpcStatus
@@ -110,9 +101,6 @@ func (e *Error) OTLPGRPCStatus() *status.Status {
 //
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for retryable
 // http and grpc codes.
-//
-// Experimental: This API is at the early stage of development and may change
-// without backward compatibility
 func (e *Error) Retryable() bool {
 	if e.retryable {
 		return true
