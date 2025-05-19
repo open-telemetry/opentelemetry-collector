@@ -17,9 +17,9 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 )
 
@@ -116,9 +116,9 @@ func TestTelemetryInit(t *testing.T) {
 					Resource: &config.Resource{
 						SchemaUrl: ptr(""),
 						Attributes: []config.AttributeNameValue{
-							{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
-							{Name: semconv.AttributeServiceName, Value: "otelcol"},
-							{Name: semconv.AttributeServiceVersion, Value: "latest"},
+							{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
+							{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
+							{Name: string(semconv.ServiceVersionKey), Value: "latest"},
 						},
 					},
 				}),
@@ -167,16 +167,16 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(semconv.AttributeNetSockPeerAddr, ""),
-		attribute.String(semconv.AttributeNetSockPeerPort, ""),
-		attribute.String(semconv.AttributeNetSockPeerName, ""),
+		attribute.String(string(semconv.NetSockPeerAddrKey), ""),
+		attribute.String(string(semconv.NetSockPeerPortKey), ""),
+		attribute.String(string(semconv.NetSockPeerNameKey), ""),
 	)))
 
 	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(semconv.AttributeNetHostName, ""),
-		attribute.String(semconv.AttributeNetHostPort, ""),
+		attribute.String(string(semconv.NetHostNameKey), ""),
+		attribute.String(string(semconv.NetHostPortKey), ""),
 	)))
 }
 
@@ -235,9 +235,9 @@ func TestInstrumentEnabled(t *testing.T) {
 			Resource: &config.Resource{
 				SchemaUrl: ptr(""),
 				Attributes: []config.AttributeNameValue{
-					{Name: semconv.AttributeServiceInstanceID, Value: testInstanceID},
-					{Name: semconv.AttributeServiceName, Value: "otelcol"},
-					{Name: semconv.AttributeServiceVersion, Value: "latest"},
+					{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
+					{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
+					{Name: string(semconv.ServiceVersionKey), Value: "latest"},
 				},
 			},
 		}),

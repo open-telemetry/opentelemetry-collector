@@ -372,6 +372,22 @@ func TestLoadMetadata(t *testing.T) {
 			},
 		},
 		{
+			name: "testdata/empty_test_config.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
+					},
+				},
+			},
+		},
+		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",

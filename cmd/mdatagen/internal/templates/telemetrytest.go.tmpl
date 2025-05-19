@@ -32,7 +32,11 @@ return set
 
 func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.{{- if eq $metric.Data.Type "Histogram" }} {{$metric.Data.Type}} {{- end }}DataPoint[{{ $metric.Data.BasicType }}], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
+		{{ if $metric.Prefix -}}
+		Name:        "{{ $metric.Prefix }}{{ $name }}",
+		{{ else -}}
 		Name:        "otelcol_{{ $name }}",
+		{{ end -}}
 		Description: "{{ $metric.Description }}{{ $metric.Stability }}",
 		Unit:        "{{ $metric.Unit }}",
 		Data:        metricdata.{{ $metric.Data.Type }}[{{ $metric.Data.BasicType }}]{
@@ -45,7 +49,11 @@ func AssertEqual{{ $name.Render }}(t *testing.T, tt *componenttest.Telemetry, dp
 			DataPoints: dps,
 		},
 	}
+	{{ if $metric.Prefix -}}
+	got, err := tt.GetMetric("{{ $metric.Prefix }}{{ $name }}")
+	{{ else -}}
 	got, err := tt.GetMetric("otelcol_{{ $name }}")
+	{{ end -}}
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

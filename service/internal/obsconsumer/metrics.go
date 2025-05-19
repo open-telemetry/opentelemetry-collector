@@ -9,12 +9,17 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var _ consumer.Metrics = metrics{}
 
 func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
+	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		return consumer
+	}
+
 	o := options{}
 	for _, opt := range opts {
 		opt.apply(&o)

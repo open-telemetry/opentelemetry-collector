@@ -99,7 +99,7 @@ The last step of the release process creates artifacts for the new version of th
 1. Run the GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-2. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Update version from ..." commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
@@ -178,20 +178,22 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - Changing the configuration to an easy to find value.
 2. The bug happens in common setups. To gauge this, maintainers can consider the following:
     - If the bug is specific to a certain platform, and if that platform is in [Tier 1](../docs/platform-support.md#tiered-platform-support-model).
-    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+    - The bug happens with the default configuration or with one that is known to be used in production.
 3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
     - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+    - The bug makes it difficult to troubleshoot or debug Collector setups
 
 We aim to provide a release that fixes security-related issues in at most 30 days since they are publicly announced; with the current release schedule this means security issues will typically not warrant a bugfix release. An exception is critical vulnerabilities (CVSSv3 score >= 9.0), which will warrant a release within five business days.
 
 The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug or security issue fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+If the maintainers are unable to reach consensus within one working day, we will lean towards releasing a bugfix version.
 
 ### Bugfix release procedure
 
-The following documents the procedure to release a bugfix
+The release manager of a minor version is responsible for releasing any bugfix versions on this release series. The following documents the procedure to release a bugfix
 
 1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
@@ -218,7 +220,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
 | 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
 | 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
@@ -228,3 +229,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
 | 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
+| 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
