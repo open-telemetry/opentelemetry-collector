@@ -19,6 +19,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
+type (
+	ctxKey  string
+	testKey int
+)
+
 func TestTracesSink(t *testing.T) {
 	sink := new(TracesSink)
 	td := testdata.GenerateTraces(1)
@@ -86,7 +91,7 @@ func TestTracesSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeTraces(ctx, td))
 		want = append(want, td)
 		wantCtx = append(wantCtx, ctx)
@@ -96,15 +101,15 @@ func TestTracesSinkWithContext(t *testing.T) {
 	assert.Equal(t, len(want), sink.SpanCount())
 
 	// Verify contexts
-	gotCtx := sink.AllContexts()
-	assert.Equal(t, len(wantCtx), len(gotCtx))
+	gotCtx := sink.Contexts()
+	assert.Len(t, gotCtx, len(wantCtx))
 	for i, ctx := range gotCtx {
-		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(fmt.Sprintf("key-%d", i)))
+		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(testKey(i)))
 	}
 
 	sink.Reset()
 	assert.Empty(t, sink.AllTraces())
-	assert.Empty(t, sink.AllContexts())
+	assert.Empty(t, sink.Contexts())
 	assert.Equal(t, 0, sink.SpanCount())
 }
 
@@ -115,7 +120,7 @@ func TestMetricsSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeMetrics(ctx, md))
 		want = append(want, md)
 		wantCtx = append(wantCtx, ctx)
@@ -125,15 +130,15 @@ func TestMetricsSinkWithContext(t *testing.T) {
 	assert.Equal(t, 2*len(want), sink.DataPointCount())
 
 	// Verify contexts
-	gotCtx := sink.AllContexts()
-	assert.Equal(t, len(wantCtx), len(gotCtx))
+	gotCtx := sink.Contexts()
+	assert.Len(t, gotCtx, len(wantCtx))
 	for i, ctx := range gotCtx {
-		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(fmt.Sprintf("key-%d", i)))
+		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(testKey(i)))
 	}
 
 	sink.Reset()
 	assert.Empty(t, sink.AllMetrics())
-	assert.Empty(t, sink.AllContexts())
+	assert.Empty(t, sink.Contexts())
 	assert.Equal(t, 0, sink.DataPointCount())
 }
 
@@ -144,7 +149,7 @@ func TestLogsSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeLogs(ctx, md))
 		want = append(want, md)
 		wantCtx = append(wantCtx, ctx)
@@ -154,15 +159,15 @@ func TestLogsSinkWithContext(t *testing.T) {
 	assert.Equal(t, len(want), sink.LogRecordCount())
 
 	// Verify contexts
-	gotCtx := sink.AllContexts()
-	assert.Equal(t, len(wantCtx), len(gotCtx))
+	gotCtx := sink.Contexts()
+	assert.Len(t, gotCtx, len(wantCtx))
 	for i, ctx := range gotCtx {
-		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(fmt.Sprintf("key-%d", i)))
+		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(testKey(i)))
 	}
 
 	sink.Reset()
 	assert.Empty(t, sink.AllLogs())
-	assert.Empty(t, sink.AllContexts())
+	assert.Empty(t, sink.Contexts())
 	assert.Equal(t, 0, sink.LogRecordCount())
 }
 
@@ -173,7 +178,7 @@ func TestProfilesSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), fmt.Sprintf("key-%d", i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeProfiles(ctx, td))
 		want = append(want, td)
 		wantCtx = append(wantCtx, ctx)
@@ -183,54 +188,53 @@ func TestProfilesSinkWithContext(t *testing.T) {
 	assert.Equal(t, len(want), sink.SampleCount())
 
 	// Verify contexts
-	gotCtx := sink.AllContexts()
-	assert.Equal(t, len(wantCtx), len(gotCtx))
+	gotCtx := sink.Contexts()
+	assert.Len(t, gotCtx, len(wantCtx))
 	for i, ctx := range gotCtx {
-		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(fmt.Sprintf("key-%d", i)))
+		assert.Equal(t, fmt.Sprintf("value-%d", i), ctx.Value(testKey(i)))
 	}
 
 	sink.Reset()
 	assert.Empty(t, sink.AllProfiles())
-	assert.Empty(t, sink.AllContexts())
+	assert.Empty(t, sink.Contexts())
 	assert.Equal(t, 0, sink.SampleCount())
 }
 
 // TestSinkContextTransformation verifies that the context is stored and transformed correctly
 func TestSinkContextTransformation(t *testing.T) {
-	// Test cases for different sink types
 	testCases := []struct {
 		name string
 		sink interface {
-			AllContexts() []context.Context
+			Contexts() []context.Context
 		}
-		consumeFunc func(interface{}, context.Context) error
-		testData    interface{}
+		consumeFunc func(any, context.Context) error
+		testData    any
 	}{
 		{
 			name: "TracesSink",
 			sink: new(TracesSink),
-			consumeFunc: func(sink interface{}, ctx context.Context) error {
+			consumeFunc: func(sink any, ctx context.Context) error {
 				return sink.(*TracesSink).ConsumeTraces(ctx, testdata.GenerateTraces(1))
 			},
 		},
 		{
 			name: "MetricsSink",
 			sink: new(MetricsSink),
-			consumeFunc: func(sink interface{}, ctx context.Context) error {
+			consumeFunc: func(sink any, ctx context.Context) error {
 				return sink.(*MetricsSink).ConsumeMetrics(ctx, testdata.GenerateMetrics(1))
 			},
 		},
 		{
 			name: "LogsSink",
 			sink: new(LogsSink),
-			consumeFunc: func(sink interface{}, ctx context.Context) error {
+			consumeFunc: func(sink any, ctx context.Context) error {
 				return sink.(*LogsSink).ConsumeLogs(ctx, testdata.GenerateLogs(1))
 			},
 		},
 		{
 			name: "ProfilesSink",
 			sink: new(ProfilesSink),
-			consumeFunc: func(sink interface{}, ctx context.Context) error {
+			consumeFunc: func(sink any, ctx context.Context) error {
 				return sink.(*ProfilesSink).ConsumeProfiles(ctx, testdata.GenerateProfiles(1))
 			},
 		},
@@ -239,24 +243,24 @@ func TestSinkContextTransformation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a context with initial values
-			initialCtx := context.WithValue(context.Background(), "initial-key", "initial-value")
+			initialCtx := context.WithValue(context.Background(), ctxKey("initial-key"), "initial-value")
 
 			// Create a context chain to simulate transformation
-			transformedCtx := context.WithValue(initialCtx, "transformed-key", "transformed-value")
+			transformedCtx := context.WithValue(initialCtx, ctxKey("transformed-key"), "transformed-value")
 
 			// Consume data with the transformed context
 			err := tc.consumeFunc(tc.sink, transformedCtx)
 			require.NoError(t, err)
 
 			// Verify context storage and transformation
-			storedContexts := tc.sink.AllContexts()
-			require.Len(t, storedContexts, 1, "Should have stored exactly one context")
+			storedContexts := tc.sink.Contexts()
+			assert.Len(t, storedContexts, 1, "Should have stored exactly one context")
 
 			storedCtx := storedContexts[0]
 			// Verify both initial and transformed values are preserved
-			assert.Equal(t, "initial-value", storedCtx.Value("initial-key"),
+			assert.Equal(t, "initial-value", storedCtx.Value(ctxKey("initial-key")),
 				"Initial context value should be preserved")
-			assert.Equal(t, "transformed-value", storedCtx.Value("transformed-key"),
+			assert.Equal(t, "transformed-value", storedCtx.Value(ctxKey("transformed-key")),
 				"Transformed context value should be stored")
 		})
 	}
@@ -268,9 +272,9 @@ func TestContextTransformationChain(t *testing.T) {
 
 	// Create a context transformation chain
 	baseCtx := context.Background()
-	ctx1 := context.WithValue(baseCtx, "step1", "value1")
-	ctx2 := context.WithValue(ctx1, "step2", "value2")
-	ctx3 := context.WithValue(ctx2, "step3", "value3")
+	ctx1 := context.WithValue(baseCtx, ctxKey("step1"), "value1")
+	ctx2 := context.WithValue(ctx1, ctxKey("step2"), "value2")
+	ctx3 := context.WithValue(ctx2, ctxKey("step3"), "value3")
 
 	// Consume traces with the transformed context
 	td := testdata.GenerateTraces(1)
@@ -278,20 +282,21 @@ func TestContextTransformationChain(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the complete transformation chain
-	storedContexts := sink.AllContexts()
+	storedContexts := sink.Contexts()
 	require.Len(t, storedContexts, 1)
 
 	finalCtx := storedContexts[0]
 	// Verify each transformation step
-	assert.Equal(t, "value1", finalCtx.Value("step1"), "First transformation should be preserved")
-	assert.Equal(t, "value2", finalCtx.Value("step2"), "Second transformation should be preserved")
-	assert.Equal(t, "value3", finalCtx.Value("step3"), "Third transformation should be preserved")
+	assert.Equal(t, "value1", finalCtx.Value(ctxKey("step1")), "First transformation should be preserved")
+	assert.Equal(t, "value2", finalCtx.Value(ctxKey("step2")), "Second transformation should be preserved")
+	assert.Equal(t, "value3", finalCtx.Value(ctxKey("step3")), "Third transformation should be preserved")
 }
 
 // TestConcurrentContextTransformations verifies context handling under concurrent operations
 func TestConcurrentContextTransformations(t *testing.T) {
 	sink := new(TracesSink)
 	const numGoroutines = 10
+	errChan := make(chan error, numGoroutines)
 
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
@@ -299,32 +304,37 @@ func TestConcurrentContextTransformations(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(idx int) {
 			defer wg.Done()
-
-			// Create a unique context for each goroutine
-			ctx := context.WithValue(context.Background(),
-				fmt.Sprintf("goroutine-%d", idx),
-				fmt.Sprintf("value-%d", idx))
+			key := ctxKey(fmt.Sprintf("goroutine-%d", idx))
+			value := fmt.Sprintf("value-%d", idx)
+			ctx := context.WithValue(context.Background(), key, value)
 
 			td := testdata.GenerateTraces(1)
-			err := sink.ConsumeTraces(ctx, td)
-			require.NoError(t, err)
+			if err := sink.ConsumeTraces(ctx, td); err != nil {
+				errChan <- err
+			}
 		}(i)
 	}
 
 	wg.Wait()
+	close(errChan)
+
+	// Check for any errors that occurred in goroutines
+	for err := range errChan {
+		t.Errorf("Error in goroutine: %v", err)
+	}
 
 	// Verify all contexts were stored correctly
-	storedContexts := sink.AllContexts()
+	storedContexts := sink.Contexts()
 	assert.Len(t, storedContexts, numGoroutines)
 
 	// Create a map to verify all expected values are present
 	contextValues := make(map[string]bool)
 	for _, ctx := range storedContexts {
 		for i := 0; i < numGoroutines; i++ {
-			key := fmt.Sprintf("goroutine-%d", i)
+			key := ctxKey(fmt.Sprintf("goroutine-%d", i))
 			expectedValue := fmt.Sprintf("value-%d", i)
 			if val := ctx.Value(key); val == expectedValue {
-				contextValues[key] = true
+				contextValues[fmt.Sprintf("goroutine-%d", i)] = true
 			}
 		}
 	}

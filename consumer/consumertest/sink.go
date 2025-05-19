@@ -49,8 +49,8 @@ func (ste *TracesSink) AllTraces() []ptrace.Traces {
 	return copyTraces
 }
 
-// AllContexts returns the contexts stored by this sink since last Reset.
-func (ste *TracesSink) AllContexts() []context.Context {
+// Contexts returns the contexts stored by this sink since last Reset.
+func (ste *TracesSink) Contexts() []context.Context {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
@@ -110,8 +110,8 @@ func (sme *MetricsSink) AllMetrics() []pmetric.Metrics {
 	return copyMetrics
 }
 
-// AllContexts returns the contexts stored by this sink since last Reset.
-func (sme *MetricsSink) AllContexts() []context.Context {
+// Contexts returns the contexts stored by this sink since last Reset.
+func (sme *MetricsSink) Contexts() []context.Context {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
@@ -187,8 +187,8 @@ func (sle *LogsSink) Reset() {
 	sle.logRecordCount = 0
 }
 
-// AllContexts returns the contexts stored by this sink since last Reset.
-func (sle *LogsSink) AllContexts() []context.Context {
+// Contexts returns the contexts stored by this sink since last Reset.
+func (sle *LogsSink) Contexts() []context.Context {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 
@@ -248,8 +248,8 @@ func (ste *ProfilesSink) Reset() {
 	ste.sampleCount = 0
 }
 
-// AllContexts returns the contexts stored by this sink since last Reset.
-func (ste *ProfilesSink) AllContexts() []context.Context {
+// Contexts returns the contexts stored by this sink since last Reset.
+func (ste *ProfilesSink) Contexts() []context.Context {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
