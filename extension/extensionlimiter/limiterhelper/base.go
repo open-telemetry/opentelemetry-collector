@@ -41,11 +41,8 @@ func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (exte
 			if err != nil {
 				return nil, err
 			}
-			return struct {
-				extensionlimiter.ReserveRateFunc
-				extensionlimiter.WaitForRateFunc
-			}{
-				func(ctx context.Context, _ uint64) (extensionlimiter.RateReservation, error) {
+			return extensionlimiter.ReserveRateFunc(
+				func(ctx context.Context, _ int) (extensionlimiter.RateReservation, error) {
 					if err := base.MustDeny(ctx); err != nil {
 						return nil, err
 					}
@@ -56,11 +53,7 @@ func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (exte
 						extensionlimiter.WaitTimeFunc(nil),
 						extensionlimiter.CancelFunc(nil),
 					}, nil
-				},
-				func(ctx context.Context, _ uint64) error {
-					return base.MustDeny(ctx)
-				},
-			}, nil
+				}), nil
 		},
 	}, nil
 }

@@ -58,15 +58,7 @@ type ResourceLimiter interface {
 	// resume after DelayFrom(). The context is provided for
 	// access to instrumentation and client metadata; the Context
 	// deadline is not used.
-	ReserveResource(context.Context, uint64) (ResourceReservation, error)
-
-	// WaitForRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.WaitN,
-	// without the time dimension.
-	//
-	// This is a blocking interface. Use this interface for
-	// callers that are constrained by a Context deadline, which
-	// will be incorporated into the limiter decision.
-	WaitForResource(context.Context, uint64) (ReleaseFunc, error)
+	ReserveResource(context.Context, int) (ResourceReservation, error)
 }
 
 // ResourceReservation is modeled on pkg.go.dev/golang.org/x/time/rate#Reservation
@@ -121,10 +113,10 @@ var immediateChan = func() <-chan struct{} {
 }()
 
 // ReserveResourceFunc is a functional way to construct ReserveResource interface methods.
-type ReserveResourceFunc func(ctx context.Context, value uint64) (ResourceReservation, error)
+type ReserveResourceFunc func(ctx context.Context, value int) (ResourceReservation, error)
 
 // ReserveResource implements a ReserveResource interface method.
-func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value uint64) (ResourceReservation, error) {
+func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value int) (ResourceReservation, error) {
 	if f == nil {
 		return struct {
 			DelayFunc
@@ -137,18 +129,4 @@ func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value uint64) 
 	return f(ctx, value)
 }
 
-// WaitForResourceFunc is a functional way to construct WaitForResource interface methods.
-type WaitForResourceFunc func(context.Context, uint64) (ReleaseFunc, error)
-
-// WaitForResource implements a WaitForResource interface method.
-func (f WaitForResourceFunc) WaitForResource(ctx context.Context, value uint64) (ReleaseFunc, error) {
-	if f == nil {
-		return ReleaseFunc(nil), nil
-	}
-	return f(ctx, value)
-}
-
-var _ ResourceLimiter = struct {
-	ReserveResourceFunc
-	WaitForResourceFunc
-}{}
+var _ ResourceLimiter = ReserveResourceFunc(nil)

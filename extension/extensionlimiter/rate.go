@@ -57,21 +57,11 @@ type RateLimiter interface {
 	// resume after Delay(). The context is provided for access to
 	// instrumentation and client metadata; the Context deadline
 	// is not used, should be considered by the caller.
-	ReserveRate(context.Context, uint64) (RateReservation, error)
-
-	// WaitForRate is modeled on pkg.go.dev/golang.org/x/time/rate#Limiter.WaitN
-	//
-	// This is a blocking interface. Use this interface for
-	// callers that are constrained by a Context deadline, which
-	// will be incorporated into the limiter decision.
-	WaitForRate(context.Context, uint64) error
+	ReserveRate(context.Context, int) (RateReservation, error)
 }
 
 // A rate limiter can be made up of two functions.
-var _ RateLimiter = struct {
-	ReserveRateFunc
-	WaitForRateFunc
-}{}
+var _ RateLimiter = ReserveRateFunc(nil)
 
 // RateReservation is modeled on pkg.go.dev/golang.org/x/time/rate#Reservation
 type RateReservation interface {
@@ -86,23 +76,12 @@ type RateReservation interface {
 }
 
 // ReserveRateFunc is a functional way to construct ReserveRate functions.
-type ReserveRateFunc func(context.Context, uint64) (RateReservation, error)
+type ReserveRateFunc func(context.Context, int) (RateReservation, error)
 
 // Reserve implements part of the RateReserveer interface.
-func (f ReserveRateFunc) ReserveRate(ctx context.Context, value uint64) (RateReservation, error) {
+func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) (RateReservation, error) {
 	if f == nil {
 		return nil, nil
-	}
-	return f(ctx, value)
-}
-
-// WaitForRateFunc is a functional way to construct WaitForRate functions.
-type WaitForRateFunc func(context.Context, uint64) error
-
-// Reserve implements part of the RateReserveer interface.
-func (f WaitForRateFunc) WaitForRate(ctx context.Context, value uint64) error {
-	if f == nil {
-		return nil
 	}
 	return f(ctx, value)
 }

@@ -177,7 +177,7 @@ func sequenceLimiters(lims []LimiterWrapper) LimiterWrapper {
 }
 
 func composeLimiters(first, second LimiterWrapper) LimiterWrapper {
-	return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(ctx context.Context) error) error {
+	return LimiterWrapperFunc(func(ctx context.Context, value int, call func(ctx context.Context) error) error {
 		return first.LimitCall(ctx, value, func(ctx context.Context) error {
 			return second.LimitCall(ctx, value, call)
 		})

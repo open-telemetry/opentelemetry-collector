@@ -54,16 +54,16 @@ type LimiterWrapper interface {
 	// from either the limiter or the enclosed callback.
 	//
 	// The `call` parameter must be non-nil.
-	LimitCall(ctx context.Context, weight uint64, call func(ctx context.Context) error) error
+	LimitCall(ctx context.Context, weight int, call func(ctx context.Context) error) error
 }
 
 // LimiterWrapperFunc is a functional way to build LimiterWrappers.
-type LimiterWrapperFunc func(context.Context, uint64, func(ctx context.Context) error) error
+type LimiterWrapperFunc func(context.Context, int, func(ctx context.Context) error) error
 
 var _ LimiterWrapper = LimiterWrapperFunc(nil)
 
 // LimitCall implements LimiterWrapper.
-func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value uint64, call func(ctx context.Context) error) error {
+func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value int, call func(ctx context.Context) error) error {
 	if f == nil {
 		return call(ctx)
 	}
@@ -99,8 +99,9 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 			if lim == nil {
 				return nil, nil
 			}
-			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-				release, err := lim.WaitForResource(ctx, value)
+			blocking := NewBlockingResourceLimiter(lim)
+			return LimiterWrapperFunc(func(ctx context.Context, value int, call func(context.Context) error) error {
+				release, err := blocking.WaitFor(ctx, value)
 				if err != nil {
 					return err
 				}
@@ -124,8 +125,9 @@ func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) Limi
 			if lim == nil {
 				return nil, nil
 			}
-			return LimiterWrapperFunc(func(ctx context.Context, value uint64, call func(context.Context) error) error {
-				if err := lim.WaitForRate(ctx, value); err != nil {
+			blocking := NewBlockingRateLimiter(lim)
+			return LimiterWrapperFunc(func(ctx context.Context, value int, call func(context.Context) error) error {
+				if err := blocking.WaitFor(ctx, value); err != nil {
 					return err
 				}
 				return call(ctx)

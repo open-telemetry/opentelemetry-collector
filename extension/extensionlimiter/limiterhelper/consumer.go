@@ -22,10 +22,10 @@ import (
 // consumer.Traces)
 type traits[P, C any] interface {
 	// itemCount is SpanCount(), DataPointCount(), or LogRecordCount().
-	itemCount(P) uint64
+	itemCount(P) int
 	// memorySize uses the appropriate protobuf Sizer as a proxy
 	// for memory used.
-	memorySize(data P) uint64
+	memorySize(data P) int
 	// consume calls the appropriate consumer method (e.g., ConsumeTraces)
 	consume(ctx context.Context, data P, next C) error
 	// create is a functional constructor the consumer type (e.g., consumer.NewTraces)
@@ -36,13 +36,13 @@ type traits[P, C any] interface {
 
 type traceTraits struct{}
 
-func (traceTraits) itemCount(data ptrace.Traces) uint64 {
-	return uint64(data.SpanCount())
+func (traceTraits) itemCount(data ptrace.Traces) int {
+	return data.SpanCount()
 }
 
-func (traceTraits) memorySize(data ptrace.Traces) uint64 {
+func (traceTraits) memorySize(data ptrace.Traces) int {
 	var sizer ptrace.MarshalSizer
-	return uint64(sizer.TracesSize(data))
+	return sizer.TracesSize(data)
 }
 
 func (traceTraits) create(next func(ctx context.Context, data ptrace.Traces) error, opts ...consumer.Option) (consumer.Traces, error) {
@@ -57,13 +57,13 @@ func (traceTraits) consume(ctx context.Context, data ptrace.Traces, next consume
 
 type metricTraits struct{}
 
-func (metricTraits) itemCount(data pmetric.Metrics) uint64 {
-	return uint64(data.DataPointCount())
+func (metricTraits) itemCount(data pmetric.Metrics) int {
+	return data.DataPointCount()
 }
 
-func (metricTraits) memorySize(data pmetric.Metrics) uint64 {
+func (metricTraits) memorySize(data pmetric.Metrics) int {
 	var sizer pmetric.MarshalSizer
-	return uint64(sizer.MetricsSize(data))
+	return sizer.MetricsSize(data)
 }
 
 func (metricTraits) create(next func(ctx context.Context, data pmetric.Metrics) error, opts ...consumer.Option) (consumer.Metrics, error) {
@@ -78,13 +78,13 @@ func (metricTraits) consume(ctx context.Context, data pmetric.Metrics, next cons
 
 type logTraits struct{}
 
-func (logTraits) itemCount(data plog.Logs) uint64 {
-	return uint64(data.LogRecordCount())
+func (logTraits) itemCount(data plog.Logs) int {
+	return data.LogRecordCount()
 }
 
-func (logTraits) memorySize(data plog.Logs) uint64 {
+func (logTraits) memorySize(data plog.Logs) int {
 	var sizer plog.MarshalSizer
-	return uint64(sizer.LogsSize(data))
+	return sizer.LogsSize(data)
 }
 
 func (logTraits) create(next func(ctx context.Context, data plog.Logs) error, opts ...consumer.Option) (consumer.Logs, error) {
@@ -99,13 +99,13 @@ func (logTraits) consume(ctx context.Context, data plog.Logs, next consumer.Logs
 
 type profileTraits struct{}
 
-func (profileTraits) itemCount(data pprofile.Profiles) uint64 {
-	return uint64(data.SampleCount())
+func (profileTraits) itemCount(data pprofile.Profiles) int {
+	return data.SampleCount()
 }
 
-func (profileTraits) memorySize(data pprofile.Profiles) uint64 {
+func (profileTraits) memorySize(data pprofile.Profiles) int {
 	var sizer pprofile.MarshalSizer
-	return uint64(sizer.ProfilesSize(data))
+	return sizer.ProfilesSize(data)
 }
 
 func (profileTraits) create(next func(ctx context.Context, data pprofile.Profiles) error, opts ...consumer.Option) (xconsumer.Profiles, error) {
@@ -124,7 +124,7 @@ func limitOne[P any, C any](
 	m traits[P, C],
 	key extensionlimiter.WeightKey,
 	opts []consumer.Option,
-	quantify func(P) uint64,
+	quantify func(P) int,
 ) (C, error) {
 	if !slices.Contains(keys, key) {
 		return next, nil
@@ -177,15 +177,15 @@ func newLimited[P any, C any](
 	var err1, err2, err3, err4 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
 	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
-		func(data P) uint64 {
+		func(data P) int {
 			return m.memorySize(data)
 		})
 	next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
-		func(data P) uint64 {
+		func(data P) int {
 			return m.itemCount(data)
 		})
 	next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
-		func(_ P) uint64 {
+		func(_ P) int {
 			return 1
 		})
 	next, err4 = applyBaseLimiter(next, provider, m, opts)

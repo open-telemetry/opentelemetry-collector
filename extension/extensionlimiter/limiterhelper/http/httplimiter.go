@@ -41,9 +41,9 @@ func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (
 					if bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
 						// If bytes are limited, create a limited ReadCloser body.
 						req.Body = &rateLimitedBody{
-							body:        req.Body,
-							rateLimiter: bytesLimiter,
-							ctx:         req.Context(),
+							body:    req.Body,
+							limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+							ctx:     req.Context(),
 						}
 					}
 					var err error
@@ -58,19 +58,19 @@ func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (
 
 // rateLimitedBody wraps an http.Request.Body to track bytes and call the rate limiter
 type rateLimitedBody struct {
-	body        io.ReadCloser
-	rateLimiter extensionlimiter.RateLimiter
-	ctx         context.Context
+	body    io.ReadCloser
+	limiter limiterhelper.BlockingRateLimiter
+	ctx     context.Context
 }
 
 var _ io.ReadCloser = &rateLimitedBody{}
 
-// Read implements io.Reader interface, counting bytes as they are read
+// Read implements io.Reader interface, limiting bytes as they are read
 func (rb *rateLimitedBody) Read(p []byte) (n int, err error) {
 	n, err = rb.body.Read(p)
 	if n > 0 {
 		// Apply rate limiting based on network bytes after they are read
-		limitErr := rb.rateLimiter.WaitForRate(rb.ctx, uint64(n))
+		limitErr := rb.limiter.WaitFor(rb.ctx, n)
 		if limitErr != nil {
 			// If the rate limiter rejects the bytes, return the error
 			return n, limitErr // TODO: How to return HTTP 429?
@@ -109,9 +109,9 @@ func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (
 					if bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
 						// If bytes are limited, create a limited ReadCloser body.
 						req.Body = &rateLimitedBody{
-							body:        req.Body,
-							rateLimiter: bytesLimiter,
-							ctx:         req.Context(),
+							body:    req.Body,
+							limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+							ctx:     req.Context(),
 						}
 					}
 					base.ServeHTTP(w, req)

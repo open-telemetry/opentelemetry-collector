@@ -62,8 +62,8 @@ func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (
 	if bytesLimiter != nil {
 		gopts = append(gopts, grpc.WithStatsHandler(
 			&limiterStatsHandler{
-				bytesLimiter: bytesLimiter,
-				isClient:     true,
+				limiter:  limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+				isClient: true,
 			}))
 	}
 	return extensionmiddleware.GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
@@ -115,8 +115,8 @@ func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (
 	if bytesLimiter != nil {
 		gopts = append(gopts, grpc.StatsHandler(
 			&limiterStatsHandler{
-				bytesLimiter: bytesLimiter,
-				isClient:     false,
+				limiter:  limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+				isClient: false,
 			}))
 	}
 
@@ -127,8 +127,8 @@ func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
 type limiterStatsHandler struct {
-	bytesLimiter extensionlimiter.RateLimiter
-	isClient     bool
+	limiter  limiterhelper.BlockingRateLimiter
+	isClient bool
 }
 
 func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
@@ -159,7 +159,7 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	}
 	// Apply rate limiting based on network bytes
 	// TODO: How does the limiter break the stream?
-	_ = h.bytesLimiter.WaitForRate(ctx, uint64(wireBytes))
+	_ = h.limiter.WaitFor(ctx, wireBytes)
 }
 
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
