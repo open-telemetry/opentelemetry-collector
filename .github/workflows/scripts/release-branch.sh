@@ -14,10 +14,9 @@ GIT_CONFIG_USER_NAME=${GIT_CONFIG_USER_NAME:-"opentelemetrybot"}
 GIT_CONFIG_USER_EMAIL=${GIT_CONFIG_USER_EMAIL:-"107717825+opentelemetrybot@users.noreply.github.com"}
 
 # --- Validate Input ---
-if [[ -z "$RELEASE_SERIES" ]]; then
-  echo "Error: Release series not provided."
-  echo "Usage: $0 <release-series> [prepare-release-commit-hash]"
-  echo "Example: $0 v0.85.x"
+if [[ -z "$RELEASE_SERIES" || -z "$PREPARE_RELEASE_COMMIT_HASH" ]]; then
+  echo "Error: Both release series and prepare release commit hash must be provided."
+  echo "Usage: $0 <release-series> <prepare-release-commit-hash>"
   echo "Example: $0 v0.85.x a1b2c3d4"
   exit 1
 fi
@@ -26,9 +25,7 @@ RELEASE_BRANCH_NAME="release/${RELEASE_SERIES}"
 
 echo "Automating Release Steps for: ${RELEASE_SERIES}"
 echo "Release Branch Name: ${RELEASE_BRANCH_NAME}"
-if [[ -n "$PREPARE_RELEASE_COMMIT_HASH" ]]; then
-  echo "Will use specific 'Prepare release' commit: ${PREPARE_RELEASE_COMMIT_HASH}"
-fi
+echo "'Prepare release' commit hash: ${PREPARE_RELEASE_COMMIT_HASH}"
 echo "Upstream Remote: ${UPSTREAM_REMOTE_NAME}"
 echo "--------------------------------------------------"
 
@@ -46,58 +43,30 @@ git fetch "${UPSTREAM_REMOTE_NAME}"
 git rebase "${UPSTREAM_REMOTE_NAME}/${MAIN_BRANCH_NAME}"
 echo "'${LOCAL_MAIN_BRANCH_NAME}' branch is now up-to-date."
 
-# Determine the target commit from main that the release branch should be based on or merge
-TARGET_MAIN_STATE_COMMIT=""
-if [[ -n "$PREPARE_RELEASE_COMMIT_HASH" ]]; then
-  TARGET_MAIN_STATE_COMMIT="$PREPARE_RELEASE_COMMIT_HASH"
-  # Verify the commit exists (it should be reachable from main after fetch)
-  if ! git cat-file -e "${TARGET_MAIN_STATE_COMMIT}^{commit}" 2>/dev/null; then
-    echo "Error: Provided 'Prepare release' commit hash '${TARGET_MAIN_STATE_COMMIT}' not found."
-    exit 1
-  fi
-  echo "Targeting specific commit from main: ${TARGET_MAIN_STATE_COMMIT}"
-else
-  # If no specific commit is given, use the current HEAD of the rebased local main branch
-  TARGET_MAIN_STATE_COMMIT=$(git rev-parse HEAD) # Assumes we are still on 'main'
-  echo "Targeting current HEAD of rebased '${MAIN_BRANCH_NAME}': ${TARGET_MAIN_STATE_COMMIT}"
+# Verify the commit exists (it should be reachable from main after fetch)
+if ! git cat-file -e "${PREPARE_RELEASE_COMMIT_HASH}^{commit}" 2>/dev/null; then
+  echo "Error: Provided 'Prepare release' commit hash '${PREPARE_RELEASE_COMMIT_HASH}' not found."
+  exit 1
 fi
-
 # 4. Handle Release Branch: Check existence, create or switch, and merge/base
 BRANCH_EXISTS_LOCALLY=$(git branch --list "${RELEASE_BRANCH_NAME}")
 # Check remote by looking for the remote tracking branch ref after fetch
 if git rev-parse --verify --quiet "${UPSTREAM_REMOTE_NAME}/${RELEASE_BRANCH_NAME}" > /dev/null 2>&1; then
   BRANCH_EXISTS_REMOTELY=true
-else
-  BRANCH_EXISTS_REMOTELY=
 fi
 
-MERGE_NEEDED=false
-
-if [[ -n "$BRANCH_EXISTS_REMOTELY" ]]; then
+if [[ -n "$BRANCH_EXISTS_LOCALLY" ]]; then
+  echo "Release branch '${RELEASE_BRANCH_NAME}' found locally."
+  echo "Please delete local release branch using 'git branch -D ${RELEASE_BRANCH_NAME}' and run the script again."
+  exit 1
+elif [[ -n "$BRANCH_EXISTS_REMOTELY" ]]; then
   echo "Release branch '${RELEASE_BRANCH_NAME}' found on remote '${UPSTREAM_REMOTE_NAME}'."
-  MERGE_NEEDED=true
-  if [[ -n "$BRANCH_EXISTS_LOCALLY" ]]; then
-    git switch "${RELEASE_BRANCH_NAME}"
-    git reset --hard "${UPSTREAM_REMOTE_NAME}/${RELEASE_BRANCH_NAME}"
-  else
-    git switch -c "${RELEASE_BRANCH_NAME}" "${UPSTREAM_REMOTE_NAME}/${RELEASE_BRANCH_NAME}"
-  fi
-elif [[ -n "$BRANCH_EXISTS_LOCALLY" ]]; then
-  echo "Release branch '${RELEASE_BRANCH_NAME}' found locally but not on remote '${UPSTREAM_REMOTE_NAME}'."
-  MERGE_NEEDED=true
-  git switch "${RELEASE_BRANCH_NAME}"
-  # No reset needed here as there's no remote counterpart to reset to.
-  # We'll merge main into this local state.
+  git switch -c "${RELEASE_BRANCH_NAME}" "${UPSTREAM_REMOTE_NAME}/${RELEASE_BRANCH_NAME}"
+  git merge "${PREPARE_RELEASE_COMMIT_HASH}"
+  git status --short
 else
   echo "Release branch '${RELEASE_BRANCH_NAME}' not found locally or on remote."
   git switch -c "${RELEASE_BRANCH_NAME}" "${TARGET_MAIN_STATE_COMMIT}"
-  # MERGE_NEEDED remains false as the branch is created directly from the target commit
-fi
-
-if [[ "$MERGE_NEEDED" == true ]]; then
-  git merge "${TARGET_MAIN_STATE_COMMIT}"
-  echo "Merge complete. Current status:"
-  git status -s # Short status
 fi
 
 echo "Current branch is now '${RELEASE_BRANCH_NAME}'."
