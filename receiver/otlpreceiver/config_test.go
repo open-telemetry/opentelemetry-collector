@@ -177,6 +177,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 		}, cfg)
 }
 
+// cspell:ignore htttp
 func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
 	require.NoError(t, err)
