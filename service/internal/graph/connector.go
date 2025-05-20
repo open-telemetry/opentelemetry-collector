@@ -90,7 +90,7 @@ func (n *connectorNode) buildTraces(
 	for _, next := range nexts {
 		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewTraces(
 			next.(consumer.Traces),
-			tb.ConnectorProducedItems,
+			tb.ConnectorProducedItems, tb.ConnectorProducedSize,
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
@@ -107,32 +107,33 @@ func (n *connectorNode) buildTraces(
 		if err != nil {
 			return err
 		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewTraces(
 			capabilityconsumer.NewTraces(
 				n.Component.(consumer.Traces),
 				aggregateCap(n.Component.(consumer.Traces), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToTraces(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	}
 	return nil
 }
@@ -152,7 +153,7 @@ func (n *connectorNode) buildMetrics(
 	for _, next := range nexts {
 		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewMetrics(
 			next.(consumer.Metrics),
-			tb.ConnectorProducedItems,
+			tb.ConnectorProducedItems, tb.ConnectorProducedSize,
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
@@ -169,32 +170,33 @@ func (n *connectorNode) buildMetrics(
 		if err != nil {
 			return err
 		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewMetrics(
 			capabilityconsumer.NewMetrics(
 				n.Component.(consumer.Metrics),
 				aggregateCap(n.Component.(consumer.Metrics), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToMetrics(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	}
 	return nil
 }
@@ -214,7 +216,7 @@ func (n *connectorNode) buildLogs(
 	for _, next := range nexts {
 		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewLogs(
 			next.(consumer.Logs),
-			tb.ConnectorProducedItems,
+			tb.ConnectorProducedItems, tb.ConnectorProducedSize,
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
@@ -231,32 +233,33 @@ func (n *connectorNode) buildLogs(
 		if err != nil {
 			return err
 		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewLogs(
 			capabilityconsumer.NewLogs(
 				n.Component.(consumer.Logs),
 				aggregateCap(n.Component.(consumer.Logs), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfilesToLogs(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	}
 	return nil
 }
@@ -276,7 +279,7 @@ func (n *connectorNode) buildProfiles(
 	for _, next := range nexts {
 		consumers[next.(*capabilitiesNode).pipelineID] = obsconsumer.NewProfiles(
 			next.(xconsumer.Profiles),
-			tb.ConnectorProducedItems,
+			tb.ConnectorProducedItems, tb.ConnectorProducedSize,
 			obsconsumer.WithStaticDataPointAttribute(
 				otelattr.String(
 					pipelineIDAttrKey,
@@ -293,32 +296,33 @@ func (n *connectorNode) buildProfiles(
 		if err != nil {
 			return err
 		}
+
 		// Connectors which might pass along data must inherit capabilities of all nexts
 		n.consumer = obsconsumer.NewProfiles(
 			capabilityconsumer.NewProfiles(
 				n.Component.(xconsumer.Profiles),
 				aggregateCap(n.Component.(xconsumer.Profiles), nexts),
 			),
-			tb.ConnectorConsumedItems,
+			tb.ConnectorConsumedItems, tb.ConnectorConsumedSize,
 		)
 	case pipeline.SignalTraces:
 		n.Component, err = builder.CreateTracesToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetricsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogsToProfiles(ctx, set, next)
 		if err != nil {
 			return err
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems)
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ConnectorConsumedItems, tb.ConnectorConsumedSize)
 	}
 	return nil
 }

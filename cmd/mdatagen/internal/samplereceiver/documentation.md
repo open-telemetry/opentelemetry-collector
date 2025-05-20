@@ -101,6 +101,46 @@ metrics:
 | string_attr | Attribute with any string value. | Any Str |
 | boolean_attr | Attribute with a boolean value. | Any Bool |
 
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### default.event
+
+Example event enabled by default.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| state | Integer attribute with overridden name. | Any Int |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
+
+### default.event.to_be_removed
+
+[DEPRECATED] Example to-be-removed event enabled by default.
+
+The event will be will be removed soon.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| state | Integer attribute with overridden name. | Any Int |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
