@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -29,7 +30,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	defaultCfg := factory.CreateDefaultConfig()
+	defaultCfg.(*Config).GRPC.GetOrInsertDefault()
+	defaultCfg.(*Config).HTTP.GetOrInsertDefault()
+	assert.Equal(t, defaultCfg, cfg)
 }
 
 func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
@@ -40,7 +44,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.HTTP = nil
+	defaultOnlyGRPC.GRPC.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -52,7 +56,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -64,7 +68,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -76,7 +80,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	defaultOnlyHTTP.HTTP.GetOrInsertDefault()
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -89,7 +93,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
@@ -117,31 +121,31 @@ func TestUnmarshalConfig(t *testing.T) {
 							PermitWithoutStream: true,
 						},
 					},
-				},
-				HTTP: &HTTPConfig{
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Auth: &confighttp.AuthConfig{
+						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
-						},
+						}),
 						Endpoint: "localhost:4318",
-						TLSSetting: &configtls.ServerConfig{
+						TLSSetting: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",
 							},
-						},
-						CORS: &confighttp.CORSConfig{
+						}),
+						CORS: configoptional.Some(confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
-						},
+						}),
 						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
 					LogsURLPath:    "/log/ingest",
-				},
+				}),
 			},
 		}, cfg)
 }
@@ -155,24 +159,24 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive:      configgrpc.NewDefaultKeepaliveServerConfig(),
-				},
-				HTTP: &HTTPConfig{
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint:        "/tmp/http_otlp.sock",
-						CORS:            confighttp.NewDefaultCORSConfig(),
+						CORS:            configoptional.Some(*confighttp.NewDefaultCORSConfig()),
 						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
 					LogsURLPath:    defaultLogsURLPath,
-				},
+				}),
 			},
 		}, cfg)
 }

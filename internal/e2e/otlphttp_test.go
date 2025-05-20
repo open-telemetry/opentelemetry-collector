@@ -351,8 +351,7 @@ func startLogsReceiver(t *testing.T, addr string, next consumer.Logs) {
 
 func createReceiverConfig(addr string, defaultCfg component.Config) *otlpreceiver.Config {
 	cfg := defaultCfg.(*otlpreceiver.Config)
-	cfg.HTTP.ServerConfig.Endpoint = addr
-	cfg.GRPC = nil
+	cfg.HTTP.GetOrInsertDefault().ServerConfig.Endpoint = addr
 	return cfg
 }
 
