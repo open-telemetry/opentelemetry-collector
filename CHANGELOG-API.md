@@ -461,7 +461,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   Factory.CreateExtension -> Factory.Create |
   Factory.ExtensionStability -> Factory.Stability
   
-- `exporter`: Deprecate funcs that repeate exporter in name (#11370)
+- `exporter`: Deprecate funcs that repeat exporter in name (#11370)
   Factory.Create[Traces|Metrics|Logs|Profiles]Exporter -> Factory.Create[Traces|Metrics|Logs|Profiles] |
   Factory.[Traces|Metrics|Logs|Profiles]ExporterStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
   
