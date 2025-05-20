@@ -1502,11 +1502,11 @@ func TestSpanContextUnmarshalJSON(t *testing.T) {
 				require.NoError(t, err)
 			}
 			if tc.expectNil {
-				require.Equal(t, "", rc.SpanContext.TraceID)
-				require.Equal(t, "", rc.SpanContext.SpanID)
-				require.Equal(t, "", rc.SpanContext.TraceFlags)
-				require.Equal(t, "", rc.SpanContext.TraceState)
-				require.Equal(t, false, rc.SpanContext.Remote)
+				require.Empty(t, rc.SpanContext.TraceID)
+				require.Empty(t, rc.SpanContext.SpanID)
+				require.Empty(t, rc.SpanContext.TraceFlags)
+				require.Empty(t, rc.SpanContext.TraceState)
+				require.False(t, rc.SpanContext.Remote)
 			}
 		})
 	}
@@ -1902,4 +1902,159 @@ func TestPersistentQueue_PutInternal_ContextTimeout(t *testing.T) {
 	// This should fail with context deadline exceeded
 	err := pq.Offer(timeoutCtx, uint64(3))
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestPersistentQueue_GetNextItem_ContextUnmarshalFails(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+	// Insert an item with a valid span context
+	tid, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	sid, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tid,
+		SpanID:     sid,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctxWithSC, req))
+
+	// Corrupt the stored context for index 0
+	corrupted := []byte(`{"notjson}`)
+	require.NoError(t, pq.client.Set(context.Background(), getContextKey(0), corrupted))
+
+	// Now getNextItem should succeed for the request, but context unmarshal will fail
+	_, gotReq, _, restoredCtx, err := pq.getNextItem(context.Background())
+	require.Error(t, err, "unexpected end of JSON input")
+	require.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	require.False(t, restoredSC.IsValid(), "restored context should not have a valid span context if context unmarshal fails")
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_ContextUnmarshalFails(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+	// Insert an item with a valid span context
+	tid, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	sid, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tid,
+		SpanID:     sid,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctxWithSC, req))
+
+	// Simulate the item being dispatched
+	pq.mu.Lock()
+	pq.currentlyDispatchedItems = []uint64{0}
+	require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+	pq.mu.Unlock()
+
+	// Corrupt the stored context for index 0
+	corrupted := []byte(`{"notjson}`)
+	require.NoError(t, pq.client.Set(context.Background(), getContextKey(0), corrupted))
+	pq.writeIndex--
+	require.NoError(t, pq.client.Set(context.Background(), writeIndexKey, itemIndexToBytes(pq.writeIndex)))
+	// Call retrieveAndEnqueueNotDispatchedReqs, which should hit the unmarshal error
+	pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+	// The item should be re-enqueued, but its context should not be valid
+	restoredCtx, gotReq, _, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	require.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	require.False(t, restoredSC.IsValid(), "restored context should not have a valid span context if context unmarshal fails")
+}
+
+func TestTraceFlagsFromHex(t *testing.T) {
+	// Valid 1-byte hex string
+	flags, err := traceFlagsFromHex("01")
+	require.NoError(t, err)
+	require.NotNil(t, flags)
+	require.Equal(t, trace.TraceFlags(1), *flags)
+
+	// Invalid hex string (should error from hex.DecodeString)
+	_, err = traceFlagsFromHex("zz")
+	require.Error(t, err)
+
+	// Valid hex but wrong length (should error on len(decoded) != 1)
+	_, err = traceFlagsFromHex("0102")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), errInvalidTraceFlagsLength)
+}
+
+func TestContextWithLocalSpanContext_AllBranches(t *testing.T) {
+	// Valid case
+	tid := "0102030405060708090a0b0c0d0e0f10"
+	sid := "0102030405060708"
+	flags := "01"
+	state := "foo=bar"
+	sc := spanContext{
+		TraceID:    tid,
+		SpanID:     sid,
+		TraceFlags: flags,
+		TraceState: state,
+		Remote:     true,
+	}
+	ctx := contextWithLocalSpanContext(context.Background(), sc)
+	span := trace.SpanContextFromContext(ctx)
+	require.True(t, span.IsValid())
+	require.Equal(t, tid, span.TraceID().String())
+	require.Equal(t, sid, span.SpanID().String())
+	require.Equal(t, trace.TraceFlags(1), span.TraceFlags())
+	require.Equal(t, state, span.TraceState().String())
+	require.True(t, span.IsRemote())
+
+	// Invalid TraceID
+	scBadTraceID := sc
+	scBadTraceID.TraceID = "nothex"
+	ctx = contextWithLocalSpanContext(context.Background(), scBadTraceID)
+	span = trace.SpanContextFromContext(ctx)
+	require.False(t, span.IsValid())
+
+	// Invalid SpanID
+	scBadSpanID := sc
+	scBadSpanID.SpanID = "nothex"
+	ctx = contextWithLocalSpanContext(context.Background(), scBadSpanID)
+	span = trace.SpanContextFromContext(ctx)
+	require.False(t, span.IsValid())
+
+	// Invalid TraceFlags (not hex)
+	scBadFlags := sc
+	scBadFlags.TraceFlags = "zz"
+	ctx = contextWithLocalSpanContext(context.Background(), scBadFlags)
+	span = trace.SpanContextFromContext(ctx)
+	require.False(t, span.IsValid())
+
+	// Invalid TraceFlags (wrong length)
+	scBadFlagsLen := sc
+	scBadFlagsLen.TraceFlags = "0102"
+	ctx = contextWithLocalSpanContext(context.Background(), scBadFlagsLen)
+	span = trace.SpanContextFromContext(ctx)
+	require.False(t, span.IsValid())
+
+	// Invalid TraceState
+	scBadState := sc
+	scBadState.TraceState = "bad=tracestate,=bad"
+	ctx = contextWithLocalSpanContext(context.Background(), scBadState)
+	span = trace.SpanContextFromContext(ctx)
+	require.False(t, span.IsValid())
 }

@@ -455,11 +455,10 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool,
 			var rc requestContext
 			if ctxOp.Value != nil {
 				unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
-				if unmarshalErr == nil {
-					restoredContext = contextWithLocalSpanContext(restoredContext, rc.SpanContext)
-				} else {
-					pq.logger.Debug("Failed to unmarshal request context", zap.Error(unmarshalErr))
+				if unmarshalErr != nil {
+					return 0, request, false, ctx, unmarshalErr
 				}
+				restoredContext = contextWithLocalSpanContext(restoredContext, rc.SpanContext)
 			}
 		}
 	}
@@ -591,24 +590,24 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 		}
 		restoredContext := ctx
 		req, err := pq.set.encoding.Unmarshal(op.Value)
-		// We will retrieve the context from the back half of the batch list, see  above:
+		// If error happened or item is nil, it will be efficiently ignored
+		if err != nil {
+			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
+			continue
+		}
+		// We will then retrieve the context from the back half of the batch list, see above:
 		// https://github.com/DataDog/opentelemetry-collector/blob/5d69954e38ea8c8219b6202f06ae8bac88a67c3e/exporter/exporterhelper/internal/queuebatch/persistent_queue.go#L561
-		if err == nil && persistRequestContextFeatureGate.IsEnabled() && idx+len(dispatchedItems) < len(retrieveBatch) {
+		if persistRequestContextFeatureGate.IsEnabled() && idx+len(dispatchedItems) < len(retrieveBatch) {
 			ctxOp := retrieveBatch[idx+len(dispatchedItems)]
-			if ctxOp != nil && ctxOp.Value != nil {
+			if ctxOp.Value != nil {
 				var rc requestContext
 				unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
 				if unmarshalErr == nil {
 					restoredContext = contextWithLocalSpanContext(restoredContext, rc.SpanContext)
 				} else {
-					pq.logger.Debug("Failed to unmarshal request context", zap.Error(unmarshalErr))
+					pq.logger.Warn("Failed retrieving request context, storing empty span context", zap.String(zapKey, ctxOp.Key), zap.Error(unmarshalErr))
 				}
 			}
-		}
-		// If error happened or item is nil, it will be efficiently ignored
-		if err != nil {
-			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
-			continue
 		}
 		if pq.putInternal(restoredContext, req) != nil {
 			errCount++
