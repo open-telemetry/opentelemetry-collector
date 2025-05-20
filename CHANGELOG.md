@@ -1056,7 +1056,7 @@ This release includes 2 very important breaking changes.
 - `configcompression`: Mark module as Stable. (#9571)
 - `cmd/mdatagen`: Use go package name for the scope name by default and add an option to provide the scope name in metadata.yaml. (#9693)
 - `cmd/mdatagen`: Generate the lifecycle tests for components by default. (#9683)
-  It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
+  It's encouraged to have lifecycle tests for all components enabled, but they can be disabled if needed 
   in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
   
 - `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
@@ -1714,7 +1714,7 @@ This release includes 2 very important breaking changes.
 - `componenttest`: Remove deprecated funcs from componenttest (#6836)
 - `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
 - `component`: Remove deprecated component.[Factories|MakeProcessorFactoryMap] and componenttest.NewNopFactories (#6835)
-- `config`: Remove deprecated cofig.*Settings (#6837)
+- `config`: Remove deprecated config.*Settings (#6837)
 - `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
 - `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
 - `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
@@ -2651,7 +2651,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Update OTLP to v0.17.0 (#5335)
 - Add optional min/max fields to histograms (#5399)
 - User-defined Resource attributes can be specified under `service.telemetry.resource`
-  configuration key and will be included as metric lables for own telemetry.
+  configuration key and will be included as metric labels for own telemetry.
   If `service.instance.id` is not specified it will be auto-generated. Previously
   `service.instance.id` was always auto-generated, so the default of the new
   behavior matches the old behavior. (#5402)
@@ -3047,7 +3047,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 - Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
-- `configtls`: TLS 1.2 is the new default mininum version (#4503)
+- `configtls`: TLS 1.2 is the new default minimum version (#4503)
 - `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
 - CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
 
@@ -3841,7 +3841,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Add `CustomRoundTripper` function to httpclientconfig (#2085)
 - Allow for more logging options to be passed to `service` (#2132)
 - Add config parameters for `jaeger` receiver (#2068)
-- Map unset status code for `jaegar` translator as per spec (#2134)
+- Map unset status code for `jaeger` translator as per spec (#2134)
 - Add more trace annotations to the queue-retry logic (#2136)
 - Add config settings for component telemetry (#2148)
 - Use net.SplitHostPort for IPv6 support in `prometheus` receiver (#2154)
@@ -4091,7 +4091,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ### 🚀 New components 🚀
 
 - Receivers
-  - `fluentfoward` runs a TCP server that accepts events via the [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) (#1173)
+  - `fluentforward` runs a TCP server that accepts events via the [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) (#1173)
 - Exporters
   - `kafka` exports traces to Kafka (#1439)
 - Extensions
@@ -4162,7 +4162,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   of different versions
 - Make "--new-metrics" command line flag the default (#1148)
 - Change `endpoint` to `url` in Zipkin exporter config (#1186)
-- Change `tls_credentials` to `tls_settings` in Jaegar receiver config (#1233)
+- Change `tls_credentials` to `tls_settings` in Jaeger receiver config (#1233)
 - OTLP receiver config change for `protocols` to support mTLS (#1223)
 - Remove `export_resource_labels` flag from Zipkin exporter (#1163)
 

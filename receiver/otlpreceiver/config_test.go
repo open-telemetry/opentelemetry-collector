@@ -182,7 +182,7 @@ func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: htttp")
+	assert.ErrorContains(t, cm.Unmarshal(&cfg), "'protocols' has invalid keys: http")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {

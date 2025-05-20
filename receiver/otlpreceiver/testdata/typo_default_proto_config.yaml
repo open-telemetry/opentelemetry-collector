@@ -1,3 +1,3 @@
 protocols:
   grpc:
-  htttp:
+  http:
