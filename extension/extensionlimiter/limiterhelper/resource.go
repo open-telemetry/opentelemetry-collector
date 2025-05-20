@@ -22,6 +22,8 @@ var (
 
 // NewResourceLimiter returns an implementation of the
 // resource-limiter extension based on a LIFO queue.
+// See this [article](https://medium.com/swlh/fifo-considered-harmful-793b76f98374)
+// explaining why LIFO is preferred here.
 func NewResourceLimiter(admitLimit, waitLimit uint64) extensionlimiter.ResourceLimiter {
 	return &boundedQueue{
 		limitAdmit: admitLimit,

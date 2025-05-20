@@ -2,73 +2,129 @@
 
 **Document status: development**
 
-The `extensionlimiter` package provides interfaces for rate limiting
-and resource limiting in the OpenTelemetry Collector, enabling control
-over data flow and resource usage through extensions that can be
-configured through middleware and/or directly by pipeline components.
+The `extensionlimiter` package provides interfaces for limiting
+pipelines in the OpenTelemetry Collector, enabling control over data
+flow and resource usage through extensions which are configured
+through middleware and/or directly by pipeline components.
 
 ## Overview
 
-This package defines two primary limiter **kinds**, which have
-different interfaces:
+This package defines three foundational limiter **kinds**, each with
+similar but distinct interfaces.  A limiter extension is either a
+basic limiter, or it implements the basic limiter interface and one of
+the weight-based interfaces:
 
-- **Rate Limiters**: Control time-based limits on quantities such as
+- **Basic Limiter**: Makes a simple yes/no decision without a weight
+  parameter, typically to stop new work in an emergency.
+- **Rate Limiter**: Controls time-based limits over weights such as
   bytes or items per second.
-- **Resource Limiters**: Manage physical limits on quantities such as
-  concurrent requests or memory usage.
+- **Resource Limiter**: Controls physical limits over weights such as
+  concurrent requests or active memory in use.
 
-Both limiter kinds are unified through the `LimiterWrapper` interface,
-which simplifies consumers in most cases by providing a consistent
-`LimitCall` interface.
+For the two weight-based limiters, requests are quantified with an
+integer value and identified by a **weight key** indicating the type
+of quantity being measured and limited. There are currently four
+weight keys with a standard definition:
 
-A limiter is **saturated** by definition when a limit is completely
+1. Network bytes
+2. Request count
+3. Request items
+4. Memory size
+
+The foundational interfaces are non-blocking, and each calling
+convention is different.  The various limiter kinds are unified
+through a `LimiterWrapper` interface, which simplifies consumers in
+many cases by providing a consistent `LimitCall` interface for each
+limiter kind using a synchronous callback. Limiter wrappers provide an
+abstraction over the details of requesting the limit, blocking the
+caller temporarily (considering deadline), and making the call.
+
+There are circumstances where the kind of limiter matters. For
+example, in current middleware, the network bytes weight key can be
+measured through a `grpc.StatsHandler` or an `io.ReadCloser`, and in
+both cases the resource (e.g., byte slice, pdata object) remains in
+use after the method returns. These callers can apply rate limit and
+basic limits, but they cannot apply resource limits.
+
+The kind of limiter matters in other situations where program control
+flow does not permit the use of a wrapper, especially as needed to
+maintain back-pressure in a pipeline. In a streaming asynchronous
+receiver (e.g.,
+[otelarrowreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/otelarrowreceiver/README.md)),
+for example, a limiter can slow the arrival of new data by stalling a
+response, it means synchronously waiting for the limit and
+asynchronously processing the request.
+
+Resource limiters require the most of callers, as the interface
+requires a `Release` function to be called after the caller is
+finished with the resource. Adapters are provided for convenience.
+
+A limiter is defined as **saturated** when a limit is completely
 overloaded in at least one weight, generally it means callers should
-immediately deny work to continue on the request.
+deny new requests. All limiter extensions implement the basic limiter
+interface, and callers are expected to check for saturation by
+invoking `MustDeny` once before applying individual weight limits.
 
-Each kind of limiter as well as the wrapper type have corresponding
-**provider** interfaces that return a limiter instance based on a
-weight keys.
+Whereas the basic limiter's `MustDeny` method indicates only
+saturation, the rate and resource limiter interfaces both return a
+`Reservation`. While the details are slightly different, the
+reservation generally has two features:
 
-Weight keys describe the standard limiting dimensions. There are
-currently four standard weight keys: network bytes, request count,
-request items, and memory size.  Callers use the `Checker` interface
-to check whether any weight keys (from a set) are saturated.
+- a mechanism to wait for the limit (if possible)
+- a mechanism to cancel or release the request.
 
-## Key Interfaces
+Each kind of limiter have corresponding **provider** interfaces that
+return a specific limiter instance based on a weight key. Components
+are expected to initialize limiters during startup, through limiter
+extension providers (which may produce configuration errors).
 
-- `LimiterWrapper`: Provides a callback-based limiting interface that
-  works with both rate and resource limiters, has a `LimitCall` method,
-  plus a provider type.
-- `RateLimiter`: Applies time-based limits, has a `Limit` method,
-  plus provider type.
-- `ResourceLimiter`: Manages physical resource limits, has
-  an `Acquire` method and a corresponding `ReleaseFunc`,
-  plus a provider type.
-- `Checker`: Has a `MustDeny` method.
+Any limiter extension:
 
-### Limiter helpers
+- MUST implement the `BaseLimiterProvider` interface
+- MUST NOT implement both the `ResourceLimiterProvider` and the `RateLimiterProvider` interfaces
 
-The `limiterhelper` subpackage provides:
-
-- Consumer wrappers apply limits to a collector pipeline (e.g.,
-  `NewLimitedLogs` for a limiter combined with `consumer.NewLogs`)
-- Multi-limiter combinators: for simple combined limiter functionality
-- Middleware conversion utilities: convert middleware configurations
-  to limiter providers.
+The `limiterhelper` package contains features for composing limiters
+as well as foundational rate and resource limiter implementations.
+The `limiterhelper/http` and `limiterhelper/grpc` packages provide
+connectors allowing limiters to act as specific kinds of middleware.
+The original garbage-collector state-based limiter can be found in
+[`../memorylimiterextension`](../memorylimiterextension/README.md).
 
 ## Recommendations
 
-For general use cases, prefer the `LimiterWrapper` interface with its
-callback-based approach because it is agnostic to the difference between
-rate and resource limiters.
+For processors, exporters, and sometimes receivers, the easiest way to
+integrate with any kind of limiter is to use the a consumer wrapper
+function (e.g. `NewLimitedLogs`). These helper methods check for
+saturation and then apply multiple weight keys in sequence. 
 
-Use the direct `RateLimiter` or `ResourceLimiter` interfaces only in
-special cases where control flow can't be easily scoped.
+Multi-limiter adapters (@@@), ...
+
+At a lower level, a simple way to integrate with any kind of limiter
+is to use the `LimiterWrapper` interface with its callback-based
+approach.
+
+For blocking access to rate and resource limiters without wrapper
+constraints, use `NewBlockingRateLimiter` or `NewBlockingResourceLimiter`.
+
+In cases where control flow is not request scoped (e.g., in middleware
+measuring network bytes), use a `RateLimiter` interface. If the
+extension is a basic limiter in this scenario, use the
+`BaseToRateLimiterProvider` adapter. Callers MUST NOT configure a
+resource limiter for a caller that is restricted to the `RateLimiter`
+interface; this configuration SHOULD fail at startup or during
+component validation.
+
+In cases where due to control flow a wrapper interface cannot be used,
+as long as the caller is able to arrange for a `Release` function to
+be called at the proper time, then any kind of limiter can be applied
+in the form of a `ResourceLimiter`.  If the extension is a basic or
+rate limiter in this scenario, use the `BaseToResourceLimiterProvider`
+or `RateToResourceLimiterProvider` adapters.
 
 Middleware configuration typically automates the configuration of
 network bytes and request count weight keys relatively early in a
 pipeline.  Receivers are responsible for limiting request items and
-memory size through one of the available helpers.
+memory size through one of the available helpers. 
 
 Processors can apply limiters for specific reasons, for example to
 apply limits in data-dependent ways.  Exporters can apply limiters for

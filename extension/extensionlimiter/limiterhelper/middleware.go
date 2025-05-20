@@ -101,7 +101,9 @@ func MiddlewareIsLimiter(host component.Host, middleware configmiddleware.Config
 	}
 }
 
-// MiddlewareToRateLimiterProvider allows a base limiter to act as a rate
+// MiddlewareToRateLimiterProvider allows a base limiter to act as a
+// rate. This encodes the fact that a resource limiter extension
+// cannot be adapted to a rate limiter interface.
 func MiddlewareToRateLimiterProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.RateLimiterProvider, error) {
 	ext, ok, err := MiddlewareIsLimiter(host, middleware)
 	if err != nil {
