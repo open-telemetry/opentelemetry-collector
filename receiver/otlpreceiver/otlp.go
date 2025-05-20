@@ -139,21 +139,21 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
 		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
 		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
