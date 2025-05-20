@@ -1715,7 +1715,7 @@ This release includes 2 very important breaking changes.
 - `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
 - `component`: Remove deprecated component.[Factories|MakeProcessorFactoryMap] and componenttest.NewNopFactories (#6835)
 - `config`: Remove deprecated config.*Settings (#6837)
-- `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
+- `observereporttest`: Remove deprecated observereporttest.SetupTelemetryWithID (#6861)
 - `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
 - `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
 
@@ -2799,9 +2799,9 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalJSON`.
-  - Deprecate `[Traces|Metrics|Logs][Reques|Response].Marshal` in favor of `MarshalProto`.
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalJSON`.
+  - Deprecate `[Traces|Metrics|Logs][Request|Response].Marshal` in favor of `MarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalProto`.
 - Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
       - InstrumentationLibrary is now InstrumentationScope
       - NewInstrumentationLibrary is now NewInstrumentationScope
