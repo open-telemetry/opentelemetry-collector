@@ -99,6 +99,20 @@ func TestToStringMap(t *testing.T) {
 	}
 }
 
+type testConfigAny struct {
+	AnyField any `mapstructure:"any_field"`
+}
+
+func TestNilToAnyField(t *testing.T) {
+	stringMap := map[string]any{
+		"any_field": nil,
+	}
+	conf := NewFromStringMap(stringMap)
+	cfg := &testConfigAny{}
+	require.NoError(t, conf.Unmarshal(cfg))
+	assert.Nil(t, cfg.AnyField)
+}
+
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	stringMap := map[string]any{
 		"boolean": nil,
