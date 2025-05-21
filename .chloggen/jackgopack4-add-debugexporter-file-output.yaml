@@ -10,7 +10,7 @@ component: debugexporter
 note: "Add support for configuring output path and error output path for `debugexporter` when `use_internal_logger` is false. This allows users to control where debugexporter writes its logs and error logs if it not configured to use collector internal telemetry."
 
 # One or more tracking issues or pull requests related to the change
-issues: [10472]
+issues: [10472, 13066]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
