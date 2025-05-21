@@ -1741,14 +1741,19 @@ func TestPersistentQueue_GetNextItem_BatchError(t *testing.T) {
 	req := uint64(50)
 	require.NoError(t, pq.Offer(context.Background(), req))
 
-	ctx := context.Background()
-	restoredCtx, readReq, done, found := pq.Read(ctx)
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
 
-	// Should return false for found since the read failed
+	restoredCtx, readReq, done, found := pq.Read(context.Background())
+
+	// Should return false for found since the read failed and queue was shutdown
 	assert.False(t, found)
 	assert.Equal(t, uint64(0), readReq)
 	assert.Nil(t, done)
-	assert.Equal(t, ctx, restoredCtx)
+	assert.Equal(t, context.Background(), restoredCtx)
 }
 
 func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_SpanContextUnmarshal(t *testing.T) {
@@ -2057,4 +2062,60 @@ func TestContextWithLocalSpanContext_AllBranches(t *testing.T) {
 	ctx = contextWithLocalSpanContext(context.Background(), scBadState)
 	span = trace.SpanContextFromContext(ctx)
 	require.False(t, span.IsValid())
+}
+
+func TestGetAndMarshalSpanContext_FeatureGateDisabled(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	}()
+
+	data, err := getAndMarshalSpanContext(context.Background())
+	require.NoError(t, err)
+	require.Nil(t, data)
+}
+
+func TestPersistentQueue_Read_ItemDispatchingFinishError(t *testing.T) {
+	// This error will be returned by the fake client on the second Batch call (itemDispatchingFinish)
+	errItemFinish := errors.New("itemDispatchingFinish error")
+	client := &fakeStorageClientWithErrors{
+		errors: []error{nil, errItemFinish},
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
+
+	restoredCtx, readReq, done, found := pq.Read(context.Background())
+
+	// Should return false for found since the read failed and queue was shutdown
+	assert.False(t, found)
+	assert.Equal(t, uint64(0), readReq)
+	assert.Nil(t, done)
+	assert.Equal(t, context.Background(), restoredCtx)
+}
+
+func TestPersistentQueue_Read_ItemDispatchingFinishErrorPath(t *testing.T) {
+	errItemFinish := errors.New("itemDispatchingFinish error")
+	client := &fakeStorageClientWithErrors{
+		errors: []error{nil, nil, nil, errItemFinish, errItemFinish, errItemFinish}, // First Batch (getNextItem) succeeds, second (itemDispatchingFinish) fails
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
+
+	_, _, _, _ = pq.Read(context.Background()) // The error is only logged, not returned, so we can't assert on output
 }
