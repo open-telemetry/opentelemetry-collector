@@ -103,3 +103,5 @@ replace go.opentelemetry.io/collector/consumer/consumererror => ../../consumer/c
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/processor/processorhelper => ../processorhelper
