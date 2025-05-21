@@ -95,8 +95,6 @@ retract (
 	v0.69.0 // Release failed, use v0.69.1
 )
 
-replace github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.4-0.20250520125605-a52bc8357ac9
-
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer

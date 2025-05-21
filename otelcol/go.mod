@@ -121,8 +121,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.4-0.20250520125605-a52bc8357ac9
-
 replace go.opentelemetry.io/collector => ../
 
 replace go.opentelemetry.io/collector/service => ../service

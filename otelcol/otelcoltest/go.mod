@@ -124,8 +124,6 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/ebitengine/purego => github.com/ebitengine/purego v0.8.4-0.20250520125605-a52bc8357ac9
-
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/consumer => ../../consumer
