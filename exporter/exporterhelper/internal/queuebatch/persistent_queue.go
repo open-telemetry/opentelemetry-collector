@@ -29,6 +29,11 @@ const (
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
 	queueSizeKey                = "si"
+
+	// queueMetadataKey is the new single key for all queue metadata.
+	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+	//nolint:unused
+	queueMetadataKey = "qm"
 )
 
 var (
@@ -95,6 +100,14 @@ type persistentQueue[T any] struct {
 	queueSize                int64
 	refClient                int64
 	stopped                  bool
+}
+
+// queueMetadata holds all persistent metadata for the queue.
+type queueMetadata struct {
+	ReadIndex                uint64
+	WriteIndex               uint64
+	QueueSize                int64 // Represents actual size if not isRequestSized, otherwise calculated
+	CurrentlyDispatchedItems []uint64
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -191,6 +204,52 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 	return bytesToItemIndex(val)
 }
 
+// marshalCurrentMetadata constructs metadata from current pq state and returns the marshaled bytes.
+// This is a helper and does not perform the Set operation itself.
+// pq.mu must be held.
+// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+//
+//nolint:unused
+func (pq *persistentQueue[T]) marshalCurrentMetadata() ([]byte, error) {
+	meta := queueMetadata{
+		ReadIndex:                pq.readIndex,
+		WriteIndex:               pq.writeIndex,
+		CurrentlyDispatchedItems: pq.currentlyDispatchedItems,
+	}
+	if !pq.isRequestSized {
+		meta.QueueSize = pq.queueSize
+	} else {
+		//nolint:gosec
+		calculatedSize := int64(pq.writeIndex - pq.readIndex)
+		if calculatedSize < 0 {
+			calculatedSize = 0
+		}
+		meta.QueueSize = calculatedSize
+	}
+
+	estimatedBufSize := 8 + 8 + 8 + 4 + (len(pq.currentlyDispatchedItems) * 8)
+	buf := make([]byte, 0, estimatedBufSize)
+	return marshalQueueMetadata(&meta, buf)
+}
+
+// persistCurrentMetadata is used for standalone metadata persistence like in Shutdown or initialization.
+// pq.mu must be held.
+// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+//
+//nolint:unused
+func (pq *persistentQueue[T]) persistCurrentMetadata(ctx context.Context) error {
+	metadataBytes, err := pq.marshalCurrentMetadata()
+	if err != nil {
+		pq.logger.Error("Failed to marshal current metadata for persistence", zap.Error(err))
+		return err
+	}
+	if err := pq.client.Set(ctx, queueMetadataKey, metadataBytes); err != nil {
+		pq.logger.Error("Failed to persist current metadata to storage", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 	// If the queue is not initialized, there is nothing to shut down.
 	if pq.client == nil {
@@ -227,6 +286,67 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 		return pq.client.Close(ctx)
 	}
 	return nil
+}
+
+// marshalQueueMetadata serializes the queue metadata.
+func marshalQueueMetadata(meta *queueMetadata, buf []byte) ([]byte, error) {
+	buf = buf[:0] // Clear the buffer before use if it's being reused
+	buf = binary.LittleEndian.AppendUint64(buf, meta.ReadIndex)
+	buf = binary.LittleEndian.AppendUint64(buf, meta.WriteIndex)
+	//nolint:gosec
+	buf = binary.LittleEndian.AppendUint64(buf, uint64(meta.QueueSize))
+
+	cdiLen := len(meta.CurrentlyDispatchedItems)
+	//nolint:gosec
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(cdiLen))
+	for _, item := range meta.CurrentlyDispatchedItems {
+		buf = binary.LittleEndian.AppendUint64(buf, item)
+	}
+	return buf, nil
+}
+
+// unmarshalQueueMetadata deserializes the queue metadata.
+func unmarshalQueueMetadata(data []byte) (*queueMetadata, error) {
+	if data == nil {
+		return nil, errValueNotSet
+	}
+	// Minimum size: ReadIndex(8) + WriteIndex(8) + QueueSize(8) + CDILen(4) = 28
+	if len(data) < 28 {
+		return nil, fmt.Errorf("queue metadata too short: %d bytes, expected at least 28", len(data))
+	}
+
+	meta := &queueMetadata{}
+	offset := 0
+	meta.ReadIndex = binary.LittleEndian.Uint64(data[offset : offset+8])
+	offset += 8
+	meta.WriteIndex = binary.LittleEndian.Uint64(data[offset : offset+8])
+	offset += 8
+	queueSize := binary.LittleEndian.Uint64(data[offset : offset+8])
+	//nolint:gosec
+	meta.QueueSize = int64(queueSize)
+	offset += 8
+	cdiLen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
+	offset += 4
+
+	if cdiLen < 0 {
+		return nil, fmt.Errorf("invalid negative length for currently dispatched items: %d", cdiLen)
+	}
+
+	expectedCDIBytes := cdiLen * 8
+	if len(data)-offset < expectedCDIBytes {
+		return nil, fmt.Errorf("queue metadata too short for currently dispatched items: got %d, want %d", len(data)-offset, expectedCDIBytes)
+	}
+
+	if cdiLen == 0 {
+		meta.CurrentlyDispatchedItems = []uint64{}
+	} else {
+		meta.CurrentlyDispatchedItems = make([]uint64, cdiLen)
+		for i := 0; i < cdiLen; i++ {
+			meta.CurrentlyDispatchedItems[i] = binary.LittleEndian.Uint64(data[offset : offset+8])
+			offset += 8
+		}
+	}
+	return meta, nil
 }
 
 // Offer inserts the specified element into this queue if it is possible to do so immediately

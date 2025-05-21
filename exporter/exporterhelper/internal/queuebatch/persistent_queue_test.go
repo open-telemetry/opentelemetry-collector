@@ -1200,6 +1200,109 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
+func TestQueueMetadataMarshaling(t *testing.T) {
+	cases := []struct {
+		name string
+		in   *queueMetadata
+		out  *queueMetadata
+		err  bool
+	}{
+		{
+			name: "valid full metadata",
+			in: &queueMetadata{
+				ReadIndex:                10,
+				WriteIndex:               20,
+				QueueSize:                100,
+				CurrentlyDispatchedItems: []uint64{1, 2, 3},
+			},
+			out: &queueMetadata{
+				ReadIndex:                10,
+				WriteIndex:               20,
+				QueueSize:                100,
+				CurrentlyDispatchedItems: []uint64{1, 2, 3},
+			},
+		},
+		{
+			name: "valid empty dispatched items",
+			in: &queueMetadata{
+				ReadIndex:                5,
+				WriteIndex:               5,
+				QueueSize:                0,
+				CurrentlyDispatchedItems: []uint64{},
+			},
+			out: &queueMetadata{
+				ReadIndex:                5,
+				WriteIndex:               5,
+				QueueSize:                0,
+				CurrentlyDispatchedItems: []uint64{},
+			},
+		},
+		{
+			name: "valid nil dispatched items", // Should be treated as empty
+			in: &queueMetadata{
+				ReadIndex:                7,
+				WriteIndex:               8,
+				QueueSize:                10,
+				CurrentlyDispatchedItems: nil,
+			},
+			out: &queueMetadata{
+				ReadIndex:                7,
+				WriteIndex:               8,
+				QueueSize:                10,
+				CurrentlyDispatchedItems: []uint64{}, // Unmarshal should set this to empty
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf, err := marshalQueueMetadata(tc.in, nil)
+			require.NoError(t, err)
+			require.NotNil(t, buf)
+
+			outMeta, err := unmarshalQueueMetadata(buf)
+			if tc.err {
+				require.Error(t, err)
+				require.Nil(t, buf)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.out, outMeta)
+			}
+		})
+	}
+
+	t.Run("unmarshal nil data", func(t *testing.T) {
+		_, err := unmarshalQueueMetadata(nil)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errValueNotSet)
+	})
+
+	t.Run("unmarshal short data", func(t *testing.T) {
+		shortData := make([]byte, 27) // Less than min 28
+		_, err := unmarshalQueueMetadata(shortData)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "queue metadata too short")
+	})
+
+	t.Run("unmarshall short data for cdi", func(t *testing.T) {
+		meta := &queueMetadata{
+			ReadIndex:                1,
+			WriteIndex:               2,
+			QueueSize:                1,
+			CurrentlyDispatchedItems: []uint64{10, 20},
+		}
+		buf, err := marshalQueueMetadata(meta, nil)
+		require.NoError(t, err)
+		// Truncate the buffer to make CDI part too short
+		require.NoError(t, err)
+		truncatedBuf := buf[:len(buf)-1]
+		_, err = unmarshalQueueMetadata(truncatedBuf)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "queue metadata too short")
+	})
+}
+
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint64], compare []uint64) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
