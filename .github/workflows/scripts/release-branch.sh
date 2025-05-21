@@ -61,9 +61,8 @@ if [[ -n "$BRANCH_EXISTS_LOCALLY" ]]; then
   exit 1
 elif [[ -n "$BRANCH_EXISTS_REMOTELY" ]]; then
   echo "Release branch '${RELEASE_BRANCH_NAME}' found on remote '${UPSTREAM_REMOTE_NAME}'."
-  git switch -c "${RELEASE_BRANCH_NAME}" "${UPSTREAM_REMOTE_NAME}/${RELEASE_BRANCH_NAME}"
-  git merge "${PREPARE_RELEASE_COMMIT_HASH}"
-  git status --short
+  echo "Nothing to do, exiting."
+  exit 0
 else
   echo "Release branch '${RELEASE_BRANCH_NAME}' not found locally or on remote."
   git switch -c "${RELEASE_BRANCH_NAME}" "${TARGET_MAIN_STATE_COMMIT}"

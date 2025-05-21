@@ -45,10 +45,9 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will either use the existing release branch (for a bugfix, e.g. `v0.126.1`), or create a new branch (for a new release, e.g. `v0.127.0`).
+4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will create a new branch (for a new release, e.g. `v0.127.0`). Bugfix releases are currently out of scope for this action/script.
    - Make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
    - If the above does not work, the underlying script (./.github/workflows/scripts/release-branch.sh) can be tested and run locally passing appropriate variables and arguments for upstream name, release series, etc.
-   - Note that for local script use, if you are doing a bugfix, you may have to delete the local `release/<release-series>` branch before running this script.
 
 5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
 
