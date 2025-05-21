@@ -65,16 +65,6 @@ func Some[T any](value T) Optional[T] {
 	return Optional[T]{value: value, Enabled: true}
 }
 
-<<<<<<< Updated upstream
-// None has no value.
-||||||| Stash base
-func Default[T any](value T) Optional[T] {
-	assertNoEnabledField[T]()
-	return Optional[T]{value: value, Enabled: false}
-}
-
-// None has no value.
-=======
 // Default creates an Optional with a default value for unmarshaling.
 // It panics if
 // - T is not a struct OR
@@ -85,8 +75,7 @@ func Default[T any](value T) Optional[T] {
 	return Optional[T]{value: value, Enabled: false}
 }
 
-// None has no value. It is equivalent to Default(zero value).
->>>>>>> Stashed changes
+// None has no value. It is equivalent to Default(zero value) for struct types.
 // It panics if T has a field with the mapstructure tag "enabled".
 func None[T any]() Optional[T] {
 	assertNoEnabledField[T]()
