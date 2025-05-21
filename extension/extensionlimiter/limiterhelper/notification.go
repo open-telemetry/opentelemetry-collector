@@ -24,10 +24,6 @@ func (n *notification) hasBeen() bool {
 	}
 }
 
-func (n *notification) waitFor() {
-	<-n.c
-}
-
 func (n *notification) channel() <-chan struct{} {
 	return n.c
 }

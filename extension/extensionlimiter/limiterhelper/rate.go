@@ -144,21 +144,23 @@ func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) e
 						return nil, err
 					}
 					cch := make(chan struct{})
-					tch := time.After(rsv.WaitTime())
-					go func() {
-						select {
-						case <-ctx.Done():
-							rsv.Cancel()
-						case <-tch:
-							close(cch)
-						}
-					}()
+					timer := time.AfterFunc(rsv.WaitTime(), func() {
+						close(cch)
+					})
 					return struct {
 						extensionlimiter.DelayFunc
 						extensionlimiter.ReleaseFunc
 					}{
 						func() <-chan struct{} { return cch },
-						func() {},
+						func() {
+							select {
+							case <-cch:
+								// The timer fired
+							default:
+								rsv.Cancel()
+								timer.Stop()
+							}
+						},
 					}, nil
 				}), nil
 		},

@@ -73,44 +73,33 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 	element := bq.addWaiterLocked(value)
 	waiter := element.Value.(*waiter)
 
-	select {
-	case <-waiter.notify.channel():
-		return struct {
-			extensionlimiter.DelayFunc
-			extensionlimiter.ReleaseFunc
-		}{
-			func() <-chan struct{} {
-				// The caller waits for this notification
-				// to use the resource.
-				return waiter.notify.channel()
-			},
-			func() {
-				// This call returns the resource.
-				bq.lock.Lock()
-				defer bq.lock.Unlock()
+	return struct {
+		extensionlimiter.DelayFunc
+		extensionlimiter.ReleaseFunc
+	}{
+		func() <-chan struct{} {
+			// The caller waits for this notification
+			// to use the resource.
+			return waiter.notify.channel()
+		},
+		func() {
+			// This call returns the resource.
+			bq.lock.Lock()
+			defer bq.lock.Unlock()
 
+			if waiter.notify.hasBeen() {
+				// We were also admitted, which can happen
+				// concurrently with cancellation. Make sure
+				// to release since no one else will do it.
 				bq.releaseLocked(value)
-			},
-		}, nil
-
-	case <-ctx.Done():
-		bq.lock.Lock()
-		defer bq.lock.Unlock()
-
-		if waiter.notify.hasBeen() {
-			// We were also admitted, which can happen
-			// concurrently with cancellation. Make sure
-			// to release since no one else will do it.
-			bq.releaseLocked(value)
-		} else {
-			// Remove ourselves from the list of waiters
-			// so that we can't be admitted in the future.
-			bq.removeWaiterLocked(value, element)
-			bq.admitWaitersLocked()
-		}
-
-		return nil, context.Cause(ctx)
-	}
+			} else {
+				// Remove ourselves from the list of waiters
+				// so that we can't be admitted in the future.
+				bq.removeWaiterLocked(value, element)
+				bq.admitWaitersLocked()
+			}
+		},
+	}, nil
 }
 
 func (bq *boundedQueue) admitWaitersLocked() {
@@ -174,6 +163,7 @@ func (b BlockingResourceLimiter) WaitFor(ctx context.Context, value int) (extens
 	}
 	select {
 	case <-ctx.Done():
+		rsv.Release()
 		return func() {}, context.Cause(ctx)
 	case <-rsv.Delay():
 		return rsv.Release, nil
