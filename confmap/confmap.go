@@ -216,7 +216,12 @@ func (l *Conf) toStringMapWithExpand() map[string]any {
 	return m
 }
 
-// ToStringMap creates a map[string]any from a Parser.
+// ToStringMap creates a map[string]any from a Conf.
+// Values with multiple representations
+// are normalized with the YAML parsed representation.
+//
+// For example, for a Conf created from `foo: ${env:FOO}` and `FOO=123`
+// ToStringMap will return `map[string]any{"foo": 123}`.
 func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
