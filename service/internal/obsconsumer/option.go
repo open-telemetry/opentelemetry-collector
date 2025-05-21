@@ -13,9 +13,7 @@ const (
 )
 
 // Option modifies the consumer behavior.
-type Option interface {
-	apply(*options)
-}
+type Option func(*options)
 
 type options struct {
 	staticDataPointAttributes []attribute.KeyValue
@@ -23,13 +21,9 @@ type options struct {
 
 // WithStaticDataPointAttribute returns an Option that adds a static attribute to data points.
 func WithStaticDataPointAttribute(attr attribute.KeyValue) Option {
-	return staticDataPointAttributeOption(attr)
-}
-
-type staticDataPointAttributeOption attribute.KeyValue
-
-func (o staticDataPointAttributeOption) apply(opts *options) {
-	opts.staticDataPointAttributes = append(opts.staticDataPointAttributes, attribute.KeyValue(o))
+	return func(opts *options) {
+		opts.staticDataPointAttributes = append(opts.staticDataPointAttributes, attr)
+	}
 }
 
 type compiledOptions struct {
