@@ -36,15 +36,38 @@ func TestConfig_Validate(t *testing.T) {
 	cfg.StorageID = &storageID
 	require.EqualError(t, cfg.Validate(), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
+	// Test an unsupported sizer type for persistent queue
+	cfg = newTestConfig()
+	cfg.Sizer = request.SizerType{}
+	cfg.StorageID = &storageID
+	require.EqualError(t, cfg.Validate(), "persistent queue configured with `storage` only supports `requests`, `bytes`, or `items` sizer")
+
+	// Test requests sizer with persistent queue
+	cfg = newTestConfig()
+	cfg.Sizer = request.SizerTypeRequests
+	cfg.StorageID = &storageID
+	cfg.Batch = nil // Batch doesn't support requests sizer
+	require.NoError(t, cfg.Validate())
+
+	// Test bytes sizer with persistent queue and batch
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
 	cfg.StorageID = &storageID
-	require.EqualError(t, cfg.Validate(), "persistent queue configured with `storage` only supports `requests` sizer")
+	cfg.Batch = &BatchConfig{
+		FlushTimeout: time.Second,
+		MinSize:      1,
+	}
+	require.NoError(t, cfg.Validate())
 
+	// Test items sizer with persistent queue and batch
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeItems
 	cfg.StorageID = &storageID
-	require.EqualError(t, cfg.Validate(), "persistent queue configured with `storage` only supports `requests` sizer")
+	cfg.Batch = &BatchConfig{
+		FlushTimeout: time.Second,
+		MinSize:      1,
+	}
+	require.NoError(t, cfg.Validate())
 
 	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeRequests
