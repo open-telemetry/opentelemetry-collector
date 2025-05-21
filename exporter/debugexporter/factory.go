@@ -120,6 +120,17 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 	encoderConfig.LevelKey = ""
 	// Do not prefix the output with current timestamp.
 	encoderConfig.TimeKey = ""
+
+	outputPaths := exporterConfig.OutputPaths
+	if len(outputPaths) == 0 {
+		outputPaths = []string{"stdout"}
+	}
+
+	errorOutputPaths := exporterConfig.ErrorOutputPaths
+	if len(errorOutputPaths) == 0 {
+		errorOutputPaths = []string{"stderr"}
+	}
+
 	zapConfig := zap.Config{
 		Level:         zap.NewAtomicLevelAt(zap.InfoLevel),
 		DisableCaller: true,
@@ -127,10 +138,10 @@ func createCustomLogger(exporterConfig *Config) *zap.Logger {
 			Initial:    exporterConfig.SamplingInitial,
 			Thereafter: exporterConfig.SamplingThereafter,
 		},
-		Encoding:      "console",
-		EncoderConfig: encoderConfig,
-		// Send exporter's output to stdout. This should be made configurable.
-		OutputPaths: []string{"stdout"},
+		Encoding:         "console",
+		EncoderConfig:    encoderConfig,
+		OutputPaths:      outputPaths,
+		ErrorOutputPaths: errorOutputPaths,
 	}
 	return zap.Must(zapConfig.Build())
 }
