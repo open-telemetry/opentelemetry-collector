@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/pipeline v0.126.0
 	go.opentelemetry.io/collector/receiver v1.32.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.126.0
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.72.1
 )
 
 require (
