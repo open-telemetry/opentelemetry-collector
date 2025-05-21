@@ -128,6 +128,8 @@ func TestLogsBuilder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			timestamp := pcommon.Timestamp(1_000_001_000)
+			traceID := [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			spanID := [8]byte{0, 1, 2, 3, 4, 5, 6, 7}
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
         	{{- if or isReceiver isScraper }}
             settings := {{ .Status.Class }}test.NewNopSettings({{ .Status.Class }}test.NopType)
@@ -188,7 +190,7 @@ func TestLogsBuilder(t *testing.T) {
 				lb.Record{{ $name.Render }}Event(timestamp
 				{{- range $event.Attributes -}}
 					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
-				{{- end }})
+				{{- end -}}, WithEventTraceId(traceID), WithEventSpanId(spanID))
 			{{- end }}
 
 			{{ if .ResourceAttributes }}
@@ -231,6 +233,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["{{ $name }}"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 
 					{{- range $i, $attr := $event.Attributes }}
 					attrVal, ok {{ if eq $i 0 }}:{{ end }}= lr.Attributes().Get("{{ (attributeInfo $attr).Name }}")

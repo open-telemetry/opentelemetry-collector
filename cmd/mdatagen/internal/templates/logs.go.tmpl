@@ -15,6 +15,30 @@ import (
 )
 
 
+{{ if .Events }}
+type EventOption interface {
+	apply(plog.LogRecord)
+}
+
+type eventOptionFunc func(plog.LogRecord)
+
+func (eof eventOptionFunc) apply(lr plog.LogRecord) {
+	eof(lr)
+}
+
+func WithEventTraceId(traceID pcommon.TraceID) EventOption {
+	return eventOptionFunc(func(lr plog.LogRecord) {
+		lr.SetTraceID(traceID)
+	})
+}
+
+func WithEventSpanId(spanID pcommon.SpanID) EventOption {
+	return eventOptionFunc(func(lr plog.LogRecord) {
+		lr.SetSpanID(spanID)
+	})
+}
+{{ end }}
+
 {{ range $name, $event := .Events -}}
 type event{{ $name.Render }} struct {
 	data     plog.LogRecordSlice // data buffer for generated log records.
@@ -22,7 +46,7 @@ type event{{ $name.Render }} struct {
 }
 
 func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
-{{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
+{{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}, options ...EventOption) {
 	if !e.config.Enabled {
 		return
 	}
@@ -40,6 +64,10 @@ func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
 	lr.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
 	{{- end }}
+
+	for _, op := range options {
+		op.apply(lr)
+	}
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -239,10 +267,10 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 func (lb *LogsBuilder) Record{{ $name.Render }}Event(timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
-	{{- end }}) {
+	{{- end }}, options... EventOption) {
 	lb.event{{ $name.Render }}.recordEvent(timestamp
 		{{- range $event.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end }})
+		{{- end }}, options...)
 }
 {{ end }}
