@@ -9,7 +9,8 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
-// @@@ Why not ...
+// LimiterWrapperProvider follows the provider pattern for
+// the LimiterWrapper type
 type LimiterWrapperProvider interface {
 	extensionlimiter.BaseLimiterProvider
 
@@ -71,16 +72,16 @@ func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value int, call func(
 
 // BaseToLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
-func BaseToLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) (LimiterWrapperProvider, error) {
+func BaseToLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) LimiterWrapperProvider {
 	return limiterWrapper{
 		GetBaseLimiterFunc:    rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: nil,
-	}, nil
+	}
 }
 
 // ResourceToLimiterWrapperProvider constructs a
 // LimiterWrapperProvider for a resource limiter extension.
-func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) (LimiterWrapperProvider, error) {
+func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
 	return limiterWrapper{
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
@@ -101,12 +102,12 @@ func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvide
 				return call(ctx)
 			}), nil
 		},
-	}, nil
+	}
 }
 
 // RateToLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
-func RateToLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) (LimiterWrapperProvider, error) {
+func RateToLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
 	return limiterWrapper{
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
@@ -125,5 +126,5 @@ func RateToLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) (Limi
 				return call(ctx)
 			}), nil
 		},
-	}, nil
+	}
 }

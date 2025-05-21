@@ -5,30 +5,15 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 
 import (
 	"context"
-	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.uber.org/multierr"
 )
 
-// MultiBaseLimiter returns MustDeny when any element returns MustDeny.
-type MultiBaseLimiter []extensionlimiter.BaseLimiter
-
-var _ extensionlimiter.BaseLimiter = MultiBaseLimiter{}
-
-// MustDeny implements BaseLimiter.
-func (ls MultiBaseLimiter) MustDeny(ctx context.Context) error {
-	var err error
-	for _, lim := range ls {
-		if lim == nil {
-			continue
-		}
-		err = errors.Join(err, lim.MustDeny(ctx))
-	}
-	return err
-}
-
-// MultiLimiterProvider combines multiple limiters and implements all
-// provider interfaces through use of the available adapters.
+// MultiLimiterProvider combines multiple limiter providers of all
+// kinds. It automatically applies the adapters in this package to
+// implement the desired provider interface from the base object.
 type MultiLimiterProvider []extensionlimiter.BaseLimiterProvider
 
 var _ LimiterWrapperProvider = MultiLimiterProvider{}
@@ -36,72 +21,223 @@ var _ extensionlimiter.RateLimiterProvider = MultiLimiterProvider{}
 var _ extensionlimiter.ResourceLimiterProvider = MultiLimiterProvider{}
 var _ extensionlimiter.BaseLimiterProvider = MultiLimiterProvider{}
 
-// GetLimiterWrapper implements LimiterWrapperProvider. The combined
+// GetBaseLimiter implements LimiterWrapperProvider. The combined
 // limiter is saturated when any of the base limiers are.
-func (ps MultiLimiterProvider) GetBaseLimiter(opts ...extensionlimiter.Option) (extensionlimiter.BaseLimiter, error) {
-	var retErr error
-	var cks MultiBaseLimiter
-	for _, provider := range ps {
-		ck, err := provider.GetBaseLimiter(opts...)
-		retErr = errors.Join(retErr, err)
-		if ck == nil {
-			continue
-		}
-		cks = append(cks, ck)
-	}
-	if len(cks) == 0 {
-		return extensionlimiter.MustDenyFunc(nil), retErr
-	}
-	if len(cks) == 1 {
-		return cks[0], retErr
-	}
-	return cks, retErr
+func (ps MultiLimiterProvider) GetBaseLimiter(
+	opts ...extensionlimiter.Option,
+) (extensionlimiter.BaseLimiter, error) {
+	var noop extensionlimiter.BaseLimiter = extensionlimiter.MustDenyFunc(nil)
+	return getMultiLimiter(ps,
+		identity[extensionlimiter.BaseLimiterProvider],
+		baseProvider[extensionlimiter.RateLimiterProvider],
+		baseProvider[extensionlimiter.ResourceLimiterProvider],
+		noop,
+		func(p extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiter, error) {
+			return p.GetBaseLimiter(opts...)
+		},
+		combineBaseLimiters)
 }
 
-// GetLimiterWrapper implements LimiterWrapperProvider, wrappers in a
-// sequence.
-func (ps MultiLimiterProvider) GetLimiterWrapper(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-	// Map provider list to limiter list.
-	var lims []LimiterWrapper
+// GetLimiterWrapper implements LimiterWrapperProvider, applies the
+// wrappers in a nested sequence.
+func (ps MultiLimiterProvider) GetLimiterWrapper(
+	key extensionlimiter.WeightKey,
+	opts ...extensionlimiter.Option,
+) (LimiterWrapper, error) {
+	var noop LimiterWrapper = LimiterWrapperFunc(nil)
+	return getMultiLimiter(ps,
+		nilError(BaseToLimiterWrapperProvider),
+		nilError(RateToLimiterWrapperProvider),
+		nilError(ResourceToLimiterWrapperProvider),
+		noop,
+		func(p LimiterWrapperProvider) (LimiterWrapper, error) {
+			return p.GetLimiterWrapper(key, opts...)
+		},
+		combineLimiterWrappers)
+}
 
-	for _, baseProvider := range ps {
-		provider, err := getProvider(
-			baseProvider,
-			BaseToLimiterWrapperProvider,
-			RateToLimiterWrapperProvider,
-			ResourceToLimiterWrapperProvider,
-		)
-		if err == nil {
+// GetResourceLimiter implements ResourceLimiterProvider, applies the
+// request to all limiters (unless any are saturated).
+func (ps MultiLimiterProvider) GetResourceLimiter(
+	key extensionlimiter.WeightKey,
+	opts ...extensionlimiter.Option,
+) (extensionlimiter.ResourceLimiter, error) {
+	var noop extensionlimiter.ResourceLimiter = extensionlimiter.ReserveResourceFunc(nil)
+	return getMultiLimiter(ps,
+		nilError(BaseToResourceLimiterProvider),
+		nilError(RateToResourceLimiterProvider),
+		identity[extensionlimiter.ResourceLimiterProvider],
+		noop,
+		func(p extensionlimiter.ResourceLimiterProvider) (extensionlimiter.ResourceLimiter, error) {
+			return p.GetResourceLimiter(key, opts...)
+		},
+		combineResourceLimiters)
+}
+
+// GetRateLimiter implements RateLimiterProvider, applies the request
+// to all limiters, returns the maximum wait time.
+func (ps MultiLimiterProvider) GetRateLimiter(
+	key extensionlimiter.WeightKey,
+	opts ...extensionlimiter.Option,
+) (extensionlimiter.RateLimiter, error) {
+	var noop extensionlimiter.RateLimiter = extensionlimiter.ReserveRateFunc(nil)
+	return getMultiLimiter(ps,
+		nilError(BaseToRateLimiterProvider),
+		identity[extensionlimiter.RateLimiterProvider],
+		resourceToRateLimiterError,
+		noop,
+		func(p extensionlimiter.RateLimiterProvider) (extensionlimiter.RateLimiter, error) {
+			return p.GetRateLimiter(key, opts...)
+		},
+		combineRateLimiters)
+}
+
+// combineBaseLimiters combines >= 2 base limiters.
+func combineBaseLimiters(lims []extensionlimiter.BaseLimiter) extensionlimiter.BaseLimiter {
+	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
+		var err error
+		for _, lim := range lims {
+			if lim == nil {
+				continue
+			}
+			err = multierr.Append(err, lim.MustDeny(ctx))
+		}
+		return err
+	})
+}
+
+// combineLimiterWrappers combines >= 2 limiter wrappers (recursive).
+func combineLimiterWrappers(lims []LimiterWrapper) LimiterWrapper {
+	if len(lims) == 1 {
+		return lims[0]
+	}
+	return sequenceLimiterWrappers(lims[0], combineLimiterWrappers(lims[1:]))
+}
+
+// sequenceLimiterWrappers combines 2 limiter wrappers.
+func sequenceLimiterWrappers(first, second LimiterWrapper) LimiterWrapper {
+	return LimiterWrapperFunc(func(ctx context.Context, value int, call func(ctx context.Context) error) error {
+		return first.LimitCall(ctx, value, func(ctx context.Context) error {
+			return second.LimitCall(ctx, value, call)
+		})
+	})
+}
+
+// combineRateLimiters combines >=2 resource limiters.
+func combineResourceLimiters(lims []extensionlimiter.ResourceLimiter) extensionlimiter.ResourceLimiter {
+	reserve := func(ctx context.Context, value int) (extensionlimiter.ResourceReservation, error) {
+		var err error
+		rsvs := make([]extensionlimiter.ResourceReservation, 0, len(lims))
+		for _, lim := range lims {
+			rsv, err := lim.ReserveResource(ctx, value)
+			err = multierr.Append(err, err)
+			rsvs = append(rsvs, rsv)
+		}
+		release := func() {
+			for _, rsv := range rsvs {
+				rsv.Release()
+			}
+		}
+		if err != nil {
+			release()
 			return nil, err
 		}
-		lim, err := provider.GetLimiterWrapper(key, opts...)
-		if err == nil {
+		ch := make(chan struct{})
+		go func() {
+			for _, rsv := range rsvs {
+				select {
+				case <-rsv.Delay():
+					continue
+				case <-ctx.Done():
+					return
+				}
+			}
+			close(ch)
+			return
+		}()
+		return struct {
+			extensionlimiter.DelayFunc
+			extensionlimiter.ReleaseFunc
+		}{
+			func() <-chan struct{} {
+				return ch
+			},
+			release,
+		}, nil
+	}
+	return extensionlimiter.ReserveResourceFunc(reserve)
+}
+
+// combineRateLimiters combines >=2 rate limiters.
+func combineRateLimiters(lims []extensionlimiter.RateLimiter) extensionlimiter.RateLimiter {
+	reserve := func(ctx context.Context, value int) (extensionlimiter.RateReservation, error) {
+		var err error
+		rsvs := make([]extensionlimiter.RateReservation, 0, len(lims))
+		for _, lim := range lims {
+			rsv, err := lim.ReserveRate(ctx, value)
+			err = multierr.Append(err, err)
+			if rsv != nil {
+				rsvs = append(rsvs, rsv)
+			}
+		}
+		cancel := func() {
+			for _, rsv := range rsvs {
+				rsv.Cancel()
+			}
+		}
+		var wt time.Duration
+		for _, rsv := range rsvs {
+			wt = max(wt, rsv.WaitTime())
+		}
+		if err != nil {
+			cancel()
 			return nil, err
 		}
-		if lim == nil {
+		return struct {
+			extensionlimiter.WaitTimeFunc
+			extensionlimiter.CancelFunc
+		}{
+			func() time.Duration { return wt },
+			cancel,
+		}, nil
+	}
+	return extensionlimiter.ReserveRateFunc(reserve)
+}
+
+// getMultiLimiter combines multiple providers (all kinds), gets
+// limiters from each, and returns the combined result or error.
+func getMultiLimiter[Out, Lim comparable](
+	multi MultiLimiterProvider,
+	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
+	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
+	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
+	noop Lim,
+	pfunc func(Out) (Lim, error),
+	combine func([]Lim) Lim,
+) (Lim, error) {
+	var lims []Lim
+
+	for _, baseProvider := range multi {
+		provider, err := getProvider(baseProvider, base, rate, resource)
+		if err == nil {
+			return noop, err
+		}
+		lim, err := pfunc(provider)
+		if err == nil {
+			return noop, err
+		}
+		var zero Lim
+		if lim == zero {
 			continue
 		}
 		lims = append(lims, lim)
 	}
 
 	if len(lims) == 0 {
-		return LimiterWrapperFunc(nil), nil
+		return noop, nil
 	}
-
-	return sequenceLimiters(lims), nil
-}
-
-func sequenceLimiters(lims []LimiterWrapper) LimiterWrapper {
 	if len(lims) == 1 {
-		return lims[0]
+		return lims[0], nil
 	}
-	return composeLimiters(lims[0], sequenceLimiters(lims[1:]))
-}
-
-func composeLimiters(first, second LimiterWrapper) LimiterWrapper {
-	return LimiterWrapperFunc(func(ctx context.Context, value int, call func(ctx context.Context) error) error {
-		return first.LimitCall(ctx, value, func(ctx context.Context) error {
-			return second.LimitCall(ctx, value, call)
-		})
-	})
+	return combine(lims), nil
 }

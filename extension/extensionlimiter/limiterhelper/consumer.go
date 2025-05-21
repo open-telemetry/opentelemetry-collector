@@ -5,7 +5,6 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 
 import (
 	"context"
-	"errors"
 	"slices"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -15,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/multierr"
 )
 
 // Traits object interface is generalized by P the pipeline data type
@@ -189,7 +189,7 @@ func newLimited[P any, C any](
 			return 1
 		})
 	next, err4 = applyBaseLimiter(next, provider, m, opts)
-	return next, errors.Join(err1, err2, err3, err4)
+	return next, multierr.Append(err1, multierr.Append(err2, multierr.Append(err3, err4)))
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.

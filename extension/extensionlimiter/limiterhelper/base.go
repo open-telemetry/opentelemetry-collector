@@ -11,7 +11,7 @@ import (
 
 // BaseToRateLimiterProvider allows a base limiter to act as a rate
 // limiter.
-func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
+func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) extensionlimiter.RateLimiterProvider {
 	return struct {
 		extensionlimiter.GetBaseLimiterFunc
 		extensionlimiter.GetRateLimiterFunc
@@ -33,12 +33,12 @@ func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (exte
 					}{}, nil
 				}), nil
 		},
-	}, nil
+	}
 }
 
 // BaseToResourceLimiterProvider allows a base limiter to act as a
 // resource limiter.
-func BaseToResourceLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+func BaseToResourceLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) extensionlimiter.ResourceLimiterProvider {
 	return struct {
 		extensionlimiter.GetBaseLimiterFunc
 		extensionlimiter.GetResourceLimiterFunc
@@ -60,5 +60,5 @@ func BaseToResourceLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) (
 					}{}, nil
 				}), nil
 		},
-	}, nil
+	}
 }
