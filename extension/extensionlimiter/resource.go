@@ -121,10 +121,7 @@ func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value int) (Re
 		return struct {
 			DelayFunc
 			ReleaseFunc
-		}{
-			DelayFunc(nil),
-			ReleaseFunc(nil),
-		}, nil
+		}{}, nil
 	}
 	return f(ctx, value)
 }

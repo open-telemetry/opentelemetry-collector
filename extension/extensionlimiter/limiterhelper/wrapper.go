@@ -9,10 +9,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
-// LimiterWrapperProvider provides access to LimiterWrappers, which is
-// the appropriate interface for callers that can easily wrap a
-// function call, because for wrapped calls there is no distinction
-// between rate limiters and resource limiters.
+// @@@ Why not ...
 type LimiterWrapperProvider interface {
 	extensionlimiter.BaseLimiterProvider
 
@@ -30,10 +27,12 @@ func (f GetLimiterWrapperFunc) GetLimiterWrapper(key extensionlimiter.WeightKey,
 	return f(key, opts...)
 }
 
-var _ LimiterWrapperProvider = struct {
+type limiterWrapper struct {
 	GetLimiterWrapperFunc
 	extensionlimiter.GetBaseLimiterFunc
-}{}
+}
+
+var _ LimiterWrapperProvider = limiterWrapper{}
 
 // LimiterWrapper is a general-purpose interface for limiter consumers
 // to limit resources with use of a callback.  This is the simplest
@@ -70,26 +69,19 @@ func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value int, call func(
 	return f(ctx, value, call)
 }
 
-// wrapperProvider is a combinator for building wrapper providers from
-// the underlying limter types.
-type wrapperProvider struct {
-	GetLimiterWrapperFunc
-	extensionlimiter.GetBaseLimiterFunc
-}
-
-// NewBaseLimiterWrapperProvider constructs a LimiterWrapperProvider
+// BaseToLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
-func NewBaseLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) LimiterWrapperProvider {
-	return wrapperProvider{
+func BaseToLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) (LimiterWrapperProvider, error) {
+	return limiterWrapper{
 		GetBaseLimiterFunc:    rp.GetBaseLimiter,
-		GetLimiterWrapperFunc: GetLimiterWrapperFunc(nil),
-	}
+		GetLimiterWrapperFunc: nil,
+	}, nil
 }
 
-// NewResourceLimiterWrapperProvider constructs a
+// ResourceToLimiterWrapperProvider constructs a
 // LimiterWrapperProvider for a resource limiter extension.
-func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
-	return wrapperProvider{
+func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) (LimiterWrapperProvider, error) {
+	return limiterWrapper{
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetResourceLimiter(key, opts...)
@@ -109,13 +101,13 @@ func NewResourceLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvid
 				return call(ctx)
 			}), nil
 		},
-	}
+	}, nil
 }
 
-// NewRateLimiterWrapperProvider constructs a LimiterWrapperProvider
+// RateToLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
-func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
-	return wrapperProvider{
+func RateToLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) (LimiterWrapperProvider, error) {
+	return limiterWrapper{
 		GetBaseLimiterFunc: rp.GetBaseLimiter,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetRateLimiter(key, opts...)
@@ -133,5 +125,5 @@ func NewRateLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) Limi
 				return call(ctx)
 			}), nil
 		},
-	}
+	}, nil
 }

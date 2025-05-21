@@ -122,3 +122,45 @@ func (b BlockingRateLimiter) waitFor(ctx context.Context, value int, timer timer
 		return context.Cause(ctx)
 	}
 }
+
+// RateToResourceLimiterProvider allows a rate limiter to act as a
+// resource limiter. Note that the opposite direction (i.e., resource
+// limter acting as rate limiter) is an invalid configuration.
+func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+	return struct {
+		extensionlimiter.GetBaseLimiterFunc
+		extensionlimiter.GetRateLimiterFunc
+	}{
+		blimp.GetBaseLimiter,
+		func(_ extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.ResourceLimiter, error) {
+			base, err := blimp.GetRateLimiter(opts...)
+			if err != nil {
+				return nil, err
+			}
+			return extensionlimiter.ReserveResourceFunc(
+				func(ctx context.Context, value int) (extensionlimiter.ResourceReservation, error) {
+					rsv, err := base.ReserveRate(ctx, value)
+					if err != nil {
+						return nil, err
+					}
+					cch := make(chan struct{})
+					tch := time.After(rsv.WaitTime())
+					go func() {
+						select {
+						case <-ctx.Done():
+							rsv.Cancel()
+						case <-tch:
+							close(cch)
+						}
+					}()
+					return struct {
+						extensionlimiter.DelayFunc
+						extensionlimiter.ReleaseFunc
+					}{
+						func() <-chan struct{} { return cch },
+						func() {},
+					}, nil
+				}), nil
+		},
+	}, nil
+}

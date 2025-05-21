@@ -78,7 +78,7 @@ return a specific limiter instance based on a weight key. Components
 are expected to initialize limiters during startup, through limiter
 extension providers (which may produce configuration errors).
 
-Any limiter extension:
+All limiter extensions:
 
 - MUST implement the `BaseLimiterProvider` interface
 - MUST NOT implement both the `ResourceLimiterProvider` and the `RateLimiterProvider` interfaces
