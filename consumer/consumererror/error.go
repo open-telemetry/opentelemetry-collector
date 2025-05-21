@@ -17,9 +17,7 @@ import (
 // are constructed through calling `New` with the relevant options to capture
 // data around the error that occurred.
 //
-// It may hold multiple errors from downstream components, and can be merged
-// with other errors as it travels upstream using `Combine`. The `Error` should
-// be obtained from a given `error` object using `errors.As`.
+// Error should be obtained from a given `error` object using `errors.As`.
 type Error struct {
 	error
 	httpStatus int
