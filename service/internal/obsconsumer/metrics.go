@@ -13,42 +13,60 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-var _ consumer.Metrics = metrics{}
+var (
+	_                consumer.Metrics = obsMetrics{}
+	metricsMarshaler                  = &pmetric.ProtoMarshaler{}
+)
 
-func NewMetrics(consumer consumer.Metrics, itemCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
+func NewMetrics(cons consumer.Metrics, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
-		return consumer
+		return cons
 	}
 
 	o := options{}
 	for _, opt := range opts {
-		opt.apply(&o)
+		opt(&o)
 	}
-	return metrics{
-		consumer:        consumer,
+
+	return obsMetrics{
+		consumer:        cons,
 		itemCounter:     itemCounter,
+		sizeCounter:     sizeCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type metrics struct {
+type obsMetrics struct {
 	consumer    consumer.Metrics
 	itemCounter metric.Int64Counter
+	sizeCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c metrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	// Measure before calling ConsumeMetrics because the data may be mutated downstream
+// ConsumeMetrics measures telemetry before calling ConsumeMetrics because the data may be mutated downstream
+func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+	// Use a pointer to so that deferred function can depend on the result of ConsumeMetrics
+	attrs := &c.withSuccessAttrs
+
 	itemCount := md.DataPointCount()
+	defer func() {
+		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+	}()
+
+	if isEnabled(ctx, c.sizeCounter) {
+		byteCount := int64(metricsMarshaler.MetricsSize(md))
+		defer func() {
+			c.sizeCounter.Add(ctx, byteCount, *attrs)
+		}()
+	}
+
 	err := c.consumer.ConsumeMetrics(ctx, md)
-	if err == nil {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
-	} else {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
+	if err != nil {
+		attrs = &c.withFailureAttrs
 	}
 	return err
 }
 
-func (c metrics) Capabilities() consumer.Capabilities {
+func (c obsMetrics) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }
