@@ -61,7 +61,20 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 	if bq.currentAdmitted+uint64(value) <= bq.limitAdmit {
 		// the fast success path.
 		bq.currentAdmitted += uint64(value)
-		return nil, nil
+		return struct {
+			extensionlimiter.DelayFunc
+			extensionlimiter.ReleaseFunc
+		}{
+			nil, // No delay
+			func() {
+				// There was never a waiter in this
+				// case, just release and admit waiters.
+				bq.lock.Lock()
+				defer bq.lock.Unlock()
+
+				bq.releaseLocked(value)
+			},
+		}, nil
 	}
 
 	// since we were unable to admit, check if we can wait.
@@ -83,7 +96,7 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 			return waiter.notify.channel()
 		},
 		func() {
-			// This call returns the resource.
+			// Called when the caller finishes.
 			bq.lock.Lock()
 			defer bq.lock.Unlock()
 

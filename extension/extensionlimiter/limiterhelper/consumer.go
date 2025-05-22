@@ -155,6 +155,9 @@ func applyBaseLimiter[P any, C any](
 	if err != nil {
 		return next, err
 	}
+	if ck == nil {
+		return next, nil
+	}
 	return m.create(func(ctx context.Context, data P) error {
 		if err := ck.MustDeny(ctx); err != nil {
 			return err

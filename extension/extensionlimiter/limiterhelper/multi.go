@@ -26,12 +26,10 @@ var _ extensionlimiter.BaseLimiterProvider = MultiLimiterProvider{}
 func (ps MultiLimiterProvider) GetBaseLimiter(
 	opts ...extensionlimiter.Option,
 ) (extensionlimiter.BaseLimiter, error) {
-	var noop extensionlimiter.BaseLimiter = extensionlimiter.MustDenyFunc(nil)
 	return getMultiLimiter(ps,
 		identity[extensionlimiter.BaseLimiterProvider],
 		baseProvider[extensionlimiter.RateLimiterProvider],
 		baseProvider[extensionlimiter.ResourceLimiterProvider],
-		noop,
 		func(p extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiter, error) {
 			return p.GetBaseLimiter(opts...)
 		},
@@ -43,12 +41,10 @@ func (ps MultiLimiterProvider) GetBaseLimiter(
 func (ps MultiLimiterProvider) GetLimiterWrapper(
 	key extensionlimiter.WeightKey,
 	opts ...extensionlimiter.Option) (LimiterWrapper, error) {
-	var noop LimiterWrapper = LimiterWrapperFunc(nil)
 	return getMultiLimiter(ps,
 		nilError(BaseToLimiterWrapperProvider),
 		nilError(RateToLimiterWrapperProvider),
 		nilError(ResourceToLimiterWrapperProvider),
-		noop,
 		func(p LimiterWrapperProvider) (LimiterWrapper, error) {
 			return p.GetLimiterWrapper(key, opts...)
 		},
@@ -61,12 +57,10 @@ func (ps MultiLimiterProvider) GetResourceLimiter(
 	key extensionlimiter.WeightKey,
 	opts ...extensionlimiter.Option,
 ) (extensionlimiter.ResourceLimiter, error) {
-	var noop extensionlimiter.ResourceLimiter = extensionlimiter.ReserveResourceFunc(nil)
 	return getMultiLimiter(ps,
 		nilError(BaseToResourceLimiterProvider),
 		nilError(RateToResourceLimiterProvider),
 		identity[extensionlimiter.ResourceLimiterProvider],
-		noop,
 		func(p extensionlimiter.ResourceLimiterProvider) (extensionlimiter.ResourceLimiter, error) {
 			return p.GetResourceLimiter(key, opts...)
 		},
@@ -79,12 +73,10 @@ func (ps MultiLimiterProvider) GetRateLimiter(
 	key extensionlimiter.WeightKey,
 	opts ...extensionlimiter.Option,
 ) (extensionlimiter.RateLimiter, error) {
-	var noop extensionlimiter.RateLimiter = extensionlimiter.ReserveRateFunc(nil)
 	return getMultiLimiter(ps,
 		nilError(BaseToRateLimiterProvider),
 		identity[extensionlimiter.RateLimiterProvider],
 		resourceToRateLimiterError,
-		noop,
 		func(p extensionlimiter.RateLimiterProvider) (extensionlimiter.RateLimiter, error) {
 			return p.GetRateLimiter(key, opts...)
 		},
@@ -130,7 +122,9 @@ func combineResourceLimiters(lims []extensionlimiter.ResourceLimiter) extensionl
 		for _, lim := range lims {
 			rsv, err := lim.ReserveResource(ctx, value)
 			err = multierr.Append(err, err)
-			rsvs = append(rsvs, rsv)
+			if rsv != nil {
+				rsvs = append(rsvs, rsv)
+			}
 		}
 		release := func() {
 			for _, rsv := range rsvs {
@@ -184,13 +178,13 @@ func combineRateLimiters(lims []extensionlimiter.RateLimiter) extensionlimiter.R
 				rsv.Cancel()
 			}
 		}
-		var wt time.Duration
-		for _, rsv := range rsvs {
-			wt = max(wt, rsv.WaitTime())
-		}
 		if err != nil {
 			cancel()
 			return nil, err
+		}
+		var wt time.Duration
+		for _, rsv := range rsvs {
+			wt = max(wt, rsv.WaitTime())
 		}
 		return struct {
 			extensionlimiter.WaitTimeFunc
@@ -203,27 +197,29 @@ func combineRateLimiters(lims []extensionlimiter.RateLimiter) extensionlimiter.R
 	return extensionlimiter.ReserveRateFunc(reserve)
 }
 
-// getMultiLimiter combines multiple providers (all kinds), gets
-// limiters from each, and returns the combined result or error.
-func getMultiLimiter[Out, Lim comparable](
+// getMultiLimiter configures a limiter for multiple limiter
+// extensions.
+func getMultiLimiter[Out any, Lim comparable](
 	multi MultiLimiterProvider,
 	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
-	noop Lim,
 	pfunc func(Out) (Lim, error),
 	combine func([]Lim) Lim,
-) (Lim, error) {
+) (nilResult Lim, _ error) {
+	// Note that nilResult is used in error and non-error cases to
+	// return a nil and not a nil with concrete type (e.g.,
+	// extensionlimiter.BaseLimiterProvider(nil)).
 	var lims []Lim
 
 	for _, baseProvider := range multi {
 		provider, err := getProvider(baseProvider, base, rate, resource)
 		if err == nil {
-			return noop, err
+			return nilResult, err
 		}
 		lim, err := pfunc(provider)
 		if err == nil {
-			return noop, err
+			return nilResult, err
 		}
 		var zero Lim
 		if lim == zero {
@@ -233,7 +229,7 @@ func getMultiLimiter[Out, Lim comparable](
 	}
 
 	if len(lims) == 0 {
-		return noop, nil
+		return nilResult, nil
 	}
 	if len(lims) == 1 {
 		return lims[0], nil

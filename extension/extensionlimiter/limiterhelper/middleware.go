@@ -39,10 +39,7 @@ func MultipleProvider(exts []extensionlimiter.BaseLimiterProvider) (MultiLimiter
 		retErr = multierr.Append(retErr, err)
 		providers = append(providers, base)
 	}
-	if len(providers) == 0 {
-		return nil, nil
-	}
-	return providers, nil
+	return providers, retErr
 }
 
 // MiddlewareToBaseLimiterProvider returns a base limiter provider
