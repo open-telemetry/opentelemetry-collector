@@ -186,7 +186,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 			return err
 		}
 		httpTracesReceiver := trace.New(next, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.TracesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
@@ -197,7 +197,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 			return err
 		}
 		httpMetricsReceiver := metrics.New(next, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.MetricsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
@@ -208,7 +208,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 			return err
 		}
 		httpLogsReceiver := logs.New(next, r.obsrepHTTP)
-		httpMux.HandleFunc(r.cfg.HTTP.LogsURLPath, func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(r.cfg.HTTP.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}

@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.126.0
-	google.golang.org/grpc v1.72.0
+	google.golang.org/grpc v1.72.1
 )
 
 require (
