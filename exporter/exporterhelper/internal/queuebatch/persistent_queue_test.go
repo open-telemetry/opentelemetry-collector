@@ -1358,7 +1358,7 @@ func TestSpanContextFromContextAndBack(t *testing.T) {
 	ctx := trace.ContextWithSpanContext(context.Background(), sc)
 
 	// Test spanContextFromContext
-	local := spanContextFromContext(ctx)
+	local := localSpanContextFromTraceSpanContext(trace.SpanContextFromContext(ctx))
 	assert.Equal(t, tid.String(), local.TraceID)
 	assert.Equal(t, sid.String(), local.SpanID)
 	assert.Equal(t, flags.String(), local.TraceFlags)

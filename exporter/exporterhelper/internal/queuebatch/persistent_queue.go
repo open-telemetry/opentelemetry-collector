@@ -268,11 +268,6 @@ type spanContext struct {
 	Remote     bool
 }
 
-func spanContextFromContext(ctx context.Context) spanContext {
-	sc := trace.SpanContextFromContext(ctx)
-	return localSpanContextFromTraceSpanContext(sc)
-}
-
 func localSpanContextFromTraceSpanContext(sc trace.SpanContext) spanContext {
 	return spanContext{
 		TraceID:    sc.TraceID().String(),
@@ -333,7 +328,7 @@ func getAndMarshalSpanContext(ctx context.Context) ([]byte, error) {
 	if !persistRequestContextFeatureGate.IsEnabled() {
 		return nil, nil
 	}
-	rc := spanContextFromContext(ctx)
+	rc := localSpanContextFromTraceSpanContext(trace.SpanContextFromContext(ctx))
 	return json.Marshal(requestContext{SpanContext: rc})
 }
 
