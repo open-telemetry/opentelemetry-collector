@@ -136,27 +136,25 @@ ways.
 
 ### Limiter blocking and failing
 
-Limiters implementations MAY block the request or fail immediately,
-subject to internal logic. A limiter aims to avoid waste, which
-requires balancing several factors. To fail a request that has already
-been transmitted, received and parsed is sometimes more wasteful than
-waiting for a little while; on the other hand waiting for a long time
-risks wasting memory. In general, an overloaded limiter that is
-saturated SHOULD fail requests immediately.
+Limiters implementations never block.  The `RateLimiter` and
+`ResourceLimiter` interfaces return reservations instead informing the
+caller how they can wait on their own, allowing them to cancel the
+request if they return early. 
 
 Limiter implementations SHOULD consider the context deadline when
 they block. If the deadline is likely to expire before the limit
 becomes available, they should return a standard overload signal.
+Blocking adapters are provided for callers including the `LimiterWrapper`.
 
 ### Limiter saturation
 
-Rate and resource limiter providers have a `GetChecker` method to
-provide a `Checker`, featuring a `MustDeny` method which is made
+Rate and resource limiter providers have a `GetBaseLimiter` method to
+provide a `BaseLimiter`, featuring a `MustDeny` method which is made
 available for applications to test when any limit is fully
 saturated that would eventually deny the request.
 
-The `Checker` is consulted at least once and applies to all weight
-keys.  Because a `Checker` can be consulted more than once by a
+The `BaseLimiter` is consulted at least once and applies to all weight
+keys.  Because a `BaseLimiter` can be consulted more than once by a
 receiver and/or middleware, it is possible for requests to be denied
 over the saturation of limits they were already granted. Users should
 configure external load balancers and/or horizontal scaling policies
@@ -173,6 +171,38 @@ before use, but either way be consistent.
 
 When using the low-level interfaces directly, limits SHOULD be applied
 before creating new concurrent work.
+
+### Built-in limiters
+
+#### Base
+
+The `memorylimiterextension` is a `BasedLimiterProvider` that bases
+its decisions on memory statistics from the garbage collector. This
+logic was traditionally included in the `memorylimiterprocessor`,
+however the limiter extension interface is preferred.
+
+#### Rate
+
+A built-in helper implementation of the RateLimiter interface is
+provided, based on `golang.org/x/time/rate.Limter`. These underlying
+rate limiters are parameterized by two numbers:
+
+- `limit` (float64): the maximum frequency of weight-units per second
+- `burst` (uint64): the "burst" configured in a Token-bucket algorithm.
+
+The rate limiter is saturated when there is no burst available.
+
+#### Resource
+
+A built-in helper implementation of the ResourceLimiter interface is
+provided, based on a bounded queue with LIFO semantics.  These
+underlying resource limiters are parameterized by two numbers:
+
+- `request` (uint64): the maximum of concurrent resource value admitted
+- `waiting` (uint64): the maximum of concurrent resource value permitted to wait
+
+The resource limiter is saturated when the sum of current `request`
+and `waiting` values exceed the sum of their maximum values.
 
 ### Examples
 
@@ -238,33 +268,39 @@ Here, `getLimiters` is a function to get the effective
 `[]configmiddleware.Config` and derive pipeline consumers using
 `limiterhelper` adapters.
 
-To acquire a limiter, use `MiddlewaresToLimiterWrapperProvider` to
+To acquire a limiter, use `MiddlewaresToLimiterProvider` to
 obtain a combined limiter wrapper around the input `nextMetrics`
 consumer. It will pass `StandardNotMiddlewareKeys()` indicating to
 apply request items and memory size:
 
 ```golang
-    // Extract limiter provider from middlewares.
-    s.limiterProvider, err = limiterhelper.MiddlewaresToLimiterWrapperProvider(
-        cfg.Middlewares)
+    // Extract limiter extensions from host and list of middleware.
+    providers, err := configmiddleware.GetBaseLimiters(
+        host, cfg.Middlewares)
     if err != nil { ... }
 	
-	// Extract a checker from the provider
-	s.checker, err = s.limiterProvider.GetChecker()
+	// Extract a multi-limiter from the provider
+	s.limiterProvider, err = limiterhelper.MultipleProvider(providers)
 	if err != nil { ... }
 
     // Here get a limiter-wrapped pipeline and a combination of weight-specific
     // limiters for MustDeny() functionality.
+	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
     s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
-        s.nextMetrics, limiterhelper.StandardNotMiddlewareKeys(), s.limiterProvider)
+        s.nextMetrics, limitKeys, s.limiterProvider)
     if err != nil { ... }
+
+    // Compute the base limiter from the middlewares for use before scrapes.
+	s.limiter, err := s.limiterProvider.GetBaseLimiter(host, middlewares)
+	if err != nil { ... }
 ```
 
 In the scraper loop, use `MustDeny` before starting a scrape:
 
 ```golang
 func (s *scraper) scrapeOnce(ctx context.Context) error {
-    if err := s.checker.MustDeny(ctx); err != nil {
+	// Check if any limits are saturated.
+    if err := s.limiter.MustDeny(ctx); err != nil {
         return err
     }
 
@@ -296,18 +332,19 @@ receivers:
       - ratelimiter/streamer
 ```
 
-The receiver will check `s.checker.MustDeny()` as above.  In a stream,
-limiters are expected to block the stream until limit requests
-succeed, however after the limit requests succeed, the receiver may
-wish to return from `Send()` to continue accepting new requests while
-the consumer works in a separate goroutine. The limit will be released
-after the consumer returns.
+The receiver will check `s.limiter.MustDeny()` as above.  In a stream,
+a blocking limiter is used which blocks the stream (via
+`s.memorySizeLimiter.WaitFor()`) until limit requests succeed, however
+after the limit requests succeed, the receiver returns from `Send()`
+to continue accepting new requests while the consumer works in a
+separate goroutine. The limit will be released after the consumer
+returns in this example:
 
 ```golang
 func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
     for {
         // Check saturation for all limiters, all keys.
-        err := s.checker.MustDeny(ctx)
+        err := s.limiter.MustDeny(ctx)
         if err != nil { ... }
 
         // The network bytes and request count limits are applied in middleware.
@@ -318,9 +355,11 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
         data, err := s.getLogs(ctx, req)
         if err != nil { ... }
 
-        release, err := s.memorySizeLimiter.Acquire(ctx, pdataSize(data))
+        // Non-blocking limiter call.
+        release, err := s.memorySizeLimiter.WaitFor(ctx, pdataSize(data))
         if err != nil { ... }
 
+        // Asynchronous work starts here.
         go func() {
             // Request items limit is applied in the pipeline consumer
             err := s.nextMetrics.ConsumeMetrics(ctx, data)
@@ -335,36 +374,6 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
 }
 ```
 
-#### Open questions
-
-##### Middleware implementation details
-
-Details are
-important. [#12700](https://github.com/open-telemetry/opentelemetry-collector/pull/12700)
-contained a `limitermiddleware` implementation which was a middleware
-that called a limiter for HTTP and gRPC. Roughly the same code will be
-used, and the details will come out.
-
-##### Provider options
-
-An `Option` type has been added as a placeholder in the provider
-interfaces. **NOTE: No options are implemented.** Potential options:
-
-- The protocol name
-- The signal kind
-- The caller's component ID
-
-Because the set of each of these is small, it is possible to
-pre-compute limiter instances for the cross product of configurations.
-
-##### Context-dependent limits
-
-Client metadata (i.e., headers) may be used in the context to make
-limiter decisions. These details are automatically extracted from the
-Context passed to `MustDeny`, `Limit`, `Acquire`, and `LimitCall`
-functions. No examples are provided. How will limiters configure, for
-example, tenant-specific limits?
-
 ##### Data-dependent limits
 
 When a single unit of data contains limits that are assignable to
@@ -373,21 +382,27 @@ requests and add to their context and run them concurrently through
 context-dependent limiters.  See
 [#39199](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39199).
 
-Another option is to add support for non-blocking limit requests. For
-example, to apply limits using information derived from the
-OpenTelemetry resource, we might do something like this pseudo-code:
+Another option, shown below, is to use the non-blocking rate limiter
+interface and drop data that would exceed a limit.  For example, to
+limit based on metadata extracted from the OpenTelemetry resource
+value:
 
 ```
 func (p *processor) limitLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, extensionlimiter.ReleaseFunc, error) {
     var rels extensionlimiter.ReleaseFuncs
 	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		md := resourceToMetadata(rl.Resource())
-		rel, err := p.nonBlockingLimiter.TryLimitOrAcquire(withMetadata(ctx, md))
+		reservation, err := p.limiter.ReserveRate(withMetadata(ctx, md))
 		if err != nil {
 		    return false
 		}
-		rels = append(rels, rel)
-		return true
+		if reservation.WaitTime() > 0 {
+			reservation.Cancel()
+			return false
+		}
+		default:
+			return true
+		}
 	})
 	if logsData.ResourceLogs().Len() == 0 {
 		return logsData, func() {}, processorhelper.ErrSkipProcessingData
@@ -405,7 +420,22 @@ func (p *processor) ConsumeLogs(ctx context.Context, logsData plog.Logs) error {
 }
 ```
 
-Here, the release a new `TryLimitOrAcquire` function abstracts the
-form of a non-blocking call to either form of limiter. If the
-underyling limiter is a rate limiter, the release function will be a
-no-op.
+Here, the limiter's `ReserveRate` function does not block the caller,
+allowing the processor to drop data instead.  Note the call to
+`RateReservation.Cancel` undoes the effect of the untaken reservation.
+The same approach works for `ResourceLimiter` as well using using
+`ResourceReservation`, its `Delay` channel `Release` function.
+
+#### Open questions
+
+##### Provider options
+
+An `Option` type has been added as a placeholder in the provider
+interfaces. **NOTE: No options are implemented.** Potential options:
+
+- The protocol name
+- The signal kind
+- The caller's component ID
+
+Because the set of each of these is small, it is possible to
+pre-compute limiter instances for the cross product of configurations.
