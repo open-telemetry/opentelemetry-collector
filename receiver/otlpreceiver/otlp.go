@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
@@ -100,7 +101,11 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	}
 
 	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
-	limiterProvider, err := limiterhelper.MiddlewaresToLimiterWrapperProvider(host, r.cfg.GRPC.Middlewares)
+	limiters, err := configmiddleware.GetBaseLimiters(host, r.cfg.GRPC.Middlewares)
+	if err != nil {
+		return err
+	}
+	limiterProvider, err := limiterhelper.MultipleProvider(limiters)
 	if err != nil {
 		return err
 	}
@@ -165,7 +170,11 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
-	limiterProvider, err := limiterhelper.MiddlewaresToLimiterWrapperProvider(host, r.cfg.HTTP.ServerConfig.Middlewares)
+	limiters, err := configmiddleware.GetBaseLimiters(host, r.cfg.HTTP.ServerConfig.Middlewares)
+	if err != nil {
+		return err
+	}
+	limiterProvider, err := limiterhelper.MultipleProvider(limiters)
 	if err != nil {
 		return err
 	}

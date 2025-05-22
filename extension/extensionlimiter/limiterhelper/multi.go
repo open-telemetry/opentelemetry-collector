@@ -42,8 +42,7 @@ func (ps MultiLimiterProvider) GetBaseLimiter(
 // wrappers in a nested sequence.
 func (ps MultiLimiterProvider) GetLimiterWrapper(
 	key extensionlimiter.WeightKey,
-	opts ...extensionlimiter.Option,
-) (LimiterWrapper, error) {
+	opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 	var noop LimiterWrapper = LimiterWrapperFunc(nil)
 	return getMultiLimiter(ps,
 		nilError(BaseToLimiterWrapperProvider),

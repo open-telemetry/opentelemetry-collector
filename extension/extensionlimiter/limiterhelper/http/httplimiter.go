@@ -5,8 +5,6 @@ import (
 	"io"
 	"net/http"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -14,9 +12,9 @@ import (
 	"go.uber.org/multierr"
 )
 
-func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.HTTPClient, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
@@ -84,9 +82,9 @@ func (rb *rateLimitedBody) Close() error {
 	return rb.body.Close()
 }
 
-func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.HTTPServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+func NewServerLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.HTTPServer, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}

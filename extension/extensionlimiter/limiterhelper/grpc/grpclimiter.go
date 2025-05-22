@@ -3,8 +3,6 @@ package grpclimiter
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -13,9 +11,9 @@ import (
 	"google.golang.org/grpc/stats"
 )
 
-func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.GRPCClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.GRPCClient, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
@@ -71,9 +69,9 @@ func NewClientLimiter(host component.Host, middleware configmiddleware.Config) (
 	}), nil
 }
 
-func NewServerLimiter(host component.Host, middleware configmiddleware.Config) (extensionmiddleware.GRPCServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(host, middleware)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(host, middleware)
+func NewServerLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.GRPCServer, error) {
+	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}

@@ -3,11 +3,8 @@ module go.opentelemetry.io/collector/extension/extensionlimiter
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v1.32.0
-	go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/consumer v1.32.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-00010101000000-000000000000
-	go.opentelemetry.io/collector/extension v1.32.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.126.0
 	go.opentelemetry.io/collector/pdata v1.32.0
@@ -27,6 +24,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/component v1.32.0 // indirect
+	go.opentelemetry.io/collector/extension v1.32.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.32.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.126.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
@@ -54,8 +53,6 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xcons
 replace go.opentelemetry.io/collector/pdata => ../../pdata
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
-
-replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 

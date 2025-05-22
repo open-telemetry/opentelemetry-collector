@@ -5,59 +5,39 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 
 import (
 	"errors"
-	"fmt"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.uber.org/multierr"
 )
 
 var (
-	ErrNotALimiter       = errors.New("middleware is not a limiter")
-	ErrNotARateLimiter   = errors.New("middleware cannot implement rate limiter")
-	ErrLimiterConflict   = errors.New("limiter implements both rate and resource-limiters")
-	ErrUnresolvedLimiter = errors.New("could not resolve middleware limiter")
+	ErrNotALimiter     = errors.New("middleware is not a limiter")
+	ErrNotARateLimiter = errors.New("middleware cannot implement rate limiter")
+	ErrLimiterConflict = errors.New("limiter implements both rate and resource-limiters")
 )
 
-// MiddlewareIsLimiter applies consistency checks and returns a valid
+// middlewareCheck applies consistency checks and returns a valid
 // limiter extension of any known kind.
-func MiddlewareIsLimiter(host component.Host, middleware configmiddleware.Config) (extensionlimiter.BaseLimiterProvider, bool, error) {
-	exts := host.GetExtensions()
-	ext := exts[middleware.ID]
-	if ext == nil {
-		return nil, false, fmt.Errorf("%w: %s", ErrUnresolvedLimiter, middleware.ID)
-	}
+func middlewareCheck(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiterProvider, error) {
 	_, isResource := ext.(extensionlimiter.ResourceLimiterProvider)
 	_, isRate := ext.(extensionlimiter.RateLimiterProvider)
-	base, isBase := ext.(extensionlimiter.BaseLimiterProvider)
 
-	switch {
-	case isResource && isRate:
-		return nil, false, fmt.Errorf("%w: %s", ErrLimiterConflict, middleware.ID)
-	case isResource, isRate:
-		return base, true, nil
-	case isBase:
-		return base, true, nil
-	default:
-		return nil, false, nil
+	if isResource && isRate {
+		return nil, ErrLimiterConflict
 	}
+	return ext, nil
 }
 
-// MiddlewaresToLimiterProvider constructs a combined limiter
-// from an ordered list of middlewares. This constructor ignores
-// middleware configs that are not limiters.
-func MiddlewaresToLimiterProvider(host component.Host, middleware []configmiddleware.Config) (MultiLimiterProvider, error) {
+// MultipleProvider constructs a combined limiter from an ordered list
+// of middlewares. This constructor ignores middleware configs that
+// are not limiters.
+func MultipleProvider(exts []extensionlimiter.BaseLimiterProvider) (MultiLimiterProvider, error) {
 	var retErr error
 	var providers MultiLimiterProvider
-	for _, mid := range middleware {
-		base, ok, err := MiddlewareIsLimiter(host, mid)
+	for _, ext := range exts {
+		base, err := middlewareCheck(ext)
 		retErr = multierr.Append(retErr, err)
-		if !ok {
-			continue
-		}
 		providers = append(providers, base)
-		retErr = multierr.Append(retErr, err)
 	}
 	if len(providers) == 0 {
 		return nil, nil
@@ -69,10 +49,9 @@ func MiddlewaresToLimiterProvider(host component.Host, middleware []configmiddle
 // from middleware. Returns a package-level error if the middleware
 // does not implement exactly one of the limiter interfaces (i.e.,
 // rate or resource).
-func MiddlewareToBaseLimiterProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.BaseLimiterProvider, error) {
+func MiddlewareToBaseLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiterProvider, error) {
 	return getMiddleware(
-		host,
-		middleware,
+		ext,
 		identity[extensionlimiter.BaseLimiterProvider],
 		baseProvider[extensionlimiter.RateLimiterProvider],
 		baseProvider[extensionlimiter.ResourceLimiterProvider],
@@ -83,10 +62,9 @@ func MiddlewareToBaseLimiterProvider(host component.Host, middleware configmiddl
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
-func MiddlewareToLimiterWrapperProvider(host component.Host, middleware configmiddleware.Config) (LimiterWrapperProvider, error) {
+func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.BaseLimiterProvider) (LimiterWrapperProvider, error) {
 	return getMiddleware(
-		host,
-		middleware,
+		ext,
 		nilError(BaseToLimiterWrapperProvider),
 		nilError(RateToLimiterWrapperProvider),
 		nilError(ResourceToLimiterWrapperProvider),
@@ -99,10 +77,9 @@ func MiddlewareToLimiterWrapperProvider(host component.Host, middleware configmi
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToRateLimiterProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.RateLimiterProvider, error) {
+func MiddlewareToRateLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
 	return getMiddleware(
-		host,
-		middleware,
+		ext,
 		nilError(BaseToRateLimiterProvider),
 		identity[extensionlimiter.RateLimiterProvider],
 		resourceToRateLimiterError,
@@ -115,10 +92,9 @@ func MiddlewareToRateLimiterProvider(host component.Host, middleware configmiddl
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToResourceLimiterProvider(host component.Host, middleware configmiddleware.Config) (extensionlimiter.ResourceLimiterProvider, error) {
+func MiddlewareToResourceLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.ResourceLimiterProvider, error) {
 	return getMiddleware(
-		host,
-		middleware,
+		ext,
 		nilError(BaseToResourceLimiterProvider),
 		nilError(RateToResourceLimiterProvider),
 		identity[extensionlimiter.ResourceLimiterProvider],
@@ -128,19 +104,15 @@ func MiddlewareToResourceLimiterProvider(host component.Host, middleware configm
 // getProvider invokes getProvider if any kind of limiter is detected
 // for the given host and middleware configuration.
 func getMiddleware[Out any](
-	host component.Host,
-	middleware configmiddleware.Config,
+	ext extensionlimiter.BaseLimiterProvider,
 	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 ) (Out, error) {
 	var out Out
-	ext, ok, err := MiddlewareIsLimiter(host, middleware)
+	ext, err := middlewareCheck(ext)
 	if err != nil {
 		return out, err
-	}
-	if !ok {
-		return out, fmt.Errorf("%w: %s", ErrNotALimiter, middleware.ID)
 	}
 	return getProvider(ext, base, rate, resource)
 }
