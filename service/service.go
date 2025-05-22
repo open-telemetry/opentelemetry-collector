@@ -192,6 +192,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		logger.Error("failed to create tracer provider", zap.Error(err))
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
@@ -200,6 +201,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
+		logger.Error("failed to create meter provider", zap.Error(err))
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
@@ -218,18 +220,22 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	})
 
 	if err = srv.initGraph(ctx, cfg); err != nil {
+		logger.Error("failed to initialize service graph", zap.Error(err))
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
+		logger.Error("failed to initialize extensions", zap.Error(err))
 		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
 	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(mpConfig.Readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
+			logger.Error("failed to register process metrics", zap.Error(err))
+			err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
 	}
