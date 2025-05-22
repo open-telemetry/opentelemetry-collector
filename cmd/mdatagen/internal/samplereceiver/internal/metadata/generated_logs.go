@@ -12,34 +12,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-type EventOption interface {
-	apply(plog.LogRecord)
-}
-
-type eventOptionFunc func(plog.LogRecord)
-
-func (eof eventOptionFunc) apply(lr plog.LogRecord) {
-	eof(lr)
-}
-
-func WithEventTraceId(traceID pcommon.TraceID) EventOption {
-	return eventOptionFunc(func(lr plog.LogRecord) {
-		lr.SetTraceID(traceID)
-	})
-}
-
-func WithEventSpanId(spanID pcommon.SpanID) EventOption {
-	return eventOptionFunc(func(lr plog.LogRecord) {
-		lr.SetSpanID(spanID)
-	})
-}
-
 type eventDefaultEvent struct {
 	data   plog.LogRecordSlice // data buffer for generated log records.
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEvent) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventOption) {
+func (e *eventDefaultEvent) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !e.config.Enabled {
 		return
 	}
@@ -51,10 +29,6 @@ func (e *eventDefaultEvent) recordEvent(timestamp pcommon.Timestamp, stringAttrA
 	lr.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	lr.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	lr.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
-
-	for _, op := range options {
-		op.apply(lr)
-	}
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -77,7 +51,7 @@ type eventDefaultEventToBeRemoved struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEventToBeRemoved) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventOption) {
+func (e *eventDefaultEventToBeRemoved) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !e.config.Enabled {
 		return
 	}
@@ -89,10 +63,6 @@ func (e *eventDefaultEventToBeRemoved) recordEvent(timestamp pcommon.Timestamp, 
 	lr.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
 	lr.Attributes().PutEmptySlice("slice_attr").FromRaw(sliceAttrAttributeValue)
 	lr.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
-
-	for _, op := range options {
-		op.apply(lr)
-	}
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -115,7 +85,7 @@ type eventDefaultEventToBeRenamed struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEventToBeRenamed) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool, options ...EventOption) {
+func (e *eventDefaultEventToBeRenamed) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
 	if !e.config.Enabled {
 		return
 	}
@@ -125,10 +95,6 @@ func (e *eventDefaultEventToBeRenamed) recordEvent(timestamp pcommon.Timestamp, 
 	lr.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	lr.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	lr.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
-
-	for _, op := range options {
-		op.apply(lr)
-	}
 }
 
 // emit appends recorded event data to a events slice and prepares it for recording another set of log records.
@@ -327,16 +293,16 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDefaultEventEvent adds a log record of default.event event.
-func (lb *LogsBuilder) RecordDefaultEventEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventOption) {
-	lb.eventDefaultEvent.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
+func (lb *LogsBuilder) RecordDefaultEventEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+	lb.eventDefaultEvent.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultEventToBeRemovedEvent adds a log record of default.event.to_be_removed event.
-func (lb *LogsBuilder) RecordDefaultEventToBeRemovedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any, options ...EventOption) {
-	lb.eventDefaultEventToBeRemoved.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue, options...)
+func (lb *LogsBuilder) RecordDefaultEventToBeRemovedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+	lb.eventDefaultEventToBeRemoved.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultEventToBeRenamedEvent adds a log record of default.event.to_be_renamed event.
-func (lb *LogsBuilder) RecordDefaultEventToBeRenamedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool, options ...EventOption) {
-	lb.eventDefaultEventToBeRenamed.recordEvent(timestamp, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue, options...)
+func (lb *LogsBuilder) RecordDefaultEventToBeRenamedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
+	lb.eventDefaultEventToBeRenamed.recordEvent(timestamp, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue)
 }
