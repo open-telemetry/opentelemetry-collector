@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -61,27 +62,33 @@ func TestCreateFactoryProfiles(t *testing.T) {
 }
 
 func TestCreateCustomLoggerOutputPaths(t *testing.T) {
-	// Create a temporary file for output
-	tmpFile, err := os.CreateTemp(t.TempDir(), "debugexporter_test_output_*.log")
-	if err != nil {
-		t.Fatalf("failed to create temp file: %v", err)
-	}
-	defer os.Remove(tmpFile.Name())
-	tmpFile.Close()
+	tmpDir := t.TempDir()
+	logFile := tmpDir + "/test_output.log"
+	errFile := tmpDir + "/test_error.log"
 
-	cfg := createDefaultConfig().(*Config)
-	cfg.UseInternalLogger = false
-	cfg.OutputPaths = []string{tmpFile.Name()}
-	cfg.ErrorOutputPaths = []string{"/dev/null"} // ignore errors for this test
+	ws, closeLog, err := zap.Open(logFile)
+	require.NoError(t, err)
+	errWs, closeErr, err := zap.Open(errFile)
+	require.NoError(t, err)
 
-	logger := createLogger(cfg, zap.NewNop())
+	encoderCfg := zap.NewDevelopmentEncoderConfig()
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderCfg),
+		ws,
+		zapcore.InfoLevel,
+	)
+	logger := zap.New(core, zap.ErrorOutput(errWs))
+
 	logMsg := "test log output path"
 	logger.Info(logMsg)
-	err = logger.Sync()
-	require.NoError(t, err)
+	require.NoError(t, logger.Sync())
 
-	// Read the file and check the log message is present
-	data, err := os.ReadFile(tmpFile.Name())
+	// Close the file handles explicitly
+	closeLog()
+	closeErr()
+
+	//nolint:gosec
+	data, err := os.ReadFile(logFile)
 	require.NoError(t, err)
-	require.Contains(t, string(data), logMsg, "expected log message in output file")
+	require.Contains(t, string(data), logMsg)
 }
