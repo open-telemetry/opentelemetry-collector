@@ -10,6 +10,10 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
+	"context"
+
+	"go.opentelemetry.io/otel/trace"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -115,6 +119,13 @@ func TestLogsBuilder(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			timestamp := pcommon.Timestamp(1_000_001_000)
+			traceID := [16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+			spanID := [8]byte{0, 1, 2, 3, 4, 5, 6, 7}
+			ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID(traceID),
+				SpanID:     trace.SpanID(spanID),
+				TraceFlags: trace.FlagsSampled,
+			}))
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
@@ -152,13 +163,13 @@ func TestLogsBuilder(t *testing.T) {
 			allEventsCount := 0
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDefaultEventEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			lb.RecordDefaultEventEvent(ctx, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 			defaultEventsCount++
 			allEventsCount++
-			lb.RecordDefaultEventToBeRemovedEvent(timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			lb.RecordDefaultEventToBeRemovedEvent(ctx, timestamp, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			allEventsCount++
-			lb.RecordDefaultEventToBeRenamedEvent(timestamp, "string_attr-val", true, false)
+			lb.RecordDefaultEventToBeRenamedEvent(ctx, timestamp, "string_attr-val", true, false)
 
 			rb := lb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -196,6 +207,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["default.event"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -216,6 +229,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["default.event.to_be_removed"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "string_attr-val", attrVal.Str())
@@ -236,6 +251,8 @@ func TestLogsBuilder(t *testing.T) {
 					validatedEvents["default.event.to_be_renamed"] = true
 					lr := lrs.At(i)
 					assert.Equal(t, timestamp, lr.Timestamp())
+					assert.Equal(t, pcommon.TraceID(traceID), lr.TraceID())
+					assert.Equal(t, pcommon.SpanID(spanID), lr.SpanID())
 					attrVal, ok := lr.Attributes().Get("string_attr")
 					assert.True(t, ok)
 					assert.Equal(t, "string_attr-val", attrVal.Str())
