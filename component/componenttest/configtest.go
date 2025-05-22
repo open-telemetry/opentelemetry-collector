@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"go.uber.org/multierr"
-	"gopkg.in/yaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -39,17 +38,17 @@ func CheckConfigStruct(config any) error {
 		return err
 	}
 
-	err = validateJSONAndYAMLMarshal(config)
+	err = validateJSONMarshal(config)
 	if err != nil {
-		return fmt.Errorf("config must be able to be marshaled to JSON and YAML, failed to marshal config: %w", err)
+		return fmt.Errorf("config must be able to be marshaled to JSON, failed to marshal config: %w", err)
 	}
 
 	return nil
 }
 
-// validateJSONAndYAMLMarshal checks if the provided value can be marshaled into JSON/YAML.
+// validateJSONMarshal checks if the provided value can be marshaled into JSON.
 // It returns an error if the value can not be marshaled.
-func validateJSONAndYAMLMarshal(config any) error {
+func validateJSONMarshal(config any) error {
 	conf := confmap.New()
 	if err := conf.Marshal(config); err != nil {
 		return err
@@ -58,11 +57,6 @@ func validateJSONAndYAMLMarshal(config any) error {
 	configMap := conf.ToStringMap()
 
 	_, err := json.Marshal(configMap)
-	if err != nil {
-		return err
-	}
-
-	_, err = yaml.Marshal(configMap)
 	if err != nil {
 		return err
 	}

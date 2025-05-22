@@ -27,12 +27,6 @@ func (tID TestID) MarshalText() (text []byte, err error) {
 	return []byte(out), nil
 }
 
-type FailMarshalYaml string
-
-func (FailMarshalYaml) MarshalYAML() (any, error) {
-	return nil, assert.AnError
-}
-
 func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {
 		SomeFiled string `mapstructure:"test"`
@@ -203,7 +197,7 @@ func TestCheckConfigStruct(t *testing.T) {
 			config: struct {
 				Function func() `mapstructure:"test_function"`
 			}{},
-			wantErrMsgSubStr: "config must be able to be marshaled to JSON and YAML, failed to marshal config: json: unsupported type: func()",
+			wantErrMsgSubStr: "config must be able to be marshaled to JSON, failed to marshal config: json: unsupported type: func()",
 		},
 		{
 			name: "valid_ignored_function_item",
@@ -211,15 +205,6 @@ func TestCheckConfigStruct(t *testing.T) {
 				Function func() `mapstructure:"-"`
 				Data     string `mapstructure:"data"`
 			}{},
-		},
-		{
-			name: "invalid_yaml_item",
-			config: struct {
-				Function    func()          `mapstructure:"-"`
-				FailMarshal FailMarshalYaml `mapstructure:"fail_marshal"`
-				Data        string          `mapstructure:"data"`
-			}{},
-			wantErrMsgSubStr: "config must be able to be marshaled to JSON and YAML, failed to marshal config: assert.AnError general error for testing",
 		},
 		{
 			name: "invalid_config_duplicate_id",
@@ -231,7 +216,7 @@ func TestCheckConfigStruct(t *testing.T) {
 					"string_": "this is another string",
 				},
 			},
-			wantErrMsgSubStr: `config must be able to be marshaled to JSON and YAML, failed to marshal config: error encoding field "map": duplicate key "string_" while encoding`,
+			wantErrMsgSubStr: `config must be able to be marshaled to JSON, failed to marshal config: error encoding field "map": duplicate key "string_" while encoding`,
 		},
 	}
 
