@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,7 +19,7 @@ import (
 func TestMergeTraces(t *testing.T) {
 	tr1 := newTracesRequest(testdata.GenerateTraces(2))
 	tr2 := newTracesRequest(testdata.GenerateTraces(3))
-	res, err := tr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, tr2)
+	res, err := tr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, tr2, zap.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, 5, res[0].ItemsCount())
 }
@@ -128,7 +129,7 @@ func TestMergeSplitTraces(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.tr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.tr2)
+			res, err := tt.tr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.tr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -231,10 +232,22 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_trace",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(1)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:      nil,
+			expected: []Request{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -247,7 +260,7 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 func TestMergeSplitTracesInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newTracesRequest(testdata.GenerateTraces(18))
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
-	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2)
+	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2, zap.NewNop())
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
@@ -266,7 +279,7 @@ func TestMergeSplitManySmallTraces(t *testing.T) {
 	merged := []Request{newTracesRequest(testdata.GenerateTraces(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newTracesRequest(testdata.GenerateTraces(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -276,7 +289,7 @@ func TestTracesMergeSplitExactBytes(t *testing.T) {
 	pb := ptrace.ProtoMarshaler{}
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newTracesRequest(testdata.GenerateTraces(4))
-	merged, err := lr.MergeSplit(context.Background(), pb.TracesSize(testdata.GenerateTraces(2))-1, RequestSizerTypeBytes, nil)
+	merged, err := lr.MergeSplit(context.Background(), pb.TracesSize(testdata.GenerateTraces(2))-1, RequestSizerTypeBytes, nil, zap.NewNop())
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -284,7 +297,7 @@ func TestTracesMergeSplitExactBytes(t *testing.T) {
 func TestTracesMergeSplitExactItems(t *testing.T) {
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newTracesRequest(testdata.GenerateTraces(4))
-	merged, err := lr.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+	merged, err := lr.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil, zap.NewNop())
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -292,7 +305,7 @@ func TestTracesMergeSplitExactItems(t *testing.T) {
 func TestTracesMergeSplitUnknownSizerType(t *testing.T) {
 	req := newTracesRequest(ptrace.NewTraces())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil)
+	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil, zap.NewNop())
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -303,7 +316,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallTraces(b *testing.B) {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newTracesRequest(testdata.GenerateTraces(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -317,7 +330,7 @@ func BenchmarkSplittingBasedOnItemCountManyTracesSlightlyAboveLimit(b *testing.B
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newTracesRequest(testdata.GenerateTraces(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
@@ -330,7 +343,7 @@ func BenchmarkSplittingBasedOnItemCountHugeTraces(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newTracesRequest(testdata.GenerateTraces(0))}
 		lr2 := newTracesRequest(testdata.GenerateTraces(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}

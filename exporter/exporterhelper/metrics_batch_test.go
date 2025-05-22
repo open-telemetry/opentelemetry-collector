@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -20,7 +21,7 @@ var metricsBytesSizer = &sizer.MetricsBytesSizer{}
 func TestMergeMetrics(t *testing.T) {
 	mr1 := newMetricsRequest(testdata.GenerateMetrics(2))
 	mr2 := newMetricsRequest(testdata.GenerateMetrics(3))
-	res, err := mr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, mr2)
+	res, err := mr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, mr2, zap.NewNop())
 	require.NoError(t, err)
 	// Every metric has 2 data points.
 	assert.Equal(t, 2*5, res[0].ItemsCount())
@@ -124,7 +125,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -139,7 +140,7 @@ func TestMergeSplitMetrics(t *testing.T) {
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newMetricsRequest(testdata.GenerateMetrics(18)) // 18 metrics, 36 data points
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
-	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2)
+	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2, zap.NewNop())
 	require.Error(t, err)
 	assert.Equal(t, 36, r1.ItemsCount())
 }
@@ -165,7 +166,7 @@ func TestMergeSplitManySmallMetrics(t *testing.T) {
 	merged := []Request{newMetricsRequest(testdata.GenerateMetrics(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -178,7 +179,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallMetrics(b *testing.B) {
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20020, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20020, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -192,7 +193,7 @@ func BenchmarkSplittingBasedOnItemCountManyMetricsSlightlyAboveLimit(b *testing.
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newMetricsRequest(testdata.GenerateMetrics(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
@@ -205,7 +206,7 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newMetricsRequest(testdata.GenerateMetrics(0))}
 		lr2 := newMetricsRequest(testdata.GenerateMetrics(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 20000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
@@ -283,14 +284,32 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			mr2:           nil,
 			expectedSizes: []int{706, 700, 85},
 		},
+		{
+			name:    "unsplittable_large_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				// Add a large attribute value to make the metric unsplittable
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("large_metric")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return md
+			}()),
+			mr2:           nil,
+			expectedSizes: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2, zap.NewNop())
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expectedSizes))
-			for i := range res {
-				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+			if tt.expectedSizes != nil {
+				assert.Len(t, res, len(tt.expectedSizes))
+				for i := range res {
+					assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+				}
+			} else {
+				assert.Empty(t, res)
 			}
 		})
 	}
@@ -540,7 +559,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 func TestMetricsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newMetricsRequest(pmetric.NewMetrics())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil)
+	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil, zap.NewNop())
 	require.EqualError(t, err, "unknown sizer type")
 }
 

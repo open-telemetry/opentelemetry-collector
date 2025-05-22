@@ -8,11 +8,16 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type batch struct {
@@ -26,6 +31,7 @@ type batcherSettings[T any] struct {
 	sizer      request.Sizer[T]
 	next       sender.SendFunc[T]
 	maxWorkers int
+	settings   Settings[request.Request]
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -40,6 +46,14 @@ type defaultBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+	tb             *metadata.TelemetryBuilder
+	metrics        *metricsBatcher
+	logger         *zap.Logger
+}
+
+type metricsBatcher struct {
+	ExporterBatchFailedItems metric.Int64Counter
+	metricAttr               metric.MeasurementOption
 }
 
 func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
@@ -51,6 +65,38 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 			workerPool <- struct{}{}
 		}
 	}
+
+	exporterAttr := attribute.String(exporterKey, bSet.settings.ID.String())
+
+	tb, err := metadata.NewTelemetryBuilder(bSet.settings.Telemetry)
+	if err != nil {
+		bSet.settings.Telemetry.Logger.Error("failed to create telemetry builder", zap.Error(err))
+	}
+
+	var batcherMetrics *metricsBatcher
+	if tb != nil {
+		var failedItems metric.Int64Counter
+		switch bSet.settings.Signal {
+		case pipeline.SignalTraces:
+			failedItems = tb.ExporterBatchFailedSpans
+		case pipeline.SignalMetrics:
+			failedItems = tb.ExporterBatchFailedMetricPoints
+		case pipeline.SignalLogs:
+			failedItems = tb.ExporterBatchFailedLogRecords
+		}
+
+		batcherMetrics = &metricsBatcher{
+			ExporterBatchFailedItems: failedItems,
+			metricAttr:               metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
+		}
+	}
+
+	logger := bSet.settings.Telemetry.Logger.With(
+		zap.String("exporter", bSet.settings.ID.String()),
+		zap.String("batcher", "default"),
+		zap.String("signal", bSet.settings.Signal.String()),
+	)
+
 	return &defaultBatcher{
 		cfg:         bCfg,
 		workerPool:  workerPool,
@@ -59,6 +105,9 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 		consumeFunc: bSet.next,
 		stopWG:      sync.WaitGroup{},
 		shutdownCh:  make(chan struct{}, 1),
+		tb:          tb,
+		metrics:     batcherMetrics,
+		logger:      logger,
 	}
 }
 
@@ -68,16 +117,31 @@ func (qb *defaultBatcher) resetTimer() {
 	}
 }
 
+func (qb *defaultBatcher) observeBatchedItems(ctx context.Context, reqList []request.Request, itemsBefore int) {
+	itemsAfter := 0
+	for _, req := range reqList {
+		itemsAfter += req.ItemsCount()
+	}
+	diff := itemsBefore - itemsAfter
+
+	if diff > 0 && qb.metrics != nil {
+		qb.metrics.ExporterBatchFailedItems.Add(ctx, int64(diff), qb.metrics.metricAttr)
+	}
+}
+
 func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done Done) {
 	qb.currentBatchMu.Lock()
+	items := req.ItemsCount()
 
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil, qb.logger)
 		if mergeSplitErr != nil || len(reqList) == 0 {
+			qb.observeBatchedItems(ctx, reqList, items)
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
 			return
 		}
+		qb.observeBatchedItems(ctx, reqList, items)
 
 		// If more than one flush is required for this request, call done only when all flushes are done.
 		if len(reqList) > 1 {
@@ -106,13 +170,15 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req, qb.logger)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
+		qb.observeBatchedItems(ctx, reqList, items)
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
 		return
 	}
+	qb.observeBatchedItems(ctx, reqList, items)
 
 	// If more than one flush is required for this request, call done only when all flushes are done.
 	if len(reqList) > 1 {
@@ -224,6 +290,11 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done D
 // Shutdown ensures that queue and all Batcher are stopped.
 func (qb *defaultBatcher) Shutdown(_ context.Context) error {
 	close(qb.shutdownCh)
+
+	if qb.tb != nil {
+		qb.tb.Shutdown()
+	}
+
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
 	qb.stopWG.Wait()
