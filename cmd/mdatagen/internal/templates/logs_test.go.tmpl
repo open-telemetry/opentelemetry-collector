@@ -5,11 +5,9 @@ package {{ .Package }}
 import (
 	"time"
 	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	{{- if or isReceiver isScraper }}
