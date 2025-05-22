@@ -45,6 +45,11 @@ func (ms Profiles) ResourceProfiles() ResourceProfilesSlice {
 	return newResourceProfilesSlice(&ms.getOrig().ResourceProfiles, internal.GetProfilesState(internal.Profiles(ms)))
 }
 
+// ProfilesDictionary returns the ProfilesDictionary associated with this Profiles.
+func (ms Profiles) ProfilesDictionary() ProfilesDictionary {
+	return newProfilesDictionary(&ms.getOrig().Dictionary, internal.GetProfilesState(internal.Profiles(ms)))
+}
+
 // MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
 func (ms Profiles) MarkReadOnly() {
 	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
