@@ -181,6 +181,15 @@ func (l *Conf) Merge(in *Conf) error {
 	return l.k.Merge(in.k)
 }
 
+// Delete a path from the Conf.
+// If the path exists, deletes it and returns true.
+// If the path does not exist, does nothing and returns false.
+func (l *Conf) Delete(key string) bool {
+	wasSet := l.IsSet(key)
+	l.k.Delete(key)
+	return wasSet
+}
+
 // mergeAppend merges the input given configuration into the existing config.
 // Note that the given map may be modified.
 // Additionally, mergeAppend performs deduplication when merging lists.
@@ -216,7 +225,12 @@ func (l *Conf) toStringMapWithExpand() map[string]any {
 	return m
 }
 
-// ToStringMap creates a map[string]any from a Parser.
+// ToStringMap creates a map[string]any from a Conf.
+// Values with multiple representations
+// are normalized with the YAML parsed representation.
+//
+// For example, for a Conf created from `foo: ${env:FOO}` and `FOO=123`
+// ToStringMap will return `map[string]any{"foo": 123}`.
 func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
