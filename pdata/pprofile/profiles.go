@@ -38,6 +38,7 @@ func (ms Profiles) IsReadOnly() bool {
 // CopyTo copies the Profiles instance overriding the destination.
 func (ms Profiles) CopyTo(dest Profiles) {
 	ms.ResourceProfiles().CopyTo(dest.ResourceProfiles())
+	ms.ProfilesDictionary().CopyTo(dest.ProfilesDictionary())
 }
 
 // ResourceProfiles returns the ResourceProfilesSlice associated with this Profiles.
