@@ -152,9 +152,3 @@ func baseProvider[T extensionlimiter.BaseLimiterProvider](p T) (extensionlimiter
 func nilError[S, T any](f func(S) T) func(S) (T, error) {
 	return func(s S) (T, error) { return f(s), nil }
 }
-
-// resourceToRateLimiterError represents the impossible conversion
-// from resource limiter to rate limiter.
-func resourceToRateLimiterError(_ extensionlimiter.ResourceLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
-	return nil, ErrNotARateLimiter
-}

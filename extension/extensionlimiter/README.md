@@ -86,8 +86,10 @@ All limiter extensions:
 The `limiterhelper` package contains features for composing limiters
 as well as foundational rate and resource limiter implementations.
 The `limiterhelper/http` and `limiterhelper/grpc` packages provide
-connectors allowing limiters to act as specific kinds of middleware.
-The original garbage-collector state-based limiter can be found in
+connectors allowing limiters to act as specific kinds of
+middleware. Limiters are automatically initialized as middleware via
+`configmiddleware`.  The original garbage-collector state-based
+limiter can be found in
 [`../memorylimiterextension`](../memorylimiterextension/README.md).
 
 ## Recommendations
@@ -97,11 +99,12 @@ integrate with any kind of limiter is to use the a consumer wrapper
 function (e.g. `NewLimitedLogs`). These helper methods check for
 saturation and then apply multiple weight keys in sequence. 
 
-Multi-limiter adapters (@@@), ...
-
 At a lower level, a simple way to integrate with any kind of limiter
 is to use the `LimiterWrapper` interface with its callback-based
 approach.
+
+Multi-limiter adapters are available for all provider interfaces via
+`MultipleProvider`.
 
 For blocking access to rate and resource limiters without wrapper
 constraints, use `NewBlockingRateLimiter` or `NewBlockingResourceLimiter`.
