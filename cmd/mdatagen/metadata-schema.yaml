@@ -117,7 +117,7 @@ metrics:
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
 
-# Optional: map of metric names with the key being the metric name and value
+# Optional: map of event names with the key being the event name and value
 # being described below.
 events:
   <event.name>:
