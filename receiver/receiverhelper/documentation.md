@@ -24,7 +24,7 @@ The number of metric points successfully accepted by the receiver.
 
 ### otelcol_receiver_accepted_spans
 
-The number of spans successfully accepted by the receiver.
+Number of spans successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -72,7 +72,7 @@ The number of metric points refused by the receiver.
 
 ### otelcol_receiver_refused_spans
 
-The number of spans refused by the receiver.
+Number of spans that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

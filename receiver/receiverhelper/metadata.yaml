@@ -9,7 +9,7 @@ telemetry:
   metrics:
     receiver_accepted_spans:
       enabled: true
-      description: The number of spans successfully accepted by the receiver.
+      description: Number of spans successfully pushed into the pipeline. [alpha]
       unit: "{spans}"
       sum:
         value_type: int
@@ -17,7 +17,7 @@ telemetry:
         aggregation_temporality: cumulative
     receiver_refused_spans:
       enabled: true
-      description: The number of spans refused by the receiver.
+      description: Number of spans that could not be pushed into the pipeline. [alpha]
       unit: "{spans}"
       sum:
         value_type: int

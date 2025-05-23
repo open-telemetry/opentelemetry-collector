@@ -47,7 +47,7 @@ func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Tel
 func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_spans",
-		Description: "The number of spans successfully accepted by the receiver.",
+		Description: "Number of spans successfully pushed into the pipeline. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
@@ -143,7 +143,7 @@ func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Tele
 func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_spans",
-		Description: "The number of spans refused by the receiver.",
+		Description: "Number of spans that could not be pushed into the pipeline. [alpha]",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,

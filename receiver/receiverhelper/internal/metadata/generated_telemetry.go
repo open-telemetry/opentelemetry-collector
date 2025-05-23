@@ -80,7 +80,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_spans",
-		metric.WithDescription("The number of spans successfully accepted by the receiver."),
+		metric.WithDescription("Number of spans successfully pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
@@ -116,7 +116,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_spans",
-		metric.WithDescription("The number of spans refused by the receiver."),
+		metric.WithDescription("Number of spans that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
