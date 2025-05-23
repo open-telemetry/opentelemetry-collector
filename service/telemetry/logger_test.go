@@ -6,10 +6,14 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,6 +104,28 @@ func TestNewLogger(t *testing.T) {
 			},
 			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
+		{
+			name: "log config with rotation",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:             zapcore.InfoLevel,
+					Development:       false,
+					Encoding:          "json",
+					OutputPaths:       []string{filepath.Join(t.TempDir(), "test-rotate.log")},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					Rotation: &LogsRotationConfig{
+						Enabled:      true,
+						MaxMegabytes: 1,
+						MaxBackups:   2,
+						MaxAge:       1,
+						Compress:     false,
+					},
+				},
+			},
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
+		},
 	}
 	for _, tt := range tests {
 		testCoreType := func(t *testing.T, wantCoreType any) {
@@ -158,6 +184,108 @@ func TestNewLoggerWithResource(t *testing.T) {
 	enc := zapcore.NewMapObjectEncoder()
 	require.NoError(t, dict.MarshalLogObject(enc))
 	require.Equal(t, "myvalue", enc.Fields["myfield"])
+}
+
+func TestNewLoggerWithRotateEnabled(t *testing.T) {
+	observerCore, observedLogs := observer.New(zap.InfoLevel)
+
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
+	}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: []string{filepath.Join(t.TempDir(), "test-rotate.log")},
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1,
+				Compress:     false,
+			},
+		},
+	}
+
+	mylogger, _, err := newLogger(set, cfg)
+	require.NoError(t, err)
+
+	// Ensure proper cleanup of lumberjack logger
+	if ljLogger != nil {
+		defer ljLogger.Close()
+	}
+
+	mylogger.Info("Test log message")
+	require.Len(t, observedLogs.All(), 1)
+
+	require.NotNil(t, ljLogger)
+}
+
+func TestNewLogger_RotateFile(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	tempFile := "test.log"
+	logFileFullPath := filepath.Join(tempDir, tempFile)
+
+	observerCore, _ := observer.New(zap.InfoLevel)
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
+	}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: []string{logFileFullPath},
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1, // Rotate after ~1MB
+				Compress:     false,
+			},
+		},
+	}
+
+	logger, _, err := newLogger(set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, logger)
+
+	// Ensure proper cleanup of lumberjack logger
+	if ljLogger != nil {
+		defer ljLogger.Close()
+	}
+	// Write ~1.2MB log data
+	line := strings.Repeat("abcdefghijmnewbigfilewritingdatatobigdatafile", 200) // ~10KB
+	for i := 0; i < 200; i++ {
+		logger.Info(fmt.Sprintf("Line %d: %s", i, line))
+	}
+
+	err = logger.Sync()
+	require.NoError(t, err)
+	files, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	// We expect two files: test.log and test.log.<timestamp>
+	require.Len(t, files, 2)
+
+	defer ljLogger.Close()
+	cntTempFile := 0
+	for _, file := range files {
+		fileName := file.Name()
+		if fileName == tempFile {
+			cntTempFile++
+			continue
+		}
+		// Can't validate timestamp without known format, skip this part
+	}
+	assert.Equal(t, 1, cntTempFile)
 }
 
 func TestOTLPLogExport(t *testing.T) {

@@ -4,16 +4,63 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"net/url"
+
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
+var (
+	rotationSchema string
+	ljLogger       *lumberjack.Logger
+)
+
+type logRotateSink struct {
+	*lumberjack.Logger
+}
+
+// Sync is a no-op method to satisfy the zap.Sink interface, ensuring compatibility with zap's logging framework.
+func (lr logRotateSink) Sync() error {
+	// no-op
+	return nil
+}
+
+func createLumberjackLogger(logsCfg LogsConfig) *lumberjack.Logger {
+	return &lumberjack.Logger{
+		Filename:   logsCfg.OutputPaths[0],
+		MaxSize:    logsCfg.Rotation.MaxMegabytes,
+		MaxAge:     logsCfg.Rotation.MaxAge,
+		MaxBackups: logsCfg.Rotation.MaxBackups,
+		Compress:   logsCfg.Rotation.Compress,
+	}
+}
+
+func registerLumberjackSink(logger *lumberjack.Logger, rotationSchemaLocal string) error {
+	err := zap.RegisterSink(rotationSchemaLocal, func(*url.URL) (zap.Sink, error) {
+		return logRotateSink{Logger: logger}, nil
+	})
+	return err
+}
+
 // newLogger creates a Logger and a LoggerProvider from Config.
 func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
+	if cfg.Logs.Rotation != nil && cfg.Logs.Rotation.Enabled && len(cfg.Logs.OutputPaths) > 0 && cfg.Logs.OutputPaths[0] != "console" {
+		ljLogger = createLumberjackLogger(cfg.Logs)
+
+		rotationSchema = "lumberjack-" + uuid.NewString()
+		err := registerLumberjackSink(ljLogger, rotationSchema)
+		if err != nil {
+			return nil, nil, err
+		}
+		cfg.Logs.OutputPaths = []string{rotationSchema + ":" + cfg.Logs.OutputPaths[0]}
+	}
+
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -43,6 +90,15 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core created above using WrapCore.
 	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
 	// the LoggerProvider, meaning that the attributes would be exported twice.
+	logger, lp := configureLogger(logger, cfg, set)
+
+	return logger, lp, nil
+}
+
+// configureLogger applies common configuration to the logger
+func configureLogger(logger *zap.Logger, cfg Config, set Settings) (*zap.Logger, log.LoggerProvider) {
+	// The attributes in cfg.Resource are added as resource attributes for logs exported through the LoggerProvider
+	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core
 	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 		var fields []zap.Field
 		for k, v := range cfg.Resource {
@@ -87,7 +143,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		return core
 	}))
 
-	return logger, lp, nil
+	return logger, lp
 }
 
 func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {

@@ -135,6 +135,17 @@ type LogsConfigV030 struct {
 	// Sampling can be disabled by setting 'enabled' to false
 	Sampling *LogsSamplingConfig `mapstructure:"sampling"`
 
+	// Rotation is the configuration for log rotation. If this is not specified,
+	// log rotation will be disabled.
+	// Example:
+	//   rotation:
+	//     max_megabytes: 100 # Rotate the log file when it exceeds 100 MB.
+	//     max_backups: 5   # Keep at most 5 old log files.
+	//     max_age: 14      # Keep old log files for at most 14 days.
+	//     compress: true   # Compress rotated log files.
+	// See LogsRotationConfig for more details on the available options.
+	Rotation *LogsRotationConfig `mapstructure:"rotation,omitempty"`
+
 	// OutputPaths is a list of URLs or file paths to write logging output to.
 	// The URLs could only be with "file" schema or without schema.
 	// The URLs with "file" schema must be an absolute path.
@@ -182,6 +193,24 @@ type LogsSamplingConfig struct {
 	// Thereafter represents the sampling rate, every Nth message will be sampled after Initial messages are logged during each Tick.
 	// If Thereafter is zero, the logger will drop all the messages after the Initial each Tick.
 	Thereafter int `mapstructure:"thereafter"`
+}
+
+// LogsRotationConfig defines the configuration for log rotation.
+// It allows users to manage log file sizes and retention policies.
+type LogsRotationConfig struct {
+	// Enabled activates log file rotation. When set to true, log files will be rotated based on other configuration parameters.
+	Enabled bool `mapstructure:"enabled"`
+	// MaxMegabytes is the maximum size in megabytes that a log file can reach before it is rotated.
+	// For example, if set to 100, a new log file will be created when the current one exceeds 100MB.
+	MaxMegabytes int `mapstructure:"max_megabytes"`
+	// MaxBackups is the maximum number of old (rotated) log files to retain.
+	// If set to 3, the system will keep the current log file and the 3 most recent rotated files.
+	MaxBackups int `mapstructure:"max_backups"`
+	// MaxAge is the maximum number of days to retain old log files. The age is based on the timestamp encoded in the rotated filenames.
+	MaxAge int `mapstructure:"max_age"`
+	// Compress determines if the rotated log files should be compressed using gzip.
+	// This can save disk space, especially for verbose logs.
+	Compress bool `mapstructure:"compress"`
 }
 
 func (c *LogsConfigV030) Unmarshal(conf *confmap.Conf) error {
