@@ -46,7 +46,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.126.0
 	go.opentelemetry.io/collector/service/hostcapabilities v0.126.0
 	go.opentelemetry.io/contrib/otelconf v0.16.0
-	go.opentelemetry.io/contrib/propagators/b3 v1.35.0
+	go.opentelemetry.io/contrib/propagators/b3 v1.36.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/log v0.12.2
 	go.opentelemetry.io/otel/metric v1.36.0
