@@ -2,3 +2,7 @@ verbosity: detailed
 sampling_initial: 10
 sampling_thereafter: 50
 use_internal_logger: false
+output_paths:
+  - /tmp/debugexporter_test.log
+error_output_paths:
+  - /tmp/debugexporter_test_error.log
