@@ -136,7 +136,11 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 
     {{- range $name, $metric := .Telemetry.Metrics }}
     builder.{{ $name.Render }}, err = builder.meter.{{ $metric.Data.Instrument }}(
+        {{ if $metric.Prefix -}}
+        "{{ $metric.Prefix }}{{ $name }}",
+        {{ else -}}
         "otelcol_{{ $name }}",
+        {{ end -}}
         metric.WithDescription("{{ $metric.Description }}{{ $metric.Stability }}"),
         metric.WithUnit("{{ $metric.Unit }}"),
         {{ if eq $metric.Data.Type "Histogram" -}}

@@ -9,41 +9,64 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ consumer.Traces = traces{}
+var (
+	_               consumer.Traces = obsTraces{}
+	tracesMarshaler                 = &ptrace.ProtoMarshaler{}
+)
 
-func NewTraces(consumer consumer.Traces, itemCounter metric.Int64Counter, opts ...Option) consumer.Traces {
+func NewTraces(cons consumer.Traces, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Traces {
+	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
+		return cons
+	}
+
 	o := options{}
 	for _, opt := range opts {
-		opt.apply(&o)
+		opt(&o)
 	}
-	return traces{
-		consumer:        consumer,
+
+	return obsTraces{
+		consumer:        cons,
 		itemCounter:     itemCounter,
+		sizeCounter:     sizeCounter,
 		compiledOptions: o.compile(),
 	}
 }
 
-type traces struct {
+type obsTraces struct {
 	consumer    consumer.Traces
 	itemCounter metric.Int64Counter
+	sizeCounter metric.Int64Counter
 	compiledOptions
 }
 
-func (c traces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	// Measure before calling ConsumeTraces because the data may be mutated downstream
+// ConsumeTraces measures telemetry before calling ConsumeTraces because the data may be mutated downstream
+func (c obsTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+	// Use a pointer to so that deferred function can depend on the result of ConsumeTraces
+	attrs := &c.withSuccessAttrs
+
 	itemCount := td.SpanCount()
+	defer func() {
+		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+	}()
+
+	if isEnabled(ctx, c.sizeCounter) {
+		byteCount := int64(tracesMarshaler.TracesSize(td))
+		defer func() {
+			c.sizeCounter.Add(ctx, byteCount, *attrs)
+		}()
+	}
+
 	err := c.consumer.ConsumeTraces(ctx, td)
-	if err == nil {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withSuccessAttrs)
-	} else {
-		c.itemCounter.Add(ctx, int64(itemCount), c.withFailureAttrs)
+	if err != nil {
+		attrs = &c.withFailureAttrs
 	}
 	return err
 }
 
-func (c traces) Capabilities() consumer.Capabilities {
+func (c obsTraces) Capabilities() consumer.Capabilities {
 	return c.consumer.Capabilities()
 }

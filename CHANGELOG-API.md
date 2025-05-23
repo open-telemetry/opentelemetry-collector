@@ -7,6 +7,19 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.32.0/v0.126.0
+
+### 🚩 Deprecations 🚩
+
+- `configauth`: Deprecate `configauth.Authentication` in favor of `configauth.Config`. (#12875)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add type definition for events in mdatagen (#12571)
+- `cmd/mdatagen`: Add functions for processing structured events in mdatagen (#12571)
+
+<!-- previous-version -->
+
 ## v1.31.0/v0.125.0
 
 ### 🚩 Deprecations 🚩
