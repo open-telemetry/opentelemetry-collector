@@ -181,7 +181,7 @@ func (rec *ObsReport) endOp(
 			outcome = "failure"
 		}
 	}
-	rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributes(attribute.String("outcome", outcome)))
+	rec.telemetryBuilder.OtelcolReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributes(attribute.String("outcome", outcome)))
 
 	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numInternalErrors)
 
