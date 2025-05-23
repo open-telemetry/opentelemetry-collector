@@ -192,15 +192,15 @@ func (rec *ObsReport) endOp(
 		case pipeline.SignalTraces:
 			acceptedItemsKey = internal.AcceptedSpansKey
 			refusedItemsKey = internal.RefusedSpansKey
-			internalErrorsKey = "internal_errors_spans"
+			internalErrorsKey = internal.RefusedInternalSpansKey
 		case pipeline.SignalMetrics:
 			acceptedItemsKey = internal.AcceptedMetricPointsKey
 			refusedItemsKey = internal.RefusedMetricPointsKey
-			internalErrorsKey = "internal_errors_metric_points"
+			internalErrorsKey = internal.RefusedInternalMetricPointKey
 		case pipeline.SignalLogs:
 			acceptedItemsKey = internal.AcceptedLogRecordsKey
 			refusedItemsKey = internal.RefusedLogRecordsKey
-			internalErrorsKey = "internal_errors_log_records"
+			internalErrorsKey = internal.RefusedInternalLogRecordsKey
 		}
 
 		span.SetAttributes(
