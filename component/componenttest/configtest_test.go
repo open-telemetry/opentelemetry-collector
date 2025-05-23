@@ -5,11 +5,27 @@ package componenttest
 
 import (
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+type TestID string
+
+func (tID *TestID) UnmarshalText(text []byte) error {
+	*tID = TestID(strings.TrimSuffix(string(text), "_"))
+	return nil
+}
+
+func (tID TestID) MarshalText() (text []byte, err error) {
+	out := string(tID)
+	if !strings.HasSuffix(out, "_") {
+		out += "_"
+	}
+	return []byte(out), nil
+}
 
 func TestCheckConfigStructPointerAndValue(t *testing.T) {
 	config := struct {
@@ -43,7 +59,7 @@ func TestCheckConfigStruct(t *testing.T) {
 				// A public type with proper tag.
 				MyPublicInt string `mapstructure:"int"`
 				// A public type that should be ignored.
-				MyFunc func() error
+				MyFunc func() error `mapstructure:"-"`
 				// A public type that should be ignored.
 				Reader io.Reader
 				// private type not tagged.
@@ -175,6 +191,32 @@ func TestCheckConfigStruct(t *testing.T) {
 			config: struct {
 				Slice []string `mapstructure:"test_slice"`
 			}{},
+		},
+		{
+			name: "invalid_function_item",
+			config: struct {
+				Function func() `mapstructure:"test_function"`
+			}{},
+			wantErrMsgSubStr: "config must be able to be marshaled to JSON, failed to marshal config: json: unsupported type: func()",
+		},
+		{
+			name: "valid_ignored_function_item",
+			config: struct {
+				Function func() `mapstructure:"-"`
+				Data     string `mapstructure:"data"`
+			}{},
+		},
+		{
+			name: "invalid_config_duplicate_id",
+			config: struct {
+				Map map[TestID]string `mapstructure:"map"`
+			}{
+				Map: map[TestID]string{
+					"string":  "this is a string",
+					"string_": "this is another string",
+				},
+			},
+			wantErrMsgSubStr: `config must be able to be marshaled to JSON, failed to marshal config: error encoding field "map": duplicate key "string_" while encoding`,
 		},
 	}
 
