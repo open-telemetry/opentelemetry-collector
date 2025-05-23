@@ -138,6 +138,7 @@ events:
       if_configured:
     # Optional: array of attributes that were defined in the attributes section that are emitted by this event.
     attributes: [string]
+
 # Lifecycle tests generated for this component.
 tests:
   config: # {} by default, specific testing configuration for lifecycle tests.
