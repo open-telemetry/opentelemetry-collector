@@ -55,22 +55,18 @@ for example, a limiter can slow the arrival of new data by stalling a
 response, it means synchronously waiting for the limit and
 asynchronously processing the request.
 
-Resource limiters require the most of callers, as the interface
-requires a `Release` function to be called after the caller is
-finished with the resource. Adapters are provided for convenience.
-
 A limiter is defined as **saturated** when a limit is completely
-overloaded in at least one weight, generally it means callers should
+overloaded for at least one weight, generally it means callers should
 deny new requests. All limiter extensions implement the basic limiter
 interface, and callers are expected to check for saturation by
-invoking `MustDeny` once before applying individual weight limits.
+invoking `MustDeny` before making individual requests with the limiter.
 
 Whereas the basic limiter's `MustDeny` method indicates only
 saturation, the rate and resource limiter interfaces both return a
 `Reservation`. While the details are slightly different, the
 reservation generally has two features:
 
-- a mechanism to wait for the limit (if possible)
+- a mechanism to wait for the limit
 - a mechanism to cancel or release the request.
 
 Each kind of limiter have corresponding **provider** interfaces that
@@ -136,15 +132,15 @@ ways.
 
 ### Limiter blocking and failing
 
-Limiters implementations never block.  The `RateLimiter` and
-`ResourceLimiter` interfaces return reservations instead informing the
-caller how they can wait on their own, allowing them to cancel the
-request if they return early. 
+Limiters implementations are not expected to block.  The `RateLimiter`
+and `ResourceLimiter` interfaces return reservations instead,
+informing the caller how they can wait on their own and allowing them
+to cancel the request if they return early.
 
-Limiter implementations SHOULD consider the context deadline when
-they block. If the deadline is likely to expire before the limit
-becomes available, they should return a standard overload signal.
-Blocking adapters are provided for callers including the `LimiterWrapper`.
+Limiter implementations SHOULD consider the context deadline when they
+block. If the deadline is likely to expire before the limit becomes
+available, they should return an error instead.  Blocking adapters are
+provided for callers including the `LimiterWrapper`.
 
 ### Limiter saturation
 
@@ -176,10 +172,10 @@ before creating new concurrent work.
 
 #### Base
 
-The `memorylimiterextension` is a `BasedLimiterProvider` that bases
-its decisions on memory statistics from the garbage collector. This
+The `memorylimiterextension` is a `BaseLimiterProvider` that makes its
+decisions using memory statistics from the garbage collector. This
 logic was traditionally included in the `memorylimiterprocessor`,
-however the limiter extension interface is preferred.
+however receiver integration with limiter extensions is preferred.
 
 #### Rate
 
@@ -188,14 +184,14 @@ provided, based on `golang.org/x/time/rate.Limter`. These underlying
 rate limiters are parameterized by two numbers:
 
 - `limit` (float64): the maximum frequency of weight-units per second
-- `burst` (uint64): the "burst" configured in a Token-bucket algorithm.
+- `burst` (uint64): the "burst" value of the Token-bucket algorithm.
 
 The rate limiter is saturated when there is no burst available.
 
 #### Resource
 
 A built-in helper implementation of the ResourceLimiter interface is
-provided, based on a bounded queue with LIFO semantics.  These
+provided, based on a bounded queue with LIFO behavior.  These
 underlying resource limiters are parameterized by two numbers:
 
 - `request` (uint64): the maximum of concurrent resource value admitted
