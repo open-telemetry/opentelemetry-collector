@@ -1053,3 +1053,39 @@ func TestStringyTypes(t *testing.T) {
 		assert.Equal(t, tt.isStringy, isStringyStructure(to))
 	}
 }
+
+func TestConfDelete(t *testing.T) {
+	tests := []struct {
+		path      string
+		stringMap map[string]any
+	}{
+		{
+			path:      "key",
+			stringMap: map[string]any{"key": "value"},
+		},
+		{
+			path: "map::expanded",
+			stringMap: map[string]any{"map": map[string]any{
+				"expanded": expandedValue{
+					Value:    0o1234,
+					Original: "01234",
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			cm := NewFromStringMap(test.stringMap)
+
+			assert.True(t, cm.IsSet(test.path))
+			assert.True(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+
+			assert.False(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+		})
+	}
+}

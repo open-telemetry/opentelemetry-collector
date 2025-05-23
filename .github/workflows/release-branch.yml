@@ -1,0 +1,39 @@
+name: Automation - Release Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-series:
+        description: 'Release series (e.g., v0.85.x).'
+        required: true
+      prepare-release-commit-hash:
+        description: 'Commit hash for "Prepare release" commit (e.g., a1b2c3d4)'
+        required: true
+
+jobs:
+  release-branch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
+        with:
+          go-version: 1.23.9
+
+      - name: Setup Git config
+        run: |
+          git config --global user.name "opentelemetrybot"
+          git config --global user.email "107717825+opentelemetrybot@users.noreply.github.com"
+
+      - name: Run release-branch.sh
+        run: |
+          ./.github/workflows/scripts/release-branch.sh "${{ inputs.release-series }}" "${{ inputs.prepare-release-commit-hash }}"
+        env:
+          UPSTREAM_REMOTE_NAME: "origin"
+          MAIN_BRANCH_NAME: "main"

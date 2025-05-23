@@ -21,17 +21,19 @@ type TracesSink struct {
 	nonMutatingConsumer
 	mu        sync.Mutex
 	traces    []ptrace.Traces
+	contexts  []context.Context
 	spanCount int
 }
 
 var _ consumer.Traces = (*TracesSink)(nil)
 
 // ConsumeTraces stores traces to this sink.
-func (ste *TracesSink) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (ste *TracesSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
 	ste.traces = append(ste.traces, td)
+	ste.contexts = append(ste.contexts, ctx)
 	ste.spanCount += td.SpanCount()
 
 	return nil
@@ -47,6 +49,16 @@ func (ste *TracesSink) AllTraces() []ptrace.Traces {
 	return copyTraces
 }
 
+// Contexts returns the contexts stored by this sink since last Reset.
+func (ste *TracesSink) Contexts() []context.Context {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	copyContexts := make([]context.Context, len(ste.contexts))
+	copy(copyContexts, ste.contexts)
+	return copyContexts
+}
+
 // SpanCount returns the number of spans sent to this sink.
 func (ste *TracesSink) SpanCount() int {
 	ste.mu.Lock()
@@ -60,6 +72,7 @@ func (ste *TracesSink) Reset() {
 	defer ste.mu.Unlock()
 
 	ste.traces = nil
+	ste.contexts = nil
 	ste.spanCount = 0
 }
 
@@ -69,17 +82,19 @@ type MetricsSink struct {
 	nonMutatingConsumer
 	mu             sync.Mutex
 	metrics        []pmetric.Metrics
+	contexts       []context.Context
 	dataPointCount int
 }
 
 var _ consumer.Metrics = (*MetricsSink)(nil)
 
 // ConsumeMetrics stores metrics to this sink.
-func (sme *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+func (sme *MetricsSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	sme.mu.Lock()
 	defer sme.mu.Unlock()
 
 	sme.metrics = append(sme.metrics, md)
+	sme.contexts = append(sme.contexts, ctx)
 	sme.dataPointCount += md.DataPointCount()
 
 	return nil
@@ -95,6 +110,16 @@ func (sme *MetricsSink) AllMetrics() []pmetric.Metrics {
 	return copyMetrics
 }
 
+// Contexts returns the contexts stored by this sink since last Reset.
+func (sme *MetricsSink) Contexts() []context.Context {
+	sme.mu.Lock()
+	defer sme.mu.Unlock()
+
+	copyContexts := make([]context.Context, len(sme.contexts))
+	copy(copyContexts, sme.contexts)
+	return copyContexts
+}
+
 // DataPointCount returns the number of metrics stored by this sink since last Reset.
 func (sme *MetricsSink) DataPointCount() int {
 	sme.mu.Lock()
@@ -108,6 +133,7 @@ func (sme *MetricsSink) Reset() {
 	defer sme.mu.Unlock()
 
 	sme.metrics = nil
+	sme.contexts = nil
 	sme.dataPointCount = 0
 }
 
@@ -117,19 +143,20 @@ type LogsSink struct {
 	nonMutatingConsumer
 	mu             sync.Mutex
 	logs           []plog.Logs
+	contexts       []context.Context
 	logRecordCount int
 }
 
 var _ consumer.Logs = (*LogsSink)(nil)
 
 // ConsumeLogs stores logs to this sink.
-func (sle *LogsSink) ConsumeLogs(_ context.Context, ld plog.Logs) error {
+func (sle *LogsSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	sle.mu.Lock()
 	defer sle.mu.Unlock()
 
 	sle.logs = append(sle.logs, ld)
 	sle.logRecordCount += ld.LogRecordCount()
-
+	sle.contexts = append(sle.contexts, ctx)
 	return nil
 }
 
@@ -156,7 +183,18 @@ func (sle *LogsSink) Reset() {
 	defer sle.mu.Unlock()
 
 	sle.logs = nil
+	sle.contexts = nil
 	sle.logRecordCount = 0
+}
+
+// Contexts returns the contexts stored by this sink since last Reset.
+func (sle *LogsSink) Contexts() []context.Context {
+	sle.mu.Lock()
+	defer sle.mu.Unlock()
+
+	copyContexts := make([]context.Context, len(sle.contexts))
+	copy(copyContexts, sle.contexts)
+	return copyContexts
 }
 
 // ProfilesSink is a xconsumer.Profiles that acts like a sink that
@@ -165,17 +203,19 @@ type ProfilesSink struct {
 	nonMutatingConsumer
 	mu          sync.Mutex
 	profiles    []pprofile.Profiles
+	contexts    []context.Context
 	sampleCount int
 }
 
 var _ xconsumer.Profiles = (*ProfilesSink)(nil)
 
 // ConsumeProfiles stores profiles to this sink.
-func (ste *ProfilesSink) ConsumeProfiles(_ context.Context, td pprofile.Profiles) error {
+func (ste *ProfilesSink) ConsumeProfiles(ctx context.Context, td pprofile.Profiles) error {
 	ste.mu.Lock()
 	defer ste.mu.Unlock()
 
 	ste.profiles = append(ste.profiles, td)
+	ste.contexts = append(ste.contexts, ctx)
 	ste.sampleCount += td.SampleCount()
 
 	return nil
@@ -204,5 +244,16 @@ func (ste *ProfilesSink) Reset() {
 	defer ste.mu.Unlock()
 
 	ste.profiles = nil
+	ste.contexts = nil
 	ste.sampleCount = 0
+}
+
+// Contexts returns the contexts stored by this sink since last Reset.
+func (ste *ProfilesSink) Contexts() []context.Context {
+	ste.mu.Lock()
+	defer ste.mu.Unlock()
+
+	copyContexts := make([]context.Context, len(ste.contexts))
+	copy(copyContexts, ste.contexts)
+	return copyContexts
 }
