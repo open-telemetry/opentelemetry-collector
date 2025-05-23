@@ -43,6 +43,7 @@ import (
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -520,6 +521,63 @@ func TestHTTPNewPortAlreadyUsed(t *testing.T) {
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+// TestOTLPReceiverGRPCMetricsIngestTest checks that the metrics receiver
+// is returning the proper response (return and metrics) when the next consumer
+// in the pipeline reports error.
+func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
+	// Get a new available port
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Create a sink
+	sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
+
+	// Create a telemetry instance
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+	// Create telemetry settings
+	settings := tt.NewTelemetrySettings()
+
+	recv := newGRPCReceiver(t, settings, addr, sink)
+	require.NotNil(t, recv)
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, cc.Close())
+	}()
+	// Set up the error case
+	sink.SetConsumeError(errors.New("consumer error"))
+
+	md := testdata.GenerateMetrics(1)
+	_, err = pmetricotlp.NewGRPCClient(cc).Export(context.Background(), pmetricotlp.NewExportRequestFromMetrics(md))
+	errStatus, ok := status.FromError(err)
+	require.True(t, ok)
+	assert.Equal(t, codes.Unavailable, errStatus.Code())
+
+	// Force collection of metrics
+	var rm metricdata.ResourceMetrics
+	require.NoError(t, tt.Reader.Collect(context.Background(), &rm))
+
+	// Debug output
+	t.Logf("ResourceMetrics: %+v", rm)
+
+	// Check internal errors metric
+	got, err := tt.GetMetric("otelcol_receiver_internal_errors_metric_points")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	sum, ok := got.Data.(metricdata.Sum[int64])
+	require.True(t, ok)
+	t.Logf("otelcol_receiver_internal_errors_metric_points: %+v", sum)
+	require.Len(t, sum.DataPoints, 1)
+	require.Equal(t, int64(2), sum.DataPoints[0].Value) // It is 2, we increment it once when the error occurs in ConsumeMetrics and again when the error is propagated back to the receiver
+	require.Equal(t, attribute.NewSet(
+		attribute.String("receiver", otlpReceiverID.String()),
+		attribute.String("transport", "grpc"),
+	), sum.DataPoints[0].Attributes)
 }
 
 // TestOTLPReceiverGRPCTracesIngestTest checks that the gRPC trace receiver
