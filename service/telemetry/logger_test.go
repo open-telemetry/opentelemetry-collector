@@ -198,11 +198,14 @@ func TestNewLoggerWithRotateEnabled(t *testing.T) {
 		},
 	}
 
+	logFilePath := filepath.Join(t.TempDir(), "test-rotate.log")
+	originalOutputPaths := []string{"stdout", logFilePath}
+
 	cfg := Config{
 		Logs: LogsConfig{
 			Level:       zapcore.InfoLevel,
 			Encoding:    "json",
-			OutputPaths: []string{filepath.Join(t.TempDir(), "test-rotate.log")},
+			OutputPaths: originalOutputPaths,
 			Rotation: &LogsRotationConfig{
 				Enabled:      true,
 				MaxMegabytes: 1,
@@ -222,6 +225,18 @@ func TestNewLoggerWithRotateEnabled(t *testing.T) {
 	mylogger.Info("Test log message")
 	require.Len(t, observedLogs.All(), 1)
 
+	// Verify that the correct output path was prefixed for rotation
+	// and other paths (like stdout) remain unchanged.
+	foundFilePrefixed := false
+	for _, path := range cfg.Logs.OutputPaths {
+		if strings.HasPrefix(path, "lumberjack-") && strings.HasSuffix(path, logFilePath) {
+			foundFilePrefixed = true
+		} else if path == "stdout" {
+			// stdout should remain as is
+			assert.Equal(t, "stdout", path)
+		}
+	}
+	assert.True(t, foundFilePrefixed, "Expected file output path to be prefixed for rotation")
 	require.NotNil(t, ljLogger)
 }
 
@@ -293,82 +308,99 @@ func TestGetFirstFileOutputPath(t *testing.T) {
 		name        string
 		logsCfg     LogsConfig
 		expectedLog string
+		expectedIdx int
 	}{
 		{
 			name:        "Empty OutputPaths",
 			logsCfg:     LogsConfig{OutputPaths: []string{}},
 			expectedLog: "",
+			expectedIdx: -1,
 		},
 		{
 			name:        "Only stdout",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stdout"}},
 			expectedLog: "",
+			expectedIdx: -1,
 		},
 		{
 			name:        "Only stderr",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stderr"}},
 			expectedLog: "",
+			expectedIdx: -1,
 		},
 		{
 			name:        "Only console",
 			logsCfg:     LogsConfig{OutputPaths: []string{"console"}},
 			expectedLog: "",
+			expectedIdx: -1,
 		},
 		{
 			name:        "Keywords only",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "console"}},
 			expectedLog: "",
+			expectedIdx: -1,
 		},
 		{
 			name:        "Single file path",
 			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/test.log"}},
 			expectedLog: "/var/log/test.log",
+			expectedIdx: 0,
 		},
 		{
 			name:        "File path first, then keywords",
 			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/app.log", "stdout", "stderr"}},
 			expectedLog: "/var/log/app.log",
+			expectedIdx: 0,
 		},
 		{
 			name:        "Keywords first, then file path",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "/var/log/system.log"}},
 			expectedLog: "/var/log/system.log",
+			expectedIdx: 2,
 		},
 		{
 			name:        "File path in the middle of keywords",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "/var/log/middle.log", "stderr"}},
 			expectedLog: "/var/log/middle.log",
+			expectedIdx: 1,
 		},
 		{
 			name:        "Multiple file paths",
 			logsCfg:     LogsConfig{OutputPaths: []string{"/first.log", "/second.log"}},
 			expectedLog: "/first.log",
+			expectedIdx: 0,
 		},
 		{
 			name:        "File path resembling a keyword",
 			logsCfg:     LogsConfig{OutputPaths: []string{"stdout.log"}},
 			expectedLog: "stdout.log",
+			expectedIdx: 0,
 		},
 		{
 			name:        "Mixed case keyword (treated as file)",
 			logsCfg:     LogsConfig{OutputPaths: []string{"Stdout", "/var/log/app.log"}},
 			expectedLog: "Stdout", // Current implementation is case-sensitive for keywords
+			expectedIdx: 0,
 		},
 		{
 			name:        "Empty string in paths",
 			logsCfg:     LogsConfig{OutputPaths: []string{"", "/var/log/app.log"}},
 			expectedLog: "", // Empty string is not a keyword, so it's returned
+			expectedIdx: 0,
 		},
 		{
 			name:        "File path with spaces (if valid on OS)",
 			logsCfg:     LogsConfig{OutputPaths: []string{"/my logs/app.log"}},
 			expectedLog: "/my logs/app.log",
+			expectedIdx: 0,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expectedLog, getFirstFileOutputPath(tt.logsCfg))
+			path, idx := getFirstFileOutputPath(tt.logsCfg)
+			assert.Equal(t, tt.expectedLog, path)
+			assert.Equal(t, tt.expectedIdx, idx)
 		})
 	}
 }
