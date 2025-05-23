@@ -288,7 +288,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 💡 Enhancements 💡
 
-- `componenttest`: Add helper to get a metric for componentest.Telemetry (#12215)
+- `componenttest`: Add helper to get a metric for componenttest.Telemetry (#12215)
 - `componenttest`: Extract componenttest.Telemetry as generic struct for telemetry testing (#12151)
 - `mdatagen`: Generate assert function for each metric in mdatagen (#12179)
 - `metadatatest`: Generate NewSettings that accepts componenttest.Telemetry (#12216)
@@ -461,14 +461,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   Factory.CreateExtension -> Factory.Create |
   Factory.ExtensionStability -> Factory.Stability
   
-- `exporter`: Deprecate funcs that repeate exporter in name (#11370)
+- `exporter`: Deprecate funcs that repeat exporter in name (#11370)
   Factory.Create[Traces|Metrics|Logs|Profiles]Exporter -> Factory.Create[Traces|Metrics|Logs|Profiles] |
   Factory.[Traces|Metrics|Logs|Profiles]ExporterStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
   
 
 ### 🚀 New components 🚀
 
-- `consumererrorprofiles`: Add new module consumereerrorprofiles for consumer error profiles. (#11131)
+- `consumererrorprofiles`: Add new module consumererrorprofiles for consumer error profiles. (#11131)
 
 ### 💡 Enhancements 💡
 
@@ -995,7 +995,7 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
   - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
   - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
   - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
-  - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
+  - obsreporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
   
 - `confignet`: Deprecates `DialContext` and `ListenContext` functions. Use `Dial` and `Listen` instead. (#9258)
   Unlike the previous `Dial` and `Listen` functions, the new `Dial` and `Listen` functions take a `context.Context` like `DialContext` and `ListenContext`.
