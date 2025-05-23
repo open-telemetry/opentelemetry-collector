@@ -31,6 +31,11 @@ func (lr logRotateSink) Sync() error {
 	return nil
 }
 
+// GetLumberjackLogger returns the global lumberjack logger instance.
+func GetLumberjackLogger() *lumberjack.Logger {
+	return ljLogger
+}
+
 func createLumberjackLogger(logsCfg LogsConfig) *lumberjack.Logger {
 	return &lumberjack.Logger{
 		Filename:   logsCfg.OutputPaths[0],
