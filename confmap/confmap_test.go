@@ -99,6 +99,20 @@ func TestToStringMap(t *testing.T) {
 	}
 }
 
+type testConfigAny struct {
+	AnyField any `mapstructure:"any_field"`
+}
+
+func TestNilToAnyField(t *testing.T) {
+	stringMap := map[string]any{
+		"any_field": nil,
+	}
+	conf := NewFromStringMap(stringMap)
+	cfg := &testConfigAny{}
+	require.NoError(t, conf.Unmarshal(cfg))
+	assert.Nil(t, cfg.AnyField)
+}
+
 func TestExpandNilStructPointersHookFunc(t *testing.T) {
 	stringMap := map[string]any{
 		"boolean": nil,
@@ -1037,5 +1051,41 @@ func TestStringyTypes(t *testing.T) {
 		// Create a reflect.Type from the value
 		to := reflect.TypeOf(tt.valueOfType)
 		assert.Equal(t, tt.isStringy, isStringyStructure(to))
+	}
+}
+
+func TestConfDelete(t *testing.T) {
+	tests := []struct {
+		path      string
+		stringMap map[string]any
+	}{
+		{
+			path:      "key",
+			stringMap: map[string]any{"key": "value"},
+		},
+		{
+			path: "map::expanded",
+			stringMap: map[string]any{"map": map[string]any{
+				"expanded": expandedValue{
+					Value:    0o1234,
+					Original: "01234",
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			cm := NewFromStringMap(test.stringMap)
+
+			assert.True(t, cm.IsSet(test.path))
+			assert.True(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+
+			assert.False(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+		})
 	}
 }

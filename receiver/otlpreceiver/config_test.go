@@ -121,7 +121,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				HTTP: &HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Auth: &confighttp.AuthConfig{
-							Authentication: configauth.Authentication{
+							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
 						},
@@ -227,7 +227,7 @@ func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			assert.EqualError(t, cm.Unmarshal(&cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
+			assert.ErrorContains(t, cm.Unmarshal(&cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
 		})
 	}
 }

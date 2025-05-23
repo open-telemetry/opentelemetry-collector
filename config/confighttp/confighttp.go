@@ -38,7 +38,12 @@ const (
 	defaultMaxRequestBodySize = 20 * 1024 * 1024 // 20MiB
 )
 
-var defaultCompressionAlgorithms = []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+func defaultCompressionAlgorithms() []string {
+	if enableFramedSnappy.IsEnabled() {
+		return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4", "x-snappy-framed"}
+	}
+	return []string{"", "gzip", "zstd", "zlib", "snappy", "deflate", "lz4"}
+}
 
 // ClientConfig defines settings for creating an HTTP client.
 type ClientConfig struct {
@@ -69,7 +74,7 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Authentication `mapstructure:"auth,omitempty"`
+	Auth *configauth.Config `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
@@ -384,7 +389,7 @@ func NewDefaultServerConfig() ServerConfig {
 
 type AuthConfig struct {
 	// Auth for this receiver.
-	configauth.Authentication `mapstructure:",squash"`
+	configauth.Config `mapstructure:",squash"`
 
 	// RequestParameters is a list of parameters that should be extracted from the request and added to the context.
 	// When a parameter is found in both the query string and the header, the value from the query string will be used.
@@ -450,7 +455,7 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 	}
 
 	if hss.CompressionAlgorithms == nil {
-		hss.CompressionAlgorithms = defaultCompressionAlgorithms
+		hss.CompressionAlgorithms = defaultCompressionAlgorithms()
 	}
 
 	// Apply middlewares in reverse order so they execute in

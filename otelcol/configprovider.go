@@ -28,6 +28,8 @@ type ConfigProvider struct {
 type ConfigProviderSettings struct {
 	// ResolverSettings are the settings to configure the behavior of the confmap.Resolver.
 	ResolverSettings confmap.ResolverSettings
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // NewConfigProvider returns a new ConfigProvider that provides the service configuration:

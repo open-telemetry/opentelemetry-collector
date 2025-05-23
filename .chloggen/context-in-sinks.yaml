@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: cmd/mdatagen
+component: consumer/consumertest
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add type definition for events in mdatagen
+note: Add context to sinks
 
 # One or more tracking issues or pull requests related to the change
-issues: [12571]
+issues: [13039]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
