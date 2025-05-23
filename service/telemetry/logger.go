@@ -36,14 +36,36 @@ func GetLumberjackLogger() *lumberjack.Logger {
 	return ljLogger
 }
 
-func createLumberjackLogger(logsCfg LogsConfig) *lumberjack.Logger {
+func createLumberjackLogger(logsCfg LogsConfig, logFileName string) *lumberjack.Logger {
 	return &lumberjack.Logger{
-		Filename:   logsCfg.OutputPaths[0],
+		Filename:   logFileName,
 		MaxSize:    logsCfg.Rotation.MaxMegabytes,
 		MaxAge:     logsCfg.Rotation.MaxAge,
 		MaxBackups: logsCfg.Rotation.MaxBackups,
 		Compress:   logsCfg.Rotation.Compress,
 	}
+}
+
+// getFirstFileOutputPath iterates through the output paths and returns the first
+// path that is not a reserved keyword (console, stdout, stderr).
+// It returns an empty string if no suitable file path is found.
+func getFirstFileOutputPath(logsCfg LogsConfig) string {
+	if len(logsCfg.OutputPaths) == 0 {
+		return ""
+	}
+
+	for _, path := range logsCfg.OutputPaths {
+		switch path {
+		case "console", "stdout", "stderr":
+			// Ignore these keywords
+			continue
+		default:
+			// This is considered a file path
+			return path
+		}
+	}
+	// No file path found
+	return ""
 }
 
 func registerLumberjackSink(logger *lumberjack.Logger, rotationSchemaLocal string) error {
@@ -55,8 +77,10 @@ func registerLumberjackSink(logger *lumberjack.Logger, rotationSchemaLocal strin
 
 // newLogger creates a Logger and a LoggerProvider from Config.
 func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
-	if cfg.Logs.Rotation != nil && cfg.Logs.Rotation.Enabled && len(cfg.Logs.OutputPaths) > 0 && cfg.Logs.OutputPaths[0] != "console" {
-		ljLogger = createLumberjackLogger(cfg.Logs)
+	logFileName := getFirstFileOutputPath(cfg.Logs)
+
+	if cfg.Logs.Rotation != nil && cfg.Logs.Rotation.Enabled && len(logFileName) > 0 {
+		ljLogger = createLumberjackLogger(cfg.Logs, logFileName)
 
 		rotationSchema = "lumberjack-" + uuid.NewString()
 		err := registerLumberjackSink(ljLogger, rotationSchema)

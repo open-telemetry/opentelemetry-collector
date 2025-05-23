@@ -288,6 +288,91 @@ func TestNewLogger_RotateFile(t *testing.T) {
 	assert.Equal(t, 1, cntTempFile)
 }
 
+func TestGetFirstFileOutputPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		logsCfg     LogsConfig
+		expectedLog string
+	}{
+		{
+			name:        "Empty OutputPaths",
+			logsCfg:     LogsConfig{OutputPaths: []string{}},
+			expectedLog: "",
+		},
+		{
+			name:        "Only stdout",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout"}},
+			expectedLog: "",
+		},
+		{
+			name:        "Only stderr",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stderr"}},
+			expectedLog: "",
+		},
+		{
+			name:        "Only console",
+			logsCfg:     LogsConfig{OutputPaths: []string{"console"}},
+			expectedLog: "",
+		},
+		{
+			name:        "Keywords only",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "console"}},
+			expectedLog: "",
+		},
+		{
+			name:        "Single file path",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/test.log"}},
+			expectedLog: "/var/log/test.log",
+		},
+		{
+			name:        "File path first, then keywords",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/app.log", "stdout", "stderr"}},
+			expectedLog: "/var/log/app.log",
+		},
+		{
+			name:        "Keywords first, then file path",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "/var/log/system.log"}},
+			expectedLog: "/var/log/system.log",
+		},
+		{
+			name:        "File path in the middle of keywords",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "/var/log/middle.log", "stderr"}},
+			expectedLog: "/var/log/middle.log",
+		},
+		{
+			name:        "Multiple file paths",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/first.log", "/second.log"}},
+			expectedLog: "/first.log",
+		},
+		{
+			name:        "File path resembling a keyword",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout.log"}},
+			expectedLog: "stdout.log",
+		},
+		{
+			name:        "Mixed case keyword (treated as file)",
+			logsCfg:     LogsConfig{OutputPaths: []string{"Stdout", "/var/log/app.log"}},
+			expectedLog: "Stdout", // Current implementation is case-sensitive for keywords
+		},
+		{
+			name:        "Empty string in paths",
+			logsCfg:     LogsConfig{OutputPaths: []string{"", "/var/log/app.log"}},
+			expectedLog: "", // Empty string is not a keyword, so it's returned
+		},
+		{
+			name:        "File path with spaces (if valid on OS)",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/my logs/app.log"}},
+			expectedLog: "/my logs/app.log",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expectedLog, getFirstFileOutputPath(tt.logsCfg))
+		})
+	}
+}
+
 func TestOTLPLogExport(t *testing.T) {
 	version := "1.2.3"
 	service := "test-service"
