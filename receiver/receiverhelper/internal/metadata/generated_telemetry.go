@@ -26,7 +26,6 @@ type TelemetryBuilder struct {
 	meter                              metric.Meter
 	mu                                 sync.Mutex
 	registrations                      []metric.Registration
-	OtelcolReceiverRequests            metric.Int64Counter
 	ReceiverAcceptedLogRecords         metric.Int64Counter
 	ReceiverAcceptedMetricPoints       metric.Int64Counter
 	ReceiverAcceptedSpans              metric.Int64Counter
@@ -67,12 +66,6 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.OtelcolReceiverRequests, err = builder.meter.Int64Counter(
-		"otelcol_otelcol_receiver_requests",
-		metric.WithDescription("The number of requests received by the receiver."),
-		metric.WithUnit("{requests}"),
-	)
-	errs = errors.Join(errs, err)
 	builder.ReceiverAcceptedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_receiver_accepted_log_records",
 		metric.WithDescription("The number of log records successfully accepted by the receiver."),

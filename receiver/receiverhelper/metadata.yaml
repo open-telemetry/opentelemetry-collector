@@ -7,15 +7,6 @@ status:
     stable: [metrics, traces, logs]
 telemetry:
   metrics:
-    otelcol_receiver_requests:
-      enabled: true
-      description: The number of requests received by the receiver.
-      unit: "{requests}"
-      sum:
-        value_type: int
-        monotonic: true
-        aggregation_temporality: cumulative
-      attributes: [outcome]
     receiver_accepted_spans:
       enabled: true
       description: The number of spans successfully accepted by the receiver.
@@ -88,8 +79,3 @@ telemetry:
         value_type: int
         monotonic: true
         aggregation_temporality: cumulative
-attributes:
-  outcome:
-    description: The outcome of the request (success when error is nil, refused when error is from downstream, failure for other errors).
-    type: string
-    enum: [success, refused, failure]

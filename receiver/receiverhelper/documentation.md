@@ -6,20 +6,6 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_otelcol_receiver_requests
-
-The number of requests received by the receiver.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| {requests} | Sum | Int | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| outcome | The outcome of the request (success when error is nil, refused when error is from downstream, failure for other errors). | Str: ``success``, ``refused``, ``failure`` |
-
 ### otelcol_receiver_accepted_log_records
 
 The number of log records successfully accepted by the receiver.
