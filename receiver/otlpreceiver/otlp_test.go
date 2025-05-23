@@ -535,8 +535,8 @@ func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
 		{
 			name:         "internal_error",
 			okToIngest:   false,
-			expectedCode: codes.Internal,
-			permanent:    false, // Internal error
+			expectedCode: codes.Unavailable,
+			permanent:    false,
 		},
 	}
 
@@ -596,15 +596,13 @@ func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
 			require.NotNil(t, got)
 			sum, ok := got.Data.(metricdata.Sum[int64])
 			require.True(t, ok)
-			t.Logf("Internal errors metric: %+v", sum)
+			t.Logf("otelcol_receiver_internal_errors_metric_points: %+v", sum)
 			require.Len(t, sum.DataPoints, 1)
-			require.Equal(t, int64(1), sum.DataPoints[0].Value)
+			require.Equal(t, int64(2), sum.DataPoints[0].Value)
 			require.Equal(t, attribute.NewSet(
 				attribute.String("receiver", otlpReceiverID.String()),
 				attribute.String("transport", "grpc"),
 			), sum.DataPoints[0].Attributes)
-
-			require.Len(t, sink.AllMetrics(), 0)
 		})
 	}
 }

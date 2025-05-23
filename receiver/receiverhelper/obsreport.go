@@ -172,17 +172,6 @@ func (rec *ObsReport) endOp(
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	// Record the total number of requests with outcome attribute
-	outcome := "success"
-	if err != nil {
-		if internal.IsDownstreamError(err) {
-			outcome = "refused"
-		} else {
-			outcome = "failure"
-		}
-	}
-	rec.telemetryBuilder.OtelcolReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributes(attribute.String("outcome", outcome)))
-
 	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numInternalErrors)
 
 	// end span according to errors
