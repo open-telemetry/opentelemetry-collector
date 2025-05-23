@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -33,7 +34,7 @@ const (
 	// queueMetadataKey is the new single key for all queue metadata.
 	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
 	//nolint:unused
-	queueMetadataKey = "qm"
+	queueMetadataKey = "qmv0"
 )
 
 var (
@@ -51,6 +52,7 @@ var indexDonePool = sync.Pool{
 
 type persistentQueueSettings[T any] struct {
 	sizer           request.Sizer[T]
+	sizerType       request.SizerType
 	capacity        int64
 	blockOnOverflow bool
 	signal          pipeline.Signal
@@ -100,14 +102,6 @@ type persistentQueue[T any] struct {
 	queueSize                int64
 	refClient                int64
 	stopped                  bool
-}
-
-// queueMetadata holds all persistent metadata for the queue.
-type queueMetadata struct {
-	ReadIndex                uint64
-	WriteIndex               uint64
-	QueueSize                int64 // Represents actual size if not isRequestSized, otherwise calculated
-	CurrentlyDispatchedItems []uint64
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -211,25 +205,21 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 //
 //nolint:unused
 func (pq *persistentQueue[T]) marshalCurrentMetadata() ([]byte, error) {
-	meta := queueMetadata{
+	sizeType, err := pq.set.sizerType.MarshalText()
+	if err != nil {
+		pq.logger.Error("Failed to marshal sizer type", zap.Error(err))
+		return nil, err
+	}
+
+	meta := QueueMetadata{
+		SizerType:                sizeType,
 		ReadIndex:                pq.readIndex,
 		WriteIndex:               pq.writeIndex,
 		CurrentlyDispatchedItems: pq.currentlyDispatchedItems,
-	}
-	if !pq.isRequestSized {
-		meta.QueueSize = pq.queueSize
-	} else {
-		//nolint:gosec
-		calculatedSize := int64(pq.writeIndex - pq.readIndex)
-		if calculatedSize < 0 {
-			calculatedSize = 0
-		}
-		meta.QueueSize = calculatedSize
+		QueueSize:                pq.queueSize,
 	}
 
-	estimatedBufSize := 8 + 8 + 8 + 4 + (len(pq.currentlyDispatchedItems) * 8)
-	buf := make([]byte, 0, estimatedBufSize)
-	return marshalQueueMetadata(&meta, buf)
+	return proto.Marshal(&meta)
 }
 
 // persistCurrentMetadata is used for standalone metadata persistence like in Shutdown or initialization.
@@ -286,67 +276,6 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 		return pq.client.Close(ctx)
 	}
 	return nil
-}
-
-// marshalQueueMetadata serializes the queue metadata.
-func marshalQueueMetadata(meta *queueMetadata, buf []byte) ([]byte, error) {
-	buf = buf[:0] // Clear the buffer before use if it's being reused
-	buf = binary.LittleEndian.AppendUint64(buf, meta.ReadIndex)
-	buf = binary.LittleEndian.AppendUint64(buf, meta.WriteIndex)
-	//nolint:gosec
-	buf = binary.LittleEndian.AppendUint64(buf, uint64(meta.QueueSize))
-
-	cdiLen := len(meta.CurrentlyDispatchedItems)
-	//nolint:gosec
-	buf = binary.LittleEndian.AppendUint32(buf, uint32(cdiLen))
-	for _, item := range meta.CurrentlyDispatchedItems {
-		buf = binary.LittleEndian.AppendUint64(buf, item)
-	}
-	return buf, nil
-}
-
-// unmarshalQueueMetadata deserializes the queue metadata.
-func unmarshalQueueMetadata(data []byte) (*queueMetadata, error) {
-	if data == nil {
-		return nil, errValueNotSet
-	}
-	// Minimum size: ReadIndex(8) + WriteIndex(8) + QueueSize(8) + CDILen(4) = 28
-	if len(data) < 28 {
-		return nil, fmt.Errorf("queue metadata too short: %d bytes, expected at least 28", len(data))
-	}
-
-	meta := &queueMetadata{}
-	offset := 0
-	meta.ReadIndex = binary.LittleEndian.Uint64(data[offset : offset+8])
-	offset += 8
-	meta.WriteIndex = binary.LittleEndian.Uint64(data[offset : offset+8])
-	offset += 8
-	queueSize := binary.LittleEndian.Uint64(data[offset : offset+8])
-	//nolint:gosec
-	meta.QueueSize = int64(queueSize)
-	offset += 8
-	cdiLen := int(binary.LittleEndian.Uint32(data[offset : offset+4]))
-	offset += 4
-
-	if cdiLen < 0 {
-		return nil, fmt.Errorf("invalid negative length for currently dispatched items: %d", cdiLen)
-	}
-
-	expectedCDIBytes := cdiLen * 8
-	if len(data)-offset < expectedCDIBytes {
-		return nil, fmt.Errorf("queue metadata too short for currently dispatched items: got %d, want %d", len(data)-offset, expectedCDIBytes)
-	}
-
-	if cdiLen == 0 {
-		meta.CurrentlyDispatchedItems = []uint64{}
-	} else {
-		meta.CurrentlyDispatchedItems = make([]uint64, cdiLen)
-		for i := 0; i < cdiLen; i++ {
-			meta.CurrentlyDispatchedItems[i] = binary.LittleEndian.Uint64(data[offset : offset+8])
-			offset += 8
-		}
-	}
-	return meta, nil
 }
 
 // Offer inserts the specified element into this queue if it is possible to do so immediately
