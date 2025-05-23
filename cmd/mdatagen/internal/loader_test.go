@@ -27,7 +27,8 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "sample",
 				SemConvVersion:       "1.9.0",
 				Status: &Status{
-					Class: "receiver",
+					DisableCodeCov: true,
+					Class:          "receiver",
 					Stability: map[component.StabilityLevel][]string{
 						component.StabilityLevelDevelopment: {"logs"},
 						component.StabilityLevelBeta:        {"traces"},
@@ -249,13 +250,30 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Events: map[EventName]Event{
 					"default.event": {
-						Enabled:               true,
-						Description:           "Example event enabled by default.",
-						ExtendedDocumentation: "The event will be renamed soon.",
+						Enabled:     true,
+						Description: "Example event enabled by default.",
 						Warnings: Warnings{
 							IfEnabledNotSet: "This event will be disabled by default soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+					},
+					"default.event.to_be_renamed": {
+						Enabled:               false,
+						Description:           "[DEPRECATED] Example event disabled by default.",
+						ExtendedDocumentation: "The event will be renamed soon.",
+						Warnings: Warnings{
+							IfConfigured: "This event is deprecated and will be renamed soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+					},
+					"default.event.to_be_removed": {
+						Enabled:               true,
+						Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
+						ExtendedDocumentation: "The event will be will be removed soon.",
+						Warnings: Warnings{
+							IfEnabled: "This event is deprecated and will be removed soon.",
+						},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Telemetry: Telemetry{
@@ -349,6 +367,22 @@ func TestLoadMetadata(t *testing.T) {
 						component.StabilityLevelDevelopment: {"logs"},
 						component.StabilityLevelBeta:        {"traces"},
 						component.StabilityLevelStable:      {"metrics"},
+					},
+				},
+			},
+		},
+		{
+			name: "testdata/empty_test_config.yaml",
+			want: Metadata{
+				Type:                 "test",
+				GeneratedPackageName: "metadata",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ShortFolderName:      "testdata",
+				Tests:                Tests{Host: "componenttest.NewNopHost()"},
+				Status: &Status{
+					Class: "receiver",
+					Stability: map[component.StabilityLevel][]string{
+						component.StabilityLevelBeta: {"logs"},
 					},
 				},
 			},

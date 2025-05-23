@@ -1,3 +1,4 @@
+// Deprecated: [v0.126.0] This package has been deprecated, use go.opentelemetry.io/otel/semconv instead.
 module go.opentelemetry.io/collector/semconv
 
 go 1.23.0

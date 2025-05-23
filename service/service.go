@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	semconv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -30,8 +32,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
-	semconv118 "go.opentelemetry.io/collector/semconv/v1.18.0"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/graph"
@@ -436,9 +436,9 @@ func configureViews(level configtelemetry.Level) []config.View {
 				Stream: &config.ViewStream{
 					AttributeKeys: &config.IncludeExclude{
 						Excluded: []string{
-							semconv118.AttributeNetSockPeerAddr,
-							semconv118.AttributeNetSockPeerPort,
-							semconv118.AttributeNetSockPeerName,
+							string(semconv118.NetSockPeerAddrKey),
+							string(semconv118.NetSockPeerPortKey),
+							string(semconv118.NetSockPeerNameKey),
 						},
 					},
 				},
@@ -450,8 +450,8 @@ func configureViews(level configtelemetry.Level) []config.View {
 				Stream: &config.ViewStream{
 					AttributeKeys: &config.IncludeExclude{
 						Excluded: []string{
-							semconv118.AttributeNetHostName,
-							semconv118.AttributeNetHostPort,
+							string(semconv118.NetHostNameKey),
+							string(semconv118.NetHostPortKey),
 						},
 					},
 				},
@@ -531,6 +531,20 @@ func configureViews(level configtelemetry.Level) []config.View {
 			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
 		}))
 	}
+
+	// Internal graph metrics
+	graphScope := ptr("go.opentelemetry.io/collector/service")
+	if level < configtelemetry.LevelDetailed {
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      graphScope,
+			InstrumentName: ptr("otelcol.*.consumed.size"),
+		}))
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      graphScope,
+			InstrumentName: ptr("otelcol.*.produced.size"),
+		}))
+	}
+
 	return views
 }
 

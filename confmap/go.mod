@@ -4,11 +4,12 @@ go 1.23.0
 
 require (
 	github.com/go-viper/mapstructure/v2 v2.2.1
+	github.com/gobwas/glob v0.2.3
 	github.com/knadh/koanf/maps v0.1.2
 	github.com/knadh/koanf/providers/confmap v1.0.0
 	github.com/knadh/koanf/v2 v2.2.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.31.0
+	go.opentelemetry.io/collector/featuregate v1.32.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0

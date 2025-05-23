@@ -2,7 +2,7 @@ type: receiverhelper
 github_project: open-telemetry/opentelemetry-collector
 status:
   disable_codecov_badge: true
-  class: pkg  
+  class: pkg
   stability:
     stable: [metrics, traces, logs]
 telemetry:
