@@ -6,9 +6,23 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_otelcol_receiver_requests
+
+The number of requests received by the receiver.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {requests} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| outcome | The outcome of the request (success when error is nil, refused when error is from downstream, failure for other errors). | Str: ``success``, ``refused``, ``failure`` |
+
 ### otelcol_receiver_accepted_log_records
 
-Number of log records successfully pushed into the pipeline. [alpha]
+The number of log records successfully accepted by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,15 +30,15 @@ Number of log records successfully pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_accepted_metric_points
 
-Number of metric points successfully pushed into the pipeline. [alpha]
+The number of metric points successfully accepted by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {datapoints} | Sum | Int | true |
+| {points} | Sum | Int | true |
 
 ### otelcol_receiver_accepted_spans
 
-Number of spans successfully pushed into the pipeline. [alpha]
+The number of spans successfully accepted by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -32,7 +46,7 @@ Number of spans successfully pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_internal_errors_log_records
 
-Number of log records that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+The number of log records that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,15 +54,15 @@ Number of log records that could not be processed due to internal errors (e.g. p
 
 ### otelcol_receiver_internal_errors_metric_points
 
-Number of metric points that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+The number of metric points that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {datapoints} | Sum | Int | true |
+| {points} | Sum | Int | true |
 
 ### otelcol_receiver_internal_errors_spans
 
-Number of spans that could not be processed due to internal errors (e.g. parsing, validation). [alpha]
+The number of spans that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -56,7 +70,7 @@ Number of spans that could not be processed due to internal errors (e.g. parsing
 
 ### otelcol_receiver_refused_log_records
 
-Number of log records that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
+The number of log records refused by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -64,15 +78,15 @@ Number of log records that could not be pushed into the pipeline due to downstre
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
+The number of metric points refused by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {datapoints} | Sum | Int | true |
+| {points} | Sum | Int | true |
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline due to downstream errors (e.g. from nextConsumer.ConsumeX). [alpha]
+The number of spans refused by the receiver.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

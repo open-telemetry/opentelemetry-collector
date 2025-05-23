@@ -41,24 +41,27 @@ func GetClientDisconnectMessage(err error) string {
 func GetStatusFromError(err error) error {
 	var s *status.Status
 	_, ok := status.FromError(err)
-	if !ok {
+
+	switch {
+	case !ok:
 		// Default to a retryable error
-		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
 		code := codes.Unavailable
 		if consumererror.IsPermanent(err) {
 			// If an error is permanent but doesn't have an attached gRPC status, assume it is server-side.
 			code = codes.Internal
 		}
 		s = status.New(code, err.Error())
-	} else if IsClientDisconnectError(err) {
-		// For client disconnection errors, we want to ensure they are marked as retryable
-		// and provide a descriptive message
+
+	case IsClientDisconnectError(err):
+		// For client disconnection errors, mark as retryable
 		s = status.New(codes.Unavailable, GetClientDisconnectMessage(err))
-	} else if consumererror.IsPermanent(err) {
-		// For permanent errors, convert to InvalidArgument (equivalent to HTTP 400)
+
+	case consumererror.IsPermanent(err):
+		// For permanent errors, treat as client error
 		s = status.New(codes.InvalidArgument, err.Error())
-	} else {
-		// For non-permanent errors, convert to Unavailable (equivalent to HTTP 503)
+
+	default:
+		// For non-permanent errors, treat as retryable server error
 		s = status.New(codes.Unavailable, err.Error())
 	}
 	return s.Err()

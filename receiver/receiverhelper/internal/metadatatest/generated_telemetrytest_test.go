@@ -19,6 +19,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.OtelcolReceiverRequests.Add(context.Background(), 1)
 	tb.ReceiverAcceptedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverAcceptedMetricPoints.Add(context.Background(), 1)
 	tb.ReceiverAcceptedSpans.Add(context.Background(), 1)
@@ -28,6 +29,9 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ReceiverRefusedLogRecords.Add(context.Background(), 1)
 	tb.ReceiverRefusedMetricPoints.Add(context.Background(), 1)
 	tb.ReceiverRefusedSpans.Add(context.Background(), 1)
+	AssertEqualOtelcolReceiverRequests(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverAcceptedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

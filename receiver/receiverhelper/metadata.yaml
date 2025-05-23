@@ -88,7 +88,7 @@ telemetry:
         monotonic: true
         aggregation_temporality: cumulative
 attributes:
-outcome:
-  description: The outcome of the request (success when error is nil, refused when error is from downstream, failure for other errors).
-  type: string
-  enum: [success, refused, failure]
+  outcome:
+    description: The outcome of the request (success when error is nil, refused when error is from downstream, failure for other errors).
+    type: string
+    enum: [success, refused, failure]

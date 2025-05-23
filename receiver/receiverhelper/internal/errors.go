@@ -5,10 +5,8 @@ package internal // import "go.opentelemetry.io/collector/receiver/receiverhelpe
 
 import "errors"
 
-var (
-	// ErrDownstreamError indicates that the error occurred in the downstream consumer
-	ErrDownstreamError = errors.New("downstream error")
-)
+// ErrDownstreamError indicates that the error occurred in the downstream consumer
+var ErrDownstreamError = errors.New("downstream error")
 
 // IsDownstreamError returns true if the error is a downstream error
 func IsDownstreamError(err error) bool {
