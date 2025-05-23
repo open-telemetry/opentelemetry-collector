@@ -22,8 +22,9 @@ func TestMergeProfiles(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
 	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
 	require.NoError(t, err)
-	assert.Len(t, res, 1)
-	assert.Equal(t, 5, res[0].ItemsCount())
+	assert.Len(t, res, 2)
+	assert.Equal(t, 2, res[0].ItemsCount())
+	assert.Equal(t, 3, res[1].ItemsCount())
 }
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
@@ -33,6 +34,8 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 }
 
 func TestMergeSplitProfiles(t *testing.T) {
+	t.Skip("merging of profiles has been temporarily disabled")
+
 	tests := []struct {
 		name     string
 		szt      exporterhelper.RequestSizerType
@@ -125,7 +128,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expected))
+			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd, r.(*profilesRequest).pd)
 			}
@@ -134,6 +137,8 @@ func TestMergeSplitProfiles(t *testing.T) {
 }
 
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
+	t.Skip("merging of profiles has been temporarily disabled")
+
 	tests := []struct {
 		name     string
 		szt      exporterhelper.RequestSizerType
@@ -290,7 +295,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expected))
+			require.Len(t, res, len(tt.expected))
 			for i, r := range res {
 				assert.Equal(t, tt.expected[i].(*profilesRequest).pd.SampleCount(), r.(*profilesRequest).pd.SampleCount(), i)
 			}
@@ -308,6 +313,8 @@ func TestExtractProfiles(t *testing.T) {
 }
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
+	t.Skip("merging of profiles has been temporarily disabled")
+
 	// All requests merge into a single batch.
 	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for j := 0; j < 1000; j++ {

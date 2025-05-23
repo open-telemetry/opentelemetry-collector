@@ -39,7 +39,8 @@ var profilesRequestJSON = []byte(`
 					}
 				]
 			}
-		]
+		],
+		"dictionary": {}
 	}`)
 
 func TestRequestToPData(t *testing.T) {
