@@ -5,6 +5,7 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -54,48 +55,64 @@ func createTraces(ctx context.Context, set exporter.Settings, config component.C
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewTraces(ctx, set, config,
+	exp, err := exporterhelper.NewTraces(ctx, set, config,
 		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("debugexporter: failed to create traces exporter: %w", err)
+	}
+	return exp, nil
 }
 
 func createMetrics(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewMetrics(ctx, set, config,
+	exp, err := exporterhelper.NewMetrics(ctx, set, config,
 		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("debugexporter: failed to create metrics exporter: %w", err)
+	}
+	return exp, nil
 }
 
 func createLogs(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return exporterhelper.NewLogs(ctx, set, config,
+	exp, err := exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("debugexporter: failed to create logs exporter: %w", err)
+	}
+	return exp, nil
 }
 
 func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return xexporterhelper.NewProfilesExporter(ctx, set, config,
+	exp, err := xexporterhelper.NewProfilesExporter(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithShutdown(otlptext.LoggerSync(exporterLogger)),
 	)
+	if err != nil {
+		return nil, fmt.Errorf("debugexporter: failed to create profiles exporter: %w", err)
+	}
+	return exp, nil
 }
 
 func createLogger(cfg *Config, logger *zap.Logger) *zap.Logger {
