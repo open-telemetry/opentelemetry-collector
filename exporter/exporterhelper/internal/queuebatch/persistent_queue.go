@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate protoc --go_out=. --go_opt=paths=source_relative persistent_queue.proto
 package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 
 import (
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,6 +31,11 @@ const (
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
 	queueSizeKey                = "si"
+
+	// queueMetadataKey is the new single key for all queue metadata.
+	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+	//nolint:unused
+	queueMetadataKey = "qmv0"
 )
 
 var (
@@ -46,6 +53,7 @@ var indexDonePool = sync.Pool{
 
 type persistentQueueSettings[T any] struct {
 	sizer           request.Sizer[T]
+	sizerType       request.SizerType
 	capacity        int64
 	blockOnOverflow bool
 	signal          pipeline.Signal
@@ -189,6 +197,48 @@ func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (
 		return 0, err
 	}
 	return bytesToItemIndex(val)
+}
+
+// marshalCurrentMetadata constructs metadata from current pq state and returns the marshaled bytes.
+// This is a helper and does not perform the Set operation itself.
+// pq.mu must be held.
+// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+//
+//nolint:unused
+func (pq *persistentQueue[T]) marshalCurrentMetadata() ([]byte, error) {
+	sizeType, err := pq.set.sizerType.MarshalText()
+	if err != nil {
+		pq.logger.Error("Failed to marshal sizer type", zap.Error(err))
+		return nil, err
+	}
+
+	meta := QueueMetadata{
+		SizerType:                sizeType,
+		ReadIndex:                pq.readIndex,
+		WriteIndex:               pq.writeIndex,
+		CurrentlyDispatchedItems: pq.currentlyDispatchedItems,
+		QueueSize:                pq.queueSize,
+	}
+
+	return proto.Marshal(&meta)
+}
+
+// persistCurrentMetadata is used for standalone metadata persistence like in Shutdown or initialization.
+// pq.mu must be held.
+// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+//
+//nolint:unused
+func (pq *persistentQueue[T]) persistCurrentMetadata(ctx context.Context) error {
+	metadataBytes, err := pq.marshalCurrentMetadata()
+	if err != nil {
+		pq.logger.Error("Failed to marshal current metadata for persistence", zap.Error(err))
+		return err
+	}
+	if err := pq.client.Set(ctx, queueMetadataKey, metadataBytes); err != nil {
+		pq.logger.Error("Failed to persist current metadata to storage", zap.Error(err))
+		return err
+	}
+	return nil
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {

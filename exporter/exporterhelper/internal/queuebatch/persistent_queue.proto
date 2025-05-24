@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package opentelemetry.collector.exporter.exporterhelper.internal.queuebatch;
+
+option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch";
+
+// QueueMetadata holds all persistent metadata for the queue.
+message QueueMetadata{
+  bytes sizer_type = 1;
+  uint64 read_index = 2;
+  uint64 write_index = 3;
+  int64 queue_size = 4;
+  repeated uint64 currently_dispatched_items = 5;
+}
