@@ -28,7 +28,6 @@ const (
 	readIndexKey                = "ri"
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
-	queueSizeKey                = "si"
 )
 
 var (
@@ -82,9 +81,6 @@ type persistentQueue[T any] struct {
 	logger *zap.Logger
 	client storage.Client
 
-	// isRequestSized indicates whether the queue is sized by the number of requests.
-	isRequestSized bool
-
 	// mu guards everything declared below.
 	mu                       sync.Mutex
 	hasMoreElements          *sync.Cond
@@ -99,11 +95,9 @@ type persistentQueue[T any] struct {
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
 func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] {
-	_, isRequestSized := set.sizer.(request.RequestsSizer[T])
 	pq := &persistentQueue[T]{
-		set:            set,
-		logger:         set.telemetry.Logger,
-		isRequestSized: isRequestSized,
+		set:    set,
+		logger: set.telemetry.Logger,
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
@@ -162,33 +156,8 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		pq.writeIndex = 0
 	}
 
-	queueSize := pq.writeIndex - pq.readIndex
-
-	// If the queue is sized by the number of requests, no need to read the queue size from storage.
-	if queueSize > 0 && !pq.isRequestSized {
-		if restoredQueueSize, err := pq.restoreQueueSizeFromStorage(ctx); err == nil {
-			queueSize = restoredQueueSize
-		}
-	}
 	//nolint:gosec
-	pq.queueSize = int64(queueSize)
-}
-
-// restoreQueueSizeFromStorage restores the queue size from storage.
-func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (uint64, error) {
-	val, err := pq.client.Get(ctx, queueSizeKey)
-	if err != nil {
-		if errors.Is(err, errValueNotSet) {
-			pq.logger.Warn("Cannot read the queue size snapshot from storage. "+
-				"The reported queue size will be inaccurate until the initial queue is drained. "+
-				"It's expected when the items sized queue enabled for the first time", zap.Error(err))
-		} else {
-			pq.logger.Error("Failed to read the queue size snapshot from storage. "+
-				"The reported queue size will be inaccurate until the initial queue is drained.", zap.Error(err))
-		}
-		return 0, err
-	}
-	return bytesToItemIndex(val)
+	pq.queueSize = int64(pq.writeIndex - pq.readIndex)
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
@@ -199,24 +168,10 @@ func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	backupErr := pq.backupQueueSize(ctx)
 	// Mark this queue as stopped, so consumer don't start any more work.
 	pq.stopped = true
 	pq.hasMoreElements.Broadcast()
-	return errors.Join(backupErr, pq.unrefClient(ctx))
-}
-
-// backupQueueSize writes the current queue size to storage. The value is used to recover the queue size
-// in case if the collector is killed.
-func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
-	// No need to write the queue size if the queue is sized by the number of requests.
-	// That information is already stored as difference between read and write indexes.
-	if pq.isRequestSized {
-		return nil
-	}
-
-	//nolint:gosec
-	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.queueSize)))
+	return pq.unrefClient(ctx)
 }
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
@@ -267,14 +222,6 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	pq.writeIndex++
 	pq.queueSize += reqSize
 	pq.hasMoreElements.Signal()
-
-	// Back up the queue size to storage every 10 writes. The stored value is used to recover the queue size
-	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-	if (pq.writeIndex % 10) == 5 {
-		if err := pq.backupQueueSize(ctx); err != nil {
-			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
-		}
-	}
 
 	return nil
 }
@@ -375,14 +322,6 @@ func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr erro
 
 	if err := pq.itemDispatchingFinish(context.Background(), index); err != nil {
 		pq.logger.Error("Error deleting item from queue", zap.Error(err))
-	}
-
-	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
-	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-	if (pq.readIndex % 10) == 0 {
-		if qsErr := pq.backupQueueSize(context.Background()); qsErr != nil {
-			pq.logger.Error("Error writing queue size to storage", zap.Error(qsErr))
-		}
 	}
 }
 
