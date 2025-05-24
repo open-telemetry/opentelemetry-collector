@@ -283,14 +283,32 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			mr2:           nil,
 			expectedSizes: []int{706, 700, 85},
 		},
+		{
+			name:    "unsplittable_large_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				// Add a large attribute value to make the metric unsplittable
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("large_metric")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return md
+			}()),
+			mr2:           nil,
+			expectedSizes: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expectedSizes))
-			for i := range res {
-				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+			if tt.expectedSizes != nil {
+				assert.Len(t, res, len(tt.expectedSizes))
+				for i := range res {
+					assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+				}
+			} else {
+				assert.Empty(t, res)
 			}
 		})
 	}
