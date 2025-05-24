@@ -22,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// QueueMetadata holds all persistent metadata for the queue.
 type QueueMetadata struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	SizerType                []byte                 `protobuf:"bytes,1,opt,name=sizer_type,json=sizerType,proto3" json:"sizer_type,omitempty"`
