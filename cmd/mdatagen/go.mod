@@ -141,3 +141,5 @@ replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/
 replace go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
+
+replace go.opentelemetry.io/collector/processor/processorhelper => ../../processor/processorhelper
