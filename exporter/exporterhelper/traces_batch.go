@@ -7,13 +7,15 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // MergeSplit splits and/or merges the provided traces request and the current request into one or more requests
 // conforming with the MaxSizeConfig.
-func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request) ([]Request, error) {
+func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSizerType, r2 Request, logger *zap.Logger) ([]Request, error) {
 	var sz sizer.TracesSizer
 	switch szt {
 	case RequestSizerTypeItems:
@@ -36,7 +38,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt Request
 	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz, logger), nil
 }
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
@@ -47,13 +49,31 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
+func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer, logger *zap.Logger) []Request {
 	var res []Request
-	for req.size(sz) > maxSize {
-		td, rmSize := extractTraces(req.td, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newTracesRequest(td))
+	var td ptrace.Traces
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		td, rmSize = extractTraces(req.td, maxSize, sz)
+		if td.SpanCount() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newTracesRequest(td))
+		}
 	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		// This means we cannot split the trace and is not possible
+		// to fit it into the max size.
+		logger.Warn("Failed to split traces request",
+			zap.Int("size", req.size(sz)),
+			zap.Int("max_size", maxSize),
+		)
+		return res
+	}
+
 	res = append(res, req)
 	return res
 }

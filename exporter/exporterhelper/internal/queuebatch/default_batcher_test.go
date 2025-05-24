@@ -13,13 +13,24 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
+	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
+	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
+	}
+
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -64,6 +75,11 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
+				settings: Settings[request.Request]{
+					Signal:    pipeline.SignalLogs,
+					ID:        exporterID,
+					Telemetry: telemetry,
+				},
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -90,6 +106,11 @@ func TestDefaultBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 }
 
 func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
+	}
+
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -134,6 +155,11 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
+				settings: Settings[request.Request]{
+					Signal:    pipeline.SignalLogs,
+					ID:        exporterID,
+					Telemetry: telemetry,
+				},
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -173,6 +199,11 @@ func TestDefaultBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
+	}
+
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
 	}
 
 	tests := []struct {
@@ -219,6 +250,11 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
+				settings: Settings[request.Request]{
+					Signal:    pipeline.SignalLogs,
+					ID:        exporterID,
+					Telemetry: telemetry,
+				},
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
@@ -248,6 +284,11 @@ func TestDefaultBatcher_NoSplit_WithTimeout(t *testing.T) {
 func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
+	}
+
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
 	}
 
 	tests := []struct {
@@ -295,6 +336,11 @@ func TestDefaultBatcher_Split_TimeoutDisabled(t *testing.T) {
 				sizer:      tt.sizer,
 				next:       sink.Export,
 				maxWorkers: tt.maxWorkers,
+				settings: Settings[request.Request]{
+					Signal:    pipeline.SignalLogs,
+					ID:        exporterID,
+					Telemetry: telemetry,
+				},
 			})
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -341,12 +387,22 @@ func TestDefaultBatcher_Shutdown(t *testing.T) {
 		MinSize:      10,
 	}
 
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
+	}
+
 	sink := requesttest.NewSink()
 	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
 		sizerType:  request.SizerTypeItems,
 		sizer:      request.NewItemsSizer(),
 		next:       sink.Export,
 		maxWorkers: 2,
+		settings: Settings[request.Request]{
+			Signal:    pipeline.SignalLogs,
+			ID:        exporterID,
+			Telemetry: telemetry,
+		},
 	})
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -374,12 +430,22 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 		MaxSize:      7,
 	}
 
+	telemetry := component.TelemetrySettings{
+		MeterProvider: mockMeterProvider{},
+		Logger:        zap.NewNop(),
+	}
+
 	sink := requesttest.NewSink()
 	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
 		sizerType:  request.SizerTypeItems,
 		sizer:      request.NewItemsSizer(),
 		next:       sink.Export,
 		maxWorkers: 2,
+		settings: Settings[request.Request]{
+			Signal:    pipeline.SignalLogs,
+			ID:        exporterID,
+			Telemetry: telemetry,
+		},
 	})
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
@@ -430,4 +496,16 @@ func newFakeBytesSizer() request.Sizer[request.Request] {
 			return int64(req.(*requesttest.FakeRequest).Bytes)
 		},
 	}
+}
+
+type mockMeter struct {
+	noopmetric.Meter
+	name string
+}
+type mockMeterProvider struct {
+	embeddedmetric.MeterProvider
+}
+
+func (m mockMeterProvider) Meter(name string, _ ...metric.MeterOption) metric.Meter {
+	return mockMeter{name: name}
 }
