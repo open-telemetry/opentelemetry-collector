@@ -10,32 +10,49 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewSignal(t *testing.T) {
-	s, err := NewSignal("traces")
-	require.NoError(t, err)
-	assert.Equal(t, Signal{name: "traces"}, s)
+func TestSignal_String(t *testing.T) {
+	assert.Equal(t, "traces", SignalTraces.String())
+	assert.Equal(t, "metrics", SignalMetrics.String())
+	assert.Equal(t, "logs", SignalLogs.String())
+	assert.Equal(t, "profiles", SignalProfiles.String())
 }
 
-func Test_NewSignal_Invalid(t *testing.T) {
-	_, err := NewSignal("")
-	require.Error(t, err)
-	_, err = NewSignal("TRACES")
-	require.Error(t, err)
-}
-
-func Test_MustNewSignal(t *testing.T) {
-	s := MustNewSignal("traces")
-	assert.Equal(t, Signal{name: "traces"}, s)
-}
-
-func Test_Signal_String(t *testing.T) {
-	s := MustNewSignal("traces")
-	assert.Equal(t, "traces", s.String())
-}
-
-func Test_Signal_MarshalText(t *testing.T) {
-	s := MustNewSignal("traces")
-	b, err := s.MarshalText()
+func TestSignal_MarshalText(t *testing.T) {
+	b, err := SignalTraces.MarshalText()
 	require.NoError(t, err)
 	assert.Equal(t, []byte("traces"), b)
+
+	b, err = SignalMetrics.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, []byte("metrics"), b)
+
+	b, err = SignalLogs.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, []byte("logs"), b)
+
+	b, err = SignalProfiles.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, []byte("profiles"), b)
+
+	var s Signal
+	b, err = s.MarshalText()
+	require.NoError(t, err)
+	assert.Equal(t, []byte(""), b)
+}
+
+func TestSignal_UnmarshalText(t *testing.T) {
+	var s Signal
+	require.NoError(t, s.UnmarshalText([]byte("traces")))
+	assert.Equal(t, SignalTraces, s)
+
+	require.NoError(t, s.UnmarshalText([]byte("metrics")))
+	assert.Equal(t, SignalMetrics, s)
+
+	require.NoError(t, s.UnmarshalText([]byte("logs")))
+	assert.Equal(t, SignalLogs, s)
+
+	require.NoError(t, s.UnmarshalText([]byte("profiles")))
+	assert.Equal(t, SignalProfiles, s)
+
+	require.Error(t, s.UnmarshalText([]byte("unknown")))
 }
