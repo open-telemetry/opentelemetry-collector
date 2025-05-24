@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -100,4 +101,28 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
+}
+
+func (builder *TelemetryBuilder) AddReceiverAcceptedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverAcceptedLogRecords.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddReceiverAcceptedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverAcceptedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddReceiverAcceptedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverAcceptedSpans.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddReceiverRefusedLogRecords(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverRefusedLogRecords.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddReceiverRefusedMetricPoints(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverRefusedMetricPoints.Add(ctx, val, opts...)
+}
+
+func (builder *TelemetryBuilder) AddReceiverRefusedSpans(ctx context.Context, val int64, opts ...metric.AddOption) {
+	builder.ReceiverRefusedSpans.Add(ctx, val, opts...)
 }
