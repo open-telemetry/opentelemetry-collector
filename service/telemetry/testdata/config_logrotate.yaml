@@ -1,0 +1,12 @@
+logs:
+  level: "info"
+  output_paths:
+    - collector.log
+  # Example: output_paths: ["/var/log/otelcol/collector.log", "stdout"]
+  # The rotation settings below would apply to "/var/log/otelcol/collector.log"
+  rotation:
+    enabled: true
+    max_megabytes: 100  # Optional: max size in MB before rotating
+    max_backups: 5 # Optional: number of rotated backups to retain
+    max_age: 14   # Optional: number of days to retain old files
+    compress: true  # Optional: gzip compress rotated logs
