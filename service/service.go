@@ -344,6 +344,10 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
+	ljLogger := telemetry.GetLumberjackLogger()
+	if ljLogger != nil {
+		ljLogger.Close()
+	}
 	errs = multierr.Append(errs, srv.shutdownTelemetry(ctx))
 
 	return errs
