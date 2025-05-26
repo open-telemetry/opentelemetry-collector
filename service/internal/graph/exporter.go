@@ -67,25 +67,25 @@ func (n *exporterNode) buildComponent(
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ExporterConsumedItems)
+		n.consumer = obsconsumer.NewTraces(n.Component.(consumer.Traces), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case pipeline.SignalMetrics:
 		n.Component, err = builder.CreateMetrics(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ExporterConsumedItems)
+		n.consumer = obsconsumer.NewMetrics(n.Component.(consumer.Metrics), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case pipeline.SignalLogs:
 		n.Component, err = builder.CreateLogs(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ExporterConsumedItems)
+		n.consumer = obsconsumer.NewLogs(n.Component.(consumer.Logs), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	case xpipeline.SignalProfiles:
 		n.Component, err = builder.CreateProfiles(ctx, set)
 		if err != nil {
 			return fmt.Errorf("failed to create %q exporter for data type %q: %w", set.ID, n.pipelineType, err)
 		}
-		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ExporterConsumedItems)
+		n.consumer = obsconsumer.NewProfiles(n.Component.(xconsumer.Profiles), tb.ExporterConsumedItems, tb.ExporterConsumedSize)
 	default:
 		return fmt.Errorf("error creating exporter %q for data type %q is not supported", set.ID, n.pipelineType)
 	}
