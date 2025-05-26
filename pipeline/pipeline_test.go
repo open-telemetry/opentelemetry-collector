@@ -41,40 +41,39 @@ func TestMarshalText(t *testing.T) {
 }
 
 func TestUnmarshalText(t *testing.T) {
-	validSignal := globalsignal.MustNewSignal("valid")
 	testCases := []struct {
 		idStr       string
 		expectedErr bool
 		expectedID  ID
 	}{
 		{
-			idStr:      "valid",
-			expectedID: ID{signal: validSignal, name: ""},
+			idStr:      "traces",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: ""},
 		},
 		{
-			idStr:      "valid/valid_name",
-			expectedID: ID{signal: validSignal, name: "valid_name"},
+			idStr:      "traces/valid_name",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "valid_name"},
 		},
 		{
-			idStr:      "   valid   /   valid_name  ",
-			expectedID: ID{signal: validSignal, name: "valid_name"},
+			idStr:      "   traces   /   valid_name  ",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "valid_name"},
 		},
 		{
-			idStr:      "valid/中文好",
-			expectedID: ID{signal: validSignal, name: "中文好"},
+			idStr:      "traces/中文好",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "中文好"},
 		},
 		{
-			idStr:      "valid/name-with-dashes",
-			expectedID: ID{signal: validSignal, name: "name-with-dashes"},
+			idStr:      "traces/name-with-dashes",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "name-with-dashes"},
 		},
 		// issue 10816
 		{
-			idStr:      "valid/Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs",
-			expectedID: ID{signal: validSignal, name: "Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs"},
+			idStr:      "traces/Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "Linux-Messages-File_01J49HCH3SWFXRVASWFZFRT3J2__processor0__logs"},
 		},
 		{
-			idStr:      "valid/1",
-			expectedID: ID{signal: validSignal, name: "1"},
+			idStr:      "traces/1",
+			expectedID: ID{signal: globalsignal.SignalTraces, name: "1"},
 		},
 		{
 			idStr:       "/valid_name",
@@ -85,11 +84,11 @@ func TestUnmarshalText(t *testing.T) {
 			expectedErr: true,
 		},
 		{
-			idStr:       "valid/",
+			idStr:       "traces/",
 			expectedErr: true,
 		},
 		{
-			idStr:       "valid/      ",
+			idStr:       "traces/      ",
 			expectedErr: true,
 		},
 		{
@@ -97,11 +96,11 @@ func TestUnmarshalText(t *testing.T) {
 			expectedErr: true,
 		},
 		{
-			idStr:       "valid/invalid name",
+			idStr:       "traces/invalid name",
 			expectedErr: true,
 		},
 		{
-			idStr:       "valid/" + strings.Repeat("a", 1025),
+			idStr:       "traces/" + strings.Repeat("a", 1025),
 			expectedErr: true,
 		},
 		{
