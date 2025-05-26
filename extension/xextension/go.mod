@@ -3,8 +3,8 @@ module go.opentelemetry.io/collector/extension/xextension
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v1.32.0
-	go.opentelemetry.io/collector/extension v1.32.0
+	go.opentelemetry.io/collector/component v1.33.0
+	go.opentelemetry.io/collector/extension v1.33.0
 )
 
 require (
@@ -14,9 +14,9 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.32.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.126.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.32.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.33.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.127.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.33.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect

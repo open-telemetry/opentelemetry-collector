@@ -7,6 +7,27 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.33.0/v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `mdatagen`: Add context parameter for recording event to set traceID and spanID (#12571)
+- `otlpreceiver`: Use wrapper type for URL paths (#13046)
+
+### 🚩 Deprecations 🚩
+
+- `pipeline`: Deprecate MustNewID and MustNewIDWithName (#12831)
+- `pdata/profile`: Replace AddAttribute with the PutAttribute helper method to modify the content of attributable records. (#12798)
+
+### 💡 Enhancements 💡
+
+- `consumer/consumertest`: Add context to sinks (#13039)
+- `cmd/mdatagen`: Add events in generated documentation (#12571)
+- `confmap`: Add a `Conf.Delete` method to remove a path from the configuration map. (#13064)
+- `confmap`: Support running Unmarshal hooks on nil values. (#12981)
+
+<!-- previous-version -->
+
 ## v1.32.0/v0.126.0
 
 ### 🚩 Deprecations 🚩
