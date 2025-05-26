@@ -66,3 +66,11 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/processor/processortest => ../processortest
+
+replace go.opentelemetry.io/collector/component/componenttest => ../../component/componenttest
+
+replace go.opentelemetry.io/collector/processor/processorhelper => ../processorhelper

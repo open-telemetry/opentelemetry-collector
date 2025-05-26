@@ -7,7 +7,9 @@ require (
 	go.opentelemetry.io/collector/component v1.32.0
 	go.opentelemetry.io/collector/consumer v1.32.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.126.0
+	go.opentelemetry.io/collector/pdata v1.32.0
 	go.opentelemetry.io/collector/pipeline v0.126.0
+	go.opentelemetry.io/collector/processor/processorhelper v0.126.0
 	go.uber.org/goleak v1.3.0
 )
 
@@ -26,7 +28,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.126.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.32.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.126.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.32.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.126.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
@@ -64,3 +65,13 @@ replace go.opentelemetry.io/collector/pipeline => ../pipeline
 replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetry
 
 replace go.opentelemetry.io/collector/featuregate => ../featuregate
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../component/componentstatus
+
+replace go.opentelemetry.io/collector/component/componenttest => ../component/componenttest
+
+replace go.opentelemetry.io/collector/processor/xprocessor => ./xprocessor
+
+replace go.opentelemetry.io/collector/processor/processortest => ./processortest
+
+replace go.opentelemetry.io/collector/processor/processorhelper => ./processorhelper
