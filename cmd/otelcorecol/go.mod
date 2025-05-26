@@ -4,7 +4,7 @@ module go.opentelemetry.io/collector/cmd/otelcorecol
 
 go 1.23.0
 
-toolchain go1.23.9
+toolchain go1.24.1
 
 require (
 	go.opentelemetry.io/collector/component v1.32.0
@@ -111,7 +111,8 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.126.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.32.0 // indirect
 	go.opentelemetry.io/collector/extension/extensioncapabilities v0.126.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.126.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
 	go.opentelemetry.io/collector/extension/extensiontest v0.126.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.126.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.32.0 // indirect
@@ -262,6 +263,8 @@ replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../e
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
 
 replace go.opentelemetry.io/collector/extension/extensiontest => ../../extension/extensiontest
 
