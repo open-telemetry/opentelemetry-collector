@@ -20,53 +20,51 @@ type Sub struct {
 	Foo string `mapstructure:"foo"`
 }
 
-var subDefault DefaultFunc[Sub] = func() Sub {
-	return Sub{
-		Foo: "foobar",
-	}
+type WithEnabled struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+var subDefault = Sub{
+	Foo: "foobar",
 }
 
 func ptr[T any](v T) *T {
 	return &v
 }
 
-var pointerToSubDefault DefaultFunc[*Sub] = func() *Sub {
-	return ptr(subDefault())
-}
-
-var intDefault DefaultFunc[int] = func() int {
-	return 1
-}
-
-var pointerToIntDefault DefaultFunc[*int] = func() *int {
-	return ptr(intDefault())
-}
-
 func TestDefaultPanics(t *testing.T) {
 	assert.Panics(t, func() {
-		_ = Default(&intDefault)
+		_ = Default(1)
 	})
 
 	assert.Panics(t, func() {
-		_ = Default(&pointerToIntDefault)
+		_ = Default(ptr(1))
 	})
 
 	assert.Panics(t, func() {
-		_ = Default[Sub](nil)
+		_ = Default(WithEnabled{})
+	})
+
+	assert.Panics(t, func() {
+		_ = Some(WithEnabled{})
+	})
+
+	assert.Panics(t, func() {
+		_ = None[WithEnabled]()
 	})
 
 	assert.NotPanics(t, func() {
-		_ = Default(&subDefault)
+		_ = Default(subDefault)
 	})
 
 	assert.NotPanics(t, func() {
-		_ = Default(&pointerToSubDefault)
+		_ = Default(ptr(subDefault))
 	})
 }
 
 func TestEqualityDefault(t *testing.T) {
-	defaultOne := Default(&subDefault)
-	defaultTwo := Default(&subDefault)
+	defaultOne := Default(subDefault)
+	defaultTwo := Default(subDefault)
 	assert.Equal(t, defaultOne, defaultTwo)
 }
 
@@ -130,7 +128,7 @@ func TestUnmarshalOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config[Sub]{
-				Sub1: Default(&subDefault),
+				Sub1: Default(subDefault),
 			},
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies
@@ -138,7 +136,7 @@ func TestUnmarshalOptional(t *testing.T) {
 		{
 			name: "default_no_config",
 			defaultCfg: Config[Sub]{
-				Sub1: Default(&subDefault),
+				Sub1: Default(subDefault),
 			},
 			expectedSub: false,
 		},
@@ -150,7 +148,7 @@ func TestUnmarshalOptional(t *testing.T) {
 				},
 			},
 			defaultCfg: Config[Sub]{
-				Sub1: Default(&subDefault),
+				Sub1: Default(subDefault),
 			},
 			expectedSub: true,
 			expectedFoo: "bar", // input overrides default
@@ -161,7 +159,7 @@ func TestUnmarshalOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config[Sub]{
-				Sub1: Default(&subDefault),
+				Sub1: Default(subDefault),
 			},
 			expectedSub: true,
 			expectedFoo: "foobar", // default applies
@@ -219,6 +217,15 @@ func TestUnmarshalOptional(t *testing.T) {
 	}
 }
 
+func TestUnmarshalErrorEnabledField(t *testing.T) {
+	cm := confmap.NewFromStringMap(map[string]any{
+		"enabled": true,
+	})
+	// Use zero value to avoid panic on constructor.
+	var none Optional[WithEnabled]
+	require.Error(t, cm.Unmarshal(&none))
+}
+
 func TestUnmarshalConfigPointer(t *testing.T) {
 	cm := confmap.NewFromStringMap(map[string]any{
 		"sub": map[string]any{
@@ -239,19 +246,14 @@ func TestUnmarshalErr(t *testing.T) {
 	})
 
 	cfg := Config[Sub]{
-		Sub1: Default(&subDefault),
+		Sub1: Default(subDefault),
 	}
 
-	assert.NotNil(t, cfg.Sub1.defaultFn)
 	assert.False(t, cfg.Sub1.HasValue())
 
 	err := cm.Unmarshal(&cfg)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "has invalid keys: field")
-
-	// Check that the default function is still set
-	// when unmarshaling fails.
-	assert.NotNil(t, cfg.Sub1.defaultFn)
 	assert.False(t, cfg.Sub1.HasValue())
 }
 
@@ -262,10 +264,8 @@ type MyConfig struct {
 	Optional[MyIntConfig] `mapstructure:",squash"`
 }
 
-var myIntDefault DefaultFunc[MyIntConfig] = func() MyIntConfig {
-	return MyIntConfig{
-		Val: 1,
-	}
+var myIntDefault = MyIntConfig{
+	Val: 1,
 }
 
 func TestSquashedOptional(t *testing.T) {
@@ -274,7 +274,7 @@ func TestSquashedOptional(t *testing.T) {
 	})
 
 	cfg := MyConfig{
-		Default(&myIntDefault),
+		Default(myIntDefault),
 	}
 
 	err := cm.Unmarshal(&cfg)
