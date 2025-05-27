@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.33.0
 	go.opentelemetry.io/collector/pdata v1.33.0
 	go.opentelemetry.io/collector/pipeline v0.127.0
-	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0
+	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/log v0.12.2
 	go.opentelemetry.io/otel/log/logtest v0.0.0-20250526142609-aa5bd0e64989
