@@ -6,6 +6,38 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_batch_flush_size
+
+Number of batches flushed due to size. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {batches} | Sum | Int | true |
+
+### otelcol_exporter_batch_flush_timeout
+
+Number of batches flushed due to timeout. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {batches} | Sum | Int | true |
+
+### otelcol_exporter_batch_latency
+
+Batches latency in the queue (in milliseconds). [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {milliseconds} | Histogram | Int |
+
+### otelcol_exporter_batch_size
+
+Batches size in the queue (in bytes). [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {bytes} | Histogram | Int |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [alpha]
@@ -32,7 +64,7 @@ Number of spans failed to be added to the sending queue. [alpha]
 
 ### otelcol_exporter_queue_capacity
 
-Fixed capacity of the retry queue (in batches) [alpha]
+Fixed capacity of the retry queue (in batches). [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

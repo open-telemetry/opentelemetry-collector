@@ -52,11 +52,32 @@ func TestLogsRequest(t *testing.T) {
 	lr := newLogsRequest(testdata.GenerateLogs(1))
 
 	logErr := consumererror.NewLogs(errors.New("some error"), plog.NewLogs())
-	assert.Equal(
-		t,
-		newLogsRequest(plog.NewLogs()),
-		lr.(RequestErrorHandler).OnError(logErr),
-	)
+
+	expected := newLogsRequest(plog.NewLogs()).(*logsRequest)
+	errRequest := lr.(RequestErrorHandler).OnError(logErr).(*logsRequest)
+
+	// Compare the structs but ignore the timestamp
+	assert.Equal(t, expected.ld, errRequest.ld)
+	assert.Equal(t, expected.cachedSize, errRequest.cachedSize)
+}
+
+func TestLogsRequest_Timestamp(t *testing.T) {
+	now := time.Now()
+	lr := &logsRequest{
+		timestamp: now,
+	}
+	assert.Equal(t, now, lr.Timestamp())
+}
+
+func TestLogsRequest_BytesSize(t *testing.T) {
+	ld := testdata.GenerateLogs(2)
+	lr := newLogsRequest(ld)
+	size := lr.BytesSize()
+	assert.Positive(t, size)
+
+	emptyLr := newLogsRequest(plog.NewLogs())
+	emptySize := emptyLr.BytesSize()
+	assert.Equal(t, 0, emptySize)
 }
 
 func TestLogs_InvalidName(t *testing.T) {

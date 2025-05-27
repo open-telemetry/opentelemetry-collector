@@ -49,10 +49,34 @@ var (
 )
 
 func TestTracesRequest(t *testing.T) {
-	mr := newTracesRequest(testdata.GenerateTraces(1))
+	td := testdata.GenerateTraces(1)
+	tr := newTracesRequest(td)
 
 	traceErr := consumererror.NewTraces(errors.New("some error"), ptrace.NewTraces())
-	assert.Equal(t, newTracesRequest(ptrace.NewTraces()), mr.(RequestErrorHandler).OnError(traceErr))
+	expected := newTracesRequest(ptrace.NewTraces()).(*tracesRequest)
+	errRequest := tr.(RequestErrorHandler).OnError(traceErr).(*tracesRequest)
+
+	assert.Equal(t, expected.td, errRequest.td)
+	assert.Equal(t, expected.cachedSize, errRequest.cachedSize)
+}
+
+func TestTracesRequest_Timestamp(t *testing.T) {
+	now := time.Now()
+	tr := &tracesRequest{
+		timestamp: now,
+	}
+	assert.Equal(t, now, tr.Timestamp())
+}
+
+func TestTracesRequest_BytesSize(t *testing.T) {
+	td := testdata.GenerateTraces(2)
+	tr := newTracesRequest(td)
+	size := tr.BytesSize()
+	assert.Positive(t, size)
+
+	emptyTr := newTracesRequest(ptrace.NewTraces())
+	emptySize := emptyTr.BytesSize()
+	assert.Equal(t, 0, emptySize)
 }
 
 func TestTraces_InvalidName(t *testing.T) {

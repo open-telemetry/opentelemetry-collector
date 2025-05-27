@@ -8,9 +8,13 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -26,6 +30,7 @@ type batcherSettings[T any] struct {
 	sizer      request.Sizer[T]
 	next       sender.SendFunc[T]
 	maxWorkers int
+	settings   Settings[request.Request]
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -40,6 +45,16 @@ type defaultBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+	tb             *metadata.TelemetryBuilder
+	metrics        *metricsBatcher
+}
+
+type metricsBatcher struct {
+	ExporterBatchSize         metric.Int64Histogram
+	ExporterBatchFlushTimeout metric.Int64Counter
+	ExporterBatchLatency      metric.Int64Histogram
+	ExporterBatchFlushSize    metric.Int64Counter
+	metricAttr                metric.MeasurementOption
 }
 
 func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
@@ -51,6 +66,28 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 			workerPool <- struct{}{}
 		}
 	}
+
+	var batcherMetrics *metricsBatcher
+	var tb *metadata.TelemetryBuilder
+	if bSet.settings.Telemetry.MeterProvider != nil {
+		exporterAttr := attribute.String(exporterKey, bSet.settings.ID.String())
+		var err error
+		tb, err = metadata.NewTelemetryBuilder(bSet.settings.Telemetry)
+		if err != nil {
+			bSet.settings.Telemetry.Logger.Error("failed to create telemetry builder", zap.Error(err))
+		}
+
+		if tb != nil {
+			batcherMetrics = &metricsBatcher{
+				ExporterBatchSize:         tb.ExporterBatchSize,
+				ExporterBatchLatency:      tb.ExporterBatchLatency,
+				ExporterBatchFlushTimeout: tb.ExporterBatchFlushTimeout,
+				ExporterBatchFlushSize:    tb.ExporterBatchFlushSize,
+				metricAttr:                metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
+			}
+		}
+	}
+
 	return &defaultBatcher{
 		cfg:         bCfg,
 		workerPool:  workerPool,
@@ -59,6 +96,8 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 		consumeFunc: bSet.next,
 		stopWG:      sync.WaitGroup{},
 		shutdownCh:  make(chan struct{}, 1),
+		tb:          tb,
+		metrics:     batcherMetrics,
 	}
 }
 
@@ -101,6 +140,13 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		qb.currentBatchMu.Unlock()
 		for i := 0; i < len(reqList); i++ {
 			qb.flush(ctx, reqList[i], done)
+			if qb.metrics != nil {
+				qb.metrics.ExporterBatchFlushSize.Add(
+					ctx,
+					1,
+					qb.metrics.metricAttr,
+				)
+			}
 		}
 
 		return
@@ -158,14 +204,28 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	qb.currentBatchMu.Unlock()
 	if firstBatch != nil {
 		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
+		if qb.metrics != nil {
+			qb.metrics.ExporterBatchFlushSize.Add(
+				ctx,
+				1,
+				qb.metrics.metricAttr,
+			)
+		}
 	}
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
+		if qb.metrics != nil {
+			qb.metrics.ExporterBatchFlushSize.Add(
+				ctx,
+				1,
+				qb.metrics.metricAttr,
+			)
+		}
 	}
 }
 
 // startTimeBasedFlushingGoroutine starts a goroutine that flushes on timeout.
-func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
+func (qb *defaultBatcher) startTimeBasedFlushingGoroutine(ctx context.Context) {
 	qb.stopWG.Add(1)
 	go func() {
 		defer qb.stopWG.Done()
@@ -175,16 +235,23 @@ func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
 				return
 			case <-qb.timer.C:
 				qb.flushCurrentBatchIfNecessary()
+				if qb.metrics != nil {
+					qb.metrics.ExporterBatchFlushTimeout.Add(
+						ctx,
+						1,
+						qb.metrics.metricAttr,
+					)
+				}
 			}
 		}
 	}()
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *defaultBatcher) Start(ctx context.Context, _ component.Host) error {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
-		qb.startTimeBasedFlushingGoroutine()
+		qb.startTimeBasedFlushingGoroutine(ctx)
 	}
 
 	return nil
@@ -218,14 +285,36 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done D
 		if qb.workerPool != nil {
 			qb.workerPool <- struct{}{}
 		}
+		if qb.metrics != nil {
+			qb.metrics.ExporterBatchLatency.Record(
+				ctx,
+				time.Since(req.Timestamp()).Milliseconds(),
+				qb.metrics.metricAttr,
+			)
+			qb.metrics.ExporterBatchSize.Record(
+				ctx,
+				int64(req.BytesSize()),
+				qb.metrics.metricAttr,
+			)
+		}
 	}()
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *defaultBatcher) Shutdown(_ context.Context) error {
+func (qb *defaultBatcher) Shutdown(ctx context.Context) error {
 	close(qb.shutdownCh)
+	if qb.tb != nil {
+		qb.tb.Shutdown()
+	}
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
+	if qb.metrics != nil {
+		qb.metrics.ExporterBatchFlushSize.Add(
+			ctx,
+			1,
+			qb.metrics.metricAttr,
+		)
+	}
 	qb.stopWG.Wait()
 	return nil
 }

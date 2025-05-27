@@ -47,14 +47,34 @@ const (
 var fakeProfilesExporterConfig = struct{}{}
 
 func TestProfilesRequest(t *testing.T) {
-	lr := newProfilesRequest(testdata.GenerateProfiles(1))
+	pd := testdata.GenerateProfiles(1)
+	pr := newProfilesRequest(pd)
 
-	profileErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
-	assert.Equal(
-		t,
-		newProfilesRequest(pprofile.NewProfiles()),
-		lr.(exporterhelper.RequestErrorHandler).OnError(profileErr),
-	)
+	profilesErr := xconsumererror.NewProfiles(errors.New("some error"), pprofile.NewProfiles())
+	expected := newProfilesRequest(pprofile.NewProfiles()).(*profilesRequest)
+	errRequest := pr.(exporterhelper.RequestErrorHandler).OnError(profilesErr).(*profilesRequest)
+
+	assert.Equal(t, expected.pd, errRequest.pd)
+	assert.Equal(t, expected.cachedSize, errRequest.cachedSize)
+}
+
+func TestProfilesRequest_Timestamp(t *testing.T) {
+	now := time.Now()
+	pr := &profilesRequest{
+		timestamp: now,
+	}
+	assert.Equal(t, now, pr.Timestamp())
+}
+
+func TestProfilesRequest_BytesSize(t *testing.T) {
+	pd := testdata.GenerateProfiles(2)
+	pr := newProfilesRequest(pd)
+	size := pr.BytesSize()
+	assert.Positive(t, size)
+
+	emptyPr := newProfilesRequest(pprofile.NewProfiles())
+	emptySize := emptyPr.BytesSize()
+	assert.Equal(t, 0, emptySize)
 }
 
 func TestProfilesExporter_InvalidName(t *testing.T) {
