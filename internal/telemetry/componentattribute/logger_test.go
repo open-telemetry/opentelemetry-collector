@@ -99,10 +99,10 @@ func TestCore(t *testing.T) {
 				recorder := rec.otelLogs
 
 				logAttributes := make(map[string]attribute.Set)
-				for _, scope := range recorder.Result() {
+				for scope, records := range recorder.Result() {
 					require.Equal(t, "testinstr", scope.Name)
-					for _, record := range scope.Records {
-						logAttributes[record.Body().String()] = scope.Attributes
+					for _, record := range records {
+						logAttributes[record.Body.String()] = scope.Attributes
 					}
 				}
 

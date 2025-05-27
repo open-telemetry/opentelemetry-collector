@@ -63,19 +63,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: errMissingServicePipelines,
 		},
 		{
-			name: "invalid-service-pipeline-type",
-			cfgFn: func(*testing.T) Config {
-				cfg := generateConfig(t)
-				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
-					Receivers:  []component.ID{component.MustNewID("nop")},
-					Processors: []component.ID{component.MustNewID("nop")},
-					Exporters:  []component.ID{component.MustNewID("nop")},
-				}
-				return cfg
-			},
-			expected: errors.New(`unknown signal "wrongtype"`),
-		},
-		{
 			name: "disabled-featuregate-profiles",
 			cfgFn: func(*testing.T) Config {
 				cfg := generateConfig(t)

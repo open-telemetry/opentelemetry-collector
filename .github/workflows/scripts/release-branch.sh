@@ -65,7 +65,7 @@ elif [[ -n "$BRANCH_EXISTS_REMOTELY" ]]; then
   exit 0
 else
   echo "Release branch '${RELEASE_BRANCH_NAME}' not found locally or on remote."
-  git switch -c "${RELEASE_BRANCH_NAME}" "${TARGET_MAIN_STATE_COMMIT}"
+  git switch -c "${RELEASE_BRANCH_NAME}" "${PREPARE_RELEASE_COMMIT_HASH}"
 fi
 
 echo "Current branch is now '${RELEASE_BRANCH_NAME}'."
