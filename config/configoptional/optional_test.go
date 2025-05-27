@@ -32,6 +32,10 @@ type OmitEmpty struct {
 	Foo int `mapstructure:",omitempty"`
 }
 
+type NoMapstructure struct {
+	Foo string
+}
+
 var subDefault = Sub{
 	Foo: "foobar",
 }
@@ -63,6 +67,10 @@ func TestDefaultPanics(t *testing.T) {
 
 	assert.Panics(t, func() {
 		_ = None[WithEnabled]()
+	})
+
+	assert.NotPanics(t, func() {
+		_ = Default(NoMapstructure{})
 	})
 
 	assert.NotPanics(t, func() {

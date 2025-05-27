@@ -67,7 +67,8 @@ func assertNoEnabledField[T any]() error {
 	// Check if the struct has a field with the name "enabled".
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		if strings.SplitN(field.Tag.Get("mapstructure"), ",", 2)[0] == "enabled" {
+		mapstructureTags := strings.SplitN(field.Tag.Get("mapstructure"), ",", 2)
+		if len(mapstructureTags) > 0 && mapstructureTags[0] == "enabled" {
 			return errors.New("configoptional: underlying type cannot have a field with mapstructure tag 'enabled'")
 		}
 	}
