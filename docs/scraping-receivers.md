@@ -33,6 +33,20 @@ There are two categories of the metrics emitted by scraping receivers:
 
 - **Optional metrics**: not emitted by default, but can be enabled in user settings.
 
+## Semantic Conventions compatibility
+
+When adding new metrics, the [Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
+project should be checked first to see if the metrics already exist.
+It's also important to check for any open issues that may already propose these or similar metrics.
+If no such metrics are defined in the Semantic Conventions, the receiver’s code owners should consider
+initiating that process first.
+The implementation of the receiver can still be submitted as a draft PR to demonstrate how the proposed metrics
+would be used while working in parallel to contribute the relevant updates to the Semantic Conventions project.
+The receiver's code owners can review the Semantic Conventions PR in collaboration with any existing domain-specific
+SemConv approvers.
+At their discretion, the code owners may choose to block the receiver’s implementation PR until the related
+Semantic Conventions changes are completed.
+
 ### How to identify if new metric should be default or optional?
 
 There is no strict rule to differentiate default metrics from optional. As a rule of thumb, default metrics SHOULD be 
