@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -20,7 +21,7 @@ import (
 func TestMergeProfiles(t *testing.T) {
 	pr1 := newProfilesRequest(testdata.GenerateProfiles(2))
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2)
+	res, err := pr1.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, pr2, zap.NewNop())
 	require.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Equal(t, 5, res[0].ItemsCount())
@@ -28,7 +29,13 @@ func TestMergeProfiles(t *testing.T) {
 
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
-	_, err := pr2.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, &requesttest.FakeRequest{Items: 1})
+	_, err := pr2.MergeSplit(
+		context.Background(),
+		0,
+		exporterhelper.RequestSizerTypeItems,
+		&requesttest.FakeRequest{Items: 1},
+		zap.NewNop(),
+	)
 	assert.Error(t, err)
 }
 
@@ -123,7 +130,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i, r := range res {
@@ -288,7 +295,7 @@ func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2)
+			res, err := tt.pr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.pr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i, r := range res {
@@ -312,7 +319,13 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newProfilesRequest(testdata.GenerateProfiles(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, exporterhelper.RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(
+			context.Background(),
+			10000,
+			exporterhelper.RequestSizerTypeItems,
+			lr2,
+			zap.NewNop(),
+		)
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -330,6 +343,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallProfiles(b *testing.B) {
 				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(11000)),
 				exporterhelper.RequestSizerTypeBytes,
 				pr2,
+				zap.NewNop(),
 			)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -349,6 +363,7 @@ func BenchmarkSplittingBasedOnByteSizeManyProfilesSlightlyAboveLimit(b *testing.
 				profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10000)),
 				exporterhelper.RequestSizerTypeBytes,
 				pr2,
+				zap.NewNop(),
 			)
 			assert.Len(b, res, 2)
 			merged = append(merged[0:len(merged)-1], res...)
@@ -368,8 +383,20 @@ func BenchmarkSplittingBasedOnByteSizeHugeProfiles(b *testing.B) {
 			profilesMarshaler.ProfilesSize(testdata.GenerateProfiles(10010)),
 			exporterhelper.RequestSizerTypeBytes,
 			pr2,
+			zap.NewNop(),
 		)
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
+}
+
+func TestMergeSplitProfilesUnsplittable(t *testing.T) {
+	pd := testdata.GenerateProfiles(1)
+	pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0).AttributeTable().AppendEmpty().Value().SetStr(string(make([]byte, 100)))
+	req := newProfilesRequest(pd)
+
+	res, err := req.MergeSplit(context.Background(), 1, exporterhelper.RequestSizerTypeBytes, nil, zap.NewNop())
+	require.NoError(t, err)
+	assert.Len(t, res, 1)
+	assert.Equal(t, pd, res[0].(*profilesRequest).pd)
 }

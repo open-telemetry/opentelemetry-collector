@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,7 +45,7 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
-func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
+func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request, _ *zap.Logger) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr
 	}

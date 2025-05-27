@@ -7,13 +7,15 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
-func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
+func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 exporterhelper.Request, logger *zap.Logger) ([]exporterhelper.Request, error) {
 	var sz sizer.ProfilesSizer
 	switch szt {
 	case exporterhelper.RequestSizerTypeItems:
@@ -36,7 +38,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	if maxSize == 0 {
 		return []exporterhelper.Request{req}, nil
 	}
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz, logger), nil
 }
 
 func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) {
@@ -47,12 +49,28 @@ func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
 }
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) []exporterhelper.Request {
+func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer, logger *zap.Logger) []exporterhelper.Request {
 	var res []exporterhelper.Request
-	for req.size(sz) > maxSize {
-		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newProfilesRequest(pd))
+	var pd pprofile.Profiles
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		pd, rmSize = extractProfiles(req.pd, maxSize, sz)
+		if pd.ResourceProfiles().Len() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newProfilesRequest(pd))
+		}
+	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		// This means we cannot split the trace and is not possible
+		// to fit it into the max size.
+		logger.Warn("Failed to split profiles request",
+			zap.Int("size", req.size(sz)),
+			zap.Int("max_size", maxSize),
+		)
 	}
 	res = append(res, req)
 	return res
