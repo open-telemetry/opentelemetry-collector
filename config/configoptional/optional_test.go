@@ -24,6 +24,14 @@ type WithEnabled struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
+type WithEnabledOmitEmpty struct {
+	Enabled bool `mapstructure:"enabled,omitempty"`
+}
+
+type OmitEmpty struct {
+	Foo int `mapstructure:",omitempty"`
+}
+
 var subDefault = Sub{
 	Foo: "foobar",
 }
@@ -46,11 +54,19 @@ func TestDefaultPanics(t *testing.T) {
 	})
 
 	assert.Panics(t, func() {
+		_ = Default(WithEnabledOmitEmpty{})
+	})
+
+	assert.Panics(t, func() {
 		_ = Some(WithEnabled{})
 	})
 
 	assert.Panics(t, func() {
 		_ = None[WithEnabled]()
+	})
+
+	assert.NotPanics(t, func() {
+		_ = Default(OmitEmpty{})
 	})
 
 	assert.NotPanics(t, func() {
@@ -85,7 +101,7 @@ func TestSome(t *testing.T) {
 		Foo: "foobar",
 	})
 	require.True(t, some.HasValue())
-	require.NotEqual(t, 1, *some.Get())
+	assert.Equal(t, "foobar", some.Get().Foo)
 }
 
 func TestDefault(t *testing.T) {

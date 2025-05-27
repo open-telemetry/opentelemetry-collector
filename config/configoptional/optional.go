@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -66,7 +67,7 @@ func assertNoEnabledField[T any]() error {
 	// Check if the struct has a field with the name "enabled".
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		if field.Tag.Get("mapstructure") == "enabled" {
+		if strings.SplitN(field.Tag.Get("mapstructure"), ",", 2)[0] == "enabled" {
 			return errors.New("configoptional: underlying type cannot have a field with mapstructure tag 'enabled'")
 		}
 	}
