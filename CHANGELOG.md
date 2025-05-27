@@ -7,6 +7,27 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.33.0/v0.127.0
+
+### 🚩 Deprecations 🚩
+
+- `semconv`: Deprecating the semconv package in favour of go.opentelemetry.io/otel/semconv (#13012)
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Display resource and scope in `normal` verbosity (#10515)
+- `service`: Add size metrics defined in Pipeline Component Telemetry RFC (#13032)
+  See [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md) for more details:
+    - `otelcol.receiver.produced.size`
+    - `otelcol.processor.consumed.size`
+    - `otelcol.processor.produced.size`
+    - `otelcol.connector.consumed.size`
+    - `otelcol.connector.produced.size`
+    - `otelcol.exporter.consumed.size`
+  
+
+<!-- previous-version -->
+
 ## v1.32.0/v0.126.0
 
 ### 🛑 Breaking changes 🛑
