@@ -147,9 +147,21 @@ func TestUnmarshalOptional(t *testing.T) {
 			expectedFoo: "bar", // input overrides default
 		},
 		{
+			// nil is treated as an empty map because of the hooks we use.
 			name: "none_with_config_no_foo",
 			config: map[string]any{
 				"sub": nil,
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "none_with_config_no_foo_empty_map",
+			config: map[string]any{
+				"sub": map[string]any{},
 			},
 			defaultCfg: Config[Sub]{
 				Sub1: Default(subDefault),
