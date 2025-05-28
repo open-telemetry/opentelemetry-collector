@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.127.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.127.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.127.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
