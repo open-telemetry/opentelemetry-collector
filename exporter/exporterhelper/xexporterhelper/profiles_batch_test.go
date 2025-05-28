@@ -34,7 +34,7 @@ func TestMergeProfilesInvalidInput(t *testing.T) {
 }
 
 func TestMergeSplitProfiles(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled")
+	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
 
 	tests := []struct {
 		name     string
@@ -137,7 +137,7 @@ func TestMergeSplitProfiles(t *testing.T) {
 }
 
 func TestMergeSplitProfilesBasedOnByteSize(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled")
+	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
 
 	tests := []struct {
 		name     string
@@ -313,7 +313,7 @@ func TestExtractProfiles(t *testing.T) {
 }
 
 func TestMergeSplitManySmallLogs(t *testing.T) {
-	t.Skip("merging of profiles has been temporarily disabled")
+	t.Skip("merging of profiles has been temporarily disabled (https://github.com/open-telemetry/opentelemetry-collector/issues/13106)")
 
 	// All requests merge into a single batch.
 	merged := []exporterhelper.Request{newProfilesRequest(testdata.GenerateProfiles(1))}
