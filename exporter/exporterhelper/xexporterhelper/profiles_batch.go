@@ -13,6 +13,9 @@ import (
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
+//
+// Following the OTLP 1.7.0 upgrade, this is currently a noop.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
 func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	var sz sizer.ProfilesSizer
 	switch szt {
