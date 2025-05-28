@@ -29,7 +29,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		// TODO: handle merging of profiles (and change the indice tables with their new indices)
+		// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
 		// req2.mergeTo(req, sz)
 
 		// If no limit we can simply merge the new request into the current and return.
@@ -47,7 +47,7 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	return req.split(maxSize, sz), nil
 }
 
-// TODO: handle merging of profiles (and change the indice tables with their new indices)
+// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
 /*func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) {
 	if sz != nil {
 		dst.setCachedSize(dst.size(sz) + req.size(sz))
