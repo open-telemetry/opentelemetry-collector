@@ -147,14 +147,14 @@ func TestSamplerCore(t *testing.T) {
 	testCases := []testCase{
 		{
 			name: "new-sampler",
-			withAttributes: func(inner zapcore.Core, sampler zapcore.Core, attrs attribute.Set) zapcore.Core {
+			withAttributes: func(inner zapcore.Core, _ zapcore.Core, attrs attribute.Set) zapcore.Core {
 				return zapcore.NewSamplerWithOptions(tryWithAttributeSet(inner, attrs), tick, first, thereafter)
 			},
 			expectedAttrs: []string{"foo", "bar", "foo", "bar"},
 		},
 		{
 			name: "cloned-sampler",
-			withAttributes: func(inner zapcore.Core, sampler zapcore.Core, attrs attribute.Set) zapcore.Core {
+			withAttributes: func(_ zapcore.Core, sampler zapcore.Core, attrs attribute.Set) zapcore.Core {
 				return tryWithAttributeSet(sampler, attrs)
 			},
 			expectedAttrs: []string{"foo", "bar"},
