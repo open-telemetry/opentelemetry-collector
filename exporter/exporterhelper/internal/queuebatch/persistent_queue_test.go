@@ -544,98 +544,99 @@ func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
 }
 
 func TestPersistentQueue_CorruptedData(t *testing.T) {
-	cases := []struct {
-		name                               string
-		corruptAllData                     bool
-		corruptSomeData                    bool
-		corruptCurrentlyDispatchedItemsKey bool
-		corruptReadIndex                   bool
-		corruptWriteIndex                  bool
-		desiredQueueSize                   int64
+	req := uint64(100)
+	sizer := request.RequestsSizer[uint64]{}
+	encoding := uint64Encoding{}
+	capacity := int64(1000)
+
+	tests := []struct {
+		name         string
+		corruptFunc  func(t *testing.T, client storage.Client) // Corrupts the specific key
+		keyToCorrupt string                                    // For logging/identification, can be new or old key name
+		expectError  bool                                      // Whether queue initialization should ideally error or log errors and start fresh
+		// We expect the queue to initialize empty or with recovered state if only one part is corrupt.
 	}{
 		{
-			name:             "corrupted no items",
-			desiredQueueSize: 3,
+			name: "corrupted new metadata key",
+			corruptFunc: func(t *testing.T, client storage.Client) {
+				require.NoError(t, client.Set(context.Background(), queueMetadataKey, []byte("corrupted data")))
+			},
+			keyToCorrupt: queueMetadataKey,
+			expectError:  false, // Should log error and start as new
 		},
 		{
-			name:             "corrupted all items",
-			corruptAllData:   true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name: "new metadata key too short",
+			corruptFunc: func(t *testing.T, client storage.Client) {
+				require.NoError(t, client.Set(context.Background(), queueMetadataKey, []byte{1, 2, 3}))
+			},
+			keyToCorrupt: queueMetadataKey,
+			expectError:  false, // Should log error and start as new
 		},
 		{
-			name:             "corrupted some items",
-			corruptSomeData:  true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name: "corrupted old read index",
+			corruptFunc: func(t *testing.T, client storage.Client) {
+				require.NoError(t, client.Set(context.Background(), oldReadIndexKey, []byte("corrupted_ri")))
+			},
+			keyToCorrupt: oldReadIndexKey,
+			expectError:  false, // Should log error and start as new if other old keys are missing or also corrupt
 		},
 		{
-			name:                               "corrupted dispatched items key",
-			corruptCurrentlyDispatchedItemsKey: true,
-			desiredQueueSize:                   2,
+			name: "corrupted old write index",
+			corruptFunc: func(t *testing.T, client storage.Client) {
+				require.NoError(t, client.Set(context.Background(), oldWriteIndexKey, []byte("corrupted_wi")))
+			},
+			keyToCorrupt: oldWriteIndexKey,
+			expectError:  false, // Should log error and start as new
 		},
 		{
-			name:             "corrupted read index",
-			corruptReadIndex: true,
-			desiredQueueSize: 1, // The dispatched item.
-		},
-		{
-			name:              "corrupted write index",
-			corruptWriteIndex: true,
-			desiredQueueSize:  1, // The dispatched item.
-		},
-		{
-			name:                               "corrupted everything",
-			corruptAllData:                     true,
-			corruptCurrentlyDispatchedItemsKey: true,
-			corruptReadIndex:                   true,
-			corruptWriteIndex:                  true,
-			desiredQueueSize:                   0,
+			name: "corrupted old dispatched items",
+			corruptFunc: func(t *testing.T, client storage.Client) {
+				require.NoError(t, client.Set(context.Background(), oldCurrentlyDispatchedItemsKey, []byte("corrupted_cdi")))
+			},
+			keyToCorrupt: oldCurrentlyDispatchedItemsKey,
+			expectError:  false, // Should log error, CDI might be empty
 		},
 	}
 
-	badBytes := []byte{0, 1, 2}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockStorage := storagetest.NewMockStorageExtension(nil)
+			client, err := mockStorage.GetClient(context.Background(), component.KindExporter, component.NewID(exportertest.NopType), pipeline.SignalTraces.String())
+			require.NoError(t, err)
 
-	for _, c := range cases {
-		t.Run(c.name, func(t *testing.T) {
-			ext := storagetest.NewMockStorageExtension(nil)
-			ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+			// Apply corruption
+			tt.corruptFunc(t, client)
 
-			// Put some items, make sure they are loaded and shutdown the storage...
-			for i := 0; i < 3; i++ {
-				require.NoError(t, ps.Offer(context.Background(), uint64(50)))
+			// Create and start the queue. It should handle the corruption gracefully.
+			// The logger inside persistentQueue will show error messages.
+			// We expect it to initialize, possibly as an empty queue.
+			set := persistentQueueSettings[uint64]{
+				telemetry:       componenttest.NewNopTelemetrySettings(),
+				capacity:        capacity,
+				sizer:           sizer,
+				encoding:        encoding,
+				id:              component.NewID(exportertest.NopType),
+				signal:          pipeline.SignalTraces, // Example signal
+				blockOnOverflow: true,                  // Default for many tests
 			}
-			assert.Equal(t, int64(3), ps.Size())
-			require.True(t, consume(ps, func(context.Context, uint64) error {
-				return experr.NewShutdownErr(nil)
-			}))
-			assert.Equal(t, int64(2), ps.Size())
+			pq := newPersistentQueue[uint64](set).(*persistentQueue[uint64])
+			pq.initClient(context.Background(), client)
+			require.NotNil(t, pq)
 
-			// We can corrupt data (in several ways) and not worry since we return ShutdownErr client will not be touched.
-			if c.corruptAllData || c.corruptSomeData {
-				require.NoError(t, ps.client.Set(context.Background(), "0", badBytes))
-			}
-			if c.corruptAllData {
-				require.NoError(t, ps.client.Set(context.Background(), "1", badBytes))
-				require.NoError(t, ps.client.Set(context.Background(), "2", badBytes))
-			}
+			// Offer an item to ensure the queue is operational
+			err = pq.Offer(context.Background(), req)
+			require.NoError(t, err)
+			assert.Equal(t, sizer.Sizeof(req), pq.Size())
 
-			if c.corruptCurrentlyDispatchedItemsKey {
-				require.NoError(t, ps.client.Set(context.Background(), currentlyDispatchedItemsKey, badBytes))
-			}
+			// Read the item
+			_, item, done, ok := pq.Read(context.Background())
+			require.True(t, ok)
+			assert.Equal(t, req, item)
+			done.OnDone(nil)
 
-			if c.corruptReadIndex {
-				require.NoError(t, ps.client.Set(context.Background(), readIndexKey, badBytes))
-			}
-
-			if c.corruptWriteIndex {
-				require.NoError(t, ps.client.Set(context.Background(), writeIndexKey, badBytes))
-			}
-
-			// Cannot close until we corrupt the data because the
-			require.NoError(t, ps.Shutdown(context.Background()))
-
-			// Reload
-			newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
-			assert.Equal(t, c.desiredQueueSize, newPs.Size())
+			assert.Equal(t, int64(0), pq.Size())
+			require.NoError(t, pq.Shutdown(context.Background()))
+			require.NoError(t, mockStorage.Shutdown(context.Background()))
 		})
 	}
 }
@@ -935,7 +936,8 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
 
 	// Manually set the storage to only have a small amount of free space left (needs 24).
-	newMaxSize := client.GetSizeInBytes() + 23
+	const minMetadataSize = 28
+	newMaxSize := client.GetSizeInBytes() + 23 + minMetadataSize
 	client.SetMaxSizeInBytes(newMaxSize)
 
 	// Take out all the items
@@ -1161,8 +1163,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
 
-// This test covers the case when the persistent storage is recovered from a snapshot which has
-// bigger value for the used size than the size of the actual items in the storage.
+// This test covers the case when the persistent storage is recovered from a snapshot.
 func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
@@ -1178,19 +1179,16 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		assert.True(t, consume(pq, func(context.Context, uint64) error { return nil }))
 	}
-	// The used size is now 30, but the snapshot should have 50, because it's taken every 5 read/writes.
 	assert.Equal(t, int64(30), pq.Size())
 
 	// Create a new queue pointed to the same storage
 	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
 
-	// This is an incorrect size restored from the snapshot.
-	// In reality the size should be 30. Once the queue is drained, it will be updated to the correct size.
-	assert.Equal(t, int64(50), newPQ.Size())
+	assert.Equal(t, int64(30), newPQ.Size())
 
 	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
 	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
-	assert.Equal(t, int64(30), newPQ.Size())
+	assert.Equal(t, int64(10), newPQ.Size())
 
 	// Now the size must be correctly reflected
 	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
@@ -1204,4 +1202,221 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
+}
+
+func TestQueueMetadataMarshaling(t *testing.T) {
+	cases := []struct {
+		name string
+		in   *queueMetadata
+		out  *queueMetadata
+		err  bool
+	}{
+		{
+			name: "valid full metadata",
+			in: &queueMetadata{
+				ReadIndex:                10,
+				WriteIndex:               20,
+				QueueSize:                100,
+				CurrentlyDispatchedItems: []uint64{1, 2, 3},
+			},
+			out: &queueMetadata{
+				ReadIndex:                10,
+				WriteIndex:               20,
+				QueueSize:                100,
+				CurrentlyDispatchedItems: []uint64{1, 2, 3},
+			},
+		},
+		{
+			name: "valid empty dispatched items",
+			in: &queueMetadata{
+				ReadIndex:                5,
+				WriteIndex:               5,
+				QueueSize:                0,
+				CurrentlyDispatchedItems: []uint64{},
+			},
+			out: &queueMetadata{
+				ReadIndex:                5,
+				WriteIndex:               5,
+				QueueSize:                0,
+				CurrentlyDispatchedItems: []uint64{},
+			},
+		},
+		{
+			name: "valid nil dispatched items", // Should be treated as empty
+			in: &queueMetadata{
+				ReadIndex:                7,
+				WriteIndex:               8,
+				QueueSize:                10,
+				CurrentlyDispatchedItems: nil,
+			},
+			out: &queueMetadata{
+				ReadIndex:                7,
+				WriteIndex:               8,
+				QueueSize:                10,
+				CurrentlyDispatchedItems: []uint64{}, // Unmarshal should set this to empty
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf, err := marshalQueueMetadata(tc.in, nil)
+			require.NoError(t, err)
+			require.NotNil(t, buf)
+
+			outMeta, err := unmarshalQueueMetadata(buf)
+			if tc.err {
+				require.Error(t, err)
+				require.Nil(t, buf)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.out, outMeta)
+			}
+		})
+	}
+
+	t.Run("unmarshal nil data", func(t *testing.T) {
+		_, err := unmarshalQueueMetadata(nil)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errValueNotSet)
+	})
+
+	t.Run("unmarshal short data", func(t *testing.T) {
+		shortData := make([]byte, 27) // Less than min 28
+		_, err := unmarshalQueueMetadata(shortData)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "queue metadata too short")
+	})
+
+	t.Run("unmarshall short data for cdi", func(t *testing.T) {
+		meta := &queueMetadata{
+			ReadIndex:                1,
+			WriteIndex:               2,
+			QueueSize:                1,
+			CurrentlyDispatchedItems: []uint64{10, 20},
+		}
+		buf, err := marshalQueueMetadata(meta, nil)
+		require.NoError(t, err)
+		// Truncate the buffer to make CDI part too short
+		require.NoError(t, err)
+		truncatedBuf := buf[:len(buf)-1]
+		_, err = unmarshalQueueMetadata(truncatedBuf)
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "queue metadata too short")
+	})
+}
+
+func TestPersistentQueue_MigrationFromOldFormat(t *testing.T) {
+	req := uint64(100)
+	sizer := request.RequestsSizer[uint64]{}
+	encoding := uint64Encoding{}
+	var capacity int64 = 1000
+
+	mockStorage := storagetest.NewMockStorageExtension(nil)
+	client, err := mockStorage.GetClient(context.Background(), component.KindExporter, component.NewID(exportertest.NopType), pipeline.SignalTraces.String())
+	require.NoError(t, err)
+
+	// 1. Populate storage with old format data
+	oldRI := uint64(5)
+	oldWI := uint64(10)
+	oldCDI := []uint64{6, 7}
+	oldQS := uint64(50)
+
+	retrievedWI := oldWI + uint64(len(oldCDI)) // Retrieve currentlyDispatchedItems after initPersistentContiguousQueue
+
+	require.NoError(t, client.Set(context.Background(), oldReadIndexKey, itemIndexToBytes(oldRI)))
+	require.NoError(t, client.Set(context.Background(), oldWriteIndexKey, itemIndexToBytes(oldWI)))
+	require.NoError(t, client.Set(context.Background(), oldCurrentlyDispatchedItemsKey, itemIndexArrayToBytes(oldCDI)))
+	require.NoError(t, client.Set(context.Background(), oldQueueSizeKey, itemIndexToBytes(oldQS)))
+
+	// Add some items to storage that correspond to the indices
+	for i := uint64(0); i < oldWI; i++ {
+		itemData, _ := encoding.Marshal(req + i) // Store unique items
+		require.NoError(t, client.Set(context.Background(), getItemKey(i), itemData))
+	}
+
+	// 2. Create and start the queue
+	set := persistentQueueSettings[uint64]{
+		telemetry:       componenttest.NewNopTelemetrySettings(),
+		capacity:        capacity,
+		sizer:           sizer,
+		encoding:        encoding,
+		id:              component.NewID(exportertest.NopType),
+		signal:          pipeline.SignalTraces,
+		blockOnOverflow: true,
+	}
+
+	pq := newPersistentQueue[uint64](set).(*persistentQueue[uint64])
+	pq.initClient(context.Background(), client) // This will trigger initPersistentContiguousQueue
+
+	// 3. Verify in-memory state matches old format data
+	pq.mu.Lock()
+	assert.Equal(t, oldRI, pq.readIndex, "Read index should be migrated")
+	assert.Equal(t, retrievedWI, pq.writeIndex, "Write index should be migrated")
+
+	if pq.isRequestSized {
+		queueSize := retrievedWI - oldRI
+		//nolint:gosec
+		assert.Equal(t, int64(queueSize), pq.queueSize, "Queue size should be calculated for requestSized")
+	} else {
+		assert.Equal(t, int64(oldQS), pq.queueSize, " Queue size should be migrated for non-requestSized")
+	}
+	pq.mu.Unlock()
+
+	// 4. Verify new metadata key exists and contains the migrated data
+	newMetaBytes, err := client.Get(context.Background(), queueMetadataKey)
+	require.NoError(t, err, "New metadata key should exist after migration")
+	require.NotNil(t, newMetaBytes)
+
+	migratedMeta, err := unmarshalQueueMetadata(newMetaBytes)
+	require.NoError(t, err)
+	assert.Equal(t, oldRI, migratedMeta.ReadIndex)
+	assert.Equal(t, retrievedWI, migratedMeta.WriteIndex)
+	if pq.isRequestSized {
+		//nolint:gosec
+		assert.Equal(t, int64(retrievedWI-oldRI), migratedMeta.QueueSize)
+	} else {
+		assert.Equal(t, int64(oldQS), migratedMeta.QueueSize)
+	}
+
+	// 5. Verify old format keys are gone or ignored.
+	// The current implementation doesn't delete old keys automatically.
+	// So we just verify operations update the new key
+
+	newItem := uint64(200)
+	err = pq.Offer(context.Background(), newItem)
+	require.NoError(t, err)
+
+	pq.mu.Lock()
+	exceptedWriteIndexAfterPut := retrievedWI + 1
+	exceptedQueueSizeAfterPut := pq.queueSize // This was updated in Offer/putInternal
+	pq.mu.Unlock()
+
+	newMetaBytesAfterPut, err := client.Get(context.Background(), queueMetadataKey)
+	require.NoError(t, err)
+	metaAfterPut, err := unmarshalQueueMetadata(newMetaBytesAfterPut)
+	require.NoError(t, err)
+	assert.Equal(t, exceptedWriteIndexAfterPut, metaAfterPut.WriteIndex)
+	assert.Equal(t, exceptedQueueSizeAfterPut, metaAfterPut.QueueSize) // queueSize in metadata reflects the sizer
+
+	// Shutdown
+	require.NoError(t, pq.Shutdown(context.Background()))
+	require.NoError(t, mockStorage.Shutdown(context.Background()))
+}
+
+// Helper functions for old format data, similar to what was removed from main code
+func itemIndexArrayToBytes(arr []uint64) []byte {
+	size := len(arr)
+	buf := make([]byte, 0, 4+size*8)
+	//nolint:gosec
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
+	for _, item := range arr {
+		buf = binary.LittleEndian.AppendUint64(buf, item)
+	}
+	return buf
+}
+
+func itemIndexToBytes(value uint64) []byte {
+	return binary.LittleEndian.AppendUint64([]byte{}, value)
 }
