@@ -7,7 +7,7 @@ change_type: enhancement
 component: confighttp
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the HTTP server span naming to use the HTTP method nad route pattern instead of the path.
+note: Update the HTTP server span naming to use the HTTP method and route pattern instead of the path.
 
 # One or more tracking issues or pull requests related to the change
 issues: [12468]
