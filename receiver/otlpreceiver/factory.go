@@ -51,7 +51,7 @@ func createDefaultConfig() component.Config {
 	httpCfg := confighttp.NewDefaultServerConfig()
 	httpCfg.Endpoint = "localhost:4318"
 	// For backward compatibility:
-	httpCfg.TLSSetting = configoptional.None[configtls.ServerConfig]()
+	httpCfg.TLS = configoptional.None[configtls.ServerConfig]()
 	httpCfg.WriteTimeout = 0
 	httpCfg.ReadHeaderTimeout = 0
 	httpCfg.IdleTimeout = 0

@@ -506,7 +506,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: configoptional.Some(configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
@@ -517,7 +517,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: configoptional.Some(configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
@@ -528,7 +528,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: configoptional.Some(configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				}),
 			},
@@ -668,8 +668,8 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &ServerConfig{
-				Endpoint:   "localhost:0",
-				TLSSetting: tt.tlsServerCreds,
+				Endpoint: "localhost:0",
+				TLS:      tt.tlsServerCreds,
 			}
 			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
@@ -1506,8 +1506,8 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	hss := &ServerConfig{
-		Endpoint:   "localhost:0",
-		TLSSetting: tlsServerCreds,
+		Endpoint: "localhost:0",
+		TLS:      tlsServerCreds,
 	}
 
 	s, err := hss.ToServer(
@@ -1570,7 +1570,7 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
-	assert.NotNil(t, httpServerSettings.TLSSetting)
+	assert.NotNil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)

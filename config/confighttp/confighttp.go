@@ -315,8 +315,8 @@ type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
+	// TLS struct exposes TLS client configuration.
+	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
@@ -379,7 +379,7 @@ type ServerConfig struct {
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        configoptional.None[configtls.ServerConfig](),
+		TLS:               configoptional.None[configtls.ServerConfig](),
 		CORS:              configoptional.None[CORSConfig](),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
@@ -405,9 +405,9 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 		return nil, err
 	}
 
-	if hss.TLSSetting.HasValue() {
+	if hss.TLS.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.Get().LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}

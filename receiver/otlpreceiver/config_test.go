@@ -127,7 +127,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							},
 						}),
 						Endpoint: "localhost:4318",
-						TLSSetting: configoptional.Some(configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",

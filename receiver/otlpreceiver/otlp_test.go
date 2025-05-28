@@ -758,7 +758,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: &HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLSSetting: configoptional.Some(configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
 						},
