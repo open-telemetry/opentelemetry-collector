@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -315,7 +316,7 @@ type ServerConfig struct {
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
+	TLSSetting configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSConfig `mapstructure:"cors"`
@@ -376,10 +377,9 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
-	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        &tlsDefaultServerConfig,
+		TLSSetting:        configoptional.None[configtls.ServerConfig](),
 		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
@@ -405,9 +405,9 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 		return nil, err
 	}
 
-	if hss.TLSSetting != nil {
+	if hss.TLSSetting.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLSSetting.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}

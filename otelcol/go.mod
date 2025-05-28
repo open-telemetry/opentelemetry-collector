@@ -75,6 +75,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/component/componenttest v0.127.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-20250528115901-279ccad9f437 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.127.0 // indirect
 	go.opentelemetry.io/collector/consumer v1.33.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.127.0 // indirect
