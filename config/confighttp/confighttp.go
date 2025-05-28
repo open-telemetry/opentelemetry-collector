@@ -75,7 +75,7 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Config `mapstructure:"auth,omitempty"`
+	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
@@ -117,7 +117,7 @@ type ClientConfig struct {
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
-	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
+	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
@@ -226,13 +226,14 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// The Auth RoundTripper should always be the innermost to ensure that
 	// request signing-based auth mechanisms operate after compression
 	// and header middleware modifies the request
-	if hcs.Auth != nil {
+	if hcs.Auth.HasValue() {
 		ext := host.GetExtensions()
 		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetHTTPClientAuthenticator(ctx, ext)
+		auth := hcs.Auth.Get()
+		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -274,7 +275,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	var jar http.CookieJar
-	if hcs.Cookies != nil && hcs.Cookies.Enabled {
+	if hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err

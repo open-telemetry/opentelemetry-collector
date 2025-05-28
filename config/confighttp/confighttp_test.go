@@ -92,7 +92,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              &CookiesConfig{Enabled: true},
+				Cookies:              CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -329,7 +329,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"dummy\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "https://localhost:1234/v1/traces",
-				Auth:     &configauth.Config{AuthenticatorID: dummyID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
 			},
 		},
 	}
@@ -375,7 +375,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "no_auth_extension_enabled",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     nil,
+				Auth:     configoptional.None[configauth.Config](),
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -388,7 +388,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Config{AuthenticatorID: dummyID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -401,7 +401,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_and_no_extension_map",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Config{AuthenticatorID: dummyID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: dummyID}),
 			},
 			shouldErr: true,
 			host:      componenttest.NewNopHost(),
@@ -410,7 +410,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Config{AuthenticatorID: mockID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 			},
 			shouldErr: false,
 			host: &mockHost{
@@ -423,7 +423,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_headers",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Config{AuthenticatorID: mockID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 				Headers:  map[string]configopaque.String{"foo": "bar"},
 			},
 			shouldErr: false,
@@ -437,7 +437,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_extension_and_compression",
 			settings: ClientConfig{
 				Endpoint:    "localhost:1234",
-				Auth:        &configauth.Config{AuthenticatorID: component.MustNewID("mock")},
+				Auth:        configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 				Compression: configcompression.TypeGzip,
 			},
 			shouldErr: false,
@@ -451,7 +451,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 			name: "with_auth_configuration_has_err_extension",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Config{AuthenticatorID: mockID},
+				Auth:     configoptional.Some(configauth.Config{AuthenticatorID: mockID}),
 			},
 			shouldErr: true,
 			host: &mockHost{
@@ -489,7 +489,7 @@ func TestHTTPClientSettingWithAuthConfig(t *testing.T) {
 				transport = ht.transport
 			}
 
-			if tt.settings.Auth != nil {
+			if tt.settings.Auth.HasValue() {
 				_, ok := transport.(*customRoundTripper)
 				assert.True(t, ok)
 			}
