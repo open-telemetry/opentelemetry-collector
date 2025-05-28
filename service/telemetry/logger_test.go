@@ -98,7 +98,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
+			wantCoreType: "*componentattribute.sharedSamplingCore",
 		},
 	}
 	for _, tt := range tests {

@@ -57,31 +57,21 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	var lp log.LoggerProvider
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-			core = newSampledCore(core, cfg.Logs.Sampling)
-		}
-
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
 		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
 			lp = set.SDK.LoggerProvider()
-			wrapper := func(c zapcore.Core) zapcore.Core {
-				return c
-			}
-			if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-				wrapper = func(c zapcore.Core) zapcore.Core {
-					return newSampledCore(c, cfg.Logs.Sampling)
-				}
-			}
-
 			core = componentattribute.NewOTelTeeCoreWithAttributes(
 				core,
 				lp,
 				"go.opentelemetry.io/collector/service/telemetry",
 				cfg.Logs.Level,
 				attribute.NewSet(),
-				wrapper,
 			)
+		}
+
+		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+			core = newSampledCore(core, cfg.Logs.Sampling)
 		}
 
 		return core
@@ -93,7 +83,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
 	// Create a logger that samples every Nth message after the first M messages every S seconds
 	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	return zapcore.NewSamplerWithOptions(
+	return componentattribute.NewSamplerCoreWithAttributes(
 		core,
 		sc.Tick,
 		sc.Initial,
