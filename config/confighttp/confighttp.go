@@ -54,8 +54,8 @@ type ClientConfig struct {
 	// ProxyURL setting for the collector
 	ProxyURL string `mapstructure:"proxy_url,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// TLS struct exposes TLS client configuration.
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	// Default is 0.
@@ -165,7 +165,7 @@ type ToClientOption interface {
 
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
+	tlsCfg, err := hcs.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
