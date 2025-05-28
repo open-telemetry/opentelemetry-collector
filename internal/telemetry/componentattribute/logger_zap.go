@@ -135,9 +135,6 @@ func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapc
 	// However, there is no method to change the inner core, so we call upon `reflect` magic to do it.
 	sampler1 := ssc.Core
 	val1 := reflect.ValueOf(sampler1).Elem()
-	if val1.Type().Name() != "sampler" {
-		panic("samplingCoreWithAttributes does not contain a sampler core")
-	}
 	val2 := reflect.New(val1.Type())
 	val2.Elem().Set(val1)
 	val2.Elem().FieldByName("Core").Set(reflect.ValueOf(newInner))
