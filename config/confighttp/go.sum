@@ -72,8 +72,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/confmap v1.33.0 h1:dCLSrONMssTWhnbELZZpJoWMn+P+DVJc8r10JJCeS/4=
-go.opentelemetry.io/collector/confmap v1.33.0/go.mod h1:fq5ccP4lzF3IVK/Cs0kWsiH0dynejXkMc8gaNwvkvtk=
 go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 h1:u2E32P7j1a/gRgZDWhIXC+Shd4rLg70mnE7QLI/Ssnw=
 go.opentelemetry.io/contrib/bridges/otelzap v0.11.0/go.mod h1:pJPCLM8gzX4ASqLlyAXjHBEYxgbOQJ/9bidWxD6PEPQ=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 h1:F7Jx+6hwnZ41NSFTO5q4LYDtJRXBf2PD0rNBkeB/lus=
