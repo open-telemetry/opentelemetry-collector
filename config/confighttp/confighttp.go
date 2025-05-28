@@ -380,8 +380,8 @@ type ServerConfig struct {
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLS:               configoptional.None[configtls.ServerConfig](),
-		CORS:              configoptional.None[CORSConfig](),
+		TLS:               configoptional.Default(configtls.NewDefaultServerConfig()),
+		CORS:              configoptional.Default(*NewDefaultCORSConfig()),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
