@@ -319,7 +319,7 @@ type ServerConfig struct {
 	TLSSetting configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS *CORSConfig `mapstructure:"cors"`
+	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
 
 	// Auth for this receiver
 	Auth *AuthConfig `mapstructure:"auth,omitempty"`
@@ -380,7 +380,7 @@ func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
 		TLSSetting:        configoptional.None[configtls.ServerConfig](),
-		CORS:              NewDefaultCORSConfig(),
+		CORS:              configoptional.None[CORSConfig](),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -495,16 +495,17 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		handler = authInterceptor(handler, server, hss.Auth.RequestParameters, serverOpts)
 	}
 
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) > 0 {
+		corsConfig := hss.CORS.Get()
 		co := cors.Options{
-			AllowedOrigins:   hss.CORS.AllowedOrigins,
+			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CORS.AllowedHeaders,
-			MaxAge:           hss.CORS.MaxAge,
+			AllowedHeaders:   corsConfig.AllowedHeaders,
+			MaxAge:           corsConfig.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) == 0 && len(hss.CORS.Get().AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 

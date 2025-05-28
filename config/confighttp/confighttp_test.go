@@ -727,7 +727,7 @@ func TestHttpCors(t *testing.T) {
 	tests := []struct {
 		name string
 
-		*CORSConfig
+		CORSConfig configoptional.Optional[CORSConfig]
 
 		allowedWorks     bool
 		disallowedWorks  bool
@@ -741,36 +741,36 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       NewDefaultCORSConfig(),
+			CORSConfig:       configoptional.Some(*NewDefaultCORSConfig()),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
 			name: "OriginCORS",
-			CORSConfig: &CORSConfig{
+			CORSConfig: configoptional.Some(CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
-			},
+			}),
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
 			name: "CacheableCORS",
-			CORSConfig: &CORSConfig{
+			CORSConfig: configoptional.Some(CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
 				MaxAge:         360,
-			},
+			}),
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
 		},
 		{
 			name: "HeaderCORS",
-			CORSConfig: &CORSConfig{
+			CORSConfig: configoptional.Some(CORSConfig{
 				AllowedOrigins: []string{"allowed-*.com"},
 				AllowedHeaders: []string{"ExtraHeader"},
-			},
+			}),
 			allowedWorks:     true,
 			disallowedWorks:  false,
 			extraHeaderWorks: true,
@@ -803,7 +803,7 @@ func TestHttpCors(t *testing.T) {
 			url := "http://" + ln.Addr().String()
 
 			expectedStatus := http.StatusNoContent
-			if tt.CORSConfig == nil || len(tt.AllowedOrigins) == 0 {
+			if !tt.CORSConfig.HasValue() || len(tt.CORSConfig.Get().AllowedOrigins) == 0 {
 				expectedStatus = http.StatusOK
 			}
 
@@ -824,7 +824,7 @@ func TestHttpCors(t *testing.T) {
 func TestHttpCorsInvalidSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS:     &CORSConfig{AllowedHeaders: []string{"some-header"}},
+		CORS:     configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
@@ -841,9 +841,9 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 func TestHttpCorsWithSettings(t *testing.T) {
 	hss := &ServerConfig{
 		Endpoint: "localhost:0",
-		CORS: &CORSConfig{
+		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
-		},
+		}),
 		Auth: &AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
@@ -928,7 +928,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url string, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -954,8 +954,8 @@ func verifyCorsResp(t *testing.T, url string, origin string, set *CORSConfig, ex
 	if wantAllowed {
 		wantAllowOrigin = origin
 		wantAllowMethods = "POST"
-		if set != nil && set.MaxAge != 0 {
-			wantMaxAge = strconv.Itoa(set.MaxAge)
+		if set.HasValue() && set.Get().MaxAge != 0 {
+			wantMaxAge = strconv.Itoa(set.Get().MaxAge)
 		}
 	}
 	assert.Equal(t, wantAllowOrigin, gotAllowOrigin)
