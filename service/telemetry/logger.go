@@ -43,17 +43,18 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core created above using WrapCore.
 	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
 	// the LoggerProvider, meaning that the attributes would be exported twice.
-	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-		var fields []zap.Field
-		for k, v := range cfg.Resource {
-			if v != nil {
-				f := zap.Stringp(k, v)
-				fields = append(fields, f)
+	// Note that we also add the resource attributes generated in service.go.
+	if set.Resource != nil {
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			var fields []zap.Field
+			for _, attr := range set.Resource.Attributes() {
+				fields = append(fields, zap.String(string(attr.Key), attr.Value.AsString()))
 			}
-		}
-		r := zap.Dict("resource", fields...)
-		return c.With([]zapcore.Field{r})
-	}))
+
+			r := zap.Dict("resource", fields...)
+			return c.With([]zapcore.Field{r})
+		}))
+	}
 
 	var lp log.LoggerProvider
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
