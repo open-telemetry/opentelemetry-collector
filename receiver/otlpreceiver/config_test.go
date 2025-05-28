@@ -121,11 +121,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				},
 				HTTP: &HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Auth: &confighttp.AuthConfig{
+						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
-						},
+						}),
 						Endpoint: "localhost:4318",
 						TLSSetting: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{

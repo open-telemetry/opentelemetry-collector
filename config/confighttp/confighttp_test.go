@@ -844,11 +844,11 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
 		}),
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{
@@ -1154,11 +1154,11 @@ func TestServerAuth(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{
@@ -1188,11 +1188,11 @@ func TestServerAuth(t *testing.T) {
 
 func TestInvalidServerAuth(t *testing.T) {
 	hss := ServerConfig{
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: nonExistingID,
 			},
-		},
+		}),
 	}
 
 	srv, err := hss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
@@ -1204,11 +1204,11 @@ func TestFailedServerAuth(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -1234,11 +1234,11 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// prepare
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 	host := &mockHost{
 		ext: map[component.ID]component.Component{
@@ -1419,12 +1419,12 @@ func TestAuthWithQueryParams(t *testing.T) {
 	authCalled := false
 	hss := ServerConfig{
 		Endpoint: "localhost:0",
-		Auth: &AuthConfig{
+		Auth: configoptional.Some(AuthConfig{
 			RequestParameters: []string{"auth"},
 			Config: configauth.Config{
 				AuthenticatorID: mockID,
 			},
-		},
+		}),
 	}
 
 	host := &mockHost{

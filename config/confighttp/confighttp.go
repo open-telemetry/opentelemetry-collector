@@ -322,7 +322,7 @@ type ServerConfig struct {
 	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *AuthConfig `mapstructure:"auth,omitempty"`
+	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
@@ -486,13 +486,14 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
-	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+	if hss.Auth.HasValue() {
+		auth := hss.Auth.Get()
+		server, err := auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.RequestParameters, serverOpts)
+		handler = authInterceptor(handler, server, auth.RequestParameters, serverOpts)
 	}
 
 	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) > 0 {
