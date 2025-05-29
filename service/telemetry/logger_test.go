@@ -221,12 +221,12 @@ func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
 	logger1, _, err1 := makeLogger(set, cfg, schema)
 	require.NotNil(t, logger1)
 	require.NotNil(t, GetLumberjackLogger())
-	require.Nil(t, err1)
+	require.NoError(t, err1)
 
 	// Second registration with the same schema should return an error.
 	logger2, _, err2 := makeLogger(set, cfg, schema)
-	require.NotNil(t, err2)
 	require.ErrorContains(t, err2, "sink factory already registered for scheme")
+	require.Error(t, err2)
 	require.Nil(t, logger2)
 }
 

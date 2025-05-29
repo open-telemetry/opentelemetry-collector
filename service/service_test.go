@@ -281,7 +281,7 @@ func TestServiceTelemetry(t *testing.T) {
 
 func TestServiceShutdown_LumberjackLoggerClose(t *testing.T) {
 	// Create a temporary file for logging to ensure lumberjack logger is initialized.
-	tmpFile, err := os.CreateTemp("", "test-lumberjack-shutdown-*.log")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-lumberjack-shutdown-*.log")
 	require.NoError(t, err)
 	tmpFileName := tmpFile.Name()
 	// Close the file as lumberjack will open/manage it.
