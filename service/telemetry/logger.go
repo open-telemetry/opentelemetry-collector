@@ -76,13 +76,25 @@ func registerLumberjackSink(logger *lumberjack.Logger, rotationSchemaLocal strin
 }
 
 // newLogger creates a Logger and a LoggerProvider from Config.
+// It generates a unique rotation schema if log rotation is enabled, then calls makeLogger.
+// This separation facilitates testing makeLogger's lumberjack sink
+// registration error path by allowing a predictable schema in tests.
 func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
+	rotationSchema = ""
+	if cfg.Logs.Rotation != nil && cfg.Logs.Rotation.Enabled {
+		rotationSchema = "lumberjack-" + uuid.NewString()
+	}
+
+	return makeLogger(set, cfg, rotationSchema)
+}
+
+// makeLogger creates a Logger and a LoggerProvider from Config and a custom rotation schema.
+func makeLogger(set Settings, cfg Config, rotationSchema string) (*zap.Logger, log.LoggerProvider, error) {
 	logFileName, logFileIndex := getFirstFileOutputPath(cfg.Logs)
 
 	if cfg.Logs.Rotation != nil && cfg.Logs.Rotation.Enabled && len(logFileName) > 0 {
 		ljLogger = createLumberjackLogger(cfg.Logs, logFileName)
 
-		rotationSchema = "lumberjack-" + uuid.NewString()
 		err := registerLumberjackSink(ljLogger, rotationSchema)
 		if err != nil {
 			return nil, nil, err

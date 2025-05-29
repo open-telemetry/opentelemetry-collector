@@ -24,7 +24,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
@@ -188,22 +187,47 @@ func TestNewLoggerWithResource(t *testing.T) {
 }
 
 func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
-	logger := &lumberjack.Logger{}
-
 	// Use a unique schema to avoid conflicts.
 	schema := "testschema"
 
-	// First registration should succeed.
-	err1 := registerLumberjackSink(logger, schema)
-	if err1 != nil {
-		t.Fatalf("expected first registerLumberjackSink call to succeed, got error: %v", err1)
+	observerCore, _ := observer.New(zap.InfoLevel)
+
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
 	}
 
-	// Second registration with the same schema should return an error.
-	err2 := registerLumberjackSink(logger, schema)
-	if err2 == nil {
-		t.Errorf("expected error from second registerLumberjackSink call with duplicate schema, got nil")
+	logFilePath := filepath.Join(t.TempDir(), "test-rotate.log")
+	originalOutputPaths := []string{"stdout", logFilePath}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: originalOutputPaths,
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1,
+				Compress:     false,
+			},
+		},
 	}
+
+	// First registration should succeed.
+	logger1, _, err1 := makeLogger(set, cfg, schema)
+	require.NotNil(t, logger1)
+	require.NotNil(t, GetLumberjackLogger())
+	require.Nil(t, err1)
+
+	// Second registration with the same schema should return an error.
+	logger2, _, err2 := makeLogger(set, cfg, schema)
+	require.NotNil(t, err2)
+	require.ErrorContains(t, err2, "sink factory already registered for scheme")
+	require.Nil(t, logger2)
 }
 
 func TestNewLoggerWithRotateEnabled(t *testing.T) {
@@ -236,6 +260,8 @@ func TestNewLoggerWithRotateEnabled(t *testing.T) {
 
 	mylogger, _, err := newLogger(set, cfg)
 	require.NoError(t, err)
+	require.NotNil(t, mylogger)
+	require.NotNil(t, GetLumberjackLogger())
 
 	// Ensure proper cleanup of lumberjack logger
 	if ljLogger != nil {
