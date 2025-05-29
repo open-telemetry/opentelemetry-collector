@@ -114,7 +114,7 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 	// Create client config with middleware extensions
 	clientConfig := ClientConfig{
 		Endpoint: addr,
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Middlewares: []configmiddleware.Config{
@@ -158,7 +158,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 			},
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Middlewares: []configmiddleware.Config{
@@ -178,7 +178,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 			},
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Middlewares: []configmiddleware.Config{
