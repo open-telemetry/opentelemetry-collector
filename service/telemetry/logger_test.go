@@ -24,6 +24,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
@@ -184,6 +185,25 @@ func TestNewLoggerWithResource(t *testing.T) {
 	enc := zapcore.NewMapObjectEncoder()
 	require.NoError(t, dict.MarshalLogObject(enc))
 	require.Equal(t, "myvalue", enc.Fields["myfield"])
+}
+
+func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
+	logger := &lumberjack.Logger{}
+
+	// Use a unique schema to avoid conflicts.
+	schema := "testschema"
+
+	// First registration should succeed.
+	err1 := registerLumberjackSink(logger, schema)
+	if err1 != nil {
+		t.Fatalf("expected first registerLumberjackSink call to succeed, got error: %v", err1)
+	}
+
+	// Second registration with the same schema should return an error.
+	err2 := registerLumberjackSink(logger, schema)
+	if err2 == nil {
+		t.Errorf("expected error from second registerLumberjackSink call with duplicate schema, got nil")
+	}
 }
 
 func TestNewLoggerWithRotateEnabled(t *testing.T) {

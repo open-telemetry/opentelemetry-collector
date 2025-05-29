@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -276,6 +277,44 @@ func TestServiceTelemetry(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp6")
 		})
 	}
+}
+
+func TestServiceShutdown_LumberjackLoggerClose(t *testing.T) {
+	// Create a temporary file for logging to ensure lumberjack logger is initialized.
+	tmpFile, err := os.CreateTemp("", "test-lumberjack-shutdown-*.log")
+	require.NoError(t, err)
+	tmpFileName := tmpFile.Name()
+	// Close the file as lumberjack will open/manage it.
+	require.NoError(t, tmpFile.Close())
+	// Ensure the temporary log file is removed after the test.
+	t.Cleanup(func() {
+		assert.NoError(t, os.Remove(tmpFileName))
+	})
+
+	set := newNopSettings()
+	cfg := newNopConfig()
+	// Configure logging to output to the temporary file with rotation.
+	// This should trigger the setup of a lumberjack logger internally by the telemetry package.
+	cfg.Telemetry.Logs.OutputPaths = []string{tmpFileName}
+	cfg.Telemetry.Logs.Rotation = &telemetry.LogsRotationConfig{
+		Enabled:      true,
+		MaxMegabytes: 1,
+		MaxBackups:   2,
+	}
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	// Start the service.
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Call Shutdown. The purpose of this test is to ensure that if a lumberjack logger
+	// was initialized (due to file output path), its Close method is called during shutdown.
+	// The Go test coverage tool will verify that the line `ljLogger.Close()` in service.go
+	// is executed.
+	err = srv.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, network string) {
