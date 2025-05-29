@@ -91,7 +91,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              &CookiesConfig{Enabled: true},
+				Cookies:              CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
