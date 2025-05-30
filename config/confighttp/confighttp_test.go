@@ -1575,3 +1575,61 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.ReadHeaderTimeout)
 }
+
+func TestHTTPServerTelemetry_Tracing(t *testing.T) {
+	// Create a pattern route. The server name the span after the
+	// pattern rather than the client-specified path.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/b/{bucket}/o/{objectname...}", func(http.ResponseWriter, *http.Request) {})
+
+	type testcase struct {
+		handler          http.Handler
+		expectedSpanName string
+	}
+
+	for name, testcase := range map[string]testcase{
+		"pattern": {
+			handler:          mux,
+			expectedSpanName: "GET /b/{bucket}/o/{objectname...}",
+		},
+		"no_pattern": {
+			handler:          http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
+			expectedSpanName: "GET",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			telemetry := componenttest.NewTelemetry()
+			config := NewDefaultServerConfig()
+			config.Endpoint = "localhost:0"
+			config.TLSSetting = nil
+			srv, err := config.ToServer(
+				context.Background(),
+				componenttest.NewNopHost(),
+				telemetry.NewTelemetrySettings(),
+				testcase.handler,
+			)
+			require.NoError(t, err)
+
+			done := make(chan struct{})
+			lis, err := config.ToListener(context.Background())
+			require.NoError(t, err)
+			go func() {
+				defer close(done)
+				_ = srv.Serve(lis)
+			}()
+			defer func() {
+				assert.NoError(t, srv.Close())
+				<-done
+			}()
+
+			resp, err := http.Get(fmt.Sprintf("http://%s/b/bucket123/o/object456/segment", lis.Addr()))
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, resp.StatusCode)
+			resp.Body.Close()
+
+			spans := telemetry.SpanRecorder.Ended()
+			require.Len(t, spans, 1)
+			assert.Equal(t, testcase.expectedSpanName, spans[0].Name())
+		})
+	}
+}

@@ -126,6 +126,7 @@
       "configmodels",
       "confignet",
       "configopaque",
+      "configoptional",
       "configparser",
       "configretry",
       "configrpc",

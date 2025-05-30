@@ -94,6 +94,7 @@ gotidy:
 gogenerate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	@$(MAKE) for-all-target TARGET="generate"
+	$(MAKE) genproto_internal
 	$(MAKE) fmt
 
 .PHONY: addlicense
@@ -259,6 +260,17 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
+
+INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queuebatch/internal/persistentqueue
+# INTERNAL_PROTO_SRC_DIRS += path/to/other/proto/dirs
+INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
+INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=${PWD}
+
+.PHONY: genproto_internal
+genproto_internal:
+	@echo "Generating Go code for internal proto files"
+	@echo "Found proto files: $(INTERNAL_PROTO_FILES)"
+	$(foreach file,$(INTERNAL_PROTO_FILES),$(call exec-command,$(INTERNAL_PROTOC) --go_opt=paths=source_relative $(file)))
 
 ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 
