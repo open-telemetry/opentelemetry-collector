@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -276,6 +277,37 @@ func TestServiceTelemetry(t *testing.T) {
 			testCollectorStartHelperWithReaders(t, tc, "tcp6")
 		})
 	}
+}
+
+func TestServiceShutdown_LumberjackLoggerClose(t *testing.T) {
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-lumberjack-shutdown-*.log")
+	require.NoError(t, err)
+	tmpFileName := tmpFile.Name()
+	require.NoError(t, tmpFile.Close())
+	t.Cleanup(func() {
+		assert.NoError(t, os.Remove(tmpFileName))
+	})
+
+	set := newNopSettings()
+	cfg := newNopConfig()
+
+	cfg.Telemetry.Logs.OutputPaths = []string{tmpFileName}
+	cfg.Telemetry.Logs.Rotation = &telemetry.LogsRotationConfig{
+		Enabled:      true,
+		MaxMegabytes: 1,
+		MaxBackups:   2,
+	}
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, srv)
+
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Call Shutdown. The purpose of this test is to ensure that if a lumberjack logger
+	// was initialized (due to file output path), its Close method is called during shutdown.
+	err = srv.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, network string) {

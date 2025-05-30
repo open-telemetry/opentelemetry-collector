@@ -6,10 +6,14 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -100,6 +104,28 @@ func TestNewLogger(t *testing.T) {
 			},
 			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
+		{
+			name: "log config with rotation",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:             zapcore.InfoLevel,
+					Development:       false,
+					Encoding:          "json",
+					OutputPaths:       []string{filepath.Join(t.TempDir(), "test-rotate.log")},
+					ErrorOutputPaths:  []string{"stderr"},
+					DisableCaller:     false,
+					DisableStacktrace: false,
+					Rotation: &LogsRotationConfig{
+						Enabled:      true,
+						MaxMegabytes: 1,
+						MaxBackups:   2,
+						MaxAge:       1,
+						Compress:     false,
+					},
+				},
+			},
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
+		},
 	}
 	for _, tt := range tests {
 		testCoreType := func(t *testing.T, wantCoreType any) {
@@ -158,6 +184,270 @@ func TestNewLoggerWithResource(t *testing.T) {
 	enc := zapcore.NewMapObjectEncoder()
 	require.NoError(t, dict.MarshalLogObject(enc))
 	require.Equal(t, "myvalue", enc.Fields["myfield"])
+}
+
+func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
+	schema := "testschema"
+
+	observerCore, _ := observer.New(zap.InfoLevel)
+
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
+	}
+
+	logFilePath := filepath.Join(t.TempDir(), "test-rotate.log")
+	originalOutputPaths := []string{"stdout", logFilePath}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: originalOutputPaths,
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1,
+				Compress:     false,
+			},
+		},
+	}
+
+	// First registration should succeed.
+	logger1, _, err1 := makeLogger(set, cfg, schema)
+	require.NotNil(t, logger1)
+	require.NotNil(t, GetRotatedLogger())
+	require.NoError(t, err1)
+
+	// Second registration with the same schema should return an error.
+	logger2, _, err2 := makeLogger(set, cfg, schema)
+	require.ErrorContains(t, err2, "sink factory already registered for scheme")
+	require.Error(t, err2)
+	require.Nil(t, logger2)
+}
+
+func TestNewLoggerWithRotateEnabled(t *testing.T) {
+	observerCore, observedLogs := observer.New(zap.InfoLevel)
+
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
+	}
+
+	logFilePath := filepath.Join(t.TempDir(), "test-rotate.log")
+	originalOutputPaths := []string{"stdout", logFilePath}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: originalOutputPaths,
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1,
+				Compress:     false,
+			},
+		},
+	}
+
+	mylogger, _, err := newLogger(set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, mylogger)
+	require.NotNil(t, GetRotatedLogger())
+
+	// Ensure proper cleanup of lumberjack logger
+	if ljLogger != nil {
+		defer ljLogger.Close()
+	}
+
+	mylogger.Info("Test log message")
+	require.Len(t, observedLogs.All(), 1)
+
+	// Verify that the correct output path was prefixed for rotation
+	// and other paths (like stdout) remain unchanged.
+	foundFilePrefixed := false
+	for _, path := range cfg.Logs.OutputPaths {
+		if strings.HasPrefix(path, "lumberjack-") && strings.HasSuffix(path, logFilePath) {
+			foundFilePrefixed = true
+		} else if path == "stdout" {
+			assert.Equal(t, "stdout", path)
+		}
+	}
+	assert.True(t, foundFilePrefixed, "Expected file output path to be prefixed for rotation")
+	require.NotNil(t, ljLogger)
+}
+
+func TestNewLogger_RotateFile(t *testing.T) {
+	t.Parallel()
+	tempDir := t.TempDir()
+	tempFile := "test.log"
+	logFileFullPath := filepath.Join(tempDir, tempFile)
+
+	observerCore, _ := observer.New(zap.InfoLevel)
+	set := Settings{
+		ZapOptions: []zap.Option{
+			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+				// Combine original core and observer core to capture everything
+				return zapcore.NewTee(core, observerCore)
+			}),
+		},
+	}
+
+	cfg := Config{
+		Logs: LogsConfig{
+			Level:       zapcore.InfoLevel,
+			Encoding:    "json",
+			OutputPaths: []string{logFileFullPath},
+			Rotation: &LogsRotationConfig{
+				Enabled:      true,
+				MaxMegabytes: 1, // Rotate after ~1MB
+				Compress:     false,
+			},
+		},
+	}
+
+	logger, _, err := newLogger(set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, logger)
+
+	// Ensure proper cleanup of lumberjack logger
+	if ljLogger != nil {
+		defer ljLogger.Close()
+	}
+
+	// Write ~1.2MB log data
+	line := strings.Repeat("abcdefghijmnewbigfilewritingdatatobigdatafile", 200) // ~10KB
+	for i := 0; i < 200; i++ {
+		logger.Info(fmt.Sprintf("Line %d: %s", i, line))
+	}
+
+	err = logger.Sync()
+	require.NoError(t, err)
+	files, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	// We expect two files: test.log and test.log.<timestamp>
+	require.Len(t, files, 2)
+
+	defer ljLogger.Close()
+	cntTempFile := 0
+	for _, file := range files {
+		fileName := file.Name()
+		if fileName == tempFile {
+			cntTempFile++
+			continue
+		}
+		// Can't validate timestamp without known format, skip this part
+	}
+	assert.Equal(t, 1, cntTempFile)
+}
+
+func TestGetFirstFileOutputPath(t *testing.T) {
+	tests := []struct {
+		name        string
+		logsCfg     LogsConfig
+		expectedLog string
+		expectedIdx int
+	}{
+		{
+			name:        "Empty OutputPaths",
+			logsCfg:     LogsConfig{OutputPaths: []string{}},
+			expectedLog: "",
+			expectedIdx: -1,
+		},
+		{
+			name:        "Only stdout",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout"}},
+			expectedLog: "",
+			expectedIdx: -1,
+		},
+		{
+			name:        "Only stderr",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stderr"}},
+			expectedLog: "",
+			expectedIdx: -1,
+		},
+		{
+			name:        "Only console",
+			logsCfg:     LogsConfig{OutputPaths: []string{"console"}},
+			expectedLog: "",
+			expectedIdx: -1,
+		},
+		{
+			name:        "Keywords only",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "console"}},
+			expectedLog: "",
+			expectedIdx: -1,
+		},
+		{
+			name:        "Single file path",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/test.log"}},
+			expectedLog: "/var/log/test.log",
+			expectedIdx: 0,
+		},
+		{
+			name:        "File path first, then keywords",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/var/log/app.log", "stdout", "stderr"}},
+			expectedLog: "/var/log/app.log",
+			expectedIdx: 0,
+		},
+		{
+			name:        "Keywords first, then file path",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "stderr", "/var/log/system.log"}},
+			expectedLog: "/var/log/system.log",
+			expectedIdx: 2,
+		},
+		{
+			name:        "File path in the middle of keywords",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout", "/var/log/middle.log", "stderr"}},
+			expectedLog: "/var/log/middle.log",
+			expectedIdx: 1,
+		},
+		{
+			name:        "Multiple file paths",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/first.log", "/second.log"}},
+			expectedLog: "/first.log",
+			expectedIdx: 0,
+		},
+		{
+			name:        "File path resembling a keyword",
+			logsCfg:     LogsConfig{OutputPaths: []string{"stdout.log"}},
+			expectedLog: "stdout.log",
+			expectedIdx: 0,
+		},
+		{
+			name:        "Mixed case keyword (treated as file)",
+			logsCfg:     LogsConfig{OutputPaths: []string{"Stdout", "/var/log/app.log"}},
+			expectedLog: "Stdout", // Current implementation is case-sensitive for keywords
+			expectedIdx: 0,
+		},
+		{
+			name:        "Empty string in paths",
+			logsCfg:     LogsConfig{OutputPaths: []string{"", "/var/log/app.log"}},
+			expectedLog: "", // Empty string is not a keyword, so it's returned
+			expectedIdx: 0,
+		},
+		{
+			name:        "File path with spaces (if valid on OS)",
+			logsCfg:     LogsConfig{OutputPaths: []string{"/my logs/app.log"}},
+			expectedLog: "/my logs/app.log",
+			expectedIdx: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, idx := getFirstFileOutputPath(tt.logsCfg)
+			assert.Equal(t, tt.expectedLog, path)
+			assert.Equal(t, tt.expectedIdx, idx)
+		})
+	}
 }
 
 func TestOTLPLogExport(t *testing.T) {
