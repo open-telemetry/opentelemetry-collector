@@ -396,7 +396,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 		}
 	}
 	require.Equal(t, int64(68), successSizeDP.Value)
-	require.Equal(t, int64(34), failureSizeDP.Value)
+	require.Equal(t, int64(36), failureSizeDP.Value)
 }
 
 func TestProfilesCapabilities(t *testing.T) {

@@ -50,6 +50,9 @@ func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				ms.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
+		case "dictionary", "profilesDictionary", "profiles_dictionary":
+			ms.ProfilesDictionary().unmarshalJsoniter(iter)
+			return true
 		default:
 			iter.Skip()
 		}
@@ -69,6 +72,51 @@ func (rp ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			})
 		case "schemaUrl", "schema_url":
 			rp.orig.SchemaUrl = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func (pd ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "mappingTable", "mapping_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.MappingTable().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		case "locationTable", "location_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.LocationTable().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		case "functionTable", "function_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.FunctionTable().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		case "linkTable", "link_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.LinkTable().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		case "stringTable", "string_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.StringTable().Append(iter.ReadString())
+				return true
+			})
+		case "attributeTable", "attribute_table":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.orig.AttributeTable = append(pd.orig.AttributeTable, json.ReadAttribute(iter))
+				return true
+			})
+		case "attributeUnits", "attribute_units":
+			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+				pd.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
 		default:
 			iter.Skip()
 		}
@@ -112,44 +160,9 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				p.Sample().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
-		case "mappingTable", "mapping_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.MappingTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "locationTable", "location_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.LocationTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
 		case "locationIndices", "location_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				p.LocationIndices().Append(json.ReadInt32(iter))
-				return true
-			})
-		case "functionTable", "function_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.FunctionTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "attributeTable", "attribute_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.orig.AttributeTable = append(p.orig.AttributeTable, json.ReadAttribute(iter))
-				return true
-			})
-		case "attributeUnits", "attribute_units":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "linkTable", "link_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.LinkTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "stringTable", "string_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.StringTable().Append(iter.ReadString())
 				return true
 			})
 		case "timeNanos", "time_nanos":
@@ -165,8 +178,8 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				p.CommentStrindices().Append(json.ReadInt32(iter))
 				return true
 			})
-		case "defaultSampleTypeStrindex", "default_sample_type_strindex":
-			p.orig.DefaultSampleTypeStrindex = json.ReadInt32(iter)
+		case "defaultSampleTypeIndex", "default_sample_type_index":
+			p.orig.DefaultSampleTypeIndex = json.ReadInt32(iter)
 		case "attributeIndices", "attribute_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				p.AttributeIndices().Append(json.ReadInt32(iter))
