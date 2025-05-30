@@ -603,6 +603,11 @@ func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
 				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
 			}
 		}
+		if to.CanSet() && to.Kind() == reflect.Map && from.Kind() == reflect.Map {
+			if from.IsNil() {
+				return to.Interface(), nil
+			}
+		}
 
 		return from.Interface(), nil
 	})
