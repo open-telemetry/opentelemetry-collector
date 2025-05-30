@@ -98,6 +98,7 @@ func newQueueBatch(
 	} else {
 		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
 			sizer:           sizer,
+			sizerType:       cfg.Sizer,
 			capacity:        cfg.QueueSize,
 			blockOnOverflow: cfg.BlockOnOverflow,
 			signal:          set.Signal,

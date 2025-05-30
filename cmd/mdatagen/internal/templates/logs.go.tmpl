@@ -12,6 +12,11 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{- if .Events }}
+	"context"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 
 
@@ -21,7 +26,7 @@ type event{{ $name.Render }} struct {
 	config   EventConfig         // event config provided by user.
 }
 
-func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
+func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pcommon.Timestamp
 {{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
 	if !e.config.Enabled {
 		return
@@ -29,7 +34,13 @@ func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("{{ $name }}")
 	lr.SetTimestamp(timestamp)
-	{{- range $event.Attributes }}
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
+	{{ range $event.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	lr.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
@@ -236,11 +247,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 
 {{ range $name, $event := .Events -}}
 // Record{{ $name.Render }}Event adds a log record of {{ $name }} event.
-func (lb *LogsBuilder) Record{{ $name.Render }}Event(timestamp pcommon.Timestamp
+func (lb *LogsBuilder) Record{{ $name.Render }}Event(ctx context.Context, timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
 	{{- end }}) {
-	lb.event{{ $name.Render }}.recordEvent(timestamp
+	lb.event{{ $name.Render }}.recordEvent(ctx, timestamp
 		{{- range $event.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})
