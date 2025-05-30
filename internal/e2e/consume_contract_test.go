@@ -7,10 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -18,6 +22,19 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
+
+// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
 
 func testExporterConfig(endpoint string) component.Config {
 	retryConfig := configretry.NewDefaultBackOffConfig()
@@ -34,10 +51,9 @@ func testExporterConfig(endpoint string) component.Config {
 	}
 }
 
-func testReceiverConfig(endpoint string) component.Config {
+func testReceiverConfig(t *testing.T, endpoint string) component.Config {
 	cfg := otlpreceiver.NewFactory().CreateDefaultConfig()
-	cfg.(*otlpreceiver.Config).HTTP = nil
-	cfg.(*otlpreceiver.Config).GRPC.NetAddr.Endpoint = endpoint
+	GetOrInsertDefault(t, &cfg.(*otlpreceiver.Config).GRPC).NetAddr.Endpoint = endpoint
 	return cfg
 }
 
@@ -52,7 +68,7 @@ func TestConsumeContractOtlpLogs(t *testing.T) {
 		Signal:               pipeline.SignalLogs,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testReceiverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(t, addr),
 	})
 }
 
@@ -65,7 +81,7 @@ func TestConsumeContractOtlpTraces(t *testing.T) {
 		ExporterFactory:      otlpexporter.NewFactory(),
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testReceiverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(t, addr),
 	})
 }
 
@@ -78,6 +94,6 @@ func TestConsumeContractOtlpMetrics(t *testing.T) {
 		Signal:               pipeline.SignalMetrics,
 		ExporterConfig:       testExporterConfig(addr),
 		ReceiverFactory:      otlpreceiver.NewFactory(),
-		ReceiverConfig:       testReceiverConfig(addr),
+		ReceiverConfig:       testReceiverConfig(t, addr),
 	})
 }
