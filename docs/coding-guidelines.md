@@ -332,6 +332,22 @@ do not decrease the overall code coverage of the codebase - this is aligned with
 goal to increase coverage over time. Keep track of execution time for your unit
 tests and try to keep them as short as possible.
 
+## Semantic Conventions compatibility
+
+When adding new metrics, attributes or entity attributes to a Collector's component (receiver, processor etc), the
+[Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) project should be checked first
+to see if those are already defined as Semantic Conventions.
+It's also important to check for any open issues that may already propose these or similar Semantic Conventions.
+If no such Semantic Conventions are defined in the Semantic Conventions project, the component’s code owners
+should consider initiating that process first.
+The implementation of the component can still be submitted as a draft PR to demonstrate how the proposed
+Semantic Conventions would be used while working in parallel to contribute the relevant updates to
+the Semantic Conventions project.
+The components's code owners can review the Semantic Conventions PR in collaboration with any existing domain-specific
+SemConv approvers.
+At their discretion, the code owners may choose to block the component’s implementation PR until the related
+Semantic Conventions changes are completed.
+
 ### Testing Library Recommendations
 
 To keep testing practices consistent across the project, it is advised to use these libraries under
