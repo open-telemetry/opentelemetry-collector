@@ -339,7 +339,10 @@ When adding new metrics, attributes or entity attributes to a Collector's compon
 to see if those are already defined as Semantic Conventions.
 It's also important to check for any open issues that may already propose these or similar Semantic Conventions.
 If no such Semantic Conventions are defined in the Semantic Conventions project, the component’s code owners
-should consider initiating that process first.
+should consider initiating that process first
+(refer to Semantic Conventions'
+[contribution guidelines](https://github.com/open-telemetry/semantic-conventions/blob/main/CONTRIBUTING.md) 
+for specific details).
 The implementation of the component can still be submitted as a draft PR to demonstrate how the proposed
 Semantic Conventions would be used while working in parallel to contribute the relevant updates to
 the Semantic Conventions project.
