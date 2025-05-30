@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -26,6 +27,7 @@ type batcherSettings[T any] struct {
 	sizer      request.Sizer[T]
 	next       sender.SendFunc[T]
 	maxWorkers int
+	settings   Settings[request.Request]
 }
 
 // defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
@@ -40,6 +42,7 @@ type defaultBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+	logger         *zap.Logger
 }
 
 func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
@@ -51,6 +54,13 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 			workerPool <- struct{}{}
 		}
 	}
+
+	logger := bSet.settings.Telemetry.Logger.With(
+		zap.String("exporter", bSet.settings.ID.String()),
+		zap.String("batcher", "default"),
+		zap.String("signal", bSet.settings.Signal.String()),
+	)
+
 	return &defaultBatcher{
 		cfg:         bCfg,
 		workerPool:  workerPool,
@@ -59,6 +69,7 @@ func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) 
 		consumeFunc: bSet.next,
 		stopWG:      sync.WaitGroup{},
 		shutdownCh:  make(chan struct{}, 1),
+		logger:      logger,
 	}
 }
 
@@ -72,7 +83,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil, qb.logger)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -106,7 +117,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req, qb.logger)
 	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)

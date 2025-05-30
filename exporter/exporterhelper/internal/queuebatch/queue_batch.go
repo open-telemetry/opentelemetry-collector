@@ -70,6 +70,7 @@ func newQueueBatch(
 				sizer:      request.NewItemsSizer(),
 				next:       next,
 				maxWorkers: cfg.NumConsumers,
+				settings:   set,
 			})
 		} else {
 			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
@@ -77,6 +78,7 @@ func newQueueBatch(
 				sizer:      sizer,
 				next:       next,
 				maxWorkers: cfg.NumConsumers,
+				settings:   set,
 			})
 		}
 		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in

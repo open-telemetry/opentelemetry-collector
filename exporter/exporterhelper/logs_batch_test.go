@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,7 +19,7 @@ import (
 func TestMergeLogs(t *testing.T) {
 	lr1 := newLogsRequest(testdata.GenerateLogs(2))
 	lr2 := newLogsRequest(testdata.GenerateLogs(3))
-	res, err := lr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, lr2)
+	res, err := lr1.MergeSplit(context.Background(), 0, RequestSizerTypeItems, lr2, zap.NewNop())
 	require.NoError(t, err)
 	require.Equal(t, 5, res[0].ItemsCount())
 }
@@ -116,7 +117,7 @@ func TestMergeSplitLogs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2, zap.NewNop())
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
@@ -219,14 +220,31 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				// Add a large attribute value to make the log unsplittable
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:      nil,
+			expected: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2, zap.NewNop())
 			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expected))
-			for i := range res {
-				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+			if tt.expected != nil {
+				assert.Len(t, res, len(tt.expected))
+				for i := range res {
+					assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+				}
+			} else {
+				assert.Empty(t, res)
 			}
 		})
 	}
@@ -235,7 +253,7 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 func TestMergeSplitLogsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newLogsRequest(testdata.GenerateLogs(18))
 	r2 := newTracesRequest(testdata.GenerateTraces(3))
-	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2)
+	_, err := r1.MergeSplit(context.Background(), 10, RequestSizerTypeItems, r2, zap.NewNop())
 	require.Error(t, err)
 	assert.Equal(t, 18, r1.ItemsCount())
 }
@@ -254,7 +272,7 @@ func TestMergeSplitManySmallLogs(t *testing.T) {
 	merged := []Request{newLogsRequest(testdata.GenerateLogs(1))}
 	for j := 0; j < 1000; j++ {
 		lr2 := newLogsRequest(testdata.GenerateLogs(10))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 	}
 	assert.Len(t, merged, 2)
@@ -264,7 +282,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 	pb := plog.ProtoMarshaler{}
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newLogsRequest(testdata.GenerateLogs(4))
-	merged, err := lr.MergeSplit(context.Background(), pb.LogsSize(testdata.GenerateLogs(2))-1, RequestSizerTypeBytes, nil)
+	merged, err := lr.MergeSplit(context.Background(), pb.LogsSize(testdata.GenerateLogs(2))-1, RequestSizerTypeBytes, nil, zap.NewNop())
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -272,7 +290,7 @@ func TestLogsMergeSplitExactBytes(t *testing.T) {
 func TestLogsMergeSplitExactItems(t *testing.T) {
 	// Set max size off by 1, so forces every log to be it's own batch.
 	lr := newLogsRequest(testdata.GenerateLogs(4))
-	merged, err := lr.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+	merged, err := lr.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil, zap.NewNop())
 	require.NoError(t, err)
 	assert.Len(t, merged, 4)
 }
@@ -280,7 +298,7 @@ func TestLogsMergeSplitExactItems(t *testing.T) {
 func TestLogsMergeSplitUnknownSizerType(t *testing.T) {
 	req := newLogsRequest(plog.NewLogs())
 	// Call MergeSplit with invalid sizer
-	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil)
+	_, err := req.MergeSplit(context.Background(), 0, RequestSizerType{}, nil, zap.NewNop())
 	require.EqualError(t, err, "unknown sizer type")
 }
 
@@ -291,7 +309,7 @@ func BenchmarkSplittingBasedOnItemCountManySmallLogs(b *testing.B) {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10010, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -305,7 +323,7 @@ func BenchmarkSplittingBasedOnByteSizeManySmallLogs(b *testing.B) {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(10))}
 		for j := 0; j < 1000; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(11000)), RequestSizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(11000)), RequestSizerTypeBytes, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 1)
@@ -319,7 +337,7 @@ func BenchmarkSplittingBasedOnItemCountManyLogsSlightlyAboveLimit(b *testing.B) 
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 			merged = append(merged[0:len(merged)-1], res...)
 		}
 		assert.Len(b, merged, 11)
@@ -333,7 +351,7 @@ func BenchmarkSplittingBasedOnByteSizeManyLogsSlightlyAboveLimit(b *testing.B) {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		for j := 0; j < 10; j++ {
 			lr2 := newLogsRequest(testdata.GenerateLogs(10001))
-			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10000)), RequestSizerTypeBytes, lr2)
+			res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10000)), RequestSizerTypeBytes, lr2, zap.NewNop())
 			assert.Len(b, res, 2)
 			merged = append(merged[0:len(merged)-1], res...)
 		}
@@ -347,7 +365,7 @@ func BenchmarkSplittingBasedOnItemCountHugeLogs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), 10000, RequestSizerTypeItems, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
@@ -359,7 +377,7 @@ func BenchmarkSplittingBasedOnByteSizeHugeLogs(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		merged := []Request{newLogsRequest(testdata.GenerateLogs(0))}
 		lr2 := newLogsRequest(testdata.GenerateLogs(100000))
-		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), RequestSizerTypeBytes, lr2)
+		res, _ := merged[len(merged)-1].MergeSplit(context.Background(), logsMarshaler.LogsSize(testdata.GenerateLogs(10010)), RequestSizerTypeBytes, lr2, zap.NewNop())
 		merged = append(merged[0:len(merged)-1], res...)
 		assert.Len(b, merged, 10)
 	}
