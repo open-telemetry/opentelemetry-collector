@@ -31,8 +31,8 @@ func (lr logRotateSink) Sync() error {
 	return nil
 }
 
-// GetLumberjackLogger returns the global lumberjack logger instance.
-func GetLumberjackLogger() *lumberjack.Logger {
+// GetRotatedLogger returns the global lumberjack logger instance.
+func GetRotatedLogger() *lumberjack.Logger {
 	return ljLogger
 }
 
@@ -127,10 +127,6 @@ func makeLogger(set Settings, cfg Config, rotationSchema string) (*zap.Logger, l
 		return nil, nil, err
 	}
 
-	// The attributes in cfg.Resource are added as resource attributes for logs exported through the LoggerProvider instantiated below.
-	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core created above using WrapCore.
-	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
-	// the LoggerProvider, meaning that the attributes would be exported twice.
 	logger, lp := configureLogger(logger, cfg, set)
 
 	return logger, lp, nil
@@ -138,8 +134,10 @@ func makeLogger(set Settings, cfg Config, rotationSchema string) (*zap.Logger, l
 
 // configureLogger applies common configuration to the logger
 func configureLogger(logger *zap.Logger, cfg Config, set Settings) (*zap.Logger, log.LoggerProvider) {
-	// The attributes in cfg.Resource are added as resource attributes for logs exported through the LoggerProvider
-	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core
+	// The attributes in cfg.Resource are added as resource attributes for logs exported through the LoggerProvider instantiated below.
+	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core created above using WrapCore.
+	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
+	// the LoggerProvider, meaning that the attributes would be exported twice.
 	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 		var fields []zap.Field
 		for k, v := range cfg.Resource {

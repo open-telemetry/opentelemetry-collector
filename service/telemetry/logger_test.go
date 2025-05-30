@@ -187,7 +187,6 @@ func TestNewLoggerWithResource(t *testing.T) {
 }
 
 func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
-	// Use a unique schema to avoid conflicts.
 	schema := "testschema"
 
 	observerCore, _ := observer.New(zap.InfoLevel)
@@ -220,7 +219,7 @@ func TestRegisterLumberjackSink_ReturnsError(t *testing.T) {
 	// First registration should succeed.
 	logger1, _, err1 := makeLogger(set, cfg, schema)
 	require.NotNil(t, logger1)
-	require.NotNil(t, GetLumberjackLogger())
+	require.NotNil(t, GetRotatedLogger())
 	require.NoError(t, err1)
 
 	// Second registration with the same schema should return an error.
@@ -261,7 +260,7 @@ func TestNewLoggerWithRotateEnabled(t *testing.T) {
 	mylogger, _, err := newLogger(set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, mylogger)
-	require.NotNil(t, GetLumberjackLogger())
+	require.NotNil(t, GetRotatedLogger())
 
 	// Ensure proper cleanup of lumberjack logger
 	if ljLogger != nil {
@@ -278,7 +277,6 @@ func TestNewLoggerWithRotateEnabled(t *testing.T) {
 		if strings.HasPrefix(path, "lumberjack-") && strings.HasSuffix(path, logFilePath) {
 			foundFilePrefixed = true
 		} else if path == "stdout" {
-			// stdout should remain as is
 			assert.Equal(t, "stdout", path)
 		}
 	}
@@ -323,6 +321,7 @@ func TestNewLogger_RotateFile(t *testing.T) {
 	if ljLogger != nil {
 		defer ljLogger.Close()
 	}
+
 	// Write ~1.2MB log data
 	line := strings.Repeat("abcdefghijmnewbigfilewritingdatatobigdatafile", 200) // ~10KB
 	for i := 0; i < 200; i++ {

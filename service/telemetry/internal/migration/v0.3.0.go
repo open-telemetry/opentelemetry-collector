@@ -209,7 +209,6 @@ type LogsRotationConfig struct {
 	// MaxAge is the maximum number of days to retain old log files. The age is based on the timestamp encoded in the rotated filenames.
 	MaxAge int `mapstructure:"max_age"`
 	// Compress determines if the rotated log files should be compressed using gzip.
-	// This can save disk space, especially for verbose logs.
 	Compress bool `mapstructure:"compress"`
 }
 

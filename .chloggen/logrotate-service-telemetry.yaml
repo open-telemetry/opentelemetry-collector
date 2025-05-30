@@ -16,8 +16,11 @@ issues: [10768]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The logger now supports configurable file rotation via `rotation` settings, including max size, age, backup count, and compression.
-  This is useful in production setups to prevent unbounded log growth and simplify log management.
+  The Collector's internal telemetry logger now supports optional log file rotation using the lumberjack library.
+  Configure `rotation` settings (max size, age, backups, compression) to manage log growth and retention directly, without needing external tools like logrotate.
+  Applies rotation only if a valid file-based `output_paths` entry is provided.
+  If `rotation.enabled` is false or the block is omitted, log behavior remains unchanged.
+  Only affects file-based logging; no impact on default console targets like stdout, stderr logging or console environments.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
