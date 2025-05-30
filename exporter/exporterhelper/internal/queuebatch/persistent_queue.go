@@ -37,7 +37,7 @@ const (
 	// queueMetadataKey is the new single key for all queue metadata.
 	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
 	//nolint:unused
-	queueMetadataKey = "qmv0"
+	queueMetadataKey           = "qmv0"
 	errInvalidTraceFlagsLength = "trace flags must only be 1 byte"
 )
 
