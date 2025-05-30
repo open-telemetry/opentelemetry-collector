@@ -482,4 +482,5 @@ var tlsCurveTypes = map[string]tls.CurveID{
 	"P384":   tls.CurveP384,
 	"P521":   tls.CurveP521,
 	"X25519": tls.X25519,
+	"X25519MLKEM768": tls.X25519MLKEM768,
 }
