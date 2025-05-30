@@ -6,17 +6,21 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -33,7 +37,8 @@ const (
 	// queueMetadataKey is the new single key for all queue metadata.
 	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
 	//nolint:unused
-	queueMetadataKey = "qmv0"
+	queueMetadataKey           = "qmv0"
+	errInvalidTraceFlagsLength = "trace flags must only be 1 byte"
 )
 
 var (
@@ -41,6 +46,15 @@ var (
 	errInvalidValue       = errors.New("invalid value")
 	errNoStorageClient    = errors.New("no storage client extension found")
 	errWrongExtensionType = errors.New("requested extension is not a storage extension")
+
+	// persistRequestContextFeatureGate controls whether request context should be persisted in the queue.
+	persistRequestContextFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		"exporter.PersistRequestContext",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterFromVersion("v0.127.0"),
+		featuregate.WithRegisterDescription("controls whether context should be stored alongside requests in the persistent queue"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector/pull/12934"),
+	)
 )
 
 var indexDonePool = sync.Pool{
@@ -244,6 +258,80 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	return pq.putInternal(ctx, req)
 }
 
+// necessary due to SpanContext and SpanContextConfig not supporting Unmarshal interface,
+// see https://github.com/open-telemetry/opentelemetry-go/issues/1819.
+type spanContext struct {
+	TraceID    string
+	SpanID     string
+	TraceFlags string
+	TraceState string
+	Remote     bool
+}
+
+func localSpanContextFromTraceSpanContext(sc trace.SpanContext) spanContext {
+	return spanContext{
+		TraceID:    sc.TraceID().String(),
+		SpanID:     sc.SpanID().String(),
+		TraceFlags: sc.TraceFlags().String(),
+		TraceState: sc.TraceState().String(),
+		Remote:     sc.IsRemote(),
+	}
+}
+
+func contextWithLocalSpanContext(ctx context.Context, sc spanContext) context.Context {
+	traceID, err := trace.TraceIDFromHex(sc.TraceID)
+	if err != nil {
+		return ctx
+	}
+	spanID, err := trace.SpanIDFromHex(sc.SpanID)
+	if err != nil {
+		return ctx
+	}
+	traceFlags, err := traceFlagsFromHex(sc.TraceFlags)
+	if err != nil {
+		return ctx
+	}
+	traceState, err := trace.ParseTraceState(sc.TraceState)
+	if err != nil {
+		return ctx
+	}
+
+	return trace.ContextWithSpanContext(ctx, trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: *traceFlags,
+		TraceState: traceState,
+		Remote:     sc.Remote,
+	}))
+}
+
+// requestContext wraps trace.SpanContext to allow for unmarshaling as well as
+// future metadata key/value pairs to be added.
+type requestContext struct {
+	SpanContext spanContext
+}
+
+// reverse of code in trace library https://github.com/open-telemetry/opentelemetry-go/blob/v1.35.0/trace/trace.go#L143-L168
+func traceFlagsFromHex(hexStr string) (*trace.TraceFlags, error) {
+	decoded, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, err
+	}
+	if len(decoded) != 1 {
+		return nil, errors.New(errInvalidTraceFlagsLength)
+	}
+	traceFlags := trace.TraceFlags(decoded[0])
+	return &traceFlags, nil
+}
+
+func getAndMarshalSpanContext(ctx context.Context) ([]byte, error) {
+	if !persistRequestContextFeatureGate.IsEnabled() {
+		return nil, nil
+	}
+	rc := localSpanContextFromTraceSpanContext(trace.SpanContextFromContext(ctx))
+	return json.Marshal(requestContext{SpanContext: rc})
+}
+
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 	reqSize := pq.set.sizer.Sizeof(req)
@@ -255,17 +343,25 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 			return err
 		}
 	}
+	// Operations will include item and write index (and context if spancontext feature enabled)
+	ops := make([]*storage.Operation, 2, 3)
+	ops[0] = storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1))
 
 	reqBuf, err := pq.set.encoding.Marshal(req)
 	if err != nil {
 		return err
 	}
+	ops[1] = storage.SetOperation(getItemKey(pq.writeIndex), reqBuf)
 
-	// Carry out a transaction where we both add the item and update the write index
-	ops := []*storage.Operation{
-		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.writeIndex+1)),
-		storage.SetOperation(getItemKey(pq.writeIndex), reqBuf),
+	if persistRequestContextFeatureGate.IsEnabled() {
+		contextBuf, scErr := getAndMarshalSpanContext(ctx)
+		if scErr != nil {
+			return scErr
+		}
+		ops = append(ops, storage.SetOperation(getContextKey(pq.writeIndex), contextBuf))
 	}
+
+	// Carry out a transaction where we add the item/context and update the write index
 	if err = pq.client.Batch(ctx, ops...); err != nil {
 		return err
 	}
@@ -297,7 +393,13 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.readIndex != pq.writeIndex {
-			index, req, consumed := pq.getNextItem(ctx)
+			index, req, consumed, restoredContext, err := pq.getNextItem(ctx)
+			if err != nil {
+				pq.logger.Debug("Failed to dispatch item", zap.Error(err))
+				if err = pq.itemDispatchingFinish(ctx, index); err != nil {
+					pq.logger.Error("Error deleting item from queue", zap.Error(err))
+				}
+			}
 			// Ensure the used size and the channel size are in sync.
 			if pq.readIndex == pq.writeIndex {
 				pq.queueSize = 0
@@ -306,7 +408,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
 				id.reset(index, pq.set.sizer.Sizeof(req), pq)
-				return context.Background(), req, id, true
+				return restoredContext, req, id, true
 			}
 		}
 
@@ -319,37 +421,52 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with onDone to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool, context.Context, error) {
 	index := pq.readIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.readIndex++
 	pq.currentlyDispatchedItems = append(pq.currentlyDispatchedItems, index)
 	getOp := storage.GetOperation(getItemKey(index))
-	err := pq.client.Batch(ctx,
-		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex)),
-		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)),
-		getOp)
+	ops := make([]*storage.Operation, 3, 4)
+	ops[0] = storage.SetOperation(readIndexKey, itemIndexToBytes(pq.readIndex))
+	ops[1] = storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))
+	ops[2] = getOp
 
-	var request T
-	if err == nil {
-		request, err = pq.set.encoding.Unmarshal(getOp.Value)
+	// Only add context operation if feature gate is enabled
+	var ctxOp *storage.Operation
+	if persistRequestContextFeatureGate.IsEnabled() {
+		ctxOp = storage.GetOperation(getContextKey(index))
+		ops = append(ops, ctxOp)
 	}
 
+	var request T
+	restoredContext := context.Background()
+	err := pq.client.Batch(ctx, ops...)
 	if err != nil {
-		pq.logger.Debug("Failed to dispatch item", zap.Error(err))
-		// We need to make sure that currently dispatched items list is cleaned
-		if err = pq.itemDispatchingFinish(ctx, index); err != nil {
-			pq.logger.Error("Error deleting item from queue", zap.Error(err))
-		}
+		return 0, request, false, restoredContext, err
+	}
+	request, err = pq.set.encoding.Unmarshal(getOp.Value)
+	if err != nil {
+		return 0, request, false, ctx, err
+	}
 
-		return 0, request, false
+	// Only try to restore context if feature gate is enabled
+	if persistRequestContextFeatureGate.IsEnabled() {
+		var rc requestContext
+		if ctxOp.Value != nil {
+			unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
+			if unmarshalErr != nil {
+				return 0, request, false, ctx, unmarshalErr
+			}
+			restoredContext = contextWithLocalSpanContext(restoredContext, rc.SpanContext)
+		}
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 
-	return index, request, true
+	return index, request, true, restoredContext, nil
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.
@@ -416,13 +533,29 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
-	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
-	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
-	for i, it := range dispatchedItems {
-		key := getItemKey(it)
-		retrieveBatch[i] = storage.GetOperation(key)
-		cleanupBatch[i] = storage.DeleteOperation(key)
+
+	// Calculate batch sizes based on whether context persistence is enabled
+	batchSize := len(dispatchedItems)
+	if persistRequestContextFeatureGate.IsEnabled() {
+		batchSize *= 2
 	}
+
+	retrieveBatch := make([]*storage.Operation, batchSize)
+	cleanupBatch := make([]*storage.Operation, batchSize)
+
+	for i, it := range dispatchedItems {
+		reqKey := getItemKey(it)
+		retrieveBatch[i] = storage.GetOperation(reqKey)
+		cleanupBatch[i] = storage.DeleteOperation(reqKey)
+
+		if persistRequestContextFeatureGate.IsEnabled() {
+			// store the context keys at at the end of the batch
+			ctxKey := getContextKey(it)
+			retrieveBatch[i+len(dispatchedItems)] = storage.GetOperation(ctxKey)
+			cleanupBatch[i+len(dispatchedItems)] = storage.DeleteOperation(ctxKey)
+		}
+	}
+
 	retrieveErr := pq.client.Batch(ctx, retrieveBatch...)
 	cleanupErr := pq.client.Batch(ctx, cleanupBatch...)
 
@@ -436,18 +569,35 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 	}
 
 	errCount := 0
-	for _, op := range retrieveBatch {
+	// only need to iterate over first half of batch if spancontext is persisted as these items
+	// are at corresponding index in the second half of retrieveBatch
+	for idx := 0; idx < len(dispatchedItems); idx++ {
+		op := retrieveBatch[idx]
 		if op.Value == nil {
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
+		restoredContext := ctx
 		req, err := pq.set.encoding.Unmarshal(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(ctx, req) != nil {
+		// We will then retrieve the context from the back half of the batch list, see above
+		if persistRequestContextFeatureGate.IsEnabled() {
+			ctxOp := retrieveBatch[idx+len(dispatchedItems)]
+			if ctxOp.Value != nil {
+				var rc requestContext
+				unmarshalErr := json.Unmarshal(ctxOp.Value, &rc)
+				if unmarshalErr == nil {
+					restoredContext = contextWithLocalSpanContext(restoredContext, rc.SpanContext)
+				} else {
+					pq.logger.Warn("Failed retrieving request context, storing empty span context", zap.String(zapKey, ctxOp.Key), zap.Error(unmarshalErr))
+				}
+			}
+		}
+		if pq.putInternal(restoredContext, req) != nil {
 			errCount++
 		}
 	}
@@ -472,9 +622,12 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		}
 	}
 
-	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))
-	deleteOp := storage.DeleteOperation(getItemKey(index))
-	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
+	setOps := []*storage.Operation{storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems))}
+	deleteOps := []*storage.Operation{storage.DeleteOperation(getItemKey(index))}
+	if persistRequestContextFeatureGate.IsEnabled() {
+		deleteOps = append(deleteOps, storage.DeleteOperation(getContextKey(index)))
+	}
+	if err := pq.client.Batch(ctx, append(setOps, deleteOps...)...); err != nil {
 		// got an error, try to gracefully handle it
 		pq.logger.Warn("Failed updating currently dispatched items, trying to delete the item first",
 			zap.Error(err))
@@ -483,12 +636,12 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		return nil
 	}
 
-	if err := pq.client.Batch(ctx, deleteOp); err != nil {
+	if err := pq.client.Batch(ctx, deleteOps...); err != nil {
 		// Return an error here, as this indicates an issue with the underlying storage medium
 		return fmt.Errorf("failed deleting item from queue, got error from storage: %w", err)
 	}
 
-	if err := pq.client.Batch(ctx, setOp); err != nil {
+	if err := pq.client.Batch(ctx, setOps...); err != nil {
 		// even if this fails, we still have the right dispatched items in memory
 		// at worst, we'll have the wrong list in storage, and we'll discard the nonexistent items during startup
 		return fmt.Errorf("failed updating currently dispatched items, but deleted item successfully: %w", err)
@@ -513,6 +666,10 @@ func toStorageClient(ctx context.Context, storageID component.ID, host component
 
 func getItemKey(index uint64) string {
 	return strconv.FormatUint(index, 10)
+}
+
+func getContextKey(index uint64) string {
+	return strconv.FormatUint(index, 10) + "_context"
 }
 
 func itemIndexToBytes(value uint64) []byte {
