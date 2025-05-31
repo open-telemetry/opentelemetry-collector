@@ -10,6 +10,7 @@ require (
 	go.opentelemetry.io/collector/component/componenttest v0.127.0
 	go.opentelemetry.io/collector/config/configauth v0.127.0
 	go.opentelemetry.io/collector/config/confighttp v0.127.0
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/confmap v1.33.0
 	go.opentelemetry.io/collector/extension v1.33.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.127.0
@@ -90,6 +91,8 @@ replace go.opentelemetry.io/collector/pdata => ../../pdata
 replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/config/configtls => ../../config/configtls
 
