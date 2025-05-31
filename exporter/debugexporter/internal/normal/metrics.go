@@ -6,6 +6,7 @@ package normal // import "go.opentelemetry.io/collector/exporter/debugexporter/i
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -121,7 +122,23 @@ func writeExponentialHistogramDataPoints(metric pmetric.Metric) (lines []string)
 			value += fmt.Sprintf(" max=%v", dataPoint.Max())
 		}
 
-		// TODO display buckets
+		base := math.Pow(2, math.Pow(2, -1.0*float64(dataPoint.Scale())))
+
+		for i := 0; i < dataPoint.Negative().BucketCounts().Len(); i++ {
+			index := int(dataPoint.Negative().Offset()) + i
+			lowerBound := math.Pow(base, float64(index))
+			value += fmt.Sprintf(" le%v=%d", lowerBound, dataPoint.Negative().BucketCounts().At(i))
+		}
+
+		for i := 0; i < dataPoint.Positive().BucketCounts().Len(); i++ {
+			index := int(dataPoint.Positive().Offset()) + i
+			lowerBound := math.Pow(base, float64(index))
+			value += fmt.Sprintf(" le%v=%d", lowerBound, dataPoint.Positive().BucketCounts().At(i))
+		}
+
+		if dataPoint.ZeroCount() > 0 {
+			value += fmt.Sprintf(" zero_count%v=%d", dataPoint.ZeroThreshold(), dataPoint.ZeroCount())
+		}
 
 		dataPointLine := fmt.Sprintf("%s{%s} %s\n", metric.Name(), strings.Join(dataPointAttributes, ","), value)
 		lines = append(lines, dataPointLine)
