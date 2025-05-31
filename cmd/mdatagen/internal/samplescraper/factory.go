@@ -5,6 +5,7 @@ package samplescraper // import "go.opentelemetry.io/collector/cmd/mdatagen/inte
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"go.opentelemetry.io/collector/cmd/mdatagen/internal/samplescraper/internal/metadata"
