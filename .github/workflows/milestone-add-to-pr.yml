@@ -1,13 +1,23 @@
 # This action adds the "next release" milestone to a pull request
 # when it is merged
 
+#
+# TODO: This workflow seems to stopped having an effect around release 0.118.0.
+#
+
 name: "Project: Add PR to Milestone"
 on:
   pull_request_target:
+    # zizmor: ignore[dangerous-triggers] pull_request_target is allowable here since only the
+    # context's repo owner, repo name, and issue number are used and are used in a passive way. The
+    # action needs to run against the upstream repo when triggered from a fork to properly update
+    # the upstream's issue/PR with the "next release" milestone.
     types:
       - closed
 
-permissions: read-all
+permissions:
+  contents: read
+  issues: write
 
 jobs:
   update-pr:
