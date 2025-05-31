@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.127.0
 	go.opentelemetry.io/collector/config/confignet v1.33.0
 	go.opentelemetry.io/collector/config/configopaque v1.33.0
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/config/configretry v1.33.0
 	go.opentelemetry.io/collector/config/configtelemetry v0.127.0
 	go.opentelemetry.io/collector/config/configtls v1.33.0
@@ -150,6 +151,8 @@ require (
 replace go.opentelemetry.io/collector => ../..
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
 
