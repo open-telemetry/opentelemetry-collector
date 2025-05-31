@@ -53,8 +53,8 @@ type ClientConfig struct {
 	// ProxyURL setting for the collector
 	ProxyURL string `mapstructure:"proxy_url,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// TLS struct exposes TLS client configuration.
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	// Default is 0.
@@ -164,7 +164,7 @@ type ToClientOption interface {
 
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
+	tlsCfg, err := hcs.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -314,8 +314,8 @@ type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
+	// TLS struct exposes TLS client configuration.
+	TLS *configtls.ServerConfig `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
 	CORS *CORSConfig `mapstructure:"cors"`
@@ -379,7 +379,7 @@ func NewDefaultServerConfig() ServerConfig {
 	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        &tlsDefaultServerConfig,
+		TLS:               &tlsDefaultServerConfig,
 		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
@@ -405,9 +405,9 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 		return nil, err
 	}
 
-	if hss.TLSSetting != nil {
+	if hss.TLS != nil {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLS.LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}

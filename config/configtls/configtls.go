@@ -80,7 +80,7 @@ type Config struct {
 	TPMConfig TPMConfig `mapstructure:"tpm,omitempty"`
 }
 
-// NewDefaultConfig creates a new TLSSetting with any default values set.
+// NewDefaultConfig creates a new Config with any default values set.
 func NewDefaultConfig() Config {
 	return Config{}
 }
@@ -109,7 +109,7 @@ type ClientConfig struct {
 	_ struct{}
 }
 
-// NewDefaultClientConfig creates a new TLSClientSetting with any default values set.
+// NewDefaultClientConfig creates a new ClientConfig with any default values set.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
 		Config: NewDefaultConfig(),
@@ -137,7 +137,7 @@ type ServerConfig struct {
 	_ struct{}
 }
 
-// NewDefaultServerConfig creates a new TLSServerSetting with any default values set.
+// NewDefaultServerConfig creates a new ServerConfig with any default values set.
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		Config: NewDefaultConfig(),
