@@ -33,6 +33,8 @@ There are two categories of the metrics emitted by scraping receivers:
 
 - **Optional metrics**: not emitted by default, but can be enabled in user settings.
 
+See also [Semantic Convention compatibility](./coding-guidelines.md#semantic-conventions-compatibility) guidance.
+
 ### How to identify if new metric should be default or optional?
 
 There is no strict rule to differentiate default metrics from optional. As a rule of thumb, default metrics SHOULD be 
