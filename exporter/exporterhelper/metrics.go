@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -46,12 +47,14 @@ func NewMetricsQueueBatchSettings() QueueBatchSettings {
 type metricsRequest struct {
 	md         pmetric.Metrics
 	cachedSize int
+	timestamp  time.Time
 }
 
 func newMetricsRequest(md pmetric.Metrics) Request {
 	return &metricsRequest{
 		md:         md,
 		cachedSize: -1,
+		timestamp:  time.Now(),
 	}
 }
 
@@ -90,6 +93,14 @@ func (req *metricsRequest) size(sizer sizer.MetricsSizer) int {
 
 func (req *metricsRequest) setCachedSize(count int) {
 	req.cachedSize = count
+}
+
+func (req *metricsRequest) Timestamp() time.Time {
+	return req.timestamp
+}
+
+func (req *metricsRequest) BytesSize() int {
+	return req.size(&sizer.MetricsBytesSizer{})
 }
 
 type metricsExporter struct {

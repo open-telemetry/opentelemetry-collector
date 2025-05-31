@@ -13,8 +13,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
@@ -402,6 +407,81 @@ func TestDefaultBatcher_MergeError(t *testing.T) {
 	// Check that done callback is called for the right amount of times.
 	assert.EqualValues(t, 2, done.errors.Load())
 	assert.EqualValues(t, 0, done.success.Load())
+}
+
+func TestDefaultBatcher_Metrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	cfg := BatchConfig{
+		FlushTimeout: 50 * time.Millisecond,
+		MinSize:      10,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newDefaultBatcher(cfg, batcherSettings[request.Request]{
+		sizerType: request.SizerTypeItems,
+		sizer:     request.NewItemsSizer(),
+		next:      sink.Export,
+		settings: Settings[request.Request]{
+			Telemetry: tt.NewTelemetrySettings(),
+			ID:        component.MustNewIDWithName("test", "test"),
+		},
+	})
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 5
+	}, 1*time.Second, 10*time.Millisecond)
+
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 12}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 17
+	}, 1*time.Second, 10*time.Millisecond)
+
+	assert.EqualValues(t, 0, done.errors.Load())
+	assert.EqualValues(t, 2, done.success.Load())
+
+	metadatatest.AssertEqualExporterBatchFlushTimeout(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", "test/test")),
+				Value: int64(1),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+
+	metadatatest.AssertEqualExporterBatchSize(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", "test/test")),
+			},
+		}, metricdatatest.IgnoreValue(), metricdatatest.IgnoreTimestamp())
+
+	metadatatest.AssertEqualExporterBatchLatency(t, tt,
+		[]metricdata.HistogramDataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", "test/test")),
+			},
+		}, metricdatatest.IgnoreValue(), metricdatatest.IgnoreTimestamp())
+
+	metadatatest.AssertEqualExporterBatchFlushSize(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String("exporter", "test/test")),
+				Value: int64(1),
+			},
+		}, metricdatatest.IgnoreTimestamp())
 }
 
 type fakeDone struct {

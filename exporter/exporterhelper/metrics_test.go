@@ -52,11 +52,30 @@ func TestMetricsRequest(t *testing.T) {
 	mr := newMetricsRequest(testdata.GenerateMetrics(1))
 
 	metricsErr := consumererror.NewMetrics(errors.New("some error"), pmetric.NewMetrics())
-	assert.Equal(
-		t,
-		newMetricsRequest(pmetric.NewMetrics()),
-		mr.(RequestErrorHandler).OnError(metricsErr),
-	)
+	expected := newMetricsRequest(pmetric.NewMetrics()).(*metricsRequest)
+	errRequest := mr.(RequestErrorHandler).OnError(metricsErr).(*metricsRequest)
+
+	assert.Equal(t, expected.md, errRequest.md)
+	assert.Equal(t, expected.cachedSize, errRequest.cachedSize)
+}
+
+func TestMetricsRequest_Timestamp(t *testing.T) {
+	now := time.Now()
+	mr := &metricsRequest{
+		timestamp: now,
+	}
+	assert.Equal(t, now, mr.Timestamp())
+}
+
+func TestMetricsRequest_BytesSize(t *testing.T) {
+	md := testdata.GenerateMetrics(2)
+	mr := newMetricsRequest(md)
+	size := mr.BytesSize()
+	assert.Positive(t, size)
+
+	emptyMr := newMetricsRequest(pmetric.NewMetrics())
+	emptySize := emptyMr.BytesSize()
+	assert.Equal(t, 0, emptySize)
 }
 
 func TestMetrics_NilConfig(t *testing.T) {

@@ -24,11 +24,12 @@ func (e errorPartial) Error() string {
 }
 
 type FakeRequest struct {
-	Items    int
-	Bytes    int
-	Partial  int
-	MergeErr error
-	Delay    time.Duration
+	Items     int
+	Bytes     int
+	Partial   int
+	MergeErr  error
+	Delay     time.Duration
+	timestamp time.Time
 }
 
 func (r *FakeRequest) OnError(err error) request.Request {
@@ -41,6 +42,14 @@ func (r *FakeRequest) OnError(err error) request.Request {
 
 func (r *FakeRequest) ItemsCount() int {
 	return r.Items
+}
+
+func (r *FakeRequest) BytesSize() int {
+	return r.Bytes
+}
+
+func (r *FakeRequest) Timestamp() time.Time {
+	return r.timestamp
 }
 
 func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {

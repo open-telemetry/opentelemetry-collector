@@ -28,6 +28,10 @@ type TelemetryBuilder struct {
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
+	ExporterBatchFlushSize            metric.Int64Counter
+	ExporterBatchFlushTimeout         metric.Int64Counter
+	ExporterBatchLatency              metric.Int64Histogram
+	ExporterBatchSize                 metric.Int64Histogram
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
@@ -110,6 +114,30 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ExporterBatchFlushSize, err = builder.meter.Int64Counter(
+		"otelcol_exporter_batch_flush_size",
+		metric.WithDescription("Number of batches flushed due to size. [alpha]"),
+		metric.WithUnit("{batches}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchFlushTimeout, err = builder.meter.Int64Counter(
+		"otelcol_exporter_batch_flush_timeout",
+		metric.WithDescription("Number of batches flushed due to timeout. [alpha]"),
+		metric.WithUnit("{batches}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchLatency, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_batch_latency",
+		metric.WithDescription("Batches latency in the queue (in milliseconds). [alpha]"),
+		metric.WithUnit("{milliseconds}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterBatchSize, err = builder.meter.Int64Histogram(
+		"otelcol_exporter_batch_size",
+		metric.WithDescription("Batches size in the queue (in bytes). [alpha]"),
+		metric.WithUnit("{bytes}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ExporterEnqueueFailedLogRecords, err = builder.meter.Int64Counter(
 		"otelcol_exporter_enqueue_failed_log_records",
 		metric.WithDescription("Number of log records failed to be added to the sending queue. [alpha]"),
@@ -130,7 +158,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(
 		"otelcol_exporter_queue_capacity",
-		metric.WithDescription("Fixed capacity of the retry queue (in batches) [alpha]"),
+		metric.WithDescription("Fixed capacity of the retry queue (in batches). [alpha]"),
 		metric.WithUnit("{batches}"),
 	)
 	errs = errors.Join(errs, err)

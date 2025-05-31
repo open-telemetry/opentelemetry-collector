@@ -117,8 +117,46 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Fixed capacity of the retry queue (in batches)
+      description: Fixed capacity of the retry queue (in batches).
       unit: "{batches}"
       gauge:
         value_type: int
         async: true
+
+    exporter_batch_size:
+      enabled: true
+      stability:
+        level: alpha
+      description: Batches size in the queue (in bytes).
+      unit: "{bytes}"
+      histogram:
+        value_type: int
+
+    exporter_batch_latency:
+      enabled: true
+      stability:
+        level: alpha
+      description: Batches latency in the queue (in milliseconds).
+      unit: "{milliseconds}"
+      histogram:
+        value_type: int
+
+    exporter_batch_flush_timeout:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of batches flushed due to timeout.
+      unit: "{batches}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    exporter_batch_flush_size:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of batches flushed due to size.
+      unit: "{batches}"
+      sum:
+        value_type: int
+        monotonic: true

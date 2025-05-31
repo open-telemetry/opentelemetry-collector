@@ -28,6 +28,10 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
+	tb.ExporterBatchFlushSize.Add(context.Background(), 1)
+	tb.ExporterBatchFlushTimeout.Add(context.Background(), 1)
+	tb.ExporterBatchLatency.Record(context.Background(), 1)
+	tb.ExporterBatchSize.Record(context.Background(), 1)
 	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedSpans.Add(context.Background(), 1)
@@ -37,6 +41,18 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterSentLogRecords.Add(context.Background(), 1)
 	tb.ExporterSentMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSentSpans.Add(context.Background(), 1)
+	AssertEqualExporterBatchFlushSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterBatchFlushTimeout(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterBatchLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterBatchSize(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedLogRecords(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
