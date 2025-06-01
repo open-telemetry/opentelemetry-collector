@@ -16,23 +16,23 @@ func TestSizerTypeToProto(t *testing.T) {
 	tests := []struct {
 		name           string
 		sizerType      request.SizerType
-		protoSizerType int32
+		protoSizerType SizerType
 		wantErr        bool
 	}{
 		{
 			name:           "requests",
 			sizerType:      request.SizerTypeRequests,
-			protoSizerType: SizerTypeRequests,
+			protoSizerType: SizerType_REQUESTS,
 		},
 		{
 			name:           "items",
 			sizerType:      request.SizerTypeItems,
-			protoSizerType: SizerTypeItems,
+			protoSizerType: SizerType_ITEMS,
 		},
 		{
 			name:           "bytes",
 			sizerType:      request.SizerTypeBytes,
-			protoSizerType: SizerTypeBytes,
+			protoSizerType: SizerType_BYTES,
 		},
 		{
 			name:           "invalid",
@@ -58,23 +58,23 @@ func TestSizerTypeFromProto(t *testing.T) {
 	tests := []struct {
 		name           string
 		sizerType      request.SizerType
-		protoSizerType int32
+		protoSizerType SizerType
 		wantErr        bool
 	}{
 		{
 			name:           "requests",
 			sizerType:      request.SizerTypeRequests,
-			protoSizerType: SizerTypeRequests,
+			protoSizerType: SizerType_REQUESTS,
 		},
 		{
 			name:           "items",
 			sizerType:      request.SizerTypeItems,
-			protoSizerType: SizerTypeItems,
+			protoSizerType: SizerType_ITEMS,
 		},
 		{
 			name:           "bytes",
 			sizerType:      request.SizerTypeBytes,
-			protoSizerType: SizerTypeBytes,
+			protoSizerType: SizerType_BYTES,
 		},
 		{
 			name:           "invalid",
@@ -92,6 +92,30 @@ func TestSizerTypeFromProto(t *testing.T) {
 			}
 			require.NoError(t, err)
 			assert.Equal(t, tt.sizerType, got)
+		})
+	}
+}
+
+func TestSizerTypeRoundTrip(t *testing.T) {
+	// Test that converting to int32 and back results in the same value
+	sizerTypes := []request.SizerType{
+		request.SizerTypeBytes,
+		request.SizerTypeItems,
+		request.SizerTypeRequests,
+	}
+
+	for _, originalType := range sizerTypes {
+		t.Run(originalType.String(), func(t *testing.T) {
+			// Convert to int32
+			protoVal, err := SizerTypeToProto(originalType)
+			require.NoError(t, err)
+
+			// Convert back to SizerType
+			convertedType, err := SizerTypeFromProto(protoVal)
+			require.NoError(t, err)
+
+			// Should be the same as original
+			assert.Equal(t, originalType, convertedType)
 		})
 	}
 }
