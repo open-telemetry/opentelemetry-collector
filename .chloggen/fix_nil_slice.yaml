@@ -7,7 +7,7 @@ change_type: bug_fix
 component: confmap
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not panic on assigning nil slices to non-nil slices
+note: Do not panic on assigning nil maps to non-nil maps
 
 # One or more tracking issues or pull requests related to the change
 issues: [13117]
