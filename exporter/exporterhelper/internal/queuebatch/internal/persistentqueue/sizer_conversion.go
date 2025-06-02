@@ -11,33 +11,33 @@ import (
 
 // Numeric constants for protobuf serialization
 const (
-	SizerTypeBytesValue    int32 = iota // 0
-	SizerTypeItemsValue                 // 1
-	SizerTypeRequestsValue              // 2
+	SizerTypeBytes    int32 = iota // 0
+	SizerTypeItems                 // 1
+	SizerTypeRequests              // 2
 )
 
-// SizerTypeToInt32 converts SizerType to int32 for protobuf serialization
-func SizerTypeToInt32(sizerType request.SizerType) (int32, error) {
+// SizerTypeToProto converts SizerType to int32 for protobuf serialization
+func SizerTypeToProto(sizerType request.SizerType) (int32, error) {
 	switch sizerType {
 	case request.SizerTypeBytes:
-		return SizerTypeBytesValue, nil
+		return SizerTypeBytes, nil
 	case request.SizerTypeItems:
-		return SizerTypeItemsValue, nil
+		return SizerTypeItems, nil
 	case request.SizerTypeRequests:
-		return SizerTypeRequestsValue, nil
+		return SizerTypeRequests, nil
 	default:
 		return -1, fmt.Errorf("invalid sizer type: %v", sizerType)
 	}
 }
 
-// SizerTypeFromInt32 creates SizerType from int32 representation
-func SizerTypeFromInt32(value int32) (request.SizerType, error) {
+// SizerTypeFromProto creates SizerType from int32 representation
+func SizerTypeFromProto(value int32) (request.SizerType, error) {
 	switch value {
-	case SizerTypeBytesValue:
+	case SizerTypeBytes:
 		return request.SizerTypeBytes, nil
-	case SizerTypeItemsValue:
+	case SizerTypeItems:
 		return request.SizerTypeItems, nil
-	case SizerTypeRequestsValue:
+	case SizerTypeRequests:
 		return request.SizerTypeRequests, nil
 	default:
 		return request.SizerType{}, fmt.Errorf("invalid sizer type value: %d", value)
