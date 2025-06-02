@@ -88,12 +88,10 @@ var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 //
 // This is used when service::telemetry::logs::processors is configured.
 func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
-	// TODO: Use `otelzap.WithAttributes` and remove `LoggerProviderWithAttributes`
-	// once we've upgraded to otelzap v0.11.0.
-	lpwa := LoggerProviderWithAttributes(lp, attrs)
 	otelCore, err := zapcore.NewIncreaseLevelCore(otelzap.NewCore(
 		scopeName,
-		otelzap.WithLoggerProvider(lpwa),
+		otelzap.WithLoggerProvider(lp),
+		otelzap.WithAttributes(attrs.ToSlice()...),
 	), zap.NewAtomicLevelAt(level))
 	if err != nil {
 		panic(err)

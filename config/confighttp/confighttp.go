@@ -116,7 +116,7 @@ type ClientConfig struct {
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
-	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
+	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
@@ -273,7 +273,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	var jar http.CookieJar
-	if hcs.Cookies != nil && hcs.Cookies.Enabled {
+	if hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
@@ -376,10 +376,8 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
-	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        &tlsDefaultServerConfig,
 		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
@@ -517,7 +515,17 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 			otelhttp.WithTracerProvider(settings.TracerProvider),
 			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-				return r.URL.Path
+				// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name:
+				//
+				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
+				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
+				//   ...
+				//   Instrumentation MUST NOT default to using URI path as a {target}."
+				//
+				if r.Pattern != "" {
+					return r.Method + " " + r.Pattern
+				}
+				return r.Method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
