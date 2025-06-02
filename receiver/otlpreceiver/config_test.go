@@ -177,6 +177,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 		}, cfg)
 }
 
+// cspell:ignore htttp
 func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
 	require.NoError(t, err)
@@ -227,7 +228,7 @@ func TestUnmarshalConfigInvalidSignalPath(t *testing.T) {
 			require.NoError(t, err)
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
-			assert.EqualError(t, cm.Unmarshal(&cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
+			assert.ErrorContains(t, cm.Unmarshal(&cfg), "invalid HTTP URL path set for signal: parse \":invalid\": missing protocol scheme")
 		})
 	}
 }
