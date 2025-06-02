@@ -45,17 +45,11 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Check out main and ensure it has the "Prepare release" commit in your local
-   copy by pulling in the latest from `open-telemetry/opentelemetry-collector`
-   Use this commit to create a branch named `release/<release-series>` (e.g.
-   `release/v0.85.x`). Push the new branch to
-   `open-telemetry/opentelemetry-collector`. Assuming your upstream remote is
-   named `upstream`, you can try the following commands:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
-   - `git push -u upstream release/<release series>`
+4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will create a new branch (for a new release, e.g. `v0.127.0`). Bugfix releases are currently out of scope for this action/script.
+   - Make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
+   - If the above does not work, the underlying script (./.github/workflows/scripts/release-branch.sh) can be tested and run locally passing appropriate variables and arguments for upstream name, release series, etc.
 
-5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
+5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
@@ -96,7 +90,7 @@ Before the release, make sure there are no open release blockers in [core](https
 
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
-1. Run the GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
+1. Run the GitHub Action workflow "[Update Version in Distributions and Prepare PR](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/update-version.yaml)" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
 2. Check out main and ensure it has the "Update version from ..." commit in your local
@@ -220,7 +214,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
 | 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
 | 2025-07-14 | v0.130.0 | [@jmacd](https://github.com/jmacd)                   |
@@ -230,3 +223,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
 | 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
 | 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
+| 2025-10-13 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |

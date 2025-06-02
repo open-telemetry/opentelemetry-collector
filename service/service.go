@@ -190,9 +190,17 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	}
 	srv.loggerProvider = lp
 
+	// Use initialized logger to handle any subsequent errors
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
+	defer func() {
+		if err != nil {
+			logger.Error("error found during service initialization", zap.Error(err))
+			_ = sdk.Shutdown(ctx)
+		}
+	}()
+
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
@@ -200,7 +208,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 	srv.telemetrySettings = component.TelemetrySettings{
@@ -218,13 +225,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	})
 
 	if err = srv.initGraph(ctx, cfg); err != nil {
-		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
-		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
@@ -531,6 +536,20 @@ func configureViews(level configtelemetry.Level) []config.View {
 			InstrumentName: ptr("otelcol_processor_batch_batch_send_size_bytes"),
 		}))
 	}
+
+	// Internal graph metrics
+	graphScope := ptr("go.opentelemetry.io/collector/service")
+	if level < configtelemetry.LevelDetailed {
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      graphScope,
+			InstrumentName: ptr("otelcol.*.consumed.size"),
+		}))
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      graphScope,
+			InstrumentName: ptr("otelcol.*.produced.size"),
+		}))
+	}
+
 	return views
 }
 
