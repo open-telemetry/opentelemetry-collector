@@ -517,7 +517,17 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 			otelhttp.WithTracerProvider(settings.TracerProvider),
 			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-				return r.URL.Path
+				// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name:
+				//
+				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
+				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
+				//   ...
+				//   Instrumentation MUST NOT default to using URI path as a {target}."
+				//
+				if r.Pattern != "" {
+					return r.Method + " " + r.Pattern
+				}
+				return r.Method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
