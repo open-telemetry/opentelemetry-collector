@@ -126,22 +126,40 @@ func NewSamplerCoreWithAttributes(inner zapcore.Core, tick time.Duration, first 
 	}
 }
 
+func checkSamplerType(ty reflect.Type) bool {
+	if ty.Kind() != reflect.Pointer {
+		return false
+	}
+	ty = ty.Elem()
+	if ty.Kind() != reflect.Struct {
+		return false
+	}
+	innerField, ok := ty.FieldByName("Core")
+	if !ok {
+		return false
+	}
+	return reflect.TypeFor[zapcore.Core]().AssignableTo(innerField.Type)
+}
+
 func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	newInner := tryWithAttributeSet(ssc.from, attrs)
 
-	// See the code for zap sampler cores:
 	// https://github.com/uber-go/zap/blob/fcf8ee58669e358bbd6460bef5c2ee7a53c0803a/zapcore/sampler.go#L168
-	// The `counts` allocation is very large, but can be reused across samplers (see `With` method).
-	// However, there is no method to change the inner core, so we call upon `reflect` magic to do it.
-	sampler1 := ssc.Core
-	val1 := reflect.ValueOf(sampler1).Elem()
-	val2 := reflect.New(val1.Type())
-	val2.Elem().Set(val1)
-	val2.Elem().FieldByName("Core").Set(reflect.ValueOf(newInner))
-	sampler2 := val2.Interface().(zapcore.Core)
+	// We need to create a new Zap sampler core with the same settings but with a new inner core,
+	// while reusing the very RAM-intensive `counters` data structure. The `With` method does
+	// something similar, but it's not quite what we want. The `sampler` type is unexported, but we
+	// can still do it using `reflect`.
+	val1 := reflect.ValueOf(ssc.Core)
+	if !checkSamplerType(val1.Type()) {
+		panic("Unexpected Zap sampler type") // To avoid a more esoteric panic message below
+	}
+	val2 := reflect.New(val1.Type().Elem())                        // core2 := new(sampler)
+	val2.Elem().Set(val1.Elem())                                   // *core2 = *core1
+	val2.Elem().FieldByName("Core").Set(reflect.ValueOf(newInner)) // core2.Core = newInner
+	newSampler := val2.Interface().(zapcore.Core)
 
 	return samplerCoreWithAttributes{
-		Core: sampler2,
+		Core: newSampler,
 		from: newInner,
 	}
 }

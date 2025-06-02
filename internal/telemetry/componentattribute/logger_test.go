@@ -194,3 +194,38 @@ func TestSamplerCore(t *testing.T) {
 		})
 	}
 }
+
+// Worst case scenario for the reflect spell in samplerCoreWithAttributes
+type crazySampler struct {
+	Core int
+}
+
+var _ zapcore.Core = (*crazySampler)(nil)
+
+func (s *crazySampler) Enabled(zapcore.Level) bool {
+	return true
+}
+
+func (s *crazySampler) With([]zapcore.Field) zapcore.Core {
+	return s
+}
+
+func (s *crazySampler) Check(_ zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return ce
+}
+
+func (s *crazySampler) Write(zapcore.Entry, []zapcore.Field) error {
+	return nil
+}
+
+func (s *crazySampler) Sync() error {
+	return nil
+}
+
+func TestSamplerCorePanic(t *testing.T) {
+	sampler := NewSamplerCoreWithAttributes(zapcore.NewNopCore(), 1, 1, 1)
+	sampler.(*samplerCoreWithAttributes).Core = &crazySampler{}
+	assert.PanicsWithValue(t, "Unexpected Zap sampler type", func() {
+		tryWithAttributeSet(sampler, attribute.NewSet())
+	})
+}
