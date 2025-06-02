@@ -376,10 +376,8 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
-	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        &tlsDefaultServerConfig,
 		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
