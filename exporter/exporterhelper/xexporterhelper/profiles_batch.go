@@ -13,6 +13,9 @@ import (
 )
 
 // MergeSplit splits and/or merges the profiles into multiple requests based on the MaxSizeConfig.
+//
+// Following the OTLP 1.7.0 upgrade, this is currently a noop.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/13106
 func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt exporterhelper.RequestSizerType, r2 exporterhelper.Request) ([]exporterhelper.Request, error) {
 	var sz sizer.ProfilesSizer
 	switch szt {
@@ -24,12 +27,20 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 		return nil, errors.New("unknown sizer type")
 	}
 
-	if r2 != nil {
+	if r2 != nil && r2.ItemsCount() > 0 {
 		req2, ok := r2.(*profilesRequest)
 		if !ok {
 			return nil, errors.New("invalid input type")
 		}
-		req2.mergeTo(req, sz)
+		// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
+		// req2.mergeTo(req, sz)
+
+		// If no limit we can simply merge the new request into the current and return.
+		if maxSize == 0 {
+			return []exporterhelper.Request{req, req2}, nil
+		}
+
+		return append(req.split(maxSize, sz), req2.split(maxSize, sz)...), nil
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
@@ -39,13 +50,14 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	return req.split(maxSize, sz), nil
 }
 
-func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) {
+// TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
+/*func (req *profilesRequest) mergeTo(dst *profilesRequest, sz sizer.ProfilesSizer) {
 	if sz != nil {
 		dst.setCachedSize(dst.size(sz) + req.size(sz))
 		req.setCachedSize(0)
 	}
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
-}
+}*/
 
 func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) []exporterhelper.Request {
 	var res []exporterhelper.Request
