@@ -9,6 +9,7 @@ import (
 	"go.uber.org/goleak"
 )
 
+// cspell:ignore gopkg, natefinch
 func TestMain(m *testing.M) {
 	// goleak.VerifyTestMain(m)
 	// Ignore lumberjack millRun goroutine in all tests

@@ -174,4 +174,5 @@ telemetry:
 tests:
   goleak:
     ignore:
+      # cspell:ignore gopkg, natefinch
       top: ["gopkg.in/natefinch/lumberjack%2ev2.(*Logger).millRun"]
