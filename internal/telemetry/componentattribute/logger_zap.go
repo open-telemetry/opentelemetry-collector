@@ -146,12 +146,12 @@ func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapc
 
 	// https://github.com/uber-go/zap/blob/fcf8ee58669e358bbd6460bef5c2ee7a53c0803a/zapcore/sampler.go#L168
 	// We need to create a new Zap sampler core with the same settings but with a new inner core,
-	// while reusing the very RAM-intensive `counters` data structure. The `With` method does
-	// something similar, but it's not quite what we want. The `sampler` type is unexported, but we
-	// can still do it using `reflect`.
+	// while reusing the very RAM-intensive `counters` data structure.
+	// The `With` method does something similar, but it's not quite what we want, so we use `reflect`.
+	// This hack can be removed once Zap supports this use case.
 	val1 := reflect.ValueOf(ssc.Core)
-	if !checkSamplerType(val1.Type()) {
-		panic("Unexpected Zap sampler type") // To avoid a more esoteric panic message below
+	if !checkSamplerType(val1.Type()) { // To avoid a more esoteric panic message below
+		panic("Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/pull/13107")
 	}
 	val2 := reflect.New(val1.Type().Elem())                        // core2 := new(sampler)
 	val2.Elem().Set(val1.Elem())                                   // *core2 = *core1

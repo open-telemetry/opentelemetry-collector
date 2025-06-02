@@ -225,7 +225,7 @@ func (s *crazySampler) Sync() error {
 func TestSamplerCorePanic(t *testing.T) {
 	sampler := NewSamplerCoreWithAttributes(zapcore.NewNopCore(), 1, 1, 1)
 	sampler.(*samplerCoreWithAttributes).Core = &crazySampler{}
-	assert.PanicsWithValue(t, "Unexpected Zap sampler type", func() {
+	assert.PanicsWithValue(t, "Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/pull/13107", func() {
 		tryWithAttributeSet(sampler, attribute.NewSet())
 	})
 }
