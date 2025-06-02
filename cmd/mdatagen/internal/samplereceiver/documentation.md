@@ -141,6 +141,30 @@ The event will be will be removed soon.
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
 
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### default.event.to_be_renamed
+
+[DEPRECATED] Example event disabled by default.
+
+The event will be renamed soon.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
