@@ -42,8 +42,8 @@ func Test_NewOTLPGRPCError(t *testing.T) {
 
 func Test_NewRetryableError(t *testing.T) {
 	wantErr := &Error{
-		error:     errTest,
-		retryable: true,
+		error:       errTest,
+		isRetryable: true,
 	}
 
 	newErr := NewRetryableError(errTest)
@@ -144,10 +144,10 @@ func TestError_OTLPHTTPStatus(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Error{
-				error:      errTest,
-				httpStatus: tt.httpStatus,
-				grpcStatus: tt.grpcStatus,
-				retryable:  tt.retryable,
+				error:       errTest,
+				httpStatus:  tt.httpStatus,
+				grpcStatus:  tt.grpcStatus,
+				isRetryable: tt.retryable,
 			}
 
 			s := err.OTLPHTTPStatus()
@@ -208,10 +208,10 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			err := Error{
-				error:      errTest,
-				httpStatus: tt.httpStatus,
-				grpcStatus: tt.grpcStatus,
-				retryable:  tt.retryable,
+				error:       errTest,
+				httpStatus:  tt.httpStatus,
+				grpcStatus:  tt.grpcStatus,
+				isRetryable: tt.retryable,
 			}
 
 			s := err.OTLPGRPCStatus()
@@ -281,13 +281,13 @@ func TestError_Retryable(t *testing.T) {
 			for _, httpStatus := range tt.httpStatuses {
 				for _, grpcStatus := range tt.grpcStatuses {
 					err := Error{
-						error:      errTest,
-						httpStatus: httpStatus,
-						grpcStatus: grpcStatus,
-						retryable:  tt.retryable,
+						error:       errTest,
+						httpStatus:  httpStatus,
+						grpcStatus:  grpcStatus,
+						isRetryable: tt.retryable,
 					}
 
-					isRetryable := err.Retryable()
+					isRetryable := err.IsRetryable()
 
 					require.Equal(t, tt.want, isRetryable)
 				}

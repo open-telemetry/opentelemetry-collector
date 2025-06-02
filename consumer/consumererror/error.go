@@ -20,9 +20,9 @@ import (
 // Error should be obtained from a given `error` object using `errors.As`.
 type Error struct {
 	error
-	httpStatus int
-	grpcStatus *status.Status
-	retryable  bool
+	httpStatus  int
+	grpcStatus  *status.Status
+	isRetryable bool
 }
 
 var _ error = (*Error)(nil)
@@ -30,18 +30,32 @@ var _ error = (*Error)(nil)
 // NewOTLPHTTPError records an HTTP status code that was received from a server
 // during data submission.
 func NewOTLPHTTPError(origErr error, httpStatus int) error {
-	return &Error{error: origErr, httpStatus: httpStatus}
+	var retryable bool
+	switch httpStatus {
+	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+		retryable = true
+	}
+
+	return &Error{error: origErr, httpStatus: httpStatus, isRetryable: retryable}
 }
 
 // NewOTLPGRPCError records a gRPC status code that was received from a server
 // during data submission.
 func NewOTLPGRPCError(origErr error, status *status.Status) error {
-	return &Error{error: origErr, grpcStatus: status}
+	var retryable bool
+	if status != nil {
+		switch status.Code() {
+		case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
+			retryable = true
+		}
+	}
+
+	return &Error{error: origErr, grpcStatus: status, isRetryable: retryable}
 }
 
 // NewRetryableError records that this error is retryable according to OTLP specification.
 func NewRetryableError(origErr error) error {
-	return &Error{error: origErr, retryable: true}
+	return &Error{error: origErr, isRetryable: true}
 }
 
 // Error implements the error interface.
@@ -67,7 +81,7 @@ func (e *Error) OTLPHTTPStatus() int {
 	if e.grpcStatus != nil {
 		return statusconversion.GetHTTPStatusCodeFromStatus(e.grpcStatus)
 	}
-	if e.retryable {
+	if e.isRetryable {
 		return http.StatusServiceUnavailable
 	}
 	return http.StatusInternalServerError
@@ -78,7 +92,7 @@ func (e *Error) OTLPHTTPStatus() int {
 // When deriving the value, the OTLP specification is used to map to GRPC.
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for more details.
 //
-// If a grpc code cannot be derived from these three sources then INTERNAL is returned.
+// If a gRPC code cannot be derived from these three sources then INTERNAL is returned.
 func (e *Error) OTLPGRPCStatus() *status.Status {
 	if e.grpcStatus != nil {
 		return e.grpcStatus
@@ -86,32 +100,18 @@ func (e *Error) OTLPGRPCStatus() *status.Status {
 	if e.httpStatus != 0 {
 		return statusconversion.NewStatusFromMsgAndHTTPCode(e.Error(), e.httpStatus)
 	}
-	if e.retryable {
+	if e.isRetryable {
 		return status.New(codes.Unavailable, e.Error())
 	}
 	return status.New(codes.Unknown, e.Error())
 }
 
-// Retryable returns true if the error was created with the WithRetryable set to true,
-// if the http status code is retryable according to OTLP,
-// or if the grpc status is retryable according to OTLP.
-// Otherwise, returns false.
+// IsRetryable returns true if the error was created with NewRetryableError, if
+// the HTTP status code is retryable according to OTLP, or if the gRPC status is
+// retryable according to OTLP. Otherwise, returns false.
 //
 // See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for retryable
-// http and grpc codes.
-func (e *Error) Retryable() bool {
-	if e.retryable {
-		return true
-	}
-	switch e.httpStatus {
-	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
-		return true
-	}
-	if e.grpcStatus != nil {
-		switch e.grpcStatus.Code() {
-		case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
-			return true
-		}
-	}
-	return false
+// HTTP and gRPC codes.
+func (e *Error) IsRetryable() bool {
+	return e.isRetryable
 }
