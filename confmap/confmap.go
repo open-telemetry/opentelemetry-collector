@@ -261,7 +261,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
-			zeroSliceHookFunc(),
+			zeroSliceAndMapHookFunc(),
 		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
@@ -595,12 +595,22 @@ type Marshaler interface {
 //
 // 4. configuration have no `keys` field specified, the output should be default config
 //   - for example, input is {}, then output is Config{ Keys: ["a", "b"]}
-func zeroSliceHookFunc() mapstructure.DecodeHookFuncValue {
+//
+// This hook is also used to solve https://github.com/open-telemetry/opentelemetry-collector/issues/13117.
+// Since v0.127.0, we decode nil values to avoid creating empty map objects.
+// The nil value is not well understood when layered on top of a default map non-nil value.
+// The fix is to avoid the assignment and return the previous value.
+func zeroSliceAndMapHookFunc() mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
 			if !from.IsNil() {
 				// input slice is not nil, set the output slice to a new slice of the same type.
 				to.Set(reflect.MakeSlice(to.Type(), from.Len(), from.Cap()))
+			}
+		}
+		if to.CanSet() && to.Kind() == reflect.Map && from.Kind() == reflect.Map {
+			if from.IsNil() {
+				return to.Interface(), nil
 			}
 		}
 
