@@ -1089,3 +1089,65 @@ func TestConfDelete(t *testing.T) {
 		})
 	}
 }
+
+type structWithConfigOpaqueMap struct {
+	Headers map[string]string `mapstructure:"headers"`
+}
+
+func TestMapMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  map[string]string
+		added    map[string]string
+		expected map[string]string
+	}{
+		{
+			name:     "both nil",
+			initial:  nil,
+			added:    nil,
+			expected: nil,
+		},
+		{
+			name:     "nil map",
+			initial:  map[string]string{},
+			added:    nil,
+			expected: map[string]string{},
+		},
+		{
+			name: "initialized",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: nil,
+			expected: map[string]string{
+				"foo": "bar",
+			},
+		},
+		{
+			name: "both",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: map[string]string{
+				"foobar": "bar",
+			},
+			expected: map[string]string{
+				"foo":    "bar",
+				"foobar": "bar",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := structWithConfigOpaqueMap{
+				Headers: test.initial,
+			}
+			c := NewFromStringMap(map[string]any{
+				"headers": test.added,
+			})
+			require.NoError(t, c.Unmarshal(&s))
+			assert.Equal(t, test.expected, s.Headers)
+		})
+	}
+}
