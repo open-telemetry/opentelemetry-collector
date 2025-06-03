@@ -80,7 +80,6 @@ func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) Queue[T] {
 	}
 	return newAsyncQueue(newPersistentQueue[T](persistentQueueSettings[T]{
 		sizer:           set.Sizer,
-		sizerType:       set.SizerType,
 		capacity:        set.Capacity,
 		blockOnOverflow: set.BlockOnOverflow,
 		signal:          set.Signal,
