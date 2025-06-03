@@ -149,7 +149,7 @@ func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapc
 	// This hack can be removed once Zap supports this use case.
 	val1 := reflect.ValueOf(ssc.Core)
 	if !checkSamplerType(val1.Type()) { // To avoid a more esoteric panic message below
-		panic("Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/pull/13107")
+		panic("Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/issues/13014")
 	}
 	val2 := reflect.New(val1.Type().Elem())                        // core2 := new(sampler)
 	val2.Elem().Set(val1.Elem())                                   // *core2 = *core1
