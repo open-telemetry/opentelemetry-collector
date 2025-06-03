@@ -98,6 +98,25 @@ func TestInt64SliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestInt64SliceMoveAndAppendTo(t *testing.T) {
+	// Test moving from an empty slice
+	ms := NewInt64Slice()
+	ms2 := NewInt64Slice()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, NewInt64Slice(), ms2)
+	assert.Equal(t, ms.Len(), 0)
+
+	// Test moving to empty slice
+	ms.FromRaw([]int64{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
+
+	// Test moving to a non empty slice
+	ms.FromRaw([]int64{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
+}
+
 func TestInt64SliceEqual(t *testing.T) {
 	ms := NewInt64Slice()
 	ms2 := NewInt64Slice()

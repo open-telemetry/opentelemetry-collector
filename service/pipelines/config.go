@@ -42,22 +42,17 @@ func (cfg Config) Validate() error {
 		return errMissingServicePipelines
 	}
 
-	// Check that all pipelines have at least one receiver and one exporter, and they reference
-	// only configured components.
-	for pipelineID := range cfg {
-		switch pipelineID.Signal() {
-		case pipeline.SignalTraces, pipeline.SignalMetrics, pipeline.SignalLogs:
-			// Continue
-		case xpipeline.SignalProfiles:
-			if !serviceProfileSupportGate.IsEnabled() {
+	if !serviceProfileSupportGate.IsEnabled() {
+		// Check that all pipelines have at least one receiver and one exporter, and they reference
+		// only configured components.
+		for pipelineID := range cfg {
+			if pipelineID.Signal() == xpipeline.SignalProfiles {
 				return fmt.Errorf(
 					"pipeline %q: profiling signal support is at alpha level, gated under the %q feature gate",
 					pipelineID.String(),
 					serviceProfileSupportGateID,
 				)
 			}
-		default:
-			return fmt.Errorf("pipeline %q: unknown signal %q", pipelineID.String(), pipelineID.Signal())
 		}
 	}
 

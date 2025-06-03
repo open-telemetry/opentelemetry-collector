@@ -21,7 +21,8 @@ func TestProtoSizer(t *testing.T) {
 	td := NewProfiles()
 	td.ResourceProfiles().AppendEmpty().
 		ScopeProfiles().AppendEmpty().
-		Profiles().AppendEmpty().
+		Profiles().AppendEmpty()
+	td.ProfilesDictionary().
 		StringTable().Append("foobar")
 
 	size := marshaler.ProfilesSize(td)
@@ -33,7 +34,7 @@ func TestProtoSizer(t *testing.T) {
 
 func TestProtoSizerEmptyProfiles(t *testing.T) {
 	sizer := &ProtoMarshaler{}
-	assert.Equal(t, 0, sizer.ProfilesSize(NewProfiles()))
+	assert.Equal(t, 2, sizer.ProfilesSize(NewProfiles()))
 }
 
 func BenchmarkProfilesToProto(b *testing.B) {

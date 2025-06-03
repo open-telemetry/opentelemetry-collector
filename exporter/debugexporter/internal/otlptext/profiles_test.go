@@ -47,6 +47,44 @@ func TestProfilesText(t *testing.T) {
 
 // GenerateExtendedProfiles generates dummy profiling data with extended values for tests
 func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
+	dic := profiles.ProfilesDictionary()
+	location := dic.LocationTable().AppendEmpty()
+	location.SetMappingIndex(3)
+	location.SetAddress(4)
+	line := location.Line().AppendEmpty()
+	line.SetFunctionIndex(1)
+	line.SetLine(2)
+	line.SetColumn(3)
+	location.SetIsFolded(true)
+	location.AttributeIndices().FromRaw([]int32{6, 7})
+	at := dic.AttributeTable()
+	a := at.AppendEmpty()
+	a.SetKey("intValue")
+	a.Value().SetInt(42)
+	attributeUnits := dic.AttributeUnits().AppendEmpty()
+	attributeUnits.SetAttributeKeyStrindex(1)
+	attributeUnits.SetUnitStrindex(5)
+	dic.StringTable().Append("foobar")
+	mapping := dic.MappingTable().AppendEmpty()
+	mapping.SetMemoryStart(2)
+	mapping.SetMemoryLimit(3)
+	mapping.SetFileOffset(4)
+	mapping.SetFilenameStrindex(5)
+	mapping.AttributeIndices().FromRaw([]int32{7, 8})
+	mapping.SetHasFunctions(true)
+	mapping.SetHasFilenames(true)
+	mapping.SetHasLineNumbers(true)
+	mapping.SetHasInlineFrames(true)
+	function := dic.FunctionTable().AppendEmpty()
+	function.SetNameStrindex(2)
+	function.SetSystemNameStrindex(3)
+	function.SetFilenameStrindex(4)
+	function.SetStartLine(5)
+
+	linkTable := dic.LinkTable().AppendEmpty()
+	linkTable.SetTraceID([16]byte{0x03, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
+	linkTable.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
+
 	sc := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0)
 	profilesCount := profiles.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().Len()
 	for i := 0; i < profilesCount; i++ {
@@ -54,51 +92,8 @@ func extendProfiles(profiles pprofile.Profiles) pprofile.Profiles {
 		case 0:
 			profile := sc.Profiles().At(i)
 			profile.LocationIndices().FromRaw([]int32{1})
-
-			location := profile.LocationTable().AppendEmpty()
-			location.SetMappingIndex(3)
-			location.SetAddress(4)
-			line := location.Line().AppendEmpty()
-			line.SetFunctionIndex(1)
-			line.SetLine(2)
-			line.SetColumn(3)
-			location.SetIsFolded(true)
-			location.AttributeIndices().FromRaw([]int32{6, 7})
-
-			at := profile.AttributeTable()
-			a := at.AppendEmpty()
-			a.SetKey("intValue")
-			a.Value().SetInt(42)
-
-			attributeUnits := profile.AttributeUnits().AppendEmpty()
-			attributeUnits.SetAttributeKeyStrindex(1)
-			attributeUnits.SetUnitStrindex(5)
-
-			profile.StringTable().Append("foobar")
 		case 1:
 			profile := sc.Profiles().At(i)
-
-			mapping := profile.MappingTable().AppendEmpty()
-			mapping.SetMemoryStart(2)
-			mapping.SetMemoryLimit(3)
-			mapping.SetFileOffset(4)
-			mapping.SetFilenameStrindex(5)
-			mapping.AttributeIndices().FromRaw([]int32{7, 8})
-			mapping.SetHasFunctions(true)
-			mapping.SetHasFilenames(true)
-			mapping.SetHasLineNumbers(true)
-			mapping.SetHasInlineFrames(true)
-
-			function := profile.FunctionTable().AppendEmpty()
-			function.SetNameStrindex(2)
-			function.SetSystemNameStrindex(3)
-			function.SetFilenameStrindex(4)
-			function.SetStartLine(5)
-
-			linkTable := profile.LinkTable().AppendEmpty()
-			linkTable.SetTraceID([16]byte{0x03, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
-			linkTable.SetSpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
-
 			profile.CommentStrindices().FromRaw([]int32{1, 2})
 		}
 	}

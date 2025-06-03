@@ -198,8 +198,10 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	wg := sync.WaitGroup{}
 	consumed := &atomic.Int64{}
 	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1000, waitForResult: true})
+	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
@@ -212,7 +214,6 @@ func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 		}
 	}()
 
-	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {

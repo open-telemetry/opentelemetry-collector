@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: confmap
+component: service
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update the behavior of the confmap.enableMergeAppendOption feature gate to merge only component lists.
+note: Use configured loggers to log errors as soon as it is available
 
 # One or more tracking issues or pull requests related to the change
-issues: [12926]
+issues: [13081]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

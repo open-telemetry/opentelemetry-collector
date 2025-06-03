@@ -16,12 +16,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
 type shutdownable interface {
@@ -98,7 +98,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.wrapperCoreWithAttributes",
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
@@ -183,16 +183,16 @@ func TestOTLPLogExport(t *testing.T) {
 		rl := logs.ResourceLogs().At(0)
 
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		assert.Equal(t, resourceAttrs[semconv.AttributeServiceName], service)
-		assert.Equal(t, resourceAttrs[semconv.AttributeServiceVersion], version)
+		assert.Equal(t, resourceAttrs[string(semconv.ServiceNameKey)], service)
+		assert.Equal(t, resourceAttrs[string(semconv.ServiceVersionKey)], version)
 		assert.Equal(t, resourceAttrs[testAttribute], testValue)
 
 		// Check that the resource attributes are not duplicated in the log records
 		sl := rl.ScopeLogs().At(0)
 		logRecord := sl.LogRecords().At(0)
 		attrs := logRecord.Attributes().AsRaw()
-		assert.NotContains(t, attrs, semconv.AttributeServiceName)
-		assert.NotContains(t, attrs, semconv.AttributeServiceVersion)
+		assert.NotContains(t, attrs, string(semconv.ServiceNameKey))
+		assert.NotContains(t, attrs, string(semconv.ServiceVersionKey))
 		assert.NotContains(t, attrs, testAttribute)
 
 		receivedLogs++
@@ -233,8 +233,8 @@ func TestOTLPLogExport(t *testing.T) {
 				Resource: &config.Resource{
 					SchemaUrl: ptr(""),
 					Attributes: []config.AttributeNameValue{
-						{Name: semconv.AttributeServiceName, Value: service},
-						{Name: semconv.AttributeServiceVersion, Value: version},
+						{Name: string(semconv.ServiceNameKey), Value: service},
+						{Name: string(semconv.ServiceVersionKey), Value: version},
 						{Name: testAttribute, Value: testValue},
 					},
 				},

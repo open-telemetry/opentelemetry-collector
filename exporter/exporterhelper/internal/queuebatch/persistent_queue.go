@@ -29,6 +29,11 @@ const (
 	writeIndexKey               = "wi"
 	currentlyDispatchedItemsKey = "di"
 	queueSizeKey                = "si"
+
+	// queueMetadataKey is the new single key for all queue metadata.
+	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
+	//nolint:unused
+	queueMetadataKey = "qmv0"
 )
 
 var (
@@ -46,6 +51,7 @@ var indexDonePool = sync.Pool{
 
 type persistentQueueSettings[T any] struct {
 	sizer           request.Sizer[T]
+	sizerType       request.SizerType
 	capacity        int64
 	blockOnOverflow bool
 	signal          pipeline.Signal

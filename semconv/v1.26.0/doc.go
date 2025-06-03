@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [v0.126.0] This package has been deprecated, use go.opentelemetry.io/otel/semconv instead.
+//
 // Package semconv implements OpenTelemetry semantic conventions.
 //
 // OpenTelemetry semantic conventions are agreed standardized naming
