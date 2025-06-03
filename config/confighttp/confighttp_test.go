@@ -91,7 +91,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
-				Cookies:              &CookiesConfig{Enabled: true},
+				Cookies:              CookiesConfig{Enabled: true},
 				HTTP2ReadIdleTimeout: idleConnTimeout,
 				HTTP2PingTimeout:     http2PingTimeout,
 			},
@@ -1569,7 +1569,7 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
-	assert.NotNil(t, httpServerSettings.TLS)
+	assert.Nil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)

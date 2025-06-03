@@ -36,7 +36,7 @@ The metric will be become optional soon.
 
 [DEPRECATED] Non-monotonic delta sum double metric enabled by default.
 
-The metric will be will be removed soon.
+The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

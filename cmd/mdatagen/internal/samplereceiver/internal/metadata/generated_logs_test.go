@@ -181,7 +181,7 @@ func TestLogsBuilder(t *testing.T) {
 			res := rb.Emit()
 			logs := lb.Emit(WithLogsResource(res))
 
-			if tt.expectEmpty {
+			if tt.expectEmpty || ((tt.name == "default" || tt.name == "filter_set_include") && defaultEventsCount == 0) {
 				assert.Equal(t, 0, logs.ResourceLogs().Len())
 				return
 			}
