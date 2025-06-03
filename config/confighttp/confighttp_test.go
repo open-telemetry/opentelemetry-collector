@@ -80,7 +80,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				ReadBufferSize:       1024,
@@ -101,7 +101,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings_with_none_compression",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				ReadBufferSize:       1024,
@@ -121,7 +121,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings_with_gzip_compression",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				ReadBufferSize:       1024,
@@ -141,7 +141,7 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			name: "all_valid_settings_http2_health_check",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				ReadBufferSize:       1024,
@@ -201,7 +201,7 @@ func TestPartialHTTPClientSettings(t *testing.T) {
 			name: "valid_partial_settings",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				ReadBufferSize:  1024,
@@ -302,7 +302,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ClientConfig{
 				Endpoint: "",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
@@ -315,7 +315,7 @@ func TestHTTPClientSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ClientConfig{
 				Endpoint: "",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
@@ -505,7 +505,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load CA CertPool File: failed to load cert /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
@@ -516,7 +516,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "^failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
@@ -527,7 +527,7 @@ func TestHTTPServerSettingsError(t *testing.T) {
 			err: "failed to load client CA CertPool: failed to load CA /doesnt/exist:",
 			settings: ServerConfig{
 				Endpoint: "localhost:0",
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				},
 			},
@@ -667,8 +667,8 @@ func TestHttpReception(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hss := &ServerConfig{
-				Endpoint:   "localhost:0",
-				TLSSetting: tt.tlsServerCreds,
+				Endpoint: "localhost:0",
+				TLS:      tt.tlsServerCreds,
 			}
 			ln, err := hss.ToListener(context.Background())
 			require.NoError(t, err)
@@ -695,8 +695,8 @@ func TestHttpReception(t *testing.T) {
 			}
 
 			hcs := &ClientConfig{
-				Endpoint:   prefix + ln.Addr().String(),
-				TLSSetting: *tt.tlsClientCreds,
+				Endpoint: prefix + ln.Addr().String(),
+				TLS:      *tt.tlsClientCreds,
 			}
 
 			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
@@ -1002,7 +1002,7 @@ func TestHttpClientHeaders(t *testing.T) {
 			serverURL, _ := url.Parse(server.URL)
 			setting := ClientConfig{
 				Endpoint:        serverURL.String(),
-				TLSSetting:      configtls.ClientConfig{},
+				TLS:             configtls.ClientConfig{},
 				ReadBufferSize:  0,
 				WriteBufferSize: 0,
 				Timeout:         0,
@@ -1038,7 +1038,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 		serverURL, _ := url.Parse(server.URL)
 		setting := ClientConfig{
 			Endpoint:        serverURL.String(),
-			TLSSetting:      configtls.ClientConfig{},
+			TLS:             configtls.ClientConfig{},
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			Timeout:         0,
@@ -1505,8 +1505,8 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}
 
 	hss := &ServerConfig{
-		Endpoint:   "localhost:0",
-		TLSSetting: tlsServerCreds,
+		Endpoint: "localhost:0",
+		TLS:      tlsServerCreds,
 	}
 
 	s, err := hss.ToServer(
@@ -1530,8 +1530,8 @@ func BenchmarkHttpRequest(b *testing.B) {
 
 	for _, bb := range tests {
 		hcs := &ClientConfig{
-			Endpoint:   "https://" + ln.Addr().String(),
-			TLSSetting: *tlsClientCreds,
+			Endpoint: "https://" + ln.Addr().String(),
+			TLS:      *tlsClientCreds,
 		}
 
 		b.Run(bb.name, func(b *testing.B) {
@@ -1569,7 +1569,7 @@ func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.ResponseHeaders)
 	assert.NotNil(t, httpServerSettings.CORS)
-	assert.Nil(t, httpServerSettings.TLSSetting)
+	assert.Nil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
 	assert.Equal(t, time.Duration(0), httpServerSettings.ReadTimeout)
@@ -1601,7 +1601,7 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
 			config := NewDefaultServerConfig()
 			config.Endpoint = "localhost:0"
-			config.TLSSetting = nil
+			config.TLS = nil
 			srv, err := config.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
