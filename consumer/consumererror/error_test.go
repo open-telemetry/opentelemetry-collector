@@ -31,8 +31,9 @@ func Test_NewOTLPHTTPError(t *testing.T) {
 func Test_NewOTLPGRPCError(t *testing.T) {
 	grpcStatus := status.New(codes.Aborted, "aborted")
 	wantErr := &Error{
-		error:      errTest,
-		grpcStatus: grpcStatus,
+		error:       errTest,
+		grpcStatus:  grpcStatus,
+		isRetryable: true,
 	}
 
 	newErr := NewOTLPGRPCError(errTest, grpcStatus)
@@ -240,57 +241,40 @@ func TestError_Retryable(t *testing.T) {
 		name         string
 		httpStatuses []int
 		grpcStatuses []*status.Status
-		retryable    bool
 		want         bool
 	}{
 		{
 			name:         "HTTP statuses: retryable",
 			httpStatuses: []int{http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout},
-			grpcStatuses: []*status.Status{nil},
 			want:         true,
 		},
 		{
 			name:         "HTTP statuses: non-retryable",
 			httpStatuses: []int{0, http.StatusInternalServerError, http.StatusNotFound, http.StatusUnauthorized},
-			grpcStatuses: []*status.Status{nil},
 			want:         false,
 		},
 		{
 			name:         "gRPC statuses: retryable",
-			httpStatuses: []int{0},
 			grpcStatuses: retryableStatuses,
 			want:         true,
 		},
 		{
 			name:         "gRPC statuses: non-retryable",
-			httpStatuses: []int{0},
 			grpcStatuses: nonretryableStatuses,
 			want:         false,
-		},
-		{
-			name:         "Retryable set to true",
-			httpStatuses: []int{0},
-			grpcStatuses: []*status.Status{nil},
-			retryable:    true,
-			want:         true,
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, httpStatus := range tt.httpStatuses {
-				for _, grpcStatus := range tt.grpcStatuses {
-					err := Error{
-						error:       errTest,
-						httpStatus:  httpStatus,
-						grpcStatus:  grpcStatus,
-						isRetryable: tt.retryable,
-					}
+				err := NewOTLPHTTPError(errTest, httpStatus).(*Error)
+				require.Equal(t, tt.want, err.IsRetryable(), "Expected %d to be retryable=%t", httpStatus, tt.want)
+			}
 
-					isRetryable := err.IsRetryable()
-
-					require.Equal(t, tt.want, isRetryable)
-				}
+			for _, grpcStatus := range tt.grpcStatuses {
+				err := NewOTLPGRPCError(errTest, grpcStatus).(*Error)
+				require.Equal(t, tt.want, err.IsRetryable(), "Expected %q to be retryable=%t", grpcStatus.Code().String(), tt.want)
 			}
 		})
 	}
