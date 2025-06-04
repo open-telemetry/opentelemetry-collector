@@ -167,7 +167,7 @@ func BenchmarkPutLocation(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 
-			for n := 0; n < b.N; n++ {
+			for b.Loop() {
 				_ = PutLocation(table, obj, bb.location)
 			}
 		})
