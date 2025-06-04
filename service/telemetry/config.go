@@ -49,6 +49,9 @@ type LogsConfig = migration.LogsConfigV030
 // to preserve a representative subset of your logs.
 type LogsSamplingConfig = migration.LogsSamplingConfig
 
+// LogsRotationConfig sets a rotation strategy for the logger.
+type LogsRotationConfig = migration.LogsRotationConfig
+
 // MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type MetricsConfig = migration.MetricsConfigV030
