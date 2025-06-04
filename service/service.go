@@ -42,15 +42,6 @@ import (
 	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
-// supports configuring the OpenTelemetry SDK via configuration
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.110.0"),
-	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
-		"configuration for internal telemetry"))
-
 // disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
 var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
