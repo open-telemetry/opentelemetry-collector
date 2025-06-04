@@ -1073,14 +1073,14 @@ func TestPersistentQueue_SizerTypeSwitchFromRequestsToItems(t *testing.T) {
 	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 	// Verify sizer type mismatch is detected - when sizer types don't match,
 	// the queue must fully drain existing data before new sizing takes effect
-	assert.True(t, newPQ.sizerTypeMismatch)
+	assert.True(t, newPQ.sizerTypeMismatch.Load())
 	assert.Equal(t, int64(2), newPQ.Size())
 
 	assert.True(t, consume(newPQ, func(_ context.Context, _ uint64) error { return nil }))
 	assert.True(t, consume(newPQ, func(_ context.Context, _ uint64) error { return nil }))
 
 	// Verify mismatch is resolved after complete draining
-	assert.False(t, newPQ.sizerTypeMismatch)
+	assert.False(t, newPQ.sizerTypeMismatch.Load())
 	assert.Equal(t, int64(0), newPQ.Size())
 
 	// Verify new items-based sizing works correctly

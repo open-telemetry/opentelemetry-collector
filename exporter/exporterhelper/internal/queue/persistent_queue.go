@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -100,7 +101,7 @@ type persistentQueue[T any] struct {
 	refClient       int64
 	stopped         bool
 
-	sizerTypeMismatch       bool
+	sizerTypeMismatch       atomic.Bool
 	drainingComplete        *sync.Cond
 	originalConfiguredSizer request.Sizer[T]
 }
@@ -154,6 +155,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 		return
 	}
 
+	// TODO: Remove legacy format support after 6 months (target: December 2025)
 	// 2. Fallback to legacy individual keys for backward compatibility
 	pq.logger.Info("Loading queue metadata from legacy format")
 	riOp := storage.GetOperation(legacyReadIndexKey)
@@ -233,7 +235,7 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 
 		pq.originalConfiguredSizer = pq.set.sizer
 		pq.set.sizer = restoredSizer
-		pq.sizerTypeMismatch = true
+		pq.sizerTypeMismatch.CompareAndSwap(false, true)
 	}
 
 	pq.readIndex = metadata.ReadIndex
@@ -342,7 +344,7 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 
-	for pq.sizerTypeMismatch {
+	for pq.sizerTypeMismatch.Load() {
 		pq.logger.Debug("Blocking new requests due ti sizer type mismatch, waiting for drain to complete")
 		pq.drainingComplete.Wait()
 	}
@@ -510,12 +512,12 @@ func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr erro
 	}
 
 	// Check if we've completed draining during sizer type mismatch.
-	if pq.sizerTypeMismatch && pq.readIndex == pq.writeIndex && len(pq.currentlyDispatchedItems) == 0 && pq.queueSize == 0 {
+	if pq.sizerTypeMismatch.Load() && pq.readIndex == pq.writeIndex && len(pq.currentlyDispatchedItems) == 0 && pq.queueSize == 0 {
 		pq.logger.Info("Queue drain completed due to sizer type mismatch, allowing new requests")
 
 		pq.set.sizer = pq.originalConfiguredSizer
 		pq.originalConfiguredSizer = nil
-		pq.sizerTypeMismatch = false
+		pq.sizerTypeMismatch.CompareAndSwap(true, false)
 
 		pq.drainingComplete.Broadcast()
 	}
