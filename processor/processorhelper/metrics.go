@@ -51,18 +51,22 @@ func NewMetrics(
 		span.AddEvent("Start processing.", eventOptions)
 		pointsIn := md.DataPointCount()
 
+		protoMarshaler := pmetric.ProtoMarshaler{}
+		incomingBytes := protoMarshaler.MetricsSize(md)
+
 		var errFunc error
 		md, errFunc = metricsFunc(ctx, md)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.recordInOut(ctx, pointsIn, 0)
+			obs.recordInOut(ctx, pointsIn, 0, incomingBytes, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		pointsOut := md.DataPointCount()
-		obs.recordInOut(ctx, pointsIn, pointsOut)
+		outgoingBytes := protoMarshaler.MetricsSize(md)
+		obs.recordInOut(ctx, pointsIn, pointsOut, incomingBytes, outgoingBytes)
 		return nextConsumer.ConsumeMetrics(ctx, md)
 	}, bs.consumerOptions...)
 	if err != nil {

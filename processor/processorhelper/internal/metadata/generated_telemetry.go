@@ -23,11 +23,13 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                  metric.Meter
-	mu                     sync.Mutex
-	registrations          []metric.Registration
-	ProcessorIncomingItems metric.Int64Counter
-	ProcessorOutgoingItems metric.Int64Counter
+	meter                       metric.Meter
+	mu                          sync.Mutex
+	registrations               []metric.Registration
+	ProcessorIncomingItems      metric.Int64Counter
+	ProcessorIncomingItemsBytes metric.Int64Counter
+	ProcessorOutgoingItems      metric.Int64Counter
+	ProcessorOutgoingItemsBytes metric.Int64Counter
 }
 
 // TelemetryBuilderOption applies changes to default builder.
@@ -65,10 +67,22 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
+	builder.ProcessorIncomingItemsBytes, err = builder.meter.Int64Counter(
+		"otelcol_processor_incoming_items_bytes",
+		metric.WithDescription("Number of bytes of items passed to the processor. [alpha]"),
+		metric.WithUnit("{bytes}"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorOutgoingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_outgoing_items",
 		metric.WithDescription("Number of items emitted from the processor. [alpha]"),
 		metric.WithUnit("{items}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorOutgoingItemsBytes, err = builder.meter.Int64Counter(
+		"otelcol_processor_outgoing_items_bytes",
+		metric.WithDescription("Number of bytes of items emitted from the processor. [alpha]"),
+		metric.WithUnit("{bytes}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

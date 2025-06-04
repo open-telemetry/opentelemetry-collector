@@ -14,6 +14,14 @@ Number of log records successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {records} | Sum | Int | true |
 
+### otelcol_receiver_accepted_log_records_bytes
+
+Number of bytes of log records successfully pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
+
 ### otelcol_receiver_accepted_metric_points
 
 Number of metric points successfully pushed into the pipeline. [alpha]
@@ -21,6 +29,14 @@ Number of metric points successfully pushed into the pipeline. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
+
+### otelcol_receiver_accepted_metric_points_bytes
+
+Number of bytes of metric points successfully pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
 
 ### otelcol_receiver_accepted_spans
 
@@ -30,6 +46,14 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_receiver_accepted_spans_bytes
+
+Number of bytes of spans successfully pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
+
 ### otelcol_receiver_refused_log_records
 
 Number of log records that could not be pushed into the pipeline. [alpha]
@@ -37,6 +61,14 @@ Number of log records that could not be pushed into the pipeline. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {records} | Sum | Int | true |
+
+### otelcol_receiver_refused_log_records_bytes
+
+Number of bytes of log records that could not be pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
 
 ### otelcol_receiver_refused_metric_points
 
@@ -46,6 +78,14 @@ Number of metric points that could not be pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {datapoints} | Sum | Int | true |
 
+### otelcol_receiver_refused_metric_points_bytes
+
+Number of bytes of metric points that could not be pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
+
 ### otelcol_receiver_refused_spans
 
 Number of spans that could not be pushed into the pipeline. [alpha]
@@ -53,3 +93,11 @@ Number of spans that could not be pushed into the pipeline. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
+
+### otelcol_receiver_refused_spans_bytes
+
+Number of bytes of spans that could not be pushed into the pipeline. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |

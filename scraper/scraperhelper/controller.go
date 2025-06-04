@@ -240,11 +240,13 @@ func scrapeLogs(c *controller[scraper.Logs], nextConsumer consumer.Logs) {
 		}
 		md.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
 	}
+	protoMarshaler := plog.ProtoMarshaler{}
+	numBytes := protoMarshaler.LogsSize(logs)
 
 	logRecordCount := logs.LogRecordCount()
 	ctx = c.obsrecv.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeLogs(ctx, logs)
-	c.obsrecv.EndMetricsOp(ctx, "", logRecordCount, err)
+	c.obsrecv.EndMetricsOp(ctx, "", logRecordCount, numBytes, err)
 }
 
 func scrapeMetrics(c *controller[scraper.Metrics], nextConsumer consumer.Metrics) {
@@ -260,10 +262,13 @@ func scrapeMetrics(c *controller[scraper.Metrics], nextConsumer consumer.Metrics
 		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
+	protoMarshaler := pmetric.ProtoMarshaler{}
+	numBytes := protoMarshaler.MetricsSize(metrics)
+
 	dataPointCount := metrics.DataPointCount()
 	ctx = c.obsrecv.StartMetricsOp(ctx)
 	err := nextConsumer.ConsumeMetrics(ctx, metrics)
-	c.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
+	c.obsrecv.EndMetricsOp(ctx, "", dataPointCount, numBytes, err)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {

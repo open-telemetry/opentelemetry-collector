@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -32,14 +33,16 @@ func New(nextConsumer consumer.Logs, obsreport *receiverhelper.ObsReport) *Recei
 // Export implements the service Export logs func.
 func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	ld := req.Logs()
-	numSpans := ld.LogRecordCount()
-	if numSpans == 0 {
+	numLogRecords := ld.LogRecordCount()
+	if numLogRecords == 0 {
 		return plogotlp.NewExportResponse(), nil
 	}
+	protoMarshaler := plog.ProtoMarshaler{}
+	numBytes := protoMarshaler.LogsSize(ld)
 
 	ctx = r.obsreport.StartLogsOp(ctx)
 	err := r.nextConsumer.ConsumeLogs(ctx, ld)
-	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+	r.obsreport.EndLogsOp(ctx, dataFormatProtobuf, numLogRecords, numBytes, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown

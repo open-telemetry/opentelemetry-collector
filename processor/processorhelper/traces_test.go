@@ -130,6 +130,12 @@ func TestTraces_RecordInOut(t *testing.T) {
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), incomingTraces))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
+	sizer := &ptrace.ProtoMarshaler{}
+	outTraces, _ := mockAggregate(context.Background(), incomingTraces)
+
+	incomingBytes := int64(sizer.TracesSize(incomingTraces))
+	outgoingBytes := int64(sizer.TracesSize(outTraces))
+
 	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
@@ -137,10 +143,24 @@ func TestTraces_RecordInOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorIncomingItemsBytes(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      incomingBytes,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      1,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItemsBytes(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      outgoingBytes,
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
@@ -169,6 +189,9 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 	require.Error(t, tp.ConsumeTraces(context.Background(), incomingTraces))
 	require.NoError(t, tp.Shutdown(context.Background()))
 
+	sizer := &ptrace.ProtoMarshaler{}
+	incomingBytes := int64(sizer.TracesSize(incomingTraces))
+
 	metadatatest.AssertEqualProcessorIncomingItems(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
@@ -176,7 +199,21 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
 			},
 		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorIncomingItemsBytes(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      incomingBytes,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualProcessorOutgoingItems(t, tel,
+		[]metricdata.DataPoint[int64]{
+			{
+				Value:      0,
+				Attributes: attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+			},
+		}, metricdatatest.IgnoreTimestamp())
+	metadatatest.AssertEqualProcessorOutgoingItemsBytes(t, tel,
 		[]metricdata.DataPoint[int64]{
 			{
 				Value:      0,

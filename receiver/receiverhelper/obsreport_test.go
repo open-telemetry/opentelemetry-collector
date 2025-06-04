@@ -23,8 +23,9 @@ import (
 )
 
 const (
-	transport = "fakeTransport"
-	format    = "fakeFormat"
+	transport        = "fakeTransport"
+	format           = "fakeFormat"
+	numReceivedBytes = 1234
 )
 
 var (
@@ -35,6 +36,7 @@ var (
 
 type testParams struct {
 	items int
+	bytes int
 	err   error
 }
 
@@ -44,8 +46,8 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 13, err: errFake},
-			{items: 42, err: nil},
+			{items: 13, bytes: 1024, err: errFake},
+			{items: 42, bytes: 2048, err: nil},
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ObsReportSettings{
@@ -56,23 +58,26 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			require.NoError(t, err)
 			ctx := rec.StartTracesOp(parentCtx)
 			assert.NotNil(t, ctx)
-			rec.EndTracesOp(ctx, format, params[i].items, param.err)
+			rec.EndTracesOp(ctx, format, params[i].items, params[i].bytes, param.err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
 		require.Len(t, spans, len(params))
 
 		var acceptedSpans, refusedSpans int
+		var acceptedBytes, refusedBytes int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedSpans += params[i].items
+				acceptedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedSpans += params[i].items
+				refusedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -100,6 +105,24 @@ func TestReceiveTraceDataOp(t *testing.T) {
 					Value: int64(refusedSpans),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverAcceptedSpansBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedSpansBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
@@ -109,8 +132,8 @@ func TestReceiveLogsOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 13, err: errFake},
-			{items: 42, err: nil},
+			{items: 13, bytes: 1024, err: errFake},
+			{items: 42, bytes: 2048, err: nil},
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ObsReportSettings{
@@ -122,23 +145,26 @@ func TestReceiveLogsOp(t *testing.T) {
 
 			ctx := rec.StartLogsOp(parentCtx)
 			assert.NotNil(t, ctx)
-			rec.EndLogsOp(ctx, format, params[i].items, param.err)
+			rec.EndLogsOp(ctx, format, params[i].items, params[i].bytes, param.err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
 		require.Len(t, spans, len(params))
 
 		var acceptedLogRecords, refusedLogRecords int
+		var acceptedBytes, refusedBytes int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/LogsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedLogRecords += params[i].items
+				acceptedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedLogRecords += params[i].items
+				refusedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -147,6 +173,7 @@ func TestReceiveLogsOp(t *testing.T) {
 				t.Fatalf("unexpected param: %v", params[i])
 			}
 		}
+
 		metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
@@ -165,6 +192,24 @@ func TestReceiveLogsOp(t *testing.T) {
 					Value: int64(refusedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverAcceptedLogRecordsBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedLogRecordsBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
@@ -174,8 +219,8 @@ func TestReceiveMetricsOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 23, err: errFake},
-			{items: 29, err: nil},
+			{items: 23, bytes: 1024, err: errFake},
+			{items: 29, bytes: 2048, err: nil},
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ObsReportSettings{
@@ -187,23 +232,26 @@ func TestReceiveMetricsOp(t *testing.T) {
 
 			ctx := rec.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
-			rec.EndMetricsOp(ctx, format, params[i].items, param.err)
+			rec.EndMetricsOp(ctx, format, params[i].items, params[i].bytes, param.err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
 		require.Len(t, spans, len(params))
 
 		var acceptedMetricPoints, refusedMetricPoints int
+		var acceptedBytes, refusedBytes int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/MetricsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
 				acceptedMetricPoints += params[i].items
+				acceptedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedMetricPoints += params[i].items
+				refusedBytes += params[i].bytes
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -231,6 +279,24 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Value: int64(refusedMetricPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverAcceptedMetricPointsBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(acceptedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverRefusedMetricPointsBytes(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(refusedBytes),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	})
 }
 
@@ -242,8 +308,8 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	defer parentSpan.End()
 
 	params := []testParams{
-		{items: 17, err: nil},
-		{items: 23, err: errFake},
+		{items: 17, bytes: 1024, err: nil},
+		{items: 23, bytes: 2048, err: errFake},
 	}
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations
@@ -257,12 +323,14 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		require.NoError(t, rerr)
 		ctx := rec.StartTracesOp(longLivedCtx)
 		assert.NotNil(t, ctx)
-		rec.EndTracesOp(ctx, format, params[i].items, params[i].err)
+		rec.EndTracesOp(ctx, format, params[i].items, params[i].bytes, params[i].err)
 	}
 
 	spans := tt.SpanRecorder.Ended()
 	require.Len(t, spans, len(params))
 
+	var acceptedSpans, refusedSpans int
+	var acceptedBytes, refusedBytes int
 	for i, span := range spans {
 		assert.False(t, span.Parent().IsValid())
 		require.Len(t, span.Links(), 1)
@@ -273,10 +341,14 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 		require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.TransportKey, Value: attribute.StringValue(transport)})
 		switch {
 		case params[i].err == nil:
+			acceptedSpans += params[i].items
+			acceptedBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
 			assert.Equal(t, codes.Unset, span.Status().Code)
 		case errors.Is(params[i].err, errFake):
+			refusedSpans += params[i].items
+			refusedBytes += params[i].bytes
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 			require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 			assert.Equal(t, codes.Error, span.Status().Code)
@@ -285,6 +357,43 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 			t.Fatalf("unexpected error: %v", params[i].err)
 		}
 	}
+
+	metadatatest.AssertEqualReceiverAcceptedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(acceptedSpans),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(refusedSpans),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverAcceptedSpansBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(acceptedBytes),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedSpansBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(refusedBytes),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
 func TestCheckReceiverTracesViews(t *testing.T) {
@@ -299,7 +408,7 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := rec.StartTracesOp(context.Background())
 	require.NotNil(t, ctx)
-	rec.EndTracesOp(ctx, format, 7, nil)
+	rec.EndTracesOp(ctx, format, 7, 1024, nil)
 
 	metadatatest.AssertEqualReceiverAcceptedSpans(t, tt,
 		[]metricdata.DataPoint[int64]{
@@ -311,6 +420,24 @@ func TestCheckReceiverTracesViews(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	metadatatest.AssertEqualReceiverRefusedSpans(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverAcceptedSpansBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(1024),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedSpansBytes(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -333,7 +460,7 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := rec.StartMetricsOp(context.Background())
 	require.NotNil(t, ctx)
-	rec.EndMetricsOp(ctx, format, 7, nil)
+	rec.EndMetricsOp(ctx, format, 7, 1024, nil)
 
 	metadatatest.AssertEqualReceiverAcceptedMetricPoints(t, tt,
 		[]metricdata.DataPoint[int64]{
@@ -345,6 +472,24 @@ func TestCheckReceiverMetricsViews(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverAcceptedMetricPointsBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(1024),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedMetricPointsBytes(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(
@@ -367,7 +512,7 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 	require.NoError(t, err)
 	ctx := rec.StartLogsOp(context.Background())
 	require.NotNil(t, ctx)
-	rec.EndLogsOp(ctx, format, 7, nil)
+	rec.EndLogsOp(ctx, format, 7, 1024, nil)
 
 	metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
 		[]metricdata.DataPoint[int64]{
@@ -379,6 +524,24 @@ func TestCheckReceiverLogsViews(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(0),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverAcceptedLogRecordsBytes(t, tt,
+		[]metricdata.DataPoint[int64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Value: int64(1024),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+	metadatatest.AssertEqualReceiverRefusedLogRecordsBytes(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
 				Attributes: attribute.NewSet(

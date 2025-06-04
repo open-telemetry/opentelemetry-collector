@@ -50,19 +50,22 @@ func NewTraces(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 		spansIn := td.SpanCount()
+		protoMarshaler := ptrace.ProtoMarshaler{}
+		incomingBytes := protoMarshaler.TracesSize(td)
 
 		var errFunc error
 		td, errFunc = tracesFunc(ctx, td)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.recordInOut(ctx, spansIn, 0)
+			obs.recordInOut(ctx, spansIn, 0, incomingBytes, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		spansOut := td.SpanCount()
-		obs.recordInOut(ctx, spansIn, spansOut)
+		outgoingBytes := protoMarshaler.TracesSize(td)
+		obs.recordInOut(ctx, spansIn, spansOut, incomingBytes, outgoingBytes)
 		return nextConsumer.ConsumeTraces(ctx, td)
 	}, bs.consumerOptions...)
 	if err != nil {

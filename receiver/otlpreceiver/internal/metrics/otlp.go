@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -36,10 +37,12 @@ func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (p
 	if dataPointCount == 0 {
 		return pmetricotlp.NewExportResponse(), nil
 	}
+	protoMarshaler := pmetric.ProtoMarshaler{}
+	numBytes := protoMarshaler.MetricsSize(md)
 
 	ctx = r.obsreport.StartMetricsOp(ctx)
 	err := r.nextConsumer.ConsumeMetrics(ctx, md)
-	r.obsreport.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
+	r.obsreport.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, numBytes, err)
 
 	// Use appropriate status codes for permanent/non-permanent errors
 	// If we return the error straightaway, then the grpc implementation will set status code to Unknown
