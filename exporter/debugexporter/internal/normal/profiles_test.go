@@ -27,6 +27,11 @@ func TestMarshalProfiles(t *testing.T) {
 			name: "one profile",
 			input: func() pprofile.Profiles {
 				profiles := pprofile.NewProfiles()
+				dic := profiles.ProfilesDictionary()
+				a := dic.AttributeTable().AppendEmpty()
+				a.SetKey("key1")
+				a.Value().SetStr("value1")
+
 				profile := profiles.ResourceProfiles().AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 				profiles.ResourceProfiles().At(0).SetSchemaUrl("https://example.com/resource")
 				profiles.ResourceProfiles().At(0).Resource().Attributes().PutStr("resourceKey", "resourceValue")
@@ -38,9 +43,6 @@ func TestMarshalProfiles(t *testing.T) {
 				profile.Sample().AppendEmpty()
 				profile.Sample().AppendEmpty()
 				profile.AttributeIndices().Append(0)
-				a := profile.AttributeTable().AppendEmpty()
-				a.SetKey("key1")
-				a.Value().SetStr("value1")
 				return profiles
 			}(),
 			expected: `ResourceProfiles #0 [https://example.com/resource] resourceKey=resourceValue
