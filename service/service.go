@@ -225,7 +225,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(mpConfig.Readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && len(mpConfig.Readers) != 0 {
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
@@ -240,10 +240,6 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
 		logger.Info("Skipped telemetry setup.")
 		return
-	}
-
-	if len(cfg.Address) != 0 {
-		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
 	if lmp, ok := mp.(interface {
