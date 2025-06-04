@@ -24,135 +24,38 @@ func TestLocationEqual(t *testing.T) {
 		},
 		{
 			name: "non-empty locations",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
+			dest: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
 			want: true,
 		},
 		{
 			name: "with non-equal mapping index",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(2)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
+			dest: buildLocation(2, 2, []int32{3}, true, buildLine(1, 2, 3)),
 			want: false,
 		},
 		{
 			name: "with non-equal address",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(3)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
+			dest: buildLocation(1, 3, []int32{3}, true, buildLine(1, 2, 3)),
 			want: false,
 		},
 		{
 			name: "with non-equal attribute indices",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(2)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
+			dest: buildLocation(1, 2, []int32{5}, true, buildLine(1, 2, 3)),
 			want: false,
 		},
 		{
 			name: "with non-equal is folded",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(false)
-				l.Line().AppendEmpty()
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
+			dest: buildLocation(1, 2, []int32{3}, false, buildLine(1, 2, 3)),
 			want: false,
 		},
 		{
 			name: "with non-equal lines",
-			orig: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				l.Line().AppendEmpty()
-				return l
-			}(),
-			dest: func() Location {
-				l := NewLocation()
-				l.SetMappingIndex(1)
-				l.SetAddress(2)
-				l.AttributeIndices().Append(3)
-				l.SetIsFolded(true)
-				li := l.Line().AppendEmpty()
-				li.SetLine(3)
-				return l
-			}(),
+			orig: buildLocation(1, 2, []int32{3}, true, buildLine(4, 5, 6)),
+			dest: buildLocation(1, 2, []int32{3}, true, buildLine(1, 2, 3)),
 			want: false,
 		},
 	} {
@@ -164,4 +67,14 @@ func TestLocationEqual(t *testing.T) {
 			}
 		})
 	}
+}
+
+func buildLocation(mapIdx int32, addr uint64, attrIdxs []int32, isFolded bool, line Line) Location {
+	l := NewLocation()
+	l.SetMappingIndex(mapIdx)
+	l.SetAddress(addr)
+	l.AttributeIndices().FromRaw(attrIdxs)
+	l.SetIsFolded(isFolded)
+	line.MoveTo(l.Line().AppendEmpty())
+	return l
 }
