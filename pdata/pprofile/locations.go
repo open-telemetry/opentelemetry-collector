@@ -46,18 +46,6 @@ func PutLocation(table LocationSlice, record locatable, loc Location) error {
 			// Location already exists, nothing to do.
 			return nil
 		}
-
-		// If the location table already contains the key/value pair, just update the index.
-		for j := range table.Len() {
-			a := table.At(j)
-			if a.Equal(loc) {
-				if j > math.MaxInt32 {
-					return errTooManyLocationTableEntries
-				}
-				record.LocationIndices().SetAt(i, int32(j)) //nolint:gosec // overflow checked
-				return nil
-			}
-		}
 	}
 
 	if record.LocationIndices().Len() >= math.MaxInt32 {
