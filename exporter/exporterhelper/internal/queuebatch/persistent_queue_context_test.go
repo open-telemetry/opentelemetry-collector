@@ -168,9 +168,9 @@ func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_SpanContextUnmarsha
 
 		// Manually mark items as dispatched (simulating them being read but not finished)
 		pq.mu.Lock()
-		pq.currentlyDispatchedItems = []uint64{0, 1}
+		pq.metadata.CurrentlyDispatchedItems = []uint64{0, 1}
 		// Update the storage with currently dispatched items
-		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.metadata.CurrentlyDispatchedItems)))
 		pq.mu.Unlock()
 
 		// Shutdown the queue
@@ -225,9 +225,9 @@ func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_SpanContextUnmarsha
 
 		// Manually mark items as dispatched (simulating them being read but not finished)
 		pq.mu.Lock()
-		pq.currentlyDispatchedItems = []uint64{0, 1}
+		pq.metadata.CurrentlyDispatchedItems = []uint64{0, 1}
 		// Update the storage with currently dispatched items
-		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.currentlyDispatchedItems)))
+		require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.metadata.CurrentlyDispatchedItems)))
 		pq.mu.Unlock()
 
 		// Corrupt the stored context data with invalid JSON
