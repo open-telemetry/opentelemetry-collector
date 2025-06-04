@@ -15,7 +15,7 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableAddressFieldForInternalTelemetry",
 	featuregate.StageStable,
 	featuregate.WithRegisterFromVersion("v0.111.0"),
-	featuregate.WithRegisterToVersion("v0.123.0"),
+	featuregate.WithRegisterToVersion("v0.127.0"),
 	featuregate.WithRegisterDescription("controls whether the deprecated address field for internal telemetry is still supported"))
 
 // Config defines the configurable settings for service telemetry.
