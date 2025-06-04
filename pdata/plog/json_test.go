@@ -44,6 +44,7 @@ var logsOTLP = func() Logs {
 	lg.SetObservedTimestamp(pcommon.Timestamp(1684623646539558000))
 	lg.Attributes().PutStr("sdkVersion", "1.0.1")
 	lg.SetFlags(DefaultLogRecordFlags.WithIsSampled(true))
+	lg.SetEventName("someEvent")
 	return ld
 }()
 
@@ -57,7 +58,7 @@ func TestLogsJSON(t *testing.T) {
 	assert.Equal(t, logsOTLP, got)
 }
 
-var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"droppedAttributesCount":1},"scopeLogs":[{"scope":{"name":"name","version":"version","droppedAttributesCount":1},"logRecords":[{"timeUnixNano":"1684617382541971000","observedTimeUnixNano":"1684623646539558000","severityNumber":17,"severityText":"Error","body":{"stringValue":"hello world"},"attributes":[{"key":"sdkVersion","value":{"stringValue":"1.0.1"}}],"droppedAttributesCount":1,"flags":1,"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"schemaUrl":"scope_schema"}],"schemaUrl":"resource_schema"}]}`
+var logsJSON = `{"resourceLogs":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}],"droppedAttributesCount":1},"scopeLogs":[{"scope":{"name":"name","version":"version","droppedAttributesCount":1},"logRecords":[{"eventName":"someEvent","timeUnixNano":"1684617382541971000","observedTimeUnixNano":"1684623646539558000","severityNumber":17,"severityText":"Error","body":{"stringValue":"hello world"},"attributes":[{"key":"sdkVersion","value":{"stringValue":"1.0.1"}}],"droppedAttributesCount":1,"flags":1,"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"schemaUrl":"scope_schema"}],"schemaUrl":"resource_schema"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
