@@ -22,7 +22,7 @@ func FromLocationIndices(table LocationSlice, record locatable) LocationSlice {
 	m := NewLocationSlice()
 	m.EnsureCapacity(record.LocationIndices().Len())
 
-	for i := 0; i < record.LocationIndices().Len(); i++ {
+	for i := range record.LocationIndices().Len() {
 		l := table.At(int(record.LocationIndices().At(i)))
 		l.CopyTo(m.AppendEmpty())
 	}
