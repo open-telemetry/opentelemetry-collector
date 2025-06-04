@@ -79,7 +79,7 @@ type LogsBuilder struct {
 	logsBuffer          plog.Logs
 	logRecordsBuffer    plog.LogRecordSlice
 	buildInfo           component.BuildInfo  // contains version information.
-	{{- if .ResourceAttributes }}
+	{{- if and .Events .ResourceAttributes }}
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	{{- end }}
@@ -112,6 +112,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- end }}
 	{{- end }}
+	{{- if .Events }}
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{- if $attr.Warnings.IfEnabled }}
 	if lbc.ResourceAttributes.{{ $name.Render }}.Enabled {
@@ -129,6 +130,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- end }}
 	{{- end }}
+	{{- end }}
 	lb := &LogsBuilder{
 		{{- if .Events }}
 		config:        lbc,
@@ -139,7 +141,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 		{{- range $name, $event := .Events }}
 		event{{ $name.Render }}: newEvent{{ $name.Render }}(lbc.Events.{{ $name.Render }}),
 		{{- end }}
-		{{ if .ResourceAttributes -}}
+		{{ if and .Events .ResourceAttributes -}}
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 		{{- end }}
@@ -217,7 +219,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
         lb.logRecordsBuffer = plog.NewLogRecordSlice()
     }
 
-    {{ if .ResourceAttributes -}}
+    {{ if and .Events .ResourceAttributes -}}
 	for attr, filter := range lb.resourceAttributeIncludeFilter {
 		if val, ok := rl.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
 			return
