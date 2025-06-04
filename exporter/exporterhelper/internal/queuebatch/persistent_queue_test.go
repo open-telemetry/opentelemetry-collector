@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -28,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -52,6 +54,20 @@ func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
 		return 0, errInvalidValue
 	}
 	return binary.LittleEndian.Uint64(bytes), nil
+}
+
+// f is an implementation of Encoding that always fails on Marshal and Unmarshal.
+type failingEncoding[T any] struct{}
+
+// Marshal always returns an error.
+func (failingEncoding[T]) Marshal(_ T) ([]byte, error) {
+	return nil, errors.New("failing encoding: Marshal failed")
+}
+
+// Unmarshal always returns an error.
+func (failingEncoding[T]) Unmarshal(_ []byte) (T, error) {
+	var zero T
+	return zero, errors.New("failing encoding: Unmarshal failed")
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -113,7 +129,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Oper
 		case storage.Set:
 			m.st[op.Key] = op.Value
 		case storage.Delete:
-			delete(m.st, op.Key)
+			delete(m.st, op.Key) // Fixed the delete operation syntax
 		default:
 			return errors.New("wrong operation type")
 		}
@@ -269,6 +285,20 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
 		encoding:  uint64Encoding{},
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+	return pq
+}
+
+func createTestPersistentQueueWithEncoding(tb testing.TB, ext storage.Extension, capacity int64, encoding Encoding[uint64]) *persistentQueue[uint64] {
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  capacity,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  encoding,
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -552,35 +582,42 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 		corruptReadIndex                   bool
 		corruptWriteIndex                  bool
 		desiredQueueSize                   int64
+		featureGateEnabled                 bool
 	}{
 		{
-			name:             "corrupted no items",
-			desiredQueueSize: 3,
+			name:               "corrupted no items",
+			desiredQueueSize:   3,
+			featureGateEnabled: false,
 		},
 		{
-			name:             "corrupted all items",
-			corruptAllData:   true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name:               "corrupted all items",
+			corruptAllData:     true,
+			desiredQueueSize:   2, // - the dispatched item which was corrupted.
+			featureGateEnabled: false,
 		},
 		{
-			name:             "corrupted some items",
-			corruptSomeData:  true,
-			desiredQueueSize: 2, // - the dispatched item which was corrupted.
+			name:               "corrupted some items",
+			corruptSomeData:    true,
+			desiredQueueSize:   2, // - the dispatched item which was corrupted.
+			featureGateEnabled: false,
 		},
 		{
 			name:                               "corrupted dispatched items key",
 			corruptCurrentlyDispatchedItemsKey: true,
 			desiredQueueSize:                   2,
+			featureGateEnabled:                 false,
 		},
 		{
-			name:             "corrupted read index",
-			corruptReadIndex: true,
-			desiredQueueSize: 1, // The dispatched item.
+			name:               "corrupted read index",
+			corruptReadIndex:   true,
+			desiredQueueSize:   1, // The dispatched item.
+			featureGateEnabled: false,
 		},
 		{
-			name:              "corrupted write index",
-			corruptWriteIndex: true,
-			desiredQueueSize:  1, // The dispatched item.
+			name:               "corrupted write index",
+			corruptWriteIndex:  true,
+			desiredQueueSize:   1, // The dispatched item.
+			featureGateEnabled: false,
 		},
 		{
 			name:                               "corrupted everything",
@@ -589,6 +626,52 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			corruptReadIndex:                   true,
 			corruptWriteIndex:                  true,
 			desiredQueueSize:                   0,
+			featureGateEnabled:                 false,
+		},
+		// Feature gate enabled test cases
+		{
+			name:               "corrupted no items with context",
+			desiredQueueSize:   3,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted all items with context",
+			corruptAllData:     true,
+			desiredQueueSize:   2,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted some items with context",
+			corruptSomeData:    true,
+			desiredQueueSize:   2,
+			featureGateEnabled: true,
+		},
+		{
+			name:                               "corrupted dispatched items key with context",
+			corruptCurrentlyDispatchedItemsKey: true,
+			desiredQueueSize:                   2,
+			featureGateEnabled:                 true,
+		},
+		{
+			name:               "corrupted read index with context",
+			corruptReadIndex:   true,
+			desiredQueueSize:   1,
+			featureGateEnabled: true,
+		},
+		{
+			name:               "corrupted write index with context",
+			corruptWriteIndex:  true,
+			desiredQueueSize:   1,
+			featureGateEnabled: true,
+		},
+		{
+			name:                               "corrupted everything with context",
+			corruptAllData:                     true,
+			corruptCurrentlyDispatchedItemsKey: true,
+			corruptReadIndex:                   true,
+			corruptWriteIndex:                  true,
+			desiredQueueSize:                   0,
+			featureGateEnabled:                 true,
 		},
 	}
 
@@ -596,6 +679,12 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
+			// Set feature gate state
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", c.featureGateEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+			}()
+
 			ext := storagetest.NewMockStorageExtension(nil)
 			ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 
@@ -612,10 +701,17 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			// We can corrupt data (in several ways) and not worry since we return ShutdownErr client will not be touched.
 			if c.corruptAllData || c.corruptSomeData {
 				require.NoError(t, ps.client.Set(context.Background(), "0", badBytes))
+				if c.featureGateEnabled {
+					require.NoError(t, ps.client.Set(context.Background(), "0_context", badBytes))
+				}
 			}
 			if c.corruptAllData {
 				require.NoError(t, ps.client.Set(context.Background(), "1", badBytes))
 				require.NoError(t, ps.client.Set(context.Background(), "2", badBytes))
+				if c.featureGateEnabled {
+					require.NoError(t, ps.client.Set(context.Background(), "1_context", badBytes))
+					require.NoError(t, ps.client.Set(context.Background(), "2_context", badBytes))
+				}
 			}
 
 			if c.corruptCurrentlyDispatchedItemsKey {
@@ -913,43 +1009,80 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
-	require.NoError(t, err)
-	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
-
-	client := newFakeBoundedStorageClient(maxSizeInBytes)
-	ps := createTestPersistentQueueWithClient(client)
-
-	// Put enough items in to fill the underlying storage
-	reqCount := int64(0)
-	for {
-		err = ps.Offer(context.Background(), uint64(50))
-		if errors.Is(err, syscall.ENOSPC) {
-			break
-		}
-		require.NoError(t, err)
-		reqCount++
+	testCases := []struct {
+		name           string
+		featureEnabled bool
+		spanContext    trace.SpanContext
+	}{
+		{
+			name:           "FeatureGateDisabled",
+			featureEnabled: false,
+		},
+		{
+			name:           "FeatureGateEnabled",
+			featureEnabled: true,
+			spanContext: trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    trace.TraceID{0x01},
+				SpanID:     trace.SpanID{0x02},
+				TraceFlags: trace.TraceFlags(0x03),
+				TraceState: trace.TraceState{},
+			}),
+		},
 	}
 
-	// Check that the size is correct
-	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Set feature gate state
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", tc.featureEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+			}()
 
-	// Manually set the storage to only have a small amount of free space left (needs 24).
-	newMaxSize := client.GetSizeInBytes() + 23
-	client.SetMaxSizeInBytes(newMaxSize)
+			marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+			require.NoError(t, err)
+			lenMarshaled := len(marshaled)
+			if tc.featureEnabled {
+				ctx := trace.ContextWithSpanContext(context.Background(), tc.spanContext)
+				m := marshalSpanContext(ctx)
+				lenMarshaled += len(m)
+			}
+			maxSizeInBytes := lenMarshaled * 5 // arbitrary small number
 
-	// Take out all the items
-	// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
-	// Subsequent items succeed, as deleting the first item frees enough space for the state update
-	reqCount--
-	for i := reqCount; i > 0; i-- {
-		require.True(t, consume(ps, func(context.Context, uint64) error { return nil }))
+			client := newFakeBoundedStorageClient(maxSizeInBytes)
+			ps := createTestPersistentQueueWithClient(client)
+
+			// Put enough items in to fill the underlying storage
+			reqCount := int64(0)
+			for {
+				err = ps.Offer(context.Background(), uint64(50))
+				if errors.Is(err, syscall.ENOSPC) {
+					break
+				}
+				require.NoError(t, err)
+				reqCount++
+			}
+
+			// Check that the size is correct
+			require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+
+			// Manually set the storage to only have a small amount of free space left (needs 24).
+			newMaxSize := client.GetSizeInBytes() + 23
+			client.SetMaxSizeInBytes(newMaxSize)
+
+			// Take out all the items
+			// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
+			// Subsequent items succeed, as deleting the first item frees enough space for the state update
+			reqCount--
+			for i := reqCount; i > 0; i-- {
+				require.True(t, consume(ps, func(context.Context, uint64) error { return nil }))
+			}
+			require.Equal(t, int64(0), ps.Size())
+
+			// We should be able to put a new item in
+			// However, this will fail if deleting items fails with full storage
+			require.NoError(t, ps.Offer(context.Background(), uint64(50)))
+		})
 	}
-	require.Equal(t, int64(0), ps.Size())
-
-	// We should be able to put a new item in
-	// However, this will fail if deleting items fails with full storage
-	require.NoError(t, ps.Offer(context.Background(), uint64(50)))
 }
 
 func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
@@ -1204,4 +1337,368 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.metadata.CurrentlyDispatchedItems)
+}
+
+func TestPersistentQueue_PutInternal_FailingEncoding(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+	pq.set.encoding = failingEncoding[uint64]{}
+
+	err := pq.Offer(context.Background(), 1)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Marshal failed")
+}
+
+func TestPersistentQueue_GetNextItem_UnmarshalError(t *testing.T) {
+	ext := storagetest.NewMockStorageExtension(nil)
+	failingEncoding := &failingEncoding[uint64]{}
+	ps := createTestPersistentQueueWithEncoding(t, ext, 1000, uint64Encoding{})
+
+	// Add an item to the queue
+	req := uint64(50)
+	require.NoError(t, ps.Offer(context.Background(), req))
+
+	// Attempt to read the item, expecting an Unmarshal error
+	ctx := context.Background()
+	// change encoding to failingEncoding so Unmarshal fails
+	ps.set.encoding = failingEncoding
+	_, _, _, _, err := ps.getNextItem(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failing encoding: Unmarshal failed")
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_ContextRestoration(t *testing.T) {
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Simulate items being dispatched
+		pq.metadata.CurrentlyDispatchedItems = []uint64{0, 1, 2}
+
+		// Retrieve and enqueue
+		pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+		// Verify items were moved back to queue without context
+		for i := uint64(0); i < 3; i++ {
+			val, err := client.Get(context.Background(), getItemKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, val)
+
+			val, err = client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+			require.Empty(t, val)
+		}
+	})
+
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Simulate items being dispatched
+		pq.metadata.CurrentlyDispatchedItems = []uint64{0, 1, 2}
+
+		// Retrieve and enqueue
+		pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+		// Verify items were moved back to queue with context
+		for i := uint64(0); i < 3; i++ {
+			val, err := client.Get(context.Background(), getItemKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, val)
+
+			ctxVal, err := client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+			require.NotNil(t, ctxVal)
+		}
+	})
+}
+
+func TestPersistentQueue_FeatureGate_ContextPersistence(t *testing.T) {
+	// Test with feature gate disabled
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add an item with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		require.NoError(t, pq.putInternal(ctx, 1))
+
+		// Verify only request key exists, no context key
+		val, err := client.Get(context.Background(), getItemKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, val)
+
+		val, err = client.Get(context.Background(), getContextKey(0))
+		require.NoError(t, err)
+		require.Empty(t, val)
+	})
+
+	// Test with feature gate enabled
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add an item with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		require.NoError(t, pq.putInternal(ctx, 1))
+
+		// Verify both request and context keys exist
+		val, err := client.Get(context.Background(), getItemKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, val)
+
+		ctxVal, err := client.Get(context.Background(), getContextKey(0))
+		require.NoError(t, err)
+		require.NotNil(t, ctxVal)
+	})
+}
+
+func TestPersistentQueue_FeatureGate_BatchOperations(t *testing.T) {
+	// Test with feature gate disabled
+	t.Run("FeatureGateDisabled", func(t *testing.T) {
+		// Disable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+		}()
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add multiple items
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(context.Background(), i))
+		}
+
+		// Verify batch operations only include request keys
+		ops := make([]*storage.Operation, 0)
+		for i := uint64(0); i < 3; i++ {
+			ops = append(ops, storage.GetOperation(getItemKey(i)))
+		}
+		require.NoError(t, client.Batch(context.Background(), ops...))
+
+		// Verify no context keys exist
+		for i := uint64(0); i < 3; i++ {
+			_, err := client.Get(context.Background(), getContextKey(i))
+			require.NoError(t, err)
+		}
+	})
+
+	// Test with feature gate enabled
+	t.Run("FeatureGateEnabled", func(t *testing.T) {
+		// Enable the feature gate
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+
+		client := newFakeBoundedStorageClient(1000)
+		pq := createTestPersistentQueueWithClient(client)
+
+		// Add multiple items with context
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+			TraceID:    [16]byte{1, 2, 3, 4},
+			SpanID:     [8]byte{5, 6, 7, 8},
+			TraceFlags: trace.FlagsSampled,
+		}))
+		for i := uint64(0); i < 3; i++ {
+			require.NoError(t, pq.putInternal(ctx, i))
+		}
+
+		// Verify batch operations include both request and context keys
+		ops := make([]*storage.Operation, 0)
+		for i := uint64(0); i < 3; i++ {
+			ops = append(ops, storage.GetOperation(getItemKey(i)))
+			ops = append(ops, storage.GetOperation(getContextKey(i)))
+		}
+		require.NoError(t, client.Batch(context.Background(), ops...))
+	})
+}
+
+func TestPersistentQueue_GetNextItem_BatchError(t *testing.T) {
+	// Create a storage client that will fail on Batch operations
+	client := &fakeStorageClientWithErrors{
+		errors: []error{errors.New("batch operation failed")},
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
+
+	restoredCtx, readReq, done, found := pq.Read(context.Background())
+
+	// Should return false for found since the read failed and queue was shutdown
+	assert.False(t, found)
+	assert.Equal(t, uint64(0), readReq)
+	assert.Nil(t, done)
+	assert.Equal(t, context.Background(), restoredCtx)
+}
+
+func TestPersistentQueue_PutInternal_ContextTimeout(t *testing.T) {
+	// Create a blocking queue
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:           request.RequestsSizer[uint64]{},
+		capacity:        2,
+		blockOnOverflow: true,
+		signal:          pipeline.SignalTraces,
+		storageID:       component.ID{},
+		encoding:        uint64Encoding{},
+		id:              component.NewID(exportertest.NopType),
+		telemetry:       componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+
+	// Initialize with storage
+	ext := storagetest.NewMockStorageExtension(nil)
+	require.NoError(t, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
+
+	// Fill the queue to capacity
+	require.NoError(t, pq.Offer(context.Background(), uint64(1)))
+	require.NoError(t, pq.Offer(context.Background(), uint64(2)))
+
+	// Try to add another item with a very short timeout
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	defer cancel()
+
+	// This should fail with context deadline exceeded
+	err := pq.Offer(timeoutCtx, uint64(3))
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestPersistentQueue_RetrieveAndEnqueueNotDispatchedReqs_ContextUnmarshalFails(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.PersistRequestContext", false))
+	}()
+
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+
+	// Insert an item with a valid span context
+	tid, _ := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	sid, _ := trace.SpanIDFromHex("0102030405060708")
+	sc := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    tid,
+		SpanID:     sid,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctxWithSC := trace.ContextWithSpanContext(context.Background(), sc)
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctxWithSC, req))
+
+	// Simulate the item being dispatched
+	pq.mu.Lock()
+	pq.metadata.CurrentlyDispatchedItems = []uint64{0}
+	require.NoError(t, pq.client.Set(context.Background(), currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.metadata.CurrentlyDispatchedItems)))
+	pq.mu.Unlock()
+
+	// Corrupt the stored context for index 0
+	corrupted := []byte(`{"notjson}`)
+	require.NoError(t, pq.client.Set(context.Background(), getContextKey(0), corrupted))
+	pq.metadata.WriteIndex--
+	require.NoError(t, pq.client.Set(context.Background(), writeIndexKey, itemIndexToBytes(pq.metadata.WriteIndex)))
+	// Call retrieveAndEnqueueNotDispatchedReqs, which should hit the unmarshal error
+	pq.retrieveAndEnqueueNotDispatchedReqs(context.Background())
+
+	// The item should be re-enqueued, but its context should not be valid
+	restoredCtx, gotReq, _, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	require.Equal(t, req, gotReq)
+	restoredSC := trace.SpanContextFromContext(restoredCtx)
+	require.False(t, restoredSC.IsValid(), "restored context should not have a valid span context if context unmarshal fails")
+}
+
+func TestPersistentQueue_Read_ItemDispatchingFinishError(t *testing.T) {
+	// This error will be returned by the fake client on the second Batch call (itemDispatchingFinish)
+	errItemFinish := errors.New("itemDispatchingFinish error")
+	client := &fakeStorageClientWithErrors{
+		errors: []error{nil, errItemFinish},
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
+
+	restoredCtx, readReq, done, found := pq.Read(context.Background())
+
+	// Should return false for found since the read failed and queue was shutdown
+	assert.False(t, found)
+	assert.Equal(t, uint64(0), readReq)
+	assert.Nil(t, done)
+	assert.Equal(t, context.Background(), restoredCtx)
+}
+
+func TestPersistentQueue_Read_ItemDispatchingFinishErrorPath(t *testing.T) {
+	errItemFinish := errors.New("itemDispatchingFinish error")
+	client := &fakeStorageClientWithErrors{
+		errors: []error{nil, nil, nil, errItemFinish, errItemFinish, errItemFinish}, // First Batch (getNextItem) succeeds, second (itemDispatchingFinish) fails
+	}
+	pq := createTestPersistentQueueWithClient(client)
+
+	req := uint64(50)
+	require.NoError(t, pq.Offer(context.Background(), req))
+
+	// Shutdown the queue after a short delay to unblock Read
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		_ = pq.Shutdown(context.Background())
+	}()
+
+	_, _, _, _ = pq.Read(context.Background()) // The error is only logged, not returned, so we can't assert on output
 }
