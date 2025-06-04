@@ -86,82 +86,26 @@ func TestLineEqual(t *testing.T) {
 		},
 		{
 			name: "with non-empty lines",
-			orig: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
-			dest: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
+			orig: buildLine(1, 2, 3),
+			dest: buildLine(1, 2, 3),
 			want: true,
 		},
 		{
 			name: "with non-equal column",
-			orig: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
-			dest: func() Line {
-				l := NewLine()
-				l.SetColumn(2)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
+			orig: buildLine(1, 2, 3),
+			dest: buildLine(2, 2, 3),
 			want: false,
 		},
 		{
 			name: "with non-equal function index",
-			orig: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
-			dest: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(3)
-				l.SetLine(3)
-
-				return l
-			}(),
+			orig: buildLine(1, 2, 3),
+			dest: buildLine(1, 3, 3),
 			want: false,
 		},
 		{
 			name: "with non-equal line",
-			orig: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(3)
-
-				return l
-			}(),
-			dest: func() Line {
-				l := NewLine()
-				l.SetColumn(1)
-				l.SetFunctionIndex(2)
-				l.SetLine(4)
-
-				return l
-			}(),
+			orig: buildLine(1, 2, 3),
+			dest: buildLine(1, 2, 4),
 			want: false,
 		},
 	} {
@@ -173,4 +117,13 @@ func TestLineEqual(t *testing.T) {
 			}
 		})
 	}
+}
+
+func buildLine(col int64, funcIdx int32, line int64) Line {
+	l := NewLine()
+	l.SetColumn(col)
+	l.SetFunctionIndex(funcIdx)
+	l.SetLine(line)
+
+	return l
 }
