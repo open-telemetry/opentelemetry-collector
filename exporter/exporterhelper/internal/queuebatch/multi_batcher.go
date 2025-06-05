@@ -13,6 +13,14 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
+type batcherSettings[T any] struct {
+	sizerType   request.SizerType
+	sizer       request.Sizer[T]
+	partitioner Partitioner[T]
+	next        sender.SendFunc[T]
+	maxWorkers  int
+}
+
 type multiBatcher struct {
 	cfg         BatchConfig
 	workerPool  chan struct{}
@@ -45,15 +53,7 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 	}
 
 	if bSet.partitioner == nil {
-		mb.singleShard = &shardBatcher{
-			cfg:         bCfg,
-			workerPool:  mb.workerPool,
-			sizerType:   bSet.sizerType,
-			sizer:       bSet.sizer,
-			consumeFunc: bSet.next,
-			stopWG:      sync.WaitGroup{},
-			shutdownCh:  make(chan struct{}, 1),
-		}
+		mb.singleShard = newShard(mb.cfg, mb.sizerType, mb.sizer, mb.workerPool, mb.consumeFunc)
 	} else {
 		mb.shards = xsync.NewMapOf[string, *shardBatcher]()
 	}
@@ -67,15 +67,7 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 
 	key := mb.partitioner.GetKey(ctx, req)
 	result, _ := mb.shards.LoadOrCompute(key, func() *shardBatcher {
-		s := &shardBatcher{
-			cfg:         mb.cfg,
-			workerPool:  mb.workerPool,
-			sizerType:   mb.sizerType,
-			sizer:       mb.sizer,
-			consumeFunc: mb.consumeFunc,
-			stopWG:      sync.WaitGroup{},
-			shutdownCh:  make(chan struct{}, 1),
-		}
+		s := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.workerPool, mb.consumeFunc)
 		s.start(ctx, nil)
 		return s
 	})
