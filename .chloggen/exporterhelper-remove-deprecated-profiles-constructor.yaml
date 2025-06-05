@@ -10,7 +10,7 @@ component: exporterhelper
 note: Remove deprecated NewProfilesRequestExporter function from xexporterhelper package
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [13157]
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
