@@ -404,6 +404,48 @@ func TestQueueBatch_MergeOrSplit(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := newTestConfig()
+	cfg.Batch = &BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		MinSize:      10,
+	}
+
+	type partitionKey struct{}
+	set := newFakeRequestSettings()
+	set.Partitioner = NewPartitioner(func(ctx context.Context, _ request.Request) string {
+		key := ctx.Value(partitionKey{}).(string)
+		return key
+	})
+
+	qb, err := NewQueueBatch(set, cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	// should be sent right away by reaching the minimum items size.
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	// Neither batch should be flushed since they haven't reached min threshold.
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, 0, sink.ItemsCount())
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 16
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 28
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func TestQueueBatch_Shutdown(t *testing.T) {
 	sink := requesttest.NewSink()
 	qb, err := NewQueueBatch(newFakeRequestSettings(), newTestConfig(), sink.Export)
