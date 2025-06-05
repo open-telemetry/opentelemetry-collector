@@ -100,7 +100,7 @@ func BenchmarkFromLocationIndices(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		_ = FromLocationIndices(table, obj)
 	}
 }
