@@ -1235,10 +1235,10 @@ func TestPersistentQueue_SizerLegacyFormatMigration(t *testing.T) {
 	expectedQueueSize := int64(queueSize) + int64(len(currentlyDispatchedItems))*pq.set.sizer.Sizeof(req)
 
 	// Assert queue state
-	assert.Equal(t, readIndex, pq.readIndex)
-	assert.Equal(t, expectedWriteIndex, pq.writeIndex)
+	assert.Equal(t, readIndex, pq.metadata.ReadIndex)
+	assert.Equal(t, expectedWriteIndex, pq.metadata.WriteIndex)
 	assert.Equal(t, expectedQueueSize, pq.Size())
-	assert.Empty(t, pq.currentlyDispatchedItems)
+	assert.Empty(t, pq.metadata.CurrentlyDispatchedItems)
 
 	// Assert new metadata in storage
 	metadataBytes, err := pq.client.Get(context.Background(), queueMetadataKey)
