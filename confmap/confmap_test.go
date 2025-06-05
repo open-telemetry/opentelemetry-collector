@@ -1151,3 +1151,78 @@ func TestMapMerge(t *testing.T) {
 		})
 	}
 }
+
+func TestConfIsNil(t *testing.T) {
+	testCases := []struct {
+		name         string
+		input        map[string]any
+		expectIsNil  bool
+		subExpectNil bool
+		subExpectErr string
+	}{
+		{
+			name:         "nil input",
+			input:        nil,
+			expectIsNil:  true,
+			subExpectNil: true,
+		},
+		{
+			name:         "empty map",
+			input:        map[string]any{},
+			expectIsNil:  false,
+			subExpectNil: true,
+		},
+		{
+			name:         "nil subkey",
+			input:        map[string]any{"foo": nil},
+			expectIsNil:  false,
+			subExpectNil: true,
+		},
+		{
+			name:         "empty subkey",
+			input:        map[string]any{"foo": map[string]any{}},
+			expectIsNil:  false,
+			subExpectNil: false,
+		},
+		{
+			name:         "non-empty map",
+			input:        map[string]any{"foo": map[string]any{"bar": 42}},
+			expectIsNil:  false,
+			subExpectNil: false,
+		},
+		{
+			name:         "non-map subkey",
+			input:        map[string]any{"foo": 123},
+			expectIsNil:  false,
+			subExpectNil: false,
+			subExpectErr: "unexpected sub-config value kind",
+		},
+	}
+
+	const subKey = "foo"
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := NewFromStringMap(tc.input)
+			if tc.expectIsNil {
+				assert.Empty(t, conf.AllKeys())
+				assert.Equal(t, map[string]any(nil), conf.ToStringMap())
+			} else {
+				assert.NotEqual(t, map[string]any(nil), conf.ToStringMap())
+			}
+
+			sub, err := conf.Sub(subKey)
+			if tc.subExpectErr != "" {
+				assert.ErrorContains(t, err, tc.subExpectErr)
+			} else {
+				assert.NoError(t, err)
+				if tc.subExpectNil {
+					assert.Empty(t, sub.AllKeys())
+					assert.Equal(t, map[string]any(nil), sub.ToStringMap())
+				} else {
+					assert.NotEqual(t, map[string]any(nil), sub.ToStringMap())
+				}
+			}
+		})
+	}
+}
