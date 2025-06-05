@@ -17,7 +17,7 @@ type locatable interface {
 
 // FromLocationIndices builds a slice containing all the locations of a record.
 // The record can be any struct that implements a `LocationIndices` method.
-// Updates made to the return map will not be applied back to the record.
+// Updates made to the returned map will not be applied back to the record.
 func FromLocationIndices(table LocationSlice, record locatable) LocationSlice {
 	m := NewLocationSlice()
 	m.EnsureCapacity(record.LocationIndices().Len())
