@@ -88,12 +88,13 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 
 func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	// If GRPC is not enabled, nothing to start.
-	if r.cfg.GRPC == nil {
+	if !r.cfg.GRPC.HasValue() {
 		return nil
 	}
 
+	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = r.cfg.GRPC.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -113,9 +114,9 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
 	}
 
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.GRPC.NetAddr.Endpoint))
+	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", grpcCfg.NetAddr.Endpoint))
 	var gln net.Listener
-	if gln, err = r.cfg.GRPC.NetAddr.Listen(context.Background()); err != nil {
+	if gln, err = grpcCfg.NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
@@ -132,28 +133,29 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
 	// If HTTP is not enabled, nothing to start.
-	if r.cfg.HTTP == nil {
+	if !r.cfg.HTTP.HasValue() {
 		return nil
 	}
 
+	httpCfg := r.cfg.HTTP.Get()
 	httpMux := http.NewServeMux()
 	if r.nextTraces != nil {
 		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
-		httpMux.HandleFunc(string(r.cfg.HTTP.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(httpCfg.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleTraces(resp, req, httpTracesReceiver)
 		})
 	}
 
 	if r.nextMetrics != nil {
 		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
-		httpMux.HandleFunc(string(r.cfg.HTTP.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(httpCfg.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleMetrics(resp, req, httpMetricsReceiver)
 		})
 	}
 
 	if r.nextLogs != nil {
 		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
-		httpMux.HandleFunc(string(r.cfg.HTTP.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
+		httpMux.HandleFunc(string(httpCfg.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
 			handleLogs(resp, req, httpLogsReceiver)
 		})
 	}
@@ -166,13 +168,13 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = r.cfg.HTTP.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
 		return err
 	}
 
