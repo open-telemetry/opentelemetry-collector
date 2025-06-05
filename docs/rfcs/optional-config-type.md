@@ -59,7 +59,7 @@ func Some[T any](value T) Optional[T] {
 	return Optional[T]{value: value, hasValue: true}
 }
 
-func None[T any](value T) Optional[T] {
+func None[T any]() Optional[T] {
 	return Optional[T]{}
 }
 

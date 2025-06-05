@@ -18,18 +18,8 @@ func Test_NewID(t *testing.T) {
 	assert.Equal(t, ID{signal: SignalTraces}, id)
 }
 
-func Test_MustNewID(t *testing.T) {
-	id := MustNewID("traces")
-	assert.Equal(t, ID{signal: SignalTraces}, id)
-}
-
 func Test_NewIDWithName(t *testing.T) {
 	id := NewIDWithName(SignalTraces, "test")
-	assert.Equal(t, ID{signal: SignalTraces, name: "test"}, id)
-}
-
-func Test_MustNewIDWithName(t *testing.T) {
-	id := MustNewIDWithName("traces", "test")
 	assert.Equal(t, ID{signal: SignalTraces, name: "test"}, id)
 }
 

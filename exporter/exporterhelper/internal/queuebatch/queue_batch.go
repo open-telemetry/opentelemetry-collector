@@ -16,11 +16,12 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Encoding  Encoding[T]
-	Sizers    map[request.SizerType]request.Sizer[T]
+	Signal      pipeline.Signal
+	ID          component.ID
+	Telemetry   component.TelemetrySettings
+	Encoding    Encoding[T]
+	Sizers      map[request.SizerType]request.Sizer[T]
+	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
@@ -65,18 +66,20 @@ func newQueueBatch(
 	if cfg.Batch != nil {
 		if oldBatcher {
 			// If user configures the old batcher we only can support "items" sizer.
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
+			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:   request.SizerTypeItems,
+				sizer:       request.NewItemsSizer(),
+				partitioner: set.Partitioner,
+				next:        next,
+				maxWorkers:  cfg.NumConsumers,
 			})
 		} else {
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  cfg.Sizer,
-				sizer:      sizer,
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
+			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
+				sizerType:   cfg.Sizer,
+				sizer:       sizer,
+				partitioner: set.Partitioner,
+				next:        next,
+				maxWorkers:  cfg.NumConsumers,
 			})
 		}
 		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in

@@ -132,9 +132,6 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 	}
 }
 
-// Deprecated: [v0.124.0] use NewProfilesRequest.
-var NewProfilesRequestExporter = NewProfilesRequest
-
 // NewProfilesRequest creates a new profiles exporter based on a custom ProfilesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
