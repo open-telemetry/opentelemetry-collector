@@ -36,8 +36,8 @@ var errTooManyLocationTableEntries = errors.New("too many entries in LocationTab
 // add or update a location.
 // The record can be any struct that implements a `LocationIndices` method.
 func PutLocation(table LocationSlice, record locatable, loc Location) error {
-	for i := range record.LocationIndices().All() {
-		idx := int(record.LocationIndices().At(i))
+	for i, locIdx := range record.LocationIndices().All() {
+		idx := int(locIdx)
 		if idx < 0 || idx >= table.Len() {
 			return fmt.Errorf("index value %d out of range in LocationIndices[%d]", idx, i)
 		}
