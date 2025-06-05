@@ -41,8 +41,8 @@ func PutLocation(table LocationSlice, record locatable, loc Location) error {
 		if idx < 0 || idx >= table.Len() {
 			return fmt.Errorf("index value %d out of range in LocationIndices[%d]", idx, i)
 		}
-		attr := table.At(idx)
-		if attr.Equal(loc) {
+		locAt := table.At(idx)
+		if locAt.Equal(loc) {
 			// Location already exists, nothing to do.
 			return nil
 		}
