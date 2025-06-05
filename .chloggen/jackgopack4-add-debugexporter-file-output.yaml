@@ -7,7 +7,7 @@ change_type: enhancement
 component: debugexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add support for configuring output path and error output path for `debugexporter` when `use_internal_logger` is false. This allows users to control where debugexporter writes its logs and error logs if it not configured to use collector internal telemetry."
+note: "Add support for configuring output path when `use_internal_logger` is `false`"
 
 # One or more tracking issues or pull requests related to the change
 issues: [10472, 13066]
@@ -16,10 +16,7 @@ issues: [10472, 13066]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  - debugexporter error output now defaults to `stderr`.
-  - New config fields `output_paths` and `error_output_paths` are now available for debugexporter.
-  - If `use_internal_logger: false`, these fields control the log and error output destinations (defaulting to stdout/stderr).
-  - Includes improved unit tests to verify log output to files.
+  This allows users to control where the Debug exporter writes its output if not configured to use collector's internal logger.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'

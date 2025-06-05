@@ -35,8 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
 				UseInternalLogger:  false,
-				OutputPaths:        []string{"/tmp/debugexporter_test.log"},
-				ErrorOutputPaths:   []string{"/tmp/debugexporter_test_error.log"},
+				OutputPaths:        []string{"stdout", "/tmp/debugexporter_test.log"},
 			},
 		},
 		{
