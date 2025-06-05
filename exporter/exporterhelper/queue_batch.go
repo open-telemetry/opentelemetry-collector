@@ -35,12 +35,16 @@ type QueueBatchConfig = queuebatch.Config
 type BatchConfig = queuebatch.BatchConfig
 
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
-// Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
+// Duplicate definition with persistentqueue.Encoding since aliasing generics is not supported by default.
 type QueueBatchEncoding[T any] interface {
-	// Marshal is a function that can marshal a request into bytes.
-	Marshal(T) ([]byte, error)
+	// MarshalTo marshals a request into a preallocated byte slice.
+	// The size of the byte slice must be at least MarshalSize(T) bytes.
+	MarshalTo(T, []byte) (int, error)
 
-	// Unmarshal is a function that can unmarshal bytes into a request.
+	// MarshalSize returns the size of the marshaled request.
+	MarshalSize(T) int
+
+	// Unmarshal unmarshals bytes into a request.
 	Unmarshal([]byte) (T, error)
 }
 

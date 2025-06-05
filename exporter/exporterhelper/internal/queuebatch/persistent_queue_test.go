@@ -5,7 +5,6 @@ package queuebatch
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -23,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -39,19 +39,6 @@ func (is *itemsSizer) Sizeof(val uint64) int64 {
 		return math.MaxInt64
 	}
 	return int64(val)
-}
-
-type uint64Encoding struct{}
-
-func (uint64Encoding) Marshal(val uint64) ([]byte, error) {
-	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
-}
-
-func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
-	if len(bytes) < 8 {
-		return 0, errInvalidValue
-	}
-	return binary.LittleEndian.Uint64(bytes), nil
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -221,7 +208,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64]
 		capacity:  capacity,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoder:   persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	})
@@ -244,7 +231,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 		capacity:  1000,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoder:   persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -268,7 +255,7 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		capacity:  capacity,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoder:   persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -416,7 +403,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				blockOnOverflow: true,
 				signal:          pipeline.SignalTraces,
 				storageID:       component.ID{},
-				encoding:        uint64Encoding{},
+				encoder:         persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 				id:              component.NewID(exportertest.NopType),
 				telemetry:       componenttest.NewNopTelemetrySettings(),
 			})
@@ -913,7 +900,8 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+	marshaled := make([]byte, persistentqueue.Uint64Encoding{}.MarshalSize(50))
+	_, err := persistentqueue.Uint64Encoding{}.MarshalTo(50, marshaled)
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 
