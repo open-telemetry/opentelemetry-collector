@@ -6,8 +6,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/puzpuzpuz/xsync/v3"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -23,14 +21,14 @@ type batcherSettings[T any] struct {
 
 type multiBatcher struct {
 	cfg         BatchConfig
-	workerPool  chan struct{}
+	wp          chan struct{}
 	sizerType   request.SizerType
 	sizer       request.Sizer[request.Request]
 	partitioner Partitioner[request.Request]
 	consumeFunc sender.SendFunc[request.Request]
 
 	singleShard *shardBatcher
-	shards      *xsync.MapOf[string, *shardBatcher]
+	shards      sync.Map
 }
 
 var _ Batcher[request.Request] = (*multiBatcher)(nil)
@@ -45,7 +43,7 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 	}
 	mb := &multiBatcher{
 		cfg:         bCfg,
-		workerPool:  workerPool,
+		wp:          workerPool,
 		sizerType:   bSet.sizerType,
 		sizer:       bSet.sizer,
 		partitioner: bSet.partitioner,
@@ -53,9 +51,7 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 	}
 
 	if bSet.partitioner == nil {
-		mb.singleShard = newShard(mb.cfg, mb.sizerType, mb.sizer, mb.workerPool, mb.consumeFunc)
-	} else {
-		mb.shards = xsync.NewMapOf[string, *shardBatcher]()
+		mb.singleShard = newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc)
 	}
 	return mb
 }
@@ -66,12 +62,19 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 	}
 
 	key := mb.partitioner.GetKey(ctx, req)
-	result, _ := mb.shards.LoadOrCompute(key, func() *shardBatcher {
-		s := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.workerPool, mb.consumeFunc)
-		s.start(ctx, nil)
-		return s
-	})
-	return result
+	// Fast path, shard already created.
+	s, found := mb.shards.Load(key)
+	if found {
+		return s.(*shardBatcher)
+	}
+	newS := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc)
+	newS.start(ctx, nil)
+	s, loaded := mb.shards.LoadOrStore(key, newS)
+	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.
+	if loaded {
+		newS.shutdown(ctx)
+	}
+	return s.(*shardBatcher)
 }
 
 func (mb *multiBatcher) Start(ctx context.Context, host component.Host) error {
@@ -93,11 +96,11 @@ func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(mb.shards.Size())
-	mb.shards.Range(func(_ string, shard *shardBatcher) bool {
+	mb.shards.Range(func(_ any, shard any) bool {
+		wg.Add(1)
 		go func() {
-			shard.shutdown(ctx)
-			wg.Done()
+			defer wg.Done()
+			shard.(*shardBatcher).shutdown(ctx)
 		}()
 		return true
 	})
