@@ -914,11 +914,6 @@ This release includes 2 very important breaking changes.
 
 - `configrpc`: Use own compressors for zstd. Before this change, the zstd compressor we used didn't respect the max message size. This addresses [GHSA-c74f-6mfw-mm4v](https://github.com/open-telemetry/opentelemetry-collector/security/advisories/GHSA-c74f-6mfw-mm4v) for `configgrpc` (#10323)
 
-# Unreleased
-
-### Changed
-- Validate TLS config earlier: return error if certificate or key is missing. ([#13134](https://github.com/open-telemetry/opentelemetry-collector/pull/13134))
-g
 
 ## v1.9.0/v0.102.0
 
