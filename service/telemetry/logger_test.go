@@ -16,12 +16,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
+	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
 type shutdownable interface {
@@ -98,7 +100,7 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.wrapperCoreWithAttributes",
+			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
@@ -126,38 +128,127 @@ func TestNewLogger(t *testing.T) {
 }
 
 func TestNewLoggerWithResource(t *testing.T) {
-	observerCore, observedLogs := observer.New(zap.InfoLevel)
-
-	set := Settings{
-		ZapOptions: []zap.Option{
-			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-				// Combine original core and observer core to capture everything
-				return zapcore.NewTee(core, observerCore)
-			}),
+	tests := []struct {
+		name           string
+		buildInfo      component.BuildInfo
+		resourceConfig map[string]*string
+		wantFields     map[string]string
+	}{
+		{
+			name: "auto-populated fields only",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "override service.name",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				string(semconv.ServiceNameKey): ptr("custom-service"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "custom-service",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "override service.version",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				string(semconv.ServiceVersionKey): ptr("2.0.0"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "2.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "custom field with auto-populated",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				"custom.field": ptr("custom-value"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "", // Just check presence
+				"custom.field":                       "custom-value",
+			},
+		},
+		{
+			name:           "resource with no attributes",
+			buildInfo:      component.BuildInfo{},
+			resourceConfig: nil,
+			wantFields:     nil,
 		},
 	}
 
-	cfg := Config{
-		Logs: LogsConfig{
-			Level:    zapcore.InfoLevel,
-			Encoding: "json",
-		},
-		Resource: map[string]*string{
-			"myfield": ptr("myvalue"),
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observerCore, observedLogs := observer.New(zap.InfoLevel)
+
+			set := Settings{
+				ZapOptions: []zap.Option{
+					zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+						return zapcore.NewTee(core, observerCore)
+					}),
+				},
+			}
+			if tt.wantFields != nil {
+				set.Resource = resource.New(tt.buildInfo, tt.resourceConfig)
+			}
+
+			cfg := Config{
+				Logs: LogsConfig{
+					Level:    zapcore.InfoLevel,
+					Encoding: "json",
+				},
+			}
+
+			mylogger, _, _ := newLogger(set, cfg)
+			mylogger.Info("Test log message")
+			require.Len(t, observedLogs.All(), 1)
+
+			entry := observedLogs.All()[0]
+			if tt.wantFields == nil {
+				assert.Empty(t, entry.Context)
+				return
+			}
+
+			assert.Equal(t, "resource", entry.Context[0].Key)
+			dict := entry.Context[0].Interface.(zapcore.ObjectMarshaler)
+			enc := zapcore.NewMapObjectEncoder()
+			require.NoError(t, dict.MarshalLogObject(enc))
+
+			// Verify all expected fields
+			for k, v := range tt.wantFields {
+				if k == string(semconv.ServiceInstanceIDKey) {
+					// For service.instance.id just verify it exists since it's auto-generated
+					assert.Contains(t, enc.Fields, k)
+				} else {
+					assert.Equal(t, v, enc.Fields[k])
+				}
+			}
+		})
 	}
-
-	mylogger, _, _ := newLogger(set, cfg)
-
-	mylogger.Info("Test log message")
-	require.Len(t, observedLogs.All(), 1)
-
-	entry := observedLogs.All()[0]
-	assert.Equal(t, "resource", entry.Context[0].Key)
-	dict := entry.Context[0].Interface.(zapcore.ObjectMarshaler)
-	enc := zapcore.NewMapObjectEncoder()
-	require.NoError(t, dict.MarshalLogObject(enc))
-	require.Equal(t, "myvalue", enc.Fields["myfield"])
 }
 
 func TestOTLPLogExport(t *testing.T) {
@@ -183,16 +274,16 @@ func TestOTLPLogExport(t *testing.T) {
 		rl := logs.ResourceLogs().At(0)
 
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		assert.Equal(t, resourceAttrs[semconv.AttributeServiceName], service)
-		assert.Equal(t, resourceAttrs[semconv.AttributeServiceVersion], version)
+		assert.Equal(t, resourceAttrs[string(semconv.ServiceNameKey)], service)
+		assert.Equal(t, resourceAttrs[string(semconv.ServiceVersionKey)], version)
 		assert.Equal(t, resourceAttrs[testAttribute], testValue)
 
 		// Check that the resource attributes are not duplicated in the log records
 		sl := rl.ScopeLogs().At(0)
 		logRecord := sl.LogRecords().At(0)
 		attrs := logRecord.Attributes().AsRaw()
-		assert.NotContains(t, attrs, semconv.AttributeServiceName)
-		assert.NotContains(t, attrs, semconv.AttributeServiceVersion)
+		assert.NotContains(t, attrs, string(semconv.ServiceNameKey))
+		assert.NotContains(t, attrs, string(semconv.ServiceVersionKey))
 		assert.NotContains(t, attrs, testAttribute)
 
 		receivedLogs++
@@ -233,8 +324,8 @@ func TestOTLPLogExport(t *testing.T) {
 				Resource: &config.Resource{
 					SchemaUrl: ptr(""),
 					Attributes: []config.AttributeNameValue{
-						{Name: semconv.AttributeServiceName, Value: service},
-						{Name: semconv.AttributeServiceVersion, Value: version},
+						{Name: string(semconv.ServiceNameKey), Value: service},
+						{Name: string(semconv.ServiceVersionKey), Value: version},
 						{Name: testAttribute, Value: testValue},
 					},
 				},

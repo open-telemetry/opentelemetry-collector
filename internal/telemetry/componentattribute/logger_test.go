@@ -90,7 +90,7 @@ func TestCore(t *testing.T) {
 			createLogger: func() (*zap.Logger, logRecorder) {
 				core, observed := createZapCore()
 				recorder := logtest.NewRecorder()
-				core = componentattribute.NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", zap.DebugLevel, attribute.NewSet())
+				core = componentattribute.NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", zap.DebugLevel, attribute.NewSet(), func(c zapcore.Core) zapcore.Core { return c })
 				return zap.New(core), logRecorder{zapLogs: observed, otelLogs: recorder}
 			},
 			check: func(t *testing.T, rec logRecorder) {
@@ -99,10 +99,10 @@ func TestCore(t *testing.T) {
 				recorder := rec.otelLogs
 
 				logAttributes := make(map[string]attribute.Set)
-				for _, scope := range recorder.Result() {
+				for scope, records := range recorder.Result() {
 					require.Equal(t, "testinstr", scope.Name)
-					for _, record := range scope.Records {
-						logAttributes[record.Body().String()] = scope.Attributes
+					for _, record := range records {
+						logAttributes[record.Body.String()] = scope.Attributes
 					}
 				}
 

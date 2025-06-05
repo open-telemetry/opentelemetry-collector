@@ -44,6 +44,36 @@ func TestSetupTelemetry(t *testing.T) {
 		observer.Observe(1)
 		return nil
 	}))
+	tb.ConnectorConsumedItems.Add(context.Background(), 1)
+	tb.ConnectorConsumedSize.Add(context.Background(), 1)
+	tb.ConnectorProducedItems.Add(context.Background(), 1)
+	tb.ConnectorProducedSize.Add(context.Background(), 1)
+	tb.ExporterConsumedItems.Add(context.Background(), 1)
+	tb.ExporterConsumedSize.Add(context.Background(), 1)
+	tb.ProcessorConsumedItems.Add(context.Background(), 1)
+	tb.ProcessorConsumedSize.Add(context.Background(), 1)
+	tb.ProcessorProducedItems.Add(context.Background(), 1)
+	tb.ProcessorProducedSize.Add(context.Background(), 1)
+	tb.ReceiverProducedItems.Add(context.Background(), 1)
+	tb.ReceiverProducedSize.Add(context.Background(), 1)
+	AssertEqualConnectorConsumedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualConnectorConsumedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualConnectorProducedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualConnectorProducedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterConsumedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterConsumedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessCPUSeconds(t, testTel,
 		[]metricdata.DataPoint[float64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
@@ -61,6 +91,24 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessUptime(t, testTel,
 		[]metricdata.DataPoint[float64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorConsumedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorConsumedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorProducedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorProducedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverProducedItems(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualReceiverProducedSize(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 
 	require.NoError(t, testTel.Shutdown(context.Background()))

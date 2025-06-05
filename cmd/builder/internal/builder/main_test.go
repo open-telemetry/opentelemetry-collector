@@ -50,6 +50,7 @@ var replaceModules = []string{
 	"/config/configmiddleware",
 	"/config/confignet",
 	"/config/configopaque",
+	"/config/configoptional",
 	"/config/configretry",
 	"/config/configtelemetry",
 	"/config/configtls",
@@ -109,7 +110,6 @@ var replaceModules = []string{
 	"/receiver/receivertest",
 	"/receiver/receiverhelper",
 	"/receiver/xreceiver",
-	"/semconv",
 	"/service",
 	"/service/hostcapabilities",
 }

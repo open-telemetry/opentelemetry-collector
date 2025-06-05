@@ -38,7 +38,7 @@ The metric will be become optional soon.
 
 [DEPRECATED] Non-monotonic delta sum double metric enabled by default.
 
-The metric will be will be removed soon.
+The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -103,6 +103,73 @@ metrics:
 | ---- | ----------- | ------ | -------- |
 | string_attr | Attribute with any string value. | Any Str | false |
 | boolean_attr | Attribute with a boolean value. | Any Bool | false |
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+### default.event
+
+Example event enabled by default.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| state | Integer attribute with overridden name. | Any Int |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
+| optional_int_attr | An optional attribute with an integer value | Any Int |
+| optional_string_attr | An optional attribute with any string value | Any Str |
+
+### default.event.to_be_removed
+
+[DEPRECATED] Example to-be-removed event enabled by default.
+
+The event will be removed soon.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| state | Integer attribute with overridden name. | Any Int |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
+| slice_attr | Attribute with a slice value. | Any Slice |
+| map_attr | Attribute with a map value. | Any Map |
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### default.event.to_be_renamed
+
+[DEPRECATED] Example event disabled by default.
+
+The event will be renamed soon.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
+| optional_string_attr | An optional attribute with any string value | Any Str |
 
 ## Resource Attributes
 

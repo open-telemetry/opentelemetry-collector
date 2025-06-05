@@ -31,8 +31,10 @@ func TestNewCommand(t *testing.T) {
 
 func TestRunContents(t *testing.T) {
 	tests := []struct {
-		yml                             string
-		wantMetricsGenerated            bool
+		yml                  string
+		wantMetricsGenerated bool
+		// TODO: we should add one more flag for logs builder
+		wantEventsGenerated             bool
 		wantMetricsContext              bool
 		wantLogsGenerated               bool
 		wantConfigGenerated             bool
@@ -194,6 +196,14 @@ func TestRunContents(t *testing.T) {
 			wantConfigGenerated:        true,
 			wantComponentTestGenerated: true,
 		},
+		{
+			yml:                        "events/basic_event.yaml",
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantConfigGenerated:        true,
+			wantEventsGenerated:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.yml, func(t *testing.T) {
@@ -278,7 +288,7 @@ foo
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_telemetry.go"))
 			}
 
-			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated {
+			if !tt.wantMetricsGenerated && !tt.wantTelemetryGenerated && !tt.wantResourceAttributesGenerated && !tt.wantEventsGenerated {
 				require.NoFileExists(t, filepath.Join(tmpdir, "documentation.md"))
 			}
 

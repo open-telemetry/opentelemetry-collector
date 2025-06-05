@@ -1,5 +1,7 @@
 # Semantic Convention Constants
 
+> :warning: This package has been deprecated, use `go.opentelemetry.io/otel/semconv` instead.
+
 This package contains constants representing the OpenTelemetry semantic conventions. They are automatically generated
 from definitions in the specification.
 

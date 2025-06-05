@@ -1,8 +1,7 @@
 # Exporter Helper
 
-This is a helper exporter that other exporters can depend on. Today, it primarily offers queued retry capabilities.
-
-> :warning: This exporter should not be added to a service pipeline.
+This package provides reusable implementations of common capabilities for exporters.
+Currently, this includes queuing, batching, timeouts, and retries.
 
 ## Configuration
 
@@ -27,7 +26,7 @@ The following configuration options can be modified:
   - `batch` disabled by default if not defined
     - `flush_timeout`: time after which a batch will be sent regardless of its size. Must be a non-zero value
     - `min_size`: the minimum size of a batch.
-    - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the mininum size of a batch.
+    - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch.
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 

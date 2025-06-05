@@ -686,10 +686,10 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 	assert.Equal(t, int64(0), newPs.Size())
 	// The writeIndex should be now set accordingly
-	require.EqualValues(t, 6, newPs.writeIndex)
+	require.EqualValues(t, 6, newPs.metadata.WriteIndex)
 
 	// There should be no items left in the storage
-	for i := uint64(0); i < newPs.writeIndex; i++ {
+	for i := uint64(0); i < newPs.metadata.WriteIndex; i++ {
 		bb, err := newPs.client.Get(context.Background(), getItemKey(i))
 		require.NoError(t, err)
 		require.Nil(t, bb)
@@ -1203,5 +1203,5 @@ func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint64], compare []uint64) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	assert.ElementsMatch(t, compare, pq.currentlyDispatchedItems)
+	assert.ElementsMatch(t, compare, pq.metadata.CurrentlyDispatchedItems)
 }

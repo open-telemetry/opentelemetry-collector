@@ -240,7 +240,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.metric.to_be_removed": {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
-						ExtendedDocumentation: "The metric will be will be removed soon.",
+						ExtendedDocumentation: "The metric will be removed soon.",
 						Warnings: Warnings{
 							IfEnabled: "This metric is deprecated and will be removed soon.",
 						},
@@ -285,7 +285,7 @@ func TestLoadMetadata(t *testing.T) {
 					"default.event.to_be_removed": {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
-						ExtendedDocumentation: "The event will be will be removed soon.",
+						ExtendedDocumentation: "The event will be removed soon.",
 						Warnings: Warnings{
 							IfEnabled: "This event is deprecated and will be removed soon.",
 						},

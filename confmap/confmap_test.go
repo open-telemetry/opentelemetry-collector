@@ -1053,3 +1053,101 @@ func TestStringyTypes(t *testing.T) {
 		assert.Equal(t, tt.isStringy, isStringyStructure(to))
 	}
 }
+
+func TestConfDelete(t *testing.T) {
+	tests := []struct {
+		path      string
+		stringMap map[string]any
+	}{
+		{
+			path:      "key",
+			stringMap: map[string]any{"key": "value"},
+		},
+		{
+			path: "map::expanded",
+			stringMap: map[string]any{"map": map[string]any{
+				"expanded": expandedValue{
+					Value:    0o1234,
+					Original: "01234",
+				},
+			}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.path, func(t *testing.T) {
+			cm := NewFromStringMap(test.stringMap)
+
+			assert.True(t, cm.IsSet(test.path))
+			assert.True(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+
+			assert.False(t, cm.Delete(test.path))
+			assert.Nil(t, cm.Get(test.path))
+			assert.False(t, cm.IsSet(test.path))
+		})
+	}
+}
+
+type structWithConfigOpaqueMap struct {
+	Headers map[string]string `mapstructure:"headers"`
+}
+
+func TestMapMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  map[string]string
+		added    map[string]string
+		expected map[string]string
+	}{
+		{
+			name:     "both nil",
+			initial:  nil,
+			added:    nil,
+			expected: nil,
+		},
+		{
+			name:     "nil map",
+			initial:  map[string]string{},
+			added:    nil,
+			expected: map[string]string{},
+		},
+		{
+			name: "initialized",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: nil,
+			expected: map[string]string{
+				"foo": "bar",
+			},
+		},
+		{
+			name: "both",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: map[string]string{
+				"foobar": "bar",
+			},
+			expected: map[string]string{
+				"foo":    "bar",
+				"foobar": "bar",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := structWithConfigOpaqueMap{
+				Headers: test.initial,
+			}
+			c := NewFromStringMap(map[string]any{
+				"headers": test.added,
+			})
+			require.NoError(t, c.Unmarshal(&s))
+			assert.Equal(t, test.expected, s.Headers)
+		})
+	}
+}

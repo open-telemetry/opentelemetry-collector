@@ -135,7 +135,7 @@ events:
   default.event.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Example to-be-removed event enabled by default."
-    extended_documentation: The event will be will be removed soon.
+    extended_documentation: The event will be removed soon.
     warnings:
       if_enabled: This event is deprecated and will be removed soon.
     attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
@@ -177,7 +177,7 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
-    extended_documentation: The metric will be will be removed soon.
+    extended_documentation: The metric will be removed soon.
     unit: s
     sum:
       value_type: double
