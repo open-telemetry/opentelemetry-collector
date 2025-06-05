@@ -21,7 +21,7 @@ type batcherSettings[T any] struct {
 
 type multiBatcher struct {
 	cfg         BatchConfig
-	wp          chan struct{}
+	wp          *workerPool
 	sizerType   request.SizerType
 	sizer       request.Sizer[request.Request]
 	partitioner Partitioner[request.Request]
@@ -34,16 +34,9 @@ type multiBatcher struct {
 var _ Batcher[request.Request] = (*multiBatcher)(nil)
 
 func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *multiBatcher {
-	var workerPool chan struct{}
-	if bSet.maxWorkers != 0 {
-		workerPool = make(chan struct{}, bSet.maxWorkers)
-		for i := 0; i < bSet.maxWorkers; i++ {
-			workerPool <- struct{}{}
-		}
-	}
 	mb := &multiBatcher{
 		cfg:         bCfg,
-		wp:          workerPool,
+		wp:          newWorkerPool(bSet.maxWorkers),
 		sizerType:   bSet.sizerType,
 		sizer:       bSet.sizer,
 		partitioner: bSet.partitioner,
@@ -68,18 +61,18 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 		return s.(*shardBatcher)
 	}
 	newS := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc)
-	newS.start(ctx, nil)
+	_ = newS.Start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.
 	if loaded {
-		newS.shutdown(ctx)
+		_ = newS.Shutdown(ctx)
 	}
 	return s.(*shardBatcher)
 }
 
 func (mb *multiBatcher) Start(ctx context.Context, host component.Host) error {
 	if mb.singleShard != nil {
-		mb.singleShard.start(ctx, host)
+		return mb.singleShard.Start(ctx, host)
 	}
 	return nil
 }
@@ -91,8 +84,7 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done D
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	if mb.singleShard != nil {
-		mb.singleShard.shutdown(ctx)
-		return nil
+		return mb.singleShard.Shutdown(ctx)
 	}
 
 	var wg sync.WaitGroup
@@ -100,7 +92,7 @@ func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			shard.(*shardBatcher).shutdown(ctx)
+			_ = shard.(*shardBatcher).Shutdown(ctx)
 		}()
 		return true
 	})
