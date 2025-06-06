@@ -4,7 +4,6 @@ go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2
-	github.com/puzpuzpuz/xsync/v3 v3.5.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.33.0
 	go.opentelemetry.io/collector/component v1.33.0
