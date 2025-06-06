@@ -506,7 +506,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 						return nil, err
 					}
 					resultMap := conf.ToStringMap()
-					if fromAsMap == nil {
+					if fromAsMap == nil && len(resultMap) > 0 {
 						fromAsMap = make(map[string]any, len(resultMap))
 					}
 					for k, v := range resultMap {
