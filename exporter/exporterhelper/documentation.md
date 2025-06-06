@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_batch_send_size_bytes
+
+Batches size in the queue (in bytes). [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {By} | Histogram | Int |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [alpha]
@@ -32,7 +40,7 @@ Number of spans failed to be added to the sending queue. [alpha]
 
 ### otelcol_exporter_queue_capacity
 
-Fixed capacity of the retry queue (in batches) [alpha]
+Fixed capacity of the retry queue (in batches). [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -40,7 +48,7 @@ Fixed capacity of the retry queue (in batches) [alpha]
 
 ### otelcol_exporter_queue_size
 
-Current size of the retry queue (in batches) [alpha]
+Current size of the retry queue (in batches). [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

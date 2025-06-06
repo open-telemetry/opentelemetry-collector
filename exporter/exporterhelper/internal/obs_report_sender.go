@@ -49,12 +49,7 @@ type obsReportSender[K request.Request] struct {
 	next            sender.Sender[K]
 }
 
-func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
-
+func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K], tb *metadata.TelemetryBuilder) sender.Sender[K] {
 	idStr := set.ID.String()
 	expAttr := attribute.String(ExporterKey, idStr)
 
@@ -68,19 +63,19 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 
 	switch signal {
 	case pipeline.SignalTraces:
-		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.itemsSentInst = tb.ExporterSentSpans
+		or.itemsFailedInst = tb.ExporterSendFailedSpans
 
 	case pipeline.SignalMetrics:
-		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.itemsSentInst = tb.ExporterSentMetricPoints
+		or.itemsFailedInst = tb.ExporterSendFailedMetricPoints
 
 	case pipeline.SignalLogs:
-		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
-		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.itemsSentInst = tb.ExporterSentLogRecords
+		or.itemsFailedInst = tb.ExporterSendFailedLogRecords
 	}
 
-	return or, nil
+	return or
 }
 
 func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
@@ -88,6 +83,7 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	items := req.ItemsCount()
+
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)
 	ors.endOp(c, items, err)

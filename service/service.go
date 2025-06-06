@@ -525,6 +525,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 		}))
 	}
 
+	// Batch exporter metrics
+	scope = ptr("go.opentelemetry.io/collector/exporter/exporterhelper")
+	if level < configtelemetry.LevelDetailed {
+		views = append(views, dropViewOption(&config.ViewSelector{
+			MeterName:      scope,
+			InstrumentName: ptr("otelcol_exporter_batch_send_size_bytes"),
+		}))
+	}
+
 	// Internal graph metrics
 	graphScope := ptr("go.opentelemetry.io/collector/service")
 	if level < configtelemetry.LevelDetailed {

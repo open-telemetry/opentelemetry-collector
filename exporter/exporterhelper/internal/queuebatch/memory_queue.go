@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -27,10 +28,11 @@ var (
 
 // memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
 type memoryQueueSettings[T any] struct {
-	sizer           request.Sizer[T]
-	capacity        int64
-	waitForResult   bool
-	blockOnOverflow bool
+	sizer            request.Sizer[T]
+	capacity         int64
+	waitForResult    bool
+	blockOnOverflow  bool
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // memoryQueue is an in-memory implementation of a Queue.

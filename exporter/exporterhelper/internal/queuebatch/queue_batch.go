@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
@@ -16,12 +17,13 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal      pipeline.Signal
-	ID          component.ID
-	Telemetry   component.TelemetrySettings
-	Encoding    Encoding[T]
-	Sizers      map[request.SizerType]request.Sizer[T]
-	Partitioner Partitioner[T]
+	Signal           pipeline.Signal
+	ID               component.ID
+	Telemetry        component.TelemetrySettings
+	Encoding         Encoding[T]
+	Sizers           map[request.SizerType]request.Sizer[T]
+	Partitioner      Partitioner[T]
+	TelemetryBuilder *metadata.TelemetryBuilder
 }
 
 type QueueBatch struct {
@@ -72,6 +74,7 @@ func newQueueBatch(
 				partitioner: set.Partitioner,
 				next:        next,
 				maxWorkers:  cfg.NumConsumers,
+				tb:          set.TelemetryBuilder,
 			})
 		} else {
 			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
@@ -80,6 +83,7 @@ func newQueueBatch(
 				partitioner: set.Partitioner,
 				next:        next,
 				maxWorkers:  cfg.NumConsumers,
+				tb:          set.TelemetryBuilder,
 			})
 		}
 		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
@@ -93,22 +97,24 @@ func newQueueBatch(
 	// Configure memory queue or persistent based on the config.
 	if cfg.StorageID == nil {
 		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-			sizer:           sizer,
-			capacity:        cfg.QueueSize,
-			waitForResult:   cfg.WaitForResult,
-			blockOnOverflow: cfg.BlockOnOverflow,
+			sizer:            sizer,
+			capacity:         cfg.QueueSize,
+			waitForResult:    cfg.WaitForResult,
+			blockOnOverflow:  cfg.BlockOnOverflow,
+			telemetryBuilder: set.TelemetryBuilder,
 		}), cfg.NumConsumers, b.Consume)
 	} else {
 		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-			sizer:           sizer,
-			sizerType:       cfg.Sizer,
-			capacity:        cfg.QueueSize,
-			blockOnOverflow: cfg.BlockOnOverflow,
-			signal:          set.Signal,
-			storageID:       *cfg.StorageID,
-			encoding:        set.Encoding,
-			id:              set.ID,
-			telemetry:       set.Telemetry,
+			sizer:            sizer,
+			sizerType:        cfg.Sizer,
+			capacity:         cfg.QueueSize,
+			blockOnOverflow:  cfg.BlockOnOverflow,
+			signal:           set.Signal,
+			storageID:        *cfg.StorageID,
+			encoding:         set.Encoding,
+			id:               set.ID,
+			telemetry:        set.Telemetry,
+			telemetryBuilder: set.TelemetryBuilder,
 		}), cfg.NumConsumers, b.Consume)
 	}
 

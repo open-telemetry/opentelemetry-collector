@@ -59,6 +59,14 @@ func TestMetricsRequest(t *testing.T) {
 	)
 }
 
+func TestMetricsRequest_BytesSize(t *testing.T) {
+	metrics := testdata.GenerateMetrics(2)
+	mr := newMetricsRequest(metrics)
+	size := mr.BytesSize()
+	expectedSize := metricsMarshaler.MetricsSize(metrics)
+	assert.Equal(t, expectedSize, size, "BytesSize should return same size as direct marshaler call")
+}
+
 func TestMetrics_NilConfig(t *testing.T) {
 	me, err := NewMetrics(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushMetricsData(nil))
 	require.Nil(t, me)

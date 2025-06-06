@@ -59,6 +59,14 @@ func TestLogsRequest(t *testing.T) {
 	)
 }
 
+func TestLogsRequest_BytesSize(t *testing.T) {
+	logs := testdata.GenerateLogs(2)
+	lr := newLogsRequest(logs)
+	size := lr.BytesSize()
+	expectedSize := logsMarshaler.LogsSize(logs)
+	assert.Equal(t, expectedSize, size, "BytesSize should return same size as direct marshaler call")
+}
+
 func TestLogs_InvalidName(t *testing.T) {
 	le, err := NewLogs(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushLogsData(nil))
 	require.Nil(t, le)

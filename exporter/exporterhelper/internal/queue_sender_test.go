@@ -16,6 +16,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -25,10 +26,17 @@ import (
 )
 
 func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
+	ts := componenttest.NewNopTelemetrySettings()
+
+	tb, err := metadata.NewTelemetryBuilder(ts)
+	require.NoError(t, err)
+	t.Cleanup(func() { tb.Shutdown() })
+
 	qSet := queuebatch.Settings[request.Request]{
-		Signal:    pipeline.SignalMetrics,
-		ID:        component.NewID(exportertest.NopType),
-		Telemetry: componenttest.NewNopTelemetrySettings(),
+		Signal:           pipeline.SignalMetrics,
+		ID:               component.NewID(exportertest.NopType),
+		Telemetry:        ts,
+		TelemetryBuilder: tb,
 		Sizers: map[request.SizerType]request.Sizer[request.Request]{
 			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
 		},

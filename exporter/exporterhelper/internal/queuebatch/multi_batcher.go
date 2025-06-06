@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -17,6 +18,7 @@ type batcherSettings[T any] struct {
 	partitioner Partitioner[T]
 	next        sender.SendFunc[T]
 	maxWorkers  int
+	tb          *metadata.TelemetryBuilder
 }
 
 type multiBatcher struct {
@@ -29,6 +31,8 @@ type multiBatcher struct {
 
 	singleShard *shardBatcher
 	shards      sync.Map
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 var _ Batcher[request.Request] = (*multiBatcher)(nil)
@@ -42,16 +46,24 @@ func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *m
 		}
 	}
 	mb := &multiBatcher{
-		cfg:         bCfg,
-		wp:          workerPool,
-		sizerType:   bSet.sizerType,
-		sizer:       bSet.sizer,
-		partitioner: bSet.partitioner,
-		consumeFunc: bSet.next,
+		cfg:              bCfg,
+		wp:               workerPool,
+		sizerType:        bSet.sizerType,
+		sizer:            bSet.sizer,
+		partitioner:      bSet.partitioner,
+		consumeFunc:      bSet.next,
+		telemetryBuilder: bSet.tb,
 	}
 
 	if bSet.partitioner == nil {
-		mb.singleShard = newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc)
+		mb.singleShard = newShard(
+			mb.cfg,
+			mb.sizerType,
+			mb.sizer,
+			mb.wp,
+			mb.consumeFunc,
+			mb.telemetryBuilder,
+		)
 	}
 	return mb
 }
@@ -67,7 +79,7 @@ func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shar
 	if found {
 		return s.(*shardBatcher)
 	}
-	newS := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc)
+	newS := newShard(mb.cfg, mb.sizerType, mb.sizer, mb.wp, mb.consumeFunc, mb.telemetryBuilder)
 	newS.start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.

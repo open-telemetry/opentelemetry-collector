@@ -43,6 +43,10 @@ func (r *FakeRequest) ItemsCount() int {
 	return r.Items
 }
 
+func (r *FakeRequest) BytesSize() int {
+	return r.Bytes
+}
+
 func (r *FakeRequest) MergeSplit(_ context.Context, maxSize int, szt request.SizerType, r2 request.Request) ([]request.Request, error) {
 	if r.MergeErr != nil {
 		return nil, r.MergeErr

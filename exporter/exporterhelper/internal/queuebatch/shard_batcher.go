@@ -11,6 +11,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -23,26 +24,28 @@ type batch struct {
 
 // shardBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type shardBatcher struct {
-	cfg            BatchConfig
-	workerPool     chan struct{}
-	sizerType      request.SizerType
-	sizer          request.Sizer[request.Request]
-	consumeFunc    sender.SendFunc[request.Request]
-	stopWG         sync.WaitGroup
-	currentBatchMu sync.Mutex
-	currentBatch   *batch
-	timer          *time.Timer
-	shutdownCh     chan struct{}
+	cfg              BatchConfig
+	workerPool       chan struct{}
+	sizerType        request.SizerType
+	sizer            request.Sizer[request.Request]
+	consumeFunc      sender.SendFunc[request.Request]
+	stopWG           sync.WaitGroup
+	currentBatchMu   sync.Mutex
+	currentBatch     *batch
+	timer            *time.Timer
+	shutdownCh       chan struct{}
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[request.Request], workerPool chan struct{}, next sender.SendFunc[request.Request]) *shardBatcher {
+func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[request.Request], workerPool chan struct{}, next sender.SendFunc[request.Request], tb *metadata.TelemetryBuilder) *shardBatcher {
 	return &shardBatcher{
-		cfg:         cfg,
-		workerPool:  workerPool,
-		sizerType:   sizerType,
-		sizer:       sizer,
-		consumeFunc: next,
-		shutdownCh:  make(chan struct{}, 1),
+		cfg:              cfg,
+		workerPool:       workerPool,
+		sizerType:        sizerType,
+		sizer:            sizer,
+		consumeFunc:      next,
+		shutdownCh:       make(chan struct{}, 1),
+		telemetryBuilder: tb,
 	}
 }
 
@@ -191,6 +194,14 @@ func (qb *shardBatcher) flush(ctx context.Context, req request.Request, done Don
 	}
 	go func() {
 		defer qb.stopWG.Done()
+
+		if qb.telemetryBuilder != nil {
+			// Only calculate and record the size of the batch if the instrument is enabled.
+			if instr, ok := qb.telemetryBuilder.ExporterBatchSendSizeBytes.(interface{ Enabled(context.Context) bool }); !ok || instr.Enabled(ctx) {
+				qb.telemetryBuilder.ExporterBatchSendSizeBytes.Record(ctx, int64(req.BytesSize()))
+			}
+		}
+
 		done.OnDone(qb.consumeFunc(ctx, req))
 		if qb.workerPool != nil {
 			qb.workerPool <- struct{}{}
