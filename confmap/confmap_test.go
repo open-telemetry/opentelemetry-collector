@@ -1226,3 +1226,86 @@ func TestConfIsNil(t *testing.T) {
 		})
 	}
 }
+
+func TestConfmapNilMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		left     map[string]any
+		right    map[string]any
+		expected map[string]any
+	}{
+		{
+			name:     "both nil",
+			left:     nil,
+			right:    nil,
+			expected: nil,
+		},
+		{
+			name:     "left nil",
+			left:     nil,
+			right:    map[string]any{"key": "value"},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "right nil",
+			left:     map[string]any{"key": "value"},
+			right:    nil,
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "both non-nil",
+			left:     map[string]any{"key1": "value1"},
+			right:    map[string]any{"key2": "value2"},
+			expected: map[string]any{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:     "left empty, right non-empty",
+			left:     map[string]any{},
+			right:    map[string]any{"key": "value"},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "left non-empty, right empty",
+			left:     map[string]any{"key": "value"},
+			right:    map[string]any{},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "left nil, right empty",
+			left:     nil,
+			right:    map[string]any{},
+			expected: map[string]any{},
+		},
+		{
+			name:     "left empty, right nil",
+			left:     map[string]any{},
+			right:    nil,
+			expected: map[string]any{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			leftConf := NewFromStringMap(test.left)
+			assert.Equal(t, test.left, leftConf.ToStringMap())
+			rightConf := NewFromStringMap(test.right)
+			assert.Equal(t, test.right, rightConf.ToStringMap())
+
+			err := leftConf.Merge(rightConf)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, leftConf.ToStringMap())
+		})
+
+		t.Run(test.name+"merge append", func(t *testing.T) {
+			leftConf := NewFromStringMap(test.left)
+			assert.Equal(t, test.left, leftConf.ToStringMap())
+			rightConf := NewFromStringMap(test.right)
+			assert.Equal(t, test.right, rightConf.ToStringMap())
+
+			err := leftConf.mergeAppend(rightConf)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, leftConf.ToStringMap())
+		})
+	}
+}

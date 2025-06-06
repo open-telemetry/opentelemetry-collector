@@ -229,6 +229,14 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	case expandedValue:
 		if m, ok := v.Value.(map[string]any); ok {
 			return NewFromStringMap(m), nil
+		} else if v.Value == nil {
+			// If the value is nil, return a new empty Conf.
+			c := New()
+			c.isNil = true
+			return c, nil
+		} else {
+			// override data with the original value to make the error message more informative.
+			data = v.Value
 		}
 	}
 
