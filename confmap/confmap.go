@@ -35,14 +35,18 @@ const (
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {
-	return &Conf{k: koanf.New(KeyDelimiter)}
+	return &Conf{k: koanf.New(KeyDelimiter), isNil: false}
 }
 
 // NewFromStringMap creates a confmap.Conf from a map[string]any.
 func NewFromStringMap(data map[string]any) *Conf {
 	p := New()
-	// Cannot return error because the koanf instance is empty.
-	_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
+	if data == nil {
+		p.isNil = true
+	} else {
+		// Cannot return error because the koanf instance is empty.
+		_ = p.k.Load(confmap.Provider(data, KeyDelimiter), nil)
+	}
 	return p
 }
 
@@ -55,6 +59,9 @@ type Conf struct {
 	// This avoids running into an infinite recursion where Unmarshaler.Unmarshal and
 	// Conf.Unmarshal would call each other.
 	skipTopLevelUnmarshaler bool
+	// isNil is true if this Conf was created from a nil field, as opposed to an empty map.
+	// AllKeys must return an empty slice if this is true.
+	isNil bool
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -178,6 +185,7 @@ func (l *Conf) Merge(in *Conf) error {
 		// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
 		return l.mergeAppend(in)
 	}
+	l.isNil = l.isNil && in.isNil
 	return l.k.Merge(in.k)
 }
 
@@ -196,7 +204,12 @@ func (l *Conf) Delete(key string) bool {
 // For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
 // the resulting list will be [extension1, extension2, extension3].
 func (l *Conf) mergeAppend(in *Conf) error {
-	return l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend))
+	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend))
+	if err != nil {
+		return err
+	}
+	l.isNil = l.isNil && in.isNil
+	return nil
 }
 
 // Sub returns new Conf instance representing a sub-config of this instance.
@@ -205,7 +218,9 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	// Code inspired by the koanf "Cut" func, but returns an error instead of empty map for unsupported sub-config type.
 	data := l.unsanitizedGet(key)
 	if data == nil {
-		return New(), nil
+		c := New()
+		c.isNil = true
+		return c, nil
 	}
 
 	switch v := data.(type) {
@@ -214,13 +229,23 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 	case expandedValue:
 		if m, ok := v.Value.(map[string]any); ok {
 			return NewFromStringMap(m), nil
+		} else if v.Value == nil {
+			// If the value is nil, return a new empty Conf.
+			c := New()
+			c.isNil = true
+			return c, nil
 		}
+		// override data with the original value to make the error message more informative.
+		data = v.Value
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
 }
 
 func (l *Conf) toStringMapWithExpand() map[string]any {
+	if l.isNil {
+		return nil
+	}
 	m := maps.Unflatten(l.k.All(), KeyDelimiter)
 	return m
 }
@@ -231,6 +256,10 @@ func (l *Conf) toStringMapWithExpand() map[string]any {
 //
 // For example, for a Conf created from `foo: ${env:FOO}` and `FOO=123`
 // ToStringMap will return `map[string]any{"foo": 123}`.
+//
+// For any map `m`, `NewFromStringMap(m).ToStringMap() == m`.
+// In particular, if the Conf was created from a nil value,
+// ToStringMap will return map[string]any(nil).
 func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
@@ -481,6 +510,9 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 						return nil, err
 					}
 					resultMap := conf.ToStringMap()
+					if fromAsMap == nil && len(resultMap) > 0 {
+						fromAsMap = make(map[string]any, len(resultMap))
+					}
 					for k, v := range resultMap {
 						fromAsMap[k] = v
 					}
