@@ -59,13 +59,7 @@ func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:   tt.sizerType,
-				sizer:       tt.sizer,
-				partitioner: nil,
-				next:        sink.Export,
-				maxWorkers:  tt.maxWorkers,
-			})
+			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -83,7 +77,7 @@ func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			assert.Eventually(t, func() bool {
 				return sink.RequestsCount() == 5 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
 			}, 1*time.Second, 10*time.Millisecond)
-			// Check that done callback is called for the right amount of times.
+			// Check that done callback is called for the right number of times.
 			assert.EqualValues(t, 1, done.errors.Load())
 			assert.EqualValues(t, 5, done.success.Load())
 		})
@@ -130,13 +124,7 @@ func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:   tt.sizerType,
-				sizer:       tt.sizer,
-				partitioner: nil,
-				next:        sink.Export,
-				maxWorkers:  tt.maxWorkers,
-			})
+			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -165,7 +153,7 @@ func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			assert.Equal(t, 3, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 57 || sink.BytesCount() == 57)
 
-			// Check that done callback is called for the right amount of times.
+			// Check that done callback is called for the right number of times.
 			assert.EqualValues(t, 3, done.errors.Load())
 			assert.EqualValues(t, 4, done.success.Load())
 		})
@@ -216,13 +204,7 @@ func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:   tt.sizerType,
-				sizer:       tt.sizer,
-				partitioner: nil,
-				next:        sink.Export,
-				maxWorkers:  tt.maxWorkers,
-			})
+			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -241,7 +223,7 @@ func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
 				return sink.RequestsCount() == 1 && (sink.ItemsCount() == 75 || sink.BytesCount() == 75)
 			}, 1*time.Second, 10*time.Millisecond)
 
-			// Check that done callback is called for the right amount of times.
+			// Check that done callback is called for the right number of times.
 			assert.EqualValues(t, 1, done.errors.Load())
 			assert.EqualValues(t, 5, done.success.Load())
 		})
@@ -293,13 +275,7 @@ func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-				sizerType:   tt.sizerType,
-				sizer:       tt.sizer,
-				partitioner: nil,
-				next:        sink.Export,
-				maxWorkers:  tt.maxWorkers,
-			})
+			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -332,7 +308,7 @@ func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
 			assert.Equal(t, 11, sink.RequestsCount())
 			assert.True(t, sink.ItemsCount() == 1005 || sink.BytesCount() == 1005)
 
-			// Check that done callback is called for the right amount of times.
+			// Check that done callback is called for the right number of times.
 			assert.EqualValues(t, 2, done.errors.Load())
 			assert.EqualValues(t, 7, done.success.Load())
 		})
@@ -346,13 +322,7 @@ func TestShardBatcher_Shutdown(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType:   request.SizerTypeItems,
-		sizer:       request.NewItemsSizer(),
-		partitioner: nil,
-		next:        sink.Export,
-		maxWorkers:  2,
-	})
+	ba := newShard(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -367,7 +337,7 @@ func TestShardBatcher_Shutdown(t *testing.T) {
 	assert.Equal(t, 1, sink.RequestsCount())
 	assert.Equal(t, 3, sink.ItemsCount())
 
-	// Check that done callback is called for the right amount of times.
+	// Check that done callback is called for the right number of times.
 	assert.EqualValues(t, 0, done.errors.Load())
 	assert.EqualValues(t, 2, done.success.Load())
 }
@@ -380,14 +350,7 @@ func TestShardBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType:   request.SizerTypeItems,
-		sizer:       request.NewItemsSizer(),
-		partitioner: nil,
-		next:        sink.Export,
-		maxWorkers:  2,
-	})
-
+	ba := newShard(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
@@ -405,7 +368,7 @@ func TestShardBatcher_MergeError(t *testing.T) {
 		return done.errors.Load() == 2
 	}, 1*time.Second, 10*time.Millisecond)
 
-	// Check that done callback is called for the right amount of times.
+	// Check that done callback is called for the right number of times.
 	assert.EqualValues(t, 2, done.errors.Load())
 	assert.EqualValues(t, 0, done.success.Load())
 }
