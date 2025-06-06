@@ -1216,7 +1216,6 @@ func TestConfIsNil(t *testing.T) {
 			name:         "non-map subkey",
 			input:        map[string]any{"foo": 123},
 			expectIsNil:  false,
-			subExpectNil: false,
 			subExpectErr: "unexpected sub-config value kind",
 		},
 	}

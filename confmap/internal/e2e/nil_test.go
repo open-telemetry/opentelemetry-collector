@@ -50,6 +50,14 @@ func TestNilToStringMap(t *testing.T) {
 			},
 			expectedSub: nil,
 		},
+
+		{
+			name: "subsection_unset_empty_map.yaml",
+			expectedMap: map[string]any{
+				"field": map[string]any{},
+			},
+			expectedSub: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
