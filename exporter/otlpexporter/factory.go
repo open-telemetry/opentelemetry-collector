@@ -31,7 +31,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	clientCfg := *configgrpc.NewDefaultClientConfig()
+	clientCfg := configgrpc.NewDefaultClientConfig()
 	// Default to gzip compression
 	clientCfg.Compression = configcompression.TypeGzip
 	// We almost read 0 bytes, so no need to tune ReadBufferSize.

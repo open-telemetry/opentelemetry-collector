@@ -51,7 +51,7 @@ func newMockAuthServer(auth func(ctx context.Context, sources map[string][]strin
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
-	expectedKeepaliveClientConfig := &KeepaliveClientConfig{
+	expectedKeepaliveClientConfig := KeepaliveClientConfig{
 		Time:    time.Second * 10,
 		Timeout: time.Second * 10,
 	}
@@ -60,9 +60,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 }
 
 func TestNewDefaultClientConfig(t *testing.T) {
-	expected := &ClientConfig{
+	keepalive := NewDefaultKeepaliveClientConfig()
+	expected := ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Keepalive:    &keepalive,
 		BalancerName: BalancerName(),
 	}
 
@@ -72,14 +73,14 @@ func TestNewDefaultClientConfig(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
-	expectedParams := &KeepaliveServerParameters{}
+	expectedParams := KeepaliveServerParameters{}
 	params := NewDefaultKeepaliveServerParameters()
 
 	assert.Equal(t, expectedParams, params)
 }
 
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
-	expectedPolicy := &KeepaliveEnforcementPolicy{}
+	expectedPolicy := KeepaliveEnforcementPolicy{}
 
 	policy := NewDefaultKeepaliveEnforcementPolicy()
 
@@ -87,17 +88,17 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
-	expected := &KeepaliveServerConfig{
-		ServerParameters:  NewDefaultKeepaliveServerParameters(),
-		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	expected := KeepaliveServerConfig{
+		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 	result := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, expected, result)
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	expected := &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
+	expected := ServerConfig{
+		Keepalive: ptr(NewDefaultKeepaliveServerConfig()),
 	}
 
 	result := NewDefaultServerConfig()

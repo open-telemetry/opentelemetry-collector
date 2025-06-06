@@ -740,7 +740,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-			CORSConfig:       NewDefaultCORSConfig(),
+			CORSConfig:       ptr(NewDefaultCORSConfig()),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
