@@ -203,6 +203,7 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 			wantConfigGenerated:        true,
 			wantEventsGenerated:        true,
+			wantLogsGenerated:          true,
 		},
 	}
 	for _, tt := range tests {
