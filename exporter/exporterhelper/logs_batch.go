@@ -6,7 +6,9 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"strconv"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -36,7 +38,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSi
 		return []Request{req}, nil
 	}
 
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz)
 }
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
@@ -47,15 +49,34 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
+func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
-		ld, rmSize := extractLogs(req.ld, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newLogsRequest(ld))
+	var ld plog.Logs
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		ld, rmSize = extractLogs(req.ld, maxSize, sz)
+		if ld.LogRecordCount() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newLogsRequest(ld))
+		}
 	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		// This means we cannot split the log and is not possible
+		// to fit it into the max size.
+		err := &partialsuccess.PartialSuccessError{
+			FailureCount: req.ld.LogRecordCount(),
+			Reason: "failed to split logs request: size is greater than max size. size: " +
+				strconv.Itoa(req.size(sz)) + ", max_size: " + strconv.Itoa(maxSize),
+		}
+		return res, err
+	}
+
 	res = append(res, req)
-	return res
+	return res, nil
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -72,6 +74,7 @@ func newQueueBatch(
 				partitioner: set.Partitioner,
 				next:        next,
 				maxWorkers:  cfg.NumConsumers,
+				logger:      set.Telemetry.Logger.With(zap.String("component", "multi_batcher")),
 			})
 		} else {
 			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
@@ -80,6 +83,7 @@ func newQueueBatch(
 				partitioner: set.Partitioner,
 				next:        next,
 				maxWorkers:  cfg.NumConsumers,
+				logger:      set.Telemetry.Logger.With(zap.String("component", "multi_batcher")),
 			})
 		}
 		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in

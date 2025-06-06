@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -128,12 +129,13 @@ func TestMergeSplitLogs(t *testing.T) {
 
 func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      RequestSizerType
-		maxSize  int
-		lr1      Request
-		lr2      Request
-		expected []Request
+		name               string
+		szt                RequestSizerType
+		maxSize            int
+		lr1                Request
+		lr2                Request
+		expected           []Request
+		expectPartialError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -219,10 +221,30 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 				}()),
 			},
 		},
+		{
+			name:    "unsplittable_large_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           []Request{},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			if tt.expectPartialError {
+				require.Error(t, err)
+				var partialErr *partialsuccess.PartialSuccessError
+				require.ErrorAs(t, err, &partialErr)
+				assert.Contains(t, err.Error(), "failed to split logs request: size is greater than max size")
+				return
+			}
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
