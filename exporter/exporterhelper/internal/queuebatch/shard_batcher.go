@@ -21,14 +21,6 @@ type batch struct {
 	done multiDone
 }
 
-type batcherSettings[T any] struct {
-	sizerType   request.SizerType
-	sizer       request.Sizer[T]
-	partitioner Partitioner[T]
-	next        sender.SendFunc[T]
-	maxWorkers  int
-}
-
 // shardBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type shardBatcher struct {
 	cfg            BatchConfig
@@ -41,6 +33,17 @@ type shardBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+}
+
+func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[request.Request], workerPool chan struct{}, next sender.SendFunc[request.Request]) *shardBatcher {
+	return &shardBatcher{
+		cfg:         cfg,
+		workerPool:  workerPool,
+		sizerType:   sizerType,
+		sizer:       sizer,
+		consumeFunc: next,
+		shutdownCh:  make(chan struct{}, 1),
+	}
 }
 
 func (qb *shardBatcher) resetTimer() {
@@ -88,7 +91,7 @@ func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done D
 	}
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
-	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
+	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
@@ -102,7 +105,7 @@ func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done D
 
 	// We have at least one result in the reqList, if more results here is what that means:
 	// - First result will contain items from the current batch + some results from the current request.
-	// - All other results except first will contain items only from current request.
+	// - All other results except first will contain items only from the current request.
 	// - Last result may not have enough data to be flushed.
 
 	// Logic on how to deal with the current batch:
@@ -145,27 +148,22 @@ func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done D
 	}
 }
 
-// startTimeBasedFlushingGoroutine starts a goroutine that flushes on timeout.
-func (qb *shardBatcher) startTimeBasedFlushingGoroutine() {
-	qb.stopWG.Add(1)
-	go func() {
-		defer qb.stopWG.Done()
-		for {
-			select {
-			case <-qb.shutdownCh:
-				return
-			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
-			}
-		}
-	}()
-}
-
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
 func (qb *shardBatcher) start(_ context.Context, _ component.Host) {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
-		qb.startTimeBasedFlushingGoroutine()
+		qb.stopWG.Add(1)
+		go func() {
+			defer qb.stopWG.Done()
+			for {
+				select {
+				case <-qb.shutdownCh:
+					return
+				case <-qb.timer.C:
+					qb.flushCurrentBatchIfNecessary()
+				}
+			}
+		}()
 	}
 }
 
