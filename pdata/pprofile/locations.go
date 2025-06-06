@@ -7,18 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"math"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type locatable interface {
-	LocationIndices() pcommon.Int32Slice
-}
-
-// FromLocationIndices builds a slice containing all the locations of a record.
-// The record can be any struct that implements a `LocationIndices` method.
-// Updates made to the returned map will not be applied back to the record.
-func FromLocationIndices(table LocationSlice, record locatable) LocationSlice {
+// FromLocationIndices builds a slice containing all the locations of a Profile.
+// Updates made to the returned map will not be applied back to the Profile.
+func FromLocationIndices(table LocationSlice, record Profile) LocationSlice {
 	m := NewLocationSlice()
 	m.EnsureCapacity(record.LocationIndices().Len())
 
@@ -32,12 +25,11 @@ func FromLocationIndices(table LocationSlice, record locatable) LocationSlice {
 
 var errTooManyLocationTableEntries = errors.New("too many entries in LocationTable")
 
-// PutLocation updates a LocationTable and a record's LocationIndices to
+// PutLocation updates a LocationTable and a Profile's LocationIndices to
 // add or update a location.
-// The record can be any struct that implements a `LocationIndices` method.
-func PutLocation(table LocationSlice, record locatable, loc Location) error {
-	for i, locIdx := range record.LocationIndices().All() {
-		idx := int(locIdx)
+func PutLocation(table LocationSlice, record Profile, loc Location) error {
+	for i := range record.LocationIndices().All() {
+		idx := int(record.LocationIndices().At(i))
 		if idx < 0 || idx >= table.Len() {
 			return fmt.Errorf("index value %d out of range in LocationIndices[%d]", idx, i)
 		}

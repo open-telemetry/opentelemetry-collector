@@ -110,7 +110,7 @@ func BenchmarkPutLocation(b *testing.B) {
 		name     string
 		location Location
 
-		runBefore func(*testing.B, LocationSlice, locatable)
+		runBefore func(*testing.B, LocationSlice, Profile)
 	}{
 		{
 			name:     "with a new location",
@@ -124,7 +124,7 @@ func BenchmarkPutLocation(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, _ locatable) {
+			runBefore: func(_ *testing.B, table LocationSlice, _ Profile) {
 				l := table.AppendEmpty()
 				l.SetAddress(1)
 			},
@@ -133,7 +133,7 @@ func BenchmarkPutLocation(b *testing.B) {
 			name:     "with a duplicate location",
 			location: NewLocation(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, obj locatable) {
+			runBefore: func(_ *testing.B, table LocationSlice, obj Profile) {
 				require.NoError(b, PutLocation(table, obj, NewLocation()))
 			},
 		},
@@ -145,7 +145,7 @@ func BenchmarkPutLocation(b *testing.B) {
 				return l
 			}(),
 
-			runBefore: func(_ *testing.B, table LocationSlice, _ locatable) {
+			runBefore: func(_ *testing.B, table LocationSlice, _ Profile) {
 				for i := range 100 {
 					l := table.AppendEmpty()
 					l.SetAddress(uint64(i)) //nolint:gosec // overflow checked
