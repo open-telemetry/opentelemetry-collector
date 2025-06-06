@@ -58,13 +58,13 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		Protocols: Protocols{
-			GRPC: grpcCfg,
-			HTTP: &HTTPConfig{
+			GRPC: configoptional.Default(*grpcCfg),
+			HTTP: configoptional.Default(HTTPConfig{
 				ServerConfig:   httpCfg,
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,
-			},
+			}),
 		},
 	}
 }

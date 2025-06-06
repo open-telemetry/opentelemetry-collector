@@ -24,13 +24,29 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
+// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
+
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	expectedCfg := factory.CreateDefaultConfig().(*Config)
+	GetOrInsertDefault(t, &expectedCfg.GRPC)
+	GetOrInsertDefault(t, &expectedCfg.HTTP)
+	assert.Equal(t, expectedCfg, cfg)
 }
 
 func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
@@ -41,7 +57,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.HTTP = nil
+	GetOrInsertDefault(t, &defaultOnlyGRPC.GRPC)
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -53,7 +69,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -65,7 +81,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -77,7 +93,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -90,12 +106,12 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLSSetting: &configtls.ServerConfig{
+					TLS: &configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
@@ -118,8 +134,8 @@ func TestUnmarshalConfig(t *testing.T) {
 							PermitWithoutStream: true,
 						},
 					},
-				},
-				HTTP: &HTTPConfig{
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
@@ -142,7 +158,7 @@ func TestUnmarshalConfig(t *testing.T) {
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
 					LogsURLPath:    "/log/ingest",
-				},
+				}),
 			},
 		}, cfg)
 }
@@ -156,15 +172,15 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
 					Keepalive:      configgrpc.NewDefaultKeepaliveServerConfig(),
-				},
-				HTTP: &HTTPConfig{
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint:        "/tmp/http_otlp.sock",
 						ResponseHeaders: map[string]configopaque.String{},
@@ -172,7 +188,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
 					LogsURLPath:    defaultLogsURLPath,
-				},
+				}),
 			},
 		}, cfg)
 }

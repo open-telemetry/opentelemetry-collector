@@ -50,6 +50,10 @@ func (s *SizerType) MarshalText() ([]byte, error) {
 	return []byte(s.val), nil
 }
 
+func (s *SizerType) String() string {
+	return s.val
+}
+
 // Sizer is an interface that returns the size of the given element.
 type Sizer[T any] interface {
 	Sizeof(T) int64

@@ -114,6 +114,20 @@ func (ms Int64Slice) MoveTo(dest Int64Slice) {
 	*ms.getOrig() = nil
 }
 
+// MoveAndAppendTo moves all elements from the current slice and appends them to the dest.
+// The current slice will be cleared.
+func (ms Int64Slice) MoveAndAppendTo(dest Int64Slice) {
+	ms.getState().AssertMutable()
+	dest.getState().AssertMutable()
+	if *dest.getOrig() == nil {
+		// We can simply move the entire vector and avoid any allocations.
+		*dest.getOrig() = *ms.getOrig()
+	} else {
+		*dest.getOrig() = append(*dest.getOrig(), *ms.getOrig()...)
+	}
+	*ms.getOrig() = nil
+}
+
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms Int64Slice) CopyTo(dest Int64Slice) {
 	dest.getState().AssertMutable()

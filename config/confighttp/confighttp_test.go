@@ -1602,7 +1602,6 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 			telemetry := componenttest.NewTelemetry()
 			config := NewDefaultServerConfig()
 			config.Endpoint = "localhost:0"
-			config.TLSSetting = nil
 			srv, err := config.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
