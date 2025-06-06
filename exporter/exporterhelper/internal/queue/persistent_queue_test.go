@@ -18,6 +18,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -626,6 +627,9 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, ps.client.Set(context.Background(), queueMetadataKey, badBytes))
 			}
 
+			err := ps.Shutdown(context.Background())
+			require.NoError(t, err)
+
 			// Reload
 			newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
 			assert.Equal(t, c.desiredQueueSize, newPs.Size())
@@ -1232,12 +1236,10 @@ func TestPersistentQueue_SizerLegacyFormatMigration(t *testing.T) {
 	// Calculate expected values after migration
 	// Dispatched items are re-queued, affecting writeIndex and queueSize.
 	expectedWriteIndex := writeIndex + uint64(len(currentlyDispatchedItems))
-	expectedQueueSize := int64(queueSize) + int64(len(currentlyDispatchedItems))*pq.set.sizer.Sizeof(req)
-
 	// Assert queue state
 	assert.Equal(t, readIndex, pq.metadata.ReadIndex)
 	assert.Equal(t, expectedWriteIndex, pq.metadata.WriteIndex)
-	assert.Equal(t, expectedQueueSize, pq.Size())
+	assert.Equal(t, int64(queueSize), pq.Size())
 	assert.Empty(t, pq.metadata.CurrentlyDispatchedItems)
 
 	// Assert new metadata in storage
@@ -1245,12 +1247,13 @@ func TestPersistentQueue_SizerLegacyFormatMigration(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, metadataBytes)
 
-	metadata, err := bytesToMetadata(metadataBytes)
+	metadata := &pq.metadata
+	err = proto.Unmarshal(metadataBytes, metadata)
 	require.NoError(t, err)
 
 	assert.Equal(t, readIndex, metadata.ReadIndex)
 	assert.Equal(t, expectedWriteIndex, metadata.WriteIndex)
-	assert.Equal(t, expectedQueueSize, metadata.QueueSize)
+	assert.Equal(t, int64(queueSize), metadata.QueueSize)
 	assert.Empty(t, metadata.CurrentlyDispatchedItems)
 
 	// Verify legacy keys were cleaned up
