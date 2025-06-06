@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
@@ -98,7 +99,7 @@ func newQueueBatch(
 			blockOnOverflow: cfg.BlockOnOverflow,
 			signal:          set.Signal,
 			storageID:       *cfg.StorageID,
-			encoding:        set.Encoding,
+			encoder:         persistentqueue.NewEncoder[request.Request](set.Encoding),
 			id:              set.ID,
 			telemetry:       set.Telemetry,
 		}), cfg.NumConsumers, b.Consume)
