@@ -97,6 +97,9 @@ type scraperTestCase struct {
 	scrapeErr                 error
 	expectScraped             bool
 
+	parallel    bool
+	workerCount int
+
 	initialize    bool
 	close         bool
 	initializeErr error
@@ -112,6 +115,19 @@ func TestLogsScrapeController(t *testing.T) {
 			name:          "AddLogsScrapersWithCollectionInterval",
 			scrapers:      2,
 			expectScraped: true,
+		},
+		{
+			name:          "AddParallelLogsScrapersWithCollectionInterval",
+			scrapers:      2,
+			expectScraped: true,
+			parallel:      true,
+		},
+		{
+			name:          "AddLimitedParallelLogsScrapersWithCollectionInterval",
+			scrapers:      5,
+			expectScraped: true,
+			parallel:      true,
+			workerCount:   2,
 		},
 		{
 			name:      "AddLogsScrapers_ScrapeError",
@@ -152,6 +168,9 @@ func TestLogsScrapeController(t *testing.T) {
 
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
+			if test.parallel {
+				options = append(options, WithParallel(test.workerCount))
+			}
 
 			sink := new(consumertest.LogsSink)
 			cfg := newTestNoDelaySettings()
@@ -225,6 +244,19 @@ func TestMetricsScrapeController(t *testing.T) {
 			expectScraped: true,
 		},
 		{
+			name:          "AddParallelMetricsScrapersWithCollectionInterval",
+			scrapers:      2,
+			expectScraped: true,
+			parallel:      true,
+		},
+		{
+			name:          "AddLimitedParallelMetricsScrapersWithCollectionInterval",
+			scrapers:      5,
+			expectScraped: true,
+			parallel:      true,
+			workerCount:   2,
+		},
+		{
 			name:      "AddMetricsScrapers_ScrapeError",
 			scrapers:  2,
 			scrapeErr: errors.New("err1"),
@@ -263,6 +295,9 @@ func TestMetricsScrapeController(t *testing.T) {
 
 			tickerCh := make(chan time.Time)
 			options = append(options, WithTickerChannel(tickerCh))
+			if test.parallel {
+				options = append(options, WithParallel(test.workerCount))
+			}
 
 			sink := new(consumertest.MetricsSink)
 			cfg := newTestNoDelaySettings()

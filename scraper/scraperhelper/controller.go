@@ -65,12 +65,23 @@ func WithTickerChannel(tickerCh <-chan time.Time) ControllerOption {
 	})
 }
 
+// WithParallel allows you to run the scrapers in parallel. The default behavior
+// is to run them sequentially.
+func WithParallel(workers int) ControllerOption {
+	return optionFunc(func(o *controllerOptions) {
+		o.parallel = true
+		o.workerCount = workers
+	})
+}
+
 type factoryWithConfig struct {
 	f   scraper.Factory
 	cfg component.Config
 }
 
 type controllerOptions struct {
+	parallel            bool
+	workerCount         int
 	tickerCh            <-chan time.Time
 	factoriesWithConfig []factoryWithConfig
 }
@@ -84,6 +95,10 @@ type controller[T component.Component] struct {
 	scrapeFunc func(*controller[T])
 	tickerCh   <-chan time.Time
 
+	parallel    bool
+	workerCount int
+	scrapeJobs  chan scrapeInstance
+
 	done chan struct{}
 	wg   sync.WaitGroup
 
@@ -96,6 +111,8 @@ func newController[T component.Component](
 	scrapers []T,
 	scrapeFunc func(*controller[T]),
 	tickerCh <-chan time.Time,
+	parallel bool,
+	workerCount int,
 ) (*controller[T], error) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             rSet.ID,
@@ -115,6 +132,12 @@ func newController[T component.Component](
 		done:               make(chan struct{}),
 		tickerCh:           tickerCh,
 		obsrecv:            obsrecv,
+		parallel:           parallel,
+		workerCount:        workerCount,
+	}
+
+	if parallel {
+		cs.scrapeJobs = make(chan scrapeInstance, workerCount)
 	}
 
 	return cs, nil
@@ -128,14 +151,55 @@ func (sc *controller[T]) Start(ctx context.Context, host component.Host) error {
 		}
 	}
 
+	if sc.parallel {
+		sc.startParallelScrapeWorkers(ctx)
+	}
+
 	sc.startScraping()
 	return nil
+}
+
+func (sc *controller[T]) startParallelScrapeWorkers(ctx context.Context) {
+	if sc.workerCount <= 0 {
+		// Run each parallel scrape instance in a new goroutine if worker count is not restricted.
+		sc.wg.Add(1)
+		go func(ctx context.Context) {
+			defer sc.wg.Done()
+			for {
+				select {
+				case <-sc.done:
+					return
+				case <-ctx.Done():
+					return
+				case job := <-sc.scrapeJobs:
+					sc.wg.Add(1)
+					go func() {
+						defer sc.wg.Done()
+						job.done <- job.scrapeFunc()
+					}()
+				}
+			}
+		}(ctx)
+		return
+	}
+
+	for range sc.workerCount {
+		w := createWorker(ctx, sc.scrapeJobs, sc.done)
+		sc.wg.Add(1)
+		go func() {
+			defer sc.wg.Done()
+			w.run()
+		}()
+	}
 }
 
 // Shutdown the receiver, invoked during service shutdown.
 func (sc *controller[T]) Shutdown(ctx context.Context) error {
 	// Signal the goroutine to stop.
 	close(sc.done)
+	if sc.parallel {
+		close(sc.scrapeJobs)
+	}
 	sc.wg.Wait()
 	var errs error
 	for _, scrp := range sc.scrapers {
@@ -180,6 +244,42 @@ func (sc *controller[T]) startScraping() {
 	}()
 }
 
+type worker struct {
+	input chan scrapeInstance
+	ctx   context.Context
+	done  chan struct{}
+}
+
+func createWorker(ctx context.Context, scrapeJobs chan scrapeInstance, done chan struct{}) *worker {
+	return &worker{
+		input: scrapeJobs,
+		ctx:   ctx,
+		done:  done,
+	}
+}
+
+func (w *worker) run() {
+	for {
+		select {
+		case <-w.done:
+			return
+		case <-w.ctx.Done():
+			return
+		case si := <-w.input:
+			// This means the scrapeFunc has been closed
+			if si.scrapeFunc == nil {
+				return
+			}
+			si.done <- si.scrapeFunc()
+		}
+	}
+}
+
+type scrapeInstance struct {
+	scrapeFunc func() error
+	done       chan error
+}
+
 // NewLogsController creates a receiver.Logs with the configured options, that can control multiple scraper.Logs.
 func NewLogsController(cfg *ControllerConfig,
 	rSet receiver.Settings,
@@ -201,7 +301,7 @@ func NewLogsController(cfg *ControllerConfig,
 		scrapers = append(scrapers, s)
 	}
 	return newController[scraper.Logs](
-		cfg, rSet, scrapers, func(c *controller[scraper.Logs]) { scrapeLogs(c, nextConsumer) }, co.tickerCh)
+		cfg, rSet, scrapers, func(c *controller[scraper.Logs]) { scrapeLogs(c, nextConsumer) }, co.tickerCh, co.parallel, co.workerCount)
 }
 
 // NewMetricsController creates a receiver.Metrics with the configured options, that can control multiple scraper.Metrics.
@@ -225,45 +325,100 @@ func NewMetricsController(cfg *ControllerConfig,
 		scrapers = append(scrapers, s)
 	}
 	return newController[scraper.Metrics](
-		cfg, rSet, scrapers, func(c *controller[scraper.Metrics]) { scrapeMetrics(c, nextConsumer) }, co.tickerCh)
+		cfg, rSet, scrapers, func(c *controller[scraper.Metrics]) { scrapeMetrics(c, nextConsumer) }, co.tickerCh, co.parallel, co.workerCount)
 }
 
 func scrapeLogs(c *controller[scraper.Logs], nextConsumer consumer.Logs) {
-	ctx, done := withScrapeContext(c.timeout)
-	defer done()
-
 	logs := plog.NewLogs()
-	for i := range c.scrapers {
-		md, err := c.scrapers[i].ScrapeLogs(ctx)
-		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
-		}
-		md.ResourceLogs().MoveAndAppendTo(logs.ResourceLogs())
-	}
-
-	logRecordCount := logs.LogRecordCount()
-	ctx = c.obsrecv.StartMetricsOp(ctx)
-	err := nextConsumer.ConsumeLogs(ctx, logs)
-	c.obsrecv.EndMetricsOp(ctx, "", logRecordCount, err)
+	scrape(c,
+		func(ctx context.Context, logs plog.Logs) {
+			logRecordCount := logs.LogRecordCount()
+			ctx = c.obsrecv.StartMetricsOp(ctx)
+			err := nextConsumer.ConsumeLogs(ctx, logs)
+			c.obsrecv.EndMetricsOp(ctx, "", logRecordCount, err)
+		},
+		logs,
+		func(agg plog.Logs, output plog.Logs) {
+			output.ResourceLogs().MoveAndAppendTo(agg.ResourceLogs())
+		},
+		func(sc scraper.Logs) func(context.Context) (plog.Logs, error) {
+			return sc.ScrapeLogs
+		},
+	)
 }
 
 func scrapeMetrics(c *controller[scraper.Metrics], nextConsumer consumer.Metrics) {
+	metrics := pmetric.NewMetrics()
+	scrape(c,
+		func(ctx context.Context, metrics pmetric.Metrics) {
+			dataPointCount := metrics.DataPointCount()
+			ctx = c.obsrecv.StartMetricsOp(ctx)
+			err := nextConsumer.ConsumeMetrics(ctx, metrics)
+			c.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
+		},
+		metrics,
+		func(agg pmetric.Metrics, output pmetric.Metrics) {
+			output.ResourceMetrics().MoveAndAppendTo(agg.ResourceMetrics())
+		},
+		func(sc scraper.Metrics) func(context.Context) (pmetric.Metrics, error) {
+			return sc.ScrapeMetrics
+		},
+	)
+}
+
+func scrape[T any, G component.Component](c *controller[G],
+	sendToConsumer func(context.Context, T),
+	agg T,
+	aggFunc func(T, T),
+	extractScrapeFunction func(G) func(context.Context) (T, error),
+) {
 	ctx, done := withScrapeContext(c.timeout)
 	defer done()
 
-	metrics := pmetric.NewMetrics()
-	for i := range c.scrapers {
-		md, err := c.scrapers[i].ScrapeMetrics(ctx)
-		if err != nil && !scrapererror.IsPartialScrapeError(err) {
-			continue
+	if c.parallel {
+		appendMtx := sync.Mutex{}
+		doneCh := make(chan error, len(c.scrapers))
+
+		for _, scraper := range c.scrapers {
+			c.scrapeJobs <- scrapeInstance{
+				scrapeFunc: func() error {
+					singleScrape(ctx, extractScrapeFunction(scraper), agg, aggFunc, &appendMtx)
+					return nil
+				},
+				done: doneCh,
+			}
 		}
-		md.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+
+		// Wait for all scrapes to return
+		scrapesCompleted := 0
+		for scrapesCompleted < len(c.scrapers) {
+			select {
+			case <-doneCh:
+				scrapesCompleted++
+			case <-c.done:
+				return
+			}
+		}
+	} else {
+		// If parallel is false, we will run scrapers sequentially.
+		for _, scraper := range c.scrapers {
+			singleScrape(ctx, extractScrapeFunction(scraper), agg, aggFunc, nil)
+		}
 	}
 
-	dataPointCount := metrics.DataPointCount()
-	ctx = c.obsrecv.StartMetricsOp(ctx)
-	err := nextConsumer.ConsumeMetrics(ctx, metrics)
-	c.obsrecv.EndMetricsOp(ctx, "", dataPointCount, err)
+	sendToConsumer(ctx, agg)
+}
+
+func singleScrape[T any](ctx context.Context, sc func(context.Context) (T, error), aggregate T, aggFunc func(T, T), appendMtx *sync.Mutex) {
+	output, err := sc(ctx)
+	if err != nil && !scrapererror.IsPartialScrapeError(err) {
+		return
+	}
+	if appendMtx != nil {
+		appendMtx.Lock()
+		defer appendMtx.Unlock()
+	}
+	aggFunc(aggregate, output)
 }
 
 func getOptions(options []ControllerOption) controllerOptions {
