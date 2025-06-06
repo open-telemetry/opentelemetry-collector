@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -140,12 +141,13 @@ func TestMergeSplitTraces(t *testing.T) {
 
 func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 	tests := []struct {
-		name     string
-		szt      RequestSizerType
-		maxSize  int
-		lr1      Request
-		lr2      Request
-		expected []Request
+		name               string
+		szt                RequestSizerType
+		maxSize            int
+		lr1                Request
+		lr2                Request
+		expected           []Request
+		expectPartialError bool
 	}{
 		{
 			name:     "both_requests_empty",
@@ -230,11 +232,32 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 					return ld
 				}()),
 			},
+			expectPartialError: false,
+		},
+		{
+			name:    "unsplittable_large_trace",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			lr1: newTracesRequest(func() ptrace.Traces {
+				ld := testdata.GenerateTraces(1)
+				ld.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("large_attr", string(make([]byte, 100)))
+				return ld
+			}()),
+			lr2:                nil,
+			expected:           []Request{},
+			expectPartialError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
+			if tt.expectPartialError {
+				require.Error(t, err)
+				var partialErr *partialsuccess.PartialSuccessError
+				require.ErrorAs(t, err, &partialErr)
+				assert.Contains(t, err.Error(), "failed to split traces request: size is greater than max size")
+				return
+			}
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
