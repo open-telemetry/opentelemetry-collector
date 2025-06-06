@@ -74,7 +74,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.64.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.5 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
@@ -95,6 +94,7 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v0.127.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.33.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.33.0 // indirect
+	go.opentelemetry.io/collector/config/configoptional v0.0.0-20250605110633-e8ca607b7989 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.33.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.127.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.33.0 // indirect
@@ -196,6 +196,8 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
 
 replace go.opentelemetry.io/collector/config/configopaque => ../../config/configopaque
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
