@@ -11,6 +11,7 @@ import (
 	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -60,7 +61,7 @@ func (qb *partitionBatcher) resetTimer() {
 	}
 }
 
-func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -203,7 +204,7 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
-func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
@@ -229,7 +230,7 @@ func (wp *workerPool) execute(f func()) {
 	wp.workers <- struct{}{}
 }
 
-type multiDone []Done
+type multiDone []queue.Done
 
 func (mdc multiDone) OnDone(err error) {
 	for _, d := range mdc {
@@ -238,13 +239,13 @@ func (mdc multiDone) OnDone(err error) {
 }
 
 type refCountDone struct {
-	done     Done
+	done     queue.Done
 	mu       sync.Mutex
 	refCount int64
 	err      error
 }
 
-func newRefCountDone(done Done, refCount int64) Done {
+func newRefCountDone(done queue.Done, refCount int64) queue.Done {
 	return &refCountDone{
 		done:     done,
 		refCount: refCount,
