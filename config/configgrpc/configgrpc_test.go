@@ -60,9 +60,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 }
 
 func TestNewDefaultClientConfig(t *testing.T) {
+	keepalive := NewDefaultKeepaliveClientConfig()
 	expected := &ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Keepalive:    &keepalive,
 		BalancerName: BalancerName(),
 	}
 
@@ -87,17 +88,20 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
+	serverParameters := NewDefaultKeepaliveServerParameters()
+	enforcementPolicy := NewDefaultKeepaliveEnforcementPolicy()
 	expected := &KeepaliveServerConfig{
-		ServerParameters:  NewDefaultKeepaliveServerParameters(),
-		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+		ServerParameters:  &serverParameters,
+		EnforcementPolicy: &enforcementPolicy,
 	}
 	result := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, expected, result)
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
+	keepalive := NewDefaultKeepaliveServerConfig()
 	expected := &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
+		Keepalive: &keepalive,
 	}
 
 	result := NewDefaultServerConfig()
