@@ -57,6 +57,14 @@ func TestProfilesRequest(t *testing.T) {
 	)
 }
 
+func TestProfilesRequest_BytesSize(t *testing.T) {
+	profiles := testdata.GenerateProfiles(2)
+	pr := newProfilesRequest(profiles)
+	size := pr.BytesSize()
+	expectedSize := profilesMarshaler.ProfilesSize(profiles)
+	assert.Equal(t, expectedSize, size, "BytesSize should return same size as direct marshaler call")
+}
+
 func TestProfilesExporter_InvalidName(t *testing.T) {
 	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushProfilesData(nil))
 	require.Nil(t, le)

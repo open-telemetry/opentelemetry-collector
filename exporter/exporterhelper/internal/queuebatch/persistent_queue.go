@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -51,15 +52,16 @@ var indexDonePool = sync.Pool{
 }
 
 type persistentQueueSettings[T any] struct {
-	sizer           request.Sizer[T]
-	sizerType       request.SizerType
-	capacity        int64
-	blockOnOverflow bool
-	signal          pipeline.Signal
-	storageID       component.ID
-	encoding        Encoding[T]
-	id              component.ID
-	telemetry       component.TelemetrySettings
+	sizer            request.Sizer[T]
+	sizerType        request.SizerType
+	capacity         int64
+	blockOnOverflow  bool
+	signal           pipeline.Signal
+	storageID        component.ID
+	encoding         Encoding[T]
+	id               component.ID
+	telemetry        component.TelemetrySettings
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // persistentQueue provides a persistent queue implementation backed by file storage extension

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -49,18 +50,25 @@ type BaseExporter struct {
 	queueBatchSettings QueueBatchSettings[request.Request]
 	queueCfg           queuebatch.Config
 	batcherCfg         BatcherConfig
+	tb                 *metadata.TelemetryBuilder
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
+	var err error
 	be := &BaseExporter{
 		Set:        set,
 		timeoutCfg: NewDefaultTimeoutConfig(),
 	}
 
 	for _, op := range options {
-		if err := op(be); err != nil {
+		if err = op(be); err != nil {
 			return nil, err
 		}
+	}
+
+	be.tb, err = metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
 
 	// Consumer Sender is always initialized.
@@ -77,11 +85,7 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.firstSender = be.RetrySender
 	}
 
-	var err error
-	be.firstSender, err = newObsReportSender(set, signal, be.firstSender)
-	if err != nil {
-		return nil, err
-	}
+	be.firstSender = newObsReportSender(set, signal, be.firstSender, be.tb)
 
 	if be.batcherCfg.Enabled || be.queueCfg.Batch != nil {
 		// Batcher mutates the data.
@@ -90,12 +94,13 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 
 	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
 		qSet := queuebatch.Settings[request.Request]{
-			Signal:      signal,
-			ID:          set.ID,
-			Telemetry:   set.TelemetrySettings,
-			Encoding:    be.queueBatchSettings.Encoding,
-			Sizers:      be.queueBatchSettings.Sizers,
-			Partitioner: be.queueBatchSettings.Partitioner,
+			Signal:           signal,
+			ID:               set.ID,
+			Telemetry:        set.TelemetrySettings,
+			Encoding:         be.queueBatchSettings.Encoding,
+			Sizers:           be.queueBatchSettings.Sizers,
+			Partitioner:      be.queueBatchSettings.Partitioner,
+			TelemetryBuilder: be.tb,
 		}
 		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {

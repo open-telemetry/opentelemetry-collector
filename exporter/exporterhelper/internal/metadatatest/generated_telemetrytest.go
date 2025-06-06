@@ -12,6 +12,21 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
+func AssertEqualExporterBatchSendSizeBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_batch_send_size_bytes",
+		Description: "Batches size in the queue (in bytes). [alpha]",
+		Unit:        "{By}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_batch_send_size_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterEnqueueFailedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_enqueue_failed_log_records",
@@ -63,7 +78,7 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_capacity",
-		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
+		Description: "Fixed capacity of the retry queue (in batches). [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -77,7 +92,7 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_size",
-		Description: "Current size of the retry queue (in batches) [alpha]",
+		Description: "Current size of the retry queue (in batches). [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,

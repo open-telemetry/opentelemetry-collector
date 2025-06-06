@@ -33,14 +33,9 @@ type obsQueue[T request.Request] struct {
 }
 
 func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
-	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
-	if err != nil {
-		return nil, err
-	}
-
 	exporterAttr := attribute.String(exporterKey, set.ID.String())
 	asyncAttr := metric.WithAttributeSet(attribute.NewSet(exporterAttr, attribute.String(dataTypeKey, set.Signal.String())))
-	err = tb.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
+	err := set.TelemetryBuilder.RegisterExporterQueueSizeCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(delegate.Size(), asyncAttr)
 		return nil
 	})
@@ -48,7 +43,7 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		return nil, err
 	}
 
-	err = tb.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
+	err = set.TelemetryBuilder.RegisterExporterQueueCapacityCallback(func(_ context.Context, o metric.Int64Observer) error {
 		o.Observe(delegate.Capacity(), asyncAttr)
 		return nil
 	})
@@ -60,18 +55,18 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 
 	or := &obsQueue[T]{
 		Queue:      delegate,
-		tb:         tb,
+		tb:         set.TelemetryBuilder,
 		metricAttr: metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
 		tracer:     tracer,
 	}
 
 	switch set.Signal {
 	case pipeline.SignalTraces:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedSpans
+		or.enqueueFailedInst = set.TelemetryBuilder.ExporterEnqueueFailedSpans
 	case pipeline.SignalMetrics:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedMetricPoints
+		or.enqueueFailedInst = set.TelemetryBuilder.ExporterEnqueueFailedMetricPoints
 	case pipeline.SignalLogs:
-		or.enqueueFailedInst = tb.ExporterEnqueueFailedLogRecords
+		or.enqueueFailedInst = set.TelemetryBuilder.ExporterEnqueueFailedLogRecords
 	}
 
 	return or, nil

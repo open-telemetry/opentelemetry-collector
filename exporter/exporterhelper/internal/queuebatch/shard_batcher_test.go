@@ -13,8 +13,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
@@ -408,6 +411,67 @@ func TestShardBatcher_MergeError(t *testing.T) {
 	// Check that done callback is called for the right amount of times.
 	assert.EqualValues(t, 2, done.errors.Load())
 	assert.EqualValues(t, 0, done.success.Load())
+}
+
+func TestShardBatcher_BatchSizeMetric(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		MinSize:      0,
+	}
+
+	sink := requesttest.NewSink()
+
+	reader := metric.NewManualReader()
+	meterProvider := metric.NewMeterProvider(metric.WithReader(reader))
+
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.MeterProvider = meterProvider
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	require.NoError(t, err)
+
+	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
+		sizerType:   request.SizerTypeBytes,
+		sizer:       newFakeBytesSizer(),
+		partitioner: nil,
+		next:        sink.Export,
+		maxWorkers:  1,
+		tb:          telemetryBuilder,
+	})
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 1, Bytes: 100}, done)
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.BytesCount() == 100
+	}, 1*time.Second, 10*time.Millisecond)
+
+	metrics := &metricdata.ResourceMetrics{}
+	err = reader.Collect(context.Background(), metrics)
+	require.NoError(t, err)
+
+	var found bool
+	for _, scope := range metrics.ScopeMetrics {
+		for _, metric := range scope.Metrics {
+			if metric.Name == "otelcol_exporter_batch_send_size_bytes" {
+				found = true
+				if hist, ok := metric.Data.(metricdata.Histogram[int64]); ok {
+					require.Len(t, hist.DataPoints, 1)
+					dp := hist.DataPoints[0]
+					assert.Equal(t, int64(100), dp.Sum)
+					assert.Equal(t, uint64(1), dp.Count)
+				} else {
+					t.Error("Expected histogram data type")
+				}
+			}
+		}
+	}
+	assert.True(t, found, "Batch size metric not found")
+	assert.EqualValues(t, 1, done.success.Load())
 }
 
 type fakeDone struct {

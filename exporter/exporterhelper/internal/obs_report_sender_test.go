@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -38,13 +39,17 @@ func TestExportTraceDataOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	tb, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+	require.NoError(t, err)
+	t.Cleanup(func() { tb.Shutdown() })
+
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalTraces,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		tb,
 	)
-	require.NoError(t, err)
 
 	params := []testParams{
 		{items: 22, err: nil},
@@ -106,13 +111,17 @@ func TestExportMetricsOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	tb, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+	require.NoError(t, err)
+	t.Cleanup(func() { tb.Shutdown() })
+
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalMetrics,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		tb,
 	)
-	require.NoError(t, err)
 
 	params := []testParams{
 		{items: 17, err: nil},
@@ -174,13 +183,17 @@ func TestExportLogsOp(t *testing.T) {
 	parentCtx, parentSpan := tt.NewTelemetrySettings().TracerProvider.Tracer("test").Start(context.Background(), t.Name())
 	defer parentSpan.End()
 
+	tb, err := metadata.NewTelemetryBuilder(tt.NewTelemetrySettings())
+	require.NoError(t, err)
+	t.Cleanup(func() { tb.Shutdown() })
+
 	var exporterErr error
-	obsrep, err := newObsReportSender(
+	obsrep := newObsReportSender(
 		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 		pipeline.SignalLogs,
 		sender.NewSender(func(context.Context, request.Request) error { return exporterErr }),
+		tb,
 	)
-	require.NoError(t, err)
 
 	params := []testParams{
 		{items: 17, err: nil},

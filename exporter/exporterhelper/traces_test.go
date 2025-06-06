@@ -55,6 +55,19 @@ func TestTracesRequest(t *testing.T) {
 	assert.Equal(t, newTracesRequest(ptrace.NewTraces()), mr.(RequestErrorHandler).OnError(traceErr))
 }
 
+func TestTracesRequest_BytesSize(t *testing.T) {
+	// Generate test traces with known data
+	traces := testdata.GenerateTraces(2)
+	tr := newTracesRequest(traces)
+
+	// Get the size using BytesSize method
+	size := tr.BytesSize()
+
+	// Verify size matches the direct marshaler call
+	expectedSize := tracesMarshaler.TracesSize(traces)
+	assert.Equal(t, expectedSize, size, "BytesSize should return same size as direct marshaler call")
+}
+
 func TestTraces_InvalidName(t *testing.T) {
 	te, err := NewTraces(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newTraceDataPusher(nil))
 	require.Nil(t, te)

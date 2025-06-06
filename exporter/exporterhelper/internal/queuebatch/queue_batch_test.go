@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -27,11 +28,18 @@ import (
 )
 
 func newFakeRequestSettings() Settings[request.Request] {
+	ts := componenttest.NewNopTelemetrySettings()
+	tb, err := metadata.NewTelemetryBuilder(ts)
+	if err != nil {
+		panic(err)
+	}
+
 	return Settings[request.Request]{
-		Signal:    pipeline.SignalMetrics,
-		ID:        component.NewID(exportertest.NopType),
-		Telemetry: componenttest.NewNopTelemetrySettings(),
-		Encoding:  newFakeEncoding(&requesttest.FakeRequest{}),
+		Signal:           pipeline.SignalMetrics,
+		ID:               component.NewID(exportertest.NopType),
+		Telemetry:        ts,
+		TelemetryBuilder: tb,
+		Encoding:         newFakeEncoding(&requesttest.FakeRequest{}),
 		Sizers: map[request.SizerType]request.Sizer[request.Request]{
 			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
 			request.SizerTypeItems:    request.NewItemsSizer(),

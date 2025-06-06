@@ -10,6 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/metric"
+	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
+	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -141,6 +144,29 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 			require.NoError(t, be.Shutdown(context.Background()))
 		})
 	}
+}
+
+type failingMeterProvider struct {
+	embeddedmetric.MeterProvider
+}
+
+func (m failingMeterProvider) Meter(_ string, _ ...metric.MeterOption) metric.Meter {
+	return failingMeter{}
+}
+
+type failingMeter struct {
+	noopmetric.Meter
+}
+
+func (m failingMeter) Int64Counter(_ string, _ ...metric.Int64CounterOption) (metric.Int64Counter, error) {
+	return nil, errors.New("failed to create counter")
+}
+
+func TestBaseExporterWithTelemetryError(t *testing.T) {
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.MeterProvider = failingMeterProvider{}
+	_, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport)
+	require.Error(t, err)
 }
 
 func errExport(context.Context, request.Request) error {
