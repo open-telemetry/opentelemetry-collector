@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
-func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
+func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -59,7 +59,7 @@ func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -84,7 +84,7 @@ func TestShardBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
+func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
 		sizerType  request.SizerType
@@ -124,7 +124,7 @@ func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -160,7 +160,7 @@ func TestShardBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
+func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11869")
 	}
@@ -204,7 +204,7 @@ func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -230,7 +230,7 @@ func TestShardBatcher_NoSplit_WithTimeout(t *testing.T) {
 	}
 }
 
-func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
+func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("Skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector/issues/11847")
 	}
@@ -275,7 +275,7 @@ func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
 			}
 
 			sink := requesttest.NewSink()
-			ba := newShard(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -315,14 +315,14 @@ func TestShardBatcher_Split_TimeoutDisabled(t *testing.T) {
 	}
 }
 
-func TestShardBatcher_Shutdown(t *testing.T) {
+func TestPartitionBatcher_Shutdown(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Second,
 		MinSize:      10,
 	}
 
 	sink := requesttest.NewSink()
-	ba := newShard(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
+	ba := newPartitionBatcher(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -342,7 +342,7 @@ func TestShardBatcher_Shutdown(t *testing.T) {
 	assert.EqualValues(t, 2, done.success.Load())
 }
 
-func TestShardBatcher_MergeError(t *testing.T) {
+func TestPartitionBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
 		MinSize:      5,
@@ -350,7 +350,7 @@ func TestShardBatcher_MergeError(t *testing.T) {
 	}
 
 	sink := requesttest.NewSink()
-	ba := newShard(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
+	ba := newPartitionBatcher(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
