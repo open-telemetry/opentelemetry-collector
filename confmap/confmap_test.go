@@ -562,6 +562,28 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
+type B struct {
+	String string `mapstructure:"string"`
+}
+
+func (b *B) Unmarshal(conf *Conf) error {
+	return conf.Unmarshal(b)
+}
+
+type A struct {
+	B `mapstructure:",squash"`
+}
+
+func (a *A) Unmarshal(conf *Conf) error {
+	return conf.Unmarshal(a)
+}
+
+func TestUnmarshalerEmbeddedNilMap(t *testing.T) {
+	cfg := A{}
+	nilConf := NewFromStringMap(nil)
+	require.NoError(t, nilConf.Unmarshal(&cfg))
+}
+
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]any{
 		"next": map[string]any{
