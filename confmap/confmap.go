@@ -234,10 +234,9 @@ func (l *Conf) Sub(key string) (*Conf, error) {
 			c := New()
 			c.isNil = true
 			return c, nil
-		} else {
-			// override data with the original value to make the error message more informative.
-			data = v.Value
 		}
+		// override data with the original value to make the error message more informative.
+		data = v.Value
 	}
 
 	return nil, fmt.Errorf("unexpected sub-config value kind for key:%s value:%v kind:%v", key, data, reflect.TypeOf(data).Kind())
