@@ -115,7 +115,6 @@ type ClientConfig struct {
 func NewDefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
 		BalancerName: BalancerName(),
 	}
 }
@@ -211,9 +210,7 @@ type ServerConfig struct {
 
 // NewDefaultServerConfig returns a new instance of ServerConfig with default values.
 func NewDefaultServerConfig() *ServerConfig {
-	return &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
-	}
+	return &ServerConfig{}
 }
 
 func (gcs *ClientConfig) Validate() error {

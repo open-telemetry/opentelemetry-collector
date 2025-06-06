@@ -378,7 +378,6 @@ type ServerConfig struct {
 func NewDefaultServerConfig() ServerConfig {
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
