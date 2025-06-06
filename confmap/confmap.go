@@ -256,6 +256,10 @@ func (l *Conf) toStringMapWithExpand() map[string]any {
 //
 // For example, for a Conf created from `foo: ${env:FOO}` and `FOO=123`
 // ToStringMap will return `map[string]any{"foo": 123}`.
+//
+// For any map `m`, `NewFromStringMap(m).ToStringMap() == m`.
+// In particular, if the Conf was created from a nil value,
+// ToStringMap will return map[string]any(nil).
 func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
