@@ -19,6 +19,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    receiver_accepted_spans_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of spans successfully pushed into the pipeline.
+      unit: "{bytes}"
+      sum:
+        value_type: int
+        monotonic: true
+
     receiver_refused_spans:
       enabled: true
       stability:
@@ -29,12 +39,32 @@ telemetry:
         value_type: int
         monotonic: true
 
+    receiver_refused_spans_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of spans that could not be pushed into the pipeline.
+      unit: "{bytes}"
+      sum:
+        value_type: int
+        monotonic: true
+
     receiver_accepted_metric_points:
       enabled: true
       stability:
         level: alpha
       description: Number of metric points successfully pushed into the pipeline.
       unit: "{datapoints}"
+      sum:
+        value_type: int
+        monotonic: true
+  
+    receiver_accepted_metric_points_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of metric points successfully pushed into the pipeline.
+      unit: "{bytes}"
       sum:
         value_type: int
         monotonic: true
@@ -49,6 +79,16 @@ telemetry:
         value_type: int
         monotonic: true
 
+    receiver_refused_metric_points_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of metric points that could not be pushed into the pipeline.
+      unit: "{bytes}"
+      sum:
+        value_type: int
+        monotonic: true
+
     receiver_accepted_log_records:
       enabled: true
       stability:
@@ -59,12 +99,32 @@ telemetry:
         value_type: int
         monotonic: true
 
+    receiver_accepted_log_records_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of log records successfully pushed into the pipeline.
+      unit: "{bytes}"
+      sum:
+        value_type: int
+        monotonic: true
+
     receiver_refused_log_records:
       enabled: true
       stability:
         level: alpha
       description: Number of log records that could not be pushed into the pipeline.
       unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    receiver_refused_log_records_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of log records that could not be pushed into the pipeline.
+      unit: "{bytes}"
       sum:
         value_type: int
         monotonic: true

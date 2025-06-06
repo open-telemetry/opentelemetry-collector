@@ -51,18 +51,22 @@ func NewLogs(
 		span.AddEvent("Start processing.", eventOptions)
 		recordsIn := ld.LogRecordCount()
 
+		protoMarshaler := plog.ProtoMarshaler{}
+		incomingBytes := protoMarshaler.LogsSize(ld)
+
 		var errFunc error
 		ld, errFunc = logsFunc(ctx, ld)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
-			obs.recordInOut(ctx, recordsIn, 0)
+			obs.recordInOut(ctx, recordsIn, 0, incomingBytes, 0)
 			if errors.Is(errFunc, ErrSkipProcessingData) {
 				return nil
 			}
 			return errFunc
 		}
 		recordsOut := ld.LogRecordCount()
-		obs.recordInOut(ctx, recordsIn, recordsOut)
+		outgoingBytes := protoMarshaler.LogsSize(ld)
+		obs.recordInOut(ctx, recordsIn, recordsOut, incomingBytes, outgoingBytes)
 		return nextConsumer.ConsumeLogs(ctx, ld)
 	}, bs.consumerOptions...)
 	if err != nil {

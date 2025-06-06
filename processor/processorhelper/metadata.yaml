@@ -19,12 +19,32 @@ telemetry:
         value_type: int
         monotonic: true
 
+    processor_incoming_items_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of items passed to the processor.
+      unit: "{bytes}"
+      sum:
+        value_type: int
+        monotonic: true
+
     processor_outgoing_items:
       enabled: true
       stability:
         level: alpha
       description: Number of items emitted from the processor.
       unit: "{items}"
+      sum:
+        value_type: int
+        monotonic: true
+
+    processor_outgoing_items_bytes:
+      enabled: true
+      stability:
+        level: alpha
+      description: Number of bytes of items emitted from the processor.
+      unit: "{bytes}"
       sum:
         value_type: int
         monotonic: true

@@ -28,6 +28,22 @@ func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualReceiverAcceptedLogRecordsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_accepted_log_records_bytes",
+		Description: "Number of bytes of log records successfully pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_accepted_log_records_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_accepted_metric_points",
@@ -40,6 +56,22 @@ func AssertEqualReceiverAcceptedMetricPoints(t *testing.T, tt *componenttest.Tel
 		},
 	}
 	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualReceiverAcceptedMetricPointsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_accepted_metric_points_bytes",
+		Description: "Number of bytes of metric points successfully pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_accepted_metric_points_bytes")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -60,6 +92,22 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry,
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualReceiverAcceptedSpansBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_accepted_spans_bytes",
+		Description: "Number of bytes of spans successfully pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_accepted_spans_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_log_records",
@@ -72,6 +120,22 @@ func AssertEqualReceiverRefusedLogRecords(t *testing.T, tt *componenttest.Teleme
 		},
 	}
 	got, err := tt.GetMetric("otelcol_receiver_refused_log_records")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualReceiverRefusedLogRecordsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_refused_log_records_bytes",
+		Description: "Number of bytes of log records that could not be pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_refused_log_records_bytes")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
@@ -92,6 +156,22 @@ func AssertEqualReceiverRefusedMetricPoints(t *testing.T, tt *componenttest.Tele
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualReceiverRefusedMetricPointsBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_refused_metric_points_bytes",
+		Description: "Number of bytes of metric points that could not be pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_refused_metric_points_bytes")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_refused_spans",
@@ -104,6 +184,22 @@ func AssertEqualReceiverRefusedSpans(t *testing.T, tt *componenttest.Telemetry, 
 		},
 	}
 	got, err := tt.GetMetric("otelcol_receiver_refused_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
+func AssertEqualReceiverRefusedSpansBytes(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_receiver_refused_spans_bytes",
+		Description: "Number of bytes of spans that could not be pushed into the pipeline. [alpha]",
+		Unit:        "{bytes}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_receiver_refused_spans_bytes")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

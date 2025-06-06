@@ -84,9 +84,10 @@ func (rec *ObsReport) EndTracesOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedSpans int,
+	numReceivedBytes int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedSpans, err, pipeline.SignalTraces)
+	rec.endOp(receiverCtx, format, numReceivedSpans, numReceivedBytes, err, pipeline.SignalTraces)
 }
 
 // StartLogsOp is called when a request is received from a client.
@@ -102,9 +103,10 @@ func (rec *ObsReport) EndLogsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedLogRecords int,
+	numReceivedBytes int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, pipeline.SignalLogs)
+	rec.endOp(receiverCtx, format, numReceivedLogRecords, numReceivedBytes, err, pipeline.SignalLogs)
 }
 
 // StartMetricsOp is called when a request is received from a client.
@@ -120,9 +122,10 @@ func (rec *ObsReport) EndMetricsOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedPoints int,
+	numReceivedBytes int,
 	err error,
 ) {
-	rec.endOp(receiverCtx, format, numReceivedPoints, err, pipeline.SignalMetrics)
+	rec.endOp(receiverCtx, format, numReceivedPoints, numReceivedBytes, err, pipeline.SignalMetrics)
 }
 
 // startOp creates the span used to trace the operation. Returning
@@ -155,19 +158,24 @@ func (rec *ObsReport) endOp(
 	receiverCtx context.Context,
 	format string,
 	numReceivedItems int,
+	numReceivedBytes int,
 	err error,
 	signal pipeline.Signal,
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
+	numAcceptedBytes := numReceivedBytes
+	numRefusedBytes := 0
 	if err != nil {
 		numAccepted = 0
 		numRefused = numReceivedItems
+		numAcceptedBytes = 0
+		numRefusedBytes = numReceivedBytes
 	}
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused)
+	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numAcceptedBytes, numRefusedBytes)
 
 	// end span according to errors
 	if span.IsRecording() {
@@ -196,20 +204,28 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused int) {
-	var acceptedMeasure, refusedMeasure metric.Int64Counter
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused int, numAcceptedBytes, numRefusedBytes int) {
+	var acceptedMeasure, refusedMeasure, acceptedBytesKey, refusedBytesKey metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
+		acceptedBytesKey = rec.telemetryBuilder.ReceiverAcceptedSpansBytes
+		refusedBytesKey = rec.telemetryBuilder.ReceiverRefusedSpansBytes
 	case pipeline.SignalMetrics:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
+		acceptedBytesKey = rec.telemetryBuilder.ReceiverAcceptedMetricPointsBytes
+		refusedBytesKey = rec.telemetryBuilder.ReceiverRefusedMetricPointsBytes
 	case pipeline.SignalLogs:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
+		acceptedBytesKey = rec.telemetryBuilder.ReceiverAcceptedLogRecordsBytes
+		refusedBytesKey = rec.telemetryBuilder.ReceiverRefusedLogRecordsBytes
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
+	acceptedBytesKey.Add(receiverCtx, int64(numAcceptedBytes), rec.otelAttrs)
+	refusedBytesKey.Add(receiverCtx, int64(numRefusedBytes), rec.otelAttrs)
 }

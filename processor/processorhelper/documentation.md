@@ -14,6 +14,14 @@ Number of items passed to the processor. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
 
+### otelcol_processor_incoming_items_bytes
+
+Number of bytes of items passed to the processor. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
+
 ### otelcol_processor_outgoing_items
 
 Number of items emitted from the processor. [alpha]
@@ -21,3 +29,11 @@ Number of items emitted from the processor. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
+
+### otelcol_processor_outgoing_items_bytes
+
+Number of bytes of items emitted from the processor. [alpha]
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {bytes} | Sum | Int | true |
