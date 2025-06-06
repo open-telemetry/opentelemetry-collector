@@ -15,14 +15,16 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
+var _ Batcher[request.Request] = (*partitionBatcher)(nil)
+
 type batch struct {
 	ctx  context.Context
 	req  request.Request
 	done multiDone
 }
 
-// shardBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
-type shardBatcher struct {
+// partitionBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
+type partitionBatcher struct {
 	cfg            BatchConfig
 	wp             *workerPool
 	sizerType      request.SizerType
@@ -35,8 +37,14 @@ type shardBatcher struct {
 	shutdownCh     chan struct{}
 }
 
-func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[request.Request], wp *workerPool, next sender.SendFunc[request.Request]) *shardBatcher {
-	return &shardBatcher{
+func newPartitionBatcher(
+	cfg BatchConfig,
+	sizerType request.SizerType,
+	sizer request.Sizer[request.Request],
+	wp *workerPool,
+	next sender.SendFunc[request.Request],
+) *partitionBatcher {
+	return &partitionBatcher{
 		cfg:         cfg,
 		wp:          wp,
 		sizerType:   sizerType,
@@ -46,13 +54,13 @@ func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[
 	}
 }
 
-func (qb *shardBatcher) resetTimer() {
+func (qb *partitionBatcher) resetTimer() {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer.Reset(qb.cfg.FlushTimeout)
 	}
 }
 
-func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -149,7 +157,7 @@ func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done D
 }
 
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *shardBatcher) Start(context.Context, component.Host) error {
+func (qb *partitionBatcher) Start(context.Context, component.Host) error {
 	if qb.cfg.FlushTimeout <= 0 {
 		return nil
 	}
@@ -170,7 +178,7 @@ func (qb *shardBatcher) Start(context.Context, component.Host) error {
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *shardBatcher) Shutdown(context.Context) error {
+func (qb *partitionBatcher) Shutdown(context.Context) error {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
@@ -179,7 +187,7 @@ func (qb *shardBatcher) Shutdown(context.Context) error {
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *shardBatcher) flushCurrentBatchIfNecessary() {
+func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()
@@ -195,7 +203,7 @@ func (qb *shardBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
-func (qb *shardBatcher) flush(ctx context.Context, req request.Request, done Done) {
+func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done Done) {
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
