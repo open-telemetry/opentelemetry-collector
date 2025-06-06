@@ -1568,7 +1568,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 func TestDefaultHTTPServerSettings(t *testing.T) {
 	httpServerSettings := NewDefaultServerConfig()
 	assert.NotNil(t, httpServerSettings.ResponseHeaders)
-	assert.NotNil(t, httpServerSettings.CORS)
+	assert.Nil(t, httpServerSettings.CORS)
 	assert.Nil(t, httpServerSettings.TLS)
 	assert.Equal(t, 1*time.Minute, httpServerSettings.IdleTimeout)
 	assert.Equal(t, 30*time.Second, httpServerSettings.WriteTimeout)
