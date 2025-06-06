@@ -266,7 +266,7 @@ func (w *worker) run() {
 		case <-w.ctx.Done():
 			return
 		case si := <-w.input:
-			// This means the scrapeFunc has been closed
+			// This means the input has been closed & we receieved a 0-value scrapeInstance.
 			if si.scrapeFunc == nil {
 				return
 			}
