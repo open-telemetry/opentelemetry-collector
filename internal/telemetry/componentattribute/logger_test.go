@@ -1,10 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package componentattribute_test
+package componentattribute
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -31,7 +31,7 @@ type test struct {
 func createZapCore() (zapcore.Core, *observer.ObservedLogs) {
 	core, observed := observer.New(zap.DebugLevel)
 	core = core.With([]zapcore.Field{zap.String("preexisting", "value")})
-	core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+	core = NewConsoleCoreWithAttributes(core, attribute.NewSet())
 	return core, observed
 }
 
@@ -40,13 +40,13 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 	require.Len(t, observedLogs, 3)
 
 	parentContext := map[string]string{
-		"preexisting":                     "value",
-		componentattribute.SignalKey:      pipeline.SignalLogs.String(),
-		componentattribute.ComponentIDKey: "filelog",
+		"preexisting":  "value",
+		SignalKey:      pipeline.SignalLogs.String(),
+		ComponentIDKey: "filelog",
 	}
 	childContext := map[string]string{
-		"preexisting":                     "value",
-		componentattribute.ComponentIDKey: "filelog",
+		"preexisting":  "value",
+		ComponentIDKey: "filelog",
 	}
 
 	require.Equal(t, "test parent before child", observedLogs[0].Message)
@@ -70,8 +70,8 @@ func checkZapLogs(t *testing.T, observed *observer.ObservedLogs) {
 
 func TestCore(t *testing.T) {
 	attrs := attribute.NewSet(
-		attribute.String(componentattribute.SignalKey, pipeline.SignalLogs.String()),
-		attribute.String(componentattribute.ComponentIDKey, "filelog"),
+		attribute.String(SignalKey, pipeline.SignalLogs.String()),
+		attribute.String(ComponentIDKey, "filelog"),
 	)
 
 	tests := []test{
@@ -90,7 +90,7 @@ func TestCore(t *testing.T) {
 			createLogger: func() (*zap.Logger, logRecorder) {
 				core, observed := createZapCore()
 				recorder := logtest.NewRecorder()
-				core = componentattribute.NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", zap.DebugLevel, attribute.NewSet(), func(c zapcore.Core) zapcore.Core { return c })
+				core = NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", zap.DebugLevel, attribute.NewSet())
 				return zap.New(core), logRecorder{zapLogs: observed, otelLogs: recorder}
 			},
 			check: func(t *testing.T, rec logRecorder) {
@@ -107,7 +107,7 @@ func TestCore(t *testing.T) {
 				}
 
 				childAttrs := attribute.NewSet(
-					attribute.String(componentattribute.ComponentIDKey, "filelog"),
+					attribute.String(ComponentIDKey, "filelog"),
 				)
 
 				assert.Equal(t, map[string]attribute.Set{
@@ -122,13 +122,110 @@ func TestCore(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			logger, state := test.createLogger()
 
-			parent := componentattribute.ZapLoggerWithAttributes(logger, attrs)
+			parent := ZapLoggerWithAttributes(logger, attrs)
 			parent.Info("test parent before child")
-			child := componentattribute.ZapLoggerWithAttributes(parent, componentattribute.RemoveAttributes(attrs, componentattribute.SignalKey))
+			child := ZapLoggerWithAttributes(parent, RemoveAttributes(attrs, SignalKey))
 			child.Info("test child")
 			parent.Info("test parent after child")
 
 			test.check(t, state)
 		})
 	}
+}
+
+func TestSamplerCore(t *testing.T) {
+	tick := time.Second
+	// Drop identical messages after the first two
+	first := 2
+	thereafter := 0
+
+	type testCase struct {
+		name           string
+		withAttributes func(inner zapcore.Core, sampler zapcore.Core, attrs attribute.Set) zapcore.Core
+		expectedAttrs  []string
+	}
+	testCases := []testCase{
+		{
+			name: "new-sampler",
+			withAttributes: func(inner zapcore.Core, _ zapcore.Core, attrs attribute.Set) zapcore.Core {
+				return zapcore.NewSamplerWithOptions(tryWithAttributeSet(inner, attrs), tick, first, thereafter)
+			},
+			expectedAttrs: []string{"foo", "bar", "foo", "bar"},
+		},
+		{
+			name: "cloned-sampler",
+			withAttributes: func(_ zapcore.Core, sampler zapcore.Core, attrs attribute.Set) zapcore.Core {
+				return tryWithAttributeSet(sampler, attrs)
+			},
+			expectedAttrs: []string{"foo", "bar"},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			inner, obs := observer.New(zapcore.DebugLevel)
+			inner = NewConsoleCoreWithAttributes(inner, attribute.NewSet(attribute.String("test", "foo")))
+
+			sampler1 := NewSamplerCoreWithAttributes(inner, tick, first, thereafter)
+			loggerFoo := zap.New(sampler1)
+
+			sampler2 := tc.withAttributes(inner, sampler1, attribute.NewSet(attribute.String("test", "bar")))
+			loggerBar := zap.New(sampler2)
+
+			// If the two samplers share their counters, only the first two messages will go through.
+			// If they are independent, the first three and the fifth will go through.
+			loggerFoo.Info("test")
+			loggerBar.Info("test")
+			loggerFoo.Info("test")
+			loggerFoo.Info("test")
+			loggerBar.Info("test")
+			loggerBar.Info("test")
+
+			var attrs []string
+			for _, log := range obs.All() {
+				var fooValue string
+				for _, field := range log.Context {
+					if field.Key == "test" {
+						fooValue = field.String
+					}
+				}
+				attrs = append(attrs, fooValue)
+			}
+			assert.Equal(t, tc.expectedAttrs, attrs)
+		})
+	}
+}
+
+// Worst case scenario for the reflect spell in samplerCoreWithAttributes
+type crazySampler struct {
+	Core int
+}
+
+var _ zapcore.Core = (*crazySampler)(nil)
+
+func (s *crazySampler) Enabled(zapcore.Level) bool {
+	return true
+}
+
+func (s *crazySampler) With([]zapcore.Field) zapcore.Core {
+	return s
+}
+
+func (s *crazySampler) Check(_ zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	return ce
+}
+
+func (s *crazySampler) Write(zapcore.Entry, []zapcore.Field) error {
+	return nil
+}
+
+func (s *crazySampler) Sync() error {
+	return nil
+}
+
+func TestSamplerCorePanic(t *testing.T) {
+	sampler := NewSamplerCoreWithAttributes(zapcore.NewNopCore(), 1, 1, 1)
+	sampler.(*samplerCoreWithAttributes).Core = &crazySampler{}
+	assert.PanicsWithValue(t, "Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/issues/13014", func() {
+		tryWithAttributeSet(sampler, attribute.NewSet())
+	})
 }
