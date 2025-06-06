@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -57,6 +58,8 @@ func newMetricsRequest(md pmetric.Metrics) Request {
 
 type metricsEncoding struct{}
 
+var _ persistentqueue.Encoding[Request] = metricsEncoding{}
+
 func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 	if err != nil {
@@ -65,8 +68,12 @@ func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	return newMetricsRequest(metrics), nil
 }
 
-func (metricsEncoding) Marshal(req Request) ([]byte, error) {
-	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
+func (metricsEncoding) MarshalTo(req Request, b []byte) (int, error) {
+	return metricsMarshaler.MarshalMetricsToSizedBuffer(req.(*metricsRequest).md, b)
+}
+
+func (metricsEncoding) MarshalSize(req Request) int {
+	return metricsMarshaler.MetricsSize(req.(*metricsRequest).md)
 }
 
 func (req *metricsRequest) OnError(err error) Request {

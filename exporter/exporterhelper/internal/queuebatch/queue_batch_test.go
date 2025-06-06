@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -44,15 +45,24 @@ type fakeEncoding struct {
 	mr request.Request
 }
 
-func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
-	return []byte("mockRequest"), nil
+var _ persistentqueue.Encoding[request.Request] = &fakeEncoding{}
+
+func (f fakeEncoding) MarshalTo(_ request.Request, b []byte) (int, error) {
+	for i, ch := range "mockRequest" {
+		b[i] = byte(ch)
+	}
+	return len("mockRequest"), nil
+}
+
+func (f fakeEncoding) MarshalSize(request.Request) int {
+	return len("mockRequest")
 }
 
 func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
 	return f.mr, nil
 }
 
-func newFakeEncoding(mr request.Request) Encoding[request.Request] {
+func newFakeEncoding(mr request.Request) persistentqueue.Encoding[request.Request] {
 	return &fakeEncoding{mr: mr}
 }
 

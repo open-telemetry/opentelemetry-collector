@@ -22,6 +22,13 @@ func (e *ProtoMarshaler) TracesSize(td Traces) int {
 	return pb.Size()
 }
 
+// MarshalTracesToSizedBuffer marshals the Traces into a preallocated byte slice `b`.
+// The byte slice must be preallocated to the size returned by TracesSize.
+func (e *ProtoMarshaler) MarshalTracesToSizedBuffer(td Traces, b []byte) (int, error) {
+	pb := internal.TracesToProto(internal.Traces(td))
+	return pb.MarshalToSizedBuffer(b)
+}
+
 func (e *ProtoMarshaler) ResourceSpansSize(rs ResourceSpans) int {
 	return rs.orig.Size()
 }
