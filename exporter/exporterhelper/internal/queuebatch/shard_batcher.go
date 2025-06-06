@@ -21,15 +21,8 @@ type batch struct {
 	done multiDone
 }
 
-type batcherSettings[T any] struct {
-	sizerType  request.SizerType
-	sizer      request.Sizer[T]
-	next       sender.SendFunc[T]
-	maxWorkers int
-}
-
-// defaultBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
-type defaultBatcher struct {
+// shardBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
+type shardBatcher struct {
 	cfg            BatchConfig
 	workerPool     chan struct{}
 	sizerType      request.SizerType
@@ -42,33 +35,24 @@ type defaultBatcher struct {
 	shutdownCh     chan struct{}
 }
 
-func newDefaultBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *defaultBatcher {
-	// TODO: Determine what is the right behavior for this in combination with async queue.
-	var workerPool chan struct{}
-	if bSet.maxWorkers != 0 {
-		workerPool = make(chan struct{}, bSet.maxWorkers)
-		for i := 0; i < bSet.maxWorkers; i++ {
-			workerPool <- struct{}{}
-		}
-	}
-	return &defaultBatcher{
-		cfg:         bCfg,
+func newShard(cfg BatchConfig, sizerType request.SizerType, sizer request.Sizer[request.Request], workerPool chan struct{}, next sender.SendFunc[request.Request]) *shardBatcher {
+	return &shardBatcher{
+		cfg:         cfg,
 		workerPool:  workerPool,
-		sizerType:   bSet.sizerType,
-		sizer:       bSet.sizer,
-		consumeFunc: bSet.next,
-		stopWG:      sync.WaitGroup{},
+		sizerType:   sizerType,
+		sizer:       sizer,
+		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
 	}
 }
 
-func (qb *defaultBatcher) resetTimer() {
+func (qb *shardBatcher) resetTimer() {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer.Reset(qb.cfg.FlushTimeout)
 	}
 }
 
-func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+func (qb *shardBatcher) Consume(ctx context.Context, req request.Request, done Done) {
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -107,7 +91,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	}
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
-	// If failed to merge signal all Done callbacks from current batch as well as the current request and reset the current batch.
+	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
@@ -121,7 +105,7 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 
 	// We have at least one result in the reqList, if more results here is what that means:
 	// - First result will contain items from the current batch + some results from the current request.
-	// - All other results except first will contain items only from current request.
+	// - All other results except first will contain items only from the current request.
 	// - Last result may not have enough data to be flushed.
 
 	// Logic on how to deal with the current batch:
@@ -164,34 +148,27 @@ func (qb *defaultBatcher) Consume(ctx context.Context, req request.Request, done
 	}
 }
 
-// startTimeBasedFlushingGoroutine starts a goroutine that flushes on timeout.
-func (qb *defaultBatcher) startTimeBasedFlushingGoroutine() {
-	qb.stopWG.Add(1)
-	go func() {
-		defer qb.stopWG.Done()
-		for {
-			select {
-			case <-qb.shutdownCh:
-				return
-			case <-qb.timer.C:
-				qb.flushCurrentBatchIfNecessary()
-			}
-		}
-	}()
-}
-
 // Start starts the goroutine that reads from the queue and flushes asynchronously.
-func (qb *defaultBatcher) Start(_ context.Context, _ component.Host) error {
+func (qb *shardBatcher) start(_ context.Context, _ component.Host) {
 	if qb.cfg.FlushTimeout > 0 {
 		qb.timer = time.NewTimer(qb.cfg.FlushTimeout)
-		qb.startTimeBasedFlushingGoroutine()
+		qb.stopWG.Add(1)
+		go func() {
+			defer qb.stopWG.Done()
+			for {
+				select {
+				case <-qb.shutdownCh:
+					return
+				case <-qb.timer.C:
+					qb.flushCurrentBatchIfNecessary()
+				}
+			}
+		}()
 	}
-
-	return nil
 }
 
 // flushCurrentBatchIfNecessary sends out the current request batch if it is not nil
-func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
+func (qb *shardBatcher) flushCurrentBatchIfNecessary() {
 	qb.currentBatchMu.Lock()
 	if qb.currentBatch == nil {
 		qb.currentBatchMu.Unlock()
@@ -207,7 +184,7 @@ func (qb *defaultBatcher) flushCurrentBatchIfNecessary() {
 }
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
-func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done Done) {
+func (qb *shardBatcher) flush(ctx context.Context, req request.Request, done Done) {
 	qb.stopWG.Add(1)
 	if qb.workerPool != nil {
 		<-qb.workerPool
@@ -222,12 +199,11 @@ func (qb *defaultBatcher) flush(ctx context.Context, req request.Request, done D
 }
 
 // Shutdown ensures that queue and all Batcher are stopped.
-func (qb *defaultBatcher) Shutdown(_ context.Context) error {
+func (qb *shardBatcher) shutdown(_ context.Context) {
 	close(qb.shutdownCh)
 	// Make sure execute one last flush if necessary.
 	qb.flushCurrentBatchIfNecessary()
 	qb.stopWG.Wait()
-	return nil
 }
 
 type multiDone []Done
