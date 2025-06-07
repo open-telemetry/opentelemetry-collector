@@ -81,6 +81,13 @@ func run(ymlPath string) error {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
+	if md.Config != nil {
+		err = generateConfigGoCode(ymlDir, packageName, md.Config)
+		if err != nil {
+			return err
+		}
+	}
+
 	tmplDir := "templates"
 
 	codeDir := filepath.Join(ymlDir, "internal", md.GeneratedPackageName)
@@ -200,6 +207,24 @@ func run(ymlPath string) error {
 		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func generateConfigGoCode(dir string, goPkgName string, conf any) error {
+	output, err := GenerateConfig(goPkgName, dir, conf)
+	if err != nil {
+		return fmt.Errorf("error generating config %w", err)
+	}
+
+	for fileName, fileContents := range output {
+		generatedCfgFile, err := os.Create(fileName)
+		if err != nil {
+			return fmt.Errorf("failed to create file: %w", err)
+		}
+		generatedCfgFile.Write([]byte(fileContents))
+		generatedCfgFile.Close()
 	}
 
 	return nil

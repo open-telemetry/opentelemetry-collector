@@ -200,3 +200,5 @@ telemetry:
       # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
       # Note: Only the following attribute types are supported: <string|int|double|bool>
       attributes: [string]
+
+# TODO: Add the new "config" field here too.
