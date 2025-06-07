@@ -1,0 +1,4 @@
+change_type: changed
+component: configtls
+note: Validate TLS config earlier: return error if certificate or key is missing.
+issues: [13134]
