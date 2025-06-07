@@ -23,7 +23,6 @@ var errOptionNoSuchElement = fmt.Errorf("no such element")
 type Optional[T any] struct {
 	// value is the value of the Optional.
 	value T
-
 	// hasValue indicates if the Optional has a value.
 	hasValue bool
 }
@@ -133,7 +132,7 @@ func (o *Optional[T]) Get() (T, bool) {
 }
 
 // ToPointer returns value if present or a nil pointer.
-func (o Optional[T]) ToPointer() *T {
+func (o *Optional[T]) ToPointer() *T {
 	if !o.hasValue {
 		return nil
 	}

@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,13 +96,20 @@ func TestEqualityDefault(t *testing.T) {
 func TestNoneZeroVal(t *testing.T) {
 	var none Optional[Sub]
 	require.False(t, none.HasValue())
-	require.Nil(t, none.Get())
+	require.Nil(t, none.ToPointer())
+}
+
+func TestGetNonZeroSize(t *testing.T) {
+	var none Optional[Sub]
+	val, ok := none.Get()
+	require.False(t, ok)
+	require.Equal(t, reflect.TypeOf(Sub{}).Size(), reflect.TypeOf(val).Size())
 }
 
 func TestNone(t *testing.T) {
 	none := None[Sub]()
 	require.False(t, none.HasValue())
-	require.Nil(t, none.Get())
+	require.Nil(t, none.ToPointer())
 }
 
 func TestSome(t *testing.T) {
@@ -109,13 +117,13 @@ func TestSome(t *testing.T) {
 		Foo: "foobar",
 	})
 	require.True(t, some.HasValue())
-	assert.Equal(t, "foobar", some.Get().Foo)
+	assert.Equal(t, "foobar", some.ToPointer().Foo)
 }
 
 func TestDefault(t *testing.T) {
 	defaultSub := Default(&subDefault)
 	require.False(t, defaultSub.HasValue())
-	require.Nil(t, defaultSub.Get())
+	require.Nil(t, defaultSub.ToPointer())
 }
 
 func TestUnmarshalOptional(t *testing.T) {
@@ -247,7 +255,7 @@ func TestUnmarshalOptional(t *testing.T) {
 			require.NoError(t, conf.Unmarshal(&cfg))
 			require.Equal(t, test.expectedSub, cfg.Sub1.HasValue())
 			if test.expectedSub {
-				require.Equal(t, test.expectedFoo, cfg.Sub1.Get().Foo)
+				require.Equal(t, test.expectedFoo, cfg.Sub1.ToPointer().Foo)
 			}
 		})
 	}
@@ -273,7 +281,7 @@ func TestUnmarshalConfigPointer(t *testing.T) {
 	err := cm.Unmarshal(&cfg)
 	require.NoError(t, err)
 	assert.True(t, cfg.Sub1.HasValue())
-	assert.Equal(t, "bar", (*cfg.Sub1.Get()).Foo)
+	assert.Equal(t, "bar", (*cfg.Sub1.ToPointer()).Foo)
 }
 
 func TestUnmarshalErr(t *testing.T) {
@@ -317,5 +325,5 @@ func TestSquashedOptional(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.True(t, cfg.HasValue())
-	assert.Equal(t, 42, cfg.Get().Val)
+	assert.Equal(t, 42, cfg.ToPointer().Val)
 }
