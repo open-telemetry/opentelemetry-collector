@@ -734,7 +734,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
-	cfg.GRPC.Get().MaxRecvMsgSizeMiB = 100
+	cfg.GRPC.ToPointer().MaxRecvMsgSizeMiB = 100
 	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
