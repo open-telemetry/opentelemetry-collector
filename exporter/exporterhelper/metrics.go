@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -30,7 +31,7 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding: metricsEncoding{},
+		Encoding: persistentqueue.NewEncoder(metricsEncoding{}),
 		Sizers: map[RequestSizerType]request.Sizer[Request]{
 			RequestSizerTypeRequests: NewRequestsSizer(),
 			RequestSizerTypeItems:    request.NewItemsSizer(),
@@ -56,6 +57,8 @@ func newMetricsRequest(md pmetric.Metrics) Request {
 }
 
 type metricsEncoding struct{}
+
+var _ persistentqueue.RequestEncoding[Request] = metricsEncoding{}
 
 func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
