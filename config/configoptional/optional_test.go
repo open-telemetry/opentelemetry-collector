@@ -101,9 +101,14 @@ func TestNoneZeroVal(t *testing.T) {
 
 func TestGetNonZeroSize(t *testing.T) {
 	var none Optional[Sub]
-	val, ok := none.Get()
+	zeroVal, ok := none.Get()
 	require.False(t, ok)
-	require.Equal(t, reflect.TypeOf(Sub{}).Size(), reflect.TypeOf(val).Size())
+	require.Equal(t, reflect.TypeOf(Sub{}).Size(), reflect.TypeOf(zeroVal).Size())
+	var nonePointer Optional[*Sub]
+	zeroPointer, ok := nonePointer.Get()
+	require.False(t, ok)
+	require.Nil(t, zeroPointer)
+	require.Equal(t, reflect.TypeOf(&Sub{}).Size(), reflect.TypeOf(zeroPointer).Size())
 }
 
 func TestNone(t *testing.T) {
