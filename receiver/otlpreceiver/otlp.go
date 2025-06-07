@@ -87,105 +87,101 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 }
 
 func (r *otlpReceiver) startGRPCServer(host component.Host) error {
-	// If GRPC is not enabled, nothing to start.
-	if !r.cfg.GRPC.HasValue() {
-		return nil
-	}
-
-	grpcCfg := r.cfg.GRPC.Get()
-	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
-		return err
-	}
-
-	if r.nextTraces != nil {
-		ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
-	}
-
-	if r.nextMetrics != nil {
-		pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC))
-	}
-
-	if r.nextLogs != nil {
-		plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
-	}
-
-	if r.nextProfiles != nil {
-		pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
-	}
-
-	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", grpcCfg.NetAddr.Endpoint))
-	var gln net.Listener
-	if gln, err = grpcCfg.NetAddr.Listen(context.Background()); err != nil {
-		return err
-	}
-
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
-		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
+	if grpcCfg, found := r.cfg.GRPC.Get(); found {
+		var err error
+		if r.serverGRPC, err = grpcCfg.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+			return err
 		}
-	}()
+
+		if r.nextTraces != nil {
+			ptraceotlp.RegisterGRPCServer(r.serverGRPC, trace.New(r.nextTraces, r.obsrepGRPC))
+		}
+
+		if r.nextMetrics != nil {
+			pmetricotlp.RegisterGRPCServer(r.serverGRPC, metrics.New(r.nextMetrics, r.obsrepGRPC))
+		}
+
+		if r.nextLogs != nil {
+			plogotlp.RegisterGRPCServer(r.serverGRPC, logs.New(r.nextLogs, r.obsrepGRPC))
+		}
+
+		if r.nextProfiles != nil {
+			pprofileotlp.RegisterGRPCServer(r.serverGRPC, profiles.New(r.nextProfiles))
+		}
+
+		r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", grpcCfg.NetAddr.Endpoint))
+		var gln net.Listener
+		if gln, err = grpcCfg.NetAddr.Listen(context.Background()); err != nil {
+			return err
+		}
+
+		r.shutdownWG.Add(1)
+		go func() {
+			defer r.shutdownWG.Done()
+
+			if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
+			}
+		}()
+	}
+
+	// If GRPC is not enabled, nothing to start.
 	return nil
 }
 
 func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
-	// If HTTP is not enabled, nothing to start.
-	if !r.cfg.HTTP.HasValue() {
-		return nil
-	}
-
-	httpCfg := r.cfg.HTTP.Get()
-	httpMux := http.NewServeMux()
-	if r.nextTraces != nil {
-		httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
-		httpMux.HandleFunc(string(httpCfg.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleTraces(resp, req, httpTracesReceiver)
-		})
-	}
-
-	if r.nextMetrics != nil {
-		httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
-		httpMux.HandleFunc(string(httpCfg.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleMetrics(resp, req, httpMetricsReceiver)
-		})
-	}
-
-	if r.nextLogs != nil {
-		httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
-		httpMux.HandleFunc(string(httpCfg.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
-			handleLogs(resp, req, httpLogsReceiver)
-		})
-	}
-
-	if r.nextProfiles != nil {
-		httpProfilesReceiver := profiles.New(r.nextProfiles)
-		httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
-			handleProfiles(resp, req, httpProfilesReceiver)
-		})
-	}
-
-	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
-		return err
-	}
-
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.ServerConfig.Endpoint))
-	var hln net.Listener
-	if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
-		return err
-	}
-
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
-
-		if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
+	if httpCfg, found := r.cfg.HTTP.Get(); found {
+		httpMux := http.NewServeMux()
+		if r.nextTraces != nil {
+			httpTracesReceiver := trace.New(r.nextTraces, r.obsrepHTTP)
+			httpMux.HandleFunc(string(httpCfg.TracesURLPath), func(resp http.ResponseWriter, req *http.Request) {
+				handleTraces(resp, req, httpTracesReceiver)
+			})
 		}
-	}()
+
+		if r.nextMetrics != nil {
+			httpMetricsReceiver := metrics.New(r.nextMetrics, r.obsrepHTTP)
+			httpMux.HandleFunc(string(httpCfg.MetricsURLPath), func(resp http.ResponseWriter, req *http.Request) {
+				handleMetrics(resp, req, httpMetricsReceiver)
+			})
+		}
+
+		if r.nextLogs != nil {
+			httpLogsReceiver := logs.New(r.nextLogs, r.obsrepHTTP)
+			httpMux.HandleFunc(string(httpCfg.LogsURLPath), func(resp http.ResponseWriter, req *http.Request) {
+				handleLogs(resp, req, httpLogsReceiver)
+			})
+		}
+
+		if r.nextProfiles != nil {
+			httpProfilesReceiver := profiles.New(r.nextProfiles)
+			httpMux.HandleFunc(defaultProfilesURLPath, func(resp http.ResponseWriter, req *http.Request) {
+				handleProfiles(resp, req, httpProfilesReceiver)
+			})
+		}
+
+		var err error
+		if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+			return err
+		}
+
+		r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.ServerConfig.Endpoint))
+		var hln net.Listener
+		if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
+			return err
+		}
+
+		r.shutdownWG.Add(1)
+		go func() {
+			defer r.shutdownWG.Done()
+
+			if errHTTP := r.serverHTTP.Serve(hln); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
+				componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errHTTP))
+			}
+		}()
+	}
+
+	// If HTTP is not enabled, nothing to start.
 	return nil
 }
 

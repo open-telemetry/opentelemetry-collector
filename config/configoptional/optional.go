@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+var errOptionNoSuchElement = fmt.Errorf("no such element")
+
 // Optional represents a value that may or may not be present.
 // It supports two flavors for all types: Some(value) and None.
 // It supports a third flavor for struct types: Default(defaultVal).
@@ -24,6 +26,10 @@ type Optional[T any] struct {
 
 	// hasValue indicates if the Optional has a value.
 	hasValue bool
+}
+
+func empty[T any]() (t T) {
+	return
 }
 
 // deref a reflect.Type to its underlying type.
@@ -118,12 +124,20 @@ func (o Optional[T]) HasValue() bool {
 	return o.hasValue
 }
 
-// Get returns the value of the Optional.
-// If the value is not present, it returns nil.
-func (o *Optional[T]) Get() *T {
+// Get returns value and presence.
+func (o *Optional[T]) Get() (T, bool) {
 	if !o.HasValue() {
+		return empty[T](), false
+	}
+	return o.value, true
+}
+
+// ToPointer returns value if present or a nil pointer.
+func (o Optional[T]) ToPointer() *T {
+	if !o.hasValue {
 		return nil
 	}
+
 	return &o.value
 }
 

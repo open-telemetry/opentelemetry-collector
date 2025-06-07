@@ -26,15 +26,12 @@ import (
 
 // GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
 func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
-	if opt.HasValue() {
-		return opt.Get()
+	if _, found := opt.Get(); !found {
+		empty := confmap.NewFromStringMap(map[string]any{})
+		require.NoError(t, empty.Unmarshal(opt))
 	}
-
-	empty := confmap.NewFromStringMap(map[string]any{})
-	require.NoError(t, empty.Unmarshal(opt))
-	val := opt.Get()
-	require.NotNil(t, "Expected a default value to be set for %T", val)
-	return val
+	require.NotNil(t, "Expected a default value to be set for %T", opt.ToPointer())
+	return opt.ToPointer()
 }
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
