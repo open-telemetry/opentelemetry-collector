@@ -62,7 +62,6 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 func TestNewDefaultClientConfig(t *testing.T) {
 	expected := &ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
 		BalancerName: BalancerName(),
 	}
 
@@ -96,12 +95,9 @@ func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	expected := &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
-	}
+	expected := &ServerConfig{}
 
 	result := NewDefaultServerConfig()
-
 	assert.Equal(t, expected, result)
 }
 

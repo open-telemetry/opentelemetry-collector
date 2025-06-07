@@ -30,7 +30,7 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 	conf = confmap.New()
 	require.NoError(t, conf.Marshal(confighttp.NewDefaultServerConfig()))
 	assert.Equal(t, map[string]any{
-		"cors":                map[string]any{},
+		"cors":                nil,
 		"idle_timeout":        60 * time.Second,
 		"read_header_timeout": 60 * time.Second,
 		"response_headers":    map[string]any{},
