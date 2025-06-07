@@ -4,6 +4,8 @@
 package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporterhelper"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 )
@@ -37,11 +39,11 @@ type BatchConfig = queuebatch.BatchConfig
 // QueueBatchEncoding defines the encoding to be used if persistent queue is configured.
 // Duplicate definition with queuebatch.Encoding since aliasing generics is not supported by default.
 type QueueBatchEncoding[T any] interface {
-	// Marshal is a function that can marshal a request into bytes.
-	Marshal(T) ([]byte, error)
+	// Marshal is a function that can marshal a request and its context into bytes.
+	Marshal(context.Context, T) ([]byte, error)
 
-	// Unmarshal is a function that can unmarshal bytes into a request.
-	Unmarshal([]byte) (T, error)
+	// Unmarshal is a function that can unmarshal bytes into a request and its context.
+	Unmarshal([]byte) (context.Context, T, error)
 }
 
 var ErrQueueIsFull = queuebatch.ErrQueueIsFull

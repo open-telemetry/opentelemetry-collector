@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -33,7 +34,7 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 	return exporterhelper.QueueBatchSettings{
-		Encoding: profilesEncoding{},
+		Encoding: persistentqueue.NewEncoder(profilesEncoding{}),
 		Sizers: map[exporterhelper.RequestSizerType]request.Sizer[exporterhelper.Request]{
 			exporterhelper.RequestSizerTypeRequests: exporterhelper.NewRequestsSizer(),
 			exporterhelper.RequestSizerTypeItems:    request.NewItemsSizer(),
@@ -59,6 +60,8 @@ func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
 }
 
 type profilesEncoding struct{}
+
+var _ persistentqueue.RequestEncoding[exporterhelper.Request] = profilesEncoding{}
 
 func (profilesEncoding) Unmarshal(bytes []byte) (exporterhelper.Request, error) {
 	profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
