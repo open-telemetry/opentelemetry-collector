@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync/atomic"
@@ -95,7 +96,8 @@ type CollectorSettings struct {
 
 // Collector represents a server providing the OpenTelemetry Collector service.
 type Collector struct {
-	set CollectorSettings
+	reloadServer *http.Server
+	set          CollectorSettings
 
 	configProvider *ConfigProvider
 
@@ -129,7 +131,8 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 
 	state := new(atomic.Int64)
 	state.Store(int64(StateStarting))
-	return &Collector{
+
+	col := &Collector{
 		set:          set,
 		state:        state,
 		shutdownChan: make(chan struct{}),
@@ -140,7 +143,13 @@ func NewCollector(set CollectorSettings) (*Collector, error) {
 		configProvider:             configProvider,
 		bc:                         bc,
 		updateConfigProviderLogger: cc.SetCore,
-	}, nil
+	}
+	reloadServer, err := col.newReloadServer()
+	if err != nil {
+		return nil, err
+	}
+	col.reloadServer = reloadServer
+	return col, nil
 }
 
 // GetState returns current state of the collector server.
@@ -245,6 +254,31 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.setCollectorState(StateRunning)
 
 	return nil
+}
+
+func (col *Collector) newReloadServer() (*http.Server, error) {
+	server := &http.Server{
+		Addr: ":8888",
+	}
+
+	http.HandleFunc("/-/reload", col.reloadHandler)
+
+	go server.ListenAndServe()
+
+	return server, nil
+}
+
+func (col *Collector) reloadHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	col.service.Logger().Info("Received reload config request")
+	if err := col.reloadConfiguration(r.Context()); err != nil {
+		http.Error(w, "Reload config failure", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
