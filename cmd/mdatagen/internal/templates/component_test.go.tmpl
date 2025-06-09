@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	{{- if not (and .Tests.SkipLifecycle .Tests.SkipShutdown) }}
+        "go.opentelemetry.io/collector/cmd/mdatagen/internal/testhelpers"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	{{- if isExporter }}
 	"go.opentelemetry.io/collector/exporter"
@@ -80,7 +81,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg)
+				return factory.CreateLogs(ctx, set, cfg, &testhelpers.ContextCheckLogsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -88,7 +89,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetrics(ctx, set, cfg)
+				return factory.CreateMetrics(ctx, set, cfg, &testhelpers.ContextCheckMetricsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -96,7 +97,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg)
+				return factory.CreateTraces(ctx, set, cfg, &testhelpers.ContextCheckTracesConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -109,22 +110,24 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
+        ctx := context.WithValue(context.Background(), "testkey", "testvalue")
+
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), exportertest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, exportertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
-			err = c.Start(context.Background(), host)
+			err = c.Start(ctx, host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
 				switch tt.name {
@@ -135,7 +138,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
-					err = e.ConsumeLogs(context.Background(), logs)
+					err = e.ConsumeLogs(ctx, logs)
 				case "metrics":
 					e, ok := c.(exporter.Metrics)
 					require.True(t, ok)
@@ -143,7 +146,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
-					err = e.ConsumeMetrics(context.Background(), metrics)
+					err = e.ConsumeMetrics(ctx, metrics)
 				case "traces":
 					e, ok := c.(exporter.Traces)
 					require.True(t, ok)
@@ -151,13 +154,13 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
-					err = e.ConsumeTraces(context.Background(), traces)
+					err = e.ConsumeTraces(ctx, traces)
 				}
 			})
 			{{ if not expectConsumerError }}
 			require.NoError(t, err)
 			{{ end }}
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
@@ -177,7 +180,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateLogs(ctx, set, cfg, &testhelpers.ContextCheckLogsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -185,7 +188,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateMetrics(ctx, set, cfg, &testhelpers.ContextCheckMetricsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -193,7 +196,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set processor.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateTraces(ctx, set, cfg, &testhelpers.ContextCheckTracesConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -206,22 +209,24 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
+        ctx := context.WithValue(context.Background(), "testkey", "testvalue")
+
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
-			err = c.Start(context.Background(), host)
+			err = c.Start(ctx, host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
 				switch tt.name {
@@ -232,7 +237,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
-					err = e.ConsumeLogs(context.Background(), logs)
+					err = e.ConsumeLogs(ctx, logs)
 				case "metrics":
 					e, ok := c.(processor.Metrics)
 					require.True(t, ok)
@@ -240,7 +245,7 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
-					err = e.ConsumeMetrics(context.Background(), metrics)
+					err = e.ConsumeMetrics(ctx, metrics)
 				case "traces":
 					e, ok := c.(processor.Traces)
 					require.True(t, ok)
@@ -248,11 +253,11 @@ func TestComponentLifecycle(t *testing.T) {
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
-					err = e.ConsumeTraces(context.Background(), traces)
+					err = e.ConsumeTraces(ctx, traces)
 				}
 			})
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
@@ -272,7 +277,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "logs",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateLogs(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateLogsReceiver(ctx, set, cfg, &testhelpers.ContextCheckLogsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -280,7 +285,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateMetricsReceiver(ctx, set, cfg, &testhelpers.ContextCheckMetricsConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -288,7 +293,7 @@ func TestComponentLifecycle(t *testing.T) {
 		{
 			name: "traces",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
-				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
+				return factory.CreateTracesReceiver(ctx, set, cfg, &testhelpers.ContextCheckTracesConsumer{T: t})
 			},
 		},
 {{ end }}
@@ -301,28 +306,30 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
+        ctx := context.WithValue(context.Background(), "testkey", "testvalue")
+
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			firstRcvr, err := tt.createFn(ctx, receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
-			require.NoError(t, firstRcvr.Start(context.Background(), host))
-			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			require.NoError(t, firstRcvr.Start(ctx, host))
+			require.NoError(t, firstRcvr.Shutdown(ctx))
+			secondRcvr, err := tt.createFn(ctx, receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			require.NoError(t, secondRcvr.Start(context.Background(), host))
-			require.NoError(t, secondRcvr.Shutdown(context.Background()))
+			require.NoError(t, secondRcvr.Start(ctx, host))
+			require.NoError(t, secondRcvr.Shutdown(ctx))
 		})
 		{{- end }}
 	}
@@ -409,26 +416,28 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
+        ctx := context.WithValue(context.Background(), "testkey", "testvalue")
+
 	{{- if not .Tests.SkipShutdown }}
 	t.Run("shutdown", func(t *testing.T) {
-		e, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
+		e, err := factory.Create(ctx, extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		err = e.Shutdown(context.Background())
+		err = e.Shutdown(ctx)
 		require.NoError(t, err)
 	})
 	{{- end }}
 
 	{{- if not .Tests.SkipLifecycle }}
 	t.Run("lifecycle", func(t *testing.T) {
-		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
+		firstExt, err := factory.Create(ctx, extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), {{ .Tests.Host }}))
-		require.NoError(t, firstExt.Shutdown(context.Background()))
+		require.NoError(t, firstExt.Start(ctx, {{ .Tests.Host }}))
+		require.NoError(t, firstExt.Shutdown(ctx))
 
-		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
+		secondExt, err := factory.Create(ctx, extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), {{ .Tests.Host }}))
-		require.NoError(t, secondExt.Shutdown(context.Background()))
+		require.NoError(t, secondExt.Start(ctx, {{ .Tests.Host }}))
+		require.NoError(t, secondExt.Shutdown(ctx))
 	})
 	{{- end }}
 }
@@ -532,28 +541,30 @@ func TestComponentLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(&cfg))
 
+        ctx := context.WithValue(context.Background(), "testkey", "testvalue")
+
 	for _, tt := range tests {
 		{{- if not .Tests.SkipShutdown }}
 		t.Run(tt.name + "-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(ctx, connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			err = c.Shutdown(context.Background())
+			err = c.Shutdown(ctx)
 			require.NoError(t, err)
 		})
 		{{- end }}
 
 		{{- if not .Tests.SkipLifecycle }}
 		t.Run(tt.name + "-lifecycle", func(t *testing.T) {
-			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
+			firstConnector, err := tt.createFn(ctx, connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := {{ .Tests.Host }}
 			require.NoError(t, err)
-			require.NoError(t, firstConnector.Start(context.Background(), host))
-			require.NoError(t, firstConnector.Shutdown(context.Background()))
-			secondConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
+			require.NoError(t, firstConnector.Start(ctx, host))
+			require.NoError(t, firstConnector.Shutdown(ctx))
+			secondConnector, err := tt.createFn(ctx, connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			require.NoError(t, secondConnector.Start(context.Background(), host))
-			require.NoError(t, secondConnector.Shutdown(context.Background()))
+			require.NoError(t, secondConnector.Start(ctx, host))
+			require.NoError(t, secondConnector.Shutdown(ctx))
 		})
 		{{- end }}
 	}
