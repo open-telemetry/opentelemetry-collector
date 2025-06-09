@@ -261,7 +261,7 @@ gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
 	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
 	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
 
-INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queuebatch/internal/persistentqueue
+INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/persistentqueue
 # INTERNAL_PROTO_SRC_DIRS += path/to/other/proto/dirs
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
 INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=${PWD}
