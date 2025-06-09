@@ -22,6 +22,13 @@ func (e *ProtoMarshaler) LogsSize(ld Logs) int {
 	return pb.Size()
 }
 
+// MarshalLogsToSizedBuffer marshals the Logs into a preallocated byte slice `b`.
+// The byte slice must be preallocated to the size returned by LogsSize.
+func (e *ProtoMarshaler) MarshalLogsToSizedBuffer(ld Logs, b []byte) (int, error) {
+	pb := internal.LogsToProto(internal.Logs(ld))
+	return pb.MarshalToSizedBuffer(b)
+}
+
 func (e *ProtoMarshaler) ResourceLogsSize(rl ResourceLogs) int {
 	return rl.orig.Size()
 }

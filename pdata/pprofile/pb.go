@@ -22,6 +22,13 @@ func (e *ProtoMarshaler) ProfilesSize(pd Profiles) int {
 	return pb.Size()
 }
 
+// MarshalProfilesToSizedBuffer marshals the Profiles into a preallocated byte slice `b`.
+// The byte slice must be preallocated to the size returned by ProfilesSize.
+func (e *ProtoMarshaler) MarshalProfilesToSizedBuffer(pd Profiles, b []byte) (int, error) {
+	pb := internal.ProfilesToProto(internal.Profiles(pd))
+	return pb.MarshalToSizedBuffer(b)
+}
+
 func (e *ProtoMarshaler) ResourceProfilesSize(pd ResourceProfiles) int {
 	return pd.orig.Size()
 }

@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -30,7 +31,7 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding: logsEncoding{},
+		Encoding: persistentqueue.NewEncoder(logsEncoding{}),
 		Sizers: map[RequestSizerType]request.Sizer[Request]{
 			RequestSizerTypeRequests: NewRequestsSizer(),
 			RequestSizerTypeItems:    request.NewItemsSizer(),
@@ -57,6 +58,8 @@ func newLogsRequest(ld plog.Logs) Request {
 
 type logsEncoding struct{}
 
+var _ persistentqueue.RequestEncoding[Request] = logsEncoding{}
+
 func (logsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	logs, err := logsUnmarshaler.UnmarshalLogs(bytes)
 	if err != nil {
@@ -65,8 +68,12 @@ func (logsEncoding) Unmarshal(bytes []byte) (Request, error) {
 	return newLogsRequest(logs), nil
 }
 
-func (logsEncoding) Marshal(req Request) ([]byte, error) {
-	return logsMarshaler.MarshalLogs(req.(*logsRequest).ld)
+func (logsEncoding) MarshalTo(req Request, b []byte) (int, error) {
+	return logsMarshaler.MarshalLogsToSizedBuffer(req.(*logsRequest).ld, b)
+}
+
+func (logsEncoding) MarshalSize(req Request) int {
+	return logsMarshaler.LogsSize(req.(*logsRequest).ld)
 }
 
 func (req *logsRequest) OnError(err error) Request {
