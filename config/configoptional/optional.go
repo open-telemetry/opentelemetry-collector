@@ -136,7 +136,8 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 // The behavior of this method depends on the state of the Optional:
 //   - None[T]: does nothing if the configuration is nil, otherwise it unmarshals into the zero value of T.
 //   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
-//   - Default[T](val), equivalent to unmarshaling into a field of type T with value val, but using val if the configuration is nil.
+//   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
+//     using val without overrides from the configuration if the configuration is nil.
 //
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
