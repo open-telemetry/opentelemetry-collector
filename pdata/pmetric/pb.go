@@ -22,6 +22,13 @@ func (e *ProtoMarshaler) MetricsSize(md Metrics) int {
 	return pb.Size()
 }
 
+// MarshalMetricsToSizedBuffer marshals the Metrics into a preallocated byte slice `b`.
+// The byte slice must be preallocated to the size returned by MetricsSize.
+func (e *ProtoMarshaler) MarshalMetricsToSizedBuffer(md Metrics, b []byte) (int, error) {
+	pb := internal.MetricsToProto(internal.Metrics(md))
+	return pb.MarshalToSizedBuffer(b)
+}
+
 func (e *ProtoMarshaler) ResourceMetricsSize(rm ResourceMetrics) int {
 	return rm.orig.Size()
 }

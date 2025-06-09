@@ -5,7 +5,6 @@ package queuebatch
 
 import (
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"math"
@@ -18,16 +17,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -39,19 +41,6 @@ func (is *itemsSizer) Sizeof(val uint64) int64 {
 		return math.MaxInt64
 	}
 	return int64(val)
-}
-
-type uint64Encoding struct{}
-
-func (uint64Encoding) Marshal(val uint64) ([]byte, error) {
-	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
-}
-
-func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
-	if len(bytes) < 8 {
-		return 0, errInvalidValue
-	}
-	return binary.LittleEndian.Uint64(bytes), nil
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -221,7 +210,7 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64]
 		capacity:  capacity,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoding:  persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	})
@@ -244,7 +233,7 @@ func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue
 		capacity:  1000,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoding:  persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -268,7 +257,7 @@ func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Ext
 		capacity:  capacity,
 		signal:    pipeline.SignalTraces,
 		storageID: component.ID{},
-		encoding:  uint64Encoding{},
+		encoding:  persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 		id:        component.NewID(exportertest.NopType),
 		telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
@@ -416,7 +405,7 @@ func TestPersistentBlockingQueue(t *testing.T) {
 				blockOnOverflow: true,
 				signal:          pipeline.SignalTraces,
 				storageID:       component.ID{},
-				encoding:        uint64Encoding{},
+				encoding:        persistentqueue.NewEncoder(persistentqueue.Uint64Encoding{}),
 				id:              component.NewID(exportertest.NopType),
 				telemetry:       componenttest.NewNopTelemetrySettings(),
 			})
@@ -913,9 +902,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
-	require.NoError(t, err)
-	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
+	maxSizeInBytes := persistentqueue.Uint64Encoding{}.MarshalSize(uint64(50)) * 5 // arbitrary small number
 
 	client := newFakeBoundedStorageClient(maxSizeInBytes)
 	ps := createTestPersistentQueueWithClient(client)
@@ -923,7 +910,7 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	// Put enough items in to fill the underlying storage
 	reqCount := int64(0)
 	for {
-		err = ps.Offer(context.Background(), uint64(50))
+		err := ps.Offer(context.Background(), uint64(50))
 		if errors.Is(err, syscall.ENOSPC) {
 			break
 		}
@@ -1204,4 +1191,60 @@ func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.metadata.CurrentlyDispatchedItems)
+}
+
+func TestPersistentQueue_SpanContextRoundTrip(t *testing.T) {
+	fgOrigState := persistentqueue.PersistRequestContextFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(persistentqueue.PersistRequestContextFeatureGate.ID(), true))
+	t.Cleanup(func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(persistentqueue.PersistRequestContextFeatureGate.ID(), fgOrigState))
+	})
+
+	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
+		sizer:     request.RequestsSizer[uint64]{},
+		capacity:  10,
+		signal:    pipeline.SignalTraces,
+		storageID: component.ID{},
+		encoding:  persistentqueue.NewEncoder[uint64](persistentqueue.Uint64Encoding{}),
+		id:        component.NewID(exportertest.NopType),
+		telemetry: componenttest.NewNopTelemetrySettings(),
+	}).(*persistentQueue[uint64])
+	ext := storagetest.NewMockStorageExtension(nil)
+	client, err := ext.GetClient(context.Background(), component.KindExporter, pq.set.id, pq.set.signal.String())
+	require.NoError(t, err)
+	pq.initClient(context.Background(), client)
+	t.Cleanup(func() {
+		assert.NoError(t, pq.Shutdown(context.Background()))
+	})
+
+	traceID, err := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
+	require.NoError(t, err)
+	spanID, err := trace.SpanIDFromHex("0102030405060708")
+	require.NoError(t, err)
+	spanCtx := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: 0x01,
+		TraceState: trace.TraceState{},
+		Remote:     true,
+	})
+	ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
+	req := uint64(42)
+	require.NoError(t, pq.Offer(ctx, req))
+
+	// send request with span context
+	gotCtx, gotReq, _, ok := pq.Read(context.Background())
+	require.True(t, ok)
+	require.Equal(t, req, gotReq)
+	restoredSpanCtx := trace.SpanContextFromContext(gotCtx)
+	require.True(t, restoredSpanCtx.IsValid())
+	require.Equal(t, spanCtx, restoredSpanCtx)
+
+	// send request without span context
+	req = uint64(99)
+	require.NoError(t, pq.Offer(context.Background(), req))
+	gotCtx, gotReq, _, ok = pq.Read(context.Background())
+	require.True(t, ok)
+	require.Equal(t, req, gotReq)
+	require.False(t, trace.SpanContextFromContext(gotCtx).IsValid())
 }
