@@ -1175,6 +1175,7 @@ func TestMapMerge(t *testing.T) {
 }
 
 func TestConfIsNil(t *testing.T) {
+	const subKey = "foo"
 	testCases := []struct {
 		name         string
 		input        map[string]any
@@ -1196,31 +1197,29 @@ func TestConfIsNil(t *testing.T) {
 		},
 		{
 			name:         "nil subkey",
-			input:        map[string]any{"foo": nil},
+			input:        map[string]any{subKey: nil},
 			expectIsNil:  false,
 			subExpectNil: true,
 		},
 		{
 			name:         "empty subkey",
-			input:        map[string]any{"foo": map[string]any{}},
+			input:        map[string]any{subKey: map[string]any{}},
 			expectIsNil:  false,
 			subExpectNil: false,
 		},
 		{
 			name:         "non-empty map",
-			input:        map[string]any{"foo": map[string]any{"bar": 42}},
+			input:        map[string]any{subKey: map[string]any{"bar": 42}},
 			expectIsNil:  false,
 			subExpectNil: false,
 		},
 		{
 			name:         "non-map subkey",
-			input:        map[string]any{"foo": 123},
+			input:        map[string]any{subKey: 123},
 			expectIsNil:  false,
 			subExpectErr: "unexpected sub-config value kind",
 		},
 	}
-
-	const subKey = "foo"
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
