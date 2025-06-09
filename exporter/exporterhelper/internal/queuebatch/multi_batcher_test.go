@@ -25,15 +25,15 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType: request.SizerTypeItems,
-		sizer:     request.NewItemsSizer(),
-		partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
+	ba := newMultiBatcher(cfg,
+		request.SizerTypeItems,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
-		next:       sink.Export,
-		maxWorkers: 1,
-	})
+		sink.Export,
+	)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -76,15 +76,15 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType: request.SizerTypeItems,
-		sizer:     request.NewItemsSizer(),
-		partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
+	ba := newMultiBatcher(cfg,
+		request.SizerTypeItems,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
-		next:       sink.Export,
-		maxWorkers: 1,
-	})
+		sink.Export,
+	)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
