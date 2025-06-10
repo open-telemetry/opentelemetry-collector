@@ -96,7 +96,7 @@ func TestError_Unwrap(t *testing.T) {
 	require.Equal(t, errTest, err.Unwrap())
 }
 
-func TestError_OTLPHTTPStatus(t *testing.T) {
+func TestError_ToHTTPStatus(t *testing.T) {
 	serverErr := http.StatusTooManyRequests
 	testCases := []struct {
 		name       string
@@ -144,21 +144,21 @@ func TestError_OTLPHTTPStatus(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Error{
+			err := &Error{
 				error:       errTest,
 				httpStatus:  tt.httpStatus,
 				grpcStatus:  tt.grpcStatus,
 				isRetryable: tt.retryable,
 			}
 
-			s := err.OTLPHTTPStatus()
+			s := ToHTTPStatus(err)
 
 			require.Equal(t, tt.want, s)
 		})
 	}
 }
 
-func TestError_OTLPGRPCStatus(t *testing.T) {
+func TestError_ToGRPCStatus(t *testing.T) {
 	httpStatus := http.StatusTooManyRequests
 	otherOTLPHTTPStatus := http.StatusOK
 	serverErr := status.New(codes.ResourceExhausted, errTest.Error())
@@ -208,18 +208,23 @@ func TestError_OTLPGRPCStatus(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Error{
+			err := &Error{
 				error:       errTest,
 				httpStatus:  tt.httpStatus,
 				grpcStatus:  tt.grpcStatus,
 				isRetryable: tt.retryable,
 			}
 
-			s := err.OTLPGRPCStatus()
+			s := ToGRPCStatus(err)
 
 			require.Equal(t, tt.want, s)
 		})
 	}
+}
+
+func TestStatus_ToGRPCStatus(t *testing.T) {
+	st := status.New(codes.ResourceExhausted, errTest.Error())
+	require.Equal(t, st, ToGRPCStatus(st.Err()))
 }
 
 func TestError_Retryable(t *testing.T) {

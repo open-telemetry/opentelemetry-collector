@@ -4,6 +4,7 @@
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 import (
+	"errors"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
@@ -68,44 +69,6 @@ func (e *Error) Unwrap() error {
 	return e.error
 }
 
-// OTLPHTTPStatus returns an HTTP status code either directly set by the source,
-// derived from a gRPC status code set by the source, or derived from Retryable.
-// When deriving the value, the OTLP specification is used to map to HTTP.
-// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for more details.
-//
-// If a http status code cannot be derived from these three sources then 500 is returned.
-func (e *Error) OTLPHTTPStatus() int {
-	if e.httpStatus != 0 {
-		return e.httpStatus
-	}
-	if e.grpcStatus != nil {
-		return statusconversion.GetHTTPStatusCodeFromStatus(e.grpcStatus)
-	}
-	if e.isRetryable {
-		return http.StatusServiceUnavailable
-	}
-	return http.StatusInternalServerError
-}
-
-// OTLPGRPCStatus returns an gRPC status code either directly set by the source,
-// derived from an HTTP status code set by the source, or derived from Retryable.
-// When deriving the value, the OTLP specification is used to map to GRPC.
-// See https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md for more details.
-//
-// If a gRPC code cannot be derived from these three sources then INTERNAL is returned.
-func (e *Error) OTLPGRPCStatus() *status.Status {
-	if e.grpcStatus != nil {
-		return e.grpcStatus
-	}
-	if e.httpStatus != 0 {
-		return statusconversion.NewStatusFromMsgAndHTTPCode(e.Error(), e.httpStatus)
-	}
-	if e.isRetryable {
-		return status.New(codes.Unavailable, e.Error())
-	}
-	return status.New(codes.Unknown, e.Error())
-}
-
 // IsRetryable returns true if the error was created with NewRetryableError, if
 // the HTTP status code is retryable according to OTLP, or if the gRPC status is
 // retryable according to OTLP. Otherwise, returns false.
@@ -114,4 +77,60 @@ func (e *Error) OTLPGRPCStatus() *status.Status {
 // HTTP and gRPC codes.
 func (e *Error) IsRetryable() bool {
 	return e.isRetryable
+}
+
+// ToHTTPStatus returns an HTTP status code either directly set by the source on
+// an [Error] object, derived from a gRPC status code set by the source, or
+// derived from Retryable. When deriving the value, the OTLP specification is
+// used to map to HTTP. See
+// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md
+// for more details.
+//
+// If a http status code cannot be derived from these three sources then 500 is
+// returned.
+func ToHTTPStatus(err error) int {
+	var e *Error
+	if errors.As(err, &e) {
+		if e.httpStatus != 0 {
+			return e.httpStatus
+		}
+		if e.grpcStatus != nil {
+			return statusconversion.GetHTTPStatusCodeFromStatus(e.grpcStatus)
+		}
+		if e.isRetryable {
+			return http.StatusServiceUnavailable
+		}
+	}
+	return http.StatusInternalServerError
+}
+
+// ToGRPCStatus returns a gRPC status code either directly set by the source on
+// an [Error] object, derived from an HTTP status code set by the
+// source, or derived from Retryable. When deriving the value, the OTLP
+// specification is used to map to gRPC. See
+// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md
+// for more details.
+//
+// If an [Error] object is not present, then we attempt to get a status.Status from the
+// error tree.
+//
+// If a status.Status cannot be derived from these sources then INTERNAL is
+// returned.
+func ToGRPCStatus(err error) *status.Status {
+	var e *Error
+	if errors.As(err, &e) {
+		if e.grpcStatus != nil {
+			return e.grpcStatus
+		}
+		if e.httpStatus != 0 {
+			return statusconversion.NewStatusFromMsgAndHTTPCode(e.Error(), e.httpStatus)
+		}
+		if e.isRetryable {
+			return status.New(codes.Unavailable, e.Error())
+		}
+	}
+	if st, ok := status.FromError(err); ok {
+		return st
+	}
+	return status.New(codes.Unknown, e.Error())
 }
