@@ -17,11 +17,25 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
+
+// GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
+func GetOrInsertDefault[T any](t *testing.T, opt *configoptional.Optional[T]) *T {
+	if opt.HasValue() {
+		return opt.Get()
+	}
+
+	empty := confmap.NewFromStringMap(map[string]any{})
+	require.NoError(t, empty.Unmarshal(opt))
+	val := opt.Get()
+	require.NotNil(t, "Expected a default value to be set for %T", val)
+	return val
+}
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "default.yaml"))
@@ -29,7 +43,10 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, cm.Unmarshal(&cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	expectedCfg := factory.CreateDefaultConfig().(*Config)
+	GetOrInsertDefault(t, &expectedCfg.GRPC)
+	GetOrInsertDefault(t, &expectedCfg.HTTP)
+	assert.Equal(t, expectedCfg, cfg)
 }
 
 func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
@@ -40,7 +57,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyGRPC.HTTP = nil
+	GetOrInsertDefault(t, &defaultOnlyGRPC.GRPC)
 	assert.Equal(t, defaultOnlyGRPC, cfg)
 }
 
@@ -52,7 +69,7 @@ func TestUnmarshalConfigOnlyHTTP(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -64,7 +81,7 @@ func TestUnmarshalConfigOnlyHTTPNull(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -76,7 +93,7 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	require.NoError(t, cm.Unmarshal(&cfg))
 
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
-	defaultOnlyHTTP.GRPC = nil
+	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
 }
 
@@ -89,12 +106,12 @@ func TestUnmarshalConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLSSetting: &configtls.ServerConfig{
+					TLS: &configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
@@ -117,8 +134,8 @@ func TestUnmarshalConfig(t *testing.T) {
 							PermitWithoutStream: true,
 						},
 					},
-				},
-				HTTP: &HTTPConfig{
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Auth: &confighttp.AuthConfig{
 							Config: configauth.Config{
@@ -126,7 +143,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							},
 						},
 						Endpoint: "localhost:4318",
-						TLSSetting: &configtls.ServerConfig{
+						TLS: &configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",
@@ -141,9 +158,13 @@ func TestUnmarshalConfig(t *testing.T) {
 					TracesURLPath:  "/traces",
 					MetricsURLPath: "/v2/metrics",
 					LogsURLPath:    "/log/ingest",
-				},
+				}),
 			},
 		}, cfg)
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func TestUnmarshalConfigUnix(t *testing.T) {
@@ -155,28 +176,29 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
-				GRPC: &configgrpc.ServerConfig{
+				GRPC: configoptional.Some(configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "/tmp/grpc_otlp.sock",
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
-					Keepalive:      configgrpc.NewDefaultKeepaliveServerConfig(),
-				},
-				HTTP: &HTTPConfig{
+					Keepalive:      ptr(configgrpc.NewDefaultKeepaliveServerConfig()),
+				}),
+				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint:        "/tmp/http_otlp.sock",
-						CORS:            confighttp.NewDefaultCORSConfig(),
+						CORS:            ptr(confighttp.NewDefaultCORSConfig()),
 						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  defaultTracesURLPath,
 					MetricsURLPath: defaultMetricsURLPath,
 					LogsURLPath:    defaultLogsURLPath,
-				},
+				}),
 			},
 		}, cfg)
 }
 
+// cspell:ignore htttp
 func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
 	require.NoError(t, err)

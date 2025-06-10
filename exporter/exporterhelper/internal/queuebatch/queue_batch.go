@@ -16,11 +16,12 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Encoding  Encoding[T]
-	Sizers    map[request.SizerType]request.Sizer[T]
+	Signal      pipeline.Signal
+	ID          component.ID
+	Telemetry   component.TelemetrySettings
+	Encoding    Encoding[T]
+	Sizers      map[request.SizerType]request.Sizer[T]
+	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
@@ -61,29 +62,23 @@ func newQueueBatch(
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
-	var b Batcher[request.Request]
+	bSet := batcherSettings[request.Request]{
+		sizerType:   cfg.Sizer,
+		sizer:       sizer,
+		partitioner: set.Partitioner,
+		next:        next,
+		maxWorkers:  cfg.NumConsumers,
+	}
+	if oldBatcher {
+		// If a user configures the old batcher, we only can support "items" sizer.
+		bSet.sizerType = request.SizerTypeItems
+		bSet.sizer = request.NewItemsSizer()
+	}
+	b := NewBatcher(cfg.Batch, bSet)
 	if cfg.Batch != nil {
-		if oldBatcher {
-			// If user configures the old batcher we only can support "items" sizer.
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
-			})
-		} else {
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  cfg.Sizer,
-				sizer:      sizer,
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
-			})
-		}
-		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
+		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
-	} else {
-		b = newDisabledBatcher[request.Request](next)
 	}
 
 	var q Queue[request.Request]
@@ -98,6 +93,7 @@ func newQueueBatch(
 	} else {
 		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
 			sizer:           sizer,
+			sizerType:       cfg.Sizer,
 			capacity:        cfg.QueueSize,
 			blockOnOverflow: cfg.BlockOnOverflow,
 			signal:          set.Signal,

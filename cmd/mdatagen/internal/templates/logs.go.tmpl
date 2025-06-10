@@ -12,6 +12,11 @@ import (
 	{{- if .SemConvVersion }}
 	conventions "go.opentelemetry.io/otel/semconv/v{{ .SemConvVersion }}"
 	{{- end }}
+	{{- if .Events }}
+	"context"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/collector/filter"
+	{{- end }}
 )
 
 
@@ -21,7 +26,7 @@ type event{{ $name.Render }} struct {
 	config   EventConfig         // event config provided by user.
 }
 
-func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
+func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pcommon.Timestamp
 {{- range $event.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
 	if !e.config.Enabled {
 		return
@@ -29,7 +34,13 @@ func (e *event{{ $name.Render }}) recordEvent(timestamp pcommon.Timestamp
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("{{ $name }}")
 	lr.SetTimestamp(timestamp)
-	{{- range $event.Attributes }}
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
+	{{ range $event.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	lr.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
@@ -68,7 +79,7 @@ type LogsBuilder struct {
 	logsBuffer          plog.Logs
 	logRecordsBuffer    plog.LogRecordSlice
 	buildInfo           component.BuildInfo  // contains version information.
-	{{- if .ResourceAttributes }}
+	{{- if and .Events .ResourceAttributes }}
 	resourceAttributeIncludeFilter map[string]filter.Filter
 	resourceAttributeExcludeFilter map[string]filter.Filter
 	{{- end }}
@@ -101,6 +112,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- end }}
 	{{- end }}
+	{{- if .Events }}
 	{{- range $name, $attr := .ResourceAttributes }}
 	{{- if $attr.Warnings.IfEnabled }}
 	if lbc.ResourceAttributes.{{ $name.Render }}.Enabled {
@@ -118,6 +130,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 	}
 	{{- end }}
 	{{- end }}
+	{{- end }}
 	lb := &LogsBuilder{
 		{{- if .Events }}
 		config:        lbc,
@@ -128,7 +141,7 @@ func NewLogsBuilder({{ if .Events }}lbc LogsBuilderConfig, {{ end }}settings {{ 
 		{{- range $name, $event := .Events }}
 		event{{ $name.Render }}: newEvent{{ $name.Render }}(lbc.Events.{{ $name.Render }}),
 		{{- end }}
-		{{ if .ResourceAttributes -}}
+		{{ if and .Events .ResourceAttributes -}}
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 		{{- end }}
@@ -206,7 +219,7 @@ func (lb *LogsBuilder) EmitForResource(options ...ResourceLogsOption) {
         lb.logRecordsBuffer = plog.NewLogRecordSlice()
     }
 
-    {{ if .ResourceAttributes -}}
+    {{ if and .Events .ResourceAttributes -}}
 	for attr, filter := range lb.resourceAttributeIncludeFilter {
 		if val, ok := rl.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
 			return
@@ -236,11 +249,11 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 
 {{ range $name, $event := .Events -}}
 // Record{{ $name.Render }}Event adds a log record of {{ $name }} event.
-func (lb *LogsBuilder) Record{{ $name.Render }}Event(timestamp pcommon.Timestamp
+func (lb *LogsBuilder) Record{{ $name.Render }}Event(ctx context.Context, timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
 	{{- end }}) {
-	lb.event{{ $name.Render }}.recordEvent(timestamp
+	lb.event{{ $name.Render }}.recordEvent(ctx, timestamp
 		{{- range $event.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})

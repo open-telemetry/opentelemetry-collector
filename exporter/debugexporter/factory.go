@@ -29,7 +29,7 @@ const (
 	defaultSamplingThereafter = 1
 )
 
-// NewFactory creates a factory for Debug exporter
+// NewFactory creates and returns a new factory for the Debug exporter.
 func NewFactory() exporter.Factory {
 	return xexporter.NewFactory(
 		componentType,

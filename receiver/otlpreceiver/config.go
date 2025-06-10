@@ -13,13 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/confmap"
-)
-
-const (
-	// Protocol values.
-	protoGRPC = "protocols::grpc"
-	protoHTTP = "protocols::http"
+	"go.opentelemetry.io/collector/config/configoptional"
 )
 
 type SanitizedURLPath string
@@ -58,8 +52,8 @@ type HTTPConfig struct {
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC *configgrpc.ServerConfig `mapstructure:"grpc"`
-	HTTP *HTTPConfig              `mapstructure:"http"`
+	GRPC configoptional.Optional[configgrpc.ServerConfig] `mapstructure:"grpc"`
+	HTTP configoptional.Optional[HTTPConfig]              `mapstructure:"http"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -70,34 +64,12 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 }
 
-var (
-	_ component.Config    = (*Config)(nil)
-	_ confmap.Unmarshaler = (*Config)(nil)
-)
+var _ component.Config = (*Config)(nil)
 
 // Validate checks the receiver configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.GRPC == nil && cfg.HTTP == nil {
+	if !cfg.GRPC.HasValue() && !cfg.HTTP.HasValue() {
 		return errors.New("must specify at least one protocol when using the OTLP receiver")
 	}
-	return nil
-}
-
-// Unmarshal a confmap.Conf into the config struct.
-func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	// first load the config normally
-	err := conf.Unmarshal(cfg)
-	if err != nil {
-		return err
-	}
-
-	if !conf.IsSet(protoGRPC) {
-		cfg.GRPC = nil
-	}
-
-	if !conf.IsSet(protoHTTP) {
-		cfg.HTTP = nil
-	}
-
 	return nil
 }

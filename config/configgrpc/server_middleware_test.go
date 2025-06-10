@@ -91,7 +91,7 @@ func TestGrpcServerUnaryInterceptor(t *testing.T) {
 	// Send a request to trigger the interceptors
 	resp, errResp := sendTestRequest(t, ClientConfig{
 		Endpoint: addr,
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	})
