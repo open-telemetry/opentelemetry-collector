@@ -24,6 +24,10 @@ type Optional[T any] struct {
 
 	// hasValue indicates if the Optional has a value.
 	hasValue bool
+
+	// notNone is used to indicate that the Optional is not None.
+	// This is used to differentiate between None and Default.
+	notNone bool
 }
 
 // deref a reflect.Type to its underlying type.
@@ -82,7 +86,7 @@ func Some[T any](value T) Optional[T] {
 	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: true}
+	return Optional[T]{value: value, hasValue: true, notNone: true}
 }
 
 // Default creates an Optional with a default value for unmarshaling.
@@ -95,13 +99,11 @@ func Default[T any](value T) Optional[T] {
 	if err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: false}
+	return Optional[T]{value: value, hasValue: false, notNone: true}
 }
 
-// None has no value.
+// None has no value. It has the same behavior as a nil pointer when unmarshaling.
 //
-// For T of struct or pointer to struct kind, this is equivalent to
-// Default(zeroVal) where zeroVal is the zero value of type T.
 // The zero value of Optional[T] is None[T]. Prefer using this constructor
 // for validation.
 //
@@ -131,11 +133,23 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.
 //
+// The behavior of this method depends on the state of the Optional:
+//   - None[T]: does nothing if the configuration is nil, otherwise it unmarshals into the zero value of T.
+//   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
+//   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
+//     using val without overrides from the configuration if the configuration is nil.
+//
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	if err := assertNoEnabledField[T](); err != nil {
 		return err
+	}
+
+	if !o.hasValue && !o.notNone && conf.ToStringMap() == nil {
+		// If the Optional is None and the configuration is nil, we do nothing.
+		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+		return nil
 	}
 
 	if err := conf.Unmarshal(&o.value); err != nil {
