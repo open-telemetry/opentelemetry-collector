@@ -52,8 +52,8 @@ type KeepaliveClientConfig struct {
 }
 
 // NewDefaultKeepaliveClientConfig returns a new instance of KeepaliveClientConfig with default values.
-func NewDefaultKeepaliveClientConfig() *KeepaliveClientConfig {
-	return &KeepaliveClientConfig{
+func NewDefaultKeepaliveClientConfig() KeepaliveClientConfig {
+	return KeepaliveClientConfig{
 		Time:    time.Second * 10,
 		Timeout: time.Second * 10,
 	}
@@ -111,11 +111,15 @@ type ClientConfig struct {
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
-func NewDefaultClientConfig() *ClientConfig {
-	return &ClientConfig{
+func NewDefaultClientConfig() ClientConfig {
+	return ClientConfig{
 		TLS:          configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
+		Keepalive:    ptr(NewDefaultKeepaliveClientConfig()),
 		BalancerName: BalancerName(),
 	}
 }
@@ -129,10 +133,10 @@ type KeepaliveServerConfig struct {
 }
 
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
-func NewDefaultKeepaliveServerConfig() *KeepaliveServerConfig {
-	return &KeepaliveServerConfig{
-		ServerParameters:  NewDefaultKeepaliveServerParameters(),
-		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
+	return KeepaliveServerConfig{
+		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 }
 
@@ -150,8 +154,8 @@ type KeepaliveServerParameters struct {
 }
 
 // NewDefaultKeepaliveServerParameters creates and returns a new instance of KeepaliveServerParameters with default settings.
-func NewDefaultKeepaliveServerParameters() *KeepaliveServerParameters {
-	return &KeepaliveServerParameters{}
+func NewDefaultKeepaliveServerParameters() KeepaliveServerParameters {
+	return KeepaliveServerParameters{}
 }
 
 // KeepaliveEnforcementPolicy allow configuration of the keepalive.EnforcementPolicy.
@@ -165,8 +169,8 @@ type KeepaliveEnforcementPolicy struct {
 }
 
 // NewDefaultKeepaliveEnforcementPolicy creates and returns a new instance of KeepaliveEnforcementPolicy with default settings.
-func NewDefaultKeepaliveEnforcementPolicy() *KeepaliveEnforcementPolicy {
-	return &KeepaliveEnforcementPolicy{}
+func NewDefaultKeepaliveEnforcementPolicy() KeepaliveEnforcementPolicy {
+	return KeepaliveEnforcementPolicy{}
 }
 
 // ServerConfig defines common settings for a gRPC server configuration.
@@ -210,9 +214,9 @@ type ServerConfig struct {
 }
 
 // NewDefaultServerConfig returns a new instance of ServerConfig with default values.
-func NewDefaultServerConfig() *ServerConfig {
-	return &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
+func NewDefaultServerConfig() ServerConfig {
+	return ServerConfig{
+		Keepalive: ptr(NewDefaultKeepaliveServerConfig()),
 	}
 }
 
