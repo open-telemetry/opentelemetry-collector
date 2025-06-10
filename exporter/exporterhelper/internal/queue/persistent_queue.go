@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 
 import (
 	"context"
@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch/internal/persistentqueue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
@@ -96,7 +95,7 @@ type persistentQueue[T any] struct {
 	mu              sync.Mutex
 	hasMoreElements *sync.Cond
 	hasMoreSpace    *cond
-	metadata        persistentqueue.QueueMetadata
+	metadata        QueueMetadata
 	refClient       int64
 	stopped         bool
 }

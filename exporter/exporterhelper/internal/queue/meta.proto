@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package opentelemetry.collector.exporter.exporterhelper.internal.queuebatch.internal.persistentqueue;
+package opentelemetry.collector.exporter.exporterhelper.internal.queue;
 
-option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch/internal/persistentqueue";
+option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue";
 
 // Sizer type configuration
 enum SizerType {

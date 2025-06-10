@@ -5,6 +5,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 
 import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 )
 
@@ -44,7 +45,7 @@ type QueueBatchEncoding[T any] interface {
 	Unmarshal([]byte) (T, error)
 }
 
-var ErrQueueIsFull = queuebatch.ErrQueueIsFull
+var ErrQueueIsFull = queue.ErrQueueIsFull
 
 // QueueBatchSettings are settings for the QueueBatch component.
 // They include things line Encoding to be used with persistent queue, or the available Sizers, etc.

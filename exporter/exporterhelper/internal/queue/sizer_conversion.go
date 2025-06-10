@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package persistentqueue // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch/internal/persistentqueue"
+package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 
 import (
 	"fmt"

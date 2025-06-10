@@ -1,13 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 
 import (
 	"context"
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
+	"go.opentelemetry.io/collector/pipeline"
 )
 
 type Encoding[T any] interface {
@@ -49,6 +51,44 @@ type Queue[T any] interface {
 	Size() int64
 	// Capacity returns the capacity of the queue.
 	Capacity() int64
+}
+
+// Settings define internal parameters for a new Queue creation.
+type Settings[T any] struct {
+	Sizer           request.Sizer[T]
+	SizerType       request.SizerType
+	Capacity        int64
+	NumConsumers    int
+	WaitForResult   bool
+	BlockOnOverflow bool
+	Signal          pipeline.Signal
+	StorageID       *component.ID
+	Encoding        Encoding[T]
+	ID              component.ID
+	Telemetry       component.TelemetrySettings
+}
+
+func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) Queue[T] {
+	// Configure memory queue or persistent based on the config.
+	if set.StorageID == nil {
+		return newAsyncQueue(newMemoryQueue[T](memoryQueueSettings[T]{
+			sizer:           set.Sizer,
+			capacity:        set.Capacity,
+			waitForResult:   set.WaitForResult,
+			blockOnOverflow: set.BlockOnOverflow,
+		}), set.NumConsumers, next)
+	}
+	return newAsyncQueue(newPersistentQueue[T](persistentQueueSettings[T]{
+		sizer:           set.Sizer,
+		sizerType:       set.SizerType,
+		capacity:        set.Capacity,
+		blockOnOverflow: set.BlockOnOverflow,
+		signal:          set.Signal,
+		storageID:       *set.StorageID,
+		encoding:        set.Encoding,
+		id:              set.ID,
+		telemetry:       set.Telemetry,
+	}), set.NumConsumers, next)
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.
