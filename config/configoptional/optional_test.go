@@ -153,10 +153,9 @@ func TestUnmarshalOptional(t *testing.T) {
 				"sub": nil,
 			},
 			defaultCfg: Config[Sub]{
-				Sub1: Default(subDefault),
+				Sub1: None[Sub](),
 			},
-			expectedSub: true,
-			expectedFoo: "foobar", // default applies
+			expectedSub: false,
 		},
 		{
 			name: "none_with_config_no_foo_empty_map",
@@ -164,10 +163,10 @@ func TestUnmarshalOptional(t *testing.T) {
 				"sub": map[string]any{},
 			},
 			defaultCfg: Config[Sub]{
-				Sub1: Default(subDefault),
+				Sub1: None[Sub](),
 			},
 			expectedSub: true,
-			expectedFoo: "foobar", // default applies
+			expectedFoo: "",
 		},
 		{
 			name: "default_no_config",
@@ -193,6 +192,17 @@ func TestUnmarshalOptional(t *testing.T) {
 			name: "default_with_config_no_foo",
 			config: map[string]any{
 				"sub": nil,
+			},
+			defaultCfg: Config[Sub]{
+				Sub1: Default(subDefault),
+			},
+			expectedSub: true,
+			expectedFoo: "foobar", // default applies
+		},
+		{
+			name: "default_with_config_no_foo_empty_map",
+			config: map[string]any{
+				"sub": map[string]any{},
 			},
 			defaultCfg: Config[Sub]{
 				Sub1: Default(subDefault),
@@ -318,4 +328,40 @@ func TestSquashedOptional(t *testing.T) {
 
 	assert.True(t, cfg.HasValue())
 	assert.Equal(t, 42, cfg.Get().Val)
+}
+
+func confFromYAML(t *testing.T, yaml string) *confmap.Conf {
+	t.Helper()
+	cm, err := confmap.NewRetrievedFromYAML([]byte(yaml))
+	require.NoError(t, err)
+	conf, err := cm.AsConf()
+	require.NoError(t, err)
+	return conf
+}
+
+func TestComparePointer(t *testing.T) {
+	tests := []struct {
+		yaml string
+	}{
+		{yaml: "sub: "},
+		{yaml: "sub: null"},
+		{yaml: "sub: {}"},
+		{yaml: "sub: {foo: bar}"},
+	}
+	for _, test := range tests {
+		t.Run(test.yaml, func(t *testing.T) {
+			var optCfg Config[Sub]
+			conf := confFromYAML(t, test.yaml)
+			optErr := conf.Unmarshal(&optCfg)
+			require.NoError(t, optErr)
+
+			var ptrCfg struct {
+				Sub1 *Sub `mapstructure:"sub"`
+			}
+			ptrErr := conf.Unmarshal(&ptrCfg)
+			require.NoError(t, ptrErr)
+
+			assert.Equal(t, optCfg.Sub1.Get(), ptrCfg.Sub1)
+		})
+	}
 }
