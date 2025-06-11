@@ -3,9 +3,9 @@ module go.opentelemetry.io/collector/service/hostcapabilities
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v1.33.0
-	go.opentelemetry.io/collector/pipeline v0.127.0
-	go.opentelemetry.io/collector/service v0.127.0
+	go.opentelemetry.io/collector/component v1.34.0
+	go.opentelemetry.io/collector/pipeline v0.128.0
+	go.opentelemetry.io/collector/service v0.128.0
 )
 
 require (
@@ -15,9 +15,9 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.33.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.127.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.33.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.34.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
@@ -30,7 +30,7 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
-	google.golang.org/grpc v1.72.2 // indirect
+	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
 

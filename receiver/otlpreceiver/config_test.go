@@ -163,6 +163,10 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 func TestUnmarshalConfigUnix(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
 	require.NoError(t, err)
@@ -178,7 +182,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
-					Keepalive:      configgrpc.NewDefaultKeepaliveServerConfig(),
+					Keepalive:      ptr(configgrpc.NewDefaultKeepaliveServerConfig()),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{

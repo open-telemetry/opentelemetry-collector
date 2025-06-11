@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -52,7 +53,7 @@ func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
 	return f.mr, nil
 }
 
-func newFakeEncoding(mr request.Request) Encoding[request.Request] {
+func newFakeEncoding(mr request.Request) queue.Encoding[request.Request] {
 	return &fakeEncoding{mr: mr}
 }
 

@@ -375,6 +375,10 @@ type ServerConfig struct {
 	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 }
 
+func ptr[T any](v T) *T {
+	return &v
+}
+
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
@@ -597,8 +601,8 @@ type CORSConfig struct {
 }
 
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
-func NewDefaultCORSConfig() *CORSConfig {
-	return &CORSConfig{}
+func NewDefaultCORSConfig() CORSConfig {
+	return CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {
