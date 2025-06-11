@@ -741,13 +741,7 @@ func TestHttpCors(t *testing.T) {
 		},
 		{
 			name:             "emptyCORS",
-<<<<<<< HEAD
-			CORSConfig:       configoptional.Some(*NewDefaultCORSConfig()),
-||||||| c9aaed834
-			CORSConfig:       NewDefaultCORSConfig(),
-=======
-			CORSConfig:       ptr(NewDefaultCORSConfig()),
->>>>>>> origin/main
+			CORSConfig:       configoptional.Some(NewDefaultCORSConfig()),
 			allowedWorks:     false,
 			disallowedWorks:  false,
 			extraHeaderWorks: false,
