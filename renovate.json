@@ -69,7 +69,8 @@
       "matchSourceUrls": [
         "https://github.com/open-telemetry/opentelemetry-go-contrib"
       ],
-      "groupName": "All opentelemetry-go-contrib packages"
+      "groupName": "All opentelemetry-go-contrib packages",
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -78,7 +79,8 @@
       "groupName": "All go.opentelemetry.io/contrib packages",
       "matchSourceUrls": [
         "https://go.opentelemetry.io/otel{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -87,7 +89,8 @@
       "groupName": "All google.golang.org packages",
       "matchSourceUrls": [
         "https://google.golang.org{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -96,7 +99,8 @@
       "groupName": "All golang.org/x packages",
       "matchPackageNames": [
         "golang.org/x{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -105,7 +109,8 @@
       "groupName": "All github.com/knadh/koanf packages",
       "matchPackageNames": [
         "github.com/knadh/koanf{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -114,7 +119,8 @@
       "groupName": "All go.opentelemetry.io/collector packages",
       "matchPackageNames": [
         "go.opentelemetry.io/collector{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
@@ -123,7 +129,8 @@
       "groupName": "All go.opentelemetry.io/build-tools packages",
       "matchPackageNames": [
         "go.opentelemetry.io/build-tools{/,}**"
-      ]
+      ],
+      "postUpdateOptions": ["gomodTidy"]
     },
     {
       "matchManagers": [
