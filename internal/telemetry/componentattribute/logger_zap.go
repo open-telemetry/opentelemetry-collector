@@ -142,11 +142,13 @@ func checkSamplerType(ty reflect.Type) bool {
 func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
 	newInner := tryWithAttributeSet(ssc.from, attrs)
 
-	// https://github.com/uber-go/zap/blob/fcf8ee58669e358bbd6460bef5c2ee7a53c0803a/zapcore/sampler.go#L168
+	// Relevant Zap code: https://github.com/uber-go/zap/blob/fcf8ee58669e358bbd6460bef5c2ee7a53c0803a/zapcore/sampler.go#L168
 	// We need to create a new Zap sampler core with the same settings but with a new inner core,
 	// while reusing the very RAM-intensive `counters` data structure.
-	// The `With` method does something similar, but it's not quite what we want, so we use `reflect`.
+	// The `With` method does something similar, but it only replaces pre-set fields, not the Core.
+	// However, we can use `reflect` to accomplish this.
 	// This hack can be removed once Zap supports this use case.
+	// Tracking issue: https://github.com/uber-go/zap/issues/1498
 	val1 := reflect.ValueOf(ssc.Core)
 	if !checkSamplerType(val1.Type()) { // To avoid a more esoteric panic message below
 		panic("Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/issues/13014")
