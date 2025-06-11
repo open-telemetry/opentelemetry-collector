@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -214,12 +215,13 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 	s := sizer.MetricsBytesSizer{}
 	tests := []struct {
-		name          string
-		szt           RequestSizerType
-		maxSize       int
-		mr1           Request
-		mr2           Request
-		expectedSizes []int
+		name               string
+		szt                RequestSizerType
+		maxSize            int
+		mr1                Request
+		mr2                Request
+		expectedSizes      []int
+		expectPartialError bool
 	}{
 		{
 			name:          "both_requests_empty",
@@ -283,10 +285,30 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			mr2:           nil,
 			expectedSizes: []int{706, 700, 85},
 		},
+		{
+			name:    "unsplittable_large_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 100)))
+				return md
+			}()),
+			mr2:                nil,
+			expectedSizes:      []int{},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
+			if tt.expectPartialError {
+				require.Error(t, err)
+				var partialErr *partialsuccess.PartialSuccessError
+				require.ErrorAs(t, err, &partialErr)
+				assert.Contains(t, err.Error(), "failed to split metrics request: size is greater than max size")
+				return
+			}
 			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expectedSizes))
 			for i := range res {

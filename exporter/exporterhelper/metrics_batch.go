@@ -6,7 +6,9 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"strconv"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -36,7 +38,7 @@ func (req *metricsRequest) MergeSplit(_ context.Context, maxSize int, szt Reques
 	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz)
 }
 
 func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
@@ -47,15 +49,33 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 	req.md.ResourceMetrics().MoveAndAppendTo(dst.md.ResourceMetrics())
 }
 
-func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) []Request {
+func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
-		md, rmSize := extractMetrics(req.md, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newMetricsRequest(md))
+	var md pmetric.Metrics
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		md, rmSize = extractMetrics(req.md, maxSize, sz)
+		if md.DataPointCount() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newMetricsRequest(md))
+		}
+	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		// This means we cannot split the metric and is not possible
+		// to fit it into the max size.
+		err := &partialsuccess.PartialSuccessError{
+			FailureCount: req.md.MetricCount(),
+			Reason: "failed to split metrics request: size is greater than max size. size: " +
+				strconv.Itoa(req.size(sz)) + ", max_size: " + strconv.Itoa(maxSize),
+		}
+		return res, err
 	}
 	res = append(res, req)
-	return res
+	return res, nil
 }
 
 // extractMetrics extracts metrics from srcMetrics until capacity is reached.
