@@ -196,8 +196,16 @@ func TestLogsBuilder(t *testing.T) {
 				allEventsCount++
 				lb.Record{{ $name.Render }}Event(ctx, timestamp
 				{{- range $event.Attributes -}}
-					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
-				{{- end }})
+				{{- if not (attributeInfo .).Optional -}}
+					, {{- template "getAttributeValue" . -}}
+				{{- end -}}
+				{{- end -}}
+				{{- range $event.Attributes -}}
+                {{- if (attributeInfo .).Optional -}}
+                    , With{{ .Render }}EventAttribute({{- template "getAttributeValue" . -}})
+                {{- end -}}
+                {{- end -}}
+                )
 			{{- end }}
 
 			{{ if .ResourceAttributes }}
