@@ -159,3 +159,28 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	o.hasValue = true
 	return nil
 }
+
+var _ confmap.Marshaler = (*Optional[any])(nil)
+
+// Marshal the Optional value into the configuration.
+// If the Optional is None or Default, it does not marshal anything.
+// If the Optional is Some, it marshals the value into the configuration.
+//
+// T must be derefenceable to a type with struct kind.
+// Scalar values are not supported.
+func (o Optional[T]) Marshal(conf *confmap.Conf) error {
+	if err := assertStructKind[T](); err != nil {
+		return err
+	}
+
+	if !o.hasValue {
+		// Optional is None or Default, do not marshal anything.
+		return nil
+	}
+
+	if err := conf.Marshal(o.value); err != nil {
+		return fmt.Errorf("configoptional: failed to marshal Optional value: %w", err)
+	}
+
+	return nil
+}

@@ -365,3 +365,46 @@ func TestComparePointer(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionalMarshal(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    Config[Sub]
+		expected map[string]any
+	}{
+		{
+			name:     "none (zero value)",
+			value:    Config[Sub]{},
+			expected: map[string]any{"sub": map[string]any{}},
+		},
+		{
+			name:     "none",
+			value:    Config[Sub]{Sub1: None[Sub]()},
+			expected: map[string]any{"sub": map[string]any{}},
+		},
+		{
+			name:     "default",
+			value:    Config[Sub]{Sub1: Default(subDefault)},
+			expected: map[string]any{"sub": map[string]any{}},
+		},
+		{
+			name: "some",
+			value: Config[Sub]{Sub1: Some(Sub{
+				Foo: "bar",
+			})},
+			expected: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			conf := confmap.New()
+			require.NoError(t, conf.Marshal(test.value))
+			assert.Equal(t, test.expected, conf.ToStringMap())
+		})
+	}
+}
