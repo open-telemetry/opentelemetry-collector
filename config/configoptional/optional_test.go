@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -339,7 +340,7 @@ func confFromYAML(t *testing.T, yaml string) *confmap.Conf {
 	return conf
 }
 
-func TestComparePointer(t *testing.T) {
+func TestComparePointerUnmarshal(t *testing.T) {
 	tests := []struct {
 		yaml string
 	}{
@@ -375,17 +376,17 @@ func TestOptionalMarshal(t *testing.T) {
 		{
 			name:     "none (zero value)",
 			value:    Config[Sub]{},
-			expected: map[string]any{"sub": map[string]any{}},
+			expected: map[string]any{"sub": map[string]any(nil)},
 		},
 		{
 			name:     "none",
 			value:    Config[Sub]{Sub1: None[Sub]()},
-			expected: map[string]any{"sub": map[string]any{}},
+			expected: map[string]any{"sub": map[string]any(nil)},
 		},
 		{
 			name:     "default",
 			value:    Config[Sub]{Sub1: Default(subDefault)},
-			expected: map[string]any{"sub": map[string]any{}},
+			expected: map[string]any{"sub": map[string]any(nil)},
 		},
 		{
 			name: "some",
@@ -405,6 +406,49 @@ func TestOptionalMarshal(t *testing.T) {
 			conf := confmap.New()
 			require.NoError(t, conf.Marshal(test.value))
 			assert.Equal(t, test.expected, conf.ToStringMap())
+		})
+	}
+}
+
+func TestComparePointerMarshal(t *testing.T) {
+	type Wrap[T any] struct {
+		Sub1 T `mapstructure:"sub"`
+	}
+
+	type WrapOmitEmpty[T any] struct {
+		Sub1 T `mapstructure:"sub.omitempty"`
+	}
+
+	tests := []struct {
+		pointer  *Sub
+		optional Optional[Sub]
+	}{
+		{pointer: nil, optional: None[Sub]()},
+		{pointer: &Sub{Foo: "bar"}, optional: Some(Sub{Foo: "bar"})},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%v vs %v", test.pointer, test.optional), func(t *testing.T) {
+			wrapPointer := Wrap[*Sub]{Sub1: test.pointer}
+			confPointer := confmap.NewFromStringMap(nil)
+			require.NoError(t, confPointer.Marshal(wrapPointer))
+
+			wrapOptional := Wrap[Optional[Sub]]{Sub1: test.optional}
+			confOptional := confmap.NewFromStringMap(nil)
+			require.NoError(t, confOptional.Marshal(wrapOptional))
+
+			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
+		})
+
+		t.Run(fmt.Sprintf("%v vs %v (omitempty)", test.pointer, test.optional), func(t *testing.T) {
+			wrapPointer := WrapOmitEmpty[*Sub]{Sub1: test.pointer}
+			confPointer := confmap.NewFromStringMap(nil)
+			require.NoError(t, confPointer.Marshal(wrapPointer))
+
+			wrapOptional := WrapOmitEmpty[Optional[Sub]]{Sub1: test.optional}
+			confOptional := confmap.NewFromStringMap(nil)
+			require.NoError(t, confOptional.Marshal(wrapOptional))
+
+			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
 	}
 }

@@ -580,11 +580,16 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 		if !ok {
 			return from.Interface(), nil
 		}
-		conf := New()
+		conf := NewFromStringMap(nil)
 		if err := marshaler.Marshal(conf); err != nil {
 			return nil, err
 		}
-		return conf.ToStringMap(), nil
+
+		stringMap := conf.ToStringMap()
+		if stringMap == nil {
+			return nil, nil
+		}
+		return stringMap, nil
 	})
 }
 

@@ -175,7 +175,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 
 	if !o.hasValue {
 		// Optional is None or Default, do not marshal anything.
-		return nil
+		return conf.Marshal(map[string]any(nil))
 	}
 
 	if err := conf.Marshal(o.value); err != nil {
