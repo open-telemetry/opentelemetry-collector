@@ -250,18 +250,7 @@ genpdata:
 	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
 	$(MAKE) fmt
 
-# Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
-gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
-	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
-	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
-	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
-	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
-
-INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queuebatch/internal/persistentqueue
+INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue
 # INTERNAL_PROTO_SRC_DIRS += path/to/other/proto/dirs
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
 INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=${PWD}

@@ -39,49 +39,42 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		return nil, nil, err
 	}
 
-	// The attributes in cfg.Resource are added as resource attributes for logs exported through the LoggerProvider instantiated below.
-	// To make sure they are also exposed in logs written to stdout, we add them as fields to the Zap core created above using WrapCore.
-	// We do NOT add them to the logger using With, because that would apply to all logs, even ones exported through the core that wraps
-	// the LoggerProvider, meaning that the attributes would be exported twice.
-	logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
-		var fields []zap.Field
-		for k, v := range cfg.Resource {
-			if v != nil {
-				f := zap.Stringp(k, v)
-				fields = append(fields, f)
+	// The attributes in set.Resource.Attributes(), which are generated in service.go, are added
+	// as resource attributes for logs exported through the LoggerProvider instantiated below.
+	// To make sure they are also exposed in logs written to stdout, we add them as fields to the
+	// Zap core created above using WrapCore.
+	// We do NOT add them to the logger using With, because that would apply to all logs, even ones
+	// exported through the core that wraps the LoggerProvider, meaning that the attributes would
+	// be exported twice.
+	if set.Resource != nil && len(set.Resource.Attributes()) > 0 {
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			var fields []zap.Field
+			for _, attr := range set.Resource.Attributes() {
+				fields = append(fields, zap.String(string(attr.Key), attr.Value.Emit()))
 			}
-		}
-		r := zap.Dict("resource", fields...)
-		return c.With([]zapcore.Field{r})
-	}))
+
+			r := zap.Dict("resource", fields...)
+			return c.With([]zapcore.Field{r})
+		}))
+	}
 
 	var lp log.LoggerProvider
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-			core = newSampledCore(core, cfg.Logs.Sampling)
-		}
-
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
 		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
 			lp = set.SDK.LoggerProvider()
-			wrapper := func(c zapcore.Core) zapcore.Core {
-				return c
-			}
-			if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-				wrapper = func(c zapcore.Core) zapcore.Core {
-					return newSampledCore(c, cfg.Logs.Sampling)
-				}
-			}
-
 			core = componentattribute.NewOTelTeeCoreWithAttributes(
 				core,
 				lp,
 				"go.opentelemetry.io/collector/service/telemetry",
 				cfg.Logs.Level,
 				attribute.NewSet(),
-				wrapper,
 			)
+		}
+
+		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+			core = newSampledCore(core, cfg.Logs.Sampling)
 		}
 
 		return core
@@ -93,7 +86,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
 	// Create a logger that samples every Nth message after the first M messages every S seconds
 	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	return zapcore.NewSamplerWithOptions(
+	return componentattribute.NewSamplerCoreWithAttributes(
 		core,
 		sc.Tick,
 		sc.Initial,
