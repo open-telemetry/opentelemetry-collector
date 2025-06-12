@@ -137,22 +137,22 @@ func TestUnmarshalConfig(t *testing.T) {
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
-						Auth: &confighttp.AuthConfig{
+						Auth: configoptional.Some(confighttp.AuthConfig{
 							Config: configauth.Config{
 								AuthenticatorID: component.MustNewID("test"),
 							},
-						},
+						}),
 						Endpoint: "localhost:4318",
-						TLS: &configtls.ServerConfig{
+						TLS: configoptional.Some(configtls.ServerConfig{
 							Config: configtls.Config{
 								CertFile: "test.crt",
 								KeyFile:  "test.key",
 							},
-						},
-						CORS: &confighttp.CORSConfig{
+						}),
+						CORS: configoptional.Some(confighttp.CORSConfig{
 							AllowedOrigins: []string{"https://*.test.com", "https://test.com"},
 							MaxAge:         7200,
-						},
+						}),
 						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  "/traces",
@@ -187,7 +187,6 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint:        "/tmp/http_otlp.sock",
-						CORS:            ptr(confighttp.NewDefaultCORSConfig()),
 						ResponseHeaders: map[string]configopaque.String{},
 					},
 					TracesURLPath:  defaultTracesURLPath,
