@@ -157,5 +157,6 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	}
 
 	o.hasValue = true
+	o.notNone = true
 	return nil
 }
