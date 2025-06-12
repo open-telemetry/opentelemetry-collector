@@ -178,7 +178,7 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if !o.hasValue {
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
 		// Optional is None or Default, do not marshal anything.
 		return conf.Marshal(map[string]any(nil))
 	}

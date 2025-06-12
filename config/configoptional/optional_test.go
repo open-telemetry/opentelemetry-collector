@@ -344,6 +344,7 @@ func TestComparePointerUnmarshal(t *testing.T) {
 	tests := []struct {
 		yaml string
 	}{
+		{yaml: ""},
 		{yaml: "sub: "},
 		{yaml: "sub: null"},
 		{yaml: "sub: {}"},
@@ -416,14 +417,16 @@ func TestComparePointerMarshal(t *testing.T) {
 	}
 
 	type WrapOmitEmpty[T any] struct {
-		Sub1 T `mapstructure:"sub.omitempty"`
+		Sub1 T `mapstructure:"sub,omitempty"`
 	}
 
 	tests := []struct {
-		pointer  *Sub
-		optional Optional[Sub]
+		pointer       *Sub
+		optional      Optional[Sub]
+		skipOmitEmpty bool
 	}{
 		{pointer: nil, optional: None[Sub]()},
+		{pointer: nil, optional: Default(subDefault), skipOmitEmpty: true}, // does not work with omitempty
 		{pointer: &Sub{Foo: "bar"}, optional: Some(Sub{Foo: "bar"})},
 	}
 	for _, test := range tests {
@@ -439,6 +442,9 @@ func TestComparePointerMarshal(t *testing.T) {
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
 
+		if test.skipOmitEmpty {
+			continue
+		}
 		t.Run(fmt.Sprintf("%v vs %v (omitempty)", test.pointer, test.optional), func(t *testing.T) {
 			wrapPointer := WrapOmitEmpty[*Sub]{Sub1: test.pointer}
 			confPointer := confmap.NewFromStringMap(nil)
