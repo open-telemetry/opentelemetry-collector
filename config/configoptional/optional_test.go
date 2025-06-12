@@ -376,17 +376,17 @@ func TestOptionalMarshal(t *testing.T) {
 		{
 			name:     "none (zero value)",
 			value:    Config[Sub]{},
-			expected: map[string]any{"sub": map[string]any(nil)},
+			expected: map[string]any{"sub": nil},
 		},
 		{
 			name:     "none",
 			value:    Config[Sub]{Sub1: None[Sub]()},
-			expected: map[string]any{"sub": map[string]any(nil)},
+			expected: map[string]any{"sub": nil},
 		},
 		{
 			name:     "default",
 			value:    Config[Sub]{Sub1: Default(subDefault)},
-			expected: map[string]any{"sub": map[string]any(nil)},
+			expected: map[string]any{"sub": nil},
 		},
 		{
 			name: "some",
