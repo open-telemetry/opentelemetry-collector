@@ -5,12 +5,15 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/partialsuccess"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -36,6 +39,7 @@ type partitionBatcher struct {
 	currentBatch   *batch
 	timer          *time.Timer
 	shutdownCh     chan struct{}
+	logger         *zap.Logger
 }
 
 func newPartitionBatcher(
@@ -44,6 +48,7 @@ func newPartitionBatcher(
 	sizer request.Sizer[request.Request],
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
+	logger *zap.Logger,
 ) *partitionBatcher {
 	return &partitionBatcher{
 		cfg:         cfg,
@@ -52,6 +57,7 @@ func newPartitionBatcher(
 		sizer:       sizer,
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
+		logger:      logger,
 	}
 }
 
@@ -66,7 +72,24 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 
 	if qb.currentBatch == nil {
 		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
-		if mergeSplitErr != nil || len(reqList) == 0 {
+		if mergeSplitErr != nil {
+			var partialSuccessErr *partialsuccess.PartialSuccessError
+			if !errors.As(mergeSplitErr, &partialSuccessErr) {
+				done.OnDone(mergeSplitErr)
+				qb.currentBatchMu.Unlock()
+				return
+			}
+			qb.logger.Warn(
+				"failed to split request",
+				zap.Int("failure_count", partialSuccessErr.FailureCount),
+				zap.String("reason", partialSuccessErr.Reason),
+			)
+			done.OnDone(mergeSplitErr)
+			qb.currentBatchMu.Unlock()
+			return
+		}
+
+		if len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
 			return
@@ -101,7 +124,24 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 
 	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
-	if mergeSplitErr != nil || len(reqList) == 0 {
+	if mergeSplitErr != nil {
+		var partialSuccessErr *partialsuccess.PartialSuccessError
+		if !errors.As(mergeSplitErr, &partialSuccessErr) {
+			done.OnDone(mergeSplitErr)
+			qb.currentBatchMu.Unlock()
+			return
+		}
+		qb.logger.Warn(
+			"failed to split request",
+			zap.Int("failure_count", partialSuccessErr.FailureCount),
+			zap.String("reason", partialSuccessErr.Reason),
+		)
+		done.OnDone(mergeSplitErr)
+		qb.currentBatchMu.Unlock()
+		return
+	}
+
+	if len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)
 		qb.currentBatchMu.Unlock()
 		return
