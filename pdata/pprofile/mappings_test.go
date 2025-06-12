@@ -30,7 +30,7 @@ func TestSetMapping(t *testing.T) {
 	assert.Equal(t, int32(0), loc.MappingIndex())
 
 	// Set a new mapping
-	// This adds an index and adds to the table.
+	// This sets the index and adds to the table.
 	require.NoError(t, SetMapping(table, loc, m2))
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, int32(1), loc.MappingIndex())
