@@ -23,7 +23,7 @@ func TestMappingEqual(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "non-empty mappings",
+			name: "non-empty identical mappings",
 			orig: buildMapping(1, 2, 3, 4, []int32{1, 2}, true, true, true, true),
 			dest: buildMapping(1, 2, 3, 4, []int32{1, 2}, true, true, true, true),
 			want: true,
