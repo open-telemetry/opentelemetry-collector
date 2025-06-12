@@ -39,6 +39,10 @@ func TestSetMapping(t *testing.T) {
 	require.NoError(t, SetMapping(table, loc, m))
 	assert.Equal(t, 2, table.Len())
 	assert.Equal(t, int32(0), loc.MappingIndex())
+	// Set another existing mapping
+	require.NoError(t, SetMapping(table, loc, m2))
+	assert.Equal(t, 2, table.Len())
+	assert.Equal(t, int32(table.Len() - 1), loc.MappingIndex())
 }
 
 func BenchmarkSetMapping(b *testing.B) {
