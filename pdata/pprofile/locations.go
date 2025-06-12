@@ -23,7 +23,10 @@ func FromLocationIndices(table LocationSlice, record Profile) LocationSlice {
 	return m
 }
 
-var errTooManyLocationTableEntries = errors.New("too many entries in LocationTable")
+var (
+	errTooManyLocationTableEntries   = errors.New("too many entries in LocationTable")
+	errTooManyLocationIndicesEntries = errors.New("too many entries in LocationIndices")
+)
 
 // PutLocation updates a LocationTable and a Profile's LocationIndices to
 // add or update a location.
@@ -41,7 +44,7 @@ func PutLocation(table LocationSlice, record Profile, loc Location) error {
 	}
 
 	if record.LocationIndices().Len() >= math.MaxInt32 {
-		return errors.New("too many entries in LocationIndices")
+		return errTooManyLocationIndicesEntries
 	}
 
 	for j, a := range table.All() {
