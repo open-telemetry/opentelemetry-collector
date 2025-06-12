@@ -53,7 +53,7 @@ func PutLocation(table LocationSlice, record Profile, loc Location) error {
 				return errTooManyLocationTableEntries
 			}
 			// Add the index of the existing location to the indices.
-			record.LocationIndices().Append(int32(j)) //nolint:gosec // overflow checked
+			record.LocationIndices().Append(int32(j)) //nolint:gosec // G115 overflow checked
 			return nil
 		}
 	}
@@ -63,6 +63,6 @@ func PutLocation(table LocationSlice, record Profile, loc Location) error {
 	}
 
 	loc.CopyTo(table.AppendEmpty())
-	record.LocationIndices().Append(int32(table.Len() - 1)) //nolint:gosec // overflow checked
+	record.LocationIndices().Append(int32(table.Len() - 1)) //nolint:gosec // G115 overflow checked
 	return nil
 }
