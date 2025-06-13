@@ -107,3 +107,5 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
