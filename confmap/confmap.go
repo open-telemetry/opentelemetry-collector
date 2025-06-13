@@ -587,6 +587,12 @@ func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 
 		stringMap := conf.ToStringMap()
 		if stringMap == nil {
+			// If conf is still nil after marshaling, we want to encode it as an untyped nil
+			// instead of a map-typed nil. This ensures the value is a proper null value
+			// in the final marshaled output instead of an empty map. We hit this case
+			// when marshaling wrapper structs that have no direct representation
+			// in the marshaled output that aren't tagged with "squash" on the fields
+			// they're used on.
 			return nil, nil
 		}
 		return stringMap, nil

@@ -413,10 +413,12 @@ func TestOptionalMarshal(t *testing.T) {
 
 func TestComparePointerMarshal(t *testing.T) {
 	type Wrap[T any] struct {
+		// Note: passes without requiring "squash".
 		Sub1 T `mapstructure:"sub"`
 	}
 
 	type WrapOmitEmpty[T any] struct {
+		// Note: passes without requiring "squash", except with Default-flavored Optional values.
 		Sub1 T `mapstructure:"sub,omitempty"`
 	}
 
