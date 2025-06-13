@@ -102,6 +102,7 @@ require (
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.128.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.128.0 // indirect
 	go.opentelemetry.io/collector/processor v1.34.0 // indirect
 	go.opentelemetry.io/collector/processor/processortest v0.128.0 // indirect
@@ -272,3 +273,5 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmid
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata

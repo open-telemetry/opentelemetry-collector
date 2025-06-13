@@ -14,9 +14,11 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
 
@@ -57,16 +59,31 @@ func newMetricsRequest(md pmetric.Metrics) Request {
 
 type metricsEncoding struct{}
 
-func (metricsEncoding) Unmarshal(bytes []byte) (Request, error) {
+var _ QueueBatchEncoding[Request] = metricsEncoding{}
+
+func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
+	if queue.PersistRequestContextOnRead {
+		ctx, metrics, err := pdatareq.UnmarshalMetrics(bytes)
+		if errors.Is(err, pdatareq.ErrInvalidFormat) {
+			// fall back to unmarshaling without context
+			metrics, err = metricsUnmarshaler.UnmarshalMetrics(bytes)
+		}
+		return ctx, newMetricsRequest(metrics), err
+	}
 	metrics, err := metricsUnmarshaler.UnmarshalMetrics(bytes)
 	if err != nil {
-		return nil, err
+		var req Request
+		return context.Background(), req, err
 	}
-	return newMetricsRequest(metrics), nil
+	return context.Background(), newMetricsRequest(metrics), nil
 }
 
-func (metricsEncoding) Marshal(req Request) ([]byte, error) {
-	return metricsMarshaler.MarshalMetrics(req.(*metricsRequest).md)
+func (metricsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
+	metrics := req.(*metricsRequest).md
+	if queue.PersistRequestContextOnWrite {
+		return pdatareq.MarshalMetrics(ctx, metrics)
+	}
+	return metricsMarshaler.MarshalMetrics(metrics)
 }
 
 func (req *metricsRequest) OnError(err error) Request {

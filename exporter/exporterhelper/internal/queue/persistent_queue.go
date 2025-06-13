@@ -253,7 +253,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		}
 	}
 
-	reqBuf, err := pq.set.encoding.Marshal(req)
+	reqBuf, err := pq.set.encoding.Marshal(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.metadata.ReadIndex != pq.metadata.WriteIndex {
-			index, req, consumed := pq.getNextItem(ctx)
+			index, req, reqCtx, consumed := pq.getNextItem(ctx)
 			// Ensure the used size and the channel size are in sync.
 			if pq.metadata.ReadIndex == pq.metadata.WriteIndex {
 				pq.metadata.QueueSize = 0
@@ -303,7 +303,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
 				id.reset(index, pq.set.sizer.Sizeof(req), pq)
-				return context.Background(), req, id, true
+				return reqCtx, req, id, true
 			}
 		}
 
@@ -316,7 +316,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with onDone to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, context.Context, bool) {
 	index := pq.metadata.ReadIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.metadata.ReadIndex++
@@ -328,8 +328,9 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 		getOp)
 
 	var request T
+	restoredCtx := context.Background()
 	if err == nil {
-		request, err = pq.set.encoding.Unmarshal(getOp.Value)
+		restoredCtx, request, err = pq.set.encoding.Unmarshal(getOp.Value)
 	}
 
 	if err != nil {
@@ -339,14 +340,14 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, bool)
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return 0, request, false
+		return 0, request, restoredCtx, false
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 
-	return index, request, true
+	return index, request, restoredCtx, true
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.
@@ -438,13 +439,13 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		req, err := pq.set.encoding.Unmarshal(op.Value)
+		reqCtx, req, err := pq.set.encoding.Unmarshal(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(ctx, req) != nil {
+		if pq.putInternal(reqCtx, req) != nil {
 			errCount++
 		}
 	}

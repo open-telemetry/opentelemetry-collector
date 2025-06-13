@@ -96,6 +96,7 @@ replaces:
   - go.opentelemetry.io/collector/pdata => ../../pdata
   - go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
   - go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+  - go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
   - go.opentelemetry.io/collector/pipeline => ../../pipeline
   - go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
   - go.opentelemetry.io/collector/processor => ../../processor

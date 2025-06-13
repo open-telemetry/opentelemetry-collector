@@ -95,6 +95,7 @@ var replaceModules = []string{
 	"/pdata",
 	"/pdata/testdata",
 	"/pdata/pprofile",
+	"/pdata/xpdata",
 	"/pipeline",
 	"/pipeline/xpipeline",
 	"/processor",

@@ -43,15 +43,15 @@ func (is *itemsSizer) Sizeof(val uint64) int64 {
 
 type uint64Encoding struct{}
 
-func (uint64Encoding) Marshal(val uint64) ([]byte, error) {
+func (uint64Encoding) Marshal(_ context.Context, val uint64) ([]byte, error) {
 	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
 }
 
-func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
+func (uint64Encoding) Unmarshal(bytes []byte) (context.Context, uint64, error) {
 	if len(bytes) < 8 {
-		return 0, errInvalidValue
+		return context.Background(), 0, errInvalidValue
 	}
-	return binary.LittleEndian.Uint64(bytes), nil
+	return context.Background(), binary.LittleEndian.Uint64(bytes), nil
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -913,7 +913,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+	marshaled, err := uint64Encoding{}.Marshal(context.Background(), uint64(50))
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 

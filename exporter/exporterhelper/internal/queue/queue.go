@@ -14,10 +14,10 @@ import (
 
 type Encoding[T any] interface {
 	// Marshal is a function that can marshal a request into bytes.
-	Marshal(T) ([]byte, error)
+	Marshal(context.Context, T) ([]byte, error)
 
 	// Unmarshal is a function that can unmarshal bytes into a request.
-	Unmarshal([]byte) (T, error)
+	Unmarshal([]byte) (context.Context, T, error)
 }
 
 // ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to

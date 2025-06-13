@@ -45,12 +45,12 @@ type fakeEncoding struct {
 	mr request.Request
 }
 
-func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
-func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
-	return f.mr, nil
+func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
+	return context.Background(), f.mr, nil
 }
 
 func newFakeEncoding(mr request.Request) queue.Encoding[request.Request] {
