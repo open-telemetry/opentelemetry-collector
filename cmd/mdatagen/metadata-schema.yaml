@@ -79,7 +79,7 @@ attributes:
     # Optional: array of attribute values if they are static values (currently, only string type is supported).
     enum: [string]
     # Required: attribute value type.
-    type: <string|int|double|bool|bytes|slice|map|template>
+    type: <string|int|double|bool|bytes|slice|map>
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
