@@ -299,7 +299,8 @@ type Attribute struct {
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
-	Type ValueType `mapstructure:"type"`
+	Type        ValueType `mapstructure:"type"`
+	TemplateKey bool      `mapstructure:"template_key"`
 	// FullName is the attribute name populated from the map key.
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
@@ -315,6 +316,12 @@ func (a Attribute) Name() AttributeName {
 }
 
 func (a Attribute) TestValue() string {
+	if a.TemplateKey {
+		switch a.Type.ValueType {
+		case pcommon.ValueTypeStr:
+			return `"key", "val"`
+		}
+	}
 	if a.Enum != nil {
 		return fmt.Sprintf(`"%s"`, a.Enum[0])
 	}
@@ -335,6 +342,14 @@ func (a Attribute) TestValue() string {
 		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
 	case pcommon.ValueTypeBytes:
 		return fmt.Sprintf(`[]byte("%s-val")`, a.FullName)
+	}
+	return ""
+}
+
+func (a Attribute) TestResultTemplateValue() string {
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeStr:
+		return `"val"`
 	}
 	return ""
 }
