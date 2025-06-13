@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -25,7 +26,7 @@ import (
 var exporterID = component.NewID(exportertest.NopType)
 
 type fakeQueue[T any] struct {
-	Queue[T]
+	queue.Queue[T]
 	offerErr error
 	size     int64
 	capacity int64
@@ -43,7 +44,7 @@ func (fq *fakeQueue[T]) Offer(context.Context, T) error {
 	return fq.offerErr
 }
 
-func newFakeQueue[T request.Request](offerErr error, size, capacity int64) Queue[T] {
+func newFakeQueue[T request.Request](offerErr error, size, capacity int64) queue.Queue[T] {
 	return &fakeQueue[T]{offerErr: offerErr, size: size, capacity: capacity}
 }
 

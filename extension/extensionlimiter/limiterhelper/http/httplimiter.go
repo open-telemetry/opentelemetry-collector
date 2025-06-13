@@ -5,11 +5,12 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
-	"go.uber.org/multierr"
 )
 
 func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.HTTPClient, error) {

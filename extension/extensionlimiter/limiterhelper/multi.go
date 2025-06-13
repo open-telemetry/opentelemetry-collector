@@ -7,8 +7,9 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
 // MultiLimiterProvider combines multiple limiter providers of all

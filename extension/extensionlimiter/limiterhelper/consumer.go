@@ -7,6 +7,8 @@ import (
 	"context"
 	"slices"
 
+	"go.uber.org/multierr"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
@@ -14,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 )
 
 // Traits object interface is generalized by P the pipeline data type

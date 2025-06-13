@@ -3,12 +3,13 @@ package grpclimiter
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
-	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
-	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/stats"
+
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
+	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
 func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.GRPCClient, error) {

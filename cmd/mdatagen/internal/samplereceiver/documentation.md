@@ -36,7 +36,7 @@ The metric will be become optional soon.
 
 [DEPRECATED] Non-monotonic delta sum double metric enabled by default.
 
-The metric will be will be removed soon.
+The metric will be removed soon.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -129,7 +129,7 @@ Example event enabled by default.
 
 [DEPRECATED] Example to-be-removed event enabled by default.
 
-The event will be will be removed soon.
+The event will be removed soon.
 
 #### Attributes
 
@@ -140,6 +140,30 @@ The event will be will be removed soon.
 | enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
 | slice_attr | Attribute with a slice value. | Any Slice |
 | map_attr | Attribute with a map value. | Any Map |
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+### default.event.to_be_renamed
+
+[DEPRECATED] Example event disabled by default.
+
+The event will be renamed soon.
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
 
 ## Resource Attributes
 

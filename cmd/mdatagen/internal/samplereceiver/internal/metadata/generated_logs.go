@@ -3,7 +3,10 @@
 package metadata
 
 import (
+	"context"
+
 	conventions "go.opentelemetry.io/otel/semconv/v1.9.0"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/filter"
@@ -17,13 +20,19 @@ type eventDefaultEvent struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEvent) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (e *eventDefaultEvent) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !e.config.Enabled {
 		return
 	}
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("default.event")
 	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
 	lr.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	lr.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	lr.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
@@ -51,13 +60,19 @@ type eventDefaultEventToBeRemoved struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEventToBeRemoved) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+func (e *eventDefaultEventToBeRemoved) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue string, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
 	if !e.config.Enabled {
 		return
 	}
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("default.event.to_be_removed")
 	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
 	lr.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	lr.Attributes().PutInt("state", overriddenIntAttrAttributeValue)
 	lr.Attributes().PutStr("enum_attr", enumAttrAttributeValue)
@@ -85,13 +100,19 @@ type eventDefaultEventToBeRenamed struct {
 	config EventConfig         // event config provided by user.
 }
 
-func (e *eventDefaultEventToBeRenamed) recordEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
+func (e *eventDefaultEventToBeRenamed) recordEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
 	if !e.config.Enabled {
 		return
 	}
 	lr := e.data.AppendEmpty()
 	lr.SetEventName("default.event.to_be_renamed")
 	lr.SetTimestamp(timestamp)
+
+	if span := trace.SpanContextFromContext(ctx); span.IsValid() {
+		lr.SetTraceID(pcommon.TraceID(span.TraceID()))
+		lr.SetSpanID(pcommon.SpanID(span.SpanID()))
+	}
+
 	lr.Attributes().PutStr("string_attr", stringAttrAttributeValue)
 	lr.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	lr.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
@@ -293,16 +314,16 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 }
 
 // RecordDefaultEventEvent adds a log record of default.event event.
-func (lb *LogsBuilder) RecordDefaultEventEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
-	lb.eventDefaultEvent.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+func (lb *LogsBuilder) RecordDefaultEventEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+	lb.eventDefaultEvent.recordEvent(ctx, timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultEventToBeRemovedEvent adds a log record of default.event.to_be_removed event.
-func (lb *LogsBuilder) RecordDefaultEventToBeRemovedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
-	lb.eventDefaultEventToBeRemoved.recordEvent(timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
+func (lb *LogsBuilder) RecordDefaultEventToBeRemovedEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, overriddenIntAttrAttributeValue int64, enumAttrAttributeValue AttributeEnumAttr, sliceAttrAttributeValue []any, mapAttrAttributeValue map[string]any) {
+	lb.eventDefaultEventToBeRemoved.recordEvent(ctx, timestamp, stringAttrAttributeValue, overriddenIntAttrAttributeValue, enumAttrAttributeValue.String(), sliceAttrAttributeValue, mapAttrAttributeValue)
 }
 
 // RecordDefaultEventToBeRenamedEvent adds a log record of default.event.to_be_renamed event.
-func (lb *LogsBuilder) RecordDefaultEventToBeRenamedEvent(timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
-	lb.eventDefaultEventToBeRenamed.recordEvent(timestamp, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue)
+func (lb *LogsBuilder) RecordDefaultEventToBeRenamedEvent(ctx context.Context, timestamp pcommon.Timestamp, stringAttrAttributeValue string, booleanAttrAttributeValue bool, booleanAttr2AttributeValue bool) {
+	lb.eventDefaultEventToBeRenamed.recordEvent(ctx, timestamp, stringAttrAttributeValue, booleanAttrAttributeValue, booleanAttr2AttributeValue)
 }

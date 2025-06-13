@@ -8,8 +8,9 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"golang.org/x/time/rate"
+
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
 var (

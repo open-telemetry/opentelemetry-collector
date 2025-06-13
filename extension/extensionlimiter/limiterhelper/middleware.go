@@ -6,8 +6,9 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.uber.org/multierr"
+
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
 var (

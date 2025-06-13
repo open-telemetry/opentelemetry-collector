@@ -562,6 +562,28 @@ func TestEmbeddedMarshalerError(t *testing.T) {
 	assert.EqualError(t, cfgMap.Unmarshal(tc), "error running encode hook: marshaling error")
 }
 
+type B struct {
+	String string `mapstructure:"string"`
+}
+
+func (b *B) Unmarshal(conf *Conf) error {
+	return conf.Unmarshal(b)
+}
+
+type A struct {
+	B `mapstructure:",squash"`
+}
+
+func (a *A) Unmarshal(conf *Conf) error {
+	return conf.Unmarshal(a)
+}
+
+func TestUnmarshalerEmbeddedNilMap(t *testing.T) {
+	cfg := A{}
+	nilConf := NewFromStringMap(nil)
+	require.NoError(t, nilConf.Unmarshal(&cfg))
+}
+
 func TestUnmarshalerKeepAlreadyInitialized(t *testing.T) {
 	cfgMap := NewFromStringMap(map[string]any{
 		"next": map[string]any{
@@ -1086,6 +1108,224 @@ func TestConfDelete(t *testing.T) {
 			assert.False(t, cm.Delete(test.path))
 			assert.Nil(t, cm.Get(test.path))
 			assert.False(t, cm.IsSet(test.path))
+		})
+	}
+}
+
+type structWithConfigOpaqueMap struct {
+	Headers map[string]string `mapstructure:"headers"`
+}
+
+func TestMapMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  map[string]string
+		added    map[string]string
+		expected map[string]string
+	}{
+		{
+			name:     "both nil",
+			initial:  nil,
+			added:    nil,
+			expected: nil,
+		},
+		{
+			name:     "nil map",
+			initial:  map[string]string{},
+			added:    nil,
+			expected: map[string]string{},
+		},
+		{
+			name: "initialized",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: nil,
+			expected: map[string]string{
+				"foo": "bar",
+			},
+		},
+		{
+			name: "both",
+			initial: map[string]string{
+				"foo": "bar",
+			},
+			added: map[string]string{
+				"foobar": "bar",
+			},
+			expected: map[string]string{
+				"foo":    "bar",
+				"foobar": "bar",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := structWithConfigOpaqueMap{
+				Headers: test.initial,
+			}
+			c := NewFromStringMap(map[string]any{
+				"headers": test.added,
+			})
+			require.NoError(t, c.Unmarshal(&s))
+			assert.Equal(t, test.expected, s.Headers)
+		})
+	}
+}
+
+func TestConfIsNil(t *testing.T) {
+	const subKey = "foo"
+	testCases := []struct {
+		name         string
+		input        map[string]any
+		expectIsNil  bool
+		subExpectNil bool
+		subExpectErr string
+	}{
+		{
+			name:         "nil input",
+			input:        nil,
+			expectIsNil:  true,
+			subExpectNil: true,
+		},
+		{
+			name:         "empty map",
+			input:        map[string]any{},
+			expectIsNil:  false,
+			subExpectNil: true,
+		},
+		{
+			name:         "nil subkey",
+			input:        map[string]any{subKey: nil},
+			expectIsNil:  false,
+			subExpectNil: true,
+		},
+		{
+			name:         "empty subkey",
+			input:        map[string]any{subKey: map[string]any{}},
+			expectIsNil:  false,
+			subExpectNil: false,
+		},
+		{
+			name:         "non-empty map",
+			input:        map[string]any{subKey: map[string]any{"bar": 42}},
+			expectIsNil:  false,
+			subExpectNil: false,
+		},
+		{
+			name:         "non-map subkey",
+			input:        map[string]any{subKey: 123},
+			expectIsNil:  false,
+			subExpectErr: "unexpected sub-config value kind",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			conf := NewFromStringMap(tc.input)
+			if tc.expectIsNil {
+				assert.Empty(t, conf.AllKeys())
+				assert.Equal(t, map[string]any(nil), conf.ToStringMap())
+			} else {
+				assert.NotEqual(t, map[string]any(nil), conf.ToStringMap())
+			}
+
+			sub, err := conf.Sub(subKey)
+			if tc.subExpectErr != "" {
+				assert.ErrorContains(t, err, tc.subExpectErr)
+			} else {
+				assert.NoError(t, err)
+				if tc.subExpectNil {
+					assert.Empty(t, sub.AllKeys())
+					assert.Equal(t, map[string]any(nil), sub.ToStringMap())
+				} else {
+					assert.NotEqual(t, map[string]any(nil), sub.ToStringMap())
+				}
+			}
+		})
+	}
+}
+
+func TestConfmapNilMerge(t *testing.T) {
+	tests := []struct {
+		name     string
+		left     map[string]any
+		right    map[string]any
+		expected map[string]any
+	}{
+		{
+			name:     "both nil",
+			left:     nil,
+			right:    nil,
+			expected: nil,
+		},
+		{
+			name:     "left nil",
+			left:     nil,
+			right:    map[string]any{"key": "value"},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "right nil",
+			left:     map[string]any{"key": "value"},
+			right:    nil,
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "both non-nil",
+			left:     map[string]any{"key1": "value1"},
+			right:    map[string]any{"key2": "value2"},
+			expected: map[string]any{"key1": "value1", "key2": "value2"},
+		},
+		{
+			name:     "left empty, right non-empty",
+			left:     map[string]any{},
+			right:    map[string]any{"key": "value"},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "left non-empty, right empty",
+			left:     map[string]any{"key": "value"},
+			right:    map[string]any{},
+			expected: map[string]any{"key": "value"},
+		},
+		{
+			name:     "left nil, right empty",
+			left:     nil,
+			right:    map[string]any{},
+			expected: map[string]any{},
+		},
+		{
+			name:     "left empty, right nil",
+			left:     map[string]any{},
+			right:    nil,
+			expected: map[string]any{},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			leftConf := NewFromStringMap(test.left)
+			assert.Equal(t, test.left, leftConf.ToStringMap())
+			rightConf := NewFromStringMap(test.right)
+			assert.Equal(t, test.right, rightConf.ToStringMap())
+
+			err := leftConf.Merge(rightConf)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, leftConf.ToStringMap())
+		})
+
+		t.Run(test.name+"merge append", func(t *testing.T) {
+			leftConf := NewFromStringMap(test.left)
+			assert.Equal(t, test.left, leftConf.ToStringMap())
+			rightConf := NewFromStringMap(test.right)
+			assert.Equal(t, test.right, rightConf.ToStringMap())
+
+			err := leftConf.mergeAppend(rightConf)
+			require.NoError(t, err)
+
+			assert.Equal(t, test.expected, leftConf.ToStringMap())
 		})
 	}
 }
