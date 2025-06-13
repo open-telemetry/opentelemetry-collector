@@ -241,8 +241,6 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 		mvt.ValueType = pcommon.ValueTypeSlice
 	case "map":
 		mvt.ValueType = pcommon.ValueTypeMap
-	case "template":
-		mvt.ValueType = pcommon.ValueTypeTemplate
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -259,8 +257,6 @@ func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
 	case pcommon.ValueTypeStr:
 		return "string"
-	case pcommon.ValueTypeTemplate:
-		return "template"
 	case pcommon.ValueTypeInt:
 		return "int64"
 	case pcommon.ValueTypeDouble:
@@ -303,7 +299,8 @@ type Attribute struct {
 	// Enum can optionally describe the set of values to which the attribute can belong.
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
-	Type ValueType `mapstructure:"type"`
+	Type        ValueType `mapstructure:"type"`
+	TemplateKey bool      `mapstructure:"template_key"`
 	// FullName is the attribute name populated from the map key.
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
@@ -319,6 +316,12 @@ func (a Attribute) Name() AttributeName {
 }
 
 func (a Attribute) TestValue() string {
+	if a.TemplateKey {
+		switch a.Type.ValueType {
+		case pcommon.ValueTypeStr:
+			return `"key", "val"`
+		}
+	}
 	if a.Enum != nil {
 		return fmt.Sprintf(`"%s"`, a.Enum[0])
 	}
@@ -327,8 +330,6 @@ func (a Attribute) TestValue() string {
 		return ""
 	case pcommon.ValueTypeStr:
 		return fmt.Sprintf(`"%s-val"`, a.FullName)
-	case pcommon.ValueTypeTemplate:
-		return `"key", "val"`
 	case pcommon.ValueTypeInt:
 		return strconv.Itoa(len(a.FullName))
 	case pcommon.ValueTypeDouble:
@@ -345,8 +346,9 @@ func (a Attribute) TestValue() string {
 	return ""
 }
 
-func (a Attribute) TestResultValue() string {
-	if a.Type.ValueType == pcommon.ValueTypeTemplate {
+func (a Attribute) TestResultTemplateValue() string {
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeStr:
 		return `"val"`
 	}
 	return ""
