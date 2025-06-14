@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.128.0
 	go.opentelemetry.io/collector/config/configgrpc v0.128.0
 	go.opentelemetry.io/collector/config/confighttp v0.128.0
+	go.opentelemetry.io/collector/config/configmiddleware v0.128.0
 	go.opentelemetry.io/collector/config/confignet v1.34.0
 	go.opentelemetry.io/collector/config/configopaque v1.34.0
 	go.opentelemetry.io/collector/config/configoptional v0.128.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.128.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.128.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.128.0
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/collector/internal/sharedcomponent v0.128.0
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0
 	go.opentelemetry.io/collector/pdata v1.34.0
@@ -69,9 +71,10 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.34.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.34.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v0.128.0 // indirect
+	go.opentelemetry.io/collector/extension v1.34.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.34.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.128.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.128.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
@@ -86,6 +89,7 @@ require (
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
@@ -132,8 +136,6 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../../client
@@ -166,3 +168,7 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
