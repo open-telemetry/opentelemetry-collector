@@ -213,7 +213,7 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 	}
 
 	// 3. Initialize sizer type in metadata
-	sizeType, err := persistentqueue.SizerTypeToProto(pq.set.sizerType)
+	sizeType, err := SizerTypeToProto(pq.set.sizerType)
 	if err == nil {
 		pq.metadata.SizerType = sizeType
 	}
@@ -242,7 +242,7 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 		return err
 	}
 
-	metadataSizerType, err := persistentqueue.SizerTypeFromProto(metadata.SizerType)
+	metadataSizerType, err := SizerTypeFromProto(metadata.SizerType)
 	if err != nil {
 		return err
 	}
@@ -483,7 +483,7 @@ func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr erro
 	}
 
 	// Check if we've completed draining during sizer type mismatch.
-	if pq.sizerTypeMismatch.Load() && pq.metadata.ReadIndex == pq.metadata.WriteIndex && len(pq.metadata.CurrentlyDispatchedItems) == 0 && pq.metadata.QueueSize == 0 {
+	if pq.sizerTypeMismatch.Load() && pq.metadata.ReadIndex == pq.metadata.WriteIndex && len(pq.metadata.CurrentlyDispatchedItems) == 0 {
 		pq.logger.Info("Queue drain completed due to sizer type mismatch, allowing new requests")
 
 		pq.set.sizer = pq.originalConfiguredSizer
@@ -671,7 +671,7 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 	return val, nil
 }
 
-func metadataToBytes(meta *persistentqueue.QueueMetadata) ([]byte, error) {
+func metadataToBytes(meta *QueueMetadata) ([]byte, error) {
 	return proto.Marshal(meta)
 }
 
