@@ -441,127 +441,30 @@ pre-compute limiter instances for the cross product of configurations.
 The following diagram illustrates the core architecture of the extension limiter system, showing the relationships between interfaces, providers, helpers, and middleware integration:
 
 ```mermaid
-graph TB
+graph LR
+    subgraph TB
     %% Core Limiter Interfaces
     BaseLimiter["🔒 BaseLimiter<br/>MustDeny(ctx) error"]
     RateLimiter["⏱️ RateLimiter<br/>ReserveRate(ctx, int) (RateReservation, error)"]
     ResourceLimiter["💾 ResourceLimiter<br/>ReserveResource(ctx, int) (ResourceReservation, error)"]
-    
+    end
+
+    subgraph TB
     %% Provider Interfaces
     BaseLimiterProvider["🏭 BaseLimiterProvider<br/>GetBaseLimiter(...Option) (BaseLimiter, error)"]
     RateLimiterProvider["🏭 RateLimiterProvider<br/>GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)"]
     ResourceLimiterProvider["🏭 ResourceLimiterProvider<br/>GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)"]
     LimiterWrapperProvider["🏭 LimiterWrapperProvider<br/>GetLimiterWrapper(WeightKey, ...Option) (LimiterWrapper, error)"]
-    
-    %% Helper Types
-    LimiterWrapper["🎯 LimiterWrapper<br/>LimitCall(ctx, weight, callback) error"]
-    BlockingRateLimiter["⏸️ BlockingRateLimiter<br/>WaitFor(ctx, value) error"]
-    BlockingResourceLimiter["⏸️ BlockingResourceLimiter<br/>WaitFor(ctx, value) (ReleaseFunc, error)"]
-    
-    %% Multi Provider
-    MultiLimiterProvider["🔗 MultiLimiterProvider<br/>[]BaseLimiterProvider"]
-    
-    %% Reservations
-    RateReservation["📋 RateReservation<br/>WaitTime() time.Duration<br/>Cancel()"]
-    ResourceReservation["📋 ResourceReservation<br/>Delay() <-chan struct{}<br/>Release()"]
-    
-    %% Weight Keys
-    WeightKey["🏷️ WeightKey<br/>network_bytes<br/>request_count<br/>request_items<br/>memory_size"]
-    
-    %% Functional Types
-    MustDenyFunc["🔧 MustDenyFunc"]
-    ReserveRateFunc["🔧 ReserveRateFunc"]
-    ReserveResourceFunc["🔧 ReserveResourceFunc"]
-    LimiterWrapperFunc["🔧 LimiterWrapperFunc"]
-    
-    %% Middleware Integration
-    HTTPClientLimiter["🌐 HTTP Client Limiter<br/>RoundTripper wrapper"]
-    HTTPServerLimiter["🌐 HTTP Server Limiter<br/>Handler wrapper"]
-    GRPCClientLimiter["📡 gRPC Client Limiter<br/>DialOption provider"]
-    GRPCServerLimiter["📡 gRPC Server Limiter<br/>ServerOption provider"]
-    
-    %% Consumer Integration
-    TracesConsumer["📊 Limited Traces Consumer"]
-    MetricsConsumer["📊 Limited Metrics Consumer"]
-    LogsConsumer["📊 Limited Logs Consumer"]
-    ProfilesConsumer["📊 Limited Profiles Consumer"]
-    
-    %% Adapter Functions
-    BaseToRate["🔄 BaseToRateLimiterProvider"]
-    BaseToResource["🔄 BaseToResourceLimiterProvider"]
-    RateToResource["🔄 RateToResourceLimiterProvider"]
-    BaseToWrapper["🔄 BaseToLimiterWrapperProvider"]
-    RateToWrapper["🔄 RateToLimiterWrapperProvider"]
-    ResourceToWrapper["🔄 ResourceToLimiterWrapperProvider"]
-    
+    end
+
     %% Provider Inheritance Relationships
     RateLimiterProvider -.->|extends| BaseLimiterProvider
     ResourceLimiterProvider -.->|extends| BaseLimiterProvider
     LimiterWrapperProvider -.->|extends| BaseLimiterProvider
-    
+
     %% Core Limiter to Provider Relationships
     BaseLimiterProvider -->|creates| BaseLimiter
     RateLimiterProvider -->|creates| RateLimiter
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper
-    
-    %% Reservation Relationships
-    RateLimiter -->|returns| RateReservation
-    ResourceLimiter -->|returns| ResourceReservation
-    
-    %% Functional Implementation Relationships
-    MustDenyFunc -.->|implements| BaseLimiter
-    ReserveRateFunc -.->|implements| RateLimiter
-    ReserveResourceFunc -.->|implements| ResourceLimiter
-    LimiterWrapperFunc -.->|implements| LimiterWrapper
-    
-    %% Helper Wrapper Relationships
-    BlockingRateLimiter -->|wraps| RateLimiter
-    BlockingResourceLimiter -->|wraps| ResourceLimiter
-    
-    %% Multi Provider Relationships
-    MultiLimiterProvider -->|combines| BaseLimiterProvider
-    MultiLimiterProvider -.->|implements| RateLimiterProvider
-    MultiLimiterProvider -.->|implements| ResourceLimiterProvider
-    MultiLimiterProvider -.->|implements| LimiterWrapperProvider
-    
-    %% Weight Key Usage
-    WeightKey -->|used by| RateLimiterProvider
-    WeightKey -->|used by| ResourceLimiterProvider
-    WeightKey -->|used by| LimiterWrapperProvider
-    
-    %% Adapter Relationships
-    BaseToRate -->|adapts| BaseLimiterProvider
-    BaseToResource -->|adapts| BaseLimiterProvider
-    RateToResource -->|adapts| RateLimiterProvider
-    BaseToWrapper -->|adapts| BaseLimiterProvider
-    RateToWrapper -->|adapts| RateLimiterProvider
-    ResourceToWrapper -->|adapts| ResourceLimiterProvider
-    
-    %% Middleware Usage
-    HTTPClientLimiter -->|uses| LimiterWrapper
-    HTTPServerLimiter -->|uses| LimiterWrapper
-    GRPCClientLimiter -->|uses| LimiterWrapper
-    GRPCServerLimiter -->|uses| LimiterWrapper
-    
-    %% Consumer Usage
-    TracesConsumer -->|uses| LimiterWrapper
-    MetricsConsumer -->|uses| LimiterWrapper
-    LogsConsumer -->|uses| LimiterWrapper
-    ProfilesConsumer -->|uses| LimiterWrapper
-    
-    %% Styling
-    classDef coreInterface fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef provider fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef helper fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef functional fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef middleware fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef adapter fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    
-    class BaseLimiter,RateLimiter,ResourceLimiter,RateReservation,ResourceReservation coreInterface
-    class BaseLimiterProvider,RateLimiterProvider,ResourceLimiterProvider,LimiterWrapperProvider provider
-    class LimiterWrapper,BlockingRateLimiter,BlockingResourceLimiter,MultiLimiterProvider helper
-    class MustDenyFunc,ReserveRateFunc,ReserveResourceFunc,LimiterWrapperFunc functional
-    class HTTPClientLimiter,HTTPServerLimiter,GRPCClientLimiter,GRPCServerLimiter,TracesConsumer,MetricsConsumer,LogsConsumer,ProfilesConsumer middleware
-    class BaseToRate,BaseToResource,RateToResource,BaseToWrapper,RateToWrapper,ResourceToWrapper adapter
 ```
