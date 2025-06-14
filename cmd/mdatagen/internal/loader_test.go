@@ -4,6 +4,7 @@
 package internal
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +13,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestTwoPackagesInDirectory(t *testing.T) {
+	contents, err := os.ReadFile("testdata/twopackages.yaml")
+	require.NoError(t, err)
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+	// we create a trivial module and packages to avoid having invalid go checked into our test directory.
+	require.NoError(t, os.WriteFile("go.mod", []byte("module twopackages"), 0644))
+	require.NoError(t, os.WriteFile("package1.go", []byte("package package1"), 0644))
+	require.NoError(t, os.WriteFile("package2.go", []byte("package package2"), 0644))
+	require.NoError(t, os.WriteFile("metadata.yaml", contents, 0644))
+
+	_, err = LoadMetadata("metadata.yaml")
+	require.Error(t, err)
+	require.ErrorContains(t, err, "unable to determine package name: [go list -f {{.ImportPath}}] failed: (stderr) found packages package1 (package1.go) and package2 (package2.go)")
+
+}
 
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
@@ -421,6 +439,10 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
+		},
+		{
+			name:    "testdata/~~this file doesn't exist~~.yaml",
+			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml: open testdata/~~this file doesn't exist~~.yaml: no such file or directory",
 		},
 	}
 	for _, tt := range tests {
