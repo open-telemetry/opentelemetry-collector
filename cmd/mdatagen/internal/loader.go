@@ -5,6 +5,8 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -84,7 +86,12 @@ func packageName() (string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			return "", fmt.Errorf("unable to determine package name: %v failed: (stderr) %v", cmd.Args, string(ee.Stderr[:]))
+		}
+
+		return "", fmt.Errorf("unable to determine package name: %v failed: %v %w", cmd.Args, string(output[:]), err)
 	}
 	return strings.TrimSpace(string(output)), nil
 }

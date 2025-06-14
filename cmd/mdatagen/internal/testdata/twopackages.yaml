@@ -1,0 +1,7 @@
+type: sample
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
