@@ -97,6 +97,10 @@ gogenerate:
 	$(MAKE) genproto_internal
 	$(MAKE) fmt
 
+.PHONY: govulncheck
+govulncheck:
+	@$(MAKE) for-all-target TARGET="govulncheck"
+
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
 	@ADDLICENSEOUT=`$(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors" $(ALL_SRC) 2>&1`; \
