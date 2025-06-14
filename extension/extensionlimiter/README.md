@@ -444,17 +444,17 @@ The following diagram illustrates the core architecture of the extension limiter
 graph LR
     subgraph TB
     %% Core Limiter Interfaces
-    BaseLimiter["🔒 BaseLimiter<br/>MustDeny(ctx) error"]
-    RateLimiter["⏱️ RateLimiter<br/>ReserveRate(ctx, int) (RateReservation, error)"]
-    ResourceLimiter["💾 ResourceLimiter<br/>ReserveResource(ctx, int) (ResourceReservation, error)"]
+    BaseLimiter["BaseLimiter"]
+    RateLimiter["RateLimiter"]
+    ResourceLimiter["ResourceLimiter"]
     end
 
     subgraph TB
     %% Provider Interfaces
-    BaseLimiterProvider["🏭 BaseLimiterProvider<br/>GetBaseLimiter(...Option) (BaseLimiter, error)"]
-    RateLimiterProvider["🏭 RateLimiterProvider<br/>GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)"]
-    ResourceLimiterProvider["🏭 ResourceLimiterProvider<br/>GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)"]
-    LimiterWrapperProvider["🏭 LimiterWrapperProvider<br/>GetLimiterWrapper(WeightKey, ...Option) (LimiterWrapper, error)"]
+    BaseLimiterProvider["BaseLimiterProvider"]
+    RateLimiterProvider["RateLimiterProvider"]
+    ResourceLimiterProvider["ResourceLimiterProvider"]
+    LimiterWrapperProvider["LimiterWrapperProvider"]
     end
 
     %% Provider Inheritance Relationships
