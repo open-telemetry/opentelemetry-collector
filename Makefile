@@ -99,7 +99,7 @@ gogenerate:
 
 .PHONY: govulncheck
 govulncheck:
-	@$(MAKE) for-all-target TARGET="govulncheck"
+	@$(MAKE) for-all-target TARGET="vulncheck"
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
