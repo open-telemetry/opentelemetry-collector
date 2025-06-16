@@ -180,7 +180,7 @@ func newLimited[P any, C any](
 	}
 	var err1, err2, err3, err4 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
-	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
+	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestSize, opts,
 		func(data P) int {
 			return m.requestSize(data)
 		})
