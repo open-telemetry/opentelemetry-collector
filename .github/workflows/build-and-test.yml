@@ -125,6 +125,10 @@ jobs:
         run: |
           make gogenerate
           git diff --exit-code || (echo 'Generated code is out of date, please run "make gogenerate" and commit the changes in this PR.' && exit 1)
+      - name: Generate proto files
+        run: |
+          make genproto
+          git diff --exit-code || (echo 'Generated code is out of date, please run "make genproto" and commit the changes in this PR.' && exit 1)
       - name: Gen Pdata
         run: |
           make genpdata
