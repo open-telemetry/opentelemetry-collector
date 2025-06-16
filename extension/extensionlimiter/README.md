@@ -441,15 +441,16 @@ pre-compute limiter instances for the cross product of configurations.
 The following diagram illustrates the core architecture of the extension limiter system, showing the relationships between interfaces, providers, helpers, and middleware integration:
 
 ```mermaid
-graph LR
-    subgraph TB
+graph TB
+    subgraph
     %% Core Limiter Interfaces
     SaturationChecker["SaturationChecker"]
     RateLimiter["RateLimiter"]
     ResourceLimiter["ResourceLimiter"]
+    LimiterWrapper["LimiterWrapper"]
     end
 
-    subgraph TB
+    subgraph
     %% Provider Interfaces
     SaturationCheckerProvider["SaturationCheckerProvider"]
     RateLimiterProvider["RateLimiterProvider"]
@@ -467,4 +468,12 @@ graph LR
     RateLimiterProvider -->|creates| RateLimiter
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper
+
+    %% Core Limiter relationships
+    RateLimiter -->|is a| SaturationChecker
+    ResourceLimiter -->|is a| SaturationChecker
+    ResourceLimiter -->|substitution| RateLimiter
+    LimiterWrapper -->|wraps| SaturationChecker
+    LimiterWrapper -->|wraps| RateLimiter
+    LimiterWrapper -->|wraps| ResourceLiiterLimiter
 ```
