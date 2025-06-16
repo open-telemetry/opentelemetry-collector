@@ -12,6 +12,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type flavor int
+
+const (
+	noneFlavor    flavor = 0
+	defaultFlavor flavor = 1
+	someFlavor    flavor = 2
+)
+
 // Optional represents a value that may or may not be present.
 // It supports two flavors for all types: Some(value) and None.
 // It supports a third flavor for struct types: Default(defaultVal).
@@ -22,12 +30,9 @@ type Optional[T any] struct {
 	// value is the value of the Optional.
 	value T
 
-	// hasValue indicates if the Optional has a value.
-	hasValue bool
-
-	// notNone is used to indicate that the Optional is not None.
-	// This is used to differentiate between None and Default.
-	notNone bool
+	// flavor indicates the flavor of the Optional.
+	// The zero value of flavor is noneFlavor.
+	flavor flavor
 }
 
 // deref a reflect.Type to its underlying type.
@@ -86,7 +91,7 @@ func Some[T any](value T) Optional[T] {
 	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: true, notNone: true}
+	return Optional[T]{value: value, flavor: someFlavor}
 }
 
 // Default creates an Optional with a default value for unmarshaling.
@@ -99,7 +104,7 @@ func Default[T any](value T) Optional[T] {
 	if err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: false, notNone: true}
+	return Optional[T]{value: value, flavor: defaultFlavor}
 }
 
 // None has no value. It has the same behavior as a nil pointer when unmarshaling.
@@ -117,7 +122,7 @@ func None[T any]() Optional[T] {
 
 // HasValue checks if the Optional has a value.
 func (o Optional[T]) HasValue() bool {
-	return o.hasValue
+	return o.flavor == someFlavor
 }
 
 // Get returns the value of the Optional.
@@ -146,7 +151,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	if !o.hasValue && !o.notNone && conf.ToStringMap() == nil {
+	if o.flavor == noneFlavor && conf.ToStringMap() == nil {
 		// If the Optional is None and the configuration is nil, we do nothing.
 		// This replicates the behavior of unmarshaling into a field with a nil pointer.
 		return nil
@@ -156,6 +161,6 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	o.hasValue = true
+	o.flavor = someFlavor
 	return nil
 }

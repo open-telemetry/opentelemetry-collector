@@ -94,7 +94,6 @@ gotidy:
 gogenerate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	@$(MAKE) for-all-target TARGET="generate"
-	$(MAKE) genproto_internal
 	$(MAKE) fmt
 
 .PHONY: addlicense
@@ -206,6 +205,7 @@ genproto: genproto-cleanup
 	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
+	$(MAKE) genproto_internal
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
 
@@ -250,10 +250,9 @@ genpdata:
 	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
 	$(MAKE) fmt
 
-INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue
-# INTERNAL_PROTO_SRC_DIRS += path/to/other/proto/dirs
+INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
-INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} --go_out=${PWD}
+INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} -I/usr/include/github.com/gogo/protobuf -I${PWD}/$(PROTO_INTERMEDIATE_DIR) --go_out=${PWD}
 
 .PHONY: genproto_internal
 genproto_internal:
