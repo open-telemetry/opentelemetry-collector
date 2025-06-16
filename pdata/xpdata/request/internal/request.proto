@@ -4,17 +4,20 @@ package opentelemetry.collector.pdata.xpdata.internal;
 
 option go_package = "go.opentelemetry.io/collector/pdata/xpdata/internal";
 
+import "gogoproto/gogo.proto";
+
 import "opentelemetry/proto/trace/v1/trace.proto";
 import "opentelemetry/proto/metrics/v1/metrics.proto";
 import "opentelemetry/proto/logs/v1/logs.proto";
+import "opentelemetry/proto/common/v1/common.proto";
 import "opentelemetry/proto/profiles/v1development/profiles.proto";
-
 
 // RequestContext represents metadata associated with a telemetry export request.
 message RequestContext {
   // Span context encoded using W3C trace context format.
   // This map typically includes "traceparent" and optionally "tracestate" keys.
-  map<string, string> span_context_map = 1;
+  // Repeated KeyValue is used over map<string, string> for performance reasons.
+  repeated opentelemetry.proto.common.v1.KeyValue span_context_map = 1 [ (gogoproto.nullable) = false ];
 }
 
 // The following messages are wrappers around standard OpenTelemetry data types.
