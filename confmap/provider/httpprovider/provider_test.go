@@ -4,7 +4,6 @@
 package httpprovider
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,5 +15,5 @@ import (
 func TestSupportedScheme(t *testing.T) {
 	fp := NewFactory().Create(confmaptest.NewNopProviderSettings())
 	assert.Equal(t, "http", fp.Scheme())
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }

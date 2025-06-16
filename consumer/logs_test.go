@@ -17,7 +17,7 @@ import (
 func TestDefaultLogs(t *testing.T) {
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, cp.ConsumeLogs(t.Context(), plog.NewLogs()))
 	assert.Equal(t, Capabilities{MutatesData: false}, cp.Capabilities())
 }
 
@@ -31,7 +31,7 @@ func TestWithCapabilitiesLogs(t *testing.T) {
 		func(context.Context, plog.Logs) error { return nil },
 		WithCapabilities(Capabilities{MutatesData: true}))
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, cp.ConsumeLogs(t.Context(), plog.NewLogs()))
 	assert.Equal(t, Capabilities{MutatesData: true}, cp.Capabilities())
 }
 
@@ -39,7 +39,7 @@ func TestConsumeLogs(t *testing.T) {
 	consumeCalled := false
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { consumeCalled = true; return nil })
 	assert.NoError(t, err)
-	assert.NoError(t, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.NoError(t, cp.ConsumeLogs(t.Context(), plog.NewLogs()))
 	assert.True(t, consumeCalled)
 }
 
@@ -47,5 +47,5 @@ func TestConsumeLogs_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	cp, err := NewLogs(func(context.Context, plog.Logs) error { return want })
 	require.NoError(t, err)
-	assert.Equal(t, want, cp.ConsumeLogs(context.Background(), plog.NewLogs()))
+	assert.Equal(t, want, cp.ConsumeLogs(t.Context(), plog.NewLogs()))
 }

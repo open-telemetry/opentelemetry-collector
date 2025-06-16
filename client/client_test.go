@@ -34,7 +34,7 @@ func TestNewContext(t *testing.T) {
 	}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := NewContext(context.Background(), tt.cl)
+			ctx := NewContext(t.Context(), tt.cl)
 			assert.Equal(t, ctx.Value(ctxKey{}), tt.cl)
 		})
 	}
@@ -48,7 +48,7 @@ func TestFromContext(t *testing.T) {
 	}{
 		{
 			name: "context with client",
-			input: context.WithValue(context.Background(), ctxKey{}, Info{
+			input: context.WithValue(t.Context(), ctxKey{}, Info{
 				Addr: &net.IPAddr{
 					IP: net.IPv4(1, 2, 3, 4),
 				},
@@ -61,12 +61,12 @@ func TestFromContext(t *testing.T) {
 		},
 		{
 			name:     "context without client",
-			input:    context.Background(),
+			input:    t.Context(),
 			expected: Info{},
 		},
 		{
 			name:     "context with something else in the key",
-			input:    context.WithValue(context.Background(), ctxKey{}, "unexpected!"),
+			input:    context.WithValue(t.Context(), ctxKey{}, "unexpected!"),
 			expected: Info{},
 		},
 	}

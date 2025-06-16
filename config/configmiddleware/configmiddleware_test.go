@@ -4,7 +4,6 @@
 package configmiddleware
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,8 +23,6 @@ type mockWrongType struct {
 }
 
 func TestConfig_GetHTTPServerHandler(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name       string
 		middleware Config
@@ -64,7 +61,7 @@ func TestConfig_GetHTTPServerHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := tt.middleware.GetHTTPServerHandler(ctx, tt.extensions)
+			value, err := tt.middleware.GetHTTPServerHandler(t.Context(), tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
@@ -77,8 +74,6 @@ func TestConfig_GetHTTPServerHandler(t *testing.T) {
 }
 
 func TestConfig_GetHTTPClientRoundTripper(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name       string
 		middleware Config
@@ -117,7 +112,7 @@ func TestConfig_GetHTTPClientRoundTripper(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := tt.middleware.GetHTTPClientRoundTripper(ctx, tt.extensions)
+			value, err := tt.middleware.GetHTTPClientRoundTripper(t.Context(), tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
@@ -130,8 +125,6 @@ func TestConfig_GetHTTPClientRoundTripper(t *testing.T) {
 }
 
 func TestConfig_GetGRPCServerOptions(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name       string
 		middleware Config
@@ -180,7 +173,7 @@ func TestConfig_GetGRPCServerOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := tt.middleware.GetGRPCServerOptions(ctx, tt.extensions)
+			value, err := tt.middleware.GetGRPCServerOptions(t.Context(), tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
@@ -193,8 +186,6 @@ func TestConfig_GetGRPCServerOptions(t *testing.T) {
 }
 
 func TestConfig_GetGRPCClientOptions(t *testing.T) {
-	ctx := context.Background()
-
 	tests := []struct {
 		name       string
 		middleware Config
@@ -243,7 +234,7 @@ func TestConfig_GetGRPCClientOptions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := tt.middleware.GetGRPCClientOptions(ctx, tt.extensions)
+			value, err := tt.middleware.GetGRPCClientOptions(t.Context(), tt.extensions)
 
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)

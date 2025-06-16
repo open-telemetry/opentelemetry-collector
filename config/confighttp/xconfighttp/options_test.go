@@ -4,7 +4,6 @@
 package xconfighttp
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -31,7 +30,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 	telemetry.TracerProvider = tp
 
 	srv, err := hss.ToServer(
-		context.Background(),
+		t.Context(),
 		componenttest.NewNopHost(),
 		telemetry,
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),
@@ -66,7 +65,7 @@ func tracerProvider(t *testing.T) (trace.TracerProvider, *tracetest.InMemoryExpo
 		sdktrace.WithSyncer(exporter),
 	)
 	t.Cleanup(func() {
-		assert.NoError(t, tp.Shutdown(context.Background()))
+		assert.NoError(t, tp.Shutdown(t.Context()))
 	})
 	return tp, exporter
 }

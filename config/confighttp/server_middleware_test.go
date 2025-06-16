@@ -4,7 +4,6 @@
 package confighttp
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -104,7 +103,7 @@ func TestServerMiddleware(t *testing.T) {
 
 			// Create the server
 			srv, err := cfg.ToServer(
-				context.Background(),
+				t.Context(),
 				host,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
@@ -184,7 +183,7 @@ func TestServerMiddlewareErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Trying to create the server should fail
 			_, err := tc.config.ToServer(
-				context.Background(),
+				t.Context(),
 				tc.host,
 				componenttest.NewNopTelemetrySettings(),
 				handler,
@@ -239,7 +238,7 @@ func TestServerMiddlewareErrors(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Trying to create the server should fail
 			_, err := tc.config.ToServer(
-				context.Background(),
+				t.Context(),
 				tc.host,
 				componenttest.NewNopTelemetrySettings(),
 				handler,

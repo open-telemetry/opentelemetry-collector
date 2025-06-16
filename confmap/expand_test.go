@@ -46,7 +46,7 @@ func TestResolverExpandEnvVars(t *testing.T) {
 			require.NoError(t, err)
 
 			// Test that expanded configs are the same with the simple config with no env vars.
-			cfgMap, err := resolver.Resolve(context.Background())
+			cfgMap, err := resolver.Resolve(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, expectedCfgMap, cfgMap.ToStringMap())
 		})
@@ -66,7 +66,7 @@ func TestResolverDoneNotExpandOldEnvVars(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test that expanded configs are the same with the simple config with no env vars.
-	cfgMap, err := resolver.Resolve(context.Background())
+	cfgMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, expectedCfgMap, cfgMap.ToStringMap())
 }
@@ -87,7 +87,7 @@ func TestResolverExpandMapAndSliceValues(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
-	cfgMap, err := resolver.Resolve(context.Background())
+	cfgMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	expectedMap := map[string]any{
 		"test_map":   map[string]any{"recv": receiverExtraMapValue},
@@ -402,7 +402,7 @@ func TestResolverExpandStringValues(t *testing.T) {
 			resolver, err := NewResolver(set)
 			require.NoError(t, err)
 
-			cfgMap, err := resolver.Resolve(context.Background())
+			cfgMap, err := resolver.Resolve(t.Context())
 			require.NoError(t, err)
 			assert.Equal(t, map[string]any{tt.name: tt.output}, cfgMap.ToStringMap())
 		})
@@ -483,7 +483,7 @@ func TestResolverExpandReturnError(t *testing.T) {
 			resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 			require.NoError(t, err)
 
-			_, err = resolver.Resolve(context.Background())
+			_, err = resolver.Resolve(t.Context())
 			assert.ErrorIs(t, err, myErr)
 		})
 	}
@@ -502,7 +502,7 @@ func TestResolverInfiniteExpand(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
-	_, err = resolver.Resolve(context.Background())
+	_, err = resolver.Resolve(t.Context())
 	assert.ErrorIs(t, err, errTooManyRecursiveExpansions)
 }
 
@@ -531,7 +531,7 @@ func TestResolverExpandInvalidOpaqueValue(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
-	_, err = resolver.Resolve(context.Background())
+	_, err = resolver.Resolve(t.Context())
 	assert.EqualError(t, err, `the uri "test:$VALUE" contains unsupported characters ('$')`)
 }
 
@@ -547,7 +547,7 @@ func TestResolverExpandUnsupportedScheme(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, testProvider}, ConverterFactories: nil})
 	require.NoError(t, err)
 
-	_, err = resolver.Resolve(context.Background())
+	_, err = resolver.Resolve(t.Context())
 	assert.EqualError(t, err, `scheme "unsupported" is not supported for uri "unsupported:VALUE"`)
 }
 
@@ -559,7 +559,7 @@ func TestResolverDefaultProviderExpand(t *testing.T) {
 	resolver, err := NewResolver(ResolverSettings{URIs: []string{"input:"}, ProviderFactories: []ProviderFactory{provider, newEnvProvider()}, DefaultScheme: "env", ConverterFactories: nil})
 	require.NoError(t, err)
 
-	cfgMap, err := resolver.Resolve(context.Background())
+	cfgMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"foo": "localhost"}, cfgMap.ToStringMap())
 }

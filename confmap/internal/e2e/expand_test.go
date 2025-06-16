@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -58,7 +57,7 @@ func Test_EscapedEnvVars_NoDefaultScheme(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test that expanded configs are the same with the simple config with no env vars.
-	cfgMap, err := resolver.Resolve(context.Background())
+	cfgMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	m := cfgMap.ToStringMap()
 	assert.Equal(t, expectedMap, m)
@@ -106,7 +105,7 @@ func Test_EscapedEnvVars_DefaultScheme(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test that expanded configs are the same with the simple config with no env vars.
-	cfgMap, err := resolver.Resolve(context.Background())
+	cfgMap, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	m := cfgMap.ToStringMap()
 	assert.Equal(t, expectedMap, m)

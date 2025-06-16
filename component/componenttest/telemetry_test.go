@@ -4,7 +4,6 @@
 package componenttest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,5 +19,5 @@ func TestNewTelemetry(t *testing.T) {
 	set := tel.NewTelemetrySettings()
 	assert.IsType(t, &sdktrace.TracerProvider{}, set.TracerProvider)
 	assert.IsType(t, &sdkmetric.MeterProvider{}, set.MeterProvider)
-	require.NoError(t, tel.Shutdown(context.Background()))
+	require.NoError(t, tel.Shutdown(t.Context()))
 }
