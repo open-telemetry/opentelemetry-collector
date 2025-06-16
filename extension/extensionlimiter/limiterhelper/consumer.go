@@ -24,9 +24,9 @@ import (
 type traits[P, C any] interface {
 	// itemCount is SpanCount(), DataPointCount(), or LogRecordCount().
 	itemCount(P) int
-	// memorySize uses the appropriate protobuf Sizer as a proxy
+	// requestSize uses the appropriate protobuf Sizer as a proxy
 	// for memory used.
-	memorySize(data P) int
+	requestSize(data P) int
 	// consume calls the appropriate consumer method (e.g., ConsumeTraces)
 	consume(ctx context.Context, data P, next C) error
 	// create is a functional constructor the consumer type (e.g., consumer.NewTraces)
@@ -41,7 +41,7 @@ func (traceTraits) itemCount(data ptrace.Traces) int {
 	return data.SpanCount()
 }
 
-func (traceTraits) memorySize(data ptrace.Traces) int {
+func (traceTraits) requestSize(data ptrace.Traces) int {
 	var sizer ptrace.MarshalSizer
 	return sizer.TracesSize(data)
 }
@@ -62,7 +62,7 @@ func (metricTraits) itemCount(data pmetric.Metrics) int {
 	return data.DataPointCount()
 }
 
-func (metricTraits) memorySize(data pmetric.Metrics) int {
+func (metricTraits) requestSize(data pmetric.Metrics) int {
 	var sizer pmetric.MarshalSizer
 	return sizer.MetricsSize(data)
 }
@@ -83,7 +83,7 @@ func (logTraits) itemCount(data plog.Logs) int {
 	return data.LogRecordCount()
 }
 
-func (logTraits) memorySize(data plog.Logs) int {
+func (logTraits) requestSize(data plog.Logs) int {
 	var sizer plog.MarshalSizer
 	return sizer.LogsSize(data)
 }
@@ -104,7 +104,7 @@ func (profileTraits) itemCount(data pprofile.Profiles) int {
 	return data.SampleCount()
 }
 
-func (profileTraits) memorySize(data pprofile.Profiles) int {
+func (profileTraits) requestSize(data pprofile.Profiles) int {
 	var sizer pprofile.MarshalSizer
 	return sizer.ProfilesSize(data)
 }
@@ -182,7 +182,7 @@ func newLimited[P any, C any](
 	// Note: reverse order of evaluation cost => least-cost applied first.
 	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyMemorySize, opts,
 		func(data P) int {
-			return m.memorySize(data)
+			return m.requestSize(data)
 		})
 	next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
 		func(data P) int {

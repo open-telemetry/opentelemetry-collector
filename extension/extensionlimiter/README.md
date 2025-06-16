@@ -330,7 +330,7 @@ receivers:
 
 The receiver will check `s.limiter.CheckSaturation()` as above.  In a stream,
 a blocking limiter is used which blocks the stream (via
-`s.memorySizeLimiter.WaitFor()`) until limit requests succeed, however
+`s.requestSizeLimiter.WaitFor()`) until limit requests succeed, however
 after the limit requests succeed, the receiver returns from `Send()`
 to continue accepting new requests while the consumer works in a
 separate goroutine. The limit will be released after the consumer
@@ -352,7 +352,7 @@ func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
         if err != nil { ... }
 
         // Non-blocking limiter call.
-        release, err := s.memorySizeLimiter.WaitFor(ctx, pdataSize(data))
+        release, err := s.requestSizeLimiter.WaitFor(ctx, pdataSize(data))
         if err != nil { ... }
 
         // Asynchronous work starts here.
