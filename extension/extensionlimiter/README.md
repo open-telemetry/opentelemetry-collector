@@ -465,10 +465,13 @@ graph TD;
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper
 
+    LimiterWrapper -->|implements| SaturationChecker
     RateLimiter -->|implements| SaturationChecker
     ResourceLimiter -->|implements| SaturationChecker
+
     ResourceLimiter -->|substitution possible| RateLimiter
+
     LimiterWrapper -->|wraps| SaturationChecker
     LimiterWrapper -->|wraps| RateLimiter
-    LimiterWrapper -->|wraps| ResourceLiiterLimiter
+    LimiterWrapper -->|wraps| ResourceLimiter
 ```
