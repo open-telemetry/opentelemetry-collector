@@ -27,6 +27,5 @@ func isRequestPayloadV1(data []byte) bool {
 	if data[0] != protoTag1TypeByte {
 		return false
 	}
-	format := binary.LittleEndian.Uint32(data[1:5])
-	return format == requestFormatVersion
+	return binary.LittleEndian.Uint32(data[1:5]) == requestFormatVersion
 }

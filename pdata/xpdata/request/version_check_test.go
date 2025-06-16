@@ -21,8 +21,13 @@ func TestIsRequestPayloadV1(t *testing.T) {
 	// too short
 	assert.False(t, isRequestPayloadV1([]byte{protoTag1TypeByte, 0x00}))
 
-	// wrong version
 	buf := make([]byte, 5)
+
+	// wrong type: field 1, wire type 2 (length-delimited)
+	buf[0] = 0x0A
+	assert.False(t, isRequestPayloadV1([]byte{protoTag1TypeByte, 0x00}))
+
+	// wrong version
 	buf[0] = protoTag1TypeByte
 	binary.LittleEndian.PutUint32(buf[1:], 2)
 	assert.False(t, isRequestPayloadV1(buf))
