@@ -108,16 +108,16 @@ constraints, use `NewBlockingRateLimiter` or `NewBlockingResourceLimiter`.
 In cases where control flow is not request scoped (e.g., in middleware
 measuring network bytes), use a `RateLimiter` interface. If the
 extension is a basic limiter in this scenario, use the
-`BaseToRateLimiterProvider` adapter. Callers MUST NOT configure a
-resource limiter for a caller that is restricted to the `RateLimiter`
-interface; this configuration SHOULD fail at startup or during
-component validation.
+`SaturationCheckerToRateLimiterProvider` adapter. Callers MUST NOT
+configure a resource limiter for a caller that is restricted to the
+`RateLimiter` interface; this configuration SHOULD fail at startup or
+during component validation.
 
 In cases where due to control flow a wrapper interface cannot be used,
 as long as the caller is able to arrange for a `Release` function to
 be called at the proper time, then any kind of limiter can be applied
 in the form of a `ResourceLimiter`.  If the extension is a basic or
-rate limiter in this scenario, use the `BaseToResourceLimiterProvider`
+rate limiter in this scenario, use the `SaturationCheckerToResourceLimiterProvider`
 or `RateToResourceLimiterProvider` adapters.
 
 Middleware configuration typically automates the configuration of
@@ -170,14 +170,14 @@ before creating new concurrent work.
 
 ### Built-in limiters
 
-#### Base
+#### MemoryLimiter
 
 The `memorylimiterextension` is a `SaturationCheckerProvider` that makes its
 decisions using memory statistics from the garbage collector. This
 logic was traditionally included in the `memorylimiterprocessor`,
 however receiver integration with limiter extensions is preferred.
 
-#### Rate
+#### RateLimiter
 
 A built-in helper implementation of the RateLimiter interface is
 provided, based on `golang.org/x/time/rate.Limter`. These underlying
@@ -188,7 +188,7 @@ rate limiters are parameterized by two numbers:
 
 The rate limiter is saturated when there is no burst available.
 
-#### Resource
+#### ResourceLimiter
 
 A built-in helper implementation of the ResourceLimiter interface is
 provided, based on a bounded queue with LIFO behavior.  These
@@ -286,7 +286,7 @@ apply request items and memory size:
         s.nextMetrics, limitKeys, s.limiterProvider)
     if err != nil { ... }
 
-    // Compute the base limiter from the middlewares for use before scrapes.
+    // Compute the saturation checker from the middlewares for use before scrapes.
 	s.limiter, err := s.limiterProvider.GetSaturationChecker(host, middlewares)
 	if err != nil { ... }
 ```
@@ -469,13 +469,12 @@ graph TD;
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper
 
-    LimiterWrapper -->|implements| SaturationChecker
+    LimiterWrapper -->|wraps/implements| SaturationChecker
     RateLimiter -->|implements| SaturationChecker
     ResourceLimiter -->|implements| SaturationChecker
 
     ResourceLimiter -->|substitution possible| RateLimiter
 
-    LimiterWrapper -->|wraps| SaturationChecker
     LimiterWrapper -->|wraps| RateLimiter
     LimiterWrapper -->|wraps| ResourceLimiter
 ```
