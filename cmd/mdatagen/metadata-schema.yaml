@@ -53,7 +53,7 @@ resource_attributes:
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
     # Optional: use attribute key value as part of template
-    template_key: true
+    is_template_key: true
     # Optional: warnings that will be shown to user under specified conditions.
     warnings:
       # A warning that will be displayed if the resource_attribute is enabled in user config.

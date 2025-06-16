@@ -65,7 +65,7 @@ filter_set_exclude:
       enabled: true
       {{- if $.Metrics }}
       metrics_exclude:
-        {{- if and (eq $attr.Type.String "Str") (not $attr.TemplateKey) }}
+        {{- if and (eq $attr.Type.String "Str") (not $attr.IsTemplateKey) }}
         - strict: {{ $attr.TestValue }}
         {{- else }}
         - regexp: ".*"
@@ -73,7 +73,7 @@ filter_set_exclude:
       {{- end }}
       {{- if $.Events }}
       events_exclude:
-        {{- if and (eq $attr.Type.String "Str") (not $attr.TemplateKey) }}
+        {{- if and (eq $attr.Type.String "Str") (not $attr.IsTemplateKey) }}
         - strict: {{ $attr.TestValue }}
         {{- else }}
         - regexp: ".*"

@@ -45,20 +45,16 @@ func TestResourceBuilder(t *testing.T) {
 
 			{{ $assignSign := ":=" }}
 			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if $attr.TemplateKey }}
-			val, ok {{ $assignSign }} res.Attributes().Get("{{ $name }}.key")
-			{{- else }}
-			val, ok {{ $assignSign }} res.Attributes().Get("{{ $name }}")
-			{{- end }}
+			val, ok {{ $assignSign }} res.Attributes().Get("{{ $name }}{{ $attr.TestResultTemplateKey }}")
 			{{- if $attr.Enabled }}
 			assert.True(t, ok)
 			{{- else }}
 			assert.Equal(t, tt == "all_set", ok)
 			{{- end }}
 			if ok {
-				{{- if eq $attr.Type.String "Int" -}}
+				{{- if and (eq $attr.Type.String "Int") (not $attr.IsTemplateKey) -}}
 				assert.EqualValues(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
-				{{- else if $attr.TemplateKey -}}
+				{{- else if $attr.IsTemplateKey -}}
 				assert.Equal(t, {{ $attr.TestResultTemplateValue }}, val.{{ $attr.Type }}()
 				{{- else -}}
 				assert.Equal(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
