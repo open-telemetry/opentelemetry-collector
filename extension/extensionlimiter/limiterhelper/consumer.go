@@ -24,7 +24,7 @@ import (
 type traits[P, C any] interface {
 	// itemCount is SpanCount(), DataPointCount(), or LogRecordCount().
 	itemCount(P) int
-	// requestSize uses the appropriate protobuf Sizer as a proxy
+	// requestBytes uses the appropriate protobuf Bytesr as a proxy
 	// for memory used.
 	requestSize(data P) int
 	// consume calls the appropriate consumer method (e.g., ConsumeTraces)
@@ -180,7 +180,7 @@ func newLimited[P any, C any](
 	}
 	var err1, err2, err3, err4 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
-	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestSize, opts,
+	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestBytes, opts,
 		func(data P) int {
 			return m.requestSize(data)
 		})

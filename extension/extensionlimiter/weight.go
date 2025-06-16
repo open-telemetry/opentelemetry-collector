@@ -33,9 +33,9 @@ const (
 	// rate and resource limiters.
 	WeightKeyRequestItems WeightKey = "request_items"
 
-	// WeightKeyRequestSize is typically used with ResourceLimiters
+	// WeightKeyRequestBytes is typically used with ResourceLimiters
 	// for limiting active memory usage.
-	WeightKeyRequestSize WeightKey = "request_size"
+	WeightKeyRequestBytes WeightKey = "request_bytes"
 )
 
 // StandardAllKeys is all the keys that can be automatically
@@ -45,7 +45,7 @@ func StandardAllKeys() []WeightKey {
 		WeightKeyNetworkBytes,
 		WeightKeyRequestCount,
 		WeightKeyRequestItems,
-		WeightKeyRequestSize,
+		WeightKeyRequestBytes,
 	}
 }
 
@@ -66,6 +66,6 @@ func StandardMiddlewareKeys() []WeightKey {
 func StandardNotMiddlewareKeys() []WeightKey {
 	return []WeightKey{
 		WeightKeyRequestItems,
-		WeightKeyRequestSize,
+		WeightKeyRequestBytes,
 	}
 }

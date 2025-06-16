@@ -11,10 +11,10 @@ through middleware and/or directly by pipeline components.
 
 This package defines three foundational limiter **kinds**, each with
 similar but distinct interfaces.  A limiter extension is either a
-basic limiter, or it implements the basic limiter interface and one of
-the weight-based interfaces:
+simple checker for "saturation" (defined below), or it extends the
+simple checker with a weight-based interface:
 
-- **Basic Limiter**: Makes a simple yes/no decision without a weight
+- **Saturation Checker**: Makes a simple yes/no decision without a weight
   parameter, typically to stop new work in an emergency.
 - **Rate Limiter**: Controls time-based limits over weights such as
   bytes or items per second.
@@ -26,10 +26,10 @@ integer value and identified by a **weight key** indicating the type
 of quantity being measured and limited. There are currently four
 weight keys with a standard definition:
 
-1. Network bytes
+1. Network bytes (compressed)
 2. Request count
 3. Request items
-4. Memory size
+4. Request bytes (compressed)
 
 The foundational interfaces are non-blocking, and each calling
 convention is different.  The various limiter kinds are unified
