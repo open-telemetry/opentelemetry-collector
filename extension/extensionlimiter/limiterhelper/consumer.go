@@ -144,7 +144,7 @@ func limitOne[P any, C any](
 	}, opts...)
 }
 
-// applySaturationChecker gets a SaturationChecker and wraps the pipeline in a MustDeny
+// applySaturationChecker gets a SaturationChecker and wraps the pipeline in a CheckSaturation
 // check.
 func applySaturationChecker[P any, C any](
 	next C,
@@ -160,7 +160,7 @@ func applySaturationChecker[P any, C any](
 		return next, nil
 	}
 	return m.create(func(ctx context.Context, data P) error {
-		if err := ck.MustDeny(ctx); err != nil {
+		if err := ck.CheckSaturation(ctx); err != nil {
 			return err
 		}
 		return m.consume(ctx, data, next)

@@ -24,7 +24,7 @@ func BaseToRateLimiterProvider(blimp extensionlimiter.SaturationCheckerProvider)
 			}
 			return extensionlimiter.ReserveRateFunc(
 				func(ctx context.Context, _ int) (extensionlimiter.RateReservation, error) {
-					if err := base.MustDeny(ctx); err != nil {
+					if err := base.CheckSaturation(ctx); err != nil {
 						return nil, err
 					}
 					return struct {
@@ -51,7 +51,7 @@ func BaseToResourceLimiterProvider(blimp extensionlimiter.SaturationCheckerProvi
 			}
 			return extensionlimiter.ReserveResourceFunc(
 				func(ctx context.Context, _ int) (extensionlimiter.ResourceReservation, error) {
-					if err := base.MustDeny(ctx); err != nil {
+					if err := base.CheckSaturation(ctx); err != nil {
 						return nil, err
 					}
 					return struct {

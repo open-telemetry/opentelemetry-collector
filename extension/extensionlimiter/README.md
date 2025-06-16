@@ -59,9 +59,9 @@ A limiter is defined as **saturated** when a limit is completely
 overloaded for at least one weight, generally it means callers should
 deny new requests. All limiter extensions implement the basic limiter
 interface, and callers are expected to check for saturation by
-invoking `MustDeny` before making individual requests with the limiter.
+invoking `CheckSaturation` before making individual requests with the limiter.
 
-Whereas the basic limiter's `MustDeny` method indicates only
+Whereas the basic limiter's `CheckSaturation` method indicates only
 saturation, the rate and resource limiter interfaces both return a
 `Reservation`. While the details are slightly different, the
 reservation generally has two features:
@@ -145,7 +145,7 @@ provided for callers including the `LimiterWrapper`.
 ### Limiter saturation
 
 Rate and resource limiter providers have a `GetSaturationChecker` method to
-provide a `SaturationChecker`, featuring a `MustDeny` method which is made
+provide a `SaturationChecker`, featuring a `CheckSaturation` method which is made
 available for applications to test when any limit is fully
 saturated that would eventually deny the request.
 
@@ -280,7 +280,7 @@ apply request items and memory size:
 	if err != nil { ... }
 
     // Here get a limiter-wrapped pipeline and a combination of weight-specific
-    // limiters for MustDeny() functionality.
+    // limiters for CheckSaturation() functionality.
 	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
     s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
         s.nextMetrics, limitKeys, s.limiterProvider)
@@ -291,12 +291,12 @@ apply request items and memory size:
 	if err != nil { ... }
 ```
 
-In the scraper loop, use `MustDeny` before starting a scrape:
+In the scraper loop, use `CheckSaturation` before starting a scrape:
 
 ```golang
 func (s *scraper) scrapeOnce(ctx context.Context) error {
 	// Check if any limits are saturated.
-    if err := s.limiter.MustDeny(ctx); err != nil {
+    if err := s.limiter.CheckSaturation(ctx); err != nil {
         return err
     }
 
@@ -328,7 +328,7 @@ receivers:
       - ratelimiter/streamer
 ```
 
-The receiver will check `s.limiter.MustDeny()` as above.  In a stream,
+The receiver will check `s.limiter.CheckSaturation()` as above.  In a stream,
 a blocking limiter is used which blocks the stream (via
 `s.memorySizeLimiter.WaitFor()`) until limit requests succeed, however
 after the limit requests succeed, the receiver returns from `Send()`
@@ -340,7 +340,7 @@ returns in this example:
 func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
     for {
         // Check saturation for all limiters, all keys.
-        err := s.limiter.MustDeny(ctx)
+        err := s.limiter.CheckSaturation(ctx)
         if err != nil { ... }
 
         // The network bytes and request count limits are applied in middleware.

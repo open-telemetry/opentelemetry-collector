@@ -86,13 +86,13 @@ func (ps MultiLimiterProvider) GetRateLimiter(
 
 // combineSaturationCheckers combines >= 2 base limiters.
 func combineSaturationCheckers(lims []extensionlimiter.SaturationChecker) extensionlimiter.SaturationChecker {
-	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
+	return extensionlimiter.CheckSaturationFunc(func(ctx context.Context) error {
 		var err error
 		for _, lim := range lims {
 			if lim == nil {
 				continue
 			}
-			err = multierr.Append(err, lim.MustDeny(ctx))
+			err = multierr.Append(err, lim.CheckSaturation(ctx))
 		}
 		return err
 	})

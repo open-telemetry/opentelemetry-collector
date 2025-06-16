@@ -10,20 +10,20 @@ import (
 // SaturationChecker is for checking when a limit is saturated.  This can be
 // called prior to the start of work to check for limiter saturation.
 type SaturationChecker interface {
-	// MustDeny is a request to apply a hard limit. If this
+	// CheckSaturation is a request to apply a hard limit. If this
 	// returns non-nil, the caller must not begin new work in this
 	// context.
-	MustDeny(context.Context) error
+	CheckSaturation(context.Context) error
 }
 
-// MustDenyFunc is a functional way to build MustDeny functions.
-type MustDenyFunc func(context.Context) error
+// CheckSaturationFunc is a functional way to build CheckSaturation functions.
+type CheckSaturationFunc func(context.Context) error
 
-// A MustDeny function is a complete SaturationChecker.
-var _ SaturationChecker = MustDenyFunc(nil)
+// A CheckSaturation function is a complete SaturationChecker.
+var _ SaturationChecker = CheckSaturationFunc(nil)
 
-// MustDeny implements SaturationChecker.
-func (f MustDenyFunc) MustDeny(ctx context.Context) error {
+// CheckSaturation implements SaturationChecker.
+func (f CheckSaturationFunc) CheckSaturation(ctx context.Context) error {
 	if f == nil {
 		return nil
 	}
