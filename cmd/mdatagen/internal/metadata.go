@@ -371,7 +371,7 @@ func (a Attribute) TestResultTemplateValue() string {
 	case pcommon.ValueTypeStr:
 		return `"val"`
 	case pcommon.ValueTypeInt:
-		return `1`
+		return `int64(1)`
 	case pcommon.ValueTypeDouble:
 		return `1.1`
 	case pcommon.ValueTypeBool:
