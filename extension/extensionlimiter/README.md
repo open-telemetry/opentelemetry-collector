@@ -441,38 +441,33 @@ pre-compute limiter instances for the cross product of configurations.
 The following diagram illustrates the core architecture of the extension limiter system, showing the relationships between interfaces, providers, helpers, and middleware integration:
 
 ```mermaid
-graph TD
-    subgraph
-    %% Core Limiter Interfaces
-    SaturationChecker["SaturationChecker"]
-    RateLimiter["RateLimiter"]
-    ResourceLimiter["ResourceLimiter"]
-    LimiterWrapper["LimiterWrapper"]
+graph TD;
+    subgraph	
+	    SaturationChecker["SaturationChecker"]
+	    RateLimiter["RateLimiter"]
+	    ResourceLimiter["ResourceLimiter"]
+	    LimiterWrapper["LimiterWrapper"]
     end
 
     subgraph
-    %% Provider Interfaces
-    SaturationCheckerProvider["SaturationCheckerProvider"]
-    RateLimiterProvider["RateLimiterProvider"]
-    ResourceLimiterProvider["ResourceLimiterProvider"]
-    LimiterWrapperProvider["LimiterWrapperProvider"]
+	    SaturationCheckerProvider["SaturationCheckerProvider"]
+	    RateLimiterProvider["RateLimiterProvider"]
+	    ResourceLimiterProvider["ResourceLimiterProvider"]
+	    LimiterWrapperProvider["LimiterWrapperProvider"]
     end
 
-    %% Provider Inheritance Relationships
     RateLimiterProvider -.->|extends| SaturationCheckerProvider
     ResourceLimiterProvider -.->|extends| SaturationCheckerProvider
     LimiterWrapperProvider -.->|extends| SaturationCheckerProvider
 
-    %% Core Limiter to Provider Relationships
     SaturationCheckerProvider -->|creates| SaturationChecker
     RateLimiterProvider -->|creates| RateLimiter
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper
 
-    %% Core Limiter relationships
-    RateLimiter -->|is a| SaturationChecker
-    ResourceLimiter -->|is a| SaturationChecker
-    ResourceLimiter -->|substitution| RateLimiter
+    RateLimiter -->|implements| SaturationChecker
+    ResourceLimiter -->|implements| SaturationChecker
+    ResourceLimiter -->|substitution possible| RateLimiter
     LimiterWrapper -->|wraps| SaturationChecker
     LimiterWrapper -->|wraps| RateLimiter
     LimiterWrapper -->|wraps| ResourceLiiterLimiter
