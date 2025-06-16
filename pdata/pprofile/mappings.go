@@ -26,8 +26,8 @@ func SetMapping(table MappingSlice, record Location, ma Mapping) error {
 		}
 	}
 
-	for j, a := range table.All() {
-		if a.Equal(ma) {
+	for j, m := range table.All() {
+		if m.Equal(ma) {
 			if j > math.MaxInt32 {
 				return errTooManyMappingTableEntries
 			}
