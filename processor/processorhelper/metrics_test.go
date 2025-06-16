@@ -180,3 +180,38 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 }
+
+func TestMetrics_ProcesDuration(t *testing.T) {
+	// Regardless of how many data points are ingested, emit 3
+	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
+		md := pmetric.NewMetrics()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
+		return md, nil
+	}
+
+	incomingMetrics := pmetric.NewMetrics()
+	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
+
+	// Add 2 data points to the incoming
+	dps.AppendEmpty()
+	dps.AppendEmpty()
+
+	tel := componenttest.NewTelemetry()
+	mp, err := NewMetrics(context.Background(), newSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, mp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, mp.ConsumeMetrics(context.Background(), incomingMetrics))
+	assert.NoError(t, mp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "metrics")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+}

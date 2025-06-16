@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_processor_duration
+
+Time taken by the processor to complete. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
 ### otelcol_processor_incoming_items
 
 Number of items passed to the processor. [alpha]

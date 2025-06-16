@@ -183,6 +183,40 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp())
 }
 
+func TestLogs_ProcessDuration(t *testing.T) {
+	// Regardless of how many logs are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
+		ld := plog.NewLogs()
+		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		return ld, nil
+	}
+
+	incomingLogs := plog.NewLogs()
+	incomingLogRecords := incomingLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+
+	// Add 3 records to the incoming
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+	incomingLogRecords.AppendEmpty()
+
+	tel := componenttest.NewTelemetry()
+	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, lp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
+	assert.NoError(t, lp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "logs")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+}
+
 func newSettings(tel *componenttest.Telemetry) processor.Settings {
 	set := processortest.NewNopSettings(component.MustNewType("processorhelper"))
 	set.TelemetrySettings = tel.NewTelemetrySettings()

@@ -49,6 +49,10 @@ func NewTraces(
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
+
+		ps := newProcessorStart()
+		defer obs.recordDuration(ctx, ps)
+
 		spansIn := td.SpanCount()
 
 		var errFunc error

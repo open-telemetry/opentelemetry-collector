@@ -49,6 +49,10 @@ func NewLogs(
 	logsConsumer, err := consumer.NewLogs(func(ctx context.Context, ld plog.Logs) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
+
+		ps := newProcessorStart()
+		defer obs.recordDuration(ctx, ps)
+
 		recordsIn := ld.LogRecordCount()
 
 		var errFunc error

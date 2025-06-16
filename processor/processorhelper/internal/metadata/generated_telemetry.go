@@ -26,6 +26,7 @@ type TelemetryBuilder struct {
 	meter                  metric.Meter
 	mu                     sync.Mutex
 	registrations          []metric.Registration
+	ProcessorDuration      metric.Float64Histogram
 	ProcessorIncomingItems metric.Int64Counter
 	ProcessorOutgoingItems metric.Int64Counter
 }
@@ -59,6 +60,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.ProcessorDuration, err = builder.meter.Float64Histogram(
+		"otelcol_processor_duration",
+		metric.WithDescription("Time taken by the processor to complete. [alpha]"),
+		metric.WithUnit("s"),
+	)
+	errs = errors.Join(errs, err)
 	builder.ProcessorIncomingItems, err = builder.meter.Int64Counter(
 		"otelcol_processor_incoming_items",
 		metric.WithDescription("Number of items passed to the processor. [alpha]"),

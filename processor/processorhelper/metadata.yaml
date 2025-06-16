@@ -28,3 +28,13 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    processor_duration:
+      enabled: true
+      stability:
+        level: alpha
+      description: Time taken by the processor to complete.
+      unit: s
+      histogram:
+        async: false
+        value_type: double

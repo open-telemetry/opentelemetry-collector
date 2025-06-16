@@ -184,3 +184,38 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 			},
 		}, metricdatatest.IgnoreTimestamp())
 }
+
+func TestTraces_ProcessDuration(t *testing.T) {
+	// Regardless of how many spans are ingested, emit just one
+	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
+		td := ptrace.NewTraces()
+		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		return td, nil
+	}
+
+	incomingTraces := ptrace.NewTraces()
+	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
+
+	// Add 4 records to the incoming
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+	incomingSpans.AppendEmpty()
+
+	tel := componenttest.NewTelemetry()
+	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
+	require.NoError(t, err)
+
+	assert.NoError(t, tp.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), incomingTraces))
+	assert.NoError(t, tp.Shutdown(context.Background()))
+
+	metadatatest.AssertEqualProcessorDuration(t, tel,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Count:        1,
+				BucketCounts: []uint64{1},
+				Attributes:   attribute.NewSet(attribute.String("processor", "processorhelper"), attribute.String("otel.signal", "traces")),
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
+}
