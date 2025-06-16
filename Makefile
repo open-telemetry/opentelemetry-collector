@@ -94,7 +94,6 @@ gotidy:
 gogenerate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	@$(MAKE) for-all-target TARGET="generate"
-	$(MAKE) genproto_internal
 	$(MAKE) fmt
 
 .PHONY: addlicense
@@ -206,6 +205,7 @@ genproto: genproto-cleanup
 	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
+	$(MAKE) genproto_internal
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
 
