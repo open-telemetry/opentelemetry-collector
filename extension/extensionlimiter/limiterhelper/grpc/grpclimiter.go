@@ -2,6 +2,7 @@ package grpclimiter
 
 import (
 	"context"
+	"sync"
 
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
@@ -11,6 +12,39 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
+
+// contextKey is a private type for context keys
+type contextKey int
+
+const (
+	rateLimiterErrorKey contextKey = iota
+)
+
+// rateLimiterErrorState holds error state,allowing rate limiters to return
+// errors in the correct context.
+type rateLimiterErrorState struct {
+	mu  sync.Mutex
+	err error
+}
+
+// checkRateLimiterError checks if there's a prior rate limiter error in the context.
+func checkRateLimiterError(ctx context.Context) error {
+	if state, ok := ctx.Value(rateLimiterErrorKey).(*rateLimiterErrorState); ok {
+		state.mu.Lock()
+		defer state.mu.Unlock()
+		return state.err
+	}
+	return nil
+}
+
+// setRateLimiterError sets a rate limiter error in the context
+func setRateLimiterError(ctx context.Context, err error) {
+	if state, ok := ctx.Value(rateLimiterErrorKey).(*rateLimiterErrorState); ok {
+		state.mu.Lock()
+		defer state.mu.Unlock()
+		state.err = multierr.Append(state.err, err)
+	}
+}
 
 func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.GRPCClient, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
@@ -38,6 +72,9 @@ func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extension
 				return requestLimiter.LimitCall(
 					ctxIn, 1,
 					func(ctx context.Context) error {
+						if err := checkRateLimiterError(ctx); err != nil {
+							return err
+						}
 						return invoker(ctx, method, req, reply, cc, opts...)
 					})
 			}),
@@ -95,6 +132,9 @@ func NewServerLimiter(ext extensionlimiter.SaturationCheckerProvider) (extension
 				err := requestLimiter.LimitCall(
 					ctxIn, 1,
 					func(ctx context.Context) error {
+						if err := checkRateLimiterError(ctx); err != nil {
+							return err
+						}
 						var err error
 						resp, err = handler(ctx, req)
 						return err
@@ -157,12 +197,14 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 		return
 	}
 	// Apply rate limiting based on network bytes
-	// TODO: How does the limiter break the stream?
-	_ = h.limiter.WaitFor(ctx, wireBytes)
+	if err := h.limiter.WaitFor(ctx, wireBytes); err != nil {
+		setRateLimiterError(ctx, err)
+	}
 }
 
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
-	return ctx
+	// Create a new context with rate limiter error state
+	return context.WithValue(ctx, rateLimiterErrorKey, &rateLimiterErrorState{})
 }
 
 func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats) {
@@ -177,7 +219,10 @@ type serverStream struct {
 func (s *serverStream) RecvMsg(m any) error {
 	return s.limiter.LimitCall(
 		s.Context(), 1,
-		func(_ context.Context) error {
+		func(ctx context.Context) error {
+			if err := checkRateLimiterError(ctx); err != nil {
+				return err
+			}
 			return s.ServerStream.RecvMsg(m)
 		})
 }
@@ -199,7 +244,10 @@ type clientStream struct {
 func (s *clientStream) SendMsg(m any) error {
 	return s.limiter.LimitCall(
 		s.Context(), 1,
-		func(_ context.Context) error {
+		func(ctx context.Context) error {
+			if err := checkRateLimiterError(ctx); err != nil {
+				return err
+			}
 			return s.ClientStream.SendMsg(m)
 		})
 }
