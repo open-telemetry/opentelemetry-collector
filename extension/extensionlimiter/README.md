@@ -459,6 +459,10 @@ graph TD;
     RateLimiterProvider -.->|extends| SaturationCheckerProvider
     ResourceLimiterProvider -.->|extends| SaturationCheckerProvider
     LimiterWrapperProvider -.->|extends| SaturationCheckerProvider
+    ResourceLimiterProvider -->|substitution possible| RateLimiterProvider
+    LimiterWrapperProvider -->|wraps| SaturationCheckerProvider
+    LimiterWrapperProvider -->|wraps| RateLimiterProvider
+    LimiterWrapperProvider -->|wraps| ResourceLimiterProvider
 
     SaturationCheckerProvider -->|creates| SaturationChecker
     RateLimiterProvider -->|creates| RateLimiter
