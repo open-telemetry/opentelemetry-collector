@@ -144,15 +144,15 @@ func limitOne[P any, C any](
 	}, opts...)
 }
 
-// applyBaseLimiter gets a BaseLimiter and wraps the pipeline in a MustDeny
+// applySaturationChecker gets a SaturationChecker and wraps the pipeline in a MustDeny
 // check.
-func applyBaseLimiter[P any, C any](
+func applySaturationChecker[P any, C any](
 	next C,
 	provider LimiterWrapperProvider,
 	m traits[P, C],
 	opts []consumer.Option,
 ) (C, error) {
-	ck, err := provider.GetBaseLimiter()
+	ck, err := provider.GetSaturationChecker()
 	if err != nil {
 		return next, err
 	}
@@ -192,7 +192,7 @@ func newLimited[P any, C any](
 		func(_ P) int {
 			return 1
 		})
-	next, err4 = applyBaseLimiter(next, provider, m, opts)
+	next, err4 = applySaturationChecker(next, provider, m, opts)
 	return next, multierr.Append(err1, multierr.Append(err2, multierr.Append(err3, err4)))
 }
 

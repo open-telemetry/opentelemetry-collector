@@ -19,7 +19,7 @@ var (
 
 // middlewareCheck applies consistency checks and returns a valid
 // limiter extension of any known kind.
-func middlewareCheck(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiterProvider, error) {
+func middlewareCheck(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.SaturationCheckerProvider, error) {
 	_, isResource := ext.(extensionlimiter.ResourceLimiterProvider)
 	_, isRate := ext.(extensionlimiter.RateLimiterProvider)
 
@@ -32,7 +32,7 @@ func middlewareCheck(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter
 // MultipleProvider constructs a combined limiter from an ordered list
 // of middlewares. This constructor ignores middleware configs that
 // are not limiters.
-func MultipleProvider(exts []extensionlimiter.BaseLimiterProvider) (MultiLimiterProvider, error) {
+func MultipleProvider(exts []extensionlimiter.SaturationCheckerProvider) (MultiLimiterProvider, error) {
 	var retErr error
 	var providers MultiLimiterProvider
 	for _, ext := range exts {
@@ -43,14 +43,14 @@ func MultipleProvider(exts []extensionlimiter.BaseLimiterProvider) (MultiLimiter
 	return providers, retErr
 }
 
-// MiddlewareToBaseLimiterProvider returns a base limiter provider
+// MiddlewareToSaturationCheckerProvider returns a base limiter provider
 // from middleware. Returns a package-level error if the middleware
 // does not implement exactly one of the limiter interfaces (i.e.,
 // rate or resource).
-func MiddlewareToBaseLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiterProvider, error) {
+func MiddlewareToSaturationCheckerProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.SaturationCheckerProvider, error) {
 	return getMiddleware(
 		ext,
-		identity[extensionlimiter.BaseLimiterProvider],
+		identity[extensionlimiter.SaturationCheckerProvider],
 		baseProvider[extensionlimiter.RateLimiterProvider],
 		baseProvider[extensionlimiter.ResourceLimiterProvider],
 	)
@@ -60,7 +60,7 @@ func MiddlewareToBaseLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
-func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.BaseLimiterProvider) (LimiterWrapperProvider, error) {
+func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.SaturationCheckerProvider) (LimiterWrapperProvider, error) {
 	return getMiddleware(
 		ext,
 		nilError(BaseToLimiterWrapperProvider),
@@ -75,7 +75,7 @@ func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.BaseLimiterProvider
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToRateLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
+func MiddlewareToRateLimiterProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.RateLimiterProvider, error) {
 	return getMiddleware(
 		ext,
 		nilError(BaseToRateLimiterProvider),
@@ -90,7 +90,7 @@ func MiddlewareToRateLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToResourceLimiterProvider(ext extensionlimiter.BaseLimiterProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+func MiddlewareToResourceLimiterProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.ResourceLimiterProvider, error) {
 	return getMiddleware(
 		ext,
 		nilError(BaseToResourceLimiterProvider),
@@ -102,8 +102,8 @@ func MiddlewareToResourceLimiterProvider(ext extensionlimiter.BaseLimiterProvide
 // getProvider invokes getProvider if any kind of limiter is detected
 // for the given host and middleware configuration.
 func getMiddleware[Out any](
-	ext extensionlimiter.BaseLimiterProvider,
-	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
+	ext extensionlimiter.SaturationCheckerProvider,
+	base func(extensionlimiter.SaturationCheckerProvider) (Out, error),
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 ) (Out, error) {
@@ -118,8 +118,8 @@ func getMiddleware[Out any](
 // getProvider handles each limiter kind, case-by-case, for building
 // limiters in a functional style.
 func getProvider[Out any](
-	ext extensionlimiter.BaseLimiterProvider,
-	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
+	ext extensionlimiter.SaturationCheckerProvider,
+	base func(extensionlimiter.SaturationCheckerProvider) (Out, error),
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 ) (Out, error) {
@@ -129,7 +129,7 @@ func getProvider[Out any](
 	if lim, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
 		return rate(lim)
 	}
-	if lim, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+	if lim, ok := ext.(extensionlimiter.SaturationCheckerProvider); ok {
 		return base(lim)
 	}
 	var out Out
@@ -142,7 +142,7 @@ func identity[T any](lim T) (T, error) {
 }
 
 // baseProvider returns a base limiter type from any limiter.
-func baseProvider[T extensionlimiter.BaseLimiterProvider](p T) (extensionlimiter.BaseLimiterProvider, error) {
+func baseProvider[T extensionlimiter.SaturationCheckerProvider](p T) (extensionlimiter.SaturationCheckerProvider, error) {
 	return p, nil
 }
 

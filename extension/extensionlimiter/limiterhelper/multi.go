@@ -15,26 +15,26 @@ import (
 // MultiLimiterProvider combines multiple limiter providers of all
 // kinds. It automatically applies the adapters in this package to
 // implement the desired provider interface from the base object.
-type MultiLimiterProvider []extensionlimiter.BaseLimiterProvider
+type MultiLimiterProvider []extensionlimiter.SaturationCheckerProvider
 
 var _ LimiterWrapperProvider = MultiLimiterProvider{}
 var _ extensionlimiter.RateLimiterProvider = MultiLimiterProvider{}
 var _ extensionlimiter.ResourceLimiterProvider = MultiLimiterProvider{}
-var _ extensionlimiter.BaseLimiterProvider = MultiLimiterProvider{}
+var _ extensionlimiter.SaturationCheckerProvider = MultiLimiterProvider{}
 
-// GetBaseLimiter implements LimiterWrapperProvider. The combined
+// GetSaturationChecker implements LimiterWrapperProvider. The combined
 // limiter is saturated when any of the base limiers are.
-func (ps MultiLimiterProvider) GetBaseLimiter(
+func (ps MultiLimiterProvider) GetSaturationChecker(
 	opts ...extensionlimiter.Option,
-) (extensionlimiter.BaseLimiter, error) {
+) (extensionlimiter.SaturationChecker, error) {
 	return getMultiLimiter(ps,
-		identity[extensionlimiter.BaseLimiterProvider],
+		identity[extensionlimiter.SaturationCheckerProvider],
 		baseProvider[extensionlimiter.RateLimiterProvider],
 		baseProvider[extensionlimiter.ResourceLimiterProvider],
-		func(p extensionlimiter.BaseLimiterProvider) (extensionlimiter.BaseLimiter, error) {
-			return p.GetBaseLimiter(opts...)
+		func(p extensionlimiter.SaturationCheckerProvider) (extensionlimiter.SaturationChecker, error) {
+			return p.GetSaturationChecker(opts...)
 		},
-		combineBaseLimiters)
+		combineSaturationCheckers)
 }
 
 // GetLimiterWrapper implements LimiterWrapperProvider, applies the
@@ -84,8 +84,8 @@ func (ps MultiLimiterProvider) GetRateLimiter(
 		combineRateLimiters)
 }
 
-// combineBaseLimiters combines >= 2 base limiters.
-func combineBaseLimiters(lims []extensionlimiter.BaseLimiter) extensionlimiter.BaseLimiter {
+// combineSaturationCheckers combines >= 2 base limiters.
+func combineSaturationCheckers(lims []extensionlimiter.SaturationChecker) extensionlimiter.SaturationChecker {
 	return extensionlimiter.MustDenyFunc(func(ctx context.Context) error {
 		var err error
 		for _, lim := range lims {
@@ -202,7 +202,7 @@ func combineRateLimiters(lims []extensionlimiter.RateLimiter) extensionlimiter.R
 // extensions.
 func getMultiLimiter[Out any, Lim comparable](
 	multi MultiLimiterProvider,
-	base func(extensionlimiter.BaseLimiterProvider) (Out, error),
+	base func(extensionlimiter.SaturationCheckerProvider) (Out, error),
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 	pfunc func(Out) (Lim, error),
@@ -210,7 +210,7 @@ func getMultiLimiter[Out any, Lim comparable](
 ) (nilResult Lim, _ error) {
 	// Note that nilResult is used in error and non-error cases to
 	// return a nil and not a nil with concrete type (e.g.,
-	// extensionlimiter.BaseLimiterProvider(nil)).
+	// extensionlimiter.SaturationCheckerProvider(nil)).
 	var lims []Lim
 
 	for _, baseProvider := range multi {

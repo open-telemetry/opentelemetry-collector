@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
-func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.HTTPClient, error) {
+func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.HTTPClient, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
@@ -83,7 +83,7 @@ func (rb *rateLimitedBody) Close() error {
 	return rb.body.Close()
 }
 
-func NewServerLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.HTTPServer, error) {
+func NewServerLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.HTTPServer, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {

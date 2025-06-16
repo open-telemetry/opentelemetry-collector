@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
-func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.GRPCClient, error) {
+func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.GRPCClient, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
@@ -70,7 +70,7 @@ func NewClientLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddle
 	}), nil
 }
 
-func NewServerLimiter(ext extensionlimiter.BaseLimiterProvider) (extensionmiddleware.GRPCServer, error) {
+func NewServerLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.GRPCServer, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {

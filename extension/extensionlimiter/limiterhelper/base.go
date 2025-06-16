@@ -11,14 +11,14 @@ import (
 
 // BaseToRateLimiterProvider allows a base limiter to act as a rate
 // limiter.
-func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) extensionlimiter.RateLimiterProvider {
+func BaseToRateLimiterProvider(blimp extensionlimiter.SaturationCheckerProvider) extensionlimiter.RateLimiterProvider {
 	return struct {
-		extensionlimiter.GetBaseLimiterFunc
+		extensionlimiter.GetSaturationCheckerFunc
 		extensionlimiter.GetRateLimiterFunc
 	}{
-		blimp.GetBaseLimiter,
+		blimp.GetSaturationChecker,
 		func(_ extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.RateLimiter, error) {
-			base, err := blimp.GetBaseLimiter(opts...)
+			base, err := blimp.GetSaturationChecker(opts...)
 			if err != nil {
 				return nil, err
 			}
@@ -38,14 +38,14 @@ func BaseToRateLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) exten
 
 // BaseToResourceLimiterProvider allows a base limiter to act as a
 // resource limiter.
-func BaseToResourceLimiterProvider(blimp extensionlimiter.BaseLimiterProvider) extensionlimiter.ResourceLimiterProvider {
+func BaseToResourceLimiterProvider(blimp extensionlimiter.SaturationCheckerProvider) extensionlimiter.ResourceLimiterProvider {
 	return struct {
-		extensionlimiter.GetBaseLimiterFunc
+		extensionlimiter.GetSaturationCheckerFunc
 		extensionlimiter.GetResourceLimiterFunc
 	}{
-		blimp.GetBaseLimiter,
+		blimp.GetSaturationChecker,
 		func(_ extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.ResourceLimiter, error) {
-			base, err := blimp.GetBaseLimiter(opts...)
+			base, err := blimp.GetSaturationChecker(opts...)
 			if err != nil {
 				return nil, err
 			}

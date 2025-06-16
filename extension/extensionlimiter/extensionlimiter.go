@@ -7,9 +7,9 @@ import (
 	"context"
 )
 
-// BaseLimiter is for checking when a limit is saturated.  This can be
+// SaturationChecker is for checking when a limit is saturated.  This can be
 // called prior to the start of work to check for limiter saturation.
-type BaseLimiter interface {
+type SaturationChecker interface {
 	// MustDeny is a request to apply a hard limit. If this
 	// returns non-nil, the caller must not begin new work in this
 	// context.
@@ -19,10 +19,10 @@ type BaseLimiter interface {
 // MustDenyFunc is a functional way to build MustDeny functions.
 type MustDenyFunc func(context.Context) error
 
-// A MustDeny function is a complete BaseLimiter.
-var _ BaseLimiter = MustDenyFunc(nil)
+// A MustDeny function is a complete SaturationChecker.
+var _ SaturationChecker = MustDenyFunc(nil)
 
-// MustDeny implements BaseLimiter.
+// MustDeny implements SaturationChecker.
 func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	if f == nil {
 		return nil
@@ -30,19 +30,19 @@ func (f MustDenyFunc) MustDeny(ctx context.Context) error {
 	return f(ctx)
 }
 
-// BaseLimiterProvider is an interface to obtain checkers for a group of
+// SaturationCheckerProvider is an interface to obtain checkers for a group of
 // weight keys.
-type BaseLimiterProvider interface {
-	// GetBaseLimiter returns a checker for a group of weight keys.
-	GetBaseLimiter(...Option) (BaseLimiter, error)
+type SaturationCheckerProvider interface {
+	// GetSaturationChecker returns a checker for a group of weight keys.
+	GetSaturationChecker(...Option) (SaturationChecker, error)
 }
 
-// GetBaseLimiterFunc is a functional way to construct GetBaseLimiter
+// GetSaturationCheckerFunc is a functional way to construct GetSaturationChecker
 // functions, used in limiter providers.
-type GetBaseLimiterFunc func(...Option) (BaseLimiter, error)
+type GetSaturationCheckerFunc func(...Option) (SaturationChecker, error)
 
-// BaseLimiter implements BaseLimiterProvider.
-func (f GetBaseLimiterFunc) GetBaseLimiter(opts ...Option) (BaseLimiter, error) {
+// SaturationChecker implements SaturationCheckerProvider.
+func (f GetSaturationCheckerFunc) GetSaturationChecker(opts ...Option) (SaturationChecker, error) {
 	if f == nil {
 		return nil, nil
 	}

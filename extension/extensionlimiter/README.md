@@ -76,7 +76,7 @@ extension providers (which may produce configuration errors).
 
 All limiter extensions:
 
-- MUST implement the `BaseLimiterProvider` interface
+- MUST implement the `SaturationCheckerProvider` interface
 - MUST NOT implement both the `ResourceLimiterProvider` and the `RateLimiterProvider` interfaces
 
 The `limiterhelper` package contains features for composing limiters
@@ -144,13 +144,13 @@ provided for callers including the `LimiterWrapper`.
 
 ### Limiter saturation
 
-Rate and resource limiter providers have a `GetBaseLimiter` method to
-provide a `BaseLimiter`, featuring a `MustDeny` method which is made
+Rate and resource limiter providers have a `GetSaturationChecker` method to
+provide a `SaturationChecker`, featuring a `MustDeny` method which is made
 available for applications to test when any limit is fully
 saturated that would eventually deny the request.
 
-The `BaseLimiter` is consulted at least once and applies to all weight
-keys.  Because a `BaseLimiter` can be consulted more than once by a
+The `SaturationChecker` is consulted at least once and applies to all weight
+keys.  Because a `SaturationChecker` can be consulted more than once by a
 receiver and/or middleware, it is possible for requests to be denied
 over the saturation of limits they were already granted. Users should
 configure external load balancers and/or horizontal scaling policies
@@ -172,7 +172,7 @@ before creating new concurrent work.
 
 #### Base
 
-The `memorylimiterextension` is a `BaseLimiterProvider` that makes its
+The `memorylimiterextension` is a `SaturationCheckerProvider` that makes its
 decisions using memory statistics from the garbage collector. This
 logic was traditionally included in the `memorylimiterprocessor`,
 however receiver integration with limiter extensions is preferred.
@@ -271,7 +271,7 @@ apply request items and memory size:
 
 ```golang
     // Extract limiter extensions from host and list of middleware.
-    providers, err := configmiddleware.GetBaseLimiters(
+    providers, err := configmiddleware.GetSaturationCheckers(
         host, cfg.Middlewares)
     if err != nil { ... }
 	
@@ -287,7 +287,7 @@ apply request items and memory size:
     if err != nil { ... }
 
     // Compute the base limiter from the middlewares for use before scrapes.
-	s.limiter, err := s.limiterProvider.GetBaseLimiter(host, middlewares)
+	s.limiter, err := s.limiterProvider.GetSaturationChecker(host, middlewares)
 	if err != nil { ... }
 ```
 
@@ -444,26 +444,26 @@ The following diagram illustrates the core architecture of the extension limiter
 graph LR
     subgraph TB
     %% Core Limiter Interfaces
-    BaseLimiter["BaseLimiter"]
+    SaturationChecker["SaturationChecker"]
     RateLimiter["RateLimiter"]
     ResourceLimiter["ResourceLimiter"]
     end
 
     subgraph TB
     %% Provider Interfaces
-    BaseLimiterProvider["BaseLimiterProvider"]
+    SaturationCheckerProvider["SaturationCheckerProvider"]
     RateLimiterProvider["RateLimiterProvider"]
     ResourceLimiterProvider["ResourceLimiterProvider"]
     LimiterWrapperProvider["LimiterWrapperProvider"]
     end
 
     %% Provider Inheritance Relationships
-    RateLimiterProvider -.->|extends| BaseLimiterProvider
-    ResourceLimiterProvider -.->|extends| BaseLimiterProvider
-    LimiterWrapperProvider -.->|extends| BaseLimiterProvider
+    RateLimiterProvider -.->|extends| SaturationCheckerProvider
+    ResourceLimiterProvider -.->|extends| SaturationCheckerProvider
+    LimiterWrapperProvider -.->|extends| SaturationCheckerProvider
 
     %% Core Limiter to Provider Relationships
-    BaseLimiterProvider -->|creates| BaseLimiter
+    SaturationCheckerProvider -->|creates| SaturationChecker
     RateLimiterProvider -->|creates| RateLimiter
     ResourceLimiterProvider -->|creates| ResourceLimiter
     LimiterWrapperProvider -->|creates| LimiterWrapper

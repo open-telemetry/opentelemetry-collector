@@ -12,7 +12,7 @@ import (
 // LimiterWrapperProvider follows the provider pattern for
 // the LimiterWrapper type
 type LimiterWrapperProvider interface {
-	extensionlimiter.BaseLimiterProvider
+	extensionlimiter.SaturationCheckerProvider
 
 	GetLimiterWrapper(extensionlimiter.WeightKey, ...extensionlimiter.Option) (LimiterWrapper, error)
 }
@@ -30,7 +30,7 @@ func (f GetLimiterWrapperFunc) GetLimiterWrapper(key extensionlimiter.WeightKey,
 
 type limiterWrapper struct {
 	GetLimiterWrapperFunc
-	extensionlimiter.GetBaseLimiterFunc
+	extensionlimiter.GetSaturationCheckerFunc
 }
 
 var _ LimiterWrapperProvider = limiterWrapper{}
@@ -72,9 +72,9 @@ func (f LimiterWrapperFunc) LimitCall(ctx context.Context, value int, call func(
 
 // BaseToLimiterWrapperProvider constructs a LimiterWrapperProvider
 // for a rate limiter extension.
-func BaseToLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) LimiterWrapperProvider {
+func BaseToLimiterWrapperProvider(rp extensionlimiter.SaturationCheckerProvider) LimiterWrapperProvider {
 	return limiterWrapper{
-		GetBaseLimiterFunc:    rp.GetBaseLimiter,
+		GetSaturationCheckerFunc:    rp.GetSaturationChecker,
 		GetLimiterWrapperFunc: nil,
 	}
 }
@@ -83,7 +83,7 @@ func BaseToLimiterWrapperProvider(rp extensionlimiter.BaseLimiterProvider) Limit
 // LimiterWrapperProvider for a resource limiter extension.
 func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvider) LimiterWrapperProvider {
 	return limiterWrapper{
-		GetBaseLimiterFunc: rp.GetBaseLimiter,
+		GetSaturationCheckerFunc: rp.GetSaturationChecker,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetResourceLimiter(key, opts...)
 			if err != nil {
@@ -109,7 +109,7 @@ func ResourceToLimiterWrapperProvider(rp extensionlimiter.ResourceLimiterProvide
 // for a rate limiter extension.
 func RateToLimiterWrapperProvider(rp extensionlimiter.RateLimiterProvider) LimiterWrapperProvider {
 	return limiterWrapper{
-		GetBaseLimiterFunc: rp.GetBaseLimiter,
+		GetSaturationCheckerFunc: rp.GetSaturationChecker,
 		GetLimiterWrapperFunc: func(key extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (LimiterWrapper, error) {
 			lim, err := rp.GetRateLimiter(key, opts...)
 			if err != nil {
