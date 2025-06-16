@@ -54,10 +54,6 @@ func newQueueBatch(
 	next sender.SendFunc[request.Request],
 	oldBatcher bool,
 ) (*QueueBatch, error) {
-	if cfg.hasBlocking {
-		set.Telemetry.Logger.Error("using deprecated field `blocking`")
-	}
-
 	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
