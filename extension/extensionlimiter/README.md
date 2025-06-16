@@ -442,14 +442,14 @@ The following diagram illustrates the core architecture of the extension limiter
 
 ```mermaid
 graph TD;
-    subgraph	
+    subgraph "Limiters"
 	    SaturationChecker["SaturationChecker"]
 	    RateLimiter["RateLimiter"]
 	    ResourceLimiter["ResourceLimiter"]
 	    LimiterWrapper["LimiterWrapper"]
     end
 
-    subgraph
+    subgraph "Providers"
 	    SaturationCheckerProvider["SaturationCheckerProvider"]
 	    RateLimiterProvider["RateLimiterProvider"]
 	    ResourceLimiterProvider["ResourceLimiterProvider"]
