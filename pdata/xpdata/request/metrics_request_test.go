@@ -17,14 +17,22 @@ import (
 
 func TestMarshalUnmarshalMetricsRequest(t *testing.T) {
 	metrics := testdata.GenerateMetrics(3)
+
+	// unmarshal metrics request with a context
 	spanCtx := fakeSpanContext(t)
 	buf, err := MarshalMetrics(trace.ContextWithSpanContext(context.Background(), spanCtx), metrics)
 	require.NoError(t, err)
-
-	// happy path: unmarshal metrics request
 	gotCtx, gotMetrics, err := UnmarshalMetrics(buf)
 	require.NoError(t, err)
 	assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
+	assert.Equal(t, metrics, gotMetrics)
+
+	// unmarshal metrics request with empty context
+	buf, err = MarshalMetrics(context.Background(), metrics)
+	require.NoError(t, err)
+	gotCtx, gotMetrics, err = UnmarshalMetrics(buf)
+	require.NoError(t, err)
+	assert.Equal(t, context.Background(), gotCtx)
 	assert.Equal(t, metrics, gotMetrics)
 
 	// unmarshal corrupted data
