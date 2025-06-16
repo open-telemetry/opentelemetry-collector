@@ -33,6 +33,7 @@ func TestMarshalUnmarshalTracesRequest(t *testing.T) {
 
 	// unmarshal invalid format (bare traces)
 	buf, err = (&ptrace.ProtoMarshaler{}).MarshalTraces(traces)
+	require.NoError(t, err)
 	_, _, err = UnmarshalTraces(buf)
 	require.ErrorIs(t, err, ErrInvalidFormat)
 }

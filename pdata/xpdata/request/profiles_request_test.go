@@ -33,6 +33,7 @@ func TestMarshalUnmarshalProfilesRequest(t *testing.T) {
 
 	// unmarshal invalid format (bare profiles)
 	buf, err = (&pprofile.ProtoMarshaler{}).MarshalProfiles(profiles)
+	require.NoError(t, err)
 	_, _, err = UnmarshalProfiles(buf)
 	require.ErrorIs(t, err, ErrInvalidFormat)
 }

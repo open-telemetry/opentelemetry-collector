@@ -33,6 +33,7 @@ func TestMarshalUnmarshalLogsRequest(t *testing.T) {
 
 	// unmarshal invalid format (bare logs)
 	buf, err = (&plog.ProtoMarshaler{}).MarshalLogs(logs)
+	require.NoError(t, err)
 	_, _, err = UnmarshalLogs(buf)
 	require.ErrorIs(t, err, ErrInvalidFormat)
 }

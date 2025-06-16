@@ -33,6 +33,7 @@ func TestMarshalUnmarshalMetricsRequest(t *testing.T) {
 
 	// unmarshal invalid format (bare metrics)
 	buf, err = (&pmetric.ProtoMarshaler{}).MarshalMetrics(metrics)
+	require.NoError(t, err)
 	_, _, err = UnmarshalMetrics(buf)
 	require.ErrorIs(t, err, ErrInvalidFormat)
 }
