@@ -441,7 +441,7 @@ pre-compute limiter instances for the cross product of configurations.
 The following diagram illustrates the core architecture of the extension limiter system, showing the relationships between interfaces, providers, helpers, and middleware integration:
 
 ```mermaid
-graph TB
+graph TD
     subgraph
     %% Core Limiter Interfaces
     SaturationChecker["SaturationChecker"]
