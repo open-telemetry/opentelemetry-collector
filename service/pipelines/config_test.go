@@ -113,8 +113,7 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 	require.Error(t, xconfmap.Validate(cfg))
 
 	gate := AllowNoPipelines
-	err := featuregate.GlobalRegistry().Set(gate.ID(), true)
-	require.NoError(t, err)
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
 	}()
