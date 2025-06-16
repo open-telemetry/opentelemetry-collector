@@ -45,6 +45,17 @@ func TestSetMapping(t *testing.T) {
 	assert.Equal(t, int32(table.Len()-1), loc.MappingIndex()) //nolint:gosec // G115
 }
 
+func TestSetMappingCurrentTooHigh(t *testing.T) {
+	table := NewMappingSlice()
+	loc := NewLocation()
+	loc.SetMappingIndex(42)
+
+	err := SetMapping(table, loc, NewMapping())
+	require.Error(t, err)
+	assert.Equal(t, 0, table.Len())
+	assert.Equal(t, int32(42), loc.MappingIndex())
+}
+
 func BenchmarkSetMapping(b *testing.B) {
 	for _, bb := range []struct {
 		name    string
