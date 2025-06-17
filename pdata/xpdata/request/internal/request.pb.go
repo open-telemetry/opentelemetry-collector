@@ -13,11 +13,11 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	v13 "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	v12 "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	_ "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	v12 "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	v11 "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	v1development "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	v11 "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -31,19 +31,93 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// SpanContext represents a span context encoded associated with a telemetry export request.
+type SpanContext struct {
+	TraceId    []byte `protobuf:"bytes,1,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	SpanId     []byte `protobuf:"bytes,2,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	TraceFlags uint32 `protobuf:"fixed32,3,opt,name=trace_flags,json=traceFlags,proto3" json:"trace_flags,omitempty"`
+	TraceState string `protobuf:"bytes,4,opt,name=trace_state,json=traceState,proto3" json:"trace_state,omitempty"`
+	Remote     bool   `protobuf:"varint,5,opt,name=remote,proto3" json:"remote,omitempty"`
+}
+
+func (m *SpanContext) Reset()         { *m = SpanContext{} }
+func (m *SpanContext) String() string { return proto.CompactTextString(m) }
+func (*SpanContext) ProtoMessage()    {}
+func (*SpanContext) Descriptor() ([]byte, []int) {
+	return fileDescriptor_b47c551a6764db21, []int{0}
+}
+func (m *SpanContext) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SpanContext) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SpanContext.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *SpanContext) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SpanContext.Merge(m, src)
+}
+func (m *SpanContext) XXX_Size() int {
+	return m.Size()
+}
+func (m *SpanContext) XXX_DiscardUnknown() {
+	xxx_messageInfo_SpanContext.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SpanContext proto.InternalMessageInfo
+
+func (m *SpanContext) GetTraceId() []byte {
+	if m != nil {
+		return m.TraceId
+	}
+	return nil
+}
+
+func (m *SpanContext) GetSpanId() []byte {
+	if m != nil {
+		return m.SpanId
+	}
+	return nil
+}
+
+func (m *SpanContext) GetTraceFlags() uint32 {
+	if m != nil {
+		return m.TraceFlags
+	}
+	return 0
+}
+
+func (m *SpanContext) GetTraceState() string {
+	if m != nil {
+		return m.TraceState
+	}
+	return ""
+}
+
+func (m *SpanContext) GetRemote() bool {
+	if m != nil {
+		return m.Remote
+	}
+	return false
+}
+
 // RequestContext represents metadata associated with a telemetry export request.
 type RequestContext struct {
-	// Span context encoded using W3C trace context format.
-	// This map typically includes "traceparent" and optionally "tracestate" keys.
-	// Repeated KeyValue is used over map<string, string> for performance reasons.
-	SpanContextMap []v1.KeyValue `protobuf:"bytes,1,rep,name=span_context_map,json=spanContextMap,proto3" json:"span_context_map"`
+	SpanContext *SpanContext `protobuf:"bytes,1,opt,name=span_context,json=spanContext,proto3" json:"span_context,omitempty"`
 }
 
 func (m *RequestContext) Reset()         { *m = RequestContext{} }
 func (m *RequestContext) String() string { return proto.CompactTextString(m) }
 func (*RequestContext) ProtoMessage()    {}
 func (*RequestContext) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b47c551a6764db21, []int{0}
+	return fileDescriptor_b47c551a6764db21, []int{1}
 }
 func (m *RequestContext) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,9 +146,9 @@ func (m *RequestContext) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RequestContext proto.InternalMessageInfo
 
-func (m *RequestContext) GetSpanContextMap() []v1.KeyValue {
+func (m *RequestContext) GetSpanContext() *SpanContext {
 	if m != nil {
-		return m.SpanContextMap
+		return m.SpanContext
 	}
 	return nil
 }
@@ -82,14 +156,14 @@ func (m *RequestContext) GetSpanContextMap() []v1.KeyValue {
 type TracesRequest struct {
 	FormatVersion  uint32          `protobuf:"fixed32,1,opt,name=format_version,json=formatVersion,proto3" json:"format_version,omitempty"`
 	RequestContext *RequestContext `protobuf:"bytes,2,opt,name=request_context,json=requestContext,proto3" json:"request_context,omitempty"`
-	TracesData     *v11.TracesData `protobuf:"bytes,3,opt,name=traces_data,json=tracesData,proto3" json:"traces_data,omitempty"`
+	TracesData     *v1.TracesData  `protobuf:"bytes,3,opt,name=traces_data,json=tracesData,proto3" json:"traces_data,omitempty"`
 }
 
 func (m *TracesRequest) Reset()         { *m = TracesRequest{} }
 func (m *TracesRequest) String() string { return proto.CompactTextString(m) }
 func (*TracesRequest) ProtoMessage()    {}
 func (*TracesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b47c551a6764db21, []int{1}
+	return fileDescriptor_b47c551a6764db21, []int{2}
 }
 func (m *TracesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -132,7 +206,7 @@ func (m *TracesRequest) GetRequestContext() *RequestContext {
 	return nil
 }
 
-func (m *TracesRequest) GetTracesData() *v11.TracesData {
+func (m *TracesRequest) GetTracesData() *v1.TracesData {
 	if m != nil {
 		return m.TracesData
 	}
@@ -142,14 +216,14 @@ func (m *TracesRequest) GetTracesData() *v11.TracesData {
 type MetricsRequest struct {
 	FormatVersion  uint32           `protobuf:"fixed32,1,opt,name=format_version,json=formatVersion,proto3" json:"format_version,omitempty"`
 	RequestContext *RequestContext  `protobuf:"bytes,2,opt,name=request_context,json=requestContext,proto3" json:"request_context,omitempty"`
-	MetricsData    *v12.MetricsData `protobuf:"bytes,3,opt,name=metrics_data,json=metricsData,proto3" json:"metrics_data,omitempty"`
+	MetricsData    *v11.MetricsData `protobuf:"bytes,3,opt,name=metrics_data,json=metricsData,proto3" json:"metrics_data,omitempty"`
 }
 
 func (m *MetricsRequest) Reset()         { *m = MetricsRequest{} }
 func (m *MetricsRequest) String() string { return proto.CompactTextString(m) }
 func (*MetricsRequest) ProtoMessage()    {}
 func (*MetricsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b47c551a6764db21, []int{2}
+	return fileDescriptor_b47c551a6764db21, []int{3}
 }
 func (m *MetricsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -192,7 +266,7 @@ func (m *MetricsRequest) GetRequestContext() *RequestContext {
 	return nil
 }
 
-func (m *MetricsRequest) GetMetricsData() *v12.MetricsData {
+func (m *MetricsRequest) GetMetricsData() *v11.MetricsData {
 	if m != nil {
 		return m.MetricsData
 	}
@@ -202,14 +276,14 @@ func (m *MetricsRequest) GetMetricsData() *v12.MetricsData {
 type LogsRequest struct {
 	FormatVersion  uint32          `protobuf:"fixed32,1,opt,name=format_version,json=formatVersion,proto3" json:"format_version,omitempty"`
 	RequestContext *RequestContext `protobuf:"bytes,2,opt,name=request_context,json=requestContext,proto3" json:"request_context,omitempty"`
-	LogsData       *v13.LogsData   `protobuf:"bytes,3,opt,name=logs_data,json=logsData,proto3" json:"logs_data,omitempty"`
+	LogsData       *v12.LogsData   `protobuf:"bytes,3,opt,name=logs_data,json=logsData,proto3" json:"logs_data,omitempty"`
 }
 
 func (m *LogsRequest) Reset()         { *m = LogsRequest{} }
 func (m *LogsRequest) String() string { return proto.CompactTextString(m) }
 func (*LogsRequest) ProtoMessage()    {}
 func (*LogsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b47c551a6764db21, []int{3}
+	return fileDescriptor_b47c551a6764db21, []int{4}
 }
 func (m *LogsRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -252,7 +326,7 @@ func (m *LogsRequest) GetRequestContext() *RequestContext {
 	return nil
 }
 
-func (m *LogsRequest) GetLogsData() *v13.LogsData {
+func (m *LogsRequest) GetLogsData() *v12.LogsData {
 	if m != nil {
 		return m.LogsData
 	}
@@ -269,7 +343,7 @@ func (m *ProfilesRequest) Reset()         { *m = ProfilesRequest{} }
 func (m *ProfilesRequest) String() string { return proto.CompactTextString(m) }
 func (*ProfilesRequest) ProtoMessage()    {}
 func (*ProfilesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_b47c551a6764db21, []int{4}
+	return fileDescriptor_b47c551a6764db21, []int{5}
 }
 func (m *ProfilesRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -320,6 +394,7 @@ func (m *ProfilesRequest) GetProfilesData() *v1development.ProfilesData {
 }
 
 func init() {
+	proto.RegisterType((*SpanContext)(nil), "opentelemetry.collector.pdata.xpdata.internal.SpanContext")
 	proto.RegisterType((*RequestContext)(nil), "opentelemetry.collector.pdata.xpdata.internal.RequestContext")
 	proto.RegisterType((*TracesRequest)(nil), "opentelemetry.collector.pdata.xpdata.internal.TracesRequest")
 	proto.RegisterType((*MetricsRequest)(nil), "opentelemetry.collector.pdata.xpdata.internal.MetricsRequest")
@@ -332,39 +407,103 @@ func init() {
 }
 
 var fileDescriptor_b47c551a6764db21 = []byte{
-	// 507 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x94, 0xcd, 0x6e, 0xd4, 0x30,
-	0x10, 0xc7, 0xd7, 0x14, 0xf1, 0xe1, 0x74, 0x53, 0xb4, 0xe2, 0xb0, 0xea, 0x21, 0xac, 0x22, 0x15,
-	0x22, 0x0a, 0x8e, 0xd2, 0x5e, 0xe0, 0xc0, 0x65, 0xe1, 0x82, 0x60, 0x11, 0x8a, 0x50, 0x91, 0x90,
-	0xd0, 0xca, 0xa4, 0xde, 0x28, 0x92, 0x93, 0x31, 0x8e, 0x1b, 0xb5, 0x6f, 0xc1, 0x63, 0xf5, 0xd8,
-	0x23, 0x27, 0x54, 0xed, 0x9e, 0x38, 0xf1, 0x08, 0x20, 0x7f, 0x64, 0xd9, 0xa0, 0x5c, 0xb8, 0xed,
-	0x29, 0xe3, 0xc9, 0x7f, 0xc6, 0xfe, 0x79, 0x3c, 0x83, 0x0f, 0xc5, 0x29, 0x55, 0x34, 0x3e, 0xb7,
-	0x1f, 0xc9, 0xbe, 0x9e, 0xb1, 0x5a, 0xc5, 0x45, 0xa5, 0x98, 0xac, 0x28, 0x6f, 0x1d, 0x44, 0x48,
-	0x50, 0x30, 0x7a, 0x0a, 0x82, 0x55, 0x8a, 0x71, 0x56, 0x32, 0x25, 0x2f, 0x48, 0x06, 0x9c, 0xb3,
-	0x4c, 0x81, 0x24, 0x26, 0x9a, 0xd8, 0x24, 0xa4, 0x0d, 0xde, 0xbf, 0x9f, 0x43, 0x0e, 0x26, 0x32,
-	0xd6, 0x96, 0x4d, 0xb2, 0x1f, 0x75, 0x92, 0xc4, 0xf6, 0xbf, 0x92, 0x34, 0x63, 0x71, 0x93, 0x58,
-	0xc3, 0x29, 0x9f, 0xf4, 0x29, 0xb5, 0x5d, 0x64, 0xb5, 0xd6, 0x3a, 0xd3, 0xa9, 0x1f, 0xf6, 0xa9,
-	0x39, 0xe4, 0x46, 0xaa, 0xbf, 0x4e, 0xf7, 0xb8, 0x4f, 0x97, 0x41, 0x59, 0x42, 0xa5, 0x95, 0xd6,
-	0x72, 0xda, 0xe7, 0x7d, 0x5a, 0x21, 0x61, 0x51, 0x70, 0xa6, 0xf3, 0x9e, 0xb2, 0x86, 0x71, 0x10,
-	0x25, 0xab, 0xd4, 0xda, 0x6d, 0x43, 0xc3, 0x02, 0xfb, 0xa9, 0xbd, 0xbc, 0x97, 0x50, 0x29, 0x76,
-	0xae, 0x46, 0x1f, 0xf1, 0xbd, 0x5a, 0xd0, 0x6a, 0x9e, 0xd9, 0xf5, 0xbc, 0xa4, 0x62, 0x8c, 0x26,
-	0x3b, 0x91, 0x77, 0xf4, 0x88, 0x74, 0x2f, 0xd6, 0x64, 0x20, 0xee, 0x24, 0x4d, 0x42, 0xde, 0xb0,
-	0x8b, 0x13, 0xca, 0xcf, 0xd8, 0xf4, 0xe6, 0xe5, 0x8f, 0x07, 0x83, 0xd4, 0xd7, 0x69, 0x5c, 0xd6,
-	0x19, 0x15, 0xe1, 0x4f, 0x84, 0x87, 0x1f, 0xf4, 0xbd, 0xd5, 0x6e, 0xc7, 0xd1, 0x01, 0xf6, 0x17,
-	0x20, 0x4b, 0xaa, 0xe6, 0x0d, 0x93, 0x75, 0x01, 0xd5, 0x18, 0x4d, 0x50, 0x74, 0x3b, 0x1d, 0x5a,
-	0xef, 0x89, 0x75, 0x8e, 0x16, 0x78, 0xcf, 0x15, 0xb8, 0x3d, 0xd4, 0xf8, 0xc6, 0x04, 0x45, 0xde,
-	0xd1, 0x0b, 0xf2, 0x5f, 0x95, 0x26, 0x5d, 0xd2, 0xd4, 0x97, 0x5d, 0xf2, 0xd7, 0xd8, 0x33, 0x75,
-	0xad, 0xe7, 0x3a, 0x6c, 0xbc, 0x63, 0xf6, 0x88, 0x7a, 0xa1, 0x6d, 0xfd, 0x9b, 0x84, 0x58, 0xa0,
-	0x57, 0x54, 0xd1, 0x14, 0xab, 0xb5, 0x1d, 0xfe, 0x42, 0xd8, 0x9f, 0xd9, 0xba, 0x6f, 0x29, 0xec,
-	0x3b, 0xbc, 0xeb, 0x1e, 0xe6, 0x26, 0xed, 0x61, 0x2f, 0x6d, 0xfb, 0x82, 0x9b, 0x84, 0x38, 0x28,
-	0x03, 0xec, 0x95, 0x7f, 0x17, 0xe1, 0x35, 0xc2, 0xde, 0x5b, 0xc8, 0xb7, 0x15, 0x77, 0x8a, 0xef,
-	0xea, 0xe6, 0xda, 0x64, 0x3d, 0xe8, 0x65, 0x35, 0x2d, 0xd8, 0x24, 0x44, 0xb3, 0x18, 0xca, 0x3b,
-	0xdc, 0x59, 0xe1, 0x6f, 0x84, 0xf7, 0xde, 0xbb, 0xf6, 0xd9, 0x52, 0xcc, 0xcf, 0x78, 0xd8, 0x36,
-	0xf8, 0x26, 0xea, 0xb3, 0x5e, 0xd4, 0xf5, 0x28, 0xe8, 0x4c, 0x08, 0xd2, 0x22, 0x1a, 0xfa, 0x5d,
-	0xb1, 0xb1, 0x9a, 0xce, 0x2e, 0x97, 0x01, 0xba, 0x5a, 0x06, 0xe8, 0x7a, 0x19, 0xa0, 0x6f, 0xab,
-	0x60, 0x70, 0xb5, 0x0a, 0x06, 0xdf, 0x57, 0xc1, 0xe0, 0xd3, 0x71, 0x0e, 0xff, 0xec, 0x51, 0xe8,
-	0x71, 0xe5, 0x60, 0xe2, 0xce, 0xf8, 0x6e, 0x61, 0xbe, 0xdc, 0x32, 0xe7, 0x38, 0xfe, 0x13, 0x00,
-	0x00, 0xff, 0xff, 0xec, 0x95, 0x7c, 0xa3, 0xde, 0x05, 0x00, 0x00,
+	// 567 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x95, 0xcf, 0x6f, 0xd3, 0x30,
+	0x14, 0xc7, 0xeb, 0x01, 0x6d, 0xe7, 0xb4, 0x9d, 0x14, 0x21, 0x28, 0x3b, 0x84, 0x2a, 0xd2, 0x50,
+	0xc4, 0xc0, 0x51, 0xb7, 0x0b, 0x20, 0x71, 0x19, 0x08, 0xa9, 0x12, 0x43, 0x28, 0x43, 0x1c, 0x90,
+	0xa6, 0xca, 0xa4, 0x6e, 0x14, 0x29, 0x89, 0x83, 0x63, 0xa2, 0xf1, 0x5f, 0x70, 0xe7, 0x1f, 0xe2,
+	0xb8, 0x23, 0xc7, 0xa9, 0x3d, 0x71, 0xe2, 0x4f, 0x60, 0xf2, 0xb3, 0xd3, 0x36, 0x53, 0x2e, 0xbb,
+	0xf5, 0x94, 0xf7, 0x9e, 0xbf, 0xcf, 0x7e, 0x1f, 0xff, 0x78, 0xc1, 0x87, 0xf9, 0x8c, 0x4a, 0xea,
+	0x5f, 0xe8, 0x8f, 0x60, 0xdf, 0xbe, 0xb3, 0x42, 0xfa, 0x71, 0x26, 0x99, 0xc8, 0x68, 0x52, 0x05,
+	0x48, 0x2e, 0xb8, 0xe4, 0xf6, 0x73, 0x9e, 0xb3, 0x4c, 0xb2, 0x84, 0xa5, 0x4c, 0x8a, 0x1f, 0x24,
+	0xe4, 0x49, 0xc2, 0x42, 0xc9, 0x05, 0x81, 0x6c, 0xa2, 0x27, 0x21, 0x55, 0xf2, 0xfe, 0xfd, 0x88,
+	0x47, 0x1c, 0x32, 0x7d, 0x65, 0xe9, 0x49, 0xf6, 0xbd, 0xda, 0x24, 0xbe, 0x1e, 0x97, 0x82, 0x86,
+	0xcc, 0x2f, 0xc7, 0xda, 0x30, 0xca, 0x67, 0x4d, 0x4a, 0x65, 0xc7, 0x61, 0xa1, 0xb4, 0xc6, 0x34,
+	0xea, 0x27, 0x4d, 0xea, 0x84, 0x47, 0x20, 0x55, 0x5f, 0xa3, 0x7b, 0xda, 0xa4, 0x0b, 0x79, 0x9a,
+	0xf2, 0x4c, 0x29, 0xb5, 0x65, 0xb4, 0x2f, 0x9b, 0xb4, 0xb9, 0xe0, 0xf3, 0x38, 0x61, 0x6a, 0xde,
+	0x19, 0x2b, 0x59, 0xc2, 0xf3, 0x94, 0x65, 0x72, 0x15, 0xd6, 0xa9, 0xee, 0x2f, 0x84, 0xad, 0xb3,
+	0x9c, 0x66, 0x6f, 0x78, 0x26, 0xd9, 0x85, 0xb4, 0x1f, 0xe1, 0x2e, 0xb0, 0x4d, 0xe3, 0xd9, 0x10,
+	0x8d, 0x90, 0xd7, 0x0b, 0x3a, 0xe0, 0x4f, 0x66, 0xf6, 0x43, 0xdc, 0x29, 0x72, 0x9a, 0xa9, 0x91,
+	0x1d, 0x18, 0x69, 0x2b, 0x77, 0x32, 0xb3, 0x1f, 0x63, 0x4b, 0xe7, 0xcc, 0x13, 0x1a, 0x15, 0xc3,
+	0x3b, 0x23, 0xe4, 0x75, 0x02, 0x0c, 0xa1, 0x77, 0x2a, 0xb2, 0x16, 0x14, 0x92, 0x4a, 0x36, 0xbc,
+	0x3b, 0x42, 0xde, 0xae, 0x11, 0x9c, 0xa9, 0x88, 0xfd, 0x00, 0xb7, 0x05, 0x4b, 0xb9, 0x64, 0xc3,
+	0x7b, 0x23, 0xe4, 0x75, 0x03, 0xe3, 0xb9, 0x1c, 0x0f, 0x02, 0x7d, 0xb4, 0x55, 0x7d, 0xe7, 0xb8,
+	0x07, 0x45, 0x84, 0xda, 0x87, 0x1a, 0xad, 0xa3, 0x57, 0xe4, 0x56, 0x47, 0x4e, 0x36, 0x88, 0x03,
+	0xab, 0x58, 0x3b, 0xee, 0x5f, 0x84, 0xfb, 0x9f, 0x54, 0x5d, 0x85, 0x59, 0xd7, 0x3e, 0xc0, 0x83,
+	0x39, 0x17, 0x29, 0x95, 0xd3, 0x92, 0x89, 0x22, 0xe6, 0x19, 0x2c, 0xd9, 0x09, 0xfa, 0x3a, 0xfa,
+	0x59, 0x07, 0xed, 0x39, 0xde, 0x33, 0x97, 0x70, 0x55, 0xda, 0x0e, 0x94, 0xf6, 0xfa, 0x96, 0xa5,
+	0xd5, 0x79, 0x83, 0x81, 0xa8, 0xf3, 0x4f, 0xcc, 0x56, 0x16, 0x53, 0x95, 0x06, 0x7b, 0x6d, 0x1d,
+	0x79, 0x37, 0xd6, 0x80, 0xa3, 0x25, 0xfa, 0x8e, 0x96, 0x63, 0xa2, 0x81, 0xde, 0x52, 0x49, 0xcd,
+	0xa6, 0x83, 0xed, 0xfe, 0x43, 0x78, 0x70, 0xaa, 0xef, 0xe6, 0x96, 0xc2, 0x7e, 0xc0, 0x3d, 0xf3,
+	0x78, 0x36, 0x69, 0x0f, 0x1b, 0x69, 0xab, 0x57, 0x56, 0x8e, 0x89, 0x81, 0x02, 0x60, 0x2b, 0x5d,
+	0x3b, 0xee, 0x15, 0xc2, 0xd6, 0x7b, 0x1e, 0x6d, 0x2b, 0xee, 0x09, 0xde, 0x55, 0x0d, 0x60, 0x93,
+	0xf5, 0xa0, 0x91, 0x15, 0xda, 0x44, 0x39, 0x26, 0x8a, 0x05, 0x28, 0xbb, 0x89, 0xb1, 0xdc, 0xff,
+	0x08, 0xef, 0x7d, 0x34, 0x4f, 0x7c, 0x4b, 0x31, 0xcf, 0x71, 0xbf, 0x6a, 0x42, 0x9b, 0xa8, 0x2f,
+	0x1a, 0x51, 0x57, 0xed, 0xaa, 0xd6, 0xc5, 0x48, 0x85, 0x08, 0xf4, 0xbd, 0x7c, 0xc3, 0x3b, 0x39,
+	0xfd, 0xbd, 0x70, 0xd0, 0xe5, 0xc2, 0x41, 0x57, 0x0b, 0x07, 0xfd, 0x5c, 0x3a, 0xad, 0xcb, 0xa5,
+	0xd3, 0xfa, 0xb3, 0x74, 0x5a, 0x5f, 0x8e, 0x23, 0x7e, 0x63, 0x8d, 0x58, 0xb5, 0x54, 0x03, 0xe3,
+	0xd7, 0x7e, 0x31, 0x15, 0xcc, 0xd7, 0x36, 0xd4, 0x71, 0x7c, 0x1d, 0x00, 0x00, 0xff, 0xff, 0xad,
+	0xa1, 0x3c, 0xeb, 0x82, 0x06, 0x00, 0x00,
+}
+
+func (m *SpanContext) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SpanContext) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *SpanContext) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Remote {
+		i--
+		if m.Remote {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x28
+	}
+	if len(m.TraceState) > 0 {
+		i -= len(m.TraceState)
+		copy(dAtA[i:], m.TraceState)
+		i = encodeVarintRequest(dAtA, i, uint64(len(m.TraceState)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if m.TraceFlags != 0 {
+		i -= 4
+		encoding_binary.LittleEndian.PutUint32(dAtA[i:], uint32(m.TraceFlags))
+		i--
+		dAtA[i] = 0x1d
+	}
+	if len(m.SpanId) > 0 {
+		i -= len(m.SpanId)
+		copy(dAtA[i:], m.SpanId)
+		i = encodeVarintRequest(dAtA, i, uint64(len(m.SpanId)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.TraceId) > 0 {
+		i -= len(m.TraceId)
+		copy(dAtA[i:], m.TraceId)
+		i = encodeVarintRequest(dAtA, i, uint64(len(m.TraceId)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *RequestContext) Marshal() (dAtA []byte, err error) {
@@ -387,19 +526,17 @@ func (m *RequestContext) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.SpanContextMap) > 0 {
-		for iNdEx := len(m.SpanContextMap) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.SpanContextMap[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintRequest(dAtA, i, uint64(size))
+	if m.SpanContext != nil {
+		{
+			size, err := m.SpanContext.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
 			}
-			i--
-			dAtA[i] = 0xa
+			i -= size
+			i = encodeVarintRequest(dAtA, i, uint64(size))
 		}
+		i--
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -627,17 +764,42 @@ func encodeVarintRequest(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *SpanContext) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.TraceId)
+	if l > 0 {
+		n += 1 + l + sovRequest(uint64(l))
+	}
+	l = len(m.SpanId)
+	if l > 0 {
+		n += 1 + l + sovRequest(uint64(l))
+	}
+	if m.TraceFlags != 0 {
+		n += 5
+	}
+	l = len(m.TraceState)
+	if l > 0 {
+		n += 1 + l + sovRequest(uint64(l))
+	}
+	if m.Remote {
+		n += 2
+	}
+	return n
+}
+
 func (m *RequestContext) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if len(m.SpanContextMap) > 0 {
-		for _, e := range m.SpanContextMap {
-			l = e.Size()
-			n += 1 + l + sovRequest(uint64(l))
-		}
+	if m.SpanContext != nil {
+		l = m.SpanContext.Size()
+		n += 1 + l + sovRequest(uint64(l))
 	}
 	return n
 }
@@ -728,6 +890,186 @@ func sovRequest(x uint64) (n int) {
 func sozRequest(x uint64) (n int) {
 	return sovRequest(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (m *SpanContext) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRequest
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SpanContext: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SpanContext: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequest
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRequest
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRequest
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TraceId = append(m.TraceId[:0], dAtA[iNdEx:postIndex]...)
+			if m.TraceId == nil {
+				m.TraceId = []byte{}
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequest
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRequest
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRequest
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SpanId = append(m.SpanId[:0], dAtA[iNdEx:postIndex]...)
+			if m.SpanId == nil {
+				m.SpanId = []byte{}
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 5 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceFlags", wireType)
+			}
+			m.TraceFlags = 0
+			if (iNdEx + 4) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TraceFlags = uint32(encoding_binary.LittleEndian.Uint32(dAtA[iNdEx:]))
+			iNdEx += 4
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceState", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequest
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthRequest
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRequest
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.TraceState = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Remote", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRequest
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Remote = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRequest(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthRequest
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *RequestContext) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -759,7 +1101,7 @@ func (m *RequestContext) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SpanContextMap", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanContext", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -786,8 +1128,10 @@ func (m *RequestContext) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SpanContextMap = append(m.SpanContextMap, v1.KeyValue{})
-			if err := m.SpanContextMap[len(m.SpanContextMap)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.SpanContext == nil {
+				m.SpanContext = &SpanContext{}
+			}
+			if err := m.SpanContext.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -917,7 +1261,7 @@ func (m *TracesRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TracesData == nil {
-				m.TracesData = &v11.TracesData{}
+				m.TracesData = &v1.TracesData{}
 			}
 			if err := m.TracesData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1049,7 +1393,7 @@ func (m *MetricsRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.MetricsData == nil {
-				m.MetricsData = &v12.MetricsData{}
+				m.MetricsData = &v11.MetricsData{}
 			}
 			if err := m.MetricsData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1181,7 +1525,7 @@ func (m *LogsRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.LogsData == nil {
-				m.LogsData = &v13.LogsData{}
+				m.LogsData = &v12.LogsData{}
 			}
 			if err := m.LogsData.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
