@@ -5,15 +5,17 @@ change_type: enhancement
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add an option to preserve request span context in the persistent queue
+note: Preserve request span context and client metadata in the persistent queue.
 
 # One or more tracking issues or pull requests related to the change
-issues: [11740]
+issues: [11740, 13220]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
+  It allows internal collector spans and client metadata to propagate through the persistent queue used by 
+  the exporters. The same way as it's done for the in-memory queue.
   Currently, it is behind the exporter.PersistRequestContext feature gate, which can be enabled by adding 
   `--feature-gates=exporter.PersistRequestContext` to the collector command line. An exporter buffer stored by
   a previous version of the collector (or by a collector with the feature gate disabled) can be read by a newer
