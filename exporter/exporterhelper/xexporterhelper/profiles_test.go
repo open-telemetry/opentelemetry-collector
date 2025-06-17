@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumererror/xconsumererror"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -81,7 +81,7 @@ func TestProfilesExporter_NilPushProfilesData(t *testing.T) {
 	require.Equal(t, errNilPushProfileData, err)
 }
 
-func TestProfilesExporter_NilTracesConverter(t *testing.T) {
+func TestProfilesExporter_NilProfilesConverter(t *testing.T) {
 	te, err := NewProfilesRequest(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, sendertest.NewNopSenderFunc[exporterhelper.Request]())
 	require.Nil(t, te)
 	require.Equal(t, errNilProfilesConverter, err)
@@ -166,28 +166,77 @@ func TestProfilesRequestExporter_Default_ExportError(t *testing.T) {
 	require.Equal(t, want, le.ConsumeProfiles(context.Background(), ld))
 }
 
-func TestProfilesExporter_WithPersistentQueue(t *testing.T) {
+func TestProfiles_WithPersistentQueue(t *testing.T) {
+	fgOrigState := queue.PersistRequestContextFeatureGate.IsEnabled()
 	qCfg := exporterhelper.NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	rCfg := configretry.NewDefaultBackOffConfig()
-	ts := consumertest.ProfilesSink{}
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.ID = component.MustNewIDWithName("test_profiles", "with_persistent_queue")
-	te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithRetry(rCfg), exporterhelper.WithQueue(qCfg))
-	require.NoError(t, err)
-
+	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	})
-	require.NoError(t, te.Start(context.Background(), host))
-	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+	spanCtx := oteltest.FakeSpanContext(t)
 
-	traces := testdata.GenerateProfiles(2)
-	require.NoError(t, te.ConsumeProfiles(context.Background(), traces))
-	require.Eventually(t, func() bool {
-		return len(ts.AllProfiles()) == 1 && ts.SampleCount() == 2
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	tests := []struct {
+		name             string
+		fgEnabledOnWrite bool
+		fgEnabledOnRead  bool
+		wantData         bool
+		wantSpanCtx      bool
+	}{
+		{
+			name:     "feature_gate_disabled_on_write_and_read",
+			wantData: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_and_read",
+			fgEnabledOnWrite: true,
+			fgEnabledOnRead:  true,
+			wantData:         true,
+			wantSpanCtx:      true,
+		},
+		{
+			name:            "feature_gate_disabled_on_write_enabled_on_read",
+			wantData:        true,
+			fgEnabledOnRead: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_disabled_on_read",
+			fgEnabledOnWrite: true,
+			wantData:         false, // going back from enabled to disabled feature gate isn't supported
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			queue.PersistRequestContextOnRead = tt.fgEnabledOnRead
+			queue.PersistRequestContextOnWrite = tt.fgEnabledOnWrite
+			t.Cleanup(func() {
+				queue.PersistRequestContextOnRead = fgOrigState
+				queue.PersistRequestContextOnWrite = fgOrigState
+			})
+
+			ts := consumertest.ProfilesSink{}
+			te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithQueue(qCfg))
+			require.NoError(t, err)
+			require.NoError(t, te.Start(context.Background(), host))
+			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+			profiles := testdata.GenerateProfiles(2)
+			require.NoError(t, te.ConsumeProfiles(trace.ContextWithSpanContext(context.Background(), spanCtx), profiles))
+			if tt.wantData {
+				require.Eventually(t, func() bool {
+					return len(ts.AllProfiles()) == 1 && ts.SampleCount() == 2
+				}, 500*time.Millisecond, 10*time.Millisecond)
+			}
+
+			// check that the span context is persisted if the feature gate is enabled
+			if tt.wantSpanCtx {
+				assert.Len(t, ts.Contexts(), 1)
+				assert.Equal(t, spanCtx, trace.SpanContextFromContext(ts.Contexts()[0]))
+			}
+		})
+	}
 }
 
 func TestProfilesExporter_WithSpan(t *testing.T) {
