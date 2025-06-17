@@ -21,12 +21,42 @@ message SpanContext {
   bool remote = 5;
 }
 
+message IPAddr {
+  bytes ip = 1;
+  string zone = 2;
+}
+
+message TCPAddr {
+  bytes ip = 1;
+  int32 port = 2;
+  string zone = 3;
+}
+
+message UDPAddr {
+  bytes ip = 1;
+  int32 port = 2;
+  string zone = 3;
+}
+
+message UnixAddr {
+  string name = 1;
+  string net = 2;
+}
+
 // RequestContext represents metadata associated with a telemetry export request.
 message RequestContext {
   SpanContext span_context = 1;
 
   // ClientMetadata contains additional metadata about the client making the request.
   repeated opentelemetry.proto.common.v1.KeyValue client_metadata = 2 [ (gogoproto.nullable) = false ];
+
+  // ClientAddress contains the address of the client making the request.
+  oneof client_address {
+    IPAddr ip = 3;
+    TCPAddr tcp = 4;
+    UDPAddr udp = 5;
+    UnixAddr unix = 6;
+  }
 }
 
 // The following messages are wrappers around standard OpenTelemetry data types.
