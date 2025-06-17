@@ -2,9 +2,9 @@
 
 ## Motivation
 
-Currently, the collector operates in a stateless mode by default, with stateful components storing offsets in memory. Ideally, stateful components should persist their state during shutdown if a storage extension is available. 
+Currently, the collector operates in a stateless mode by default, with stateful components storing offsets in memory. Ideally, these components should persist their state during shutdown if a storage extension is available.
 
-This was the case previously with `filelog` receiver, but it was reverted. Refer [historical context](#historical-context) for more details on this.
+This behaviour was previously supported in the `filelog` receiver, but it was later reverted. Refer [historical context](#historical-context) for more details on this.
 
 At present, enabling stateful behavior involves a somewhat lengthy process:
 
@@ -61,16 +61,16 @@ service:
   extensions: [file_storage]
 ```
 
-It would be beneficial to simplify this process by introducing a feature gate or simple single configuration option(s). With this approach, users could enable stateful mode with a single setting, and the necessary steps would be handled automatically, achieving the same effect as the manual steps described.
+It would be beneficial to simplify this process by introducing a feature gate or a single configuration option. This would allow users to enable stateful mode with a single setting, while the system automatically performs the steps outlined above.
 
 ### Historical context
 
-A few years ago, filelog receiver automatically _hooked_ a storage extension when it was specified in the piepline. There was no need to explicitly mention `storage: file_storage` in the stanza confiugration. 
-That changed was [reverted](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10915) due to following downsides:
+A few years ago, filelog receiver automatically _hooked_ a storage extension when it was defined in the piepline. There was no need to explicitly mention `storage: file_storage` in the component confiugration. 
+That behaviour was was [reverted](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10915) due to following downsides:
 1. It was not possible to specify multiple storage extensions and use a preferred one for the receiver.
-2. User had no option to opt out of statefulness.
+2. User had no option to opt out of statefulness if a storage extension was specified.
 
-This RFC addresses above mentioned downsides.
+This RFC addresses the above-mentioned limitations.
 
 ## Scope of this RFC
 
@@ -79,10 +79,10 @@ In this RFC, I'll only use `filelogreceiver` and `filestorage` extension for dem
 ## Explanation
 
 This RFC proposes to solve above mentioned limitations using a [config converter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/confmap#converter).
-We can automate the 3-step manual process by using a converter (let's call it `statefulconverter` for the purpose of this RFC), in a following way:
+We can automate the 3-step manual process by using a converter (let's call it `statefulconverter`), as follows:
 
-1. We can create a new converter to inject the `filestorage` extension into the configuration provided by the user.
-2. We can then loop through the config and inject `storage: file_storage` into the receiver config, if not set.
+1. The converter can inject the filestorage extension into the configuration provided by the user.
+2. It can then loop through the configuration and inject `storage: file_storage` into receiver configurations where it is not explicitly set.
 
 All of the above steps can be controlled via a single command line option, making it easier for us to enable statefulness without changing the code or introducing side effects.
 
@@ -90,7 +90,7 @@ Here’s the POC [changeset](https://github.com/open-telemetry/opentelemetry-col
 
 ## User experience
 
-In default mode, the user experience will be unaffected. If they want to enable statefulness, it will be simplified by using following command:
+By default, the user experience remains unchanged. However, enabling statefulness becomes as simple as using the following command:
 
 ```bash
 otelcontribcol_darwin_arm64 --feature-gates=stateful --config otel.yaml
@@ -101,17 +101,17 @@ otelcontribcol_darwin_arm64 --feature-gates=stateful --config otel.yaml
 
 ## Internal details
 
-Ideally, we should introduce a new command-line flag and use a feature gate to control its functionality.
-We can add a boolean in [ConverterSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/3ef58fda95de1fa1d27f1d43c9ef92193bac0b2d/confmap/converter.go#L13-L22) and set it to `false` by default to avoid any breaking changes.
-The statefulconverter will be enabled conditionally based on the value of this boolean.
+Ideally, we should introduce a new command-line flag and use a feature gate to control its operability.
+We can add a boolean field in [ConverterSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/3ef58fda95de1fa1d27f1d43c9ef92193bac0b2d/confmap/converter.go#L13-L22) to enable converter and set it to `false` by default to avoid any breaking changes.
+The `statefulconverter` will be enabled conditionally based on the value of this boolean.
 
 > [!NOTE] 
 > By default, offsets are stored in memory. The main goal of this RFC is to simplify enabling statefulness.
 
 ### Changes required for this feature
 
-1. The stateful converter implementation and the feature gate will live in `opentelemetry-collector-contrib` repository.
-2. The changes in core can be divded into two parts:
+1. Implement the statefulconverter and the associated feature gate in the `opentelemetry-collector-contrib` repository.
+2. Core changes can be divided into two parts:
    a. In the first part, we can just add a boolean to [ConverterSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/3ef58fda95de1fa1d27f1d43c9ef92193bac0b2d/confmap/converter.go#L13-L22).
    b. Finally, we can add a new command line flag to update the boolean.
 
@@ -173,7 +173,7 @@ exporters:
   debug:
 service:
   logs:
-    receivers: [filelog]
+    receivers: [filelog, filelog/syslog]
     exporters: [debug]
 ```
 
@@ -196,7 +196,7 @@ exporters:
   debug:
 service:
   logs:
-    receivers: [filelog]
+    receivers: [filelog, filelog/syslog]
     exporters: [debug]
 ```
 
@@ -222,7 +222,7 @@ extensions:
     directory: DIR
 service:
   logs:
-    receivers: [filelog]
+    receivers: [filelog, filelog/syslog]
     exporters: [debug]
 ```
 
