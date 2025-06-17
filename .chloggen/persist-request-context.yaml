@@ -14,6 +14,7 @@ issues: [11740]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
+  It allows spans to propagate through the persistent queue used by the exporters.
   Currently, it is behind the exporter.PersistRequestContext feature gate, which can be enabled by adding 
   `--feature-gates=exporter.PersistRequestContext` to the collector command line. An exporter buffer stored by
   a previous version of the collector (or by a collector with the feature gate disabled) can be read by a newer
