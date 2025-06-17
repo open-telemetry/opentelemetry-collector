@@ -12,12 +12,18 @@ import "opentelemetry/proto/logs/v1/logs.proto";
 import "opentelemetry/proto/common/v1/common.proto";
 import "opentelemetry/proto/profiles/v1development/profiles.proto";
 
+// SpanContext represents a span context encoded associated with a telemetry export request.
+message SpanContext {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+  fixed32 trace_flags = 3;
+  string trace_state = 4;
+  bool remote = 5;
+}
+
 // RequestContext represents metadata associated with a telemetry export request.
 message RequestContext {
-  // Span context encoded using W3C trace context format.
-  // This map typically includes "traceparent" and optionally "tracestate" keys.
-  // Repeated KeyValue is used over map<string, string> for performance reasons.
-  repeated opentelemetry.proto.common.v1.KeyValue span_context_map = 1 [ (gogoproto.nullable) = false ];
+  SpanContext span_context = 1;
 }
 
 // The following messages are wrappers around standard OpenTelemetry data types.

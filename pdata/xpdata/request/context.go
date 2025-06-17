@@ -6,54 +6,44 @@ package request // import "go.opentelemetry.io/collector/pdata/xpdata/request"
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 
-	pdataint "go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
 
-// Default trace context propagator
-var tracePropagator = propagation.TraceContext{}
-
 // encodeContext encodes the context into a map of strings.
 func encodeContext(ctx context.Context) internal.RequestContext {
-	carrier := pdataMapCarrier(pcommon.NewMap())
-	tracePropagator.Inject(ctx, carrier)
-	return internal.RequestContext{SpanContextMap: *pdataint.GetOrigMap(pdataint.Map(carrier))}
+	rc := internal.RequestContext{}
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.IsValid() {
+		traceID := spanCtx.TraceID()
+		spanID := spanCtx.SpanID()
+		rc.SpanContext = &internal.SpanContext{
+			TraceId:    traceID[:],
+			SpanId:     spanID[:],
+			TraceFlags: uint32(spanCtx.TraceFlags()),
+			TraceState: spanCtx.TraceState().String(),
+			Remote:     spanCtx.IsRemote(),
+		}
+	}
+	return rc
 }
 
 // decodeContext decodes the context from the bytes map.
 func decodeContext(rc *internal.RequestContext) context.Context {
-	if rc == nil || rc.SpanContextMap == nil {
+	if rc == nil || rc.SpanContext == nil {
 		return context.Background()
 	}
-	state := pdataint.StateMutable
-	carrier := pdataMapCarrier(pdataint.NewMap(&rc.SpanContextMap, &state))
-	return tracePropagator.Extract(context.Background(), carrier)
-}
-
-type pdataMapCarrier pcommon.Map
-
-var _ propagation.TextMapCarrier = pdataMapCarrier{}
-
-func (m pdataMapCarrier) Get(key string) string {
-	v, ok := pcommon.Map(m).Get(key)
-	if !ok || v.Type() != pcommon.ValueTypeStr {
-		return ""
-	}
-	return v.Str()
-}
-
-func (m pdataMapCarrier) Set(key, value string) {
-	pcommon.Map(m).PutStr(key, value)
-}
-
-func (m pdataMapCarrier) Keys() []string {
-	keys := make([]string, 0, pcommon.Map(m).Len())
-	pcommon.Map(m).Range(func(k string, _ pcommon.Value) bool {
-		keys = append(keys, k)
-		return true
-	})
-	return keys
+	traceID := trace.TraceID{}
+	copy(traceID[:], rc.SpanContext.TraceId)
+	spanID := trace.SpanID{}
+	copy(spanID[:], rc.SpanContext.SpanId)
+	traceState, _ := trace.ParseTraceState(rc.SpanContext.TraceState)
+	return trace.ContextWithSpanContext(context.Background(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.TraceFlags(rc.SpanContext.TraceFlags),
+		TraceState: traceState,
+		Remote:     rc.SpanContext.Remote,
+	}))
 }
