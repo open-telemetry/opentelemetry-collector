@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 	reqint "go.opentelemetry.io/collector/pdata/xpdata/request/internal"
@@ -23,7 +21,7 @@ func MarshalLogs(ctx context.Context, ld plog.Logs) ([]byte, error) {
 		LogsData:       &otlpLogs,
 		RequestContext: &rc,
 	}
-	return proto.Marshal(&lr)
+	return lr.Marshal()
 }
 
 // UnmarshalLogs unmarshals a byte slice into plog.Logs and the context.
@@ -32,7 +30,7 @@ func UnmarshalLogs(buf []byte) (context.Context, plog.Logs, error) {
 		return context.Background(), plog.Logs{}, ErrInvalidFormat
 	}
 	lr := reqint.LogsRequest{}
-	if err := proto.Unmarshal(buf, &lr); err != nil {
+	if err := lr.Unmarshal(buf); err != nil {
 		return context.Background(), plog.Logs{}, fmt.Errorf("failed to unmarshal logs request: %w", err)
 	}
 	return decodeContext(lr.RequestContext), plog.Logs(internal.LogsFromProto(*lr.LogsData)), nil

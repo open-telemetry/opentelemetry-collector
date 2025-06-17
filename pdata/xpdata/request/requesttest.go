@@ -10,11 +10,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func fakeSpanContext(t *testing.T) trace.SpanContext {
+func fakeSpanContext(tb testing.TB) trace.SpanContext {
 	traceID, err := trace.TraceIDFromHex("0102030405060708090a0b0c0d0e0f10")
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	spanID, err := trace.SpanIDFromHex("0102030405060708")
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    traceID,
 		SpanID:     spanID,

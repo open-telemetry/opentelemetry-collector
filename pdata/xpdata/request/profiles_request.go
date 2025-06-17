@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	reqint "go.opentelemetry.io/collector/pdata/xpdata/request/internal"
@@ -23,7 +21,7 @@ func MarshalProfiles(ctx context.Context, ld pprofile.Profiles) ([]byte, error) 
 		ProfilesData:   &otlpProfiles,
 		RequestContext: &rc,
 	}
-	return proto.Marshal(&pr)
+	return pr.Marshal()
 }
 
 // UnmarshalProfiles unmarshals a byte slice into pprofile.Profiles and the context.
@@ -32,7 +30,7 @@ func UnmarshalProfiles(buf []byte) (context.Context, pprofile.Profiles, error) {
 		return context.Background(), pprofile.Profiles{}, ErrInvalidFormat
 	}
 	pr := reqint.ProfilesRequest{}
-	if err := proto.Unmarshal(buf, &pr); err != nil {
+	if err := pr.Unmarshal(buf); err != nil {
 		return context.Background(), pprofile.Profiles{}, fmt.Errorf("failed to unmarshal profiles request: %w", err)
 	}
 	return decodeContext(pr.RequestContext), pprofile.Profiles(internal.ProfilesFromProto(*pr.ProfilesData)), nil
