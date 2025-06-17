@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -32,9 +31,6 @@ type Config struct {
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
 	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
 
-	// Deprecated: [v0.123.0] use `block_on_overflow`.
-	Blocking bool `mapstructure:"blocking"`
-
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
 	// TODO: This will be changed to Optional when available.
@@ -49,23 +45,6 @@ type Config struct {
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
 	// TODO: This will be changed to Optional when available.
 	Batch *BatchConfig `mapstructure:"batch"`
-
-	// TODO: Remove when deprecated "blocking" is removed.
-	hasBlocking bool
-}
-
-func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
-		return err
-	}
-
-	// If user still uses the old blocking, override and will log error during initialization.
-	if conf.IsSet("blocking") {
-		cfg.hasBlocking = true
-		cfg.BlockOnOverflow = cfg.Blocking
-	}
-
-	return nil
 }
 
 // Validate checks if the Config is valid

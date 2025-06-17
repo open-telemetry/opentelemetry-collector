@@ -445,6 +445,7 @@
       "xexporter",
       "xexporterhelper",
       "xextension",
+      "xpdata",
       "xpipeline",
       "xprocessor",
       "xprocessorhelper",
