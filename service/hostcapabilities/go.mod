@@ -97,3 +97,5 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
