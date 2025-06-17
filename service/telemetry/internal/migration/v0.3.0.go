@@ -22,9 +22,8 @@ type TracesConfigV030 struct {
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and
 	// context propagation is disabled.
 	Propagators []string `mapstructure:"propagators"`
-	// Processors allow configuration of span processors to emit spans to
-	// any number of supported backends.
-	Processors []config.SpanProcessor `mapstructure:"processors"`
+
+	config.TracerProvider `mapstructure:",squash"`
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {

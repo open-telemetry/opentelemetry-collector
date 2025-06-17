@@ -73,6 +73,7 @@ module-sets:
       - go.opentelemetry.io/collector/otelcol/otelcoltest
       - go.opentelemetry.io/collector/pdata/pprofile
       - go.opentelemetry.io/collector/pdata/testdata
+      - go.opentelemetry.io/collector/pdata/xpdata
       - go.opentelemetry.io/collector/pipeline
       - go.opentelemetry.io/collector/pipeline/xpipeline
       - go.opentelemetry.io/collector/processor/processortest
