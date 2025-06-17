@@ -10,9 +10,9 @@ through middleware and/or directly by pipeline components.
 ## Overview
 
 This package defines three foundational limiter **kinds**, each with
-similar but distinct interfaces.  A limiter extension is either a
-simple checker for "saturation" (defined below), or it extends the
-simple checker with a weight-based interface:
+similar but distinct interfaces.  A limiter extension can be either a
+simple "saturation" checker (defined below), or it extends the simple
+checker interface with a weight-based interface:
 
 - **Saturation Checker**: Makes a simple yes/no decision without a weight
   parameter, typically to stop new work in an emergency.
@@ -29,7 +29,9 @@ weight keys with a standard definition:
 1. Network bytes (compressed)
 2. Request count
 3. Request items
-4. Request bytes (compressed)
+4. Request bytes (uncompressed)
+
+
 
 The foundational interfaces are non-blocking, and each calling
 convention is different.  The various limiter kinds are unified
