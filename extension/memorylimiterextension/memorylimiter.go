@@ -22,7 +22,7 @@ type memoryLimiterExtension struct {
 	memLimiter *memorylimiter.MemoryLimiter
 }
 
-var _ extensionlimiter.BaseLimiterProvider = &memoryLimiterExtension{}
+var _ extensionlimiter.RateLimiterProvider = &memoryLimiterExtension{}
 
 // newMemoryLimiter returns a new memorylimiter extension.
 func newMemoryLimiter(cfg *Config, logger *zap.Logger) (*memoryLimiterExtension, error) {
@@ -42,15 +42,18 @@ func (ml *memoryLimiterExtension) Shutdown(ctx context.Context) error {
 	return ml.memLimiter.Shutdown(ctx)
 }
 
-// GetBaseLimiter implements extensionlimiter.BaseLimiterProvider.
-func (ml *memoryLimiterExtension) GetBaseLimiter(
-	opts ...extensionlimiter.Option,
-) (extensionlimiter.BaseLimiter, error) {
-	return extensionlimiter.MustDenyFunc(func(_ context.Context) error {
+// GetRateLimiter implements extensionlimiter.RateLimiterProvider.
+// Note that this extension ignores the weight/key, the context, the
+// and the options.
+func (ml *memoryLimiterExtension) GetRateLimiter(
+	_ extensionlimiter.WeightKey,
+	_ ...extensionlimiter.Option,
+) (extensionlimiter.RateLimiter, error) {
+	return extensionlimiter.ReserveRateFunc(func(_ context.Context, _ int) (extensionlimiter.RateReservation, error) {
 		if ml.MustRefuse() {
-			return ErrMustRefuse
+			return nil, ErrMustRefuse
 		}
-		return nil
+		return extensionlimiter.NewNopRateReservation(), nil
 	}), nil
 }
 

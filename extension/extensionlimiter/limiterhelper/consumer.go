@@ -144,29 +144,6 @@ func limitOne[P any, C any](
 	}, opts...)
 }
 
-// applySaturationChecker gets a SaturationChecker and wraps the pipeline in a CheckSaturation
-// check.
-func applySaturationChecker[P any, C any](
-	next C,
-	provider LimiterWrapperProvider,
-	m traits[P, C],
-	opts []consumer.Option,
-) (C, error) {
-	ck, err := provider.GetSaturationChecker()
-	if err != nil {
-		return next, err
-	}
-	if ck == nil {
-		return next, nil
-	}
-	return m.create(func(ctx context.Context, data P) error {
-		if err := ck.CheckSaturation(ctx); err != nil {
-			return err
-		}
-		return m.consume(ctx, data, next)
-	}, opts...)
-}
-
 // newLimited is signal-generic limiting logic.
 func newLimited[P any, C any](
 	next C,
@@ -178,7 +155,7 @@ func newLimited[P any, C any](
 	if provider == nil {
 		return next, nil
 	}
-	var err1, err2, err3, err4 error
+	var err1, err2, err3 error
 	// Note: reverse order of evaluation cost => least-cost applied first.
 	next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestBytes, opts,
 		func(data P) int {
@@ -192,8 +169,7 @@ func newLimited[P any, C any](
 		func(_ P) int {
 			return 1
 		})
-	next, err4 = applySaturationChecker(next, provider, m, opts)
-	return next, multierr.Append(err1, multierr.Append(err2, multierr.Append(err3, err4)))
+	return next, multierr.Append(err1, multierr.Append(err2, err3))
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.

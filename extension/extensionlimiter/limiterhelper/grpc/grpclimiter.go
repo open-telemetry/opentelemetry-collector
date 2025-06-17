@@ -46,7 +46,7 @@ func setRateLimiterError(ctx context.Context, err error) {
 	}
 }
 
-func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.GRPCClient, error) {
+func NewClientLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.GRPCClient, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
@@ -107,7 +107,7 @@ func NewClientLimiter(ext extensionlimiter.SaturationCheckerProvider) (extension
 	}), nil
 }
 
-func NewServerLimiter(ext extensionlimiter.SaturationCheckerProvider) (extensionmiddleware.GRPCServer, error) {
+func NewServerLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.GRPCServer, error) {
 	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {

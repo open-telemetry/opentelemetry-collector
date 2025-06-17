@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	grpclimiter "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/grpc"
 	httplimiter "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/http"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -51,7 +51,7 @@ func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[comp
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
 			return client.GetHTTPRoundTripper, nil
 		}
-		if limiter, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		if limiter, ok := ext.(limiterhelper.AnyProvider); ok {
 			limiter, err := httplimiter.NewClientLimiter(limiter)
 			if err != nil {
 				return nil, err
@@ -73,7 +73,7 @@ func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
 			return server.GetHTTPHandler, nil
 		}
-		if limiter, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		if limiter, ok := ext.(limiterhelper.AnyProvider); ok {
 			limiter, err := httplimiter.NewServerLimiter(limiter)
 			if err != nil {
 				return nil, err
@@ -95,7 +95,7 @@ func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
 			return client.GetGRPCClientOptions()
 		}
-		if limiter, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		if limiter, ok := ext.(limiterhelper.AnyProvider); ok {
 			lim, err := grpclimiter.NewClientLimiter(limiter)
 			if err != nil {
 				return nil, err
@@ -116,7 +116,7 @@ func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component
 		if server, ok := ext.(extensionmiddleware.GRPCServer); ok {
 			return server.GetGRPCServerOptions()
 		}
-		if limiter, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		if limiter, ok := ext.(limiterhelper.AnyProvider); ok {
 			lim, err := grpclimiter.NewServerLimiter(limiter)
 			if err != nil {
 				return nil, err
@@ -132,9 +132,9 @@ func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component
 // GetBaseLimiters gets a list of basic limiters.  These can be
 // upgraded to any kind of limiter, subject to restrictions documented
 // in that extension interface, using limiterhelper.MiddlewaresToLimiterProvider.
-func GetBaseLimiters(host component.Host, cfgs []Config) ([]extensionlimiter.BaseLimiterProvider, error) {
+func GetBaseLimiters(host component.Host, cfgs []Config) ([]limiterhelper.AnyProvider, error) {
 	var err error
-	var lims []extensionlimiter.BaseLimiterProvider
+	var lims []limiterhelper.AnyProvider
 	all := host.GetExtensions()
 	for _, m := range cfgs {
 		ext, ok := all[m.ID]
@@ -142,7 +142,7 @@ func GetBaseLimiters(host component.Host, cfgs []Config) ([]extensionlimiter.Bas
 			err = multierr.Append(err, resolveFailed(m.ID))
 			continue
 		}
-		if lim, ok := ext.(extensionlimiter.BaseLimiterProvider); ok {
+		if lim, ok := ext.(limiterhelper.AnyProvider); ok {
 			lims = append(lims, lim)
 		} else {
 			// Note: In this case, we skip the middleware

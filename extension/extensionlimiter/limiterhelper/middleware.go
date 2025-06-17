@@ -6,8 +6,7 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 import (
 	"errors"
 
-	"go.uber.org/multierr"
-
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
@@ -17,53 +16,19 @@ var (
 	ErrLimiterConflict = errors.New("limiter implements both rate and resource-limiters")
 )
 
-// middlewareCheck applies consistency checks and returns a valid
-// limiter extension of any known kind.
-func middlewareCheck(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.SaturationCheckerProvider, error) {
-	_, isResource := ext.(extensionlimiter.ResourceLimiterProvider)
-	_, isRate := ext.(extensionlimiter.RateLimiterProvider)
-
-	if isResource && isRate {
-		return nil, ErrLimiterConflict
-	}
-	return ext, nil
-}
-
-// MultipleProvider constructs a combined limiter from an ordered list
-// of middlewares. This constructor ignores middleware configs that
-// are not limiters.
-func MultipleProvider(exts []extensionlimiter.SaturationCheckerProvider) (MultiLimiterProvider, error) {
-	var retErr error
-	var providers MultiLimiterProvider
-	for _, ext := range exts {
-		base, err := middlewareCheck(ext)
-		retErr = multierr.Append(retErr, err)
-		providers = append(providers, base)
-	}
-	return providers, retErr
-}
-
-// MiddlewareToSaturationCheckerProvider returns a base limiter provider
-// from middleware. Returns a package-level error if the middleware
-// does not implement exactly one of the limiter interfaces (i.e.,
-// rate or resource).
-func MiddlewareToSaturationCheckerProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.SaturationCheckerProvider, error) {
-	return getMiddleware(
-		ext,
-		identity[extensionlimiter.SaturationCheckerProvider],
-		baseProvider[extensionlimiter.RateLimiterProvider],
-		baseProvider[extensionlimiter.ResourceLimiterProvider],
-	)
-}
+// AnyProvider is an any extension type, possibly one of the limiter
+// interfaces.  Users will see ErrNotALimiter when the implementation
+// does not match a know limiter interface, ErrLimiterConflict if the
+// extension implements more than one limiter interface.
+type AnyProvider extension.Extension
 
 // MiddlewareToLimiterWrapperProvider returns a limiter wrapper
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
-func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.SaturationCheckerProvider) (LimiterWrapperProvider, error) {
+func MiddlewareToLimiterWrapperProvider(ext AnyProvider) (LimiterWrapperProvider, error) {
 	return getMiddleware(
 		ext,
-		nilError(BaseToLimiterWrapperProvider),
 		nilError(RateToLimiterWrapperProvider),
 		nilError(ResourceToLimiterWrapperProvider),
 	)
@@ -75,10 +40,9 @@ func MiddlewareToLimiterWrapperProvider(ext extensionlimiter.SaturationCheckerPr
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToRateLimiterProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.RateLimiterProvider, error) {
+func MiddlewareToRateLimiterProvider(ext AnyProvider) (extensionlimiter.RateLimiterProvider, error) {
 	return getMiddleware(
 		ext,
-		nilError(BaseToRateLimiterProvider),
 		identity[extensionlimiter.RateLimiterProvider],
 		resourceToRateLimiterError,
 	)
@@ -90,10 +54,9 @@ func MiddlewareToRateLimiterProvider(ext extensionlimiter.SaturationCheckerProvi
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToResourceLimiterProvider(ext extensionlimiter.SaturationCheckerProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+func MiddlewareToResourceLimiterProvider(ext AnyProvider) (extensionlimiter.ResourceLimiterProvider, error) {
 	return getMiddleware(
 		ext,
-		nilError(BaseToResourceLimiterProvider),
 		nilError(RateToResourceLimiterProvider),
 		identity[extensionlimiter.ResourceLimiterProvider],
 	)
@@ -102,37 +65,22 @@ func MiddlewareToResourceLimiterProvider(ext extensionlimiter.SaturationCheckerP
 // getProvider invokes getProvider if any kind of limiter is detected
 // for the given host and middleware configuration.
 func getMiddleware[Out any](
-	ext extensionlimiter.SaturationCheckerProvider,
-	base func(extensionlimiter.SaturationCheckerProvider) (Out, error),
+	ext AnyProvider,
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 ) (Out, error) {
 	var out Out
-	ext, err := middlewareCheck(ext)
-	if err != nil {
-		return out, err
+	res, isResource := ext.(extensionlimiter.ResourceLimiterProvider)
+	rat, isRate := ext.(extensionlimiter.RateLimiterProvider)
+	if isResource && isRate {
+		return out, ErrLimiterConflict
 	}
-	return getProvider(ext, base, rate, resource)
-}
-
-// getProvider handles each limiter kind, case-by-case, for building
-// limiters in a functional style.
-func getProvider[Out any](
-	ext extensionlimiter.SaturationCheckerProvider,
-	base func(extensionlimiter.SaturationCheckerProvider) (Out, error),
-	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
-	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
-) (Out, error) {
-	if lim, ok := ext.(extensionlimiter.ResourceLimiterProvider); ok {
-		return resource(lim)
+	if isResource {
+		return resource(res)
 	}
-	if lim, ok := ext.(extensionlimiter.RateLimiterProvider); ok {
-		return rate(lim)
+	if isRate {
+		return rate(rat)
 	}
-	if lim, ok := ext.(extensionlimiter.SaturationCheckerProvider); ok {
-		return base(lim)
-	}
-	var out Out
 	return out, ErrNotALimiter
 }
 
@@ -141,12 +89,13 @@ func identity[T any](lim T) (T, error) {
 	return lim, nil
 }
 
-// baseProvider returns a base limiter type from any limiter.
-func baseProvider[T extensionlimiter.SaturationCheckerProvider](p T) (extensionlimiter.SaturationCheckerProvider, error) {
-	return p, nil
-}
-
 // nilError converts an infallible constructor to return a nil error.
 func nilError[S, T any](f func(S) T) func(S) (T, error) {
 	return func(s S) (T, error) { return f(s), nil }
+}
+
+// resourceToRateLimiterError represents the impossible conversion
+// from resource limiter to rate limiter.
+func resourceToRateLimiterError(_ extensionlimiter.ResourceLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
+	return nil, ErrNotARateLimiter
 }

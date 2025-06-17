@@ -128,11 +128,7 @@ func (b BlockingRateLimiter) waitFor(ctx context.Context, value int, timer timer
 // resource limiter. Note that the opposite direction (i.e., resource
 // limter acting as rate limiter) is an invalid configuration.
 func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) extensionlimiter.ResourceLimiterProvider {
-	return struct {
-		extensionlimiter.GetSaturationCheckerFunc
-		extensionlimiter.GetResourceLimiterFunc
-	}{
-		blimp.GetSaturationChecker,
+	return extensionlimiter.GetResourceLimiterFunc(
 		func(weight extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.ResourceLimiter, error) {
 			rlim, err := blimp.GetRateLimiter(weight, opts...)
 			if err != nil {
@@ -165,5 +161,5 @@ func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) e
 					}, nil
 				}), nil
 		},
-	}
+	)
 }

@@ -480,3 +480,6 @@ graph TD;
     LimiterWrapper -->|wraps| RateLimiter
     LimiterWrapper -->|wraps| ResourceLimiter
 ```
+
+TODO describe connection with
+https://github.com/elastic/opentelemetry-collector-components/blob/main/processor/ratelimitprocessor/README.md

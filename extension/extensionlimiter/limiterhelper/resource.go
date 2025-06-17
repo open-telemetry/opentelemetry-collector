@@ -182,9 +182,3 @@ func (b BlockingResourceLimiter) WaitFor(ctx context.Context, value int) (extens
 		return rsv.Release, nil
 	}
 }
-
-// resourceToRateLimiterError represents the impossible conversion
-// from resource limiter to rate limiter.
-func resourceToRateLimiterError(_ extensionlimiter.ResourceLimiterProvider) (extensionlimiter.RateLimiterProvider, error) {
-	return nil, ErrNotARateLimiter
-}

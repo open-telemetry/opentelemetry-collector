@@ -14,8 +14,6 @@ import (
 // Limiters are covered by configmiddleware configuration, which
 // is able to construct LimiterWrappers from these providers.
 type ResourceLimiterProvider interface {
-	SaturationCheckerProvider
-
 	GetResourceLimiter(WeightKey, ...Option) (ResourceLimiter, error)
 }
 
@@ -30,11 +28,6 @@ func (f GetResourceLimiterFunc) GetResourceLimiter(key WeightKey, opts ...Option
 	}
 	return f(key, opts...)
 }
-
-var _ ResourceLimiterProvider = struct {
-	GetResourceLimiterFunc
-	GetSaturationCheckerFunc
-}{}
 
 // ResourceLimiter is an interface that an implementation makes
 // available to apply physical limits on quantities such as the number
@@ -55,7 +48,7 @@ type ResourceLimiter interface {
 	//
 	// This is a non-blocking interface; use this interface for
 	// callers that cannot be blocked but will instead schedule a
-	// resume after DelayFrom(). The context is provided for
+	// resume after Delay(). The context is provided for
 	// access to instrumentation and client metadata; the Context
 	// deadline is not used.
 	ReserveResource(context.Context, int) (ResourceReservation, error)
@@ -73,11 +66,6 @@ type ResourceReservation interface {
 	// whether the delay has been reached or not.
 	Release()
 }
-
-var _ ResourceReservation = struct {
-	DelayFunc
-	ReleaseFunc
-}{}
 
 // ReleaseFunc is called when resources have been released after use.
 //
@@ -118,12 +106,24 @@ type ReserveResourceFunc func(ctx context.Context, value int) (ResourceReservati
 // ReserveResource implements a ReserveResource interface method.
 func (f ReserveResourceFunc) ReserveResource(ctx context.Context, value int) (ResourceReservation, error) {
 	if f == nil {
-		return struct {
-			DelayFunc
-			ReleaseFunc
-		}{}, nil
+		return NopResourceReservation{}, nil
 	}
 	return f(ctx, value)
 }
 
-var _ ResourceLimiter = ReserveResourceFunc(nil)
+// NopResourceReservation is a no-op ResourceReservation, Delay()
+// returns an immediate channel, release does nothing.
+type NopResourceReservation struct {
+	DelayFunc
+	ReleaseFunc
+}
+
+var _ ResourceReservation = NopResourceReservation{}
+
+// NopResourceLimiterProvider is a no-op ResourceLimiterProvider.
+// It always returns a NopResourceReservation with nil error.
+type NopResourceLimiterProvider struct {
+	GetResourceLimiterFunc
+}
+
+var _ ResourceLimiterProvider = NopResourceLimiterProvider{}

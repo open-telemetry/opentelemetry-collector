@@ -15,8 +15,6 @@ import (
 // Limiters are covered by configmiddleware configuration, which is
 // able to construct LimiterWrappers from these providers.
 type RateLimiterProvider interface {
-	SaturationCheckerProvider
-
 	// GetRateLimiter returns a rate limiter for a weight key.
 	GetRateLimiter(WeightKey, ...Option) (RateLimiter, error)
 }
@@ -28,15 +26,12 @@ type GetRateLimiterFunc func(WeightKey, ...Option) (RateLimiter, error)
 // RateLimiter implements RateLimiterProvider.
 func (f GetRateLimiterFunc) GetRateLimiter(key WeightKey, opts ...Option) (RateLimiter, error) {
 	if f == nil {
-		return nil, nil
+		return NewRateLimiterImpl(nil), nil
 	}
 	return f(key, opts...)
 }
 
-var _ RateLimiterProvider = struct {
-	GetRateLimiterFunc
-	GetSaturationCheckerFunc
-}{}
+var _ RateLimiterProvider = GetRateLimiterFunc(nil)
 
 // RateLimiter is an interface that an implementation makes available
 // to apply time-based limits on quantities such as the number of
@@ -55,13 +50,10 @@ type RateLimiter interface {
 	// This is a non-blocking interface; use this interface for
 	// callers that cannot be blocked but will instead schedule a
 	// resume after Delay(). The context is provided for access to
-	// instrumentation and client metadata; the Context deadline
+	// instrumentation and client metadata; the Context deadline 
 	// is not used, should be considered by the caller.
 	ReserveRate(context.Context, int) (RateReservation, error)
 }
-
-// A rate limiter can be made up of two functions.
-var _ RateLimiter = ReserveRateFunc(nil)
 
 // RateReservation is modeled on pkg.go.dev/golang.org/x/time/rate#Reservation
 type RateReservation interface {
@@ -78,10 +70,10 @@ type RateReservation interface {
 // ReserveRateFunc is a functional way to construct ReserveRate functions.
 type ReserveRateFunc func(context.Context, int) (RateReservation, error)
 
-// Reserve implements part of the RateReserveer interface.
+// Reserve implements part of the RateLimiter interface.
 func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) (RateReservation, error) {
 	if f == nil {
-		return nil, nil
+		return NewRateReservationImpl(nil, nil), nil
 	}
 	return f(ctx, value)
 }
@@ -108,8 +100,30 @@ func (f CancelFunc) Cancel() {
 	f.Cancel()
 }
 
-// A rate limiter can be made up of three functions.
-var _ RateReservation = struct {
+func NewRateLimiterProviderImpl(f GetRateLimiterFunc) RateLimiterProvider {
+	return f
+}
+
+func NewRateLimiterImpl(f ReserveRateFunc) RateLimiter {
+	return f 
+}
+
+// rateReservationImpl is a struct that implements RateReservation.
+// The zero state is a no-op.
+type rateReservationImpl struct {
 	WaitTimeFunc
 	CancelFunc
-}{}
+}
+
+var _ RateReservation = rateReservationImpl{}
+
+func NewRateReservationImpl(wf WaitTimeFunc, cf CancelFunc) RateReservation {
+	return rateReservationImpl{
+		WaitTimeFunc: wf,
+		CancelFunc: cf,
+	}
+}
+
+func NewNopRateReservation() RateReservation {
+	return rateReservationImpl{}
+}
