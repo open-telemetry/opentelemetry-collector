@@ -7,13 +7,13 @@ package extensionlimiter // import "go.opentelemetry.io/collector/extension/exte
 // limiter interfaces.  This serves as a marker for implementations
 // which provider rate limiters of any (one)kind.
 type AnyProvider interface {
-	// recognizedProvider may be embedded using an AnyProviderImpl.
-	recognizedProvider()
+	// unexportedProviderFunc may be embedded using an AnyProviderImpl.
+	unexportedProviderFunc()
 }
 
 // AnyProviderImpl can be embedded as a marker that a component
 // implements one of the rate limiters.
 type AnyProviderImpl struct {}
 
-func (AnyProviderImpl) recognizedProvider() {}
+func (AnyProviderImpl) unexportedProviderFunc() {}
 

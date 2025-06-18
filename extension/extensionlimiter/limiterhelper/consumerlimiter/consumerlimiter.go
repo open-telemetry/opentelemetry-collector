@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package limiterhelper // import "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
+package consumerlimiter // import "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/consumerlimiter"
 
 import (
 	"context"
@@ -9,14 +9,26 @@ import (
 
 	"go.uber.org/multierr"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+// Config is the standard pipeline configuration for limiting a
+// consumer interface by specific signal.
+type Config struct {
+	RequestCount component.ID `mapstructure:"request_count"`
+	RequestItems component.ID `mapstructure:"request_items"`
+	RequestBytes component.ID `mapstructure:"request_bytes"`
+}
 
 // Traits object interface is generalized by P the pipeline data type
 // (e.g., ptrace.Traces) and C the consumer type (e.g.,
@@ -121,7 +133,7 @@ func (profileTraits) consume(ctx context.Context, data pprofile.Profiles, next x
 func limitOne[P any, C any](
 	next C,
 	keys []extensionlimiter.WeightKey,
-	provider WrapperProvider,
+	provider limiterhelper.WrapperProvider,
 	m traits[P, C],
 	key extensionlimiter.WeightKey,
 	opts []consumer.Option,
@@ -148,7 +160,7 @@ func limitOne[P any, C any](
 func newLimited[P any, C any](
 	next C,
 	keys []extensionlimiter.WeightKey,
-	provider WrapperProvider,
+	provider limiterhelper.WrapperProvider,
 	m traits[P, C],
 	opts ...consumer.Option,
 ) (C, error) {
@@ -172,26 +184,49 @@ func newLimited[P any, C any](
 	return next, multierr.Append(err1, multierr.Append(err2, err3))
 }
 
-// NewLimitedTraces applies a limiter using the provider over keys before calling next.
-func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Traces, error) {
-	return newLimited(next, keys, provider, traceTraits{},
-		consumer.WithCapabilities(next.Capabilities()))
-}
+// // NewLimitedTraces applies a limiter using the provider over keys before calling next.
+// func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider limiterhelper.WrapperProvider) (consumer.Traces, error) {
+// 	return newLimited(next, keys, provider, traceTraits{},
+// 		consumer.WithCapabilities(next.Capabilities()))
+// }
 
-// NewLimitedLogs applies a limiter using the provider over keys before calling next.
-func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Logs, error) {
-	return newLimited(next, keys, provider, logTraits{},
-		consumer.WithCapabilities(next.Capabilities()))
-}
+// // NewLimitedLogs applies a limiter using the provider over keys before calling next.
+// func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider limiterhelper.WrapperProvider) (consumer.Logs, error) {
+// 	return newLimited(next, keys, provider, logTraits{},
+// 		consumer.WithCapabilities(next.Capabilities()))
+// }
 
-// NewLimitedMetrics applies a limiter using the provider over keys before calling next.
-func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Metrics, error) {
-	return newLimited(next, keys, provider, metricTraits{},
-		consumer.WithCapabilities(next.Capabilities()))
-}
+// // NewLimitedMetrics applies a limiter using the provider over keys before calling next.
+// func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider limiterhelper.WrapperProvider) (consumer.Metrics, error) {
+// 	return newLimited(next, keys, provider, metricTraits{},
+// 		consumer.WithCapabilities(next.Capabilities()))
+// }
 
-// NewLimitedProfiles applies a limiter using the provider over keys before calling next.
-func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider WrapperProvider) (xconsumer.Profiles, error) {
-	return newLimited(next, keys, provider, profileTraits{},
-		consumer.WithCapabilities(next.Capabilities()))
+// // NewLimitedProfiles applies a limiter using the provider over keys before calling next.
+// func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider limiterhelper.WrapperProvider) (xconsumer.Profiles, error) {
+// 	return newLimited(next, keys, provider, profileTraits{},
+// 		consumer.WithCapabilities(next.Capabilities()))
+// }
+
+// type stabilityFunc func() component.StabilityLevel
+
+// 	// TracesStability gets the stability level of the Traces receiver.
+// 	TracesStability() component.StabilityLevel
+// 	// MetricsStability gets the stability level of the Metrics receiver.
+// 	MetricsStability() component.StabilityLevel
+
+
+func NewLimitedFactory(fact xreceiver.Factory) xreceiver.Factory {
+	return configureLimits{
+		TypeFunc: fact.Type,
+		CreateDefaultConfigFunc: fact.CreateDefaultConfig,
+		TracesStabilityFunc: fact.TracesStability,
+		MetricsStabilityFunc: fact.MetricsStability,
+		LogsStabilityFunc: fact.LogsStability,
+		ProfilesStabilityFunc: fact.ProfilesStability,
+		CreateTracesFunc: fact.CreateTraces,
+		CreateMetricsFunc: fact.CreateMetrics,
+		CreateLogsFunc: fact.CreateLogs,
+		CreateProfilesFunc: fact.CreateProfiles,
+	}
 }

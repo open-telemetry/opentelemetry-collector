@@ -41,37 +41,40 @@ type Factory interface {
 // CreateProfilesFunc is the equivalent of Factory.CreateProfiles.
 type CreateProfilesFunc func(context.Context, receiver.Settings, component.Config, xconsumer.Profiles) (Profiles, error)
 
+// ProfilesStabilityFunc is a functional way to construct Factory implementations.
+type ProfilesStabilityFunc func() component.StabilityLevel
+
+func (f ProfilesStabilityFunc) ProfilesStability() component.StabilityLevel {
+	if f == nil {
+		return component.StabilityLevelUndefined
+	}
+	return f()
+}
+
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factoryOpts)
+	applyOption(o *factoryOpts, cfgType component.Type)
 }
 
 // factoryOptionFunc is a FactoryOption created through a function.
-type factoryOptionFunc func(*factoryOpts)
+type factoryOptionFunc func(*factoryOpts, component.Type)
 
-func (f factoryOptionFunc) applyOption(o *factoryOpts) {
-	f(o)
+func (f factoryOptionFunc) applyOption(o *factoryOpts, cfgType component.Type) {
+	f(o, cfgType)
 }
 
 type factory struct {
 	receiver.Factory
-	createProfilesFunc     CreateProfilesFunc
-	profilesStabilityLevel component.StabilityLevel
+	CreateProfilesFunc
+	ProfilesStabilityFunc
 }
 
-func (f *factory) ProfilesStability() component.StabilityLevel {
-	return f.profilesStabilityLevel
-}
-
-func (f *factory) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
-	if f.createProfilesFunc == nil {
+func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
+	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
-	}
-	return f.createProfilesFunc(ctx, set, cfg, next)
+	return f(ctx, set, cfg, next)
 }
 
 type factoryOpts struct {
@@ -79,32 +82,44 @@ type factoryOpts struct {
 	*factory
 }
 
+type Creator[A, B any] func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) 
+
+func typeChecked[A, B any](cf Creator[A, B], cfgType component.Type) Creator[A, B] {
+	return func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) {
+		if set.ID.Type() != cfgType {
+			var zero B
+			return zero, internal.ErrIDMismatch(set.ID, cfgType)
+		}
+		return cf(ctx, set, cfg, next)
+	}	
+}
+
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces receiver.CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factoryOpts, cfgType component.Type) {
 		o.opts = append(o.opts, receiver.WithTraces(createTraces, sl))
 	})
 }
 
 // WithMetrics overrides the default "error not supported" implementation for Factory.CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics receiver.CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factoryOpts, cfgType component.Type) {
 		o.opts = append(o.opts, receiver.WithMetrics(createMetrics, sl))
 	})
 }
 
 // WithLogs overrides the default "error not supported" implementation for Factory.CreateLogs and the default "undefined" stability level.
 func WithLogs(createLogs receiver.CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
+	return factoryOptionFunc(func(o *factoryOpts, cfgType component.Type) {
 		o.opts = append(o.opts, receiver.WithLogs(createLogs, sl))
 	})
 }
 
 // WithProfiles overrides the default "error not supported" implementation for Factory.CreateProfiles and the default "undefined" stability level.
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factoryOpts) {
-		o.profilesStabilityLevel = sl
-		o.createProfilesFunc = createProfiles
+	return factoryOptionFunc(func(o *factoryOpts, cfgType component.Type) {
+		o.ProfilesStabilityFunc = sl.Self
+		o.CreateProfilesFunc = CreateProfilesFunc(typeChecked[xconsumer.Profiles, Profiles](Creator[xconsumer.Profiles, Profiles](createProfiles), cfgType))
 	})
 }
 
@@ -112,7 +127,7 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	opts := factoryOpts{factory: &factory{}}
 	for _, opt := range options {
-		opt.applyOption(&opts)
+		opt.applyOption(&opts, cfgType)
 	}
 	opts.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
 	return opts.factory

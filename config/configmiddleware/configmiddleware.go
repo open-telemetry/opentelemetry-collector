@@ -30,12 +30,7 @@ var (
 )
 
 // Middleware defines the extension ID for a middleware component.
-type Config struct {
-	// ID specifies the name of the extension to use.
-	ID component.ID `mapstructure:"id,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
-}
+type Config component.ID
 
 func resolveFailed(id component.ID) error {
 	return fmt.Errorf("failed to resolve middleware %q: %w", id, errMiddlewareNotFound)
@@ -47,7 +42,7 @@ func resolveFailed(id component.ID) error {
 // found, an error is returned.  This should only be used by HTTP
 // clients.
 func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[component.ID]component.Component) (func(http.RoundTripper) (http.RoundTripper, error), error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
 			return client.GetHTTPRoundTripper, nil
 		}
@@ -60,7 +55,7 @@ func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[comp
 		}
 		return nil, errNotHTTPClient
 	}
-	return nil, resolveFailed(m.ID)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetHTTPServerHandler attempts to select the appropriate
@@ -69,7 +64,7 @@ func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[comp
 // found, an error is returned.  This should only be used by HTTP
 // servers.
 func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component.ID]component.Component) (func(http.Handler) (http.Handler, error), error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
 			return server.GetHTTPHandler, nil
 		}
@@ -83,7 +78,7 @@ func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component
 		return nil, errNotHTTPServer
 	}
 
-	return nil, resolveFailed(m.ID)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetGRPCClientOptions attempts to select the appropriate
@@ -91,7 +86,7 @@ func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component
 // returns the gRPC dial options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC clients.
 func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
 			return client.GetGRPCClientOptions()
 		}
@@ -104,7 +99,7 @@ func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component
 		}
 		return nil, errNotGRPCClient
 	}
-	return nil, resolveFailed(m.ID)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetGRPCServerOptions attempts to select the appropriate
@@ -112,7 +107,7 @@ func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component
 // returns the gRPC server options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC servers.
 func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.ServerOption, error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if server, ok := ext.(extensionmiddleware.GRPCServer); ok {
 			return server.GetGRPCServerOptions()
 		}
@@ -126,7 +121,7 @@ func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component
 		return nil, errNotGRPCServer
 	}
 
-	return nil, resolveFailed(m.ID)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetBaseLimiters gets a list of basic limiters.  These can be
@@ -137,9 +132,9 @@ func GetBaseLimiters(host component.Host, cfgs []Config) ([]extensionlimiter.Any
 	var lims []extensionlimiter.AnyProvider
 	all := host.GetExtensions()
 	for _, m := range cfgs {
-		ext, ok := all[m.ID]
+		ext, ok := all[component.ID(m)]
 		if !ok {
-			err = multierr.Append(err, resolveFailed(m.ID))
+			err = multierr.Append(err, resolveFailed(component.ID(m)))
 			continue
 		}
 		if lim, ok := ext.(extensionlimiter.AnyProvider); ok {

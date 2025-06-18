@@ -17,8 +17,8 @@ import (
 )
 
 func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTTPClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
+	wp, err1 := limiterhelper.AnyToWrapperProvider(ext)
+	rp, err2 := limiterhelper.AnyToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
@@ -87,8 +87,8 @@ func (rb *rateLimitedBody) Close() error {
 }
 
 func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTTPServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
+	wp, err1 := limiterhelper.AnyToWrapperProvider(ext)
+	rp, err2 := limiterhelper.AnyToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}

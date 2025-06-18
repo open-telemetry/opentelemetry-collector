@@ -15,49 +15,49 @@ var (
 	ErrLimiterConflict = errors.New("limiter implements both rate and resource-limiters")
 )
 
-// MiddlewareToWrapperProvider returns a limiter wrapper
-// provider from middleware. Returns a package-level error if the
-// middleware does not implement exactly one of the limiter
-// interfaces (i.e., rate or resource).
-func MiddlewareToWrapperProvider(ext extensionlimiter.AnyProvider) (WrapperProvider, error) {
-	return getMiddleware(
+// AnyToWrapperProvider returns a limiter wrapper provider from
+// middleware. Returns a package-level error if the middleware does
+// not implement exactly one of the limiter interfaces (i.e., rate or
+// resource).
+func AnyToWrapperProvider(ext extensionlimiter.AnyProvider) (WrapperProvider, error) {
+	return getAny(
 		ext,
 		nilError(RateToWrapperProvider),
 		nilError(ResourceToWrapperProvider),
 	)
 }
 
-// MiddlewareToRateLimiterProvider allows a base limiter provider to
-// act as a rate limiter provider. This encodes the fact that a
-// resource limiter extension cannot be adapted to a rate limiter
+// AnyToRateLimiterProvider allows a base limiter provider to act as a
+// rate limiter provider. This encodes the fact that a resource
+// limiter extension cannot be adapted to a rate limiter
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToRateLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.RateLimiterProvider, error) {
-	return getMiddleware(
+func AnyToRateLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.RateLimiterProvider, error) {
+	return getAny(
 		ext,
 		identity[extensionlimiter.RateLimiterProvider],
 		resourceToRateLimiterError,
 	)
 }
 
-// MiddlewareToResourceLimiterProvider allows a base limiter provider
-// to act as a resource provider. This enforces that a resource
-// limiter extension cannot be adapted to a resource limiter
+// AnyToResourceLimiterProvider allows a base limiter provider to act
+// as a resource provider. This enforces that a resource limiter
+// extension cannot be adapted to a resource limiter
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToResourceLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.ResourceLimiterProvider, error) {
-	return getMiddleware(
+func AnyToResourceLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+	return getAny(
 		ext,
 		nilError(RateToResourceLimiterProvider),
 		identity[extensionlimiter.ResourceLimiterProvider],
 	)
 }
 
-// getProvider invokes getProvider if any kind of limiter is detected
-// for the given host and middleware configuration.
-func getMiddleware[Out any](
+// getAny invokes getProvider if any kind of limiter is detected for
+// the given host and middleware configuration.
+func getAny[Out any](
 	ext extensionlimiter.AnyProvider,
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
@@ -77,14 +77,16 @@ func getMiddleware[Out any](
 	return out, ErrNotALimiter
 }
 
-// identity is a pass-through for the correct provider type.
+// identity is a pass-through for the matching provider type.
 func identity[T any](lim T) (T, error) {
 	return lim, nil
 }
 
 // nilError converts an infallible constructor to return a nil error.
 func nilError[S, T any](f func(S) T) func(S) (T, error) {
-	return func(s S) (T, error) { return f(s), nil }
+	return func(s S) (T, error) {
+		return f(s), nil
+	}
 }
 
 // resourceToRateLimiterError represents the impossible conversion

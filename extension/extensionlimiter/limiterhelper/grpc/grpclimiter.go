@@ -50,8 +50,8 @@ func setRateLimiterError(ctx context.Context, err error) {
 }
 
 func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRPCClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
+	wp, err1 := limiterhelper.AnyToWrapperProvider(ext)
+	rp, err2 := limiterhelper.AnyToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
@@ -111,8 +111,8 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 }
 
 func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRPCServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
-	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
+	wp, err1 := limiterhelper.AnyToWrapperProvider(ext)
+	rp, err2 := limiterhelper.AnyToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}

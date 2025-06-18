@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/consumerlimiter"
 )
 
 type SanitizedURLPath string
@@ -62,6 +63,9 @@ type Protocols struct {
 type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
+
+	// Limiters allows applying limiter extensions for request count, items, and bytes.
+	Limiters consumerlimiter.Config `mapstructure:"limiters"`
 }
 
 var _ component.Config = (*Config)(nil)

@@ -110,6 +110,10 @@ const (
 	StabilityLevelStable
 )
 
+func (sl *StabilityLevel) Self() StabilityLevel {
+	return *sl
+}
+
 func (sl *StabilityLevel) UnmarshalText(in []byte) error {
 	str := strings.ToLower(string(in))
 	switch str {
@@ -193,4 +197,18 @@ type CreateDefaultConfigFunc func() Config
 // CreateDefaultConfig implements Factory.CreateDefaultConfig().
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
+}
+
+type factoryImpl struct {
+	TypeFunc
+	CreateDefaultConfigFunc
+}
+
+var _ Factory = factoryImpl{}
+
+func NewFactoryImpl(tf TypeFunc, cf CreateDefaultConfigFunc) Factory {
+	return factoryImpl{
+		TypeFunc: tf,
+		CreateDefaultConfigFunc: cf,
+	}
 }
