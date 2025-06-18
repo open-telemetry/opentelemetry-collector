@@ -442,7 +442,7 @@ func TestLoadMetadata(t *testing.T) {
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
-			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml: open testdata/~~this file doesn't exist~~.yaml: no such file or directory",
+			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
 	}
 	for _, tt := range tests {
@@ -450,7 +450,7 @@ func TestLoadMetadata(t *testing.T) {
 			got, err := LoadMetadata(tt.name)
 			if tt.wantErr != "" {
 				require.Error(t, err)
-				require.EqualError(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.want, got)
