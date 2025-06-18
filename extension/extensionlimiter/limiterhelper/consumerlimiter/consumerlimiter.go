@@ -15,11 +15,11 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/xreceiver"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
 // Config is the standard pipeline configuration for limiting a
@@ -215,18 +215,21 @@ func newLimited[P any, C any](
 // 	// MetricsStability gets the stability level of the Metrics receiver.
 // 	MetricsStability() component.StabilityLevel
 
-
 func NewLimitedFactory(fact xreceiver.Factory) xreceiver.Factory {
-	return configureLimits{
-		TypeFunc: fact.Type,
-		CreateDefaultConfigFunc: fact.CreateDefaultConfig,
-		TracesStabilityFunc: fact.TracesStability,
-		MetricsStabilityFunc: fact.MetricsStability,
-		LogsStabilityFunc: fact.LogsStability,
-		ProfilesStabilityFunc: fact.ProfilesStability,
-		CreateTracesFunc: fact.CreateTraces,
-		CreateMetricsFunc: fact.CreateMetrics,
-		CreateLogsFunc: fact.CreateLogs,
-		CreateProfilesFunc: fact.CreateProfiles,
-	}
+	return xreceiver.NewFactoryImpl(
+		receiver.NewFactoryImpl(
+			component.NewFactoryImpl(
+				fact.Type,
+				fact.CreateDefaultConfig,
+			),
+			fact.CreateTraces,
+			fact.TracesStability,
+			fact.CreateMetrics,
+			fact.MetricsStability,
+			fact.CreateLogs,
+			fact.LogsStability,
+		),
+		fact.CreateProfiles,
+		fact.ProfilesStability,
+	)
 }

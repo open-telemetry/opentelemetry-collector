@@ -93,13 +93,13 @@ type Factory interface {
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factory, cfgType component.Type)
+	applyOption(o *factoryImpl, cfgType component.Type)
 }
 
 // factoryOptionFunc is an FactoryOption created through a function.
-type factoryOptionFunc func(*factory, component.Type)
+type factoryOptionFunc func(*factoryImpl, component.Type)
 
-func (f factoryOptionFunc) applyOption(o *factory, cfgType component.Type) {
+func (f factoryOptionFunc) applyOption(o *factoryImpl, cfgType component.Type) {
 	f(o, cfgType)
 }
 
@@ -121,9 +121,8 @@ type MetricsStabilityFunc func() component.StabilityLevel
 // LogsStabilityFunc is a functional way to construct Factory implementations.
 type LogsStabilityFunc func() component.StabilityLevel
 
-type factory struct {
-	component.TypeFunc
-	component.CreateDefaultConfigFunc
+type factoryImpl struct {
+	component.Factory
 	CreateTracesFunc
 	TracesStabilityFunc
 	CreateMetricsFunc
@@ -132,7 +131,9 @@ type factory struct {
 	LogsStabilityFunc
 }
 
-func (f *factory) unexportedFactoryFunc() {}
+var _ Factory = factoryImpl{}
+
+func (f factoryImpl) unexportedFactoryFunc() {}
 
 func (f TracesStabilityFunc) TracesStability() component.StabilityLevel {
 	if f == nil {
@@ -155,7 +156,7 @@ func (f LogsStabilityFunc) LogsStability() component.StabilityLevel {
 	return f()
 }
 
-type Creator[A, B any] func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error) 
+type Creator[A, B any] func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error)
 
 func typeChecked[A, B any](cf Creator[A, B], cfgType component.Type) Creator[A, B] {
 	return func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error) {
@@ -164,7 +165,7 @@ func typeChecked[A, B any](cf Creator[A, B], cfgType component.Type) Creator[A, 
 			return zero, internal.ErrIDMismatch(set.ID, cfgType)
 		}
 		return cf(ctx, set, cfg, next)
-	}	
+	}
 }
 
 func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
@@ -193,7 +194,7 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory, cfgType component.Type) {
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.TracesStabilityFunc = sl.Self
 		o.CreateTracesFunc = CreateTracesFunc(typeChecked[consumer.Traces, Traces](Creator[consumer.Traces, Traces](createTraces), cfgType))
 	})
@@ -201,7 +202,7 @@ func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) Fact
 
 // WithMetrics overrides the default "error not supported" implementation for Factory.CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory, cfgType component.Type) {
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.MetricsStabilityFunc = sl.Self
 		o.CreateMetricsFunc = CreateMetricsFunc(typeChecked[consumer.Metrics, Metrics](Creator[consumer.Metrics, Metrics](createMetrics), cfgType))
 	})
@@ -209,7 +210,7 @@ func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) F
 
 // WithLogs overrides the default "error not supported" implementation for Factory.CreateLogs and the default "undefined" stability level.
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory, cfgType component.Type) {
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.LogsStabilityFunc = sl.Self
 		o.CreateLogsFunc = CreateLogsFunc(typeChecked[consumer.Logs, Logs](Creator[consumer.Logs, Logs](createLogs), cfgType))
 	})
@@ -217,12 +218,31 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	f := &factory{
-		TypeFunc:                cfgType.Self,
-		CreateDefaultConfigFunc: createDefaultConfig,
+	f := factoryImpl{
+		Factory: component.NewFactoryImpl(cfgType.Self, createDefaultConfig),
 	}
 	for _, opt := range options {
-		opt.applyOption(f, cfgType)
+		opt.applyOption(&f, cfgType)
 	}
 	return f
+}
+
+func NewFactoryImpl(
+	factory component.Factory,
+	tracesFunc CreateTracesFunc,
+	tracesStab TracesStabilityFunc,
+	metricsFunc CreateMetricsFunc,
+	mtricsStab MetricsStabilityFunc,
+	createLogs CreateLogsFunc,
+	logsStab LogsStabilityFunc,
+) Factory {
+	return factoryImpl{
+		Factory:              factory,
+		CreateTracesFunc:     tracesFunc,
+		TracesStabilityFunc:  tracesStab,
+		CreateMetricsFunc:    metricsFunc,
+		MetricsStabilityFunc: mtricsStab,
+		CreateLogsFunc:       createLogs,
+		LogsStabilityFunc:    logsStab,
+	}
 }

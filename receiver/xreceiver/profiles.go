@@ -64,11 +64,13 @@ func (f factoryOptionFunc) applyOption(o *factoryOpts, cfgType component.Type) {
 	f(o, cfgType)
 }
 
-type factory struct {
+type factoryImpl struct {
 	receiver.Factory
 	CreateProfilesFunc
 	ProfilesStabilityFunc
 }
+
+var _ Factory = factoryImpl{}
 
 func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Settings, cfg component.Config, next xconsumer.Profiles) (Profiles, error) {
 	if f == nil {
@@ -79,7 +81,7 @@ func (f CreateProfilesFunc) CreateProfiles(ctx context.Context, set receiver.Set
 
 type factoryOpts struct {
 	opts []receiver.FactoryOption
-	*factory
+	factoryImpl
 }
 
 type Creator[A, B any] func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) 
@@ -125,10 +127,22 @@ func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	opts := factoryOpts{factory: &factory{}}
+	var opts factoryOpts
 	for _, opt := range options {
 		opt.applyOption(&opts, cfgType)
 	}
 	opts.Factory = receiver.NewFactory(cfgType, createDefaultConfig, opts.opts...)
-	return opts.factory
+	return opts.factoryImpl
+}
+
+func NewFactoryImpl(
+	factory receiver.Factory,
+	profilesFunc CreateProfilesFunc,
+	profilesStab ProfilesStabilityFunc,
+) Factory {
+	return factoryImpl{
+		Factory: factory,
+		CreateProfilesFunc: profilesFunc,
+		ProfilesStabilityFunc: profilesStab,
+	}
 }
