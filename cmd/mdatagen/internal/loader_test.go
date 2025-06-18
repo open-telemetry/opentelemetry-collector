@@ -5,6 +5,7 @@ package internal
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,17 +19,16 @@ func TestTwoPackagesInDirectory(t *testing.T) {
 	contents, err := os.ReadFile("testdata/twopackages.yaml")
 	require.NoError(t, err)
 	tempDir := t.TempDir()
-	t.Chdir(tempDir)
+	metadataPath := filepath.Join(tempDir, "metadata.yaml")
 	// we create a trivial module and packages to avoid having invalid go checked into our test directory.
-	require.NoError(t, os.WriteFile("go.mod", []byte("module twopackages"), 0644))
-	require.NoError(t, os.WriteFile("package1.go", []byte("package package1"), 0644))
-	require.NoError(t, os.WriteFile("package2.go", []byte("package package2"), 0644))
-	require.NoError(t, os.WriteFile("metadata.yaml", contents, 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "go.mod"), []byte("module twopackages"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package1.go"), []byte("package package1"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package2.go"), []byte("package package2"), 0o600))
+	require.NoError(t, os.WriteFile(metadataPath, contents, 0o600))
 
-	_, err = LoadMetadata("metadata.yaml")
+	_, err = LoadMetadata(metadataPath)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "unable to determine package name: [go list -f {{.ImportPath}}] failed: (stderr) found packages package1 (package1.go) and package2 (package2.go)")
-
 }
 
 func TestLoadMetadata(t *testing.T) {
