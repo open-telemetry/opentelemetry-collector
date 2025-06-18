@@ -45,18 +45,23 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will create a new branch (for a new release, e.g. `v0.127.0`). Bugfix releases are currently out of scope for this action/script.
-   - Make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
-   - If the above does not work, the underlying script (./.github/workflows/scripts/release-branch.sh) can be tested and run locally passing appropriate variables and arguments for upstream name, release series, etc.
-
-5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
+4. On your local machine, make sure you are on the `main` branch with the latest changes from step 3. Tag the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
    - `make push-tags MODSET=beta` for the beta modules group,
    - `make push-tags MODSET=stable` for the stable modules group, only if there were changes since the last release.
    
-6. Wait for the new tag build to pass successfully.
+   **Note**: Pushing the **beta** tags will automatically trigger the [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml) GitHub Action, which will create the release branch (e.g. `release/v0.127.x`) from the commit that prepared the release. Pushing stable tags, if required, will not trigger creation of an additional release branch.
+
+5. Wait for the "Automation - Release Branch" workflow to complete successfully. This workflow will automatically:
+   - Detect the version from the pushed beta tags
+   - Use the commit on which the tags were pushed as the "prepare release" commit
+   - Create a new release branch (e.g. `release/v0.127.x`) from that commit
+   
+   If the workflow fails, you can check the [Actions tab](https://github.com/open-telemetry/opentelemetry-collector/actions) for details. The underlying script (./.github/workflows/scripts/release-branch.sh) can also be tested and run locally if needed by setting the GITHUB_REF environment variable (e.g., `GITHUB_REF=refs/tags/v0.85.0 ./.github/workflows/scripts/release-branch.sh`).
+   
+6. Wait for the tag-triggered build workflows to pass successfully.
 
 7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
