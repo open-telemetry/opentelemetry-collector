@@ -62,7 +62,12 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	err := c.consumer.ConsumeLogs(ctx, ld)
 	if err != nil {
-		attrs = &c.withFailureAttrs
+		if IsDownstream(err) {
+			attrs = &c.withRefusedAttrs
+		} else {
+			attrs = &c.withFailureAttrs
+			err = MarkAsDownstream(err)
+		}
 	}
 	return err
 }

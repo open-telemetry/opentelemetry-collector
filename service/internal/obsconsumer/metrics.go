@@ -62,7 +62,12 @@ func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 
 	err := c.consumer.ConsumeMetrics(ctx, md)
 	if err != nil {
-		attrs = &c.withFailureAttrs
+		if IsDownstream(err) {
+			attrs = &c.withRefusedAttrs
+		} else {
+			attrs = &c.withFailureAttrs
+			err = MarkAsDownstream(err)
+		}
 	}
 	return err
 }

@@ -162,6 +162,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := obsconsumer.MarkAsDownstream(expectedErr)
 	mockConsumer := &mockMetricsConsumer{err: expectedErr}
 
 	reader := sdkmetric.NewManualReader()
@@ -182,7 +183,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 	m.SetEmptyGauge().DataPoints().AppendEmpty()
 
 	err = consumer.ConsumeMetrics(ctx, md)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var metrics metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &metrics)
@@ -303,6 +304,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
+	downstreamErr := obsconsumer.MarkAsDownstream(expectedErr)
 	mockConsumer := &mockMetricsConsumer{}
 
 	reader := sdkmetric.NewManualReader()
@@ -335,7 +337,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	m := sm.Metrics().AppendEmpty()
 	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	err = consumer.ConsumeMetrics(ctx, md2)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	// Third batch: 2 successful items
 	mockConsumer.err = nil
@@ -357,7 +359,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	m = sm.Metrics().AppendEmpty()
 	m.SetEmptyGauge().DataPoints().AppendEmpty()
 	err = consumer.ConsumeMetrics(ctx, md4)
-	assert.Equal(t, expectedErr, err)
+	assert.Equal(t, downstreamErr, err)
 
 	var metrics metricdata.ResourceMetrics
 	err = reader.Collect(ctx, &metrics)

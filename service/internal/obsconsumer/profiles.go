@@ -63,7 +63,12 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 
 	err := c.consumer.ConsumeProfiles(ctx, pd)
 	if err != nil {
-		attrs = &c.withFailureAttrs
+		if IsDownstream(err) {
+			attrs = &c.withRefusedAttrs
+		} else {
+			attrs = &c.withFailureAttrs
+			err = MarkAsDownstream(err)
+		}
 	}
 	return err
 }

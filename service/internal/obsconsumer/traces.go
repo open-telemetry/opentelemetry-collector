@@ -62,7 +62,12 @@ func (c obsTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 	err := c.consumer.ConsumeTraces(ctx, td)
 	if err != nil {
-		attrs = &c.withFailureAttrs
+		if IsDownstream(err) {
+			attrs = &c.withRefusedAttrs
+		} else {
+			attrs = &c.withFailureAttrs
+			err = MarkAsDownstream(err)
+		}
 	}
 	return err
 }
