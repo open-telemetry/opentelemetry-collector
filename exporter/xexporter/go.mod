@@ -85,8 +85,8 @@ replace go.opentelemetry.io/collector/extension/xextension => ../../extension/xe
 
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
-replace go.opentelemetry.io/collector/confmap => ../../confmap
-
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/client => ../../client
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
