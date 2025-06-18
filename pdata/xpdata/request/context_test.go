@@ -7,27 +7,38 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/pdata/xpdata/request/internal"
 )
 
-func BenchmarkEncodeDecodeContext(b *testing.B) {
-	spanCtx := fakeSpanContext(b)
+func TestEncodeDecodeContext(t *testing.T) {
+	spanCtx := fakeSpanContext(t)
+	clientMetadata := client.NewMetadata(map[string][]string{
+		"key1": {"value1"},
+		"key2": {"value2", "value3"},
+	})
+
+	// Encode a context with a span and client metadata
 	ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
+	ctx = client.NewContext(ctx, client.Info{
+		Metadata: clientMetadata,
+	})
+	reqCtx := encodeContext(ctx)
+	buf, err := reqCtx.Marshal()
+	require.NoError(t, err)
 
-	b.ResetTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		reqCtx := encodeContext(ctx)
-		buf, err := reqCtx.Marshal()
-		require.NoError(b, err)
+	// Decode the context
+	gotReqCtx := internal.RequestContext{}
+	err = gotReqCtx.Unmarshal(buf)
+	require.NoError(t, err)
+	gotCtx := decodeContext(context.Background(), &gotReqCtx)
+	assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
+	assert.Equal(t, clientMetadata, client.FromContext(gotCtx).Metadata)
 
-		gotReqCtx := internal.RequestContext{}
-		err = gotReqCtx.Unmarshal(buf)
-		require.NoError(b, err)
-		gotCtx := decodeContext(&gotReqCtx)
-		require.Equal(b, spanCtx, trace.SpanContextFromContext(gotCtx))
-	}
+	// Decode nil request context
+	assert.Equal(t, context.Background(), decodeContext(context.Background(), nil))
 }
