@@ -35,10 +35,10 @@ func TestEncodeDecodeContext(t *testing.T) {
 	gotReqCtx := internal.RequestContext{}
 	err = gotReqCtx.Unmarshal(buf)
 	require.NoError(t, err)
-	gotCtx := decodeContext(&gotReqCtx)
+	gotCtx := decodeContext(context.Background(), &gotReqCtx)
 	assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
 	assert.Equal(t, clientMetadata, client.FromContext(gotCtx).Metadata)
 
-	// Decode a nil context
-	assert.Equal(t, context.Background(), decodeContext(nil))
+	// Decode nil request context
+	assert.Equal(t, context.Background(), decodeContext(context.Background(), nil))
 }

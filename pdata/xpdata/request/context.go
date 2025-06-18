@@ -60,8 +60,7 @@ func encodeClientMetadata(ctx context.Context) []protocommon.KeyValue {
 }
 
 // decodeContext decodes the context from the bytes map.
-func decodeContext(rc *internal.RequestContext) context.Context {
-	ctx := context.Background()
+func decodeContext(ctx context.Context, rc *internal.RequestContext) context.Context {
 	if rc == nil {
 		return ctx
 	}

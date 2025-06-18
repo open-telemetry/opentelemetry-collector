@@ -26,12 +26,13 @@ func MarshalTraces(ctx context.Context, ld ptrace.Traces) ([]byte, error) {
 
 // UnmarshalTraces unmarshals a byte slice into ptrace.Traces and the context.
 func UnmarshalTraces(buf []byte) (context.Context, ptrace.Traces, error) {
+	ctx := context.Background()
 	if !isRequestPayloadV1(buf) {
-		return context.Background(), ptrace.Traces{}, ErrInvalidFormat
+		return ctx, ptrace.Traces{}, ErrInvalidFormat
 	}
 	tr := reqint.TracesRequest{}
 	if err := tr.Unmarshal(buf); err != nil {
-		return context.Background(), ptrace.Traces{}, fmt.Errorf("failed to unmarshal traces request: %w", err)
+		return ctx, ptrace.Traces{}, fmt.Errorf("failed to unmarshal traces request: %w", err)
 	}
-	return decodeContext(tr.RequestContext), ptrace.Traces(internal.TracesFromProto(*tr.TracesData)), nil
+	return decodeContext(ctx, tr.RequestContext), ptrace.Traces(internal.TracesFromProto(*tr.TracesData)), nil
 }
