@@ -65,7 +65,7 @@ It would be beneficial to simplify this process by introducing a feature gate or
 
 ### Historical context
 
-A few years ago, filelog receiver automatically _hooked_ a storage extension when it was defined in the piepline. There was no need to explicitly mention `storage: file_storage` in the component confiugration. 
+A few years ago, filelog receiver automatically _hooked_ a storage extension when it was defined in the pipeline. There was no need to explicitly mention `storage: file_storage` in the component configuration. 
 That behaviour was was [reverted](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10915) due to following downsides:
 1. It was not possible to specify multiple storage extensions and use a preferred one for the receiver.
 2. User had no option to opt out of statefulness if a storage extension was specified.
@@ -160,7 +160,7 @@ service:
     otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
 ```
 
-3. Use mutliple receivers
+3. Use mutiple receivers
 
 ```yaml
 # config.yaml
