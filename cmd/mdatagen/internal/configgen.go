@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal
+package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	CONFIG_NAME = "config"
+	ConfigName = "config"
 )
 
 // GenerateConfig generates a "config.go", as well as any other Go files which "config.go" depends on.
@@ -33,7 +33,7 @@ func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, 
 		return nil, fmt.Errorf("failed loading config %w", err)
 	}
 	var schema schemas.Schema
-	if err := json.Unmarshal(jsonBytes, &schema); err != nil {
+	if err = json.Unmarshal(jsonBytes, &schema); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON: %w", err)
 	}
 
@@ -99,11 +99,11 @@ func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, 
 			// The file paths in the schema mappings are relative to the repo root.
 			// Make the paths absolute.
 			relFilePath := filepath.Clean(filepath.Join(repoRootDir, schemaMappings[i].OutputName))
-			absFilePath, err := filepath.Abs(relFilePath)
-			absFilePath = filepath.Clean(absFilePath)
-			if err != nil {
+			absFilePath, errAbs := filepath.Abs(relFilePath)
+			if errAbs != nil {
 				return nil, fmt.Errorf("failed to get absolute path for %s: %w", schemaMappings[i].OutputName, err)
 			}
+			absFilePath = filepath.Clean(absFilePath)
 			schemaMappings[i].OutputName = absFilePath
 		}
 	}
@@ -125,7 +125,7 @@ func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create generator: %w", err)
 	}
-	if err = generator.AddFile(CONFIG_NAME, &schema); err != nil {
+	if err = generator.AddFile(ConfigName, &schema); err != nil {
 		return nil, fmt.Errorf("failed to add config: %w", err)
 	}
 
@@ -142,7 +142,7 @@ func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, 
 	return output, nil
 }
 
-func logf(format string, args ...interface{}) {
+func logf(format string, args ...any) {
 	fmt.Fprint(os.Stderr, "go-jsonschema: ")
 	fmt.Fprintf(os.Stderr, format, args...)
 	fmt.Fprint(os.Stderr, "\n")

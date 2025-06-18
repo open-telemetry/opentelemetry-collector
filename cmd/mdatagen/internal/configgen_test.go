@@ -6,7 +6,6 @@ package internal
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -32,26 +31,19 @@ func TestJsonSchema(t *testing.T) {
 
 		expectedOutputFile := filepath.Join(outputDir, inputFile.Name())
 		var expectedOutput []byte
-		expectedOutput, err = os.ReadFile(expectedOutputFile)
+		expectedOutput, err = os.ReadFile(filepath.Clean(expectedOutputFile))
 		require.NoError(t, err)
 
-		require.Equal(t, 1, len(generatedConfigs))
+		require.Len(t, generatedConfigs, 1)
 
 		for filePathStr, fileContents := range generatedConfigs {
-			require.Equal(t, "config.go", filePathLeaf(filePathStr))
+			require.Equal(t, "config.go", filename(filePathStr))
 			require.Equal(t, string(expectedOutput), fileContents)
 		}
 	}
 }
 
-func filePathLeaf(path string) string {
-	split := strings.Split(path, "/")
-	return split[len(split)-1]
-}
-
-func TestFilePathLeaf(t *testing.T) {
-	input := "/Users/user/git/opentelemetry-collector/cmd/mdatagen/internal/test_dir/config.go"
-	expected := "config.go"
-	actual := filePathLeaf(input)
-	require.Equal(t, expected, actual)
+func filename(path string) string {
+	_, filename := filepath.Split(path)
+	return filename
 }

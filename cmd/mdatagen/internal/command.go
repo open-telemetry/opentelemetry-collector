@@ -220,11 +220,14 @@ func generateConfigGoCode(dir string, goPkgName string, conf any) error {
 	}
 
 	for fileName, fileContents := range output {
-		generatedCfgFile, err := os.Create(fileName)
+		generatedCfgFile, err := os.Create(filepath.Clean(fileName))
 		if err != nil {
 			return fmt.Errorf("failed to create file: %w", err)
 		}
-		generatedCfgFile.Write([]byte(fileContents))
+		_, err = generatedCfgFile.Write([]byte(fileContents))
+		if err != nil {
+			return fmt.Errorf("failed to write to file %q: %w", fileName, err)
+		}
 		generatedCfgFile.Close()
 	}
 

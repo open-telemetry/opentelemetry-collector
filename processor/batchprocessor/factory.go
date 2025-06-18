@@ -27,7 +27,13 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	cfg := &Config{}
-	json.Unmarshal([]byte("{}"), cfg) // Unmarshal empty JSON to get default values
+
+	// Unmarshal empty JSON to get default values.
+	// Errors shouldn't happen, so we can ignore them.
+	// TODO: Find a cleaner, more mapstructure-friendly way to do this.
+	// For example: https://github.com/omissis/go-jsonschema/pull/283
+	_ = json.Unmarshal([]byte("{}"), cfg)
+
 	return cfg
 }
 
