@@ -117,11 +117,11 @@ func (profileTraits) consume(ctx context.Context, data pprofile.Profiles, next x
 	return next.ConsumeProfiles(ctx, data)
 }
 
-// limitOne obtains a LimiterWrapper and applies a single weight limit.
+// limitOne obtains a Wrapper and applies a single weight limit.
 func limitOne[P any, C any](
 	next C,
 	keys []extensionlimiter.WeightKey,
-	provider LimiterWrapperProvider,
+	provider WrapperProvider,
 	m traits[P, C],
 	key extensionlimiter.WeightKey,
 	opts []consumer.Option,
@@ -130,7 +130,7 @@ func limitOne[P any, C any](
 	if !slices.Contains(keys, key) {
 		return next, nil
 	}
-	lim, err := provider.GetLimiterWrapper(key)
+	lim, err := provider.GetWrapper(key)
 	if err != nil {
 		return next, err
 	}
@@ -148,7 +148,7 @@ func limitOne[P any, C any](
 func newLimited[P any, C any](
 	next C,
 	keys []extensionlimiter.WeightKey,
-	provider LimiterWrapperProvider,
+	provider WrapperProvider,
 	m traits[P, C],
 	opts ...consumer.Option,
 ) (C, error) {
@@ -173,25 +173,25 @@ func newLimited[P any, C any](
 }
 
 // NewLimitedTraces applies a limiter using the provider over keys before calling next.
-func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (consumer.Traces, error) {
+func NewLimitedTraces(next consumer.Traces, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Traces, error) {
 	return newLimited(next, keys, provider, traceTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedLogs applies a limiter using the provider over keys before calling next.
-func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (consumer.Logs, error) {
+func NewLimitedLogs(next consumer.Logs, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Logs, error) {
 	return newLimited(next, keys, provider, logTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedMetrics applies a limiter using the provider over keys before calling next.
-func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (consumer.Metrics, error) {
+func NewLimitedMetrics(next consumer.Metrics, keys []extensionlimiter.WeightKey, provider WrapperProvider) (consumer.Metrics, error) {
 	return newLimited(next, keys, provider, metricTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }
 
 // NewLimitedProfiles applies a limiter using the provider over keys before calling next.
-func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider LimiterWrapperProvider) (xconsumer.Profiles, error) {
+func NewLimitedProfiles(next xconsumer.Profiles, keys []extensionlimiter.WeightKey, provider WrapperProvider) (xconsumer.Profiles, error) {
 	return newLimited(next, keys, provider, profileTraits{},
 		consumer.WithCapabilities(next.Capabilities()))
 }

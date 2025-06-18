@@ -6,7 +6,6 @@ package limiterhelper // import "go.opentelemetry.io/collector/extension/extensi
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionlimiter"
 )
 
@@ -16,21 +15,15 @@ var (
 	ErrLimiterConflict = errors.New("limiter implements both rate and resource-limiters")
 )
 
-// AnyProvider is an any extension type, possibly one of the limiter
-// interfaces.  Users will see ErrNotALimiter when the implementation
-// does not match a know limiter interface, ErrLimiterConflict if the
-// extension implements more than one limiter interface.
-type AnyProvider extension.Extension
-
-// MiddlewareToLimiterWrapperProvider returns a limiter wrapper
+// MiddlewareToWrapperProvider returns a limiter wrapper
 // provider from middleware. Returns a package-level error if the
 // middleware does not implement exactly one of the limiter
 // interfaces (i.e., rate or resource).
-func MiddlewareToLimiterWrapperProvider(ext AnyProvider) (LimiterWrapperProvider, error) {
+func MiddlewareToWrapperProvider(ext extensionlimiter.AnyProvider) (WrapperProvider, error) {
 	return getMiddleware(
 		ext,
-		nilError(RateToLimiterWrapperProvider),
-		nilError(ResourceToLimiterWrapperProvider),
+		nilError(RateToWrapperProvider),
+		nilError(ResourceToWrapperProvider),
 	)
 }
 
@@ -40,7 +33,7 @@ func MiddlewareToLimiterWrapperProvider(ext AnyProvider) (LimiterWrapperProvider
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToRateLimiterProvider(ext AnyProvider) (extensionlimiter.RateLimiterProvider, error) {
+func MiddlewareToRateLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.RateLimiterProvider, error) {
 	return getMiddleware(
 		ext,
 		identity[extensionlimiter.RateLimiterProvider],
@@ -54,7 +47,7 @@ func MiddlewareToRateLimiterProvider(ext AnyProvider) (extensionlimiter.RateLimi
 // interface. Returns a package-level error if the middleware does not
 // implement exactly one of the limiter interfaces (i.e., rate or
 // resource).
-func MiddlewareToResourceLimiterProvider(ext AnyProvider) (extensionlimiter.ResourceLimiterProvider, error) {
+func MiddlewareToResourceLimiterProvider(ext extensionlimiter.AnyProvider) (extensionlimiter.ResourceLimiterProvider, error) {
 	return getMiddleware(
 		ext,
 		nilError(RateToResourceLimiterProvider),
@@ -65,7 +58,7 @@ func MiddlewareToResourceLimiterProvider(ext AnyProvider) (extensionlimiter.Reso
 // getProvider invokes getProvider if any kind of limiter is detected
 // for the given host and middleware configuration.
 func getMiddleware[Out any](
-	ext AnyProvider,
+	ext extensionlimiter.AnyProvider,
 	rate func(extensionlimiter.RateLimiterProvider) (Out, error),
 	resource func(extensionlimiter.ResourceLimiterProvider) (Out, error),
 ) (Out, error) {

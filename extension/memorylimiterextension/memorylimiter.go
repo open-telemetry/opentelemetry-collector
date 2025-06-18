@@ -19,6 +19,8 @@ var (
 )
 
 type memoryLimiterExtension struct {
+	extensionlimiter.AnyProviderImpl
+
 	memLimiter *memorylimiter.MemoryLimiter
 }
 

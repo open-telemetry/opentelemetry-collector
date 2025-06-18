@@ -61,10 +61,7 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 	if bq.currentAdmitted+uint64(value) <= bq.limitAdmit {
 		// the fast success path.
 		bq.currentAdmitted += uint64(value)
-		return struct {
-			extensionlimiter.DelayFunc
-			extensionlimiter.ReleaseFunc
-		}{
+		return extensionlimiter.NewResourceReservationImpl(
 			nil, // No delay
 			func() {
 				// There was never a waiter in this
@@ -74,7 +71,7 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 
 				bq.releaseLocked(value)
 			},
-		}, nil
+		), nil
 	}
 
 	// since we were unable to admit, check if we can wait.
@@ -86,10 +83,7 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 	element := bq.addWaiterLocked(value)
 	waiter := element.Value.(*waiter)
 
-	return struct {
-		extensionlimiter.DelayFunc
-		extensionlimiter.ReleaseFunc
-	}{
+	return extensionlimiter.NewResourceReservationImpl(
 		func() <-chan struct{} {
 			// The caller waits for this notification
 			// to use the resource.
@@ -112,7 +106,7 @@ func (bq *boundedQueue) ReserveResource(ctx context.Context, value int) (extensi
 				bq.admitWaitersLocked()
 			}
 		},
-	}, nil
+	), nil
 }
 
 func (bq *boundedQueue) admitWaitersLocked() {

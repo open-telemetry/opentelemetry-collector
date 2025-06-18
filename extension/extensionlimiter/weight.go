@@ -37,35 +37,3 @@ const (
 	// for limiting active memory usage.
 	WeightKeyRequestBytes WeightKey = "request_bytes"
 )
-
-// StandardAllKeys is all the keys that can be automatically
-// implemented by middleware and/or limiterhelper.
-func StandardAllKeys() []WeightKey {
-	return []WeightKey{
-		WeightKeyNetworkBytes,
-		WeightKeyRequestCount,
-		WeightKeyRequestItems,
-		WeightKeyRequestBytes,
-	}
-}
-
-// StandardMiddlewareKeys are typically handled in middleware for
-// protocols that support it.  Receivers should be careful not to
-// re-apply these limits, especially not to twice-limit by
-// WeightKeyRequestItems.
-func StandardMiddlewareKeys() []WeightKey {
-	return []WeightKey{
-		WeightKeyNetworkBytes,
-		WeightKeyRequestCount,
-	}
-}
-
-// StandardNotMiddlewareKeys are the keys that are typically not
-// handled through middlware because they are protocol specific and
-// generally easier to handle after the input has become pdata.
-func StandardNotMiddlewareKeys() []WeightKey {
-	return []WeightKey{
-		WeightKeyRequestItems,
-		WeightKeyRequestBytes,
-	}
-}

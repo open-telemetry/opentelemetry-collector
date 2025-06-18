@@ -25,46 +25,43 @@ func NewRateLimiter(frequency float64, burst int) extensionlimiter.RateLimiter {
 	limit := rate.Limit(frequency)
 	limiter := rate.NewLimiter(limit, burst)
 
-	reserve := func(ctx context.Context, value int) (extensionlimiter.RateReservation, error) {
-		// Check if context was canceled.
-		select {
-		case <-ctx.Done():
-			return nil, context.Cause(ctx)
-		default:
-		}
-
-		// Check for out-of-range requests.
-		if value > burst && limit != rate.Inf {
-			return nil, ErrRateRequestTooLarge
-		}
-
-		// Call the non-blocking API.
-		rsv := limiter.ReserveN(time.Now(), value)
-		if !rsv.OK() {
-			return nil, ErrRateLimitExceeded
-		}
-
-		// Compare the wait and deadline.
-		when := time.Now()
-		wait := rsv.DelayFrom(when)
-		if deadline, ok := ctx.Deadline(); ok {
-			if deadline.Sub(when) < wait {
-				rsv.Cancel()
-				return nil, ErrRateRequestDeadline
+	return extensionlimiter.NewRateLimiterImpl(
+		func(ctx context.Context, value int) (extensionlimiter.RateReservation, error) {
+			// Check if context was canceled.
+			select {
+			case <-ctx.Done():
+				return nil, context.Cause(ctx)
+			default:
 			}
-		}
-
-		// Return the wait time and cancel function.
-		return struct {
-			extensionlimiter.WaitTimeFunc
-			extensionlimiter.CancelFunc
-		}{
-			func() time.Duration { return wait },
-			rsv.Cancel,
-		}, nil
-	}
-
-	return extensionlimiter.ReserveRateFunc(reserve)
+			
+			// Check for out-of-range requests.
+			if value > burst && limit != rate.Inf {
+				return nil, ErrRateRequestTooLarge
+			}
+			
+			// Call the non-blocking API.
+			rsv := limiter.ReserveN(time.Now(), value)
+			if !rsv.OK() {
+				return nil, ErrRateLimitExceeded
+			}
+			
+			// Compare the wait and deadline.
+			when := time.Now()
+			wait := rsv.DelayFrom(when)
+			if deadline, ok := ctx.Deadline(); ok {
+				if deadline.Sub(when) < wait {
+					rsv.Cancel()
+					return nil, ErrRateRequestDeadline
+				}
+			}
+			
+			// Return the wait time and cancel function.
+			return extensionlimiter.NewRateReservationImpl(
+				func() time.Duration { return wait },
+				rsv.Cancel,
+			), nil
+		},
+	)
 }
 
 // BlockingRateLimiter wraps a RateLimiter extension in a blocking
@@ -128,13 +125,13 @@ func (b BlockingRateLimiter) waitFor(ctx context.Context, value int, timer timer
 // resource limiter. Note that the opposite direction (i.e., resource
 // limter acting as rate limiter) is an invalid configuration.
 func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) extensionlimiter.ResourceLimiterProvider {
-	return extensionlimiter.GetResourceLimiterFunc(
+	return extensionlimiter.NewResourceLimiterProviderImpl(
 		func(weight extensionlimiter.WeightKey, opts ...extensionlimiter.Option) (extensionlimiter.ResourceLimiter, error) {
 			rlim, err := blimp.GetRateLimiter(weight, opts...)
 			if err != nil {
 				return nil, err
 			}
-			return extensionlimiter.ReserveResourceFunc(
+			return extensionlimiter.NewResourceLimiterImpl(
 				func(ctx context.Context, value int) (extensionlimiter.ResourceReservation, error) {
 					rsv, err := rlim.ReserveRate(ctx, value)
 					if err != nil {
@@ -144,10 +141,7 @@ func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) e
 					timer := time.AfterFunc(rsv.WaitTime(), func() {
 						close(cch)
 					})
-					return struct {
-						extensionlimiter.DelayFunc
-						extensionlimiter.ReleaseFunc
-					}{
+					return extensionlimiter.NewResourceReservationImpl(
 						func() <-chan struct{} { return cch },
 						func() {
 							select {
@@ -158,7 +152,7 @@ func RateToResourceLimiterProvider(blimp extensionlimiter.RateLimiterProvider) e
 								timer.Stop()
 							}
 						},
-					}, nil
+					), nil
 				}), nil
 		},
 	)

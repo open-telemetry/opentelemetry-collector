@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package grpclimiter
 
 import (
@@ -46,13 +49,13 @@ func setRateLimiterError(ctx context.Context, err error) {
 	}
 }
 
-func NewClientLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.GRPCClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRPCClient, error) {
+	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
-	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
 	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 	if err := multierr.Append(err3, err4); err != nil {
 		return nil, err
@@ -107,13 +110,13 @@ func NewClientLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.GRPCCl
 	}), nil
 }
 
-func NewServerLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.GRPCServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRPCServer, error) {
+	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
-	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
 	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 	if err := multierr.Append(err3, err4); err != nil {
 		return nil, err
@@ -212,7 +215,7 @@ func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats)
 
 type serverStream struct {
 	grpc.ServerStream
-	limiter limiterhelper.LimiterWrapper
+	limiter limiterhelper.Wrapper
 }
 
 // RecvMsg applies rate limiting to server stream message receiving.
@@ -228,7 +231,7 @@ func (s *serverStream) RecvMsg(m any) error {
 }
 
 // wrapServerStream wraps a gRPC server stream with rate limiting.
-func wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter limiterhelper.LimiterWrapper) grpc.ServerStream {
+func wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter limiterhelper.Wrapper) grpc.ServerStream {
 	return &serverStream{
 		ServerStream: ss,
 		limiter:      limiter,
@@ -237,7 +240,7 @@ func wrapServerStream(ss grpc.ServerStream, _ *grpc.StreamServerInfo, limiter li
 
 type clientStream struct {
 	grpc.ClientStream
-	limiter limiterhelper.LimiterWrapper
+	limiter limiterhelper.Wrapper
 }
 
 // SendMsg applies rate limiting to client stream message sending.
@@ -253,7 +256,7 @@ func (s *clientStream) SendMsg(m any) error {
 }
 
 // wrapClientStream wraps a gRPC client stream with rate limiting.
-func wrapClientStream(cs grpc.ClientStream, _ string, limiter limiterhelper.LimiterWrapper) grpc.ClientStream {
+func wrapClientStream(cs grpc.ClientStream, _ string, limiter limiterhelper.Wrapper) grpc.ClientStream {
 	return &clientStream{
 		ClientStream: cs,
 		limiter:      limiter,

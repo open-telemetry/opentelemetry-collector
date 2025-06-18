@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package httplimiter
 
 import (
@@ -13,13 +16,13 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
-func NewClientLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.HTTPClient, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTTPClient, error) {
+	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
-	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
 	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 	if err := multierr.Append(err3, err4); err != nil {
 		return nil, err
@@ -83,13 +86,13 @@ func (rb *rateLimitedBody) Close() error {
 	return rb.body.Close()
 }
 
-func NewServerLimiter(ext limiterhelper.AnyProvider) (extensionmiddleware.HTTPServer, error) {
-	wp, err1 := limiterhelper.MiddlewareToLimiterWrapperProvider(ext)
+func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTTPServer, error) {
+	wp, err1 := limiterhelper.MiddlewareToWrapperProvider(ext)
 	rp, err2 := limiterhelper.MiddlewareToRateLimiterProvider(ext)
 	if err := multierr.Append(err1, err2); err != nil {
 		return nil, err
 	}
-	requestLimiter, err3 := wp.GetLimiterWrapper(extensionlimiter.WeightKeyRequestCount)
+	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
 	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
 	if err := multierr.Append(err3, err4); err != nil {
 		return nil, err
