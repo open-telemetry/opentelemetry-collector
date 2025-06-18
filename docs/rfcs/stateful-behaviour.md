@@ -230,3 +230,10 @@ service:
 ```bash
     otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
 ```
+
+## Why to use a converter?
+
+Before settling for a converter, my approach was to inject storage extensions in component's logic. However, we also need a way to ensure the extension is added to the pipeline configuration -- otherwise, receivers would fail if the required extension isn’t present.
+The only viable option I found to add the extension was through a converter, which is specifically designed to update configurations in place.
+
+We can take it a step further by moving the injection logic into the converter itself, streamlining the entire implementation and keeping it contained within a single component. 
