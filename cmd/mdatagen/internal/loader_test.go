@@ -366,7 +366,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "subcomponent",
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 			},
@@ -376,7 +376,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
@@ -394,7 +394,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
