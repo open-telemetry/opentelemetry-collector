@@ -1,0 +1,71 @@
+# kubernetes-deployment.yaml
+# Example deployment for the fix to duplicate exported_job labels
+# Maintainers can adapt this to their existing OpenTelemetry setup
+
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel-collector-fixed
+  namespace: opentelemetry-operator-system
+spec:
+  # Use the standard collector image with inline config
+  image: ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.128.0
+  
+  # Inline configuration with the transform processor fix
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+    processors:
+      # FIX: Transform processor to remove namespace prefixes from exported_job labels
+      transform/remove_namespace:
+        metric_statements:
+          - context: datapoint
+            statements:
+              - replace_pattern(datapoint.attributes["exported_job"], "^[^/]+/", "") where datapoint.attributes["exported_job"] != nil
+      
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:8888"
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [transform/remove_namespace, batch]  # Include the transform processor
+          exporters: [prometheus]
+      
+      telemetry:
+        metrics:
+          level: normal
+          address: 0.0.0.0:8888
+
+---
+# Optional: Service to expose the collector
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector-fixed-service
+  namespace: opentelemetry-operator-system
+spec:
+  selector:
+    app.kubernetes.io/name: otel-collector-fixed
+  ports:
+    - name: prometheus
+      port: 8888
+      targetPort: 8888
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318

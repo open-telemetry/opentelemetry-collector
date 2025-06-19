@@ -1,0 +1,47 @@
+# collector-config.yaml
+# OpenTelemetry Collector configuration with transform processor
+# Fixes duplicate exported_job labels by removing namespace prefixes
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Transform processor to fix duplicate exported_job labels (Issue #13079)
+  # Removes namespace prefixes like "production/" from exported_job values
+  transform/remove_namespace:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - replace_pattern(datapoint.attributes["exported_job"], "^[^/]+/", "") where datapoint.attributes["exported_job"] != nil
+  
+  # Standard batch processor for efficiency
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+exporters:
+  # Prometheus exporter for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8888"
+    
+  # Optional: Add your existing prometheus remote write endpoint
+  # prometheusremotewrite:
+  #   endpoint: "http://your-prometheus:9090/api/v1/write"
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform/remove_namespace, batch]
+      exporters: [prometheus]
+  
+  # Telemetry configuration
+  telemetry:
+    metrics:
+      level: normal
+      address: 0.0.0.0:8888
