@@ -33,7 +33,7 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Time taken by the processor to complete.
+      description: Duration of time taken to process a batch of telemetry data through the processor.
       unit: s
       histogram:
         async: false

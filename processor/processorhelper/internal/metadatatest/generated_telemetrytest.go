@@ -14,7 +14,7 @@ import (
 func AssertEqualProcessorDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_processor_duration",
-		Description: "Time taken by the processor to complete. [alpha]",
+		Description: "Duration of time taken to process a batch of telemetry data through the processor. [alpha]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
 			Temporality: metricdata.CumulativeTemporality,

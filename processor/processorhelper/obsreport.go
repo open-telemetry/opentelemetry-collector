@@ -44,8 +44,8 @@ func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 
 func (or *obsReport) recordDuration(ctx context.Context, ps processorStart) {
 	duration := time.Since(ps.Time)
-	durationSecs := float64(duration.Microseconds()) / 1e6 // Convert to seconds
-	or.telemetryBuilder.ProcessorDuration.Record(ctx, float64(durationSecs), or.otelAttrs)
+	durationSecs := duration.Seconds()
+	or.telemetryBuilder.ProcessorDuration.Record(ctx, durationSecs, or.otelAttrs)
 }
 
 type processorStart struct {

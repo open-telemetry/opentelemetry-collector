@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_processor_duration
 
-Time taken by the processor to complete. [alpha]
+Duration of time taken to process a batch of telemetry data through the processor. [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

@@ -62,7 +62,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	var err, errs error
 	builder.ProcessorDuration, err = builder.meter.Float64Histogram(
 		"otelcol_processor_duration",
-		metric.WithDescription("Time taken by the processor to complete. [alpha]"),
+		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the processor. [alpha]"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
