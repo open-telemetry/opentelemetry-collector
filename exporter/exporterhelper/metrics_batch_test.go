@@ -334,7 +334,7 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractGaugeDataPoints(gauge, tt.capacity, sz)
+			destMetric, removedSize := extractGaugeDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -382,7 +382,7 @@ func TestExtractSumDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSumDataPoints(sum, tt.capacity, sz)
+			destMetric, removedSize := extractSumDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -431,7 +431,7 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractHistogramDataPoints(histogram, tt.capacity, sz)
+			destMetric, removedSize := extractHistogramDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -479,7 +479,7 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractExponentialHistogramDataPoints(expHistogram, tt.capacity, sz)
+			destMetric, removedSize := extractExponentialHistogramDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -527,7 +527,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSummaryDataPoints(summary, tt.capacity, sz)
+			destMetric, removedSize := extractSummaryDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
 			if tt.expectedPoints > 0 {
