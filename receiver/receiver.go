@@ -156,9 +156,9 @@ func (f LogsStabilityFunc) LogsStability() component.StabilityLevel {
 	return f()
 }
 
-type Creator[A, B any] func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error)
+type creator[A, B any] func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error)
 
-func typeChecked[A, B any](cf Creator[A, B], cfgType component.Type) Creator[A, B] {
+func typeChecked[A, B any](cf creator[A, B], cfgType component.Type) creator[A, B] {
 	return func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error) {
 		if set.ID.Type() != cfgType {
 			var zero B
@@ -196,7 +196,7 @@ func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg compon
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.TracesStabilityFunc = sl.Self
-		o.CreateTracesFunc = CreateTracesFunc(typeChecked[consumer.Traces, Traces](Creator[consumer.Traces, Traces](createTraces), cfgType))
+		o.CreateTracesFunc = CreateTracesFunc(typeChecked[consumer.Traces, Traces](creator[consumer.Traces, Traces](createTraces), cfgType))
 	})
 }
 
@@ -204,7 +204,7 @@ func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) Fact
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.MetricsStabilityFunc = sl.Self
-		o.CreateMetricsFunc = CreateMetricsFunc(typeChecked[consumer.Metrics, Metrics](Creator[consumer.Metrics, Metrics](createMetrics), cfgType))
+		o.CreateMetricsFunc = CreateMetricsFunc(typeChecked[consumer.Metrics, Metrics](creator[consumer.Metrics, Metrics](createMetrics), cfgType))
 	})
 }
 
@@ -212,7 +212,7 @@ func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) F
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.LogsStabilityFunc = sl.Self
-		o.CreateLogsFunc = CreateLogsFunc(typeChecked[consumer.Logs, Logs](Creator[consumer.Logs, Logs](createLogs), cfgType))
+		o.CreateLogsFunc = CreateLogsFunc(typeChecked[consumer.Logs, Logs](creator[consumer.Logs, Logs](createLogs), cfgType))
 	})
 }
 

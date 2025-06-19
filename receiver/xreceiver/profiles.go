@@ -84,9 +84,9 @@ type factoryOpts struct {
 	factoryImpl
 }
 
-type Creator[A, B any] func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) 
+type creator[A, B any] func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) 
 
-func typeChecked[A, B any](cf Creator[A, B], cfgType component.Type) Creator[A, B] {
+func typeChecked[A, B any](cf creator[A, B], cfgType component.Type) creator[A, B] {
 	return func(ctx context.Context, set receiver.Settings, cfg component.Config, next A) (B, error) {
 		if set.ID.Type() != cfgType {
 			var zero B
@@ -121,7 +121,7 @@ func WithLogs(createLogs receiver.CreateLogsFunc, sl component.StabilityLevel) F
 func WithProfiles(createProfiles CreateProfilesFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryOpts, cfgType component.Type) {
 		o.ProfilesStabilityFunc = sl.Self
-		o.CreateProfilesFunc = CreateProfilesFunc(typeChecked[xconsumer.Profiles, Profiles](Creator[xconsumer.Profiles, Profiles](createProfiles), cfgType))
+		o.CreateProfilesFunc = CreateProfilesFunc(typeChecked[xconsumer.Profiles, Profiles](creator[xconsumer.Profiles, Profiles](createProfiles), cfgType))
 	})
 }
 

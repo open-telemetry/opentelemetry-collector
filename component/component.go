@@ -77,6 +77,20 @@ func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 	return f(ctx)
 }
 
+type componentImpl struct {
+	StartFunc
+	ShutdownFunc
+}
+
+var _ Component = componentImpl{}
+
+func NewComponentImpl(sf StartFunc, shf ShutdownFunc) Component {
+	return componentImpl{
+		StartFunc: sf,
+		ShutdownFunc: shf,
+	}
+}
+
 // Kind represents component kinds.
 type Kind struct {
 	name string

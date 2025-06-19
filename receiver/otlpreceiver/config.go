@@ -64,8 +64,8 @@ type Config struct {
 	// Protocols is the configuration for the supported protocols, currently gRPC and HTTP (Proto and JSON).
 	Protocols `mapstructure:"protocols"`
 
-	// Limiters allows applying limiter extensions for request count, items, and bytes.
-	Limiters consumerlimiter.Config `mapstructure:"limiters"`
+	// LimiterConfig allows applying limiter extensions for request count, items, and bytes.
+	consumerlimiter.LimiterConfig `mapstructure:"limiters"`
 }
 
 var _ component.Config = (*Config)(nil)
