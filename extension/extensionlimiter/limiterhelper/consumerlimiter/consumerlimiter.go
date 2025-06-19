@@ -5,7 +5,8 @@ package consumerlimiter // import "go.opentelemetry.io/collector/extension/exten
 
 import (
 	"context"
-	"slices"
+	"errors"
+	"fmt"
 
 	"go.uber.org/multierr"
 
@@ -22,6 +23,11 @@ import (
 	"go.opentelemetry.io/collector/receiver/xreceiver"
 )
 
+var (
+	ErrLimiterNotFound = errors.New("limiter not found")
+	ErrNotALimiter = errors.New("not a limiter")
+)
+
 // Config is the standard pipeline configuration for limiting a
 // consumer interface by specific signal.
 //
@@ -36,24 +42,16 @@ type LimiterConfig struct {
 	RequestBytes component.ID `mapstructure:"request_bytes"`
 }
 
-type HasLimiterConfig interface {
-	getConfig() LimiterConfig
-}
-
-func (c LimiterConfig) getConfig() LimiterConfig {
-	return c
-}
-
-var _ HasLimiterConfig = LimiterConfig{}
-
+// capable is an internal interface describing common features of a
+// consumer.
 type capable interface {
 	Capabilities() consumer.Capabilities
 }
 
 // Traits object interface is generalized by P the pipeline data type
 // (e.g., ptrace.Traces) and C the consumer type (e.g.,
-// consumer.Traces)
-type traits[P, C any] interface {
+// consumer.Traces) and R the return component type.
+type traits[P, C, R any] interface {
 	// itemCount is SpanCount(), DataPointCount(), or LogRecordCount().
 	itemCount(P) int
 	// requestBytes uses the appropriate protobuf Bytesr as a proxy
@@ -63,13 +61,18 @@ type traits[P, C any] interface {
 	consume(ctx context.Context, data P, next C) error
 	// create is a functional constructor the consumer type (e.g., consumer.NewTraces)
 	create(func(ctx context.Context, data P) error, ...consumer.Option) (C, error)
+	// newReceiver constructs the correct receiver type
+	newReceiver(component.Component) R
 }
+
+// Creator is the function to create a receiver components.
+type creator[C capable, R component.Component] func(ctx context.Context, set receiver.Settings, cfg component.Config, next C) (R, error)
 
 // Traces traits
 
 type traceTraits struct{}
 
-var _ traits[ptrace.Traces, consumer.Traces] = traceTraits{}
+var _ traits[ptrace.Traces, consumer.Traces, receiver.Traces] = traceTraits{}
 
 func (traceTraits) itemCount(data ptrace.Traces) int {
 	return data.SpanCount()
@@ -88,11 +91,15 @@ func (traceTraits) consume(ctx context.Context, data ptrace.Traces, next consume
 	return next.ConsumeTraces(ctx, data)
 }
 
+func (traceTraits) newReceiver(c component.Component) receiver.Traces {
+	return receiver.Traces(c)
+}
+
 // Metrics traits
 
 type metricTraits struct{}
 
-var _ traits[pmetric.Metrics, consumer.Metrics] = metricTraits{}
+var _ traits[pmetric.Metrics, consumer.Metrics, receiver.Metrics] = metricTraits{}
 
 func (metricTraits) itemCount(data pmetric.Metrics) int {
 	return data.DataPointCount()
@@ -111,11 +118,15 @@ func (metricTraits) consume(ctx context.Context, data pmetric.Metrics, next cons
 	return next.ConsumeMetrics(ctx, data)
 }
 
+func (metricTraits) newReceiver(c component.Component) receiver.Metrics {
+	return receiver.Metrics(c)
+}
+
 // Logs traits
 
 type logTraits struct{}
 
-var _ traits[plog.Logs, consumer.Logs] = logTraits{}
+var _ traits[plog.Logs, consumer.Logs, receiver.Logs] = logTraits{}
 
 func (logTraits) itemCount(data plog.Logs) int {
 	return data.LogRecordCount()
@@ -134,11 +145,15 @@ func (logTraits) consume(ctx context.Context, data plog.Logs, next consumer.Logs
 	return next.ConsumeLogs(ctx, data)
 }
 
+func (logTraits) newReceiver(c component.Component) receiver.Logs {
+	return receiver.Logs(c)
+}
+
 // Profiles traits
 
 type profileTraits struct{}
 
-var _ traits[pprofile.Profiles, xconsumer.Profiles] = profileTraits{}
+var _ traits[pprofile.Profiles, xconsumer.Profiles, xreceiver.Profiles] = profileTraits{}
 
 func (profileTraits) itemCount(data pprofile.Profiles) int {
 	return data.SampleCount()
@@ -157,98 +172,126 @@ func (profileTraits) consume(ctx context.Context, data pprofile.Profiles, next x
 	return next.ConsumeProfiles(ctx, data)
 }
 
-// limitOne obtains a Wrapper and applies a single weight limit.
-func limitOne[P, C, R any](
-	next C,
-	keys []extensionlimiter.WeightKey,
-	provider limiterhelper.WrapperProvider,
-	m traits[P, C],
-	key extensionlimiter.WeightKey,
-	opts []consumer.Option,
-	quantify func(P) int,
-) (C, error) {
-	if !slices.Contains(keys, key) {
-		return next, nil
-	}
-	lim, err := provider.GetWrapper(key)
-	if err != nil {
-		return next, err
-	}
-	if lim == nil {
-		return next, nil
-	}
-	return m.create(func(ctx context.Context, data P) error {
-		return lim.LimitCall(ctx, quantify(data), func(ctx context.Context) error {
-			return m.consume(ctx, data, next)
-		})
-	}, opts...)
+func (profileTraits) newReceiver(c component.Component) xreceiver.Profiles {
+	return xreceiver.Profiles(c)
 }
 
-type limitedReceiver[P any, C capable, T traits[P, C]] struct {
+type limitedReceiver[P any, C capable, R component.Component, T traits[P, C, R]] struct {
+	cfg LimiterConfig
 	next C
-
+	self T
 	component.ShutdownFunc
 }
 
-func (l *limitedReceiver[P, C, T]) Capabilities() consumer.Capabilities {
+func (l *limitedReceiver[P, C, R, T]) Capabilities() consumer.Capabilities {
 	return l.next.Capabilities()
 }
 
-func (l *limitedReceiver[P, C, T]) Start(ctx context.Context, host component.Host) error {
-	// @@@
-	return nil
+func (l *limitedReceiver[P, C, R, T]) Start(ctx context.Context, host component.Host) error {
+	var unset component.ID
+	var err1, err2, err3 error
+	if name := l.cfg.RequestBytes; name != unset {
+		l.next, err1 = l.limitOne(
+			host,
+			name,
+			extensionlimiter.WeightKeyRequestBytes,
+			func(data P) int {
+				return l.self.requestSize(data)
+			},
+		)
+	}
+	if name := l.cfg.RequestItems; name != unset {
+		l.next, err2 = l.limitOne(
+			host,
+			name,
+			extensionlimiter.WeightKeyRequestItems,
+			func(data P) int {
+				return l.self.itemCount(data)
+			},
+		)
+	}
+	if name := l.cfg.RequestCount; name != unset {
+		l.next, err3 = l.limitOne(
+			host,
+			name,
+			extensionlimiter.WeightKeyRequestCount,
+			func(data P) int {
+				return 1
+			},
+		)
+	}
+
+	return multierr.Append(err1, multierr.Append(err2, err3))
 }
 
-func (l *limitedReceiver[P, C, T]) consume(ctx context.Context, data P) error {
-	var t T
-	return t.consume(ctx, data, l.next)
+func (l *limitedReceiver[P, C, R, T]) consume(ctx context.Context, data P) error {
+	return l.self.consume(ctx, data, l.next)
+}
+
+// limitOne obtains a Wrapper and applies a single weight limit.
+func (l *limitedReceiver[P, C, R, T]) limitOne(
+	host component.Host,
+	name component.ID,
+	key extensionlimiter.WeightKey,
+	quantify func(P) int,
+) (C, error) {
+	exts := host.GetExtensions()
+	comp := exts[name]
+	if comp == nil {
+		return l.next, fmt.Errorf("%w: %s", ErrLimiterNotFound, name.String())
+	}
+	alim, isLim := comp.(extensionlimiter.AnyProvider)
+	if !isLim {
+		return l.next, fmt.Errorf("%w: %s", ErrNotALimiter, name.String())
+	}
+	provider, err := limiterhelper.AnyToWrapperProvider(alim)
+	if err != nil {
+		return l.next, err
+	}
+	// Note: not passing options to GetWrapper(), an open question.
+	lim, err := provider.GetWrapper(key)
+	if err != nil {
+		return l.next, err
+	}
+	if lim == nil {
+		return l.next, nil
+	}
+	return l.self.create(func(ctx context.Context, data P) error {
+		return lim.LimitCall(ctx, quantify(data), func(ctx context.Context) error {
+			return l.self.consume(ctx, data, l.next)
+		})
+	}, consumer.WithCapabilities(l.next.Capabilities()))
 }
 
 // newLimited is signal-generic limiting logic.
-func newLimited[P any, C capable](
+func newLimited[P any, C capable, R component.Component](
 	next C,
 	cfg LimiterConfig,
-	t traits[P, C],
-) *limitedReceiver[P, C, traits[P, C]] { 
-	return &limitedReceiver[P, C, traits[P, C]]{
+	self traits[P, C, R],
+) *limitedReceiver[P, C, R, traits[P, C, R]] { 
+	return &limitedReceiver[P, C, R, traits[P, C, R]]{
+		cfg: cfg,
 		next: next,
+		self: self,
 	}
 }
-	// opts ...consumer.Option,
-	// if provider == nil {
-	// 	return next, nil
-	// }
-	// var err1, err2, err3 error
-	// // Note: reverse order of evaluation cost => least-cost applied first.
-	// next, err1 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestBytes, opts,
-	// 	func(data P) int {
-	// 		return m.requestSize(data)
-	// 	})
-	// next, err2 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestItems, opts,
-	// 	func(data P) int {
-	// 		return m.itemCount(data)
-	// 	})
-	// next, err3 = limitOne(next, keys, provider, m, extensionlimiter.WeightKeyRequestCount, opts,
-	// 	func(_ P) int {
-	// 		return 1
-	// 	})
-	// return next, multierr.Append(err1, multierr.Append(err2, err3))
-	//var zero C
-	// @@@ @@@!!!
-	//return  zero, nil
 
-type creator[C capable, R component.Component] func(ctx context.Context, set receiver.Settings, cfg component.Config, next C) (R, error)
+// LimiterConfigurator lets components configure limiters using
+// a field they determine.
+type LimiterConfigurator func(component.Config) LimiterConfig
 
 // limitReceiver limits a receiver component where P is pipeline data,
 // C is the consumer type, and R is the return type.
 func limitReceiver[P any, C capable, R component.Component](
 	cf creator[C, R],
-	t traits[P, C],
+	t traits[P, C, R],
+	cfgf LimiterConfigurator,
 ) creator[C, R] {
 	return func(ctx context.Context, set receiver.Settings, cfg component.Config, next C) (R, error) {
-		var limiter *limitedReceiver[P, C, traits[P, C]]
-		if lc, ok := cfg.(HasLimiterConfig); ok {
-			limiter = newLimited(next, lc.getConfig(), t)
+		var limiter *limitedReceiver[P, C, R, traits[P, C, R]]
+		var emptyCfg LimiterConfig
+		if lc := cfgf(cfg); lc != emptyCfg {
+			limiter = newLimited(next, lc, t)
 			var err error
 			next, err = t.create(limiter.consume)
 			if err != nil {
@@ -261,7 +304,10 @@ func limitReceiver[P any, C capable, R component.Component](
 		if err != nil {
 			return recv, err
 		}
-		return component.NewComponentImpl(
+		if limiter == nil {
+			return recv, nil
+		}
+		return t.newReceiver(component.NewComponentImpl(
 			func (ctx context.Context, host component.Host) error {
 				err1 := limiter.Start(ctx, host)
 				err2 := recv.Start(ctx, host)
@@ -272,25 +318,25 @@ func limitReceiver[P any, C capable, R component.Component](
 				err2 := limiter.Shutdown(ctx)
 				return multierr.Append(err1, err2) 
 			},
-		), nil
+		)), nil
 	}
 }
 
-func NewLimitedFactory(fact xreceiver.Factory) xreceiver.Factory {
+func NewLimitedFactory(fact xreceiver.Factory, cfgf LimiterConfigurator) xreceiver.Factory {
 	return xreceiver.NewFactoryImpl(
 		receiver.NewFactoryImpl(
 			component.NewFactoryImpl(
 				fact.Type,
 				fact.CreateDefaultConfig,
 			),
-			receiver.CreateTracesFunc(limitReceiver(fact.CreateTraces, traceTraits{})),
+			receiver.CreateTracesFunc(limitReceiver(fact.CreateTraces, traceTraits{}, cfgf)),
 			fact.TracesStability,
-			receiver.CreateMetricsFunc(limitReceiver(fact.CreateMetrics, metricTraits{})),
+			receiver.CreateMetricsFunc(limitReceiver(fact.CreateMetrics, metricTraits{}, cfgf)),
 			fact.MetricsStability,
-			receiver.CreateLogsFunc(limitReceiver(fact.CreateLogs, logTraits{})),
+			receiver.CreateLogsFunc(limitReceiver(fact.CreateLogs, logTraits{}, cfgf)),
 			fact.LogsStability,
 		),
-		xreceiver.CreateProfilesFunc(limitReceiver(fact.CreateProfiles, profileTraits{})),
+		xreceiver.CreateProfilesFunc(limitReceiver(fact.CreateProfiles, profileTraits{}, cfgf)),
 		fact.ProfilesStability,
 	)
 }
