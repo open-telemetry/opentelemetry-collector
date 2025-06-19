@@ -70,13 +70,13 @@ func encodeClientAddress(ctx context.Context, rc *internal.RequestContext) {
 	case *net.TCPAddr:
 		rc.ClientAddress = &internal.RequestContext_Tcp{Tcp: &internal.TCPAddr{
 			Ip:   a.IP,
-			Port: int32(a.Port), //nolint:gosec // G115
+			Port: int64(a.Port),
 			Zone: a.Zone,
 		}}
 	case *net.UDPAddr:
 		rc.ClientAddress = &internal.RequestContext_Udp{Udp: &internal.UDPAddr{
 			Ip:   a.IP,
-			Port: int32(a.Port), //nolint:gosec // G115
+			Port: int64(a.Port),
 			Zone: a.Zone,
 		}}
 	case *net.UnixAddr:
