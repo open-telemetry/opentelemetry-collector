@@ -61,9 +61,7 @@ func newTestClientMiddleware(name string) component.Component {
 }
 
 func newTestClientConfig(name string) configmiddleware.Config {
-	return configmiddleware.Config{
-		ID: component.MustNewID(name),
-	}
+	return configmiddleware.Config(component.MustNewID(name))
 }
 
 func TestClientMiddlewares(t *testing.T) {
@@ -162,9 +160,7 @@ func TestClientMiddlewareErrors(t *testing.T) {
 			config: ClientConfig{
 				Endpoint: server.URL,
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("nonexistent"),
-					},
+					configmiddleware.Config(component.MustNewID("nonexistent")),
 				},
 			},
 			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
@@ -179,9 +175,7 @@ func TestClientMiddlewareErrors(t *testing.T) {
 			config: ClientConfig{
 				Endpoint: server.URL,
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("errormw"),
-					},
+					configmiddleware.Config(component.MustNewID("errormw")),
 				},
 			},
 			errText: "http middleware error",
@@ -216,9 +210,7 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("nonexistent"),
-					},
+					configmiddleware.Config(component.MustNewID("nonexistent")),
 				},
 			},
 			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
@@ -233,9 +225,7 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 			config: ClientConfig{
 				Endpoint: "localhost:1234",
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("errormw"),
-					},
+					configmiddleware.Config(component.MustNewID("errormw")),
 				},
 			},
 			errText: "grpc middleware error",

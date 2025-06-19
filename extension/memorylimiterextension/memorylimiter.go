@@ -55,7 +55,7 @@ func (ml *memoryLimiterExtension) GetRateLimiter(
 		if ml.MustRefuse() {
 			return nil, ErrMustRefuse
 		}
-		return extensionlimiter.NewNopRateReservation(), nil
+		return extensionlimiter.NewRateReservationImpl(nil, nil), nil
 	}), nil
 }
 

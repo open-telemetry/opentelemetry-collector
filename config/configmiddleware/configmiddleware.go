@@ -32,6 +32,13 @@ var (
 // Middleware defines the extension ID for a middleware component.
 type Config component.ID
 
+func (cfg *Config) UnmarshalText(in []byte) error {
+	var id component.ID
+	err := id.UnmarshalText(in)
+	*cfg = Config(id)
+	return err
+}
+
 func resolveFailed(id component.ID) error {
 	return fmt.Errorf("failed to resolve middleware %q: %w", id, errMiddlewareNotFound)
 }

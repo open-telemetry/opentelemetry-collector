@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -95,6 +96,27 @@ func TestUnmarshalConfigOnlyHTTPEmptyMap(t *testing.T) {
 	defaultOnlyHTTP := factory.CreateDefaultConfig().(*Config)
 	GetOrInsertDefault(t, &defaultOnlyHTTP.HTTP)
 	assert.Equal(t, defaultOnlyHTTP, cfg)
+}
+
+func TestUnmarshalLimiterConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "limiters.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	require.NoError(t, cm.Unmarshal(&cfg))
+
+	assert.Equal(t, cfg.Protocols.GRPC.Get().Middlewares, []configmiddleware.Config{
+		configmiddleware.Config(component.MustNewIDWithName("one", "a")),
+		configmiddleware.Config(component.MustNewID("two")),
+	})
+	assert.Equal(t, cfg.Protocols.HTTP.Get().ServerConfig.Middlewares, []configmiddleware.Config{
+		configmiddleware.Config(component.MustNewIDWithName("three", "b")),
+		configmiddleware.Config(component.MustNewID("four")),
+	})
+	assert.Equal(t, cfg.LimiterConfig.RequestBytes, component.MustNewIDWithName("five", "c"))
+	assert.Equal(t, cfg.LimiterConfig.RequestItems, component.MustNewID("six"))
+	assert.Equal(t, cfg.LimiterConfig.RequestCount, component.MustNewID("seven"))
+	
 }
 
 func TestUnmarshalConfig(t *testing.T) {
