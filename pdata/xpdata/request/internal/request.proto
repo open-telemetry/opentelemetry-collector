@@ -28,13 +28,13 @@ message IPAddr {
 
 message TCPAddr {
   bytes ip = 1;
-  int32 port = 2;
+  int64 port = 2;
   string zone = 3;
 }
 
 message UDPAddr {
   bytes ip = 1;
-  int32 port = 2;
+  int64 port = 2;
   string zone = 3;
 }
 
