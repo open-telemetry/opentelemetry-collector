@@ -189,6 +189,7 @@ func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.Me
 
 func extractGaugeDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
 	m := pmetric.NewMetric()
+	srcMetric.CopyTo(m)
 	destGauge := m.SetEmptyGauge()
 
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
