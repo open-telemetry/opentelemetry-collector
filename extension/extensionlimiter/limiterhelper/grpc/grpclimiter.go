@@ -6,6 +6,7 @@ package grpclimiter
 import (
 	"context"
 	"sync"
+	"time"
 
 	"go.uber.org/multierr"
 	"google.golang.org/grpc"
@@ -56,8 +57,10 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 		return nil, err
 	}
 	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
-	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
-	if err := multierr.Append(err3, err4); err != nil {
+	compressedLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+	uncompressedLimiter, err5 := rp.GetRateLimiter(extensionlimiter.WeightKeyRequestBytes)
+
+	if err := multierr.Append(err3, multierr.Append(err4, err5)); err != nil {
 		return nil, err
 	}
 
@@ -98,10 +101,11 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 				}),
 		)
 	}
-	if bytesLimiter != nil {
+	if compressedLimiter != nil || uncompressedLimiter != nil {
 		gopts = append(gopts, grpc.WithStatsHandler(
 			&limiterStatsHandler{
-				limiter:  limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+				compressedLimiter:  compressedLimiter,
+				uncompressedLimiter:  uncompressedLimiter,
 				isClient: true,
 			}))
 	}
@@ -117,8 +121,9 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 		return nil, err
 	}
 	requestLimiter, err3 := wp.GetWrapper(extensionlimiter.WeightKeyRequestCount)
-	bytesLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
-	if err := multierr.Append(err3, err4); err != nil {
+	compressedLimiter, err4 := rp.GetRateLimiter(extensionlimiter.WeightKeyNetworkBytes)
+	uncompressedLimiter, err5 := rp.GetRateLimiter(extensionlimiter.WeightKeyRequestBytes)
+	if err := multierr.Append(err3, multierr.Append(err4, err5)); err != nil {
 		return nil, err
 	}
 
@@ -154,10 +159,11 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 			}),
 		)
 	}
-	if bytesLimiter != nil {
+	if compressedLimiter != nil || uncompressedLimiter != nil {
 		gopts = append(gopts, grpc.StatsHandler(
 			&limiterStatsHandler{
-				limiter:  limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+				compressedLimiter:  compressedLimiter,
+				uncompressedLimiter:  uncompressedLimiter,
 				isClient: false,
 			}))
 	}
@@ -169,7 +175,8 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
 type limiterStatsHandler struct {
-	limiter  limiterhelper.BlockingRateLimiter
+	compressedLimiter  extensionlimiter.RateLimiter
+	uncompressedLimiter  extensionlimiter.RateLimiter
 	isClient bool
 }
 
@@ -180,28 +187,56 @@ func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) c
 func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	// Check for payload messages to apply network byte rate limiting
 	var wireBytes int
+	var reqBytes int
 	switch payload := s.(type) {
 	case *stats.InPayload:
 		// Server receiving payload (or client receiving response)
 		if !h.isClient {
 			wireBytes = payload.WireLength
+			reqBytes = payload.Length
 		}
 	case *stats.OutPayload:
 		// Client sending payload (or server sending response)
 		if h.isClient {
 			wireBytes = payload.WireLength
+			reqBytes = payload.Length
 		}
 	default:
 		// Not a payload message, no rate limiting to apply
 		return
 	}
 
-	if wireBytes == 0 {
+	// Implement 1 or 2 rate limits in parallel
+	var err1, err2 error
+	var res1, res2 extensionlimiter.RateReservation
+
+	if wireBytes != 0 {
+		res1, err1 = h.compressedLimiter.ReserveRate(ctx, wireBytes)
+	}
+	if reqBytes != 0 {
+		res2, err2 = h.uncompressedLimiter.ReserveRate(ctx, reqBytes)
+	}
+
+	var wait1, wait2 time.Duration
+		
+	if res1 != nil {
+		wait1 = res1.WaitTime()
+		defer res1.Cancel()
+	}
+	if res2 != nil {
+		wait2 = res2.WaitTime()
+		defer res2.Cancel()
+	}
+
+	if err := multierr.Append(err1, err2); err != nil {
+		setRateLimiterError(ctx, err)
 		return
 	}
-	// Apply rate limiting based on network bytes
-	if err := h.limiter.WaitFor(ctx, wireBytes); err != nil {
-		setRateLimiterError(ctx, err)
+
+	wait := max(wait1, wait2)
+	select {
+	case <-ctx.Done():
+	case <-time.After(wait):
 	}
 }
 
