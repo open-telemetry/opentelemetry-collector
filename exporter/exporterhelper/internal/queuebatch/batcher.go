@@ -6,6 +6,8 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -24,6 +26,7 @@ type batcherSettings[T any] struct {
 	partitioner Partitioner[T]
 	next        sender.SendFunc[T]
 	maxWorkers  int
+	logger      *zap.Logger
 }
 
 func NewBatcher(cfg *BatchConfig, set batcherSettings[request.Request]) Batcher[request.Request] {
@@ -32,8 +35,8 @@ func NewBatcher(cfg *BatchConfig, set batcherSettings[request.Request]) Batcher[
 	}
 
 	if set.partitioner == nil {
-		return newPartitionBatcher(*cfg, set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.next)
+		return newPartitionBatcher(*cfg, set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.next, set.logger)
 	}
 
-	return newMultiBatcher(*cfg, set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next)
+	return newMultiBatcher(*cfg, set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next, set.logger)
 }

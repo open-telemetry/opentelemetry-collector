@@ -65,6 +65,7 @@ func newQueueBatch(
 		partitioner: set.Partitioner,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
+		logger:      set.Telemetry.Logger,
 	}
 	if oldBatcher {
 		// If a user configures the old batcher, we only can support "items" sizer.
