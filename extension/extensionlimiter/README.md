@@ -90,14 +90,9 @@ deadline. If the request cannot enter a pipeline before for example
 half of its deadline, return failure instead of allowing it to
 proceed.
 
-## Limiter configuration
-
-Limiters are configurable the same way middleware are configured, by
-referring to the name of the extension component.
-
 ### Built-in limiters
 
-#### MemoryLimiter
+#### MemoryLimiter extension
 
 The `memorylimiterextension` gives access to an internal component
 named `MemoryLimiter` with an interface named `MustDeny()`.
@@ -166,26 +161,7 @@ receivers:
 
 Note that in general, middleware components do not have access to the
 number of items in a request, so users are directed to receiver-level
-`limiters` configuration to limit items. The OTLP receiver uses the
-helper library to configure its factory:
-
-```golang
-func NewFactory() receiver.Factory {
-	return consumerlimiter.NewLimitedFactory(
-		receiver.NewFactory(
-			metadata.Type,
-			createDefaultConfig,
-			receiver.WithTraces(createTraces, metadata.TracesStability),
-			receiver.WithMetrics(createMetrics, metadata.MetricsStability),
-			receiver.WithLogs(createLog, metadata.LogsStability),
-			receiver.WithProfiles(createProfiles, metadata.ProfilesStability),
-		),
-		func(cfg component.Config) consumerlimiter.LimiterConfig {
-			return cfg.(*Config).LimiterConfig
-		},
-	)
-}
-```
+`limiters` configuration to limit items.
 
 #### HTTP metrics scraper
 
@@ -195,127 +171,21 @@ automatically configures network bytes and request count limits:
 
 ```yaml
 receivers:
-  scraper:
+  httpscraper:
     http:
-      limiters:
-        request_ratelimiter/scraper
-```
-
-Limiter extensions are derived from a host, a middlewares list, and a
-list of weight keys. When middleware is configurable at the factory
-level, it may be added via `receiver.NewFactory` using
-`receiver.WithLimiters(getLimiters)`:
-
-```golang
-func NewFactory() receiver.Factory {
-	return consumerlimiter.NewLimitedFactory(
-		receiver.NewFactory(
-			metadata.Type,
-			createDefaultConfig,
-			xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		),
-		func(cfg component.Config) consumerlimiter.LimiterConfig {
-		        cpy := cfg.(*Config).LimiterConfig
-			// RequestCount checked in scraper loop, reset it here:
-			cpy.RequestCount = component.ID{}
-			return 
-		},
-	)
-}
-```
-
-Here, the second argument to `consumerlimiter.NewLimitedFactory`
-is a function providing the `LimiterConfig` struct to be applied
-automatically before the next consumer in the pipeline.
-
-In the scraper loop, use `CheckSaturation` before starting a scrape:
-
-```golang
-func (s *scraper) scrapeOnce(ctx context.Context) error {
-	// Check if any limits are saturated.
-    if err := s.limiter.CheckSaturation(ctx); err != nil {
-        return err
-    }
-
-    // Network bytes and request count limits are applied in middleware.
-    // before this returns:
-    data, err := s.getData(ctx)
-    if err != nil {
-        return err
-    }
-
-    // Request items and memory size are applied in the pipeline.
-    return s.nextMetrics.ConsumeMetrics(ctx, data)
-}
-```
-
-#### gRPC stream receiver
-
-A gRPC streaming receiver that holds memory across its allocated in
-`Send()` and does not release it until after a corresponding `Recv()`
-requires use of the lower-level `ResourceLimiter` interface.
-The gRPC  config object's `middlewares` field
-automatically configures network bytes and request count limits:
-
-```yaml
-receivers:
-  streamer:
-    grpc:
-      middlewares:
-      - ratelimiter/streamer
-```
-
-The receiver will check `s.limiter.CheckSaturation()` as above.  In a stream,
-a blocking limiter is used which blocks the stream (via
-`s.requestSizeLimiter.WaitFor()`) until limit requests succeed, however
-after the limit requests succeed, the receiver returns from `Send()`
-to continue accepting new requests while the consumer works in a
-separate goroutine. The limit will be released after the consumer
-returns in this example:
-
-```golang
-func (s *scraper) LogsStream(ctx context.Context, stream *Stream) error {
-    for {
-        // Check saturation for all limiters, all keys.
-        err := s.limiter.CheckSaturation(ctx)
-        if err != nil { ... }
-
-        // The network bytes and request count limits are applied in middleware.
-        req, err := stream.Recv()
-        if err != nil { ... }
-
-        // Allocate memory objects.
-        data, err := s.getLogs(ctx, req)
-        if err != nil { ... }
-
-        // Non-blocking limiter call.
-        release, err := s.requestSizeLimiter.WaitFor(ctx, pdataSize(data))
-        if err != nil { ... }
-
-        // Asynchronous work starts here.
-        go func() {
-            // Request items limit is applied in the pipeline consumer
-            err := s.nextMetrics.ConsumeMetrics(ctx, data)
-
-            // Release the memory.
-            release()
-
-            // Reply to the caller.
-            stream.Send(streamResponseFromConsumerError(err))
-        }
-    }
-}
+      middleware:
+      - ratelimiter/scraper_request_bytes
+      - compression/zstd
+      - ratelimiter/scraper_network_bytes
+    limiters:
+      request_count: ratelimiter/scraper_count
+      request_items: ratelimiter/scraper_items
 ```
 
 ##### Data-dependent limits
 
 When a single unit of data contains limits that are assignable to
-multiple distinct limiters, one option available to users is to split
-requests and add to their context and run them concurrently through
-context-dependent limiters.  See
-[#39199](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39199).
-
-Another option, shown below, is to use the non-blocking rate limiter
+multiple distinct limiters, we can use the non-blocking rate limiter
 interface and drop data that would exceed a limit.  For example, to
 limit based on metadata extracted from the OpenTelemetry resource
 value:
@@ -324,6 +194,7 @@ value:
 func (p *processor) limitLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, extensionlimiter.ReleaseFunc, error) {
     var rels extensionlimiter.ReleaseFuncs
 	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+	        // For an individual resource, ...
 		md := resourceToMetadata(rl.Resource())
 		reservation, err := p.limiter.ReserveRate(withMetadata(ctx, md))
 		if err != nil {
@@ -373,48 +244,90 @@ interfaces. **NOTE: No options are implemented.** Potential options:
 Because the set of each of these is small, it is possible to
 pre-compute limiter instances for the cross product of configurations.
 
-## Architecture
+##### Middleware and/or LimiterConfig
 
-The following diagram illustrates the core architecture of the extension limiter system, showing the relationships between interfaces, providers, helpers, and middleware integration:
+The question is how we avoid double-count certain limits whether they
+are implemented in middleware, through a factory, through custom
+receiver code, or other.
 
-```mermaid
-graph TD;
-    subgraph "Limiters"
-	    SaturationChecker["SaturationChecker"]
-	    RateLimiter["RateLimiter"]
-	    ResourceLimiter["ResourceLimiter"]
-	    LimiterWrapper["LimiterWrapper"]
-    end
+In the current limiter extension proposal, middleware references are
+component IDs (without referce to weight key), while `LimiterConfig`
+is a set of weight-specific limiter references. Users will be able to
+double-count certain features when they user the same limiter
+extension in both middleware and limiters configuration, unless we
+help explicitly avoid this scnario. It could be accomplished using
+context variables or start-time settings.
 
-    subgraph "Providers"
-	    SaturationCheckerProvider["SaturationCheckerProvider"]
-	    RateLimiterProvider["RateLimiterProvider"]
-	    ResourceLimiterProvider["ResourceLimiterProvider"]
-	    LimiterWrapperProvider["LimiterWrapperProvider"]
-    end
+##### Controlling middleware order
 
-    RateLimiterProvider -.->|extends| SaturationCheckerProvider
-    ResourceLimiterProvider -.->|extends| SaturationCheckerProvider
-    LimiterWrapperProvider -.->|extends| SaturationCheckerProvider
-    ResourceLimiterProvider -->|substitution possible| RateLimiterProvider
-    LimiterWrapperProvider -->|wraps| SaturationCheckerProvider
-    LimiterWrapperProvider -->|wraps| RateLimiterProvider
-    LimiterWrapperProvider -->|wraps| ResourceLimiterProvider
+While middleware order is a list of components, it is difficult for
+users to reason about the order of application. To implement a
+network-bytes or request-bytes limit, the limiter has to be configured
+before or after the compression middleware.
 
-    SaturationCheckerProvider -->|creates| SaturationChecker
-    RateLimiterProvider -->|creates| RateLimiter
-    ResourceLimiterProvider -->|creates| ResourceLimiter
-    LimiterWrapperProvider -->|creates| LimiterWrapper
+Today, HTTP middleware for compression is automatically inserted
+although [it could become middleware
+itself](https://github.com/open-telemetry/opentelemetry-collector/issues/13228).
 
-    LimiterWrapper -->|wraps/implements| SaturationChecker
-    RateLimiter -->|implements| SaturationChecker
-    ResourceLimiter -->|implements| SaturationChecker
+Since middlware references are simple identifiers (without weight
+keys), additional help is needed to distinguish compressed bytes from
+uncompressed bytes, especially for the HTTP cases. Potentially,
+middleware can look at Transfer-Encoding or context.Context values
+to distinguish these cases.
 
-    ResourceLimiter -->|substitution possible| RateLimiter
+#### Middleware component syntax
 
-    LimiterWrapper -->|wraps| RateLimiter
-    LimiterWrapper -->|wraps| ResourceLimiter
+In many discussions and documents, a number of authors have shown a
+preference for simple component identifiers, without the leading `id:`
+field syntax, which is to change
+
+```go
+type Config struct {
+	ID component.ID `mapstructure:"id,omitempty"`
+}
 ```
 
-TODO describe connection with
-https://github.com/elastic/opentelemetry-collector-components/blob/main/processor/ratelimitprocessor/README.md
+to:
+
+```go
+type Config struct component.ID
+```
+
+This allows middleware to be listed as simple identifiers,
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        middleware:
+        - ratelimiter/1
+        - ratelimiter/2
+    limiters:
+      request_bytes: admissionlimiter/3
+```
+
+##### Are built-in rate and resource limiters needed?
+
+The provided helper implementations are based in
+`golang.org/x/time/rate` and
+`collector-contrib/internal/otelarrow/admission2`.  We could instead
+create two extension implementations for these. The code is a hundred
+lines or so each.
+
+The [Elastic rate limiter
+processor](https://github.com/elastic/opentelemetry-collector-components/blob/main/processor/ratelimitprocessor/README.md)
+would be a good contribution for the community. We are interested in
+real-world features such as the ability to set `metadata_keys`.
+
+##### Instrumentation
+
+It is possible to extract Counter (RateLimiter) and UpDownCounter
+(ResourceLimiter) instrumentation to convey the rates and totals
+associated with each limiter.
+
+This should investigated along with investigation into the topics
+raised above. Users will be well served if we are able to confidently
+extract network-bytes, request-bytes, request-items, and request-count
+information without double-counting and provide instrumentation
+covering these variables.
