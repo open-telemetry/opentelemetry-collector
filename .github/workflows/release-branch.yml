@@ -1,14 +1,12 @@
 name: Automation - Release Branch
 
 on:
-  workflow_dispatch:
-    inputs:
-      release-series:
-        description: 'Release series (e.g., v0.85.x).'
-        required: true
-      prepare-release-commit-hash:
-        description: 'Commit hash for "Prepare release" commit (e.g., a1b2c3d4)'
-        required: true
+  push:
+    tags:
+      # Trigger on beta version tags (0.x.x series) to create release branch
+      # This pattern matches: v0.{minor}.{patch} for new releases and bugfix releases
+      - 'v0.[0-9]+.[0-9]+'
+      - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
 
 jobs:
   release-branch:
@@ -33,7 +31,8 @@ jobs:
 
       - name: Run release-branch.sh
         run: |
-          ./.github/workflows/scripts/release-branch.sh "${{ inputs.release-series }}" "${{ inputs.prepare-release-commit-hash }}"
+          ./.github/workflows/scripts/release-branch.sh
         env:
           UPSTREAM_REMOTE_NAME: "origin"
           MAIN_BRANCH_NAME: "main"
+          GITHUB_REF: ${{ github.ref }}
