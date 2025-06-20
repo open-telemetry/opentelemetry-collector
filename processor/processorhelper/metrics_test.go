@@ -182,7 +182,6 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 }
 
 func TestMetrics_ProcesDuration(t *testing.T) {
-	// Regardless of how many data points are ingested, emit 3
 	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
 		md := pmetric.NewMetrics()
 		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()
@@ -192,11 +191,6 @@ func TestMetrics_ProcesDuration(t *testing.T) {
 	}
 
 	incomingMetrics := pmetric.NewMetrics()
-	dps := incomingMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints()
-
-	// Add 2 data points to the incoming
-	dps.AppendEmpty()
-	dps.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
 	mp, err := NewMetrics(context.Background(), newSettings(tel), &testMetricsCfg, consumertest.NewNop(), mockAggregate)

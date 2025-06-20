@@ -186,7 +186,6 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 }
 
 func TestTraces_ProcessDuration(t *testing.T) {
-	// Regardless of how many spans are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
 		td := ptrace.NewTraces()
 		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -194,13 +193,6 @@ func TestTraces_ProcessDuration(t *testing.T) {
 	}
 
 	incomingTraces := ptrace.NewTraces()
-	incomingSpans := incomingTraces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans()
-
-	// Add 4 records to the incoming
-	incomingSpans.AppendEmpty()
-	incomingSpans.AppendEmpty()
-	incomingSpans.AppendEmpty()
-	incomingSpans.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
 	tp, err := NewTraces(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)

@@ -184,7 +184,6 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 }
 
 func TestLogs_ProcessDuration(t *testing.T) {
-	// Regardless of how many logs are ingested, emit just one
 	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
 		ld := plog.NewLogs()
 		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
@@ -192,12 +191,6 @@ func TestLogs_ProcessDuration(t *testing.T) {
 	}
 
 	incomingLogs := plog.NewLogs()
-	incomingLogRecords := incomingLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
-
-	// Add 3 records to the incoming
-	incomingLogRecords.AppendEmpty()
-	incomingLogRecords.AppendEmpty()
-	incomingLogRecords.AppendEmpty()
 
 	tel := componenttest.NewTelemetry()
 	lp, err := NewLogs(context.Background(), newSettings(tel), &testLogsCfg, consumertest.NewNop(), mockAggregate)
