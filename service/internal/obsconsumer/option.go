@@ -42,8 +42,8 @@ func (o *options) compile() compiledOptions {
 	failureAttrs = append(failureAttrs, o.staticDataPointAttributes...)
 
 	refusedAttrs := make([]attribute.KeyValue, 0, 1+len(o.staticDataPointAttributes))
-	refusedAttrs = append(failureAttrs, attribute.String(ComponentOutcome, "refused"))
-	refusedAttrs = append(failureAttrs, o.staticDataPointAttributes...)
+	refusedAttrs = append(refusedAttrs, attribute.String(ComponentOutcome, "refused"))
+	refusedAttrs = append(refusedAttrs, o.staticDataPointAttributes...)
 
 	return compiledOptions{
 		withSuccessAttrs: metric.WithAttributes(successAttrs...),

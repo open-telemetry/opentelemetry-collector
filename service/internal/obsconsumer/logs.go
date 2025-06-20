@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -62,11 +63,11 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 
 	err := c.consumer.ConsumeLogs(ctx, ld)
 	if err != nil {
-		if IsDownstream(err) {
+		if consumererror.IsDownstream(err) {
 			attrs = &c.withRefusedAttrs
 		} else {
 			attrs = &c.withFailureAttrs
-			err = MarkAsDownstream(err)
+			err = consumererror.NewDownstream(err)
 		}
 	}
 	return err

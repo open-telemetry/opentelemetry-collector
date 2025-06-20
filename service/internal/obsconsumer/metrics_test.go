@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
@@ -162,7 +163,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
-	downstreamErr := obsconsumer.MarkAsDownstream(expectedErr)
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockMetricsConsumer{err: expectedErr}
 
 	reader := sdkmetric.NewManualReader()
@@ -304,7 +305,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 
 	ctx := context.Background()
 	expectedErr := errors.New("test error")
-	downstreamErr := obsconsumer.MarkAsDownstream(expectedErr)
+	downstreamErr := consumererror.NewDownstream(expectedErr)
 	mockConsumer := &mockMetricsConsumer{}
 
 	reader := sdkmetric.NewManualReader()
