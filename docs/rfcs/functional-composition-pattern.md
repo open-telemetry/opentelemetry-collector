@@ -81,9 +81,9 @@ values, so we can write:
 ```
 
 For constant values and enumerated types, define a `Self()` method to
-act as the corresponding function implementation for constant values.
+act as the corresponding function implementation: 
 
-```
+```go
 // Self returns itself.
 func (t Type) Self() Type {
      return t
@@ -100,20 +100,20 @@ func (f TypeFunc) Type() Type {
 }
 ```
 
-with usage like:
+For example, we can decompose, modify, and recompose a
+`component.Factory`:
 
 ```go
     // Construct a factory with a new default Config:
     factory := sometype.NewFactory()
     cfg := factory.CreateDefaultConfig()
     // modify the config object
-    return NewFactoryImpl(factory.Type().Self, cfg.Self) Factory {
+    return NewFactoryImpl(factory.Type().Self, cfg.Self)
 ```
 
 ### 3. Use Constructors for Interface Values
 
-For public interfaces provide constructor functions rather than
-exposing concrete types:
+Provide constructor functions rather than exposing concrete types:
 
 ```go
 // Good: Constructor function
@@ -126,14 +126,14 @@ func NewRateLimiterImpl(f ReserveRateFunc) RateLimiter {
 ```
 
 Rarely should the implementation type be exposed. This pattern can be
-combined with the functional option pattern:
+combined with the Functional Option pattern (from `receiver/receiver.go`):
 
-```
-// Setup the logging implementation functions
+```go
+// Setup optional logging-related functions
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
+		o.CreateLogsFunc = createLogs
 		o.LogsStabilityFunc = sl.Self
-		o.CreateLogsFunc = ...
 	})
 }
 
@@ -257,11 +257,18 @@ type ReserveRateFunc func(context.Context, int) (RateReservation, error)
 
 ### 5. Implementation Structs
 
-- Use lowercase names for implementation structs
+- Use unexported names for implementation structs
 - Embed function types directly
-- Implement private methods for sealing
+- Implement private methods for sealing the interface
 
 ```go
+type RateLimiter interface {
+     // ...
+
+     // Must use functional constructors outside this package
+     private()
+}
+
 type rateLimiterImpl struct {
     ReserveRateFunc
 }
@@ -284,71 +291,3 @@ func (rateLimiterImpl) private() {}
 - **Stateful objects** where methods need to share significant state
 - **Performance-critical code** where function call overhead matters
 - **Simple implementations** where the pattern adds unnecessary complexity
-
-## Examples
-
-### Simple Rate Limiter
-
-```go
-type RateLimiter interface {
-    ReserveRate(context.Context, int) (RateReservation, error)
-    private()
-}
-
-type ReserveRateFunc func(context.Context, int) (RateReservation, error)
-
-func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) (RateReservation, error) {
-    if f == nil {
-        return NewRateReservationImpl(nil, nil), nil
-    }
-    return f(ctx, value)
-}
-
-func NewRateLimiterImpl(f ReserveRateFunc) RateLimiter {
-    return rateLimiterImpl{ReserveRateFunc: f}
-}
-```
-
-### Multi-Method Interface
-
-```go
-type RateReservation interface {
-    WaitTime() time.Duration
-    Cancel()
-    private()
-}
-
-type WaitTimeFunc func() time.Duration
-type CancelFunc func()
-
-func (f WaitTimeFunc) WaitTime() time.Duration {
-    if f == nil { return 0 }
-    return f()
-}
-
-func (f CancelFunc) Cancel() {
-    if f == nil { return }
-    f()
-}
-
-func NewRateReservationImpl(wf WaitTimeFunc, cf CancelFunc) RateReservation {
-    return rateReservationImpl{
-        WaitTimeFunc: wf,
-        CancelFunc:   cf,
-    }
-}
-```
-
-## Benefits Summary
-
-1. **Compositional**: Build complex interfaces from simple function components
-2. **Flexible**: Transform individual methods without affecting others
-3. **Testable**: Test each method implementation independently
-4. **Evolvable**: Add methods to interfaces without breaking existing code
-5. **Type-Safe**: Maintain compile-time safety while providing runtime flexibility
-
-## Common Pitfalls
-
-1. **Nil Panics**: Always handle nil function types in method implementations
-2. **Performance**: Consider the function call overhead for high-frequency operations
-3. **Complexity**: Don't use this pattern when a simple struct implementation suffices
