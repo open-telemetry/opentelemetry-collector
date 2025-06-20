@@ -136,6 +136,95 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestSplitMetricsWithDataPointSplit(t *testing.T) {
+	generateTestMetrics := func(metricType pmetric.MetricType) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("test_metric")
+		m.SetDescription("test_description")
+		m.SetUnit("test_unit")
+
+		const numDataPoints = 2
+
+		switch metricType {
+		case pmetric.MetricTypeSum:
+			sum := m.SetEmptySum()
+			for i := 0; i < numDataPoints; i++ {
+				sum.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeGauge:
+			gauge := m.SetEmptyGauge()
+			for i := 0; i < numDataPoints; i++ {
+				gauge.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeHistogram:
+			hist := m.SetEmptyHistogram()
+			for i := 0; i < numDataPoints; i++ {
+				hist.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			expHist := m.SetEmptyExponentialHistogram()
+			for i := 0; i < numDataPoints; i++ {
+				expHist.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			}
+		case pmetric.MetricTypeSummary:
+			summary := m.SetEmptySummary()
+			for i := 0; i < numDataPoints; i++ {
+				summary.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			}
+		}
+		return md
+	}
+
+	tests := []struct {
+		name       string
+		metricType pmetric.MetricType
+	}{
+		{
+			name:       "sum",
+			metricType: pmetric.MetricTypeSum,
+		},
+		{
+			name:       "gauge",
+			metricType: pmetric.MetricTypeGauge,
+		},
+		{
+			name:       "histogram",
+			metricType: pmetric.MetricTypeHistogram,
+		},
+		{
+			name:       "exponential_histogram",
+			metricType: pmetric.MetricTypeExponentialHistogram,
+		},
+		{
+			name:       "summary",
+			metricType: pmetric.MetricTypeSummary,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Generate metrics with 2 data points.
+			mr1 := newMetricsRequest(generateTestMetrics(tt.metricType))
+
+			// Split by data point, so maxSize is 1.
+			res, err := mr1.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+			require.NoError(t, err)
+			require.Len(t, res, 2)
+
+			for _, req := range res {
+				actualRequest := req.(*metricsRequest)
+				// Each split request should contain one data point.
+				assert.Equal(t, 1, actualRequest.ItemsCount())
+				m := actualRequest.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				// Check that metric metadata is preserved.
+				assert.Equal(t, "test_metric", m.Name())
+				assert.Equal(t, "test_description", m.Description())
+				assert.Equal(t, "test_unit", m.Unit())
+			}
+		})
+	}
+}
+
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newMetricsRequest(testdata.GenerateMetrics(18)) // 18 metrics, 36 data points
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
@@ -334,7 +423,7 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractGaugeDataPoints(gauge, tt.capacity, sz)
+			destMetric, removedSize := extractGaugeDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -382,7 +471,7 @@ func TestExtractSumDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSumDataPoints(sum, tt.capacity, sz)
+			destMetric, removedSize := extractSumDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -431,7 +520,7 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractHistogramDataPoints(histogram, tt.capacity, sz)
+			destMetric, removedSize := extractHistogramDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -479,7 +568,7 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractExponentialHistogramDataPoints(expHistogram, tt.capacity, sz)
+			destMetric, removedSize := extractExponentialHistogramDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -527,7 +616,7 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSummaryDataPoints(summary, tt.capacity, sz)
+			destMetric, removedSize := extractSummaryDataPoints(srcMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
 			if tt.expectedPoints > 0 {
