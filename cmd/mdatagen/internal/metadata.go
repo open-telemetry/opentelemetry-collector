@@ -300,8 +300,8 @@ type Attribute struct {
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
 	Type ValueType `mapstructure:"type"`
-	// IsTemplateKey defines if attribute template of type Type should be used
-	IsTemplateKey bool `mapstructure:"is_template_key"`
+	// IsTemplate defines if attribute template of type Type should be used
+	IsTemplate bool `mapstructure:"is_template"`
 	// FullName is the attribute name populated from the map key.
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
@@ -317,8 +317,8 @@ func (a Attribute) Name() AttributeName {
 }
 
 func (a Attribute) TestValue() string {
-	if a.IsTemplateKey {
-		return a.TestValueTemplateKey()
+	if a.IsTemplate {
+		return a.TestTemplateKey()
 	}
 	if a.Enum != nil {
 		return fmt.Sprintf(`"%s"`, a.Enum[0])
@@ -344,29 +344,11 @@ func (a Attribute) TestValue() string {
 	return ""
 }
 
-func (a Attribute) TestValueTemplateKey() string {
-	switch a.Type.ValueType {
-	case pcommon.ValueTypeEmpty:
-		return ""
-	case pcommon.ValueTypeStr:
-		return `"key", "val"`
-	case pcommon.ValueTypeInt:
-		return `"key", 1`
-	case pcommon.ValueTypeDouble:
-		return `"key", 1.1`
-	case pcommon.ValueTypeBool:
-		return `"key", true`
-	case pcommon.ValueTypeMap:
-		return `"key", map[string]any{"key1": "val1", "key2": "val2"}`
-	case pcommon.ValueTypeSlice:
-		return `"key", []any{"item1", "item2"}`
-	case pcommon.ValueTypeBytes:
-		return `"key", []byte("val")`
-	}
-	return ""
+func (a Attribute) TestTemplateKey() string {
+	return `"key", ` + a.TestTemplateValue()
 }
 
-func (a Attribute) TestResultTemplateValue() string {
+func (a Attribute) TestTemplateValue() string {
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeStr:
 		return `"val"`
@@ -387,7 +369,7 @@ func (a Attribute) TestResultTemplateValue() string {
 }
 
 func (a Attribute) TestResultTemplateKey() string {
-	if a.IsTemplateKey {
+	if a.IsTemplate {
 		return ".key"
 	}
 	return ""

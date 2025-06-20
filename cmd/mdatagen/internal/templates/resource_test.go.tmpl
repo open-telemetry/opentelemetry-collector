@@ -52,10 +52,10 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, tt == "all_set", ok)
 			{{- end }}
 			if ok {
-				{{- if and (eq $attr.Type.String "Int") (not $attr.IsTemplateKey) -}}
+				{{- if and (eq $attr.Type.String "Int") (not $attr.IsTemplate) -}}
 				assert.EqualValues(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
-				{{- else if $attr.IsTemplateKey -}}
-				assert.Equal(t, {{ $attr.TestResultTemplateValue }}, val.{{ $attr.Type }}()
+				{{- else if $attr.IsTemplate -}}
+				assert.Equal(t, {{ $attr.TestTemplateValue }}, val.{{ $attr.Type }}()
 				{{- else -}}
 				assert.Equal(t, {{ $attr.TestValue }}, val.{{ $attr.Type }}()
 				{{- end -}}

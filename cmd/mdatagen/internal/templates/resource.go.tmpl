@@ -30,7 +30,7 @@ func (rb *ResourceBuilder) Set{{ $name.Render }}{{ . | publicVar }}() {
 	}
 }
 {{- else }}
-{{- if $attr.IsTemplateKey }}
+{{- if $attr.IsTemplate }}
 // Set{{ $name.Render }} sets provided attribute key with template prefix "{{ $name }}".
 func (rb *ResourceBuilder) Set{{ $name.Render }}(key string, val {{ $attr.Type.Primitive }}) {
 	if rb.config.{{ $name.Render }}.Enabled {
