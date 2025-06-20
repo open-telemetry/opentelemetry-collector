@@ -16,6 +16,9 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest"
 )
 
+// TODO: network bytes can be implemented after compression middleware, requires
+// integration with confighttp.
+
 func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTTPClient, error) {
 	wp, err1 := limiterhelper.AnyToWrapperProvider(ext)
 	rp, err2 := limiterhelper.AnyToRateLimiterProvider(ext)
