@@ -5,6 +5,7 @@ package request // import "go.opentelemetry.io/collector/pdata/xpdata/request"
 
 import (
 	"context"
+	"net"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -19,20 +20,21 @@ var readOnlyState = pdataint.StateReadOnly
 
 // encodeContext encodes the context into a map of strings.
 func encodeContext(ctx context.Context) internal.RequestContext {
-	return internal.RequestContext{
-		SpanContext:    encodeSpanContext(ctx),
-		ClientMetadata: encodeClientMetadata(ctx),
-	}
+	rc := internal.RequestContext{}
+	encodeSpanContext(ctx, &rc)
+	encodeClientMetadata(ctx, &rc)
+	encodeClientAddress(ctx, &rc)
+	return rc
 }
 
-func encodeSpanContext(ctx context.Context) *internal.SpanContext {
+func encodeSpanContext(ctx context.Context, rc *internal.RequestContext) {
 	spanCtx := trace.SpanContextFromContext(ctx)
 	if !spanCtx.IsValid() {
-		return nil
+		return
 	}
 	traceID := spanCtx.TraceID()
 	spanID := spanCtx.SpanID()
-	return &internal.SpanContext{
+	rc.SpanContext = &internal.SpanContext{
 		TraceId:    traceID[:],
 		SpanId:     spanID[:],
 		TraceFlags: uint32(spanCtx.TraceFlags()),
@@ -41,7 +43,7 @@ func encodeSpanContext(ctx context.Context) *internal.SpanContext {
 	}
 }
 
-func encodeClientMetadata(ctx context.Context) []protocommon.KeyValue {
+func encodeClientMetadata(ctx context.Context, rc *internal.RequestContext) {
 	clientMetadata := client.FromContext(ctx).Metadata
 	metadataMap, metadataFound := pcommon.Map{}, false
 	for k := range clientMetadata.Keys() {
@@ -54,9 +56,35 @@ func encodeClientMetadata(ctx context.Context) []protocommon.KeyValue {
 		}
 	}
 	if metadataFound {
-		return *pdataint.GetOrigMap(pdataint.Map(metadataMap))
+		rc.ClientMetadata = *pdataint.GetOrigMap(pdataint.Map(metadataMap))
 	}
-	return nil
+}
+
+func encodeClientAddress(ctx context.Context, rc *internal.RequestContext) {
+	switch a := client.FromContext(ctx).Addr.(type) {
+	case *net.IPAddr:
+		rc.ClientAddress = &internal.RequestContext_Ip{Ip: &internal.IPAddr{
+			Ip:   a.IP,
+			Zone: a.Zone,
+		}}
+	case *net.TCPAddr:
+		rc.ClientAddress = &internal.RequestContext_Tcp{Tcp: &internal.TCPAddr{
+			Ip:   a.IP,
+			Port: int64(a.Port),
+			Zone: a.Zone,
+		}}
+	case *net.UDPAddr:
+		rc.ClientAddress = &internal.RequestContext_Udp{Udp: &internal.UDPAddr{
+			Ip:   a.IP,
+			Port: int64(a.Port),
+			Zone: a.Zone,
+		}}
+	case *net.UnixAddr:
+		rc.ClientAddress = &internal.RequestContext_Unix{Unix: &internal.UnixAddr{
+			Name: a.Name,
+			Net:  a.Net,
+		}}
+	}
 }
 
 // decodeContext decodes the context from the bytes map.
@@ -65,7 +93,15 @@ func decodeContext(ctx context.Context, rc *internal.RequestContext) context.Con
 		return ctx
 	}
 	ctx = decodeSpanContext(ctx, rc.SpanContext)
-	return decodeClientMetadata(ctx, rc.ClientMetadata)
+	metadataMap := decodeClientMetadata(rc.ClientMetadata)
+	clientAddress := decodeClientAddress(rc)
+	if len(metadataMap) > 0 || clientAddress != nil {
+		ctx = client.NewContext(ctx, client.Info{
+			Metadata: client.NewMetadata(metadataMap),
+			Addr:     clientAddress,
+		})
+	}
+	return ctx
 }
 
 func decodeSpanContext(ctx context.Context, sc *internal.SpanContext) context.Context {
@@ -86,9 +122,9 @@ func decodeSpanContext(ctx context.Context, sc *internal.SpanContext) context.Co
 	}))
 }
 
-func decodeClientMetadata(ctx context.Context, clientMetadata []protocommon.KeyValue) context.Context {
+func decodeClientMetadata(clientMetadata []protocommon.KeyValue) map[string][]string {
 	if len(clientMetadata) == 0 {
-		return ctx
+		return nil
 	}
 	metadataMap := make(map[string][]string, len(clientMetadata))
 	for k, vals := range pcommon.Map(pdataint.NewMap(&clientMetadata, &readOnlyState)).All() {
@@ -97,5 +133,33 @@ func decodeClientMetadata(ctx context.Context, clientMetadata []protocommon.KeyV
 			metadataMap[k][i] = v.Str()
 		}
 	}
-	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(metadataMap)})
+	return metadataMap
+}
+
+func decodeClientAddress(rc *internal.RequestContext) net.Addr {
+	switch a := rc.ClientAddress.(type) {
+	case *internal.RequestContext_Ip:
+		return &net.IPAddr{
+			IP:   a.Ip.Ip,
+			Zone: a.Ip.Zone,
+		}
+	case *internal.RequestContext_Tcp:
+		return &net.TCPAddr{
+			IP:   a.Tcp.Ip,
+			Port: int(a.Tcp.Port),
+			Zone: a.Tcp.Zone,
+		}
+	case *internal.RequestContext_Udp:
+		return &net.UDPAddr{
+			IP:   a.Udp.Ip,
+			Port: int(a.Udp.Port),
+			Zone: a.Udp.Zone,
+		}
+	case *internal.RequestContext_Unix:
+		return &net.UnixAddr{
+			Name: a.Unix.Name,
+			Net:  a.Unix.Net,
+		}
+	}
+	return nil
 }

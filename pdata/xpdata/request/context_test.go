@@ -5,6 +5,7 @@ package request // import "go.opentelemetry.io/collector/pdata/xpdata/request"
 
 import (
 	"context"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,24 +22,74 @@ func TestEncodeDecodeContext(t *testing.T) {
 		"key1": {"value1"},
 		"key2": {"value2", "value3"},
 	})
+	tests := []struct {
+		name       string
+		clientInfo client.Info
+	}{
+		{
+			name:       "without_client_address",
+			clientInfo: client.Info{Metadata: clientMetadata},
+		},
+		{
+			name: "with_client_IP_address",
+			clientInfo: client.Info{
+				Metadata: clientMetadata,
+				Addr: &net.IPAddr{
+					IP:   net.IPv6loopback,
+					Zone: "eth0",
+				},
+			},
+		},
+		{
+			name: "with_client_TCP_address",
+			clientInfo: client.Info{
+				Metadata: clientMetadata,
+				Addr: &net.TCPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 8080,
+				},
+			},
+		},
+		{
+			name: "with_client_UDP_address",
+			clientInfo: client.Info{
+				Metadata: clientMetadata,
+				Addr: &net.UDPAddr{
+					IP:   net.IPv4(127, 0, 0, 1),
+					Port: 8080,
+				},
+			},
+		},
+		{
+			name: "with_client_unix_address",
+			clientInfo: client.Info{
+				Metadata: clientMetadata,
+				Addr: &net.UnixAddr{
+					Name: "/var/run/test.sock",
+					Net:  "unixpacket",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Encode a context with a span and client metadata
+			ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
+			ctx = client.NewContext(ctx, tt.clientInfo)
+			reqCtx := encodeContext(ctx)
+			buf, err := reqCtx.Marshal()
+			require.NoError(t, err)
 
-	// Encode a context with a span and client metadata
-	ctx := trace.ContextWithSpanContext(context.Background(), spanCtx)
-	ctx = client.NewContext(ctx, client.Info{
-		Metadata: clientMetadata,
-	})
-	reqCtx := encodeContext(ctx)
-	buf, err := reqCtx.Marshal()
-	require.NoError(t, err)
+			// Decode the context
+			gotReqCtx := internal.RequestContext{}
+			err = gotReqCtx.Unmarshal(buf)
+			require.NoError(t, err)
+			gotCtx := decodeContext(context.Background(), &gotReqCtx)
+			assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
+			assert.Equal(t, tt.clientInfo, client.FromContext(gotCtx))
+		})
+	}
 
-	// Decode the context
-	gotReqCtx := internal.RequestContext{}
-	err = gotReqCtx.Unmarshal(buf)
-	require.NoError(t, err)
-	gotCtx := decodeContext(context.Background(), &gotReqCtx)
-	assert.Equal(t, spanCtx, trace.SpanContextFromContext(gotCtx))
-	assert.Equal(t, clientMetadata, client.FromContext(gotCtx).Metadata)
-
-	// Decode nil request context
+	// Decode a nil context
 	assert.Equal(t, context.Background(), decodeContext(context.Background(), nil))
 }
