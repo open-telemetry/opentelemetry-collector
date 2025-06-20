@@ -44,6 +44,13 @@ func (f CancelFunc) Cancel() {
 }
 ```
 
+Users of the `net/http` package will have seen this pattern
+before. The `http.HandlerFunc` type can be seen as a prototype for
+functional composition of HTTP handlers. Interestingly, the
+single-method `http.RoundTripper` interface, which represents the same
+interaction on the client-side, does not have a `RoundTripperFunc`. In
+this codebase, the pattern is applied exstensively.
+
 Note that each function type always implements no-op functionality,
 such that passing `nil` corresponds with the no-op implementation for
 a that function.
