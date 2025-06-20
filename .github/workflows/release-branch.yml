@@ -3,10 +3,10 @@ name: Automation - Release Branch
 on:
   push:
     tags:
-      # Trigger only on beta version tags (0.x.x series) to create release branch
-      # This pattern matches: v0.{minor}.{patch} where patch is 0 for new releases
-      - 'v0.[0-9]+.0'
-      - 'v0.[0-9]+.0-*' # Also support release candidates if needed
+      # Trigger on beta version tags (0.x.x series) to create release branch
+      # This pattern matches: v0.{minor}.{patch} for new releases and bugfix releases
+      - 'v0.[0-9]+.[0-9]+'
+      - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
 
 jobs:
   release-branch:
