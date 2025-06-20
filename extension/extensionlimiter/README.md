@@ -9,175 +9,101 @@ through middleware and/or directly by pipeline components.
 
 ## Overview
 
-This package defines three foundational limiter **kinds**, each with
-similar but distinct interfaces.  A limiter extension can be either a
-simple "saturation" checker (defined below), or it extends the simple
-checker interface with a weight-based interface:
+This package defines two foundational limiter **kinds**, with similar
+but distinct interfaces.  A limiter extension can be:
 
-- **Saturation Checker**: Makes a simple yes/no decision without a weight
-  parameter, typically to stop new work in an emergency.
 - **Rate Limiter**: Controls time-based limits over weights such as
   bytes or items per second.
 - **Resource Limiter**: Controls physical limits over weights such as
   concurrent requests or active memory in use.
 
-For the two weight-based limiters, requests are quantified with an
-integer value and identified by a **weight key** indicating the type
-of quantity being measured and limited. There are currently four
-weight keys with a standard definition:
+Requests are quantified with an integer value and identified by
+**weight key**, indicating the type of quantity being measured and
+limited. There are currently four weight keys with a standard
+definition:
 
 1. Network bytes (compressed)
 2. Request count
 3. Request items
 4. Request bytes (uncompressed)
 
+## Early-as-possible application
 
+Limiter extensions should be used as early as possible in a
+pipeline. There are two automatic ways that receivers can integrate
+with rate limiters:
 
-The foundational interfaces are non-blocking, and each calling
-convention is different.  The various limiter kinds are unified
-through a `LimiterWrapper` interface, which simplifies consumers in
-many cases by providing a consistent `LimitCall` interface for each
-limiter kind using a synchronous callback. Limiter wrappers provide an
-abstraction over the details of requesting the limit, blocking the
-caller temporarily (considering deadline), and making the call.
+- Middleware application: rate limiters are automatically recognized
+  in the list of middleware. Middleware supports HTTP and gRPC, client
+  and server, unary and streaming cases. Middleware automatically
+  implements request bytes and request count limits.
+- Consumer application: rate limiters can be applied before the next
+  consumer in the pipeline, using standard `consumerlimiter.LimiterConfig`
+  configuration.
 
-There are circumstances where the kind of limiter matters. For
-example, in current middleware, the network bytes weight key can be
-measured through a `grpc.StatsHandler` or an `io.ReadCloser`, and in
-both cases the resource (e.g., byte slice, pdata object) remains in
-use after the method returns. These callers can apply rate limit and
-basic limits, but they cannot apply resource limits.
+Limiters should be applied, if possible, before work on a request
+begins. Work that is done before a limit is requested is subject to
+loss, in case the limiter causes failure.
 
-The kind of limiter matters in other situations where program control
-flow does not permit the use of a wrapper, especially as needed to
-maintain back-pressure in a pipeline. In a streaming asynchronous
-receiver (e.g.,
-[otelarrowreceiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/otelarrowreceiver/README.md)),
-for example, a limiter can slow the arrival of new data by stalling a
-response, it means synchronously waiting for the limit and
-asynchronously processing the request.
+Limiters are not always applied in receivers, but all receivers should
+support limiters through middleware and/or `consumerlimiter`.
 
-A limiter is defined as **saturated** when a limit is completely
-overloaded for at least one weight, generally it means callers should
-deny new requests. All limiter extensions implement the basic limiter
-interface, and callers are expected to check for saturation by
-invoking `CheckSaturation` before making individual requests with the limiter.
+## Delay-the-caller application
 
-Whereas the basic limiter's `CheckSaturation` method indicates only
-saturation, the rate and resource limiter interfaces both return a
-`Reservation`. While the details are slightly different, the
-reservation generally has two features:
+Limiters should be applied so that they delay the caller. This is an
+important case of the early-as-possible rule: limit requests should be
+made before returning control, in order to slow the process that is
+contributing to the limit.
 
-- a mechanism to wait for the limit
-- a mechanism to cancel or release the request.
+In order to support delaying the caller in complex scenarios,
+non-blocking interfaces are provided for each of the limiter
+interfaces. Non-blocking APIs allow callers to delay the caller while
+requesting the limit and then to perform their work asynchronously.
 
-Each kind of limiter have corresponding **provider** interfaces that
-return a specific limiter instance based on a weight key. Components
-are expected to initialize limiters during startup, through limiter
-extension providers (which may produce configuration errors).
+The `limiterhelper.Wrapper` limiter interface is provided which
+simplifies the application of limits to a scoped callback, making it
+easy to use a blocking limit request.
 
-All limiter extensions:
+## Failure options
 
-- MUST implement the `SaturationCheckerProvider` interface
-- MUST NOT implement both the `ResourceLimiterProvider` and the `RateLimiterProvider` interfaces
+Limiters at their discretion can block or fail requests that would
+exceed a limit. The decision may influenced by limiter configuration
+(e.g., burst, maximum wait parameters) and/or the deadline of the
+request context. When the delay is small, it is usually beneficial to
+wait instead of failing because (a) avoids the wasted effort (e.g.,
+re-transmitting data), (b) delays the caller for the effect of
+back-pressure.
 
-The `limiterhelper` package contains features for composing limiters
-as well as foundational rate and resource limiter implementations.
-The `limiterhelper/http` and `limiterhelper/grpc` packages provide
-connectors allowing limiters to act as specific kinds of
-middleware. Limiters are automatically initialized as middleware via
-`configmiddleware`.  The original garbage-collector state-based
-limiter can be found in
-[`../memorylimiterextension`](../memorylimiterextension/README.md).
+When a limiter returns failure, the client should return a
+protocol-specific failure code indicating resource exhaustion. The
+recognized resource exhaustion codes are HTTP 429 and gRPC
+RESOURCE_EXHAUSTED. Receivers should follow protocol-specific
+recommendations, which for
+[OTLP](https://opentelemetry.io/docs/specs/otlp/) includes returning a
+`RetryDelay` parameter.
 
-## Recommendations
+If the limit request results in waiting, limiters should delay to
+allow the request to proceed, however they should give up and return
+at some point. As a recommendation, receivers and other components
+should allow requests to wait up to configurable fraction of their
+deadline. If the request cannot enter a pipeline before for example
+half of its deadline, return failure instead of allowing it to
+proceed.
 
-For processors, exporters, and sometimes receivers, the easiest way to
-integrate with any kind of limiter is to use the a consumer wrapper
-function (e.g. `NewLimitedLogs`). These helper methods check for
-saturation and then apply multiple weight keys in sequence. 
+## Limiter configuration
 
-At a lower level, a simple way to integrate with any kind of limiter
-is to use the `LimiterWrapper` interface with its callback-based
-approach.
-
-Multi-limiter adapters are available for all provider interfaces via
-`MultipleProvider`.
-
-For blocking access to rate and resource limiters without wrapper
-constraints, use `NewBlockingRateLimiter` or `NewBlockingResourceLimiter`.
-
-In cases where control flow is not request scoped (e.g., in middleware
-measuring network bytes), use a `RateLimiter` interface. If the
-extension is a basic limiter in this scenario, use the
-`SaturationCheckerToRateLimiterProvider` adapter. Callers MUST NOT
-configure a resource limiter for a caller that is restricted to the
-`RateLimiter` interface; this configuration SHOULD fail at startup or
-during component validation.
-
-In cases where due to control flow a wrapper interface cannot be used,
-as long as the caller is able to arrange for a `Release` function to
-be called at the proper time, then any kind of limiter can be applied
-in the form of a `ResourceLimiter`.  If the extension is a basic or
-rate limiter in this scenario, use the `SaturationCheckerToResourceLimiterProvider`
-or `RateToResourceLimiterProvider` adapters.
-
-Middleware configuration typically automates the configuration of
-network bytes and request count weight keys relatively early in a
-pipeline.  Receivers are responsible for limiting request items and
-memory size through one of the available helpers. 
-
-Processors can apply limiters for specific reasons, for example to
-apply limits in data-dependent ways.  Exporters can apply limiters for
-the same reasons, for example to apply limits in destination-dependent
-ways.
-
-### Limiter blocking and failing
-
-Limiters implementations are not expected to block.  The `RateLimiter`
-and `ResourceLimiter` interfaces return reservations instead,
-informing the caller how they can wait on their own and allowing them
-to cancel the request if they return early.
-
-Limiter implementations SHOULD consider the context deadline when they
-block. If the deadline is likely to expire before the limit becomes
-available, they should return an error instead.  Blocking adapters are
-provided for callers including the `LimiterWrapper`.
-
-### Limiter saturation
-
-Rate and resource limiter providers have a `GetSaturationChecker` method to
-provide a `SaturationChecker`, featuring a `CheckSaturation` method which is made
-available for applications to test when any limit is fully
-saturated that would eventually deny the request.
-
-The `SaturationChecker` is consulted at least once and applies to all weight
-keys.  Because a `SaturationChecker` can be consulted more than once by a
-receiver and/or middleware, it is possible for requests to be denied
-over the saturation of limits they were already granted. Users should
-configure external load balancers and/or horizontal scaling policies
-to avoid cases of limiter saturation.
-
-### Limit before or after use
-
-It is sometimes possible to request a limit before it is actually
-used. As an example, consider a protocol using a compressed payload,
-such that the receiver knows how much memory will be allocated before
-the fact. In this case the receiver can request the limit before using
-it, but this will not always be the case. Generally, prefer to limit
-before use, but either way be consistent.
-
-When using the low-level interfaces directly, limits SHOULD be applied
-before creating new concurrent work.
+Limiters are configurable the same way middleware are configured, by
+referring to the name of the extension component.
 
 ### Built-in limiters
 
 #### MemoryLimiter
 
-The `memorylimiterextension` is a `SaturationCheckerProvider` that makes its
-decisions using memory statistics from the garbage collector. This
-logic was traditionally included in the `memorylimiterprocessor`,
-however receiver integration with limiter extensions is preferred.
+The `memorylimiterextension` gives access to an internal component
+named `MemoryLimiter` with an interface named `MustDeny()`.
+Components can call this component directly, however when configured
+as a limiter extension, this component is modeled as a `RateLimiter`
+that is on or off based on the current result of `MustDeny`.
 
 #### RateLimiter
 
@@ -188,8 +114,6 @@ rate limiters are parameterized by two numbers:
 - `limit` (float64): the maximum frequency of weight-units per second
 - `burst` (uint64): the "burst" value of the Token-bucket algorithm.
 
-The rate limiter is saturated when there is no burst available.
-
 #### ResourceLimiter
 
 A built-in helper implementation of the ResourceLimiter interface is
@@ -199,38 +123,69 @@ underlying resource limiters are parameterized by two numbers:
 - `request` (uint64): the maximum of concurrent resource value admitted
 - `waiting` (uint64): the maximum of concurrent resource value permitted to wait
 
-The resource limiter is saturated when the sum of current `request`
-and `waiting` values exceed the sum of their maximum values.
-
 ### Examples
 
 #### OTLP receiver
 
-Limiters applied through middleware are an implementation detail,
-simply configure them using `configgrpc` or `confighttp`. For the
-OTLP receiver (e.g., with two `ratelimiter` extensions):
+Limiters applied through middleware and/or via receiver-level
+limiters.  Middleware limiters are automatically configured using
+`configgrpc` or `confighttp`. Receivers can add support at the factory
+level using helpers in `consumerlimiter`.
+
+For the OTLP receiver (e.g., with three `ratelimiter` extensions and a
+`resourcelimiter` extension):
 
 ```yaml
 extensions:
   ratelimiter/limit_for_grpc:
-    # rate limiter settings for gRPC
-  ratelimiter/limit_for_grpc:
-    # rate limiter settings for HTTP
+    network_bytes: ...
+
+  ratelimiter/limit_for_http:
+    network_bytes: ...
+
+  ratelimiter/limit_items:
+    request_items: ...
+
+  resourcelimiter/limit_memory:
+    request_bytes: ...
 
 receivers:
   otlp:
     protocols:
       grpc:
-        middlewares:
+        middleware:
         - ratelimiter/limit_for_grpc
+        - resourcelimiter/limit_memory
       http:
-        middlewares:
+        middleware:
         - ratelimiter/limit_for_http
+        - resourcelimiter/limit_memory
+    limiters:
+      request_items: ratelimiter/limit_items
 ```
 
-Note that the OTLP receiver specifically supports multiple protocols
-with separate middleware configurations, thus it configures limiters
-for request items and memory size on a protocol-by-protocol basis.
+Note that in general, middleware components do not have access to the
+number of items in a request, so users are directed to receiver-level
+`limiters` configuration to limit items. The OTLP receiver uses the
+helper library to configure its factory:
+
+```golang
+func NewFactory() receiver.Factory {
+	return consumerlimiter.NewLimitedFactory(
+		receiver.NewFactory(
+			metadata.Type,
+			createDefaultConfig,
+			receiver.WithTraces(createTraces, metadata.TracesStability),
+			receiver.WithMetrics(createMetrics, metadata.MetricsStability),
+			receiver.WithLogs(createLog, metadata.LogsStability),
+			receiver.WithProfiles(createProfiles, metadata.ProfilesStability),
+		),
+		func(cfg component.Config) consumerlimiter.LimiterConfig {
+			return cfg.(*Config).LimiterConfig
+		},
+	)
+}
+```
 
 #### HTTP metrics scraper
 
@@ -242,8 +197,8 @@ automatically configures network bytes and request count limits:
 receivers:
   scraper:
     http:
-      middlewares:
-      - ratelimiter/scraper
+      limiters:
+        request_ratelimiter/scraper
 ```
 
 Limiter extensions are derived from a host, a middlewares list, and a
@@ -253,45 +208,25 @@ level, it may be added via `receiver.NewFactory` using
 
 ```golang
 func NewFactory() receiver.Factory {
-    return xreceiver.NewFactory(
-        metadata.Type,
-        createDefaultConfig,
-        xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
-        xreceiver.WithLimiters(getLimiters),
-    )
+	return consumerlimiter.NewLimitedFactory(
+		receiver.NewFactory(
+			metadata.Type,
+			createDefaultConfig,
+			xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+		),
+		func(cfg component.Config) consumerlimiter.LimiterConfig {
+		        cpy := cfg.(*Config).LimiterConfig
+			// RequestCount checked in scraper loop, reset it here:
+			cpy.RequestCount = component.ID{}
+			return 
+		},
+	)
 }
 ```
 
-Here, `getLimiters` is a function to get the effective
-`[]configmiddleware.Config` and derive pipeline consumers using
-`limiterhelper` adapters.
-
-To acquire a limiter, use `MiddlewaresToLimiterProvider` to
-obtain a combined limiter wrapper around the input `nextMetrics`
-consumer. It will pass `StandardNotMiddlewareKeys()` indicating to
-apply request items and memory size:
-
-```golang
-    // Extract limiter extensions from host and list of middleware.
-    providers, err := configmiddleware.GetSaturationCheckers(
-        host, cfg.Middlewares)
-    if err != nil { ... }
-	
-	// Extract a multi-limiter from the provider
-	s.limiterProvider, err = limiterhelper.MultipleProvider(providers)
-	if err != nil { ... }
-
-    // Here get a limiter-wrapped pipeline and a combination of weight-specific
-    // limiters for CheckSaturation() functionality.
-	limitKeys := extensionlimiter.StandardNotMiddlewareKeys()
-    s.nextMetrics, err = limiterhelper.NewLimitedMetrics(
-        s.nextMetrics, limitKeys, s.limiterProvider)
-    if err != nil { ... }
-
-    // Compute the saturation checker from the middlewares for use before scrapes.
-	s.limiter, err := s.limiterProvider.GetSaturationChecker(host, middlewares)
-	if err != nil { ... }
-```
+Here, the second argument to `consumerlimiter.NewLimitedFactory`
+is a function providing the `LimiterConfig` struct to be applied
+automatically before the next consumer in the pipeline.
 
 In the scraper loop, use `CheckSaturation` before starting a scrape:
 

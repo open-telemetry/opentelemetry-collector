@@ -26,6 +26,7 @@ import (
 var (
 	ErrLimiterNotFound = errors.New("limiter not found")
 	ErrNotALimiter = errors.New("not a limiter")
+	ErrLimiterUnsupported = errors.New("limiter unsupported")
 )
 
 // Config is the standard pipeline configuration for limiting a
@@ -40,6 +41,9 @@ type LimiterConfig struct {
 	RequestCount component.ID `mapstructure:"request_count"`
 	RequestItems component.ID `mapstructure:"request_items"`
 	RequestBytes component.ID `mapstructure:"request_bytes"`
+
+	// Not always available. Typically must be a RateLimiter.
+	NetworkBytes component.ID `mapstructure:"network_bytes"`
 }
 
 // capable is an internal interface describing common features of a
@@ -189,6 +193,10 @@ func (l *limitedReceiver[P, C, R, T]) Capabilities() consumer.Capabilities {
 
 func (l *limitedReceiver[P, C, R, T]) Start(ctx context.Context, host component.Host) error {
 	var unset component.ID
+	if name := l.cfg.NetworkBytes; name != unset {
+		return fmt.Errorf("%w: network bytes unavailable: %s", ErrLimiterUnsupported, name)
+	}
+	
 	var err1, err2, err3 error
 	if name := l.cfg.RequestBytes; name != unset {
 		l.next, err1 = l.limitOne(
