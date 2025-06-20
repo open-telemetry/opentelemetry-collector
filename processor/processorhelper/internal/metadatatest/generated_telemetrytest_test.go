@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
 )
 
 func TestSetupTelemetry(t *testing.T) {
@@ -19,8 +18,12 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ProcessorDuration.Record(context.Background(), 1)
 	tb.ProcessorIncomingItems.Add(context.Background(), 1)
 	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
+	AssertEqualProcessorDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorIncomingItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
