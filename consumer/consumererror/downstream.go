@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package consumererror
+package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
 type downstreamError struct {
 	inner error
