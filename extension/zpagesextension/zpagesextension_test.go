@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/internal/testutil"
 )
 
@@ -80,11 +81,11 @@ func TestZPagesExtensionBadAuthExtension(t *testing.T) {
 	cfg := &Config{
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:0",
-			Auth: &confighttp.AuthConfig{
+			Auth: configoptional.Some(confighttp.AuthConfig{
 				Config: configauth.Config{
 					AuthenticatorID: component.MustNewIDWithName("foo", "bar"),
 				},
-			},
+			}),
 		},
 	}
 	zpagesExt := newServer(cfg, newZpagesTelemetrySettings())
