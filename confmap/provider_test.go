@@ -92,7 +92,7 @@ func TestNewRetrieved(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, New(), retMap)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.NoError(t, ret.Close(t.Context()))
 }
 
 func TestNewRetrievedWithOptions(t *testing.T) {
@@ -102,7 +102,7 @@ func TestNewRetrievedWithOptions(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, New(), retMap)
-	assert.Equal(t, want, ret.Close(context.Background()))
+	assert.Equal(t, want, ret.Close(t.Context()))
 }
 
 func TestNewRetrievedUnsupportedType(t *testing.T) {
@@ -116,7 +116,7 @@ func TestNewRetrievedFromYAML(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, New(), retMap)
-	assert.NoError(t, ret.Close(context.Background()))
+	assert.NoError(t, ret.Close(t.Context()))
 }
 
 func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
@@ -126,7 +126,7 @@ func TestNewRetrievedFromYAMLWithOptions(t *testing.T) {
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, New(), retMap)
-	assert.Equal(t, want, ret.Close(context.Background()))
+	assert.Equal(t, want, ret.Close(t.Context()))
 }
 
 func TestNewRetrievedFromYAMLInvalidYAMLBytes(t *testing.T) {

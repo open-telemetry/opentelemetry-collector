@@ -4,7 +4,6 @@
 package consumertest
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -22,8 +21,8 @@ func TestErr(t *testing.T) {
 	ec := NewErr(err)
 	require.NotNil(t, ec)
 	assert.NotPanics(t, ec.unexported)
-	assert.Equal(t, err, ec.ConsumeLogs(context.Background(), plog.NewLogs()))
-	assert.Equal(t, err, ec.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))
-	assert.Equal(t, err, ec.ConsumeTraces(context.Background(), ptrace.NewTraces()))
-	assert.Equal(t, err, ec.ConsumeProfiles(context.Background(), pprofile.NewProfiles()))
+	assert.Equal(t, err, ec.ConsumeLogs(t.Context(), plog.NewLogs()))
+	assert.Equal(t, err, ec.ConsumeMetrics(t.Context(), pmetric.NewMetrics()))
+	assert.Equal(t, err, ec.ConsumeTraces(t.Context(), ptrace.NewTraces()))
+	assert.Equal(t, err, ec.ConsumeProfiles(t.Context(), pprofile.NewProfiles()))
 }

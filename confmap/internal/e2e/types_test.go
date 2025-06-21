@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -63,7 +62,7 @@ func AssertExpectedMatch[T any](t *testing.T, tt Test, conf *confmap.Conf, cfg *
 }
 
 func AssertResolvesTo(t *testing.T, resolver *confmap.Resolver, tt Test) {
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	if tt.resolveErr != "" {
 		require.ErrorContains(t, err, tt.resolveErr)
 		return
@@ -383,7 +382,7 @@ func TestRecursiveMaps(t *testing.T) {
 	t.Setenv("ENV", `{env: "${env:ENV2}", inline: "inline ${env:ENV2}"}`)
 	t.Setenv("ENV2", `{env2: "${env:ENV3}"}`)
 	t.Setenv("ENV3", value)
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	type Value struct {
@@ -415,7 +414,7 @@ func TestRecursiveMaps(t *testing.T) {
 		cfg,
 	)
 
-	confStr, err := resolver.Resolve(context.Background())
+	confStr, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
@@ -428,7 +427,7 @@ func TestRecursiveMaps(t *testing.T) {
 // Test that comments with invalid ${env:...} references do not prevent configuration from loading.
 func TestIssue10787(t *testing.T) {
 	resolver := NewResolver(t, "issue-10787-main.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{
 		"exporters": map[string]any{
@@ -474,7 +473,7 @@ func TestStructMappingIssue10787(t *testing.T) {
 	t.Setenv("ENV", `# this is a comment
 debug:
   verbosity: detailed`)
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	type Debug struct {
@@ -499,7 +498,7 @@ debug:
 		cfg,
 	)
 
-	confStr, err := resolver.Resolve(context.Background())
+	confStr, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
@@ -517,7 +516,7 @@ func TestStructMappingIssue10787_ExpandComment(t *testing.T) {
 	t.Setenv("ENV", `# this is a comment with ${EXPAND_ME}
 debug:
   verbosity: detailed`)
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	type Debug struct {
@@ -542,7 +541,7 @@ debug:
 		cfg,
 	)
 
-	confStr, err := resolver.Resolve(context.Background())
+	confStr, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 	var cfgStr targetConfig[string]
 	err = confStr.Unmarshal(&cfgStr)
@@ -561,7 +560,7 @@ func TestIndirectSliceEnvVar(t *testing.T) {
 	t.Setenv("OTEL_LOGS_RECEIVER", "[nop, otlp]")
 	t.Setenv("OTEL_LOGS_EXPORTER", "[otlp, nop]")
 	resolver := NewResolver(t, "indirect-slice-env-var-main.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	type CollectorConf struct {
@@ -601,7 +600,7 @@ func TestIssue10937_MapType(t *testing.T) {
 	t.Setenv("VALUE", "1234")
 
 	resolver := NewResolver(t, "types_map.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	var cfg targetConfig[map[string]configopaque.String]
@@ -614,7 +613,7 @@ func TestIssue10937_ArrayType(t *testing.T) {
 	t.Setenv("VALUE", "1234")
 
 	resolver := NewResolver(t, "types_slice.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	var cfgStrSlice targetConfig[[]string]
@@ -642,7 +641,7 @@ func TestIssue10937_ComplexType(t *testing.T) {
 	t.Setenv("VALUE", "1234")
 
 	resolver := NewResolver(t, "types_complex.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	var cfgStringy targetConfig[[]map[string][]string]
@@ -659,7 +658,7 @@ func TestIssue10937_ComplexType(t *testing.T) {
 func TestIssue10949_UnsetVar(t *testing.T) {
 	t.Setenv("ENV", "")
 	resolver := NewResolver(t, "types_expand.yaml")
-	conf, err := resolver.Resolve(context.Background())
+	conf, err := resolver.Resolve(t.Context())
 	require.NoError(t, err)
 
 	var cfg targetConfig[int]

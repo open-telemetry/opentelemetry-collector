@@ -4,7 +4,6 @@
 package confighttp
 
 import (
-	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -119,7 +118,7 @@ func TestClientMiddlewares(t *testing.T) {
 			}
 
 			// Create the client
-			client, err := clientConfig.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
+			client, err := clientConfig.ToClient(t.Context(), host, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 
 			// Create a request to the test server
@@ -191,7 +190,7 @@ func TestClientMiddlewareErrors(t *testing.T) {
 	for _, tc := range httpTests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Trying to create the client should fail
-			_, err := tc.config.ToClient(context.Background(), tc.host, componenttest.NewNopTelemetrySettings())
+			_, err := tc.config.ToClient(t.Context(), tc.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errText)
 		})
@@ -247,7 +246,7 @@ func TestGRPCClientMiddlewareErrors(t *testing.T) {
 			// For gRPC, we need to use the configgrpc.ClientConfig structure
 			// We'll test the middleware failure path here using the HTTP client approach,
 			// as the middleware resolution logic is the same
-			_, err := tc.config.ToClient(context.Background(), tc.host, componenttest.NewNopTelemetrySettings())
+			_, err := tc.config.ToClient(t.Context(), tc.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errText)
 		})

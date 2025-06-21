@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -62,7 +61,7 @@ func TestNilToStringMap(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resolver := NewResolver(t, tt.name)
-			conf, err := resolver.Resolve(context.Background())
+			conf, err := resolver.Resolve(t.Context())
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedMap, conf.ToStringMap())
 
@@ -112,7 +111,7 @@ func TestNilToStringMapEnv(t *testing.T) {
 		t.Run(tt.envValue, func(t *testing.T) {
 			t.Setenv("VALUE", tt.envValue)
 			resolver := NewResolver(t, "types_map.yaml")
-			conf, err := resolver.Resolve(context.Background())
+			conf, err := resolver.Resolve(t.Context())
 			require.NoError(t, err)
 			require.Equal(t, tt.expectedMap, conf.ToStringMap())
 			sub, err := conf.Sub("field::key")
