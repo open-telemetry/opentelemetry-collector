@@ -654,20 +654,28 @@ func TestMinMaxTLSVersions(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	tests := []struct {
-		name      string
-		tlsConfig Config
-		errorTxt  string
+	 name      string
+	 tlsConfig Config
+	 errorTxt  string
 	}{
-		{name: `TLS Config ["", ""] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: ""}},
-		{name: `TLS Config ["", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: "1.3"}},
-		{name: `TLS Config ["1.2", ""] to be valid`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: ""}},
-		{name: `TLS Config ["1.3", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "1.3", MaxVersion: "1.3"}},
-		{name: `TLS Config ["1.0", "1.1"] to be valid`, tlsConfig: Config{MinVersion: "1.0", MaxVersion: "1.1"}},
-		{name: `TLS Config ["asd", ""] to give [Error]`, tlsConfig: Config{MinVersion: "asd", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
-		{name: `TLS Config ["", "asd"] to give [Error]`, tlsConfig: Config{MinVersion: "", MaxVersion: "asd"}, errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
-		{name: `TLS Config ["0.4", ""] to give [Error]`, tlsConfig: Config{MinVersion: "0.4", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
-		{name: `TLS Config ["1.2", "1.1"] to give [Error]`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: "1.1"}, errorTxt: `invalid TLS configuration: min_version cannot be greater than max_version`},
-		{name: `TLS Config with both CA File and PEM`, tlsConfig: Config{CAFile: "test", CAPem: "test"}, errorTxt: `provide either a CA file or the PEM-encoded string, but not both`},
+	 {name: `TLS Config ["", ""] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: ""}},
+	 {name: `TLS Config ["", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "", MaxVersion: "1.3"}},
+	 {name: `TLS Config ["1.2", ""] to be valid`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: ""}},
+	 {name: `TLS Config ["1.3", "1.3"] to be valid`, tlsConfig: Config{MinVersion: "1.3", MaxVersion: "1.3"}},
+	 {name: `TLS Config ["1.0", "1.1"] to be valid`, tlsConfig: Config{MinVersion: "1.0", MaxVersion: "1.1"}},
+	 {name: `TLS Config ["asd", ""] to give [Error]`, tlsConfig: Config{MinVersion: "asd", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "asd"`},
+	 {name: `TLS Config ["", "asd"] to give [Error]`, tlsConfig: Config{MinVersion: "", MaxVersion: "asd"}, errorTxt: `invalid TLS max_version: unsupported TLS version: "asd"`},
+	 {name: `TLS Config ["0.4", ""] to give [Error]`, tlsConfig: Config{MinVersion: "0.4", MaxVersion: ""}, errorTxt: `invalid TLS min_version: unsupported TLS version: "0.4"`},
+	 {name: `TLS Config ["1.2", "1.1"] to give [Error]`, tlsConfig: Config{MinVersion: "1.2", MaxVersion: "1.1"}, errorTxt: `invalid TLS configuration: min_version cannot be greater than max_version`},
+	 {name: `TLS Config with both CA File and PEM`, tlsConfig: Config{CAFile: "test", CAPem: "test"}, errorTxt: `provide either a CA file or the PEM-encoded string, but not both`},
+	 {name: `TLS Config with cert file but no key file`, tlsConfig: Config{CertFile: "cert.pem"}, errorTxt: `provide both certificate and key files for TLS configuration`},
+	 {name: `TLS Config with key file but no cert file`, tlsConfig: Config{KeyFile: "key.pem"}, errorTxt: `provide both certificate and key files for TLS configuration`},
+	 {name: `TLS Config with cert PEM but no key PEM`, tlsConfig: Config{CertPem: "cert-pem"}, errorTxt: `provide both certificate and key PEM for TLS configuration`},
+	 {name: `TLS Config with key PEM but no cert PEM`, tlsConfig: Config{KeyPem: "key-pem"}, errorTxt: `provide both certificate and key PEM for TLS configuration`},
+	 {name: `TLS Config with cert file and key PEM (mixed)`, tlsConfig: Config{CertFile: "cert.pem", KeyPem: "key-pem"}, errorTxt: `provide either certificate files or PEM strings, but not both`},
+	 {name: `TLS Config with cert PEM and key file (mixed)`, tlsConfig: Config{CertPem: "cert-pem", KeyFile: "key.pem"}, errorTxt: `provide either certificate files or PEM strings, but not both`},
+	 {name: `TLS Config with valid cert and key files`, tlsConfig: Config{CertFile: "cert.pem", KeyFile: "key.pem"}},
+	 {name: `TLS Config with valid cert and key PEM`, tlsConfig: Config{CertPem: "cert-pem", KeyPem: "key-pem"}},
 	}
 
 	for _, test := range tests {
@@ -876,10 +884,10 @@ func TestSystemCertPool_loadCert(t *testing.T) {
 
 func TestCurvePreferences(t *testing.T) {
 	tests := []struct {
-		name             string
-		preferences      []string
-		expectedCurveIDs []tls.CurveID
-		expectedErr      string
+	 name             string
+	 preferences      []string
+	 expectedCurveIDs []tls.CurveID
+	 expectedErr      string
 	}{
 		{
 			name:             "X25519",
@@ -921,5 +929,172 @@ func TestCurvePreferences(t *testing.T) {
 		} else {
 			require.ErrorContains(t, err, test.expectedErr)
 		}
+	}
+}
+
+func TestServerConfigValidate(t *testing.T) {
+	tests := []struct {
+		name         string
+		serverConfig ServerConfig
+		errorTxt     string
+	}{
+		{
+			name:         "Valid empty server config",
+			serverConfig: ServerConfig{},
+		},
+		{
+			name: "Valid server config with certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+			},
+		},
+		{
+			name: "Valid server config with PEM certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertPem: "cert-pem",
+					KeyPem:  "key-pem",
+				},
+			},
+		},
+		{
+			name: "Server config with TLS settings but no certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					MinVersion: "1.2",
+				},
+			},
+			errorTxt: "server TLS configuration requires a certificate and key",
+		},
+		{
+			name: "Server config with cipher suites but no certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+				},
+			},
+			errorTxt: "server TLS configuration requires a certificate and key",
+		},
+		{
+			name: "Server config with reload interval but no certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					ReloadInterval: time.Minute,
+				},
+			},
+			errorTxt: "server TLS configuration requires a certificate and key",
+		},
+		{
+			name: "Server config with mismatched cert and key (file/PEM)",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyPem:   "key-pem",
+				},
+			},
+			errorTxt: "provide either certificate files or PEM strings, but not both",
+		},
+		{
+			name: "Server config with only cert file",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+				},
+			},
+			errorTxt: "provide both certificate and key files for TLS configuration",
+		},
+		{
+			name: "Server config with CA file but no certificates",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CAFile: "ca.pem",
+				},
+			},
+			errorTxt: "server TLS configuration requires a certificate and key",
+		},
+		{
+			name: "Server config with client CA file but no certificates",
+			serverConfig: ServerConfig{
+				ClientCAFile: "client-ca.pem",
+			},
+			errorTxt: "server TLS configuration requires a certificate and key",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.serverConfig.Validate()
+
+			if test.errorTxt == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, test.errorTxt)
+			}
+		})
+	}
+}
+
+func TestClientConfigValidate(t *testing.T) {
+	tests := []struct {
+		name         string
+		clientConfig ClientConfig
+		errorTxt     string
+	}{
+		{
+			name:         "Valid empty client config",
+			clientConfig: ClientConfig{},
+		},
+		{
+			name: "Valid client config with certificates",
+			clientConfig: ClientConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyFile:  "key.pem",
+				},
+			},
+		},
+		{
+			name: "Client config with only cert file",
+			clientConfig: ClientConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+				},
+			},
+			errorTxt: "provide both certificate and key files for TLS configuration",
+		},
+		{
+			name: "Client config with mismatched cert and key",
+			clientConfig: ClientConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyPem:   "key-pem",
+				},
+			},
+			errorTxt: "provide either certificate files or PEM strings, but not both",
+		},
+		{
+			name: "Client config with invalid TLS version",
+			clientConfig: ClientConfig{
+				Config: Config{
+					MinVersion: "invalid",
+				},
+			},
+			errorTxt: `invalid TLS min_version: unsupported TLS version: "invalid"`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			err := test.clientConfig.Validate()
+
+			if test.errorTxt == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, test.errorTxt)
+			}
+		})
 	}
 }
