@@ -460,6 +460,7 @@
       "zipkinv",
       "zpages",
       "zpagesextension",
-      "zstd"
+      "zstd",
+      "nillable"
     ]
   }
