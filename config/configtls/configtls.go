@@ -208,6 +208,14 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	certProvided := c.CertFile != "" || c.CertPem != ""
+	keyProvided := c.KeyFile != "" || c.KeyPem != ""
+
+	// If cert or key is provided, require both to be present
+	if certProvided != keyProvided {
+		return errors.New("TLS configuration must include certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	return nil
 }
 
