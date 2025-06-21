@@ -24,13 +24,13 @@ The metric will be become optional soon.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| state | Integer attribute with overridden name. | Any Int |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
-| slice_attr | Attribute with a slice value. | Any Slice |
-| map_attr | Attribute with a map value. | Any Map |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| state | Integer attribute with overridden name. | Any Int | false |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
+| slice_attr | Attribute with a slice value. | Any Slice | false |
+| map_attr | Attribute with a map value. | Any Map | false |
 
 ### default.metric.to_be_removed
 
@@ -52,13 +52,13 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| state | Integer attribute with overridden name. | Any Int |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
-| slice_attr | Attribute with a slice value. | Any Slice |
-| map_attr | Attribute with a map value. | Any Map |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| state | Integer attribute with overridden name. | Any Int | false |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
+| slice_attr | Attribute with a slice value. | Any Slice | false |
+| map_attr | Attribute with a map value. | Any Map | false |
 
 ## Optional Metrics
 
@@ -80,11 +80,11 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| boolean_attr | Attribute with a boolean value. | Any Bool |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
 
 ### optional.metric.empty_unit
 
@@ -96,10 +96,10 @@ metrics:
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| boolean_attr | Attribute with a boolean value. | Any Bool |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| boolean_attr | Attribute with a boolean value. | Any Bool | false |
 
 ## Resource Attributes
 

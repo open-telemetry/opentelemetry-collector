@@ -124,6 +124,15 @@ func (m Metric) Data() MetricData {
 	return nil
 }
 
+func (m Metric) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+	for _, attr := range m.Attributes {
+		if v, exists := attrs[attr]; exists && v.Optional {
+			return true
+		}
+	}
+	return false
+}
+
 // MetricData is generic interface for all metric datatypes.
 type MetricData interface {
 	Type() string
