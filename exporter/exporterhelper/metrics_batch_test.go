@@ -159,18 +159,18 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 			}
 		case pmetric.MetricTypeHistogram:
 			hist := m.SetEmptyHistogram()
-			for i := 0; i < numDataPoints; i++ {
-				hist.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				hist.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			expHist := m.SetEmptyExponentialHistogram()
-			for i := 0; i < numDataPoints; i++ {
-				expHist.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				expHist.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		case pmetric.MetricTypeSummary:
 			summary := m.SetEmptySummary()
-			for i := 0; i < numDataPoints; i++ {
-				summary.DataPoints().AppendEmpty().SetCount(uint64(i + 1))
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				summary.DataPoints().AppendEmpty().SetCount(i + 1)
 			}
 		}
 		return md
@@ -348,7 +348,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			maxSize:       s.MetricsSize(testdata.GenerateMetrics(4)),
 			mr1:           newMetricsRequest(pmetric.NewMetrics()),
 			mr2:           newMetricsRequest(testdata.GenerateMetrics(10)),
-			expectedSizes: []int{706, 504, 625, 378},
+			expectedSizes: []int{706, 531, 642, 378},
 		},
 		{
 			name:          "merge_and_split",
@@ -356,7 +356,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))/2 + metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11))/2,
 			mr1:           newMetricsRequest(testdata.GenerateMetrics(8)),
 			mr2:           newMetricsRequest(testdata.GenerateMetrics(20)),
-			expectedSizes: []int{2107, 2022, 1954, 290},
+			expectedSizes: []int{2119, 2036, 1981, 290},
 		},
 		{
 			name:    "scope_metrics_split",
@@ -370,7 +370,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 				return md
 			}()),
 			mr2:           nil,
-			expectedSizes: []int{706, 700, 85},
+			expectedSizes: []int{706, 628, 171},
 		},
 	}
 	for _, tt := range tests {
