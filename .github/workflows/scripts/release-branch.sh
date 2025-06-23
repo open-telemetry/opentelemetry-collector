@@ -18,13 +18,17 @@ if [[ -z "$GITHUB_REF" ]]; then
   exit 1
 fi
 
-# Extract tag name from the ref (e.g., refs/tags/v0.85.0 -> v0.85.0)
+# Extract tag name and validate format using regex
+if [[ ! $GITHUB_REF =~ ^refs/tags/v([0-9]+\.[0-9]+)\.[0-9]+(-.+)?$ ]]; then
+    echo "Error: GITHUB_REF did not match expected format (refs/tags/vX.XX.X)"
+    exit 1
+fi
+
 TAG_NAME=${GITHUB_REF#refs/tags/}
 echo "Detected tag: ${TAG_NAME}"
 
-# Extract version numbers (e.g., v0.85.0 -> 0.85)
-VERSION_MAJOR_MINOR=${TAG_NAME#v}      # Remove 'v' prefix
-VERSION_MAJOR_MINOR=${VERSION_MAJOR_MINOR%.*}  # Remove from last dot
+# Extract version numbers from regex match
+VERSION_MAJOR_MINOR=${BASH_REMATCH[1]}
 RELEASE_SERIES="v${VERSION_MAJOR_MINOR}.x"
 echo "Release series: ${RELEASE_SERIES}"
 
