@@ -143,6 +143,7 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 		m.SetName("test_metric")
 		m.SetDescription("test_description")
 		m.SetUnit("test_unit")
+		m.Metadata().PutStr("test_metadata_key", "test_metadata_value")
 
 		const numDataPoints = 2
 
@@ -220,6 +221,10 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 				assert.Equal(t, "test_metric", m.Name())
 				assert.Equal(t, "test_description", m.Description())
 				assert.Equal(t, "test_unit", m.Unit())
+				assert.Equal(t, 1, m.Metadata().Len())
+				val, ok := m.Metadata().Get("test_metadata_key")
+				assert.True(t, ok)
+				assert.Equal(t, "test_metadata_value", val.AsString())
 			}
 		})
 	}

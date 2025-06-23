@@ -191,6 +191,7 @@ func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.Me
 	destMetric.SetName(srcMetric.Name())
 	destMetric.SetDescription(srcMetric.Description())
 	destMetric.SetUnit(srcMetric.Unit())
+	srcMetric.Metadata().CopyTo(destMetric.Metadata())
 	return destMetric, removedSize
 }
 
