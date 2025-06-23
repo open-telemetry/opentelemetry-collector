@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
@@ -62,7 +63,7 @@ func (mb *multiBatcher) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
+func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
 	shard := mb.getPartition(ctx, req)
 	shard.Consume(ctx, req, done)
 }

@@ -4,8 +4,6 @@
 package pprofile
 
 import (
-	"fmt"
-	"os"
 	"testing"
 
 	jsoniter "github.com/json-iterator/go"
@@ -133,7 +131,6 @@ func TestJSONUnmarshal(t *testing.T) {
 func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalProfiles(profilesOTLP)
-	fmt.Fprintf(os.Stdout, "=================\n%#v\n----------------", string(jsonBuf))
 	require.NoError(t, err)
 	assert.JSONEq(t, profilesJSON, string(jsonBuf))
 }

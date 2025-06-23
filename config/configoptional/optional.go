@@ -12,6 +12,14 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type flavor int
+
+const (
+	noneFlavor    flavor = 0
+	defaultFlavor flavor = 1
+	someFlavor    flavor = 2
+)
+
 // Optional represents a value that may or may not be present.
 // It supports two flavors for all types: Some(value) and None.
 // It supports a third flavor for struct types: Default(defaultVal).
@@ -22,8 +30,9 @@ type Optional[T any] struct {
 	// value is the value of the Optional.
 	value T
 
-	// hasValue indicates if the Optional has a value.
-	hasValue bool
+	// flavor indicates the flavor of the Optional.
+	// The zero value of flavor is noneFlavor.
+	flavor flavor
 }
 
 // deref a reflect.Type to its underlying type.
@@ -82,7 +91,7 @@ func Some[T any](value T) Optional[T] {
 	if err := assertNoEnabledField[T](); err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: true}
+	return Optional[T]{value: value, flavor: someFlavor}
 }
 
 // Default creates an Optional with a default value for unmarshaling.
@@ -95,13 +104,11 @@ func Default[T any](value T) Optional[T] {
 	if err != nil {
 		panic(err)
 	}
-	return Optional[T]{value: value, hasValue: false}
+	return Optional[T]{value: value, flavor: defaultFlavor}
 }
 
-// None has no value.
+// None has no value. It has the same behavior as a nil pointer when unmarshaling.
 //
-// For T of struct or pointer to struct kind, this is equivalent to
-// Default(zeroVal) where zeroVal is the zero value of type T.
 // The zero value of Optional[T] is None[T]. Prefer using this constructor
 // for validation.
 //
@@ -115,7 +122,7 @@ func None[T any]() Optional[T] {
 
 // HasValue checks if the Optional has a value.
 func (o Optional[T]) HasValue() bool {
-	return o.hasValue
+	return o.flavor == someFlavor
 }
 
 // Get returns the value of the Optional.
@@ -131,6 +138,12 @@ var _ confmap.Unmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.
 //
+// The behavior of this method depends on the state of the Optional:
+//   - None[T]: does nothing if the configuration is nil, otherwise it unmarshals into the zero value of T.
+//   - Some[T](val): equivalent to unmarshaling into a field of type T with value val.
+//   - Default[T](val), equivalent to unmarshaling into a field of type T with base value val,
+//     using val without overrides from the configuration if the configuration is nil.
+//
 // T must be derefenceable to a type with struct kind and not have an 'enabled' field.
 // Scalar values are not supported.
 func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
@@ -138,10 +151,41 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
+	if o.flavor == noneFlavor && conf.ToStringMap() == nil {
+		// If the Optional is None and the configuration is nil, we do nothing.
+		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+		return nil
+	}
+
 	if err := conf.Unmarshal(&o.value); err != nil {
 		return err
 	}
 
-	o.hasValue = true
+	o.flavor = someFlavor
+	return nil
+}
+
+var _ confmap.Marshaler = (*Optional[any])(nil)
+
+// Marshal the Optional value into the configuration.
+// If the Optional is None or Default, it does not marshal anything.
+// If the Optional is Some, it marshals the value into the configuration.
+//
+// T must be derefenceable to a type with struct kind.
+// Scalar values are not supported.
+func (o Optional[T]) Marshal(conf *confmap.Conf) error {
+	if err := assertStructKind[T](); err != nil {
+		return err
+	}
+
+	if o.flavor == noneFlavor || o.flavor == defaultFlavor {
+		// Optional is None or Default, do not marshal anything.
+		return conf.Marshal(map[string]any(nil))
+	}
+
+	if err := conf.Marshal(o.value); err != nil {
+		return fmt.Errorf("configoptional: failed to marshal Optional value: %w", err)
+	}
+
 	return nil
 }

@@ -57,7 +57,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		Protocols: Protocols{
-			GRPC: configoptional.Default(*grpcCfg),
+			GRPC: configoptional.Default(grpcCfg),
 			HTTP: configoptional.Default(HTTPConfig{
 				ServerConfig:   httpCfg,
 				TracesURLPath:  defaultTracesURLPath,
