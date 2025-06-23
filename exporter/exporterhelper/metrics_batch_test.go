@@ -217,7 +217,6 @@ func TestSplitMetricsWithDataPointSplit(t *testing.T) {
 				// Each split request should contain one data point.
 				assert.Equal(t, 1, actualRequest.ItemsCount())
 				m := actualRequest.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-				// Check that metric metadata is preserved.
 				assert.Equal(t, "test_metric", m.Name())
 				assert.Equal(t, "test_description", m.Description())
 				assert.Equal(t, "test_unit", m.Unit())
