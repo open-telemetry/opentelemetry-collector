@@ -24,9 +24,6 @@ if [[ ! $GITHUB_REF =~ ^refs/tags/v([0-9]+\.[0-9]+)\.[0-9]+(-.+)?$ ]]; then
     exit 1
 fi
 
-TAG_NAME=${GITHUB_REF#refs/tags/}
-echo "Detected tag: ${TAG_NAME}"
-
 # Extract version numbers from regex match
 VERSION_MAJOR_MINOR=${BASH_REMATCH[1]}
 RELEASE_SERIES="v${VERSION_MAJOR_MINOR}.x"
