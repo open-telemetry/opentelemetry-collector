@@ -1055,6 +1055,8 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 // When the sizer type changes, the queue enters sizerTypeMismatch mode and must fully drain
 // the existing data before the new capacity calculation takes effect.
 func TestPersistentQueue_SizerTypeSwitchFromRequestsToItems(t *testing.T) {
+	t.Skip("Skipping test: sizer type switching from requests to items not implemented yet. Track progress at https://github.com/open-telemetry/opentelemetry-collector/issues/12890")
+
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
 

@@ -247,16 +247,10 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 	}
 
 	if metadataSizerType != pq.set.sizerType {
-		pq.logger.Warn("Sizer type mismatch in stored metadata")
-
-		restoredSizer, exists := pq.set.availableSizers[metadataSizerType]
-		if !exists {
-			return fmt.Errorf("missing sizer for stored type %q in availableSizers", metadataSizerType)
-		}
-
-		pq.originalConfiguredSizer = pq.set.sizer
-		pq.set.sizer = restoredSizer
-		pq.sizerTypeMismatch.Store(true)
+		// TODO: Add support for sizer type mismatch in a followup PR
+		// See https://github.com/open-telemetry/opentelemetry-collector/issues/12890
+		// For now return an error.
+		return fmt.Errorf("sizer type mismatch: expected %s, got %s", pq.set.sizerType, metadataSizerType)
 	}
 
 	pq.logger.Info("Loaded queue metadata",
