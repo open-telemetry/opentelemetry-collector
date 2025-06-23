@@ -99,7 +99,7 @@ func (m *QueueMetadata) GetCurrentlyDispatchedItems() []uint64 {
 
 // QueueItem represents a single item stored in the persistent queue.
 type QueueItem struct {
-	// Size of the item according to the configured sizer type.
+	// Size of the item according to the sizer that was active when enqueued
 	ItemSize int64 `protobuf:"varint,1,opt,name=item_size,json=itemSize,proto3" json:"item_size,omitempty"`
 	// The marshaled data of the item.
 	ItemData []byte `protobuf:"bytes,2,opt,name=item_data,json=itemData,proto3" json:"item_data,omitempty"`
