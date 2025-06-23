@@ -33,6 +33,20 @@ More specifically, this RFC aims to:
 ## Proposed approach
 
 The proposed approach will rely on concept of URI query parameters([_RFC 3986_](https://datatracker.ietf.org/doc/html/rfc3986#page-23)). Our configuration URIs already adhere to this syntax and we can extend it to support query params instead adding new CLI flags. 
+
+We will support new parameters to config URIs as follows:
+1. `paths`: A comma-separated list of glob patterns which will be used while config merging
+    - This setting will control the paths user wants to merge from the given config.
+    - Example: 
+        - `otelcol --config main.yaml --config extra.yaml?paths=service::extensions,service::**::receivers`
+            - In this example, we will merge the list of extensions and receivers from pipeline, leaving lists in rest of the config untouched.
+        - `otelcol --config main.yaml --config ext.yaml?paths=service::extensions --config rec.yaml?paths=service::**::receivers`
+            - In this example, we will merge all list of extensions from `ext.yml` and list of receivers from `rec.yaml`, leaving lists in rest of the config untouched.
+2. `mode`: One of `prepend` or `append`.
+    - This setting will control the ordering of merged list.
+
+### Examples
+
 Here are some examples:
 
 1. _Append to default mergeable components_:
