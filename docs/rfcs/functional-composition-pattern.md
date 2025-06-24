@@ -3,16 +3,16 @@
 ## Overview
 
 This codebase uses a **Functional Composition** pattern for its core
-interfaces. This pattern decomposes individual methods from interface
-types into corresponding function types, then recomposes them into a
-concrete implementation type.  This approach provides flexibility,
-testability, and safe interface evolution for the OpenTelemetry
-Collector.
+interfaces. This pattern decomposes the individual methods from
+interface types into corresponding function types, then recomposes
+them into a concrete implementation type.  This approach provides
+flexibility, testability, and safe interface evolution for the
+OpenTelemetry Collector.
 
 When an interface type is exported for users outside of this
-repository, the type MUST follow these guidelines. Interface types
-exposed in internal packages may decide to export internal interfaces,
-of course.
+repository, the type MUST follow these guidelines, including the use
+of an unexported method to "seal" the interface. Interface types
+exposed from internal packages may opt-out of this recommendation.
 
 For every method in the public interface, a corresponding `type
 <Method>Func func(...) ...` declaration in the same package will
@@ -33,11 +33,8 @@ These "sealed concrete" implementation objects support adding new
 methods in future releases, _without changing the major version
 number_, because public interface types are always provided through a
 package-provided implementation. As a key requirement, every function
-must have a simple "no-op" implementation correspodning with the zero
+must have a simple "no-op" implementation corresponding with the zero
 value of the `<Method>Func`.
-
-Additional methods may be provided using the widely-known [Functional
-Option pattern](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html).
 
 ## Key concepts
 
@@ -60,29 +57,31 @@ type CancelFunc func()
 // Function types implement their corresponding methods
 func (f WaitTimeFunc) WaitTime() time.Duration {
     if f == nil {
-        return 0
+        return 0 // No-op behavior
     }
     return f()
 }
 
 func (f CancelFunc) Cancel() {
     if f == nil {
-        return
+        return // No-op behavior
     }
     f()
 }
 ```
 
-Users of the `net/http` package have seen this pattern before. The
-`http.HandlerFunc` type can be seen as the prototype for functional
-composition, in this case for HTTP handlers. Interestingly, the
-single-method `http.RoundTripper` interface, which represents the same
-interaction on the client-side, does not have a `RoundTripperFunc`. In
-this codebase, the pattern is applied exstensively.
+Users of the [`net/http` package have seen this
+pattern](https://pkg.go.dev/net/http#HandlerFunc).  `http.HandlerFunc`
+can be seen as a prototype for the Functional Composition pattern, in
+this case for HTTP servers. Interestingly, the single-method
+`http.RoundTripper` interface, representing the same interaction for
+HTTP clients, does not have a `RoundTripperFunc`. In this codebase,
+the pattern is applied exstensively.
 
-### 2. Compose Functions into Interface Implementations
+### 2. Compose Function Types into Interface Implementations
 
-Create concrete implementations embed the corresponding function type:
+Create concrete implementations embedding the function type
+corresponding with each interface method:
 
 ```go  
 type rateReservationImpl struct {
@@ -90,18 +89,53 @@ type rateReservationImpl struct {
     CancelFunc
 }
 
-// Constructor for an instance
+This pattern applies even for single-method interfaces, where the
+`<Method>Func` is capable of implementing the interaface. 
+
+type RateLimiter interface {
+    ReserveRate(context.Context, int) RateReservation
+}
+
+type ReserveRateFunc func(context.Context, int) RateReservation
+
+func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) RateReservation {
+    if f == nil {
+        return rateReservationImpl{} // Composite no-op behavior
+    }
+    f(ctx, value)
+}
+
+// Implement the interface and use the struct via its constructor, not
+// the function type, to implement a single-method interface.
+type rateLimiterImpl struct {
+    ReserveRateFunc
+}
+```
+
+### 3. Use Constructors for Interface Values
+
+Provide constructor functions rather than exposing concrete types.  By
+default, each interface should provide a `func
+New<Type>(<Method1>Func, <Method2>Func, ...) Type` for all methods,
+using the concrete implementation struct.  For example:
+
+```go
 func NewRateReservation(wf WaitTimeFunc, cf CancelFunc) RateReservation {
     return rateReservationImpl{
         WaitTimeFunc: wf,
         CancelFunc:   cf,
     }
 }
+
+func NewRateLimiter(f ReserveRateFunc) RateLimiter {
+    return rateLimiterImpl{ReserveRateFunc: f}
+}
 ```
 
 [The Go language automatically converts function literal
 expressions](https://go.dev/doc/effective_go#conversions) into the
-correct named type (i.e., `<Method>Func`), so we can write:
+correct named type (i.e., `<Method>Func`), so we can pass function
+literals to these constructors without an explicit conversion:
 
 ```go
     return NewRateReservation(
@@ -112,24 +146,10 @@ correct named type (i.e., `<Method>Func`), so we can write:
     )
 ```
 
-### 3. Use Constructors for Interface Values
-
-Provide constructor functions rather than exposing concrete types:
-
-```go
-// Good: Constructor function
-func NewRateLimiter(f ReserveRateFunc) RateLimiter {
-    return rateLimiterImpl{ReserveRateFunc: f}
-}
-
-// Avoid: Direct struct instantiation inside the package
-// rateLimiterImpl{ReserveRateFunc: f} // Don't do this, use the constructor
-```
-
-This will help maintainers upgrade your callsites, should the
-interface gain a new method.  For more complicated interfaces, this
-pattern can be combined with the Functional Option pattern in Golang,
-shown in the next example.
+For more complicated interfaces, this pattern can be combined with the
+[Functional Option
+pattern](https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html)
+in Golang, shown in the next example.
 
 Taken from `receiver/receiver.go`, here we setup signal-specific
 functions using a functional-option argument passed to
@@ -147,7 +167,7 @@ func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOpt
 // Accept options to configure various aspects of the interface
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
 	f := factoryImpl{
-		Factory: component.NewFactoryImpl(cfgType.Self, createDefaultConfig),
+		Factory: component.NewFactory(cfgType.Self, createDefaultConfig),
 	}
 	for _, opt := range options {
 		opt.applyOption(&f, cfgType)
@@ -156,7 +176,46 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 }
 ```
 
-### 4. Constant-value Function Implementations
+### 4. Seal Public Interface Types
+
+Using an unexported method "seals" the interface type so external
+packages can only use, not implement the interface.  This allows
+interfaces to evolve safely because users are forced to use
+constructor functions.
+
+```go
+type RateLimiter interface {
+    ReserveRate(context.Context, int) (RateReservation, error)
+
+    private() // Prevents external implementations
+}
+```
+
+This practice enables safely evolving interfaces. A new method can be
+added to a public interface type because public constructor functions
+force the user to obtain the new type and the new type is guaranteed
+to implement the old interface. If the functional option pattern is
+already being used, then new interface methods will need no new
+constructors, otherwise backwards compatibility can be maintained by
+adding new constructors, for example:
+
+```go
+type RateLimiter interface {
+    // Original method
+    ReserveRate(context.Context, int) RateReservation
+
+    // New method (optional support)
+    ExtraFeature()
+}
+
+// Original constructor
+func NewRateLimiter(f ReserveRateFunc) RateLimiter { ... }
+
+// New constructor
+func NewRateLimiterWithExtraFeature(rf ReserveRateFunc, ef ExtraFeatureFunc) RateLimiter { ... }
+```
+
+### 5. Constant-value Function Implementations
 
 For types defined by simple values, especially for enumerated types,
 define a `Self()` method to act as the corresponding functional
@@ -180,18 +239,22 @@ func (f TypeFunc) Type() Type {
 ```
 
 For example, we can decompose, modify, and recompose a
-`component.Factory`:
+`component.Factory` easily using Self methods to capture the
+constant-valued Type and Config functions:
 
 ```go
-    // Construct a factory with a new default Config:
-    factory := sometype.NewFactory()
-    cfg := factory.CreateDefaultConfig()
-    // ... Modify the config object
-    // Pass cfg.Self as the default config function.
+    // Construct a factory, get its default default Config:
+    originalFactory := somepackage.NewFactory()
+    cfg := originalFactory.CreateDefaultConfig()
+
+    // ... Modify the config object somehow
+
+    // Pass cfg.Self as the default config function,
+    // return a new factory using the modified config.
     return NewFactoryImpl(factory.Type().Self, cfg.Self)
 ```
 
-## Rationale
+## Examples
 
 ### Flexibility and Composition
 
@@ -215,8 +278,7 @@ func NewLimitedFactory(fact receiver.Factory, cfgf LimiterConfigurator) receiver
 }
 ```
 
-This is sometimes called aspect-oriented programming, for example it
-is easy to add logging to an existing function:
+For example, it is easy to add logging to an existing function:
 
 ```go
 func addLogging(f ReserveRateFunc) ReserveRateFunc {
@@ -226,112 +288,3 @@ func addLogging(f ReserveRateFunc) ReserveRateFunc {
     }
 }
 ```
-
-### Safe Interface Evolution
-
-Using a private method allows sealing the interface type, which forces
-external users to use functional constructor methods. This allows
-interfaces to evolve safely because users are forced to use
-constructor functions, and instead of breaking stability for function
-definitions, we can add alternative constructors.
-
-```go
-type RateLimiter interface {
-    ReserveRate(context.Context, int) (RateReservation, error)
-
-    // Can add new methods without breaking existing code
-    private() // Prevents external implementations
-}
-```
-
-### Enhanced Testability
-
-Individual methods can be tested independently:
-
-```go
-func TestWaitTimeFunction(t *testing.T) {
-    waitFn := WaitTimeFunc(func() time.Duration { return time.Second })
-    assert.Equal(t, time.Second, waitFn.WaitTime())
-}
-```
-
-## Implementation Guidelines
-
-### 1. Interface Design
-
-- Define interfaces with clear method signatures
-- Include a `private()` method if you need to control implementations
-- Keep interfaces focused and cohesive
-
-### 2. Function Type Naming
-
-- Use `<MethodName>Func` naming convention
-- Ensure function signatures match the interface method exactly
-- Always implement the corresponding interface method on the function type
-
-### 3. Nil Handling
-
-Always handle nil function types gracefully to act as a no-op implementation.
-
-```go
-func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) (RateReservation, error) {
-    if f == nil {
-        return NewRateReservationImpl(nil, nil), nil // No-op implementation
-    }
-    return f(ctx, value)
-}
-```
-
-### 4. Constructor Patterns
-
-Follow consistent constructor naming for building an implementation
-of each interface:
-
-```go
-// For interfaces: New<InterfaceName>Impl
-func NewRateLimiterImpl(f ReserveRateFunc) RateLimiter
-```
-
-Follow consistent type naming for each method-function type:
-
-```go
-// For function types: <MethodName>Func
-type ReserveRateFunc func(context.Context, int) (RateReservation, error)
-```
-
-### 5. Implementation Structs
-
-- Use unexported names for implementation structs
-- Embed function types directly
-- Implement private methods for sealing the interface
-
-```go
-type RateLimiter interface {
-     // ...
-
-     // Must use functional constructors outside this package
-     private()
-}
-
-type rateLimiterImpl struct {
-    ReserveRateFunc
-}
-
-func (rateLimiterImpl) private() {}
-```
-
-## When to Use This Pattern
-
-### Appropriate Use Cases
-
-- **Interfaces with single or multiple methods** that benefit from composition
-- **Cross-cutting concerns** that need to be applied selectively
-- **Interface evolution** where you need to add methods over time
-- **Factory patterns** where you're assembling behavior from components
-- **Middleware/decorator scenarios** where you're transforming behavior
-
-### When to Avoid
-
-- **Stateful objects** where methods need to share significant state
-- **Performance-critical code** where function call overhead matters
-- **Simple implementations** where the pattern adds unnecessary complexity
