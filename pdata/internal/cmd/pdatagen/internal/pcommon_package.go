@@ -160,6 +160,13 @@ var resource = &messageValueStruct{
 	fields: []baseField{
 		attributes,
 		droppedAttributesCount,
+		&sliceField{
+			// Hide accessors for this field from 1.x public API since the proto field is experimental.
+			// It's available via the xpdata/entity.ResourceEntityRefs.
+			hideAccessors:   true,
+			originFieldName: "EntityRefs",
+			returnSlice:     entityRefSlice,
+		},
 	},
 }
 
