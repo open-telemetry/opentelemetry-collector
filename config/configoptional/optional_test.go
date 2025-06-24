@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -339,10 +340,11 @@ func confFromYAML(t *testing.T, yaml string) *confmap.Conf {
 	return conf
 }
 
-func TestComparePointer(t *testing.T) {
+func TestComparePointerUnmarshal(t *testing.T) {
 	tests := []struct {
 		yaml string
 	}{
+		{yaml: ""},
 		{yaml: "sub: "},
 		{yaml: "sub: null"},
 		{yaml: "sub: {}"},
@@ -362,6 +364,99 @@ func TestComparePointer(t *testing.T) {
 			require.NoError(t, ptrErr)
 
 			assert.Equal(t, optCfg.Sub1.Get(), ptrCfg.Sub1)
+		})
+	}
+}
+
+func TestOptionalMarshal(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    Config[Sub]
+		expected map[string]any
+	}{
+		{
+			name:     "none (zero value)",
+			value:    Config[Sub]{},
+			expected: map[string]any{"sub": nil},
+		},
+		{
+			name:     "none",
+			value:    Config[Sub]{Sub1: None[Sub]()},
+			expected: map[string]any{"sub": nil},
+		},
+		{
+			name:     "default",
+			value:    Config[Sub]{Sub1: Default(subDefault)},
+			expected: map[string]any{"sub": nil},
+		},
+		{
+			name: "some",
+			value: Config[Sub]{Sub1: Some(Sub{
+				Foo: "bar",
+			})},
+			expected: map[string]any{
+				"sub": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			conf := confmap.New()
+			require.NoError(t, conf.Marshal(test.value))
+			assert.Equal(t, test.expected, conf.ToStringMap())
+		})
+	}
+}
+
+func TestComparePointerMarshal(t *testing.T) {
+	type Wrap[T any] struct {
+		// Note: passes without requiring "squash".
+		Sub1 T `mapstructure:"sub"`
+	}
+
+	type WrapOmitEmpty[T any] struct {
+		// Note: passes without requiring "squash", except with Default-flavored Optional values.
+		Sub1 T `mapstructure:"sub,omitempty"`
+	}
+
+	tests := []struct {
+		pointer       *Sub
+		optional      Optional[Sub]
+		skipOmitEmpty bool
+	}{
+		{pointer: nil, optional: None[Sub]()},
+		{pointer: nil, optional: Default(subDefault), skipOmitEmpty: true}, // does not work with omitempty
+		{pointer: &Sub{Foo: "bar"}, optional: Some(Sub{Foo: "bar"})},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%v vs %v", test.pointer, test.optional), func(t *testing.T) {
+			wrapPointer := Wrap[*Sub]{Sub1: test.pointer}
+			confPointer := confmap.NewFromStringMap(nil)
+			require.NoError(t, confPointer.Marshal(wrapPointer))
+
+			wrapOptional := Wrap[Optional[Sub]]{Sub1: test.optional}
+			confOptional := confmap.NewFromStringMap(nil)
+			require.NoError(t, confOptional.Marshal(wrapOptional))
+
+			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
+		})
+
+		if test.skipOmitEmpty {
+			continue
+		}
+		t.Run(fmt.Sprintf("%v vs %v (omitempty)", test.pointer, test.optional), func(t *testing.T) {
+			wrapPointer := WrapOmitEmpty[*Sub]{Sub1: test.pointer}
+			confPointer := confmap.NewFromStringMap(nil)
+			require.NoError(t, confPointer.Marshal(wrapPointer))
+
+			wrapOptional := WrapOmitEmpty[Optional[Sub]]{Sub1: test.optional}
+			confOptional := confmap.NewFromStringMap(nil)
+			require.NoError(t, confOptional.Marshal(wrapOptional))
+
+			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
 	}
 }

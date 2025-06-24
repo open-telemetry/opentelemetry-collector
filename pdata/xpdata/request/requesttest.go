@@ -15,10 +15,13 @@ func fakeSpanContext(tb testing.TB) trace.SpanContext {
 	require.NoError(tb, err)
 	spanID, err := trace.SpanIDFromHex("0102030405060708")
 	require.NoError(tb, err)
+	traceState, err := trace.ParseTraceState("key1=value1,key2=value2,key3=value3")
+	require.NoError(tb, err)
 	return trace.NewSpanContext(trace.SpanContextConfig{
 		TraceID:    traceID,
 		SpanID:     spanID,
 		TraceFlags: 0x01,
+		TraceState: traceState,
 		Remote:     true,
 	})
 }
