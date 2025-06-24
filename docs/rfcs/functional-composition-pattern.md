@@ -76,7 +76,7 @@ can be seen as a prototype for the Functional Composition pattern, in
 this case for HTTP servers. Interestingly, the single-method
 `http.RoundTripper` interface, representing the same interaction for
 HTTP clients, does not have a `RoundTripperFunc`. In this codebase,
-the pattern is applied exstensively.
+the pattern is applied extensively.
 
 ### 2. Compose Function Types into Interface Implementations
 
@@ -90,7 +90,7 @@ type rateReservationImpl struct {
 }
 
 This pattern applies even for single-method interfaces, where the
-`<Method>Func` is capable of implementing the interaface. 
+`<Method>Func` is capable of implementing the interface. 
 
 type RateLimiter interface {
     ReserveRate(context.Context, int) RateReservation
@@ -261,15 +261,15 @@ with a limiter of some sort:
 
 ```go
 // Transform existing factories with cross-cutting concerns
-func NewLimitedFactory(fact receiver.Factory, cfgf LimiterConfigurator) receiver.Factory {
+func NewLimitedFactory(fact receiver.Factory, cfg LimiterConfigurator) receiver.Factory {
     return receiver.NewFactoryImpl(
         fact.Type,
         fact.CreateDefaultConfig,
-        receiver.CreateTracesFunc(limitReceiver(fact.CreateTraces, traceTraits{}, cfgf)),
+        receiver.CreateTracesFunc(limitReceiver(fact.CreateTraces, traceTraits{}, cfg)),
         fact.TracesStability,
-        receiver.CreateMetricsFunc(limitReceiver(fact.CreateMetrics, metricTraits{}, cfgf)),
+        receiver.CreateMetricsFunc(limitReceiver(fact.CreateMetrics, metricTraits{}, cfg)),
         fact.MetricsStability,
-        receiver.CreateLogsFunc(limitReceiver(fact.CreateLogs, logTraits{}, cfgf)),
+        receiver.CreateLogsFunc(limitReceiver(fact.CreateLogs, logTraits{}, cfg)),
         fact.LogsStability,
     )
 }
