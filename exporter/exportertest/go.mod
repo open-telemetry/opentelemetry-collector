@@ -39,7 +39,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.128.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.128.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
