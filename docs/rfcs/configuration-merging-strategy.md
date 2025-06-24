@@ -8,7 +8,7 @@ More information about this feature can be found in the [confmap's README](https
 
 The main motivation for this change was to allow users to define configuration fragments in different sources, and have them merged in such a way that all specified components are included under `service::pipeline` in the final configuration.
 
-Previously, we relied on Koanf’s default merging strategy, which overrides scalar values and slices (such as strings, numbers, and lists). This behavior often resulted in configurations being unintentionally overwritten when merged from multiple sources.
+Previously, we relied on Koanf’s default merging strategy, which overrides static values and slices (such as strings, numbers, and lists). This behavior often resulted in configurations being unintentionally overwritten when merged from multiple sources.
 
 This issue has been highlighted in several discussions and feature requests:
 - https://github.com/open-telemetry/opentelemetry-collector/issues/8394
@@ -26,7 +26,7 @@ This RFC builds on top of feedback gathered from the [original PR](https://githu
 More specifically, this RFC aims to:
 1. Add an option to specify which configuration paths should be merged.
 2. Introduce support for prepend and append operations when merging list values:
-    - This is a good to have for lists that rely on certain ordering, such as:
+    - This is good to have for lists that rely on certain ordering, such as:
         - `processors`
         - `transformprocessor` statements
 
@@ -35,14 +35,14 @@ More specifically, this RFC aims to:
 The proposed approach will rely on concept of URI query parameters([_RFC 3986_](https://datatracker.ietf.org/doc/html/rfc3986#page-23)). Our configuration URIs already adhere to this syntax and we can extend it to support query params instead adding new CLI flags. 
 
 We will support new parameters to config URIs as follows:
-1. `paths`: A comma-separated list of glob patterns which will be used while config merging
+1. `merge_paths`: A comma-separated list of glob patterns which will be used while config merging
     - This setting will control the paths user wants to merge from the given config.
     - Example: 
-        - `otelcol --config main.yaml --config extra.yaml?paths=service::extensions,service::**::receivers`
+        - `otelcol --config main.yaml --config extra.yaml?merge_paths=service::extensions,service::**::receivers`
             - In this example, we will merge the list of extensions and receivers from pipeline, leaving lists in rest of the config untouched.
-        - `otelcol --config main.yaml --config ext.yaml?paths=service::extensions --config rec.yaml?paths=service::**::receivers`
+        - `otelcol --config main.yaml --config ext.yaml?merge_paths=service::extensions --config rec.yaml?merge_paths=service::**::receivers`
             - In this example, we will merge all list of extensions from `ext.yml` and list of receivers from `rec.yaml`, leaving lists in rest of the config untouched.
-2. `mode`: One of `prepend` or `append`.
+2. `merge_mode`: One of `prepend` or `append`.
     - This setting will control the ordering of merged list.
 
 ### Examples
@@ -61,8 +61,8 @@ otelcol --config=main.yaml --config=extra_components.yaml?mode=append --feature-
 ```bash
 otelcol \
   --config=main.yaml \
-  --config=extra_extension.yaml?mode=append&paths=service::extensions \
-  --config=extra_receiver.yaml?mode=append&paths=service::**::receivers \
+  --config=extra_extension.yaml?mode=append&merge_paths=service::extensions \
+  --config=extra_receiver.yaml?mode=append&merge_paths=service::**::receivers \
   --feature-gates=confmap.enableMergeAppendOption
 ```
 
@@ -73,13 +73,20 @@ otelcol \
 
 3. _Prepend processors_:
 ```bash
-otelcol --config=main.yaml --config=extra_processor.yaml?mode=prepend&paths=service::**::processors --feature-gates=confmap.enableMergeAppendOption
+otelcol --config=main.yaml --config=extra_processor.yaml?mode=prepend&merge_paths=service::**::processors --feature-gates=confmap.enableMergeAppendOption
 ```
 
 - After running above command, the final configuration will include:
     - Merged processor(s) from `extra_processor.yaml`, but prepend the existing list.
 
+4. _Exclude a config file from lists merging process_:
+```bash
+otelcol --config=main.yaml --config=extra_components.yaml?mode=append --config override_components.yaml --feature-gates=confmap.enableMergeAppendOption
+```
+
+- In the above command, we have no specified any options for `override_components.yaml`. Hence, it will override all the conflicting lists from previous configuration, which is the default behaviour.
+
+
 ## Extensibility 
 
-This URI-based approach is highly extensible. In the future, it can enable advanced operations such as map merging. Currently, it's impossible to do so.
-Refer Dmitry's comment for [more context](https://github.com/open-telemetry/opentelemetry-collector/pull/12097#issuecomment-2679219217).
+This URI-based approach is highly extensible. In the future, it can enable advanced operations such as map overriding. Currently, it's impossible to do so.
