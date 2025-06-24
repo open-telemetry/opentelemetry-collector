@@ -41,9 +41,9 @@ We will support new parameters to config URIs as follows:
     - This setting will control the paths user wants to merge from the given config.
     - Example: 
         - `otelcol --config main.yaml --config extra.yaml?merge_paths=service::extensions,service::**::receivers`
-            - In this example, we will merge the list of extensions and receivers from pipeline, excluding lists in the rest of the config untouched.
+            - In this example, we will merge the list of extensions and receivers from pipeline, excluding lists in the rest of the config.
         - `otelcol --config main.yaml --config ext.yaml?merge_paths=service::extensions --config rec.yaml?merge_paths=service::**::receivers`
-            - In this example, we will merge all list of extensions from `ext.yml` and list of receivers from `rec.yaml`, excluding lists in the rest of the config untouched.
+            - In this example, we will merge all list of extensions from `ext.yml` and list of receivers from `rec.yaml`, excluding lists in the rest of the config.
 2. `merge_mode`: One of `prepend` or `append`.
     - This setting will control the ordering of merged list.
 
