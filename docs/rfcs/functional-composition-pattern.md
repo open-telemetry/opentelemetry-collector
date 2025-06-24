@@ -160,7 +160,7 @@ functions using a functional-option argument passed to
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
 	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
 		o.CreateLogsFunc = createLogs
-		o.LogsStabilityFunc = sl.Self
+		o.LogsStabilityFunc = sl.Self // See (5) below
 	})
 }
 
@@ -218,20 +218,19 @@ func NewRateLimiterWithExtraFeature(rf ReserveRateFunc, ef ExtraFeatureFunc) Rat
 ### 5. Constant-value Function Implementations
 
 For types defined by simple values, especially for enumerated types,
-define a `Self()` method to act as the corresponding functional
-constant:
+define a `Self()` method to act as the corresponding value:
 
 ```go
 // Self returns itself.
-func (t Type) Self() Type {
+func (t Config) Self() Config {
      return t
 }
 
-// TypeFunc is ...
-type TypeFunc func() Type
+// ConfigFunc is ...
+type ConfigFunc func() Config
 
-// Type gets the type of the component created by this factory.
-func (f TypeFunc) Type() Type {
+// Config gets the type of the component created by this factory.
+func (f ConfigFunc) Config() Config {
 	if f == nil {
 	}
 	return f()
@@ -243,24 +242,22 @@ For example, we can decompose, modify, and recompose a
 constant-valued Type and Config functions:
 
 ```go
-    // Construct a factory, get its default default Config:
-    originalFactory := somepackage.NewFactory()
-    cfg := originalFactory.CreateDefaultConfig()
+// Copy a factory from somepackage, modify its default config.
+func modifiedFactory() Factory {
+    original := somepackage.NewFactory()
+    cfg := original.CreateDefaultConfig()
 
-    // ... Modify the config object somehow
-
-    // Pass cfg.Self as the default config function,
-    // return a new factory using the modified config.
-    return NewFactoryImpl(factory.Type().Self, cfg.Self)
+    // ... Modify the config object somehow,
+    // pass cfg.Self as the default config function.
+    return component.NewFactory(original.Type, cfg.Self)
+}    
 ```
 
 ## Examples
 
-### Flexibility and Composition
-
-This pattern enables composition scenarios by making it easy to
-compose and decompose interface values. For example, to wrap a
-`receiver.Factory` with a limiter of some sort:
+This pattern enables composition by making it easy to compose and
+decompose interface values. For example, to wrap a `receiver.Factory`
+with a limiter of some sort:
 
 ```go
 // Transform existing factories with cross-cutting concerns
