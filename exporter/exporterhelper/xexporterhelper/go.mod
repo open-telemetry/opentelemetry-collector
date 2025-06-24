@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/exporter/xexporter v0.128.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.128.0
 	go.opentelemetry.io/collector/pdata/testdata v0.128.0
-	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-00010101000000-000000000000
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.128.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/sdk v1.36.0
