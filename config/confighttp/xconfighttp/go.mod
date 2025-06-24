@@ -109,3 +109,11 @@ replace go.opentelemetry.io/collector/consumer/xconsumer => ../../../consumer/xc
 replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../../extension/extensionlimiter
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../../pdata/testdata
+
+replace go.opentelemetry.io/collector/receiver => ../../../receiver
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../../receiver/xreceiver

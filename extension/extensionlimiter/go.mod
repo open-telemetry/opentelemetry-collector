@@ -67,8 +67,10 @@ replace go.opentelemetry.io/collector/extension => ../
 
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
-replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
-
 replace go.opentelemetry.io/collector/receiver => ../../receiver
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
