@@ -237,3 +237,11 @@ Before settling for a converter, my approach was to inject storage extensions in
 The only viable option I found to add the extension was through a converter, which is specifically designed to update configurations in place.
 
 We can take it a step further by moving the injection logic into the converter itself, streamlining the entire implementation and keeping it contained within a single component. 
+
+## Open questions
+
+- Which directory to use for storing offsets if the feature gate is enabled?
+    - Currently, the filestorage extension uses following defaults:
+      - _For non-windows_: `/var/lib/otelcol/file_storage`
+      - _For windows_: `%ProgramData%\Otelcol\FileStorage`
+    - We can use them as defaults or specify our directories in the converter.
