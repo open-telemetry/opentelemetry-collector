@@ -24,23 +24,22 @@ import (
 )
 
 var (
-	ErrLimiterNotFound = errors.New("limiter not found")
-	ErrNotALimiter = errors.New("not a limiter")
+	ErrLimiterNotFound    = errors.New("limiter not found")
+	ErrNotALimiter        = errors.New("not a limiter")
 	ErrLimiterUnsupported = errors.New("limiter unsupported")
 )
 
-// Config is the standard pipeline configuration for limiting a
-// consumer interface by specific signal.
-//
-// This type should be embedded, for example:
-//
-// 	// LimiterConfig allows applying limiter extensions for request count, items, and bytes.
-//	consumerlimiter.LimiterConfig `mapstructure:"limiters"`
-//
-type LimiterConfig struct {
-	RequestCount component.ID `mapstructure:"request_count"`
-	RequestItems component.ID `mapstructure:"request_items"`
-	RequestBytes component.ID `mapstructure:"request_bytes"`
+// LimiterConfig is the standard pipeline configuration for limiting a
+// consumer interface by specific signal. This is identical to
+// configmiddleware.Config.
+type Config component.ID
+
+// UnmarshalText implements encoding.TextUnmarshaler for YAML support.
+func (cfg *Config) UnmarshalText(text []byte) error {
+	var id component.ID
+	err := id.UnmarshalText(text)
+	*cfg = Config(id)
+	return err
 }
 
 // capable is an internal interface describing common features of a
@@ -178,7 +177,7 @@ func (profileTraits) newReceiver(c component.Component) xreceiver.Profiles {
 }
 
 type limitedReceiver[P any, C capable, R component.Component, T traits[P, C, R]] struct {
-	cfg LimiterConfig
+	cfg  Config
 	next C
 	self T
 	component.ShutdownFunc
@@ -190,38 +189,40 @@ func (l *limitedReceiver[P, C, R, T]) Capabilities() consumer.Capabilities {
 
 func (l *limitedReceiver[P, C, R, T]) Start(ctx context.Context, host component.Host) error {
 	var unset component.ID
-	var err1, err2, err3 error
-	if name := l.cfg.RequestBytes; name != unset {
-		l.next, err1 = l.limitOne(
-			host,
-			name,
-			extensionlimiter.WeightKeyRequestBytes,
-			func(data P) int {
-				return l.self.requestSize(data)
-			},
-		)
-	}
-	if name := l.cfg.RequestItems; name != unset {
-		l.next, err2 = l.limitOne(
-			host,
-			name,
-			extensionlimiter.WeightKeyRequestItems,
-			func(data P) int {
-				return l.self.itemCount(data)
-			},
-		)
-	}
-	if name := l.cfg.RequestCount; name != unset {
-		l.next, err3 = l.limitOne(
-			host,
-			name,
-			extensionlimiter.WeightKeyRequestCount,
-			func(data P) int {
-				return 1
-			},
-		)
+	if component.ID(l.cfg) == unset {
+		// No limiter configured
+		return nil
 	}
 
+	limiterID := component.ID(l.cfg)
+	var err1, err2, err3 error
+
+	// Apply the same limiter to all three weight keys
+	l.next, err1 = l.limitOne(
+		host,
+		limiterID,
+		extensionlimiter.WeightKeyRequestBytes,
+		func(data P) int {
+			return l.self.requestSize(data)
+		},
+	)
+	l.next, err2 = l.limitOne(
+		host,
+		limiterID,
+		extensionlimiter.WeightKeyRequestItems,
+		func(data P) int {
+			return l.self.itemCount(data)
+		},
+	)
+	l.next, err3 = l.limitOne(
+		host,
+		limiterID,
+		extensionlimiter.WeightKeyRequestCount,
+		func(data P) int {
+			return 1
+		},
+	)
+	
 	return multierr.Append(err1, multierr.Append(err2, err3))
 }
 
@@ -258,7 +259,21 @@ func (l *limitedReceiver[P, C, R, T]) limitOne(
 		return l.next, nil
 	}
 	return l.self.create(func(ctx context.Context, data P) error {
-		return lim.LimitCall(ctx, quantify(data), func(ctx context.Context) error {
+		// Ensure limiter tracking exists in context and get tracking state
+		ctx, tracking := extensionlimiter.EnsureLimiterTracking(ctx)
+		amount := quantify(data)
+
+		// Check if any limiter was already applied for this weight key
+		if tracking.HasBeenLimited(key) {
+			// Skip this limiter - already applied (likely in middleware)
+			return l.self.consume(ctx, data, l.next)
+		}
+
+		// Apply limiter and increment the counter for this weight key
+		return lim.LimitCall(ctx, amount, func(ctx context.Context) error {
+			if tracking != nil {
+				tracking.AddRequest(key, amount)
+			}
 			return l.self.consume(ctx, data, l.next)
 		})
 	}, consumer.WithCapabilities(l.next.Capabilities()))
@@ -267,11 +282,11 @@ func (l *limitedReceiver[P, C, R, T]) limitOne(
 // newLimited is signal-generic limiting logic.
 func newLimited[P any, C capable, R component.Component](
 	next C,
-	cfg LimiterConfig,
+	cfg Config,
 	self traits[P, C, R],
-) *limitedReceiver[P, C, R, traits[P, C, R]] { 
+) *limitedReceiver[P, C, R, traits[P, C, R]] {
 	return &limitedReceiver[P, C, R, traits[P, C, R]]{
-		cfg: cfg,
+		cfg:  cfg,
 		next: next,
 		self: self,
 	}
@@ -279,7 +294,7 @@ func newLimited[P any, C capable, R component.Component](
 
 // LimiterConfigurator lets components configure limiters using
 // a field they determine.
-type LimiterConfigurator func(component.Config) LimiterConfig
+type LimiterConfigurator func(component.Config) Config
 
 // limitReceiver limits a receiver component where P is pipeline data,
 // C is the consumer type, and R is the return type.
@@ -290,7 +305,7 @@ func limitReceiver[P any, C capable, R component.Component](
 ) creator[C, R] {
 	return func(ctx context.Context, set receiver.Settings, cfg component.Config, next C) (R, error) {
 		var limiter *limitedReceiver[P, C, R, traits[P, C, R]]
-		var emptyCfg LimiterConfig
+		var emptyCfg Config
 		if lc := cfgf(cfg); lc != emptyCfg {
 			limiter = newLimited(next, lc, t)
 			var err error
@@ -309,15 +324,15 @@ func limitReceiver[P any, C capable, R component.Component](
 			return recv, nil
 		}
 		return t.newReceiver(component.NewComponentImpl(
-			func (ctx context.Context, host component.Host) error {
+			func(ctx context.Context, host component.Host) error {
 				err1 := limiter.Start(ctx, host)
 				err2 := recv.Start(ctx, host)
-				return multierr.Append(err1, err2) 
+				return multierr.Append(err1, err2)
 			},
-			func (ctx context.Context) error {
+			func(ctx context.Context) error {
 				err1 := recv.Shutdown(ctx)
 				err2 := limiter.Shutdown(ctx)
-				return multierr.Append(err1, err2) 
+				return multierr.Append(err1, err2)
 			},
 		)), nil
 	}

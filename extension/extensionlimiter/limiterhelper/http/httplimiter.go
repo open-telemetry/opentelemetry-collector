@@ -38,24 +38,63 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTT
 				return base.RoundTrip(req)
 			}
 
+			// Ensure limiter tracking exists in context
+			ctx, tracking := extensionlimiter.EnsureLimiterTracking(req.Context())
+			req = req.WithContext(ctx)
+
+			// Determine what types of limiting to check/apply
+			var shouldLimitRequests, shouldLimitBytes bool
+			if requestLimiter != nil && !tracking.HasBeenLimited(extensionlimiter.WeightKeyRequestCount) {
+				shouldLimitRequests = true
+			}
+			if bytesLimiter != nil && !tracking.HasBeenLimited(extensionlimiter.WeightKeyNetworkBytes) {
+				shouldLimitBytes = true
+			}
+
+			if !shouldLimitRequests && !shouldLimitBytes {
+				// Skip limiting since limiters were already applied for these weight keys
+				return base.RoundTrip(req)
+			}
+
 			var resp *http.Response
-			err := requestLimiter.LimitCall(
-				req.Context(),
-				1,
-				func(_ context.Context) error {
-					if bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
-						// If bytes are limited, create a limited ReadCloser body.
-						req.Body = &rateLimitedBody{
-							body:    req.Body,
-							limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
-							ctx:     req.Context(),
+			if shouldLimitRequests && requestLimiter != nil {
+				err := requestLimiter.LimitCall(
+					ctx,
+					1,
+					func(ctx context.Context) error {
+						// Mark request limiting as applied
+						tracking.AddRequest(extensionlimiter.WeightKeyRequestCount, 1)
+						if shouldLimitBytes && bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
+							// If bytes are limited, create a limited ReadCloser body.
+							req.Body = &rateLimitedBody{
+								body:    req.Body,
+								limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+								ctx:     ctx,
+							}
+							// Mark byte limiting as applied too
+							tracking.AddRequest(extensionlimiter.WeightKeyNetworkBytes, 0)
 						}
+						var err error
+						resp, err = base.RoundTrip(req.WithContext(ctx))
+						return err
+					})
+				return resp, err
+			} else if shouldLimitBytes && bytesLimiter != nil {
+				// No request limiting, but apply byte limiting
+				if req.Body != nil && req.Body != http.NoBody {
+					req.Body = &rateLimitedBody{
+						body:    req.Body,
+						limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+						ctx:     ctx,
 					}
-					var err error
-					resp, err = base.RoundTrip(req)
-					return err
-				})
-			return resp, err
+				}
+				// Mark byte limiting as applied
+				tracking.AddRequest(extensionlimiter.WeightKeyNetworkBytes, 0)
+				return base.RoundTrip(req)
+			} else {
+				// Neither type should be limited
+				return base.RoundTrip(req)
+			}
 		}), multierr.Append(err1, err2)
 	}
 	return extensionmiddleware.GetHTTPRoundTripperFunc(roundtrip), nil
@@ -107,21 +146,66 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.HTT
 		}
 
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			_ = requestLimiter.LimitCall(
-				req.Context(),
-				1,
-				func(_ context.Context) error {
-					if bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
-						// If bytes are limited, create a limited ReadCloser body.
-						req.Body = &rateLimitedBody{
-							body:    req.Body,
-							limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
-							ctx:     req.Context(),
+			// Ensure limiter tracking exists in context
+			ctx, tracking := extensionlimiter.EnsureLimiterTracking(req.Context())
+			req = req.WithContext(ctx)
+
+			// Determine what types of limiting to check/apply
+			var shouldLimitRequests, shouldLimitBytes bool
+			if requestLimiter != nil && !tracking.HasBeenLimited(extensionlimiter.WeightKeyRequestCount) {
+				shouldLimitRequests = true
+			}
+			if bytesLimiter != nil && !tracking.HasBeenLimited(extensionlimiter.WeightKeyNetworkBytes) {
+				shouldLimitBytes = true
+			}
+
+			if !shouldLimitRequests && !shouldLimitBytes {
+				// Skip limiting since limiters were already applied for these weight keys
+				base.ServeHTTP(w, req)
+				return
+			}
+
+			// Apply request count limiting if configured
+			if shouldLimitRequests && requestLimiter != nil {
+				err := requestLimiter.LimitCall(
+					ctx,
+					1,
+					func(ctx context.Context) error {
+						// Mark request limiting as applied
+						tracking.AddRequest(extensionlimiter.WeightKeyRequestCount, 1)
+						if shouldLimitBytes && bytesLimiter != nil && req.Body != nil && req.Body != http.NoBody {
+							// If bytes are limited, create a limited ReadCloser body.
+							req.Body = &rateLimitedBody{
+								body:    req.Body,
+								limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+								ctx:     ctx,
+							}
+							// Mark byte limiting as applied too
+							tracking.AddRequest(extensionlimiter.WeightKeyNetworkBytes, 0)
 						}
+						base.ServeHTTP(w, req.WithContext(ctx))
+						return nil
+					})
+				if err != nil {
+					http.Error(w, "Request rate limited", http.StatusTooManyRequests)
+					return
+				}
+			} else if shouldLimitBytes && bytesLimiter != nil {
+				// No request limiting, but apply byte limiting
+				if req.Body != nil && req.Body != http.NoBody {
+					req.Body = &rateLimitedBody{
+						body:    req.Body,
+						limiter: limiterhelper.NewBlockingRateLimiter(bytesLimiter),
+						ctx:     ctx,
 					}
-					base.ServeHTTP(w, req)
-					return nil
-				})
+				}
+				// Mark byte limiting as applied
+				tracking.AddRequest(extensionlimiter.WeightKeyNetworkBytes, 0)
+				base.ServeHTTP(w, req)
+			} else {
+				// Neither type should be limited
+				base.ServeHTTP(w, req)
+			}
 		}), nil
 	}
 	return extensionmiddleware.GetHTTPHandlerFunc(handler), nil

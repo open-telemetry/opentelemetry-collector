@@ -38,8 +38,8 @@ func NewFactory() receiver.Factory {
 			xreceiver.WithLogs(createLog, metadata.LogsStability),
 			xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
 		),
-		func(cfg component.Config) consumerlimiter.LimiterConfig {
-			return cfg.(*Config).LimiterConfig
+		func(cfg component.Config) consumerlimiter.Config {
+			return cfg.(*Config).Limiter
 		},
 	)
 }

@@ -5,7 +5,6 @@ package grpclimiter
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"go.uber.org/multierr"
@@ -17,36 +16,18 @@ import (
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
-// contextKey is a private type for context keys
-type contextKey int
-
-const (
-	rateLimiterErrorKey contextKey = iota
-)
-
-// rateLimiterErrorState holds error state,allowing rate limiters to return
-// errors in the correct context.
-type rateLimiterErrorState struct {
-	mu  sync.Mutex
-	err error
-}
-
 // checkRateLimiterError checks if there's a prior rate limiter error in the context.
 func checkRateLimiterError(ctx context.Context) error {
-	if state, ok := ctx.Value(rateLimiterErrorKey).(*rateLimiterErrorState); ok {
-		state.mu.Lock()
-		defer state.mu.Unlock()
-		return state.err
+	if state := extensionlimiter.GetLimiterTracking(ctx); state != nil {
+		return state.GetRateLimiterError()
 	}
 	return nil
 }
 
 // setRateLimiterError sets a rate limiter error in the context
 func setRateLimiterError(ctx context.Context, err error) {
-	if state, ok := ctx.Value(rateLimiterErrorKey).(*rateLimiterErrorState); ok {
-		state.mu.Lock()
-		defer state.mu.Unlock()
-		state.err = multierr.Append(state.err, err)
+	if state := extensionlimiter.GetLimiterTracking(ctx); state != nil {
+		state.SetRateLimiterError(err)
 	}
 }
 
@@ -75,9 +56,19 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 				invoker grpc.UnaryInvoker,
 				opts ...grpc.CallOption,
 			) error {
+				// Ensure limiter tracking exists in context and get tracking state
+				ctxIn, tracking := extensionlimiter.EnsureLimiterTracking(ctxIn)
+
+				if tracking.HasBeenLimited(extensionlimiter.WeightKeyRequestCount) {
+					// Skip limiting since a limiter was already applied for request count
+					return invoker(ctxIn, method, req, reply, cc, opts...)
+				}
+
 				return requestLimiter.LimitCall(
 					ctxIn, 1,
 					func(ctx context.Context) error {
+						// Mark this weight key as applied
+						tracking.AddRequest(extensionlimiter.WeightKeyRequestCount, 1)
 						if err := checkRateLimiterError(ctx); err != nil {
 							return err
 						}
@@ -104,9 +95,9 @@ func NewClientLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 	if compressedLimiter != nil || uncompressedLimiter != nil {
 		gopts = append(gopts, grpc.WithStatsHandler(
 			&limiterStatsHandler{
-				compressedLimiter:  compressedLimiter,
-				uncompressedLimiter:  uncompressedLimiter,
-				isClient: true,
+				compressedLimiter:   compressedLimiter,
+				uncompressedLimiter: uncompressedLimiter,
+				isClient:            true,
 			}))
 	}
 	return extensionmiddleware.GetGRPCClientOptionsFunc(func() ([]grpc.DialOption, error) {
@@ -136,10 +127,20 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 				info *grpc.UnaryServerInfo,
 				handler grpc.UnaryHandler,
 			) (any, error) {
+				// Ensure limiter tracking exists in context and get tracking state
+				ctxIn, tracking := extensionlimiter.EnsureLimiterTracking(ctxIn)
+
+				if tracking.HasBeenLimited(extensionlimiter.WeightKeyRequestCount) {
+					// Skip limiting since a limiter was already applied for request count
+					return handler(ctxIn, req)
+				}
+
 				var resp any
 				err := requestLimiter.LimitCall(
 					ctxIn, 1,
 					func(ctx context.Context) error {
+						// Mark this weight key as applied
+						tracking.AddRequest(extensionlimiter.WeightKeyRequestCount, 1)
 						if err := checkRateLimiterError(ctx); err != nil {
 							return err
 						}
@@ -162,9 +163,9 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 	if compressedLimiter != nil || uncompressedLimiter != nil {
 		gopts = append(gopts, grpc.StatsHandler(
 			&limiterStatsHandler{
-				compressedLimiter:  compressedLimiter,
-				uncompressedLimiter:  uncompressedLimiter,
-				isClient: false,
+				compressedLimiter:   compressedLimiter,
+				uncompressedLimiter: uncompressedLimiter,
+				isClient:            false,
 			}))
 	}
 
@@ -175,12 +176,17 @@ func NewServerLimiter(ext extensionlimiter.AnyProvider) (extensionmiddleware.GRP
 
 // limiterStatsHandler implements the stats.Handler interface for rate limiting.
 type limiterStatsHandler struct {
-	compressedLimiter  extensionlimiter.RateLimiter
-	uncompressedLimiter  extensionlimiter.RateLimiter
-	isClient bool
+	compressedLimiter   extensionlimiter.RateLimiter
+	uncompressedLimiter extensionlimiter.RateLimiter
+	isClient            bool
 }
 
 func (h *limiterStatsHandler) TagRPC(ctx context.Context, _ *stats.RPCTagInfo) context.Context {
+	// Create a new context with limiter tracking (includes rate limiter error state)
+	ctx, tracking := extensionlimiter.EnsureLimiterTracking(ctx)
+	if tracking.HasBeenLimited(extensionlimiter.WeightKeyNetworkBytes) {
+
+	}
 	return ctx
 }
 
@@ -206,19 +212,35 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 		return
 	}
 
+	// Ensure limiter tracking exists in context and get tracking state
+	tracking := extensionlimiter.GetLimiterTracking(ctx)
+	if tracking == nil {
+		// Misconfiguration
+		return
+	}
+
+
 	// Implement 1 or 2 rate limits in parallel
 	var err1, err2 error
 	var res1, res2 extensionlimiter.RateReservation
 
-	if wireBytes != 0 {
+	if wireBytes != 0 && h.compressedLimiter != nil &&
+		!tracking.HasBeenLimited(extensionlimiter.WeightKeyNetworkBytes) {
 		res1, err1 = h.compressedLimiter.ReserveRate(ctx, wireBytes)
+		if err1 == nil {
+			tracking.AddRequest(extensionlimiter.WeightKeyNetworkBytes, wireBytes)
+		}
 	}
-	if reqBytes != 0 {
+	if reqBytes != 0 && h.uncompressedLimiter != nil &&
+		!tracking.HasBeenLimited(extensionlimiter.WeightKeyRequestBytes) {
 		res2, err2 = h.uncompressedLimiter.ReserveRate(ctx, reqBytes)
+		if err2 == nil {
+			tracking.AddRequest(extensionlimiter.WeightKeyRequestBytes, reqBytes)
+		}
 	}
 
 	var wait1, wait2 time.Duration
-		
+
 	if res1 != nil {
 		wait1 = res1.WaitTime()
 		defer res1.Cancel()
@@ -234,6 +256,9 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 	}
 
 	wait := max(wait1, wait2)
+	if wait == 0 {
+		return
+	}
 	select {
 	case <-ctx.Done():
 	case <-time.After(wait):
@@ -241,8 +266,7 @@ func (h *limiterStatsHandler) HandleRPC(ctx context.Context, s stats.RPCStats) {
 }
 
 func (h *limiterStatsHandler) TagConn(ctx context.Context, _ *stats.ConnTagInfo) context.Context {
-	// Create a new context with rate limiter error state
-	return context.WithValue(ctx, rateLimiterErrorKey, &rateLimiterErrorState{})
+	return ctx
 }
 
 func (h *limiterStatsHandler) HandleConn(ctx context.Context, _ stats.ConnStats) {

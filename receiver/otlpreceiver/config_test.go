@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/consumerlimiter"
 )
 
 // GetOrInsertDefault is a helper function to get or insert a default value for a configoptional.Optional type.
@@ -113,10 +114,8 @@ func TestUnmarshalLimiterConfig(t *testing.T) {
 		configmiddleware.Config(component.MustNewIDWithName("three", "b")),
 		configmiddleware.Config(component.MustNewID("four")),
 	})
-	assert.Equal(t, cfg.LimiterConfig.RequestBytes, component.MustNewIDWithName("five", "c"))
-	assert.Equal(t, cfg.LimiterConfig.RequestItems, component.MustNewID("six"))
-	assert.Equal(t, cfg.LimiterConfig.RequestCount, component.MustNewID("seven"))
-	
+	assert.Equal(t, cfg.Limiter, consumerlimiter.Config(component.MustNewIDWithName("five", "c")))
+
 }
 
 func TestUnmarshalConfig(t *testing.T) {

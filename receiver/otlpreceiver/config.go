@@ -65,7 +65,7 @@ type Config struct {
 	Protocols `mapstructure:"protocols"`
 
 	// LimiterConfig allows applying limiter extensions for request count, items, and bytes.
-	consumerlimiter.LimiterConfig `mapstructure:"limiters"`
+	Limiter consumerlimiter.Config `mapstructure:"limiter"`
 }
 
 var _ component.Config = (*Config)(nil)

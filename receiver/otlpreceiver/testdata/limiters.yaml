@@ -9,7 +9,4 @@ protocols:
     middleware:
     - three/b
     - four
-limiters:
-  request_bytes: five/c
-  request_items: six
-  request_count: seven
+limiter: five/c

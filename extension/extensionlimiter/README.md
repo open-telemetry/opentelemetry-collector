@@ -190,7 +190,7 @@ interface and drop data that would exceed a limit.  For example, to
 limit based on metadata extracted from the OpenTelemetry resource
 value:
 
-```
+```go
 func (p *processor) limitLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, extensionlimiter.ReleaseFunc, error) {
     var rels extensionlimiter.ReleaseFuncs
 	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
@@ -250,62 +250,108 @@ The question is how we avoid double-count certain limits whether they
 are implemented in middleware, through a factory, through custom
 receiver code, or other.
 
-In the current limiter extension proposal, middleware references are
-component IDs (without referce to weight key), while `LimiterConfig`
-is a set of weight-specific limiter references. Users will be able to
-double-count certain features when they user the same limiter
-extension in both middleware and limiters configuration, unless we
-help explicitly avoid this scnario. It could be accomplished using
-context variables or start-time settings.
+The current proposal avoids double-counting by maintaining state in
+the Context indicating when a Limiter component has already seen a
+request. This allows early-as-possible limiting to be achieved while
+falling-back to consumerlimiter for limits that have not been enforced
+automatically.
 
-##### Controlling middleware order
-
-While middleware order is a list of components, it is difficult for
-users to reason about the order of application. To implement a
-network-bytes or request-bytes limit, the limiter has to be configured
-before or after the compression middleware.
-
-Today, HTTP middleware for compression is automatically inserted
-although [it could become middleware
-itself](https://github.com/open-telemetry/opentelemetry-collector/issues/13228).
-
-Since middlware references are simple identifiers (without weight
-keys), additional help is needed to distinguish compressed bytes from
-uncompressed bytes, especially for the HTTP cases. Potentially,
-middleware can look at Transfer-Encoding or context.Context values
-to distinguish these cases.
-
-#### Middleware component syntax
-
-In many discussions and documents, a number of authors have shown a
-preference for simple component identifiers, without the leading `id:`
-field syntax, which is to change
-
-```go
-type Config struct {
-	ID component.ID `mapstructure:"id,omitempty"`
-}
-```
-
-to:
-
-```go
-type Config struct component.ID
-```
-
-This allows middleware to be listed as simple identifiers,
+But, there are variations, like
 
 ```yaml
+extensions:
+  ratelimiter/1:      # weights go here?
+  ratelimiter/3:      # weights go here?
+  admissionlimiter/2: # weights go here?
+  admissionlimiter/4: # weights go here?
 receivers:
   otlp:
     protocols:
       grpc:
         middleware:
         - ratelimiter/1
-        - ratelimiter/2
+        - admissionlimiter/2
     limiters:
-      request_bytes: admissionlimiter/3
+    - ratelimiter/3    # multiple limiters here?
+    - admissionlimiter/4 # multiple limiters here?
 ```
+
+The configuration leaves all weight configuration to the limiter
+components. Limiters can implement all weights, but they cannot be
+both a rate limiter and a resource limiter.
+
+Should we add indirection? Relax the requirement that a limiter cannot
+be both a rate and a resource limiter? In this example, indirection is
+added in the form of a "limitermux" extension. This can be an
+implementation detail.
+
+```yaml
+extensions:
+  ...
+  limitermux/grpc:
+    request_count:
+    - ratelimiter/1
+    network_bytes:
+    - ratelimiter/2
+    request_bytes:
+    - ratelimiter/3
+    - admissionlimiter/1
+    request_items:
+    - ratelimiter/4
+
+  limitermux/otlp:
+    ...
+
+  ...
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        middleware:
+        - limitermux/grpc
+    limiters:
+    - limitermux/otlp
+```
+
+Another route is to back up from the current PR, which makes
+configmiddleware.Config into a non-struct `component.ID` type,
+eliminating the struct-value with single `id:` field. Instead,
+we could add limiter-weight bindings to the middleware config
+and/or limiter config:
+
+```yaml
+extensions:
+  ...
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        middleware:
+        - network_bytes: ratelimiter/1
+          request_count: ratelimiter/2
+	  request_bytes: admissionlimiter/1
+      http:
+        middleware:
+        - network_bytes: ratelimiter/1
+          request_count: ratelimiter/2
+	- decompression: zstd,snappy,gzip
+        - request_bytes: admissionlimiter/1
+	- instrumentation: opentelemetry/1
+    limiters:
+    - request_items: ratelimiter/3
+```
+
+##### Instrumentation
+
+It is possible to extract Counter (RateLimiter) and UpDownCounter
+(ResourceLimiter) instrumentation to convey the rates and totals
+associated with each limiter.
+
+This should investigated along with investigation into the topics
+raised above. Users will be well served if we are able to confidently
+extract network-bytes, request-bytes, request-items, and request-count
+information without double-counting and provide instrumentation
+covering these variables.
 
 ##### Are built-in rate and resource limiters needed?
 
@@ -320,14 +366,3 @@ processor](https://github.com/elastic/opentelemetry-collector-components/blob/ma
 would be a good contribution for the community. We are interested in
 real-world features such as the ability to set `metadata_keys`.
 
-##### Instrumentation
-
-It is possible to extract Counter (RateLimiter) and UpDownCounter
-(ResourceLimiter) instrumentation to convey the rates and totals
-associated with each limiter.
-
-This should investigated along with investigation into the topics
-raised above. Users will be well served if we are able to confidently
-extract network-bytes, request-bytes, request-items, and request-count
-information without double-counting and provide instrumentation
-covering these variables.
