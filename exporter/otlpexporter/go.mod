@@ -27,7 +27,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237
-	google.golang.org/grpc v1.72.2
+	google.golang.org/grpc v1.73.0
 	google.golang.org/protobuf v1.36.6
 )
 
@@ -69,6 +69,7 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.128.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
+	go.opentelemetry.io/collector/pdata/xpdata v0.0.0-20250620153441-35668a11dade // indirect
 	go.opentelemetry.io/collector/pipeline v0.128.0 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.128.0 // indirect
 	go.opentelemetry.io/collector/receiver v1.34.0 // indirect
@@ -175,3 +176,5 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata

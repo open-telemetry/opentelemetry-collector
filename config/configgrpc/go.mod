@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
-	google.golang.org/grpc v1.72.2
+	google.golang.org/grpc v1.73.0
 )
 
 require (
