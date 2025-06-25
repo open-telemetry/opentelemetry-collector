@@ -250,7 +250,7 @@ func (t Config) Self() Config {
 // ConfigFunc is ...
 type ConfigFunc func() Config
 
-// Config gets the type of the component created by this factory.
+// Config gets the default configuration for this factory.
 func (f ConfigFunc) Config() Config {
 	if f == nil {
 	}
@@ -259,18 +259,21 @@ func (f ConfigFunc) Config() Config {
 ```
 
 For example, we can decompose, modify, and recompose a
-`component.Factory` easily using Self methods to capture the
-constant-valued Type and Config functions:
+`component.Factory` easily using Self instead of the inline `func()
+Config { return cfg }` to capture the constant-valued Config function:
 
 ```go
 // Copy a factory from somepackage, modify its default config.
 func modifiedFactory() Factory {
     original := somepackage.NewFactory()
+    otype := original.Type()
     cfg := original.CreateDefaultConfig()
 
-    // ... Modify the config object somehow,
-    // pass cfg.Self as the default config function.
-    return component.NewFactory(original.Type, cfg.Self)
+    // Modify the config object
+    ...
+
+    // Here, otype.Self equals original.Type.
+    return component.NewFactory(otype.Self, cfg.Self)
 }    
 ```
 
