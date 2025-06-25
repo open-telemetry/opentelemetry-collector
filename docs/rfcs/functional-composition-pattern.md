@@ -5,7 +5,7 @@
 This codebase uses a **Functional Composition** pattern for its core
 interfaces. This pattern decomposes the individual methods from
 interface types into corresponding function types, then recomposes
-them into a concrete implementation type.  This approach provides
+them into a concrete implementation type. This approach provides
 flexibility, testability, and safe interface evolution for the
 OpenTelemetry Collector.
 
@@ -73,7 +73,7 @@ func (f CancelFunc) Cancel() {
 ```
 
 Users of the [`net/http` package have seen this
-pattern](https://pkg.go.dev/net/http#HandlerFunc).  `http.HandlerFunc`
+pattern](https://pkg.go.dev/net/http#HandlerFunc). `http.HandlerFunc`
 can be seen as a prototype for the Functional Composition pattern, in
 this case for HTTP servers. Interestingly, the single-method
 `http.RoundTripper` interface, representing the same interaction for
@@ -122,10 +122,10 @@ type rateLimiterImpl struct {
 
 ### 3. Use Constructors for Interface Values
 
-Provide constructor functions rather than exposing concrete types.  By
+Provide constructor functions rather than exposing concrete types. By
 default, each interface should provide a `func
 New<Type>(<Method1>Func, <Method2>Func, ...) Type` for all methods,
-using the concrete implementation struct.  For example:
+using the concrete implementation struct. For example:
 
 ```go
 func NewRateReservation(wf WaitTimeFunc, cf CancelFunc) RateReservation {
@@ -187,7 +187,7 @@ func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefa
 ### 4. Seal Public Interface Types
 
 Using an unexported method "seals" the interface type so external
-packages can only use, not implement the interface.  This allows
+packages can only use, not implement the interface. This allows
 interfaces to evolve safely because users are forced to use
 constructor functions.
 
