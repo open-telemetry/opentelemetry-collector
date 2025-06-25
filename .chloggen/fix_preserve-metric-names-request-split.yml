@@ -7,7 +7,7 @@ change_type: bug_fix
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes an issue in exporterhelper's sending_queue where metric names were lost during metricRequest splitting.
+note: Preserve all metrics metadata when batch splitting.
 
 # One or more tracking issues or pull requests related to the change
 issues: [13236]
