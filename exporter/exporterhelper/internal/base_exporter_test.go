@@ -87,6 +87,171 @@ func TestBaseExporterLogging(t *testing.T) {
 	require.NoError(t, bs.Shutdown(context.Background()))
 }
 
+func TestExporterStartupDebugLogging(t *testing.T) {
+	tests := []struct {
+		name             string
+		queueEnabled     bool
+		expectedLogs     int
+		expectedMessages []string
+	}{
+		{
+			name:         "queue enabled",
+			queueEnabled: true,
+			expectedLogs: 3,
+			expectedMessages: []string{
+				"Starting exporter",
+				"Starting QueueSender",
+				"Started exporter",
+			},
+		},
+		{
+			name:         "queue disabled",
+			queueEnabled: false,
+			expectedLogs: 3,
+			expectedMessages: []string{
+				"Starting exporter",
+				"Starting QueueSender",
+				"Started exporter",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := exportertest.NewNopSettings(exportertest.NopType)
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+			rCfg := configretry.NewDefaultBackOffConfig()
+			rCfg.Enabled = false
+			qCfg := NewDefaultQueueConfig()
+			qCfg.Enabled = tt.queueEnabled
+
+			bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
+				WithQueueBatchSettings(newFakeQueueBatch()),
+				WithQueue(qCfg),
+				WithBatcher(NewDefaultBatcherConfig()),
+				WithRetry(rCfg))
+			require.NoError(t, err)
+			require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
+
+			// Debug Logs for Startup
+			debugLogs := observed.FilterLevelExact(zap.DebugLevel).All()
+			require.Len(t, debugLogs, tt.expectedLogs)
+
+			for i, expectedMessage := range tt.expectedMessages {
+				assert.Contains(t, debugLogs[i].Message, expectedMessage)
+				assert.Contains(t, debugLogs[i].Context[0].Key, "exporter")
+				assert.Contains(t, debugLogs[i].Context[0].String, set.ID.String())
+			}
+
+			require.NoError(t, bs.Shutdown(context.Background()))
+		})
+	}
+}
+
+func TestExporterShutdownDebugLogging(t *testing.T) {
+	tests := []struct {
+		name             string
+		queueEnabled     bool
+		retryEnabled     bool
+		expectedLogs     int
+		expectedMessages []string
+	}{
+		{
+			name:         "queue and retry enabled",
+			queueEnabled: true,
+			retryEnabled: true,
+			expectedLogs: 7,
+			expectedMessages: []string{
+				"Begin exporter shutdown sequence.",
+				"Shutting down exporter retry sender...",
+				"Shutdown exporter retry sender",
+				"Shutting down queue sender...",
+				"Shutdown queue sender",
+				"Shutting down exporter...",
+				"Shutdown exporter",
+			},
+		},
+		{
+			name:         "queue enabled, retry disabled",
+			queueEnabled: true,
+			retryEnabled: false,
+			expectedLogs: 5,
+			expectedMessages: []string{
+				"Begin exporter shutdown sequence.",
+				"Shutting down queue sender...",
+				"Shutdown queue sender",
+				"Shutting down exporter...",
+				"Shutdown exporter",
+			},
+		},
+		{
+			name:         "queue disabled, retry enabled",
+			queueEnabled: false,
+			retryEnabled: true,
+			expectedLogs: 7,
+			expectedMessages: []string{
+				"Begin exporter shutdown sequence.",
+				"Shutting down exporter retry sender...",
+				"Shutdown exporter retry sender",
+				"Shutting down queue sender...",
+				"Shutdown queue sender",
+				"Shutting down exporter...",
+				"Shutdown exporter",
+			},
+		},
+		{
+			name:         "queue and retry disabled",
+			queueEnabled: false,
+			retryEnabled: false,
+			expectedLogs: 5,
+			expectedMessages: []string{
+				"Begin exporter shutdown sequence.",
+				"Shutting down queue sender...",
+				"Shutdown queue sender",
+				"Shutting down exporter...",
+				"Shutdown exporter",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			set := exportertest.NewNopSettings(exportertest.NopType)
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+			rCfg := configretry.NewDefaultBackOffConfig()
+			rCfg.Enabled = tt.retryEnabled
+			qCfg := NewDefaultQueueConfig()
+			qCfg.Enabled = tt.queueEnabled
+
+			bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
+				WithQueueBatchSettings(newFakeQueueBatch()),
+				WithQueue(qCfg),
+				WithBatcher(NewDefaultBatcherConfig()),
+				WithRetry(rCfg))
+			require.NoError(t, err)
+			require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
+
+			// Clear the startup logs
+			observed.TakeAll()
+
+			// Perform shutdown
+			require.NoError(t, bs.Shutdown(context.Background()))
+
+			// Debug Logs for Shutdown
+			debugLogs := observed.FilterLevelExact(zap.DebugLevel).All()
+			require.Len(t, debugLogs, tt.expectedLogs)
+
+			for i, expectedMessage := range tt.expectedMessages {
+				assert.Contains(t, debugLogs[i].Message, expectedMessage)
+				assert.Contains(t, debugLogs[i].Context[0].Key, "exporter")
+				assert.Contains(t, debugLogs[i].Context[0].String, set.ID.String())
+			}
+		})
+	}
+}
+
 func TestQueueRetryWithDisabledQueue(t *testing.T) {
 	tests := []struct {
 		name         string
