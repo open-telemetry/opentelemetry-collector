@@ -160,59 +160,69 @@ See the [Contributing Guide](CONTRIBUTING.md) for details.
 
 Here is a list of community roles with current and previous members:
 
-- Triagers ([@open-telemetry/collector-triagers](https://github.com/orgs/open-telemetry/teams/collector-triagers)):
+### Maintainers
 
-  - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
-  - [Chao Weng](https://github.com/sincejune), AppDynamics
-  - [Damien Mathieu](https://github.com/dmathieu), Elastic
-  - Actively seeking contributors to triage issues
+- [Alex Boten](https://github.com/codeboten), Honeycomb
+- [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
+- [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
+- [Pablo Baeyens](https://github.com/mx-psi), DataDog
 
-- Emeritus Triagers:
+For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).
 
-   - [Andrew Hsu](https://github.com/andrewhsu)
-   - [Alolita Sharma](https://github.com/alolita)
-   - [Punya Biswal](https://github.com/punya)
-   - [Steve Flanders](https://github.com/flands)
+### Approvers
 
-- Approvers ([@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)):
+- [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Evan Bradley](https://github.com/evan-bradley), Dynatrace
+- [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
+- [Joshua MacDonald](https://github.com/jmacd), Microsoft
+- [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
+- [Yang Song](https://github.com/songy23), Datadog
 
-   - [Antoine Toulme](https://github.com/atoulme), Splunk
-   - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-   - [Jade Guiton](https://github.com/jade-guiton-dd), Datadog
-   - [Joshua MacDonald](https://github.com/jmacd), Microsoft
-   - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
-   - [Yang Song](https://github.com/songy23), Datadog
+For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).
 
-- Emeritus Approvers:
+### Triagers
 
-   - [James Bebbington](https://github.com/james-bebbington)
-   - [Jay Camp](https://github.com/jrcamp)
-   - [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
-   - [Nail Islamov](https://github.com/nilebox)
-   - [Owais Lone](https://github.com/owais)
-   - [Rahul Patel](https://github.com/rghetia)
-   - [Steven Karis](https://github.com/sjkaris)
-   - [Anthony Mirabella](https://github.com/Aneurysm9)
-   - [Daniel Jaglowski](https://github.com/djaglowski)
+- [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Chao Weng](https://github.com/sincejune), AppDynamics
+- [Damien Mathieu](https://github.com/dmathieu), Elastic
+- Actively seeking contributors to triage issues
 
-- Maintainers ([@open-telemetry/collector-maintainers](https://github.com/orgs/open-telemetry/teams/collector-maintainers)):
+For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#triagers).
 
-   - [Alex Boten](https://github.com/codeboten), Honeycomb
-   - [Bogdan Drutu](https://github.com/BogdanDrutu), Snowflake
-   - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
-   - [Pablo Baeyens](https://github.com/mx-psi), DataDog
+### Emeritus Maintainers
 
-- Emeritus Maintainers:
+- [Paulo Janotti](https://github.com/pjanotti)
+- [Tigran Najaryan](https://github.com/tigrannajaryan)
 
-   - [Paulo Janotti](https://github.com/pjanotti)
-   - [Tigran Najaryan](https://github.com/tigrannajaryan)
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
-Learn more about roles in [Community membership](https://github.com/open-telemetry/community/blob/main/community-membership.md).
+### Emeritus Approvers
+
+- [James Bebbington](https://github.com/james-bebbington)
+- [Jay Camp](https://github.com/jrcamp)
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Nail Islamov](https://github.com/nilebox)
+- [Owais Lone](https://github.com/owais)
+- [Rahul Patel](https://github.com/rghetia)
+- [Steven Karis](https://github.com/sjkaris)
+- [Anthony Mirabella](https://github.com/Aneurysm9)
+- [Daniel Jaglowski](https://github.com/djaglowski)
+
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
+
+### Emeritus Triagers
+
+- [Andrew Hsu](https://github.com/andrewhsu)
+- [Alolita Sharma](https://github.com/alolita)
+- [Punya Biswal](https://github.com/punya)
+- [Steve Flanders](https://github.com/flands)
+
+For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
 the role of the [release manager](./docs/release.md#release-manager).
 
-Thanks to all the people who already contributed!
+### Thanks to all of our contributors!
 
 <a href="https://github.com/open-telemetry/opentelemetry-collector/graphs/contributors">
-  <img src="https://contributors-img.web.app/image?repo=open-telemetry/opentelemetry-collector" />
+  <img alt="Repo contributors" src="https://contrib.rocks/image?repo=open-telemetry/opentelemetry-collector" />
 </a>
