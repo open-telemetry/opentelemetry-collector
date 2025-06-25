@@ -180,6 +180,9 @@ For more information about the maintainer role, see the [community repository](h
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).
 
+In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
+the role of the [release manager](./docs/release.md#release-manager).
+
 ### Triagers
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
@@ -218,8 +221,6 @@ For more information about the emeritus role, see the [community repository](htt
 - [Steve Flanders](https://github.com/flands)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
-In addition to what is described at the organization-level, the SIG Collector requires all core approvers to take part in rotating
-the role of the [release manager](./docs/release.md#release-manager).
 
 ### Thanks to all of our contributors!
 
