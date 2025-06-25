@@ -10,8 +10,7 @@ flexibility, testability, and safe interface evolution for the
 OpenTelemetry Collector.
 
 When an interface type is exported for users outside of this
-repository, the type MUST follow these guidelines, including the use
-of an unexported method to "seal" the interface. Interface types
+repository, the type MUST follow these guidelines. Interface types
 exposed from internal packages may opt-out of this recommendation.
 
 For every method in the public interface, a corresponding `type
@@ -26,15 +25,18 @@ interface methods.
 Interface stability for exported interface types is our primary
 objective. The Functional Composition pattern supports safe interface
 evolution, first by "sealing" the type with an unexported interface
-method. This means all implementations of an interface must use
-constructors provided in the package.
+method. This means all implementations of an interface must embed or
+use constructors provided in the package.
 
 These "sealed concrete" implementation objects support adding new
 methods in future releases, _without changing the major version
 number_, because public interface types are always provided through a
-package-provided implementation. As a key requirement, every function
-must have a simple "no-op" implementation corresponding with the zero
-value of the `<Method>Func`.
+package-provided implementation.
+
+As a key requirement, every function must have a simple "no-op"
+implementation corresponding with the zero value of the
+`<Method>Func`. The expression `New<Type>(nil, nil, ...)` is the empty
+implementation for each type.
 
 ## Key concepts
 
@@ -75,28 +77,35 @@ pattern](https://pkg.go.dev/net/http#HandlerFunc).  `http.HandlerFunc`
 can be seen as a prototype for the Functional Composition pattern, in
 this case for HTTP servers. Interestingly, the single-method
 `http.RoundTripper` interface, representing the same interaction for
-HTTP clients, does not have a `RoundTripperFunc`. In this codebase,
-the pattern is applied extensively.
+HTTP clients, does not have a `RoundTripperFunc` in the base library
+(consequently, this codebase defines [it for testing middleware
+extensions](`../../extension/extensionmiddleware/extensionmiddlewaretest/nop.go`)). In
+this codebase, the pattern is applied extensively.
 
 ### 2. Compose Function Types into Interface Implementations
 
 Create concrete implementations embedding the function type
 corresponding with each interface method:
 
-```go  
+```go
+// A struct embedding a <Method>Func for each method.
 type rateReservationImpl struct {
     WaitTimeFunc
     CancelFunc
 }
+```
 
 This pattern applies even for single-method interfaces, where the
-`<Method>Func` is capable of implementing the interface. 
+`<Method>Func` would implement the interface, were it not sealed. 
 
+```go
+// Single-method interface type
 type RateLimiter interface {
     ReserveRate(context.Context, int) RateReservation
 }
 
-type ReserveRateFunc func(context.Context, int) RateReservation
+// Single function type
+ReserveRateFunc func(context.Context, int) RateReservation
 
 func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) RateReservation {
     if f == nil {
@@ -105,8 +114,7 @@ func (f ReserveRateFunc) ReserveRate(ctx context.Context, value int) RateReserva
     f(ctx, value)
 }
 
-// Implement the interface and use the struct via its constructor, not
-// the function type, to implement a single-method interface.
+// The matching concrete type.
 type rateLimiterImpl struct {
     ReserveRateFunc
 }
@@ -184,20 +192,30 @@ interfaces to evolve safely because users are forced to use
 constructor functions.
 
 ```go
+// Public interfaces must include at least one private method
 type RateLimiter interface {
     ReserveRate(context.Context, int) (RateReservation, error)
 
-    private() // Prevents external implementations
+    // Prevents external implementations
+    private()
 }
+
+// Concrete implementations are sealed with this method.
+type rateLimiterImpl struct {
+    ReserveRateFunc
+}
+
+func (rateLimiterImpl) private() {}
 ```
 
 This practice enables safely evolving interfaces. A new method can be
 added to a public interface type because public constructor functions
 force the user to obtain the new type and the new type is guaranteed
 to implement the old interface. If the functional option pattern is
-already being used, then new interface methods will need no new
-constructors, otherwise backwards compatibility can be maintained by
-adding new constructors, for example:
+already being used, then new interface methods will not require new
+constructors, only new options. If the functional option pattern is
+not in use, backwards compatibility can be maintained by adding new
+constructors, for example:
 
 ```go
 type RateLimiter interface {
@@ -212,7 +230,10 @@ type RateLimiter interface {
 func NewRateLimiter(f ReserveRateFunc) RateLimiter { ... }
 
 // New constructor
-func NewRateLimiterWithExtraFeature(rf ReserveRateFunc, ef ExtraFeatureFunc) RateLimiter { ... }
+func NewRateLimiterWithOptions(rf ReserveRateFunc, opts ...Option) RateLimiter { ... }
+
+// New option
+func WithExtraFeature(...) Option { ... }
 ```
 
 ### 5. Constant-value Function Implementations
