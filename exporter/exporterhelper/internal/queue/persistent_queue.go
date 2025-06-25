@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
-	"sync/atomic"
 
 	"go.uber.org/zap"
 
@@ -99,10 +98,6 @@ type persistentQueue[T any] struct {
 	metadata        QueueMetadata
 	refClient       int64
 	stopped         bool
-
-	sizerTypeMismatch       atomic.Bool
-	drainingComplete        *sync.Cond
-	originalConfiguredSizer request.Sizer[T]
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
@@ -115,7 +110,6 @@ func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] 
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
-	pq.drainingComplete = sync.NewCond(&pq.mu)
 	return pq
 }
 
@@ -322,11 +316,6 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-
-	for pq.sizerTypeMismatch.Load() {
-		pq.logger.Debug("Blocking new requests due ti sizer type mismatch, waiting for drain to complete")
-		pq.drainingComplete.Wait()
-	}
 	return pq.putInternal(ctx, req)
 }
 
@@ -474,17 +463,6 @@ func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr erro
 	// itemDispatchingFinish will persist the new metadata (including the updated queue size) to storage.
 	if err := pq.itemDispatchingFinish(context.Background(), index); err != nil {
 		pq.logger.Error("Error deleting item from queue", zap.Error(err))
-	}
-
-	// Check if we've completed draining during sizer type mismatch.
-	if pq.sizerTypeMismatch.Load() && pq.metadata.ReadIndex == pq.metadata.WriteIndex && len(pq.metadata.CurrentlyDispatchedItems) == 0 {
-		pq.logger.Info("Queue drain completed due to sizer type mismatch, allowing new requests")
-
-		pq.set.sizer = pq.originalConfiguredSizer
-		pq.originalConfiguredSizer = nil
-		pq.sizerTypeMismatch.CompareAndSwap(true, false)
-
-		pq.drainingComplete.Broadcast()
 	}
 }
 
