@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.34.0/v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated NewProfilesRequestExporter function from xexporterhelper package (#13157)
+- `confighttp`: Remove pointer to field `cookies` in confighttp.ClientConfig (#13116)
+- `otlpreceiver`: Use `configoptional.Optional` to define optional configuration sections in the OTLP receiver. Remove `Unmarshal` method. (#13119)
+- `confighttp,configgrpc`: Rename `ClientConfig.TLSSetting` and `ServerConfig.TLSSetting` to `ClientConfig.TLS` and `ServerConfig.TLS`. (#13115)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+  Note that the batcher is temporarily a noop.
+- `pipeline`: Remove deprecated MustNewID[WithName] (#13139)
+
+### 🚀 New components 🚀
+
+- `configoptional`: Add a new configoptional module to support optional configuration fields. (#12981)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Introduce `MoveAndAppendTo` methods to the generated primitive slices (#13074)
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Correctly distinguish between `nil` and empty map values on the `ToStringMap` method (#13161)
+  This means that `ToStringMap()` method can now return a nil map if the original value was `nil`.
+  If you were not doing so already, make sure to check for `nil` before writing to the map to avoid panics.
+  
+- `confighttp`: Make the `NewDefaultServerConfig` function return a nil TLS config by default. (#13129)
+  - The previous default was a TLS config with no certificates, which would fail at runtime.
+  
+
+<!-- previous-version -->
+
 ## v1.33.0/v0.127.0
 
 ### 🛑 Breaking changes 🛑
