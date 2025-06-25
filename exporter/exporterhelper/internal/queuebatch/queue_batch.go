@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
@@ -19,13 +20,13 @@ type Settings[T any] struct {
 	Signal      pipeline.Signal
 	ID          component.ID
 	Telemetry   component.TelemetrySettings
-	Encoding    Encoding[T]
+	Encoding    queue.Encoding[T]
 	Sizers      map[request.SizerType]request.Sizer[T]
 	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
-	queue   Queue[request.Request]
+	queue   queue.Queue[request.Request]
 	batcher Batcher[request.Request]
 }
 
@@ -53,64 +54,43 @@ func newQueueBatch(
 	next sender.SendFunc[request.Request],
 	oldBatcher bool,
 ) (*QueueBatch, error) {
-	if cfg.hasBlocking {
-		set.Telemetry.Logger.Error("using deprecated field `blocking`")
-	}
-
 	sizer, ok := set.Sizers[cfg.Sizer]
 	if !ok {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
-	var b Batcher[request.Request]
+	bSet := batcherSettings[request.Request]{
+		sizerType:   cfg.Sizer,
+		sizer:       sizer,
+		partitioner: set.Partitioner,
+		next:        next,
+		maxWorkers:  cfg.NumConsumers,
+	}
+	if oldBatcher {
+		// If a user configures the old batcher, we only can support "items" sizer.
+		bSet.sizerType = request.SizerTypeItems
+		bSet.sizer = request.NewItemsSizer()
+	}
+	b := NewBatcher(cfg.Batch, bSet)
 	if cfg.Batch != nil {
-		if oldBatcher {
-			// If user configures the old batcher we only can support "items" sizer.
-			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:   request.SizerTypeItems,
-				sizer:       request.NewItemsSizer(),
-				partitioner: set.Partitioner,
-				next:        next,
-				maxWorkers:  cfg.NumConsumers,
-			})
-		} else {
-			b = newMultiBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:   cfg.Sizer,
-				sizer:       sizer,
-				partitioner: set.Partitioner,
-				next:        next,
-				maxWorkers:  cfg.NumConsumers,
-			})
-		}
-		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
+		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
-	} else {
-		b = newDisabledBatcher[request.Request](next)
 	}
 
-	var q Queue[request.Request]
-	// Configure memory queue or persistent based on the config.
-	if cfg.StorageID == nil {
-		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-			sizer:           sizer,
-			capacity:        cfg.QueueSize,
-			waitForResult:   cfg.WaitForResult,
-			blockOnOverflow: cfg.BlockOnOverflow,
-		}), cfg.NumConsumers, b.Consume)
-	} else {
-		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-			sizer:           sizer,
-			sizerType:       cfg.Sizer,
-			capacity:        cfg.QueueSize,
-			blockOnOverflow: cfg.BlockOnOverflow,
-			signal:          set.Signal,
-			storageID:       *cfg.StorageID,
-			encoding:        set.Encoding,
-			id:              set.ID,
-			telemetry:       set.Telemetry,
-		}), cfg.NumConsumers, b.Consume)
-	}
+	q := queue.NewQueue[request.Request](queue.Settings[request.Request]{
+		Sizer:           sizer,
+		SizerType:       cfg.Sizer,
+		Capacity:        cfg.QueueSize,
+		NumConsumers:    cfg.NumConsumers,
+		WaitForResult:   cfg.WaitForResult,
+		BlockOnOverflow: cfg.BlockOnOverflow,
+		Signal:          set.Signal,
+		StorageID:       cfg.StorageID,
+		Encoding:        set.Encoding,
+		ID:              set.ID,
+		Telemetry:       set.Telemetry,
+	}, b.Consume)
 
 	oq, err := newObsQueue(set, q)
 	if err != nil {

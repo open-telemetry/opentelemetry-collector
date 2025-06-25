@@ -71,17 +71,16 @@ func TestPrintCommand(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true)
-			require.NoError(t, err)
+			require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true))
 			defer func() {
-				_ = featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false)
+				require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
 			}()
 
 			set := ConfigProviderSettings{
 				ResolverSettings: test.set,
 			}
 			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
-			err = cmd.Execute()
+			err := cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
 			} else {
@@ -132,10 +131,9 @@ func TestConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true)
-			require.NoError(t, err)
+			require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true))
 			defer func() {
-				_ = featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false)
+				require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
 			}()
 			set := ConfigProviderSettings{
 				ResolverSettings: confmap.ResolverSettings{
