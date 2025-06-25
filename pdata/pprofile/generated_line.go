@@ -85,7 +85,11 @@ func (ms Line) SetColumn(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Line) CopyTo(dest Line) {
 	dest.state.AssertMutable()
-	dest.SetFunctionIndex(ms.FunctionIndex())
-	dest.SetLine(ms.Line())
-	dest.SetColumn(ms.Column())
+	copyOrigLine(dest.orig, ms.orig)
+}
+
+func copyOrigLine(dest, src *otlpprofiles.Line) {
+	dest.FunctionIndex = src.FunctionIndex
+	dest.Line = src.Line
+	dest.Column = src.Column
 }
