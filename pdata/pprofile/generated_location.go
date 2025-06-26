@@ -112,9 +112,7 @@ func (ms Location) CopyTo(dest Location) {
 }
 
 func copyOrigLocation(dest, src *otlpprofiles.Location) {
-	if src.MappingIndex_ == nil {
-		dest.MappingIndex_ = nil
-	} else {
+	if src.MappingIndex_ != nil {
 		dest.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: src.GetMappingIndex()}
 	}
 	dest.Address = src.Address

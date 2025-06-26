@@ -121,9 +121,7 @@ func copyOrigSample(dest, src *otlpprofiles.Sample) {
 	dest.LocationsLength = src.LocationsLength
 	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
 	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	if src.LinkIndex_ == nil {
-		dest.LinkIndex_ = nil
-	} else {
+	if src.LinkIndex_ != nil {
 		dest.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: src.GetLinkIndex()}
 	}
 	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)

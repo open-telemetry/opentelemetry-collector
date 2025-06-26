@@ -860,9 +860,7 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 }
 
 func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) string {
-	return "if src." + opv.fieldName + "_ == nil {\n" +
-		"\tdest." + opv.fieldName + "_ = nil\n" +
-		"} else {\n" +
+	return "if src." + opv.fieldName + "_ != nil {\n" +
 		"\tdest." + opv.fieldName + "_ = &" + ms.originFullName + "_" + opv.fieldName + "{" + opv.fieldName + ": src.Get" + opv.fieldName + "()}\n" +
 		"}"
 }

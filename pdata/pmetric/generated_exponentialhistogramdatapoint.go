@@ -236,19 +236,13 @@ func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	copyOrigExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative)
 	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
-	if src.Sum_ == nil {
-		dest.Sum_ = nil
-	} else {
+	if src.Sum_ != nil {
 		dest.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-	if src.Min_ == nil {
-		dest.Min_ = nil
-	} else {
+	if src.Min_ != nil {
 		dest.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: src.GetMin()}
 	}
-	if src.Max_ == nil {
-		dest.Max_ = nil
-	} else {
+	if src.Max_ != nil {
 		dest.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: src.GetMax()}
 	}
 	dest.ZeroThreshold = src.ZeroThreshold
