@@ -9,7 +9,7 @@ import (
 
 // splitLogs removes logrecords from the input data and returns a new data of the specified size.
 func splitLogs(size int, src plog.Logs) plog.Logs {
-	if src.LogRecordCount() <= size {
+	if !hasAtLeastNRecords(src, size+1) {
 		return src
 	}
 	totalCopiedLogRecords := 0
@@ -22,8 +22,8 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 		}
 
 		// If it fully fits
-		srcRlLRC := resourceLRC(srcRl)
-		if (totalCopiedLogRecords + srcRlLRC) <= size {
+		wontFit, srcRlLRC := resourceHasAtLeastNRecords(srcRl, size-totalCopiedLogRecords+1)
+		if !wontFit {
 			totalCopiedLogRecords += srcRlLRC
 			srcRl.MoveTo(dest.ResourceLogs().AppendEmpty())
 			return true
@@ -64,10 +64,30 @@ func splitLogs(size int, src plog.Logs) plog.Logs {
 	return dest
 }
 
-// resourceLRC calculates the total number of log records in the plog.ResourceLogs.
-func resourceLRC(rs plog.ResourceLogs) (count int) {
+func resourceHasAtLeastNRecords(rs plog.ResourceLogs, n int) (bool, int) {
+	count := 0
 	for k := 0; k < rs.ScopeLogs().Len(); k++ {
 		count += rs.ScopeLogs().At(k).LogRecords().Len()
+		if count >= n {
+			return true, 0
+		}
 	}
-	return
+	return false, count
+}
+
+func hasAtLeastNRecords(ms plog.Logs, n int) bool {
+	logCount := 0
+	rss := ms.ResourceLogs()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ill := rs.ScopeLogs()
+		for i := 0; i < ill.Len(); i++ {
+			logs := ill.At(i)
+			logCount += logs.LogRecords().Len()
+			if logCount >= n {
+				return true
+			}
+		}
+	}
+	return logCount >= n
 }
