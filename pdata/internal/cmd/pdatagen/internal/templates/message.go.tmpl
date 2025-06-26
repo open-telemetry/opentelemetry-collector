@@ -75,7 +75,17 @@ func (ms {{ .structName }}) getState() *internal.State {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-	{{- range .fields }}
-	{{ .GenerateCopyToValue $.messageStruct }}
+    {{- if .isCommon }}
+    internal.CopyOrig{{ .structName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
+    {{- else }}
+    copyOrig{{ .structName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
 	{{- end }}
 }
+
+{{ if not .isCommon -}}
+func copyOrig{{ .structName }}(dest, src *{{ .originName }}) {
+	{{- range .fields }}
+	{{ .GenerateCopyOrig $.messageStruct }}
+	{{- end }}
+}
+{{- end }}
