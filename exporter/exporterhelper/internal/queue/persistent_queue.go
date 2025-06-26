@@ -133,7 +133,7 @@ func (pq *persistentQueue[T]) internalSize() int64 {
 	case request.SizerTypeItems:
 		return pq.metadata.ItemsSize + pq.legacySize()
 	default:
-		return pq.requestsSize() + pq.legacySize()
+		return pq.requestsSize()
 	}
 }
 
