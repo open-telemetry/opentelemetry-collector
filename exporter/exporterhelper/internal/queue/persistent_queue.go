@@ -25,14 +25,14 @@ const (
 	zapErrorCount    = "errorCount"
 	zapNumberOfItems = "numberOfItems"
 
-	readIndexKey                = "ri"
-	writeIndexKey               = "wi"
-	currentlyDispatchedItemsKey = "di"
-	queueSizeKey                = "si"
+	// Legacy metadata keys for backward compatibility
+	// TODO: Remove after December 2025
+	legacyReadIndexKey                = "ri"
+	legacyWriteIndexKey               = "wi"
+	legacyCurrentlyDispatchedItemsKey = "di"
+	legacyQueueSizeKey                = "si"
 
-	// queueMetadataKey is the new single key for all queue metadata.
-	// TODO: Enable when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done
-	//nolint:unused
+	// New consolidated metadata key
 	queueMetadataKey = "qmv0"
 )
 
@@ -51,7 +51,6 @@ var indexDonePool = sync.Pool{
 
 type persistentQueueSettings[T any] struct {
 	sizer           request.Sizer[T]
-	sizerType       request.SizerType
 	capacity        int64
 	blockOnOverflow bool
 	signal          pipeline.Signal
@@ -143,10 +142,26 @@ func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Cli
 }
 
 func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Context) {
-	riOp := storage.GetOperation(readIndexKey)
-	wiOp := storage.GetOperation(writeIndexKey)
+	// 1. Try to load from new consolidated metadata first
+	err := pq.loadQueueMetadata(ctx)
+	switch {
+	case err == nil:
+		pq.logger.Info("Successfully loaded queue metadata.")
+		return
+	case !errors.Is(err, errValueNotSet):
+		pq.logger.Error("Unable to retrieve queue metadata from storage, non-missing value error occurred", zap.Error(err))
+		return
+	default:
+		pq.logger.Info("New queue metadata key not found, attempting to load legacy format.")
+	}
 
-	err := pq.client.Batch(ctx, riOp, wiOp)
+	// 2. Fallback to legacy individual keys for backward compatibility
+	// TODO: Remove legacy format support after December 2025
+	pq.logger.Info("Loading queue metadata from legacy format")
+	riOp := storage.GetOperation(legacyReadIndexKey)
+	wiOp := storage.GetOperation(legacyWriteIndexKey)
+
+	err = pq.client.Batch(ctx, riOp, wiOp)
 	if err == nil {
 		pq.metadata.ReadIndex, err = bytesToItemIndex(riOp.Value)
 	}
@@ -169,29 +184,87 @@ func (pq *persistentQueue[T]) initPersistentContiguousStorage(ctx context.Contex
 
 	// If the queue is sized by the number of requests, no need to read the queue size from storage.
 	if queueSize > 0 && !pq.isRequestSized {
-		if restoredQueueSize, err := pq.restoreQueueSizeFromStorage(ctx); err == nil {
-			queueSize = restoredQueueSize
+		var queueSizeBuf []byte
+		if queueSizeBuf, err = pq.client.Get(ctx, legacyQueueSizeKey); err == nil {
+			queueSize, err = bytesToItemIndex(queueSizeBuf)
+		}
+		if err != nil {
+			pq.logger.Warn("Failed to read queue size from storage, starting with 0", zap.Error(err))
+			queueSize = 0
 		}
 	}
 	//nolint:gosec
 	pq.metadata.QueueSize = int64(queueSize)
+	// Load legacy dispatched items
+	var itemKeysBuf []byte
+	if itemKeysBuf, err = pq.client.Get(ctx, legacyCurrentlyDispatchedItemsKey); err == nil {
+		var dispatchedItems []uint64
+		if dispatchedItems, err = bytesToItemIndexArray(itemKeysBuf); err == nil {
+			pq.metadata.CurrentlyDispatchedItems = dispatchedItems
+		}
+	}
+
+	// 3. Save to a new format and clean up legacy keys
+	if err := pq.backupCurrentMetadata(ctx); err != nil {
+		pq.logger.Error("Failed to persist migrated queue metadata", zap.Error(err))
+		return
+	}
+	pq.cleanupLegacyKeys(ctx)
 }
 
-// restoreQueueSizeFromStorage restores the queue size from storage.
-func (pq *persistentQueue[T]) restoreQueueSizeFromStorage(ctx context.Context) (uint64, error) {
-	val, err := pq.client.Get(ctx, queueSizeKey)
+// loadQueueMetadata loads queue metadata from the consolidated key
+func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
+	buf, err := pq.client.Get(ctx, queueMetadataKey)
 	if err != nil {
-		if errors.Is(err, errValueNotSet) {
-			pq.logger.Warn("Cannot read the queue size snapshot from storage. "+
-				"The reported queue size will be inaccurate until the initial queue is drained. "+
-				"It's expected when the items sized queue enabled for the first time", zap.Error(err))
-		} else {
-			pq.logger.Error("Failed to read the queue size snapshot from storage. "+
-				"The reported queue size will be inaccurate until the initial queue is drained.", zap.Error(err))
-		}
-		return 0, err
+		return err
 	}
-	return bytesToItemIndex(val)
+
+	if len(buf) == 0 {
+		return errValueNotSet
+	}
+
+	metadata := &pq.metadata
+	if err = metadata.Unmarshal(buf); err != nil {
+		return err
+	}
+
+	pq.logger.Info("Loaded queue metadata",
+		zap.Uint64("readIndex", pq.metadata.ReadIndex),
+		zap.Uint64("writeIndex", pq.metadata.WriteIndex),
+		zap.Int64("queueSize", pq.metadata.QueueSize),
+		zap.Int("dispatchedItems", len(pq.metadata.CurrentlyDispatchedItems)))
+
+	return nil
+}
+
+// cleanupLegacyKeys removes the old individual metadata keys
+func (pq *persistentQueue[T]) cleanupLegacyKeys(ctx context.Context) {
+	ops := []*storage.Operation{
+		storage.DeleteOperation(legacyReadIndexKey),
+		storage.DeleteOperation(legacyWriteIndexKey),
+		storage.DeleteOperation(legacyCurrentlyDispatchedItemsKey),
+		storage.DeleteOperation(legacyQueueSizeKey),
+	}
+
+	if err := pq.client.Batch(ctx, ops...); err != nil {
+		pq.logger.Warn("Failed to cleanup legacy metadata keys", zap.Error(err))
+	} else {
+		pq.logger.Info("Successfully migrated to consolidated metadata format")
+	}
+}
+
+// backupCurrentMetadata is used for standalone metadata persistence like in Shutdown or initialization.
+func (pq *persistentQueue[T]) backupCurrentMetadata(ctx context.Context) error {
+	metadataBytes, err := metadataToBytes(&pq.metadata)
+	if err != nil {
+		return err
+	}
+
+	if err := pq.client.Set(ctx, queueMetadataKey, metadataBytes); err != nil {
+		pq.logger.Error("Failed to persist current metadata to storage", zap.Error(err))
+		return err
+	}
+	return nil
 }
 
 func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
@@ -202,24 +275,10 @@ func (pq *persistentQueue[T]) Shutdown(ctx context.Context) error {
 
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	backupErr := pq.backupQueueSize(ctx)
 	// Mark this queue as stopped, so consumer don't start any more work.
 	pq.stopped = true
 	pq.hasMoreElements.Broadcast()
-	return errors.Join(backupErr, pq.unrefClient(ctx))
-}
-
-// backupQueueSize writes the current queue size to storage. The value is used to recover the queue size
-// in case if the collector is killed.
-func (pq *persistentQueue[T]) backupQueueSize(ctx context.Context) error {
-	// No need to write the queue size if the queue is sized by the number of requests.
-	// That information is already stored as difference between read and write indexes.
-	if pq.isRequestSized {
-		return nil
-	}
-
-	//nolint:gosec
-	return pq.client.Set(ctx, queueSizeKey, itemIndexToBytes(uint64(pq.metadata.QueueSize)))
+	return pq.unrefClient(ctx)
 }
 
 // unrefClient unrefs the client, and closes if no more references. Callers MUST hold the mutex.
@@ -238,12 +297,13 @@ func (pq *persistentQueue[T]) unrefClient(ctx context.Context) error {
 func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
-	return pq.putInternal(ctx, req)
+
+	reqSize := pq.set.sizer.Sizeof(req)
+	return pq.putInternal(ctx, reqSize, req)
 }
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
-func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
-	reqSize := pq.set.sizer.Sizeof(req)
+func (pq *persistentQueue[T]) putInternal(ctx context.Context, reqSize int64, req T) error {
 	for pq.metadata.QueueSize+reqSize > pq.set.capacity {
 		if !pq.set.blockOnOverflow {
 			return ErrQueueIsFull
@@ -258,27 +318,31 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		return err
 	}
 
-	// Carry out a transaction where we both add the item and update the write index
-	ops := []*storage.Operation{
-		storage.SetOperation(writeIndexKey, itemIndexToBytes(pq.metadata.WriteIndex+1)),
-		storage.SetOperation(getItemKey(pq.metadata.WriteIndex), reqBuf),
-	}
-	if err = pq.client.Batch(ctx, ops...); err != nil {
+	itemIndex := pq.metadata.WriteIndex
+	itemValue, err := getQueueItem(reqSize, reqBuf)
+	if err != nil {
 		return err
 	}
 
 	pq.metadata.WriteIndex++
 	pq.metadata.QueueSize += reqSize
-	pq.hasMoreElements.Signal()
-
-	// Back up the queue size to storage every 10 writes. The stored value is used to recover the queue size
-	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-	if (pq.metadata.WriteIndex % 10) == 5 {
-		if err := pq.backupQueueSize(ctx); err != nil {
-			pq.logger.Error("Error writing queue size to storage", zap.Error(err))
-		}
+	metadataBytes, err := metadataToBytes(&pq.metadata)
+	if err != nil {
+		return err
 	}
 
+	// Carry out a transaction where we both add the item and update the metadata.
+	ops := []*storage.Operation{
+		storage.SetOperation(queueMetadataKey, metadataBytes),
+		storage.SetOperation(getItemKey(itemIndex), itemValue),
+	}
+	if err = pq.client.Batch(ctx, ops...); err != nil {
+		pq.metadata.WriteIndex--
+		pq.metadata.QueueSize -= reqSize
+		return err
+	}
+
+	pq.hasMoreElements.Signal()
 	return nil
 }
 
@@ -294,7 +358,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 
 		// Read until either a successful retrieved element or no more elements in the storage.
 		for pq.metadata.ReadIndex != pq.metadata.WriteIndex {
-			index, req, reqCtx, consumed := pq.getNextItem(ctx)
+			index, req, reqSize, reqCtx, consumed := pq.getNextItem(ctx)
 			// Ensure the used size and the channel size are in sync.
 			if pq.metadata.ReadIndex == pq.metadata.WriteIndex {
 				pq.metadata.QueueSize = 0
@@ -302,7 +366,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			}
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
-				id.reset(index, pq.set.sizer.Sizeof(req), pq)
+				id.reset(index, reqSize, pq)
 				return reqCtx, req, id, true
 			}
 		}
@@ -316,21 +380,31 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 // getNextItem pulls the next available item from the persistent storage along with its index. Once processing is
 // finished, the index should be called with onDone to clean up the storage. If no new item is available,
 // returns false.
-func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, context.Context, bool) {
+func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, int64, context.Context, bool) {
 	index := pq.metadata.ReadIndex
 	// Increase here, so even if errors happen below, it always iterates
 	pq.metadata.ReadIndex++
 	pq.metadata.CurrentlyDispatchedItems = append(pq.metadata.CurrentlyDispatchedItems, index)
-	getOp := storage.GetOperation(getItemKey(index))
-	err := pq.client.Batch(ctx,
-		storage.SetOperation(readIndexKey, itemIndexToBytes(pq.metadata.ReadIndex)),
-		storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.metadata.CurrentlyDispatchedItems)),
-		getOp)
 
+	metadataBytes, err := metadataToBytes(&pq.metadata)
 	var request T
 	restoredCtx := context.Background()
+
+	if err != nil {
+		return 0, request, 0, restoredCtx, false
+	}
+
+	getOp := storage.GetOperation(getItemKey(index))
+	err = pq.client.Batch(ctx,
+		storage.SetOperation(queueMetadataKey, metadataBytes),
+		getOp)
+
+	var queueItem *QueueItem
 	if err == nil {
-		restoredCtx, request, err = pq.set.encoding.Unmarshal(getOp.Value)
+		queueItem, err = bytesToQueueItem(getOp.Value)
+	}
+	if err == nil {
+		restoredCtx, request, err = pq.set.encoding.Unmarshal(queueItem.ItemData)
 	}
 
 	if err != nil {
@@ -340,14 +414,14 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 			pq.logger.Error("Error deleting item from queue", zap.Error(err))
 		}
 
-		return 0, request, restoredCtx, false
+		return 0, request, 0, restoredCtx, false
 	}
 
 	// Increase the reference count, so the client is not closed while the request is being processed.
 	// The client cannot be closed because we hold the lock since last we checked `stopped`.
 	pq.refClient++
 
-	return index, request, restoredCtx, true
+	return index, request, queueItem.ItemSize, restoredCtx, true
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.
@@ -377,35 +451,20 @@ func (pq *persistentQueue[T]) onDone(index uint64, elSize int64, consumeErr erro
 		return
 	}
 
+	// itemDispatchingFinish will persist the new metadata (including the updated queue size) to storage.
 	if err := pq.itemDispatchingFinish(context.Background(), index); err != nil {
 		pq.logger.Error("Error deleting item from queue", zap.Error(err))
-	}
-
-	// Back up the queue size to storage on every 10 reads. The stored value is used to recover the queue size
-	// in case if the collector is killed. The recovered queue size is allowed to be inaccurate.
-	if (pq.metadata.ReadIndex % 10) == 0 {
-		if qsErr := pq.backupQueueSize(context.Background()); qsErr != nil {
-			pq.logger.Error("Error writing queue size to storage", zap.Error(qsErr))
-		}
 	}
 }
 
 // retrieveAndEnqueueNotDispatchedReqs gets the items for which sending was not finished, cleans the storage
 // and moves the items at the back of the queue.
 func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Context) {
-	var dispatchedItems []uint64
-
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	pq.logger.Debug("Checking if there are items left for dispatch by consumers")
-	itemKeysBuf, err := pq.client.Get(ctx, currentlyDispatchedItemsKey)
-	if err == nil {
-		dispatchedItems, err = bytesToItemIndexArray(itemKeysBuf)
-	}
-	if err != nil {
-		pq.logger.Error("Could not fetch items left for dispatch by consumers", zap.Error(err))
-		return
-	}
+
+	dispatchedItems := pq.metadata.CurrentlyDispatchedItems
 
 	if len(dispatchedItems) == 0 {
 		pq.logger.Debug("No items left for dispatch by consumers")
@@ -414,6 +473,8 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 
 	pq.logger.Info("Fetching items left for dispatch by consumers", zap.Int(zapNumberOfItems,
 		len(dispatchedItems)))
+	pq.metadata.CurrentlyDispatchedItems = pq.metadata.CurrentlyDispatchedItems[:0]
+
 	retrieveBatch := make([]*storage.Operation, len(dispatchedItems))
 	cleanupBatch := make([]*storage.Operation, len(dispatchedItems))
 	for i, it := range dispatchedItems {
@@ -439,13 +500,26 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		reqCtx, req, err := pq.set.encoding.Unmarshal(op.Value)
+
+		queueItem, err := bytesToQueueItem(op.Value)
+		if err != nil {
+			pq.logger.Warn("Failed converting item to queueItem",
+				zap.String(zapKey, op.Key), zap.Error(err))
+			continue
+		}
+
+		// Subtract the item size from queue size before re-enqueuing to avoid double counting.
+		// The item was previously counted when it was dispatched, so we need to remove it first
+		// before putInternal adds it back to the queue size.
+		pq.metadata.QueueSize -= queueItem.ItemSize
+
+		reqCtx, req, err := pq.set.encoding.Unmarshal(queueItem.ItemData)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(reqCtx, req) != nil {
+		if pq.putInternal(reqCtx, queueItem.ItemSize, req) != nil {
 			errCount++
 		}
 	}
@@ -470,7 +544,12 @@ func (pq *persistentQueue[T]) itemDispatchingFinish(ctx context.Context, index u
 		}
 	}
 
-	setOp := storage.SetOperation(currentlyDispatchedItemsKey, itemIndexArrayToBytes(pq.metadata.CurrentlyDispatchedItems))
+	metadataBytes, err := metadataToBytes(&pq.metadata)
+	if err != nil {
+		return err
+	}
+
+	setOp := storage.SetOperation(queueMetadataKey, metadataBytes)
 	deleteOp := storage.DeleteOperation(getItemKey(index))
 	if err := pq.client.Batch(ctx, setOp, deleteOp); err != nil {
 		// got an error, try to gracefully handle it
@@ -515,6 +594,31 @@ func getItemKey(index uint64) string {
 
 func itemIndexToBytes(value uint64) []byte {
 	return binary.LittleEndian.AppendUint64([]byte{}, value)
+}
+
+func getQueueItem(itemSize int64, buf []byte) ([]byte, error) {
+	value := QueueItem{
+		ItemSize: itemSize,
+		ItemData: buf,
+	}
+	return value.Marshal()
+}
+
+func bytesToQueueItem(buf []byte) (*QueueItem, error) {
+	if buf == nil {
+		return nil, errValueNotSet
+	}
+
+	var queueItem QueueItem
+	err := queueItem.Unmarshal(buf)
+	if err != nil {
+		// Legacy format fallback: previous queue only supported RequestSizer which always returns 1.
+		// Use original buffer as item data for legacy compatibility
+		queueItem.ItemSize = 1
+		queueItem.ItemData = buf
+	}
+
+	return &queueItem, nil
 }
 
 func bytesToItemIndex(buf []byte) (uint64, error) {
@@ -565,6 +669,10 @@ func bytesToItemIndexArray(buf []byte) ([]uint64, error) {
 		buf = buf[8:]
 	}
 	return val, nil
+}
+
+func metadataToBytes(meta *QueueMetadata) ([]byte, error) {
+	return meta.Marshal()
 }
 
 type indexDone struct {
