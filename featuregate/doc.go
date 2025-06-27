@@ -22,5 +22,4 @@
 //	reg.VisitAll(func(g *featuregate.Gate) {
 //		fmt.Printf("Gate: %s, Enabled: %v\n", g.ID(), g.IsEnabled())
 //	})
-//
 package featuregate

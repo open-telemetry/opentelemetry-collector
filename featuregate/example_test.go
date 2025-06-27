@@ -1,7 +1,9 @@
+
 package featuregate_test
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/featuregate"
 )
 
