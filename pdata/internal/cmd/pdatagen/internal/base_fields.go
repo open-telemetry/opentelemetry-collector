@@ -281,6 +281,10 @@ const accessorsOptionalPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .f
 	{{- end }}
 	ms.Remove{{ .fieldName }}()
 	assert.False(t, ms.Has{{ .fieldName }}())
+	dest := New{{ .structName }}()
+	dest.Set{{ .fieldName }}({{ .testValue }})
+	ms.CopyTo(dest)
+	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
 type baseField interface {
@@ -860,7 +864,9 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 }
 
 func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) string {
-	return "if src." + opv.fieldName + "_ != nil {\n" +
+	return "if src." + opv.fieldName + "_ == nil {\n" +
+		"\tdest." + opv.fieldName + "_ = nil\n" +
+		"} else {\n" +
 		"\tdest." + opv.fieldName + "_ = &" + ms.originFullName + "_" + opv.fieldName + "{" + opv.fieldName + ": src.Get" + opv.fieldName + "()}\n" +
 		"}"
 }

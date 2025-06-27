@@ -198,13 +198,19 @@ func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.ExplicitBounds = internal.CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
 	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
-	if src.Sum_ != nil {
+	if src.Sum_ == nil {
+		dest.Sum_ = nil
+	} else {
 		dest.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-	if src.Min_ != nil {
+	if src.Min_ == nil {
+		dest.Min_ = nil
+	} else {
 		dest.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: src.GetMin()}
 	}
-	if src.Max_ != nil {
+	if src.Max_ == nil {
+		dest.Max_ = nil
+	} else {
 		dest.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: src.GetMax()}
 	}
 }
