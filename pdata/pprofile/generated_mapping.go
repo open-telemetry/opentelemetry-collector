@@ -146,13 +146,17 @@ func (ms Mapping) SetHasInlineFrames(v bool) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Mapping) CopyTo(dest Mapping) {
 	dest.state.AssertMutable()
-	dest.SetMemoryStart(ms.MemoryStart())
-	dest.SetMemoryLimit(ms.MemoryLimit())
-	dest.SetFileOffset(ms.FileOffset())
-	dest.SetFilenameStrindex(ms.FilenameStrindex())
-	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
-	dest.SetHasFunctions(ms.HasFunctions())
-	dest.SetHasFilenames(ms.HasFilenames())
-	dest.SetHasLineNumbers(ms.HasLineNumbers())
-	dest.SetHasInlineFrames(ms.HasInlineFrames())
+	copyOrigMapping(dest.orig, ms.orig)
+}
+
+func copyOrigMapping(dest, src *otlpprofiles.Mapping) {
+	dest.MemoryStart = src.MemoryStart
+	dest.MemoryLimit = src.MemoryLimit
+	dest.FileOffset = src.FileOffset
+	dest.FilenameStrindex = src.FilenameStrindex
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.HasFunctions = src.HasFunctions
+	dest.HasFilenames = src.HasFilenames
+	dest.HasLineNumbers = src.HasLineNumbers
+	dest.HasInlineFrames = src.HasInlineFrames
 }

@@ -177,19 +177,23 @@ func (ms Profile) OriginalPayload() pcommon.ByteSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	ms.SampleType().CopyTo(dest.SampleType())
-	ms.Sample().CopyTo(dest.Sample())
-	ms.LocationIndices().CopyTo(dest.LocationIndices())
-	dest.SetTime(ms.Time())
-	dest.SetDuration(ms.Duration())
-	dest.SetStartTime(ms.StartTime())
-	ms.PeriodType().CopyTo(dest.PeriodType())
-	dest.SetPeriod(ms.Period())
-	ms.CommentStrindices().CopyTo(dest.CommentStrindices())
-	dest.SetDefaultSampleTypeIndex(ms.DefaultSampleTypeIndex())
-	dest.SetProfileID(ms.ProfileID())
-	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
-	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
-	dest.SetOriginalPayloadFormat(ms.OriginalPayloadFormat())
-	ms.OriginalPayload().CopyTo(dest.OriginalPayload())
+	copyOrigProfile(dest.orig, ms.orig)
+}
+
+func copyOrigProfile(dest, src *otlpprofiles.Profile) {
+	dest.SampleType = copyOrigValueTypeSlice(dest.SampleType, src.SampleType)
+	dest.Sample = copyOrigSampleSlice(dest.Sample, src.Sample)
+	dest.LocationIndices = internal.CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
+	dest.TimeNanos = src.TimeNanos
+	dest.DurationNanos = src.DurationNanos
+	dest.TimeNanos = src.TimeNanos
+	copyOrigValueType(&dest.PeriodType, &src.PeriodType)
+	dest.Period = src.Period
+	dest.CommentStrindices = internal.CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
+	dest.DefaultSampleTypeIndex = src.DefaultSampleTypeIndex
+	dest.ProfileId = src.ProfileId
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
+	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
 }
