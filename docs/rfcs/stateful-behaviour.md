@@ -1,0 +1,247 @@
+# Simplifying stateful behaviour
+
+## Motivation
+
+Currently, the collector operates in a stateless mode by default, with stateful components storing offsets in memory. Ideally, these components should persist their state during shutdown if a storage extension is available.
+
+This behaviour was previously supported in the `filelog` receiver, but it was later reverted. Refer [historical context](#historical-context) for more details on this.
+
+At present, enabling stateful behavior involves a somewhat lengthy process:
+
+1. Adding a filestorage entry to the extensions stanza in the configuration.
+
+```yaml
+# main.yaml
+receivers:
+  ...
+processors:
+  ...
+exporters:
+  ...
+extensions:
+  file_storage: 		<--- HERE
+
+service:
+  ...
+```
+
+2. Including filestorage under service::extensions.
+
+```yaml
+# main.yaml
+receivers:
+  ...
+processors:
+  ...
+exporters:
+  ...
+extensions:
+  file_storage:
+
+service:
+  extensions: [file_storage]     <--- HERE
+  ...
+```
+
+3. Adding storage: file_storage/xyz to individual components.
+
+```yaml
+# main.yaml
+receivers:
+  filelog:
+    storage: file_storage    <--- HERE	
+processors:
+  ...
+exporters:
+  ...
+extensions:
+  file_storage:
+
+service:
+  extensions: [file_storage]
+```
+
+It would be beneficial to simplify this process by introducing a feature gate or a single configuration option. This would allow users to enable stateful mode with a single setting, while the system automatically performs the steps outlined above.
+
+### Historical context
+
+A few years ago, filelog receiver automatically _hooked_ a storage extension when it was defined in the pipeline. There was no need to explicitly mention `storage: file_storage` in the component configuration. 
+That behaviour was was [reverted](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10915) due to following downsides:
+1. It was not possible to specify multiple storage extensions and use a preferred one for the receiver.
+2. User had no option to opt out of statefulness if a storage extension was specified.
+
+This RFC addresses the above-mentioned limitations.
+
+## Scope of this RFC
+
+In this RFC, I'll only use `filelogreceiver` and `filestorage` extension for demonstration. We can enable this feature for any stateful receivers if we want to in future.
+
+## Explanation
+
+This RFC proposes to solve above mentioned limitations using a [config converter](https://github.com/open-telemetry/opentelemetry-collector/tree/main/confmap#converter).
+We can automate the 3-step manual process by using a converter (let's call it `statefulconverter`), as follows:
+
+1. The converter can inject the filestorage extension into the configuration provided by the user.
+2. It can then loop through the configuration and inject `storage: file_storage` into receiver configurations where it is not explicitly set.
+
+All of the above steps can be controlled via a single command line option, making it easier for us to enable statefulness without changing the code or introducing side effects.
+
+Here’s the POC [changeset](https://github.com/open-telemetry/opentelemetry-collector-contrib/compare/main...VihasMakwana:opentelemetry-collector-contrib:stateful-flag) implementing `statefulconverter` and updating `filelogreceiver`. It is not ready for review, but give you a rough idea of how we'll update the config.
+
+## User experience
+
+By default, the user experience remains unchanged. However, enabling statefulness becomes as simple as using the following command:
+
+```bash
+otelcontribcol_darwin_arm64 --feature-gates=stateful --config otel.yaml
+```
+
+> [!NOTE] 
+> Users will not change configuration files in any way. Everything will be taken care of by the converters. 
+
+## Internal details
+
+Ideally, we should introduce a new command-line flag and use a feature gate to control its operability.
+We can add a boolean field in [ConverterSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/3ef58fda95de1fa1d27f1d43c9ef92193bac0b2d/confmap/converter.go#L13-L22) to enable converter and set it to `false` by default to avoid any breaking changes.
+The `statefulconverter` will be enabled conditionally based on the value of this boolean.
+
+> [!NOTE] 
+> By default, offsets are stored in memory. The main goal of this RFC is to simplify enabling statefulness.
+
+### Changes required for this feature
+
+1. Implement the statefulconverter and the associated feature gate in the `opentelemetry-collector-contrib` repository.
+2. Core changes can be divided into two parts:
+   a. In the first part, we can just add a boolean to [ConverterSettings](https://github.com/open-telemetry/opentelemetry-collector/blob/3ef58fda95de1fa1d27f1d43c9ef92193bac0b2d/confmap/converter.go#L13-L22).
+   b. Finally, we can add a new command line flag to update the boolean.
+
+## Examples using the feature gate
+
+1. Use default directory to store offsets:
+
+```yaml
+# config.yaml
+receivers:
+  filelog:
+    include: [/var/log/*.log]
+exporters:
+  debug:
+service:
+  logs:
+    receivers: [filelog]
+    exporters: [debug]
+```
+
+  - _Command_
+```bash
+    otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
+```
+
+2. Use custom directory to store offsets
+
+```yaml
+# config.yaml
+receivers:
+  filelog:
+    include: [/var/log/*.log]
+exporters:
+  debug:
+extensions:
+  file_storage/_stateful:
+    directory: NEW_DIRECTORY
+service:
+  logs:
+    receivers: [filelog]
+    exporters: [debug]
+```
+
+  - _Command_
+```bash
+    otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
+```
+
+3. Use mutiple receivers
+
+```yaml
+# config.yaml
+receivers:
+  filelog:
+    include: [/var/log/*.log]
+  filelog/syslog:
+    include: [/var/log/syslog]
+exporters:
+  debug:
+service:
+  logs:
+    receivers: [filelog, filelog/syslog]
+    exporters: [debug]
+```
+
+  - _Command_
+```bash
+    otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
+```
+
+4. Opt out of statefulness for receiver(s), with flag enabled
+
+```yaml
+# config.yaml
+receivers:
+  filelog:
+    include: [/var/log/*.log]
+    storage: null               ## IMPORTANT
+  filelog/syslog:
+    include: [/var/log/syslog]
+exporters:
+  debug:
+service:
+  logs:
+    receivers: [filelog, filelog/syslog]
+    exporters: [debug]
+```
+
+  - _Command_
+```bash
+    otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
+```
+
+5. Overwrite default storage extension for receiver(s)
+
+```yaml
+# config.yaml
+receivers:
+  filelog:
+    include: [/var/log/*.log]
+    storage: file_storage
+  filelog/syslog:
+    include: [/var/log/syslog]
+exporters:
+  debug:
+extensions:
+  file_storage:
+    directory: DIR
+service:
+  logs:
+    receivers: [filelog, filelog/syslog]
+    exporters: [debug]
+```
+
+  - _Command_
+```bash
+    otelcontribcol_darwin_arm64 --feature-gates=stateful --config config.yaml
+```
+
+## Why to use a converter?
+
+Before settling for a converter, my approach was to inject storage extensions in component's logic. However, we also need a way to ensure the extension is added to the pipeline configuration -- otherwise, receivers would fail if the required extension isn’t present.
+The only viable option I found to add the extension was through a converter, which is specifically designed to update configurations in place.
+
+We can take it a step further by moving the injection logic into the converter itself, streamlining the entire implementation and keeping it contained within a single component. 
+
+## Open questions
+
+- Which directory to use for storing offsets if the feature gate is enabled?
+    - Currently, the filestorage extension uses following defaults:
+      - _For non-windows_: `/var/lib/otelcol/file_storage`
+      - _For windows_: `%ProgramData%\Otelcol\FileStorage`
+    - We can use them as defaults or specify our directories in the converter.
