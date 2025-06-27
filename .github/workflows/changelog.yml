@@ -33,7 +33,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.10
+          go-version: 1.24.4
       - name: Cache Go
         id: go-cache
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -79,7 +79,7 @@ jobs:
         run: make chlog-preview > changelog_preview.md
       - name: Link Checker
         id: lychee
-        uses: lycheeverse/lychee-action@82202e5e9c2f4ef1a55a3d02563e1cb6041e5332
+        uses: lycheeverse/lychee-action@5c4ee84814c983aa7164eaee476f014e53ff3963
         with:
           args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
           failIfEmpty: false
