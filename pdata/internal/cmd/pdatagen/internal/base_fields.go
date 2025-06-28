@@ -323,10 +323,15 @@ const accessorsOptionalPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .f
 const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
-const optionalPrimitiveCopyOrigTemplate = `if src.{{ .fieldName }}_ == nil {
-	dest.{{ .fieldName }}_ = nil
+const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
+	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
+	if !ok {
+		dest{{ .fieldName }} = &{{ .originStructType }}{}
+		dest.{{ .fieldName }}_ = dest{{ .fieldName }}
+	}
+	dest{{ .fieldName }}.{{ .fieldName }} = src{{ .fieldName }}.{{ .fieldName }}
 } else {
-	dest.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: src.Get{{ .fieldName }}(){{ "}" }}
+	dest.{{ .fieldName }}_ = nil
 }`
 
 type baseField interface {
