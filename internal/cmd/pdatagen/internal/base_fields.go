@@ -172,11 +172,14 @@ const oneOfMessageSetTestFieldTemplate = `tv.orig.{{ .originOneOfFieldName }} = 
 fillTest{{ .returnType }}(new{{ .returnType }}(tv.orig.Get{{ .returnType }}(), tv.state))`
 
 const copyToValueOneOfMessageTemplate = `	case *{{ .originStructType }}:
-		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
-		copyOrig{{ .returnType }}({{ .lowerFieldName }}, t.{{ .fieldName }})
-		dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
-			{{ .fieldName }}: {{ .lowerFieldName }},
-		}`
+		{{ .lowerFieldName }}, ok := dest.{{ .originOneOfFieldName }}.(*{{ .originStructType }})
+		if !ok || {{ .lowerFieldName }}.{{ .fieldName }} == nil {
+			{{ .lowerFieldName }} = &{{ .originStructType }}{
+				{{ .fieldName }}: &{{ .originFieldPackageName}}.{{ .fieldName }}{},
+			}
+			dest.{{ .originOneOfFieldName }} = {{ .lowerFieldName }}
+		}
+		copyOrig{{ .returnType }}({{ .lowerFieldName }}.{{ .fieldName }}, t.{{ .fieldName }})`
 
 const accessorsOneOfPrimitiveTemplate = `// {{ .accessorFieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .accessorFieldName }}() {{ .returnType }} {
@@ -218,8 +221,12 @@ const oneOfPrimitiveSetTestFieldTemplate = `tv.orig.{{ .originOneOfFieldName }} 
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigFieldTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
-	dest.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
-{{- .originFieldName }}: t.{{ .originFieldName }}}`
+	dest{{ .originOneOfFieldName }}, ok := dest.{{ .originOneOfFieldName }}.(*{{ .originStructName }}_{{ .originFieldName }})
+	if !ok {
+		dest{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{}
+		dest.{{ .originOneOfFieldName }} = dest{{ .originOneOfFieldName }}
+	}
+	dest{{ .originOneOfFieldName }}.{{ .originFieldName }} = t.{{ .originFieldName }}`
 
 const oneOfPrimitiveSwitchCaseTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
 	return {{ .typeName }}`

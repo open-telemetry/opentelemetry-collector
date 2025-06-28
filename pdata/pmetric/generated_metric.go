@@ -250,34 +250,49 @@ func copyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Metadata = internal.CopyOrigMap(dest.Metadata, src.Metadata)
 	switch t := src.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		gauge := &otlpmetrics.Gauge{}
-		copyOrigGauge(gauge, t.Gauge)
-		dest.Data = &otlpmetrics.Metric_Gauge{
-			Gauge: gauge,
+		gauge, ok := dest.Data.(*otlpmetrics.Metric_Gauge)
+		if !ok || gauge.Gauge == nil {
+			gauge = &otlpmetrics.Metric_Gauge{
+				Gauge: &otlpmetrics.Gauge{},
+			}
+			dest.Data = gauge
 		}
+		copyOrigGauge(gauge.Gauge, t.Gauge)
 	case *otlpmetrics.Metric_Sum:
-		sum := &otlpmetrics.Sum{}
-		copyOrigSum(sum, t.Sum)
-		dest.Data = &otlpmetrics.Metric_Sum{
-			Sum: sum,
+		sum, ok := dest.Data.(*otlpmetrics.Metric_Sum)
+		if !ok || sum.Sum == nil {
+			sum = &otlpmetrics.Metric_Sum{
+				Sum: &otlpmetrics.Sum{},
+			}
+			dest.Data = sum
 		}
+		copyOrigSum(sum.Sum, t.Sum)
 	case *otlpmetrics.Metric_Histogram:
-		histogram := &otlpmetrics.Histogram{}
-		copyOrigHistogram(histogram, t.Histogram)
-		dest.Data = &otlpmetrics.Metric_Histogram{
-			Histogram: histogram,
+		histogram, ok := dest.Data.(*otlpmetrics.Metric_Histogram)
+		if !ok || histogram.Histogram == nil {
+			histogram = &otlpmetrics.Metric_Histogram{
+				Histogram: &otlpmetrics.Histogram{},
+			}
+			dest.Data = histogram
 		}
+		copyOrigHistogram(histogram.Histogram, t.Histogram)
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		exponentialhistogram := &otlpmetrics.ExponentialHistogram{}
-		copyOrigExponentialHistogram(exponentialhistogram, t.ExponentialHistogram)
-		dest.Data = &otlpmetrics.Metric_ExponentialHistogram{
-			ExponentialHistogram: exponentialhistogram,
+		exponentialhistogram, ok := dest.Data.(*otlpmetrics.Metric_ExponentialHistogram)
+		if !ok || exponentialhistogram.ExponentialHistogram == nil {
+			exponentialhistogram = &otlpmetrics.Metric_ExponentialHistogram{
+				ExponentialHistogram: &otlpmetrics.ExponentialHistogram{},
+			}
+			dest.Data = exponentialhistogram
 		}
+		copyOrigExponentialHistogram(exponentialhistogram.ExponentialHistogram, t.ExponentialHistogram)
 	case *otlpmetrics.Metric_Summary:
-		summary := &otlpmetrics.Summary{}
-		copyOrigSummary(summary, t.Summary)
-		dest.Data = &otlpmetrics.Metric_Summary{
-			Summary: summary,
+		summary, ok := dest.Data.(*otlpmetrics.Metric_Summary)
+		if !ok || summary.Summary == nil {
+			summary = &otlpmetrics.Metric_Summary{
+				Summary: &otlpmetrics.Summary{},
+			}
+			dest.Data = summary
 		}
+		copyOrigSummary(summary.Summary, t.Summary)
 	}
 }

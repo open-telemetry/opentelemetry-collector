@@ -143,9 +143,19 @@ func copyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: t.AsDouble}
+		destValue, ok := dest.Value.(*otlpmetrics.NumberDataPoint_AsDouble)
+		if !ok {
+			destValue = &otlpmetrics.NumberDataPoint_AsDouble{}
+			dest.Value = destValue
+		}
+		destValue.AsDouble = t.AsDouble
 	case *otlpmetrics.NumberDataPoint_AsInt:
-		dest.Value = &otlpmetrics.NumberDataPoint_AsInt{AsInt: t.AsInt}
+		destValue, ok := dest.Value.(*otlpmetrics.NumberDataPoint_AsInt)
+		if !ok {
+			destValue = &otlpmetrics.NumberDataPoint_AsInt{}
+			dest.Value = destValue
+		}
+		destValue.AsInt = t.AsInt
 	}
 	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
