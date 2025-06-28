@@ -68,8 +68,12 @@ func (ms Histogram) DataPoints() HistogramDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
 	dest.state.AssertMutable()
-	dest.SetAggregationTemporality(ms.AggregationTemporality())
-	ms.DataPoints().CopyTo(dest.DataPoints())
+	copyOrigHistogram(dest.orig, ms.orig)
+}
+
+func copyOrigHistogram(dest, src *otlpmetrics.Histogram) {
+	dest.AggregationTemporality = src.AggregationTemporality
+	dest.DataPoints = copyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
 // Equal checks equality with another Histogram

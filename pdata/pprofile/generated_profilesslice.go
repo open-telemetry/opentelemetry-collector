@@ -145,25 +145,11 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newProfile((*es.orig)[i], es.state).CopyTo(newProfile((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.Profile, srcLen)
-	wrappers := make([]*otlpprofiles.Profile, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newProfile((*es.orig)[i], es.state).CopyTo(newProfile(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigProfilesSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another ProfilesSlice
+// In order to match equality, the order of elements must be the same.
 func (es ProfilesSlice) Equal(val ProfilesSlice) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -182,4 +168,19 @@ func (es ProfilesSlice) Equal(val ProfilesSlice) bool {
 func (es ProfilesSlice) Sort(less func(a, b Profile) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigProfilesSlice(dest, src []*otlpprofiles.Profile) []*otlpprofiles.Profile {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Profile, len(src))
+		data := make([]otlpprofiles.Profile, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigProfile(dest[i], src[i])
+	}
+	return dest
 }

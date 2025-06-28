@@ -156,6 +156,18 @@ func TestNumberDataPointSlice_Equal(t *testing.T) {
 
 	es2.AppendEmpty()
 	assert.False(t, es1.Equal(es2))
+
+	// Test element-wise inequality - create two slices with same length but different elements
+	if es1.Len() > 0 {
+		es1 = generateTestNumberDataPointSlice()
+		es2 = NewNumberDataPointSlice()
+		// Make es2 same length as es1 but with empty elements
+		for i := 0; i < es1.Len(); i++ {
+			es2.AppendEmpty()
+		}
+		// This should return false since elements are different
+		assert.False(t, es1.Equal(es2))
+	}
 }
 
 func TestNumberDataPointSlice_Sort(t *testing.T) {

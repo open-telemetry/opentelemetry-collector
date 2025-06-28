@@ -145,25 +145,11 @@ func (es SummaryDataPointSlice) RemoveIf(f func(SummaryDataPoint) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newSummaryDataPoint((*es.orig)[i], es.state).CopyTo(newSummaryDataPoint((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.SummaryDataPoint, srcLen)
-	wrappers := make([]*otlpmetrics.SummaryDataPoint, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newSummaryDataPoint((*es.orig)[i], es.state).CopyTo(newSummaryDataPoint(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigSummaryDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another SummaryDataPointSlice
+// In order to match equality, the order of elements must be the same.
 func (es SummaryDataPointSlice) Equal(val SummaryDataPointSlice) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -182,4 +168,19 @@ func (es SummaryDataPointSlice) Equal(val SummaryDataPointSlice) bool {
 func (es SummaryDataPointSlice) Sort(less func(a, b SummaryDataPoint) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigSummaryDataPointSlice(dest, src []*otlpmetrics.SummaryDataPoint) []*otlpmetrics.SummaryDataPoint {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpmetrics.SummaryDataPoint, len(src))
+		data := make([]otlpmetrics.SummaryDataPoint, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigSummaryDataPoint(dest[i], src[i])
+	}
+	return dest
 }

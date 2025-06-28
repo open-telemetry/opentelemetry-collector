@@ -145,25 +145,11 @@ func (es ExponentialHistogramDataPointSlice) RemoveIf(f func(ExponentialHistogra
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDataPointSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newExponentialHistogramDataPoint((*es.orig)[i], es.state).CopyTo(newExponentialHistogramDataPoint((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpmetrics.ExponentialHistogramDataPoint, srcLen)
-	wrappers := make([]*otlpmetrics.ExponentialHistogramDataPoint, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newExponentialHistogramDataPoint((*es.orig)[i], es.state).CopyTo(newExponentialHistogramDataPoint(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigExponentialHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another ExponentialHistogramDataPointSlice
+// In order to match equality, the order of elements must be the same.
 func (es ExponentialHistogramDataPointSlice) Equal(val ExponentialHistogramDataPointSlice) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -182,4 +168,19 @@ func (es ExponentialHistogramDataPointSlice) Equal(val ExponentialHistogramDataP
 func (es ExponentialHistogramDataPointSlice) Sort(less func(a, b ExponentialHistogramDataPoint) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.ExponentialHistogramDataPoint) []*otlpmetrics.ExponentialHistogramDataPoint {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpmetrics.ExponentialHistogramDataPoint, len(src))
+		data := make([]otlpmetrics.ExponentialHistogramDataPoint, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigExponentialHistogramDataPoint(dest[i], src[i])
+	}
+	return dest
 }

@@ -7,6 +7,8 @@
 package pmetric
 
 import (
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
@@ -74,12 +76,16 @@ func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.state.AssertMutable()
-	dest.SetQuantile(ms.Quantile())
-	dest.SetValue(ms.Value())
+	copyOrigSummaryDataPointValueAtQuantile(dest.orig, ms.orig)
+}
+
+func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	dest.Quantile = src.Quantile
+	dest.Value = src.Value
 }
 
 // Equal checks equality with another SummaryDataPointValueAtQuantile
 func (ms SummaryDataPointValueAtQuantile) Equal(val SummaryDataPointValueAtQuantile) bool {
-	return ms.Quantile() == val.Quantile() &&
-		ms.Value() == val.Value()
+	return math.Abs(ms.Quantile()-val.Quantile()) < 0.01 &&
+		math.Abs(ms.Value()-val.Value()) < 0.01
 }

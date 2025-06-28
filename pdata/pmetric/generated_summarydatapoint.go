@@ -7,6 +7,8 @@
 package pmetric
 
 import (
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -118,13 +120,17 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	dest.SetSum(ms.Sum())
-	ms.QuantileValues().CopyTo(dest.QuantileValues())
-	dest.SetFlags(ms.Flags())
+	copyOrigSummaryDataPoint(dest.orig, ms.orig)
+}
+
+func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
+	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	dest.Sum = src.Sum
+	dest.QuantileValues = copyOrigSummaryDataPointValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
+	dest.Flags = src.Flags
 }
 
 // Equal checks equality with another SummaryDataPoint
@@ -133,7 +139,7 @@ func (ms SummaryDataPoint) Equal(val SummaryDataPoint) bool {
 		ms.StartTimestamp() == val.StartTimestamp() &&
 		ms.Timestamp() == val.Timestamp() &&
 		ms.Count() == val.Count() &&
-		ms.Sum() == val.Sum() &&
+		math.Abs(ms.Sum()-val.Sum()) < 0.01 &&
 		ms.QuantileValues().Equal(val.QuantileValues()) &&
 		ms.Flags() == val.Flags()
 }

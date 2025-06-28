@@ -145,25 +145,11 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeLogs((*es.orig)[i], es.state).CopyTo(newScopeLogs((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlplogs.ScopeLogs, srcLen)
-	wrappers := make([]*otlplogs.ScopeLogs, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newScopeLogs((*es.orig)[i], es.state).CopyTo(newScopeLogs(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigScopeLogsSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another ScopeLogsSlice
+// In order to match equality, the order of elements must be the same.
 func (es ScopeLogsSlice) Equal(val ScopeLogsSlice) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -182,4 +168,19 @@ func (es ScopeLogsSlice) Equal(val ScopeLogsSlice) bool {
 func (es ScopeLogsSlice) Sort(less func(a, b ScopeLogs) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLogs {
+	if cap(dest) < len(src) {
+		dest = make([]*otlplogs.ScopeLogs, len(src))
+		data := make([]otlplogs.ScopeLogs, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigScopeLogs(dest[i], src[i])
+	}
+	return dest
 }

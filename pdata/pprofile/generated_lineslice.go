@@ -145,25 +145,11 @@ func (es LineSlice) RemoveIf(f func(Line) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LineSlice) CopyTo(dest LineSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newLine((*es.orig)[i], es.state).CopyTo(newLine((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.Line, srcLen)
-	wrappers := make([]*otlpprofiles.Line, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newLine((*es.orig)[i], es.state).CopyTo(newLine(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigLineSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another LineSlice
+// In order to match equality, the order of elements must be the same.
 func (es LineSlice) Equal(val LineSlice) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -182,4 +168,19 @@ func (es LineSlice) Equal(val LineSlice) bool {
 func (es LineSlice) Sort(less func(a, b Line) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Line, len(src))
+		data := make([]otlpprofiles.Line, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigLine(dest[i], src[i])
+	}
+	return dest
 }

@@ -7,6 +7,8 @@
 package pmetric
 
 import (
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -222,32 +224,36 @@ func (ms ExponentialHistogramDataPoint) SetZeroThreshold(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	dest.state.AssertMutable()
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	dest.SetScale(ms.Scale())
-	dest.SetZeroCount(ms.ZeroCount())
-	ms.Positive().CopyTo(dest.Positive())
-	ms.Negative().CopyTo(dest.Negative())
-	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
+	copyOrigExponentialHistogramDataPoint(dest.orig, ms.orig)
+}
+
+func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
+	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	dest.Scale = src.Scale
+	dest.ZeroCount = src.ZeroCount
+	copyOrigExponentialHistogramDataPointBuckets(&dest.Positive, &src.Positive)
+	copyOrigExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative)
+	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Flags = src.Flags
+	if src.Sum_ == nil {
+		dest.Sum_ = nil
 	} else {
-		dest.RemoveSum()
+		dest.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
+	if src.Min_ == nil {
+		dest.Min_ = nil
 	} else {
-		dest.RemoveMin()
+		dest.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: src.GetMin()}
 	}
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
+	if src.Max_ == nil {
+		dest.Max_ = nil
 	} else {
-		dest.RemoveMax()
+		dest.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: src.GetMax()}
 	}
-	dest.SetZeroThreshold(ms.ZeroThreshold())
+	dest.ZeroThreshold = src.ZeroThreshold
 }
 
 // Equal checks equality with another ExponentialHistogramDataPoint
@@ -262,8 +268,8 @@ func (ms ExponentialHistogramDataPoint) Equal(val ExponentialHistogramDataPoint)
 		ms.Negative().Equal(val.Negative()) &&
 		ms.Exemplars().Equal(val.Exemplars()) &&
 		ms.Flags() == val.Flags() &&
-		ms.HasSum() == val.HasSum() && (!ms.HasSum() || ms.Sum() == val.Sum()) &&
-		ms.HasMin() == val.HasMin() && (!ms.HasMin() || ms.Min() == val.Min()) &&
-		ms.HasMax() == val.HasMax() && (!ms.HasMax() || ms.Max() == val.Max()) &&
-		ms.ZeroThreshold() == val.ZeroThreshold()
+		ms.HasSum() == val.HasSum() && (!ms.HasSum() || math.Abs(ms.Sum()-val.Sum()) < 0.01) &&
+		ms.HasMin() == val.HasMin() && (!ms.HasMin() || math.Abs(ms.Min()-val.Min()) < 0.01) &&
+		ms.HasMax() == val.HasMax() && (!ms.HasMax() || math.Abs(ms.Max()-val.Max()) < 0.01) &&
+		math.Abs(ms.ZeroThreshold()-val.ZeroThreshold()) < 0.01
 }
