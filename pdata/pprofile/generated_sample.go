@@ -124,7 +124,12 @@ func copyOrigSample(dest, src *otlpprofiles.Sample) {
 	if src.LinkIndex_ == nil {
 		dest.LinkIndex_ = nil
 	} else {
-		dest.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: src.GetLinkIndex()}
+		destLinkIndex, ok := dest.LinkIndex_.(*otlpprofiles.Sample_LinkIndex)
+		if !ok {
+			destLinkIndex = &otlpprofiles.Sample_LinkIndex{}
+			dest.LinkIndex_ = destLinkIndex
+		}
+		destLinkIndex.LinkIndex = src.GetLinkIndex()
 	}
 	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }

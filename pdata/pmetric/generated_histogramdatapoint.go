@@ -201,16 +201,31 @@ func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	if src.Sum_ == nil {
 		dest.Sum_ = nil
 	} else {
-		dest.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: src.GetSum()}
+		destSum, ok := dest.Sum_.(*otlpmetrics.HistogramDataPoint_Sum)
+		if !ok {
+			destSum = &otlpmetrics.HistogramDataPoint_Sum{}
+			dest.Sum_ = destSum
+		}
+		destSum.Sum = src.GetSum()
 	}
 	if src.Min_ == nil {
 		dest.Min_ = nil
 	} else {
-		dest.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: src.GetMin()}
+		destMin, ok := dest.Min_.(*otlpmetrics.HistogramDataPoint_Min)
+		if !ok {
+			destMin = &otlpmetrics.HistogramDataPoint_Min{}
+			dest.Min_ = destMin
+		}
+		destMin.Min = src.GetMin()
 	}
 	if src.Max_ == nil {
 		dest.Max_ = nil
 	} else {
-		dest.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: src.GetMax()}
+		destMax, ok := dest.Max_.(*otlpmetrics.HistogramDataPoint_Max)
+		if !ok {
+			destMax = &otlpmetrics.HistogramDataPoint_Max{}
+			dest.Max_ = destMax
+		}
+		destMax.Max = src.GetMax()
 	}
 }
