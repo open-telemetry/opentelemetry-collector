@@ -31,15 +31,15 @@ jobs:
       - name: Copy release files
         run: cp -R ./opentelemetry-collector-releases/cmd/builder/. ./.core/cmd/builder/
 
-      - uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
 
-      - uses: anchore/sbom-action/download-syft@e11c554f704a0b820cbf8c51673f6945e0731532 # v0.20.0
+      - uses: anchore/sbom-action/download-syft@9246b90769f852b3a8921f330c59e0b3f439d6e9 # v0.20.1
 
       - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
         with:
           platforms: amd64, arm64,ppc64le
 
-      - uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
