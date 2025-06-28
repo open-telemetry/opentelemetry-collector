@@ -234,3 +234,21 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmid
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper => ../../exporter/exporterhelper/xexporterhelper
+
+replace go.opentelemetry.io/collector/receiver/otlpreceiver => ../../receiver/otlpreceiver
+
+replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../consumer/consumererror/xconsumererror
+
+replace go.opentelemetry.io/collector/internal/sharedcomponent => ../../internal/sharedcomponent
+
+replace go.opentelemetry.io/collector/config/configgrpc => ../../config/configgrpc
+
+replace go.opentelemetry.io/collector/exporter/otlpexporter => ../../exporter/otlpexporter
+
+replace go.opentelemetry.io/collector/config/confignet => ../../config/confignet
+
+replace go.opentelemetry.io/collector/receiver/receiverhelper => ../../receiver/receiverhelper
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
