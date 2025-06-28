@@ -49,6 +49,10 @@ func NewMetrics(
 	metricsConsumer, err := consumer.NewMetrics(func(ctx context.Context, md pmetric.Metrics) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
+
+		ps := newProcessorStart()
+		defer obs.recordDuration(ctx, ps)
+
 		pointsIn := md.DataPointCount()
 
 		var errFunc error
