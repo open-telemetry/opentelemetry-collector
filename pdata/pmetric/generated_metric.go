@@ -281,3 +281,12 @@ func copyOrigMetric(dest, src *otlpmetrics.Metric) {
 		}
 	}
 }
+
+// Equal checks equality with another Metric
+func (ms Metric) Equal(val Metric) bool {
+	return ms.Name() == val.Name() &&
+		ms.Description() == val.Description() &&
+		ms.Unit() == val.Unit() &&
+		ms.Metadata().Equal(val.Metadata()) &&
+		ms.Type() == val.Type()
+}

@@ -81,3 +81,9 @@ func copyOrigExportPartialSuccess(dest, src *otlpcollectorprofile.ExportProfiles
 	dest.RejectedProfiles = src.RejectedProfiles
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+// Equal checks equality with another ExportPartialSuccess
+func (ms ExportPartialSuccess) Equal(val ExportPartialSuccess) bool {
+	return ms.RejectedProfiles() == val.RejectedProfiles() &&
+		ms.ErrorMessage() == val.ErrorMessage()
+}

@@ -105,3 +105,11 @@ func copyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.FilenameStrindex = src.FilenameStrindex
 	dest.StartLine = src.StartLine
 }
+
+// Equal checks equality with another Function
+func (ms Function) Equal(val Function) bool {
+	return ms.NameStrindex() == val.NameStrindex() &&
+		ms.SystemNameStrindex() == val.SystemNameStrindex() &&
+		ms.FilenameStrindex() == val.FilenameStrindex() &&
+		ms.StartLine() == val.StartLine()
+}

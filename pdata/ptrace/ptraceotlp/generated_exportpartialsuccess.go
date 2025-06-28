@@ -81,3 +81,9 @@ func copyOrigExportPartialSuccess(dest, src *otlpcollectortrace.ExportTraceParti
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+// Equal checks equality with another ExportPartialSuccess
+func (ms ExportPartialSuccess) Equal(val ExportPartialSuccess) bool {
+	return ms.RejectedSpans() == val.RejectedSpans() &&
+		ms.ErrorMessage() == val.ErrorMessage()
+}

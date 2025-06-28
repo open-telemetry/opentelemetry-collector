@@ -150,3 +150,13 @@ func copyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
 }
+
+// Equal checks equality with another NumberDataPoint
+func (ms NumberDataPoint) Equal(val NumberDataPoint) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.ValueType() == val.ValueType() &&
+		ms.Exemplars().Equal(val.Exemplars()) &&
+		ms.Flags() == val.Flags()
+}

@@ -337,6 +337,8 @@ type baseField interface {
 	GenerateSetWithTestValue(ms *messageValueStruct) string
 
 	GenerateCopyOrig(ms *messageValueStruct) string
+
+	GenerateEqualComparison(ms *messageValueStruct) string
 }
 
 type sliceField struct {
@@ -363,6 +365,10 @@ func (sf *sliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 func (sf *sliceField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *sliceField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "())"
 }
 
 func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -418,6 +424,10 @@ func (mf *messageValueField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
+func (mf *messageValueField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "())"
+}
+
 func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
@@ -465,6 +475,10 @@ func (pf *primitiveField) GenerateSetWithTestValue(ms *messageValueStruct) strin
 func (pf *primitiveField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigPrimitiveTemplate").Parse(copyOrigPrimitiveTemplate))
 	return executeTemplate(t, pf.templateFields(ms))
+}
+
+func (pf *primitiveField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + pf.fieldName + "() == val." + pf.fieldName + "()"
 }
 
 func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any {
@@ -527,6 +541,10 @@ func (ptf *primitiveTypedField) GenerateCopyOrig(ms *messageValueStruct) string 
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *primitiveTypedField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()"
+}
+
 func (ptf *primitiveTypedField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"structName": ms.getName(),
@@ -583,6 +601,10 @@ func (psf *primitiveSliceField) GenerateSetWithTestValue(ms *messageValueStruct)
 func (psf *primitiveSliceField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
 	return executeTemplate(t, psf.templateFields(ms))
+}
+
+func (psf *primitiveSliceField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "())"
 }
 
 func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -642,6 +664,10 @@ func (of *oneOfField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 func (of *oneOfField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("oneOfTypeCopyOrigTestTemplate").Parse(oneOfTypeCopyOrigTestTemplate))
 	return executeTemplate(t, of.templateFields(ms))
+}
+
+func (of *oneOfField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()"
 }
 
 func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
@@ -804,6 +830,10 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *optionalPrimitiveValue) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || ms." + opv.fieldName + "() == val." + opv.fieldName + "())"
 }
 
 func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[string]any {

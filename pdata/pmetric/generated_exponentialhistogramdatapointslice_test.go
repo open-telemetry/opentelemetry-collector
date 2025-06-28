@@ -142,6 +142,22 @@ func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestExponentialHistogramDataPointSlice_Equal(t *testing.T) {
+	es1 := NewExponentialHistogramDataPointSlice()
+	es2 := NewExponentialHistogramDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestExponentialHistogramDataPointSlice()
+	es2 = generateTestExponentialHistogramDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewExponentialHistogramDataPointSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 	es := generateTestExponentialHistogramDataPointSlice()
 	es.Sort(func(a, b ExponentialHistogramDataPoint) bool {

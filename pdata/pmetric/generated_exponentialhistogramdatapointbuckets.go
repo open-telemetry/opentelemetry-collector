@@ -76,3 +76,9 @@ func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.Exponen
 	dest.Offset = src.Offset
 	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
 }
+
+// Equal checks equality with another ExponentialHistogramDataPointBuckets
+func (ms ExponentialHistogramDataPointBuckets) Equal(val ExponentialHistogramDataPointBuckets) bool {
+	return ms.Offset() == val.Offset() &&
+		ms.BucketCounts().Equal(val.BucketCounts())
+}

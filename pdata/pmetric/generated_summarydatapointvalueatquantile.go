@@ -81,3 +81,9 @@ func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataP
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }
+
+// Equal checks equality with another SummaryDataPointValueAtQuantile
+func (ms SummaryDataPointValueAtQuantile) Equal(val SummaryDataPointValueAtQuantile) bool {
+	return ms.Quantile() == val.Quantile() &&
+		ms.Value() == val.Value()
+}

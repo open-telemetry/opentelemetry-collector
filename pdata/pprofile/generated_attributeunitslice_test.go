@@ -142,6 +142,22 @@ func TestAttributeUnitSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestAttributeUnitSlice_Equal(t *testing.T) {
+	es1 := NewAttributeUnitSlice()
+	es2 := NewAttributeUnitSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestAttributeUnitSlice()
+	es2 = generateTestAttributeUnitSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewAttributeUnitSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestAttributeUnitSlice_Sort(t *testing.T) {
 	es := generateTestAttributeUnitSlice()
 	es.Sort(func(a, b AttributeUnit) bool {

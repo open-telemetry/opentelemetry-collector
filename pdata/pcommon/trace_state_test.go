@@ -41,9 +41,24 @@ func TestTraceState_FromRaw_AsRaw(t *testing.T) {
 
 func TestInvalidTraceState(t *testing.T) {
 	v := TraceState{}
-
 	assert.Panics(t, func() { v.AsRaw() })
-	assert.Panics(t, func() { v.FromRaw("") })
+	assert.Panics(t, func() { v.FromRaw("a=b") })
 	assert.Panics(t, func() { v.MoveTo(TraceState{}) })
 	assert.Panics(t, func() { v.CopyTo(TraceState{}) })
+}
+
+func TestTraceState_Equal(t *testing.T) {
+	ms1 := NewTraceState()
+	ms2 := NewTraceState()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1.FromRaw("a=b,c=d")
+	ms2.FromRaw("a=b,c=d")
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2.FromRaw("a=b")
+	assert.False(t, ms1.Equal(ms2))
+
+	ms2 = NewTraceState()
+	assert.False(t, ms1.Equal(ms2))
 }

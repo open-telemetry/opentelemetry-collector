@@ -76,3 +76,9 @@ func copyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.DataPoints = copyOrigExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+// Equal checks equality with another ExponentialHistogram
+func (ms ExponentialHistogram) Equal(val ExponentialHistogram) bool {
+	return ms.AggregationTemporality() == val.AggregationTemporality() &&
+		ms.DataPoints().Equal(val.DataPoints())
+}

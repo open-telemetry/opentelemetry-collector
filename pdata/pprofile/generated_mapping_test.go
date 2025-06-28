@@ -41,6 +41,19 @@ func TestMapping_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
 }
 
+func TestMapping_Equal(t *testing.T) {
+	ms1 := NewMapping()
+	ms2 := NewMapping()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestMapping()
+	ms2 = generateTestMapping()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewMapping()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestMapping_MemoryStart(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, uint64(0), ms.MemoryStart())

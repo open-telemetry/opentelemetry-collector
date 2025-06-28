@@ -148,3 +148,12 @@ func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 }
+
+// Equal checks equality with another Exemplar
+func (ms Exemplar) Equal(val Exemplar) bool {
+	return ms.Timestamp() == val.Timestamp() &&
+		ms.ValueType() == val.ValueType() &&
+		ms.FilteredAttributes().Equal(val.FilteredAttributes()) &&
+		ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID()
+}

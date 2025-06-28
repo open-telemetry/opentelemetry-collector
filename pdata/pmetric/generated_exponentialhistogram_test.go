@@ -40,6 +40,19 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
 }
 
+func TestExponentialHistogram_Equal(t *testing.T) {
+	ms1 := NewExponentialHistogram()
+	ms2 := NewExponentialHistogram()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestExponentialHistogram()
+	ms2 = generateTestExponentialHistogram()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewExponentialHistogram()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewExponentialHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())

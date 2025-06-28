@@ -82,3 +82,10 @@ func copyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeSpans = copyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 }
+
+// Equal checks equality with another ResourceSpans
+func (ms ResourceSpans) Equal(val ResourceSpans) bool {
+	return ms.Resource().Equal(val.Resource()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.ScopeSpans().Equal(val.ScopeSpans())
+}

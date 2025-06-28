@@ -141,6 +141,22 @@ func TestExemplarSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestExemplarSlice_Equal(t *testing.T) {
+	es1 := NewExemplarSlice()
+	es2 := NewExemplarSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestExemplarSlice()
+	es2 = generateTestExemplarSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewExemplarSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func generateTestExemplarSlice() ExemplarSlice {
 	es := NewExemplarSlice()
 	fillTestExemplarSlice(es)

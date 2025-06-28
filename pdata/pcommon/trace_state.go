@@ -55,3 +55,8 @@ func (ms TraceState) CopyTo(dest TraceState) {
 	dest.getState().AssertMutable()
 	*dest.getOrig() = *ms.getOrig()
 }
+
+// Equal checks equality with another TraceState
+func (ms TraceState) Equal(val TraceState) bool {
+	return *ms.getOrig() == *val.getOrig()
+}

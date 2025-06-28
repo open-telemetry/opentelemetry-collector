@@ -148,6 +148,19 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	*dest.orig = copyOrigNumberDataPointSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another NumberDataPointSlice
+func (es NumberDataPointSlice) Equal(val NumberDataPointSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the NumberDataPoint elements within NumberDataPointSlice given the
 // provided less function so that two instances of NumberDataPointSlice
 // can be compared.

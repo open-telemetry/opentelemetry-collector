@@ -122,3 +122,12 @@ func copyOrigLocation(dest, src *otlpprofiles.Location) {
 	dest.IsFolded = src.IsFolded
 	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
+
+// Equal checks equality with another Location
+func (ms Location) Equal(val Location) bool {
+	return ms.HasMappingIndex() == val.HasMappingIndex() && (!ms.HasMappingIndex() || ms.MappingIndex() == val.MappingIndex()) &&
+		ms.Address() == val.Address() &&
+		ms.Line().Equal(val.Line()) &&
+		ms.IsFolded() == val.IsFolded() &&
+		ms.AttributeIndices().Equal(val.AttributeIndices())
+}

@@ -42,6 +42,19 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
 }
 
+func TestExportPartialSuccess_Equal(t *testing.T) {
+	ms1 := NewExportPartialSuccess()
+	ms2 := NewExportPartialSuccess()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestExportPartialSuccess()
+	ms2 = generateTestExportPartialSuccess()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewExportPartialSuccess()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())

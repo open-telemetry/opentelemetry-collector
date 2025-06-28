@@ -82,3 +82,9 @@ func copyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 	dest.Message = src.Message
 }
+
+// Equal checks equality with another Status
+func (ms Status) Equal(val Status) bool {
+	return ms.Code() == val.Code() &&
+		ms.Message() == val.Message()
+}

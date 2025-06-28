@@ -142,6 +142,22 @@ func TestLineSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestLineSlice_Equal(t *testing.T) {
+	es1 := NewLineSlice()
+	es2 := NewLineSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestLineSlice()
+	es2 = generateTestLineSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewLineSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestLineSlice_Sort(t *testing.T) {
 	es := generateTestLineSlice()
 	es.Sort(func(a, b Line) bool {

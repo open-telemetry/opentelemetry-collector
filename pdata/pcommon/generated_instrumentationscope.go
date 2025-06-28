@@ -97,3 +97,11 @@ func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.getState().AssertMutable()
 	internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
 }
+
+// Equal checks equality with another InstrumentationScope
+func (ms InstrumentationScope) Equal(val InstrumentationScope) bool {
+	return ms.Name() == val.Name() &&
+		ms.Version() == val.Version() &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

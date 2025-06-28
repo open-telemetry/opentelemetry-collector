@@ -47,6 +47,19 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	})
 }
 
+func TestExponentialHistogramDataPoint_Equal(t *testing.T) {
+	ms1 := NewExponentialHistogramDataPoint()
+	ms2 := NewExponentialHistogramDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestExponentialHistogramDataPoint()
+	ms2 = generateTestExponentialHistogramDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewExponentialHistogramDataPoint()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())

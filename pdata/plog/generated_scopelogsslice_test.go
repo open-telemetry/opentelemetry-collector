@@ -142,6 +142,22 @@ func TestScopeLogsSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestScopeLogsSlice_Equal(t *testing.T) {
+	es1 := NewScopeLogsSlice()
+	es2 := NewScopeLogsSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestScopeLogsSlice()
+	es2 = generateTestScopeLogsSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewScopeLogsSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestScopeLogsSlice_Sort(t *testing.T) {
 	es := generateTestScopeLogsSlice()
 	es.Sort(func(a, b ScopeLogs) bool {

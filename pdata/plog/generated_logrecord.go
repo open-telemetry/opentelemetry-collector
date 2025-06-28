@@ -179,3 +179,18 @@ func copyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
+
+// Equal checks equality with another LogRecord
+func (ms LogRecord) Equal(val LogRecord) bool {
+	return ms.ObservedTimestamp() == val.ObservedTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID() &&
+		ms.Flags() == val.Flags() &&
+		ms.EventName() == val.EventName() &&
+		ms.SeverityText() == val.SeverityText() &&
+		ms.SeverityNumber() == val.SeverityNumber() &&
+		ms.Body().Equal(val.Body()) &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

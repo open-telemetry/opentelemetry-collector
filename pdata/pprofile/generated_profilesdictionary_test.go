@@ -41,6 +41,19 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState)) })
 }
 
+func TestProfilesDictionary_Equal(t *testing.T) {
+	ms1 := NewProfilesDictionary()
+	ms2 := NewProfilesDictionary()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestProfilesDictionary()
+	ms2 = generateTestProfilesDictionary()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewProfilesDictionary()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestProfilesDictionary_MappingTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewMappingSlice(), ms.MappingTable())

@@ -142,6 +142,22 @@ func TestNumberDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestNumberDataPointSlice_Equal(t *testing.T) {
+	es1 := NewNumberDataPointSlice()
+	es2 := NewNumberDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestNumberDataPointSlice()
+	es2 = generateTestNumberDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewNumberDataPointSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestNumberDataPointSlice_Sort(t *testing.T) {
 	es := generateTestNumberDataPointSlice()
 	es.Sort(func(a, b NumberDataPoint) bool {
