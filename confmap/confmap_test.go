@@ -275,7 +275,7 @@ func TestUint32UnmarshalerFailure(t *testing.T) {
 	cfg := &uint32Config{}
 	err := conf.Unmarshal(cfg)
 
-	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\n'value' cannot parse value as 'uint32': %d overflows uint", testValue))
 }
 
 type uint64Config struct {
@@ -308,7 +308,7 @@ func TestUint64UnmarshalerFailure(t *testing.T) {
 	cfg := &uint64Config{}
 	err := conf.Unmarshal(cfg)
 
-	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\n'value' cannot parse value as 'uint64': %d overflows uint", testValue))
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -546,7 +546,7 @@ func TestEmbeddedUnmarshalerError(t *testing.T) {
 	})
 
 	tc := &testConfigWithEmbeddedError{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), "embedded error")
+	assert.ErrorContains(t, cfgMap.Unmarshal(tc), "embedded error")
 }
 
 func TestEmbeddedMarshalerError(t *testing.T) {
@@ -638,7 +638,7 @@ func TestUnmarshalerErr(t *testing.T) {
 	})
 
 	tc := &testErrConfig{}
-	require.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
+	require.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\n'err' never works")
 	assert.Empty(t, tc.Err.Foo)
 }
 
