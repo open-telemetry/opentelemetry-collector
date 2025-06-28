@@ -1,0 +1,3 @@
+change_type: enhancement
+component: featuregate
+note: Add example test cases to demonstrate usage of feature gates
