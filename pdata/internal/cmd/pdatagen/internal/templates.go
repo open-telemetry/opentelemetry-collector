@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pda
 
 import (
 	_ "embed"
+	"strings"
 	"text/template"
 )
 
@@ -48,4 +49,12 @@ var (
 
 func parseTemplate(name string, bytes []byte) *template.Template {
 	return template.Must(template.New(name).Parse(string(bytes)))
+}
+
+func executeTemplate(tmpl *template.Template, data any) string {
+	var sb strings.Builder
+	if err := tmpl.Execute(&sb, data); err != nil {
+		panic(err)
+	}
+	return sb.String()
 }
