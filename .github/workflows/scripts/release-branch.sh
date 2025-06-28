@@ -4,8 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # --- Configuration ---
-RELEASE_SERIES="$1" # e.g., v0.85.x
-PREPARE_RELEASE_COMMIT_HASH="$2" # Optional: Specific commit hash for "Prepare release"
 UPSTREAM_REMOTE_NAME=${UPSTREAM_REMOTE_NAME:-"upstream"} # Your upstream remote name for open-telemetry/opentelemetry-collector
 MAIN_BRANCH_NAME=${MAIN_BRANCH_NAME:-"main"}
 LOCAL_MAIN_BRANCH_NAME=${LOCAL_MAIN_BRANCH_NAME:-"${MAIN_BRANCH_NAME}"}
@@ -13,13 +11,27 @@ LOCAL_MAIN_BRANCH_NAME=${LOCAL_MAIN_BRANCH_NAME:-"${MAIN_BRANCH_NAME}"}
 GIT_CONFIG_USER_NAME=${GIT_CONFIG_USER_NAME:-"opentelemetrybot"}
 GIT_CONFIG_USER_EMAIL=${GIT_CONFIG_USER_EMAIL:-"107717825+opentelemetrybot@users.noreply.github.com"}
 
-# --- Validate Input ---
-if [[ -z "$RELEASE_SERIES" || -z "$PREPARE_RELEASE_COMMIT_HASH" ]]; then
-  echo "Error: Both release series and prepare release commit hash must be provided."
-  echo "Usage: $0 <release-series> <prepare-release-commit-hash>"
-  echo "Example: $0 v0.85.x a1b2c3d4"
+# --- Extract release information from tag ---
+if [[ -z "$GITHUB_REF" ]]; then
+  echo "Error: GITHUB_REF environment variable must be provided when running in GitHub Actions."
+  echo "For manual usage: GITHUB_REF=refs/tags/v0.85.0 $0"
   exit 1
 fi
+
+# Extract tag name and validate format using regex
+if [[ ! $GITHUB_REF =~ ^refs/tags/v([0-9]+\.[0-9]+)\.[0-9]+(-.+)?$ ]]; then
+    echo "Error: GITHUB_REF did not match expected format (refs/tags/vX.XX.X)"
+    exit 1
+fi
+
+# Extract version numbers from regex match
+VERSION_MAJOR_MINOR=${BASH_REMATCH[1]}
+RELEASE_SERIES="v${VERSION_MAJOR_MINOR}.x"
+echo "Release series: ${RELEASE_SERIES}"
+
+# --- Use current commit as prepare release commit ---
+PREPARE_RELEASE_COMMIT_HASH="${GITHUB_SHA:-HEAD}"
+echo "Using current commit as prepare release commit: ${PREPARE_RELEASE_COMMIT_HASH}"
 
 RELEASE_BRANCH_NAME="release/${RELEASE_SERIES}"
 
@@ -78,6 +90,6 @@ echo "Step 4 completed."
 echo "--------------------------------------------------"
 
 echo ""
-echo "Automation for your Step 4 (push release/<release-series> branch) complete."
-echo "Next, you would typically proceed to your Step 5 on your local machine."
-echo "You will need to check out the release branch locally and push beta/stable tags."
+echo "Automation for release branch creation complete."
+echo "Release branch '${RELEASE_BRANCH_NAME}' has been created from the prepare release commit."
+echo "Tag-triggered build workflows should now be running for the pushed tags."

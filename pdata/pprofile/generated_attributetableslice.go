@@ -144,16 +144,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-	} else {
-		(*dest.orig) = make([]v1.KeyValue, srcLen)
-	}
-	for i := range *es.orig {
-		newAttribute(&(*es.orig)[i], es.state).CopyTo(newAttribute(&(*dest.orig)[i], dest.state))
-	}
+	*dest.orig = copyOrigAttributeTableSlice(*dest.orig, *es.orig)
 }
 
 // Equal checks equality with another AttributeTableSlice
@@ -167,4 +158,15 @@ func (es AttributeTableSlice) Equal(val AttributeTableSlice) bool {
 		}
 	}
 	return true
+}
+
+func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
+	if cap(dest) < len(src) {
+		dest = make([]v1.KeyValue, len(src))
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigAttribute(&dest[i], &src[i])
+	}
+	return dest
 }

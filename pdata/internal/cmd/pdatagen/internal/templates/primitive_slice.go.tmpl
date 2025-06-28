@@ -36,13 +36,13 @@ func New{{ .structName }}() {{ .structName }} {
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
 func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
-	return copy{{ .structName }}(nil, *ms.getOrig())
+	return internal.CopyOrig{{ .structName }}(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
 func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = copy{{ .structName }}(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyOrig{{ .structName }}(*ms.getOrig(), val)
 }
 
 // Len returns length of the []{{ .itemType }} slice value.
@@ -130,15 +130,10 @@ func (ms {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.getState().AssertMutable()
-	*dest.getOrig() = copy{{ .structName }}(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyOrig{{ .structName }}(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another {{ .structName }}
 func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
-}
-
-func copy{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
-	dst = dst[:0]
-	return append(dst, src...)
 }

@@ -186,28 +186,32 @@ func (ms HistogramDataPoint) RemoveMax() {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.state.AssertMutable()
-	ms.Attributes().CopyTo(dest.Attributes())
-	dest.SetStartTimestamp(ms.StartTimestamp())
-	dest.SetTimestamp(ms.Timestamp())
-	dest.SetCount(ms.Count())
-	ms.BucketCounts().CopyTo(dest.BucketCounts())
-	ms.ExplicitBounds().CopyTo(dest.ExplicitBounds())
-	ms.Exemplars().CopyTo(dest.Exemplars())
-	dest.SetFlags(ms.Flags())
-	if ms.HasSum() {
-		dest.SetSum(ms.Sum())
+	copyOrigHistogramDataPoint(dest.orig, ms.orig)
+}
+
+func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
+	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
+	dest.StartTimeUnixNano = src.StartTimeUnixNano
+	dest.TimeUnixNano = src.TimeUnixNano
+	dest.Count = src.Count
+	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.ExplicitBounds = internal.CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
+	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Flags = src.Flags
+	if src.Sum_ == nil {
+		dest.Sum_ = nil
 	} else {
-		dest.RemoveSum()
+		dest.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: src.GetSum()}
 	}
-	if ms.HasMin() {
-		dest.SetMin(ms.Min())
+	if src.Min_ == nil {
+		dest.Min_ = nil
 	} else {
-		dest.RemoveMin()
+		dest.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: src.GetMin()}
 	}
-	if ms.HasMax() {
-		dest.SetMax(ms.Max())
+	if src.Max_ == nil {
+		dest.Max_ = nil
 	} else {
-		dest.RemoveMax()
+		dest.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: src.GetMax()}
 	}
 }
 

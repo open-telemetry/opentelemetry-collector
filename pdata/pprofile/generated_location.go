@@ -108,15 +108,19 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	if ms.HasMappingIndex() {
-		dest.SetMappingIndex(ms.MappingIndex())
+	copyOrigLocation(dest.orig, ms.orig)
+}
+
+func copyOrigLocation(dest, src *otlpprofiles.Location) {
+	if src.MappingIndex_ == nil {
+		dest.MappingIndex_ = nil
 	} else {
-		dest.RemoveMappingIndex()
+		dest.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: src.GetMappingIndex()}
 	}
-	dest.SetAddress(ms.Address())
-	ms.Line().CopyTo(dest.Line())
-	dest.SetIsFolded(ms.IsFolded())
-	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
+	dest.Address = src.Address
+	dest.Line = copyOrigLineSlice(dest.Line, src.Line)
+	dest.IsFolded = src.IsFolded
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
 
 // Equal checks equality with another Location

@@ -69,8 +69,12 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	dest.SetOffset(ms.Offset())
-	ms.BucketCounts().CopyTo(dest.BucketCounts())
+	copyOrigExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
+}
+
+func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	dest.Offset = src.Offset
+	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
 }
 
 // Equal checks equality with another ExponentialHistogramDataPointBuckets

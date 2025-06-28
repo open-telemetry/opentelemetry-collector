@@ -408,37 +408,37 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' missing required field: `enabled`",
 		},
 		{
 			name:    "testdata/events/no_enabled.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'events[system.event]': missing required field: `enabled`",
+			wantErr: "decoding failed due to the following error(s):\n\n'events[system.event]' missing required field: `enabled`",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
 			want: Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +
-				"error decoding 'sum': missing required field: `value_type`",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' decoding failed due to the following error(s):\n\n" +
+				"'sum' missing required field: `value_type`",
 		},
 		{
 			name:    "testdata/unknown_value_type.yaml",
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'value_type': invalid value_type: \"unknown\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' decoding failed due to the following error(s):\n\n'sum' decoding failed due to the following error(s):\n\n'value_type' invalid value_type: \"unknown\"",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[default.metric]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'sum' decoding failed due to the following error(s):\n\n'aggregation_temporality' invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",

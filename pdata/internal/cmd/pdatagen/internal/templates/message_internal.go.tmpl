@@ -31,6 +31,12 @@ func New{{ .structName }}(orig *{{ .originName }}, state *State) {{ .structName 
 	return {{ .structName }}{orig: orig, state: state}
 }
 
+func CopyOrig{{ .structName }}(dest, src *{{ .originName }}) {
+    {{- range .fields }}
+    {{ .GenerateCopyOrig $.messageStruct }}
+    {{- end }}
+}
+
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := {{ .originName }}{}
 	state := StateMutable

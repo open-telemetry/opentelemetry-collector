@@ -32,6 +32,23 @@ func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .st
 	return {{ .structName }}{orig: orig, state: state}
 }
 
+func CopyOrig{{ .structName }}(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
+	if cap(dest) < len(src) {
+		dest = make([]{{ .originElementType }}, len(src))
+		{{- if eq .type "sliceOfPtrs" }}
+		data := make([]{{ .originName }}, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+		{{- end }}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		CopyOrig{{ .elementName }}({{ .originElementPtr }}dest[i], {{ .originElementPtr }}src[i])
+	}
+	return dest
+}
+
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := []{{ .originElementType }}(nil)
 	state := StateMutable

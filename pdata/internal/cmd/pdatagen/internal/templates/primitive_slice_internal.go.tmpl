@@ -31,6 +31,11 @@ func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName 
 	return {{ .structName }}{orig: orig, state: state}
 }
 
+func CopyOrig{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
+	dst = dst[:0]
+	return append(dst, src...)
+}
+
 func FillTest{{ .structName }}(tv {{ .structName}}) {
 }
 
