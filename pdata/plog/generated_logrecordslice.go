@@ -163,6 +163,19 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another LogRecordSlice
+func (es LogRecordSlice) Equal(val LogRecordSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the LogRecord elements within LogRecordSlice given the
 // provided less function so that two instances of LogRecordSlice
 // can be compared.

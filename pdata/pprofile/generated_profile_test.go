@@ -42,6 +42,19 @@ func TestProfile_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newProfile(&otlpprofiles.Profile{}, &sharedState)) })
 }
 
+func TestProfile_Equal(t *testing.T) {
+	ms1 := NewProfile()
+	ms2 := NewProfile()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestProfile()
+	ms2 = generateTestProfile()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewProfile()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueTypeSlice(), ms.SampleType())

@@ -41,6 +41,19 @@ func TestSample_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSample(&otlpprofiles.Sample{}, &sharedState)) })
 }
 
+func TestSample_Equal(t *testing.T) {
+	ms1 := NewSample()
+	ms2 := NewSample()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSample()
+	ms2 = generateTestSample()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSample()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSample_LocationsStartIndex(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LocationsStartIndex())

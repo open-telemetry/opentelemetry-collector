@@ -46,6 +46,19 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	})
 }
 
+func TestSummaryDataPointValueAtQuantile_Equal(t *testing.T) {
+	ms1 := NewSummaryDataPointValueAtQuantile()
+	ms2 := NewSummaryDataPointValueAtQuantile()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSummaryDataPointValueAtQuantile()
+	ms2 = generateTestSummaryDataPointValueAtQuantile()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSummaryDataPointValueAtQuantile()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
 	assert.InDelta(t, float64(0.0), ms.Quantile(), 0.01)

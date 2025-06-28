@@ -163,6 +163,19 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another ValueTypeSlice
+func (es ValueTypeSlice) Equal(val ValueTypeSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ValueType elements within ValueTypeSlice given the
 // provided less function so that two instances of ValueTypeSlice
 // can be compared.

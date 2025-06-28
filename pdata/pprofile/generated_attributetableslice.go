@@ -155,3 +155,16 @@ func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 		newAttribute(&(*es.orig)[i], es.state).CopyTo(newAttribute(&(*dest.orig)[i], dest.state))
 	}
 }
+
+// Equal checks equality with another AttributeTableSlice
+func (es AttributeTableSlice) Equal(val AttributeTableSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}

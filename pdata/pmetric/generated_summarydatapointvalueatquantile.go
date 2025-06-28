@@ -77,3 +77,9 @@ func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQua
 	dest.SetQuantile(ms.Quantile())
 	dest.SetValue(ms.Value())
 }
+
+// Equal checks equality with another SummaryDataPointValueAtQuantile
+func (ms SummaryDataPointValueAtQuantile) Equal(val SummaryDataPointValueAtQuantile) bool {
+	return ms.Quantile() == val.Quantile() &&
+		ms.Value() == val.Value()
+}

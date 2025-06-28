@@ -156,3 +156,16 @@ func (ms Mapping) CopyTo(dest Mapping) {
 	dest.SetHasLineNumbers(ms.HasLineNumbers())
 	dest.SetHasInlineFrames(ms.HasInlineFrames())
 }
+
+// Equal checks equality with another Mapping
+func (ms Mapping) Equal(val Mapping) bool {
+	return ms.MemoryStart() == val.MemoryStart() &&
+		ms.MemoryLimit() == val.MemoryLimit() &&
+		ms.FileOffset() == val.FileOffset() &&
+		ms.FilenameStrindex() == val.FilenameStrindex() &&
+		ms.AttributeIndices().Equal(val.AttributeIndices()) &&
+		ms.HasFunctions() == val.HasFunctions() &&
+		ms.HasFilenames() == val.HasFilenames() &&
+		ms.HasLineNumbers() == val.HasLineNumbers() &&
+		ms.HasInlineFrames() == val.HasInlineFrames()
+}

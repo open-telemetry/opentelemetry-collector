@@ -46,6 +46,19 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	})
 }
 
+func TestExponentialHistogramDataPointBuckets_Equal(t *testing.T) {
+	ms1 := NewExponentialHistogramDataPointBuckets()
+	ms2 := NewExponentialHistogramDataPointBuckets()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestExponentialHistogramDataPointBuckets()
+	ms2 = generateTestExponentialHistogramDataPointBuckets()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewExponentialHistogramDataPointBuckets()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())

@@ -119,7 +119,18 @@ func (ms Sample) CopyTo(dest Sample) {
 	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
 	if ms.HasLinkIndex() {
 		dest.SetLinkIndex(ms.LinkIndex())
+	} else {
+		dest.RemoveLinkIndex()
 	}
-
 	ms.TimestampsUnixNano().CopyTo(dest.TimestampsUnixNano())
+}
+
+// Equal checks equality with another Sample
+func (ms Sample) Equal(val Sample) bool {
+	return ms.LocationsStartIndex() == val.LocationsStartIndex() &&
+		ms.LocationsLength() == val.LocationsLength() &&
+		ms.Value().Equal(val.Value()) &&
+		ms.AttributeIndices().Equal(val.AttributeIndices()) &&
+		ms.HasLinkIndex() == val.HasLinkIndex() && (!ms.HasLinkIndex() || ms.LinkIndex() == val.LinkIndex()) &&
+		ms.TimestampsUnixNano().Equal(val.TimestampsUnixNano())
 }

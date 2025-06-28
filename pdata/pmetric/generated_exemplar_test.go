@@ -42,6 +42,19 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
 }
 
+func TestExemplar_Equal(t *testing.T) {
+	ms1 := NewExemplar()
+	ms2 := NewExemplar()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestExemplar()
+	ms2 = generateTestExemplar()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewExemplar()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestExemplar_Timestamp(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())

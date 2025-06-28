@@ -79,3 +79,9 @@ func (ms Link) CopyTo(dest Link) {
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
 }
+
+// Equal checks equality with another Link
+func (ms Link) Equal(val Link) bool {
+	return ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID()
+}

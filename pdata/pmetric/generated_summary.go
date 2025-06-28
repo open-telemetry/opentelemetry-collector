@@ -59,3 +59,8 @@ func (ms Summary) CopyTo(dest Summary) {
 	dest.state.AssertMutable()
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
+
+// Equal checks equality with another Summary
+func (ms Summary) Equal(val Summary) bool {
+	return ms.DataPoints().Equal(val.DataPoints())
+}

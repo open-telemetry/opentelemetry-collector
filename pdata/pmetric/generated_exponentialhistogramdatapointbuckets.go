@@ -72,3 +72,9 @@ func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramD
 	dest.SetOffset(ms.Offset())
 	ms.BucketCounts().CopyTo(dest.BucketCounts())
 }
+
+// Equal checks equality with another ExponentialHistogramDataPointBuckets
+func (ms ExponentialHistogramDataPointBuckets) Equal(val ExponentialHistogramDataPointBuckets) bool {
+	return ms.Offset() == val.Offset() &&
+		ms.BucketCounts().Equal(val.BucketCounts())
+}

@@ -193,3 +193,22 @@ func (ms Profile) CopyTo(dest Profile) {
 	dest.SetOriginalPayloadFormat(ms.OriginalPayloadFormat())
 	ms.OriginalPayload().CopyTo(dest.OriginalPayload())
 }
+
+// Equal checks equality with another Profile
+func (ms Profile) Equal(val Profile) bool {
+	return ms.SampleType().Equal(val.SampleType()) &&
+		ms.Sample().Equal(val.Sample()) &&
+		ms.LocationIndices().Equal(val.LocationIndices()) &&
+		ms.Time() == val.Time() &&
+		ms.Duration() == val.Duration() &&
+		ms.StartTime() == val.StartTime() &&
+		ms.PeriodType().Equal(val.PeriodType()) &&
+		ms.Period() == val.Period() &&
+		ms.CommentStrindices().Equal(val.CommentStrindices()) &&
+		ms.DefaultSampleTypeIndex() == val.DefaultSampleTypeIndex() &&
+		ms.ProfileID() == val.ProfileID() &&
+		ms.AttributeIndices().Equal(val.AttributeIndices()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount() &&
+		ms.OriginalPayloadFormat() == val.OriginalPayloadFormat() &&
+		ms.OriginalPayload().Equal(val.OriginalPayload())
+}

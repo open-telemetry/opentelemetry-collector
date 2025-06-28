@@ -77,3 +77,9 @@ func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.SetRejectedProfiles(ms.RejectedProfiles())
 	dest.SetErrorMessage(ms.ErrorMessage())
 }
+
+// Equal checks equality with another ExportPartialSuccess
+func (ms ExportPartialSuccess) Equal(val ExportPartialSuccess) bool {
+	return ms.RejectedProfiles() == val.RejectedProfiles() &&
+		ms.ErrorMessage() == val.ErrorMessage()
+}

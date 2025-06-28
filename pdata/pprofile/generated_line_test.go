@@ -40,6 +40,19 @@ func TestLine_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
 }
 
+func TestLine_Equal(t *testing.T) {
+	ms1 := NewLine()
+	ms2 := NewLine()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestLine()
+	ms2 = generateTestLine()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewLine()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestLine_FunctionIndex(t *testing.T) {
 	ms := NewLine()
 	assert.Equal(t, int32(0), ms.FunctionIndex())

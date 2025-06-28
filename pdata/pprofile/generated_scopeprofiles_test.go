@@ -41,6 +41,19 @@ func TestScopeProfiles_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState)) })
 }
 
+func TestScopeProfiles_Equal(t *testing.T) {
+	ms1 := NewScopeProfiles()
+	ms2 := NewScopeProfiles()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestScopeProfiles()
+	ms2 = generateTestScopeProfiles()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewScopeProfiles()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

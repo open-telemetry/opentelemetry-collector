@@ -142,6 +142,22 @@ func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestSummaryDataPointValueAtQuantileSlice_Equal(t *testing.T) {
+	es1 := NewSummaryDataPointValueAtQuantileSlice()
+	es2 := NewSummaryDataPointValueAtQuantileSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestSummaryDataPointValueAtQuantileSlice()
+	es2 = generateTestSummaryDataPointValueAtQuantileSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewSummaryDataPointValueAtQuantileSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointValueAtQuantileSlice()
 	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {

@@ -142,6 +142,22 @@ func TestHistogramDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestHistogramDataPointSlice_Equal(t *testing.T) {
+	es1 := NewHistogramDataPointSlice()
+	es2 := NewHistogramDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestHistogramDataPointSlice()
+	es2 = generateTestHistogramDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewHistogramDataPointSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestHistogramDataPointSlice_Sort(t *testing.T) {
 	es := generateTestHistogramDataPointSlice()
 	es.Sort(func(a, b HistogramDataPoint) bool {

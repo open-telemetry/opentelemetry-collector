@@ -126,3 +126,14 @@ func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	ms.QuantileValues().CopyTo(dest.QuantileValues())
 	dest.SetFlags(ms.Flags())
 }
+
+// Equal checks equality with another SummaryDataPoint
+func (ms SummaryDataPoint) Equal(val SummaryDataPoint) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.Count() == val.Count() &&
+		ms.Sum() == val.Sum() &&
+		ms.QuantileValues().Equal(val.QuantileValues()) &&
+		ms.Flags() == val.Flags()
+}

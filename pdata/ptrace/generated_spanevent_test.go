@@ -41,6 +41,19 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
 }
 
+func TestSpanEvent_Equal(t *testing.T) {
+	ms1 := NewSpanEvent()
+	ms2 := NewSpanEvent()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSpanEvent()
+	ms2 = generateTestSpanEvent()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSpanEvent()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSpanEvent_Timestamp(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())

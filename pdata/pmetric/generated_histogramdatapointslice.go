@@ -163,6 +163,19 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another HistogramDataPointSlice
+func (es HistogramDataPointSlice) Equal(val HistogramDataPointSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
 // provided less function so that two instances of HistogramDataPointSlice
 // can be compared.

@@ -89,3 +89,10 @@ func (ms ValueType) CopyTo(dest ValueType) {
 	dest.SetUnitStrindex(ms.UnitStrindex())
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 }
+
+// Equal checks equality with another ValueType
+func (ms ValueType) Equal(val ValueType) bool {
+	return ms.TypeStrindex() == val.TypeStrindex() &&
+		ms.UnitStrindex() == val.UnitStrindex() &&
+		ms.AggregationTemporality() == val.AggregationTemporality()
+}

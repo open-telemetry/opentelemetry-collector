@@ -40,6 +40,19 @@ func TestResource_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResource(&otlpresource.Resource{}, &sharedState)) })
 }
 
+func TestResource_Equal(t *testing.T) {
+	ms1 := NewResource()
+	ms2 := NewResource()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestResource()
+	ms2 = generateTestResource()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewResource()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, NewMap(), ms.Attributes())

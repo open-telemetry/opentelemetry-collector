@@ -163,6 +163,19 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another ResourceMetricsSlice
+func (es ResourceMetricsSlice) Equal(val ResourceMetricsSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ResourceMetrics elements within ResourceMetricsSlice given the
 // provided less function so that two instances of ResourceMetricsSlice
 // can be compared.

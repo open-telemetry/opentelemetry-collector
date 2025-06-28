@@ -175,3 +175,18 @@ func (ms LogRecord) CopyTo(dest LogRecord) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
+
+// Equal checks equality with another LogRecord
+func (ms LogRecord) Equal(val LogRecord) bool {
+	return ms.ObservedTimestamp() == val.ObservedTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID() &&
+		ms.Flags() == val.Flags() &&
+		ms.EventName() == val.EventName() &&
+		ms.SeverityText() == val.SeverityText() &&
+		ms.SeverityNumber() == val.SeverityNumber() &&
+		ms.Body().Equal(val.Body()) &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

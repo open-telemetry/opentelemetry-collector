@@ -163,6 +163,19 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another MappingSlice
+func (es MappingSlice) Equal(val MappingSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Mapping elements within MappingSlice given the
 // provided less function so that two instances of MappingSlice
 // can be compared.

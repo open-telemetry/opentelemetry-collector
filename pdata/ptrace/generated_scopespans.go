@@ -78,3 +78,10 @@ func (ms ScopeSpans) CopyTo(dest ScopeSpans) {
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Spans().CopyTo(dest.Spans())
 }
+
+// Equal checks equality with another ScopeSpans
+func (ms ScopeSpans) Equal(val ScopeSpans) bool {
+	return ms.Scope().Equal(val.Scope()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.Spans().Equal(val.Spans())
+}

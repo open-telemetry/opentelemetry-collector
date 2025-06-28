@@ -59,3 +59,8 @@ func (ms Gauge) CopyTo(dest Gauge) {
 	dest.state.AssertMutable()
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
+
+// Equal checks equality with another Gauge
+func (ms Gauge) Equal(val Gauge) bool {
+	return ms.DataPoints().Equal(val.DataPoints())
+}

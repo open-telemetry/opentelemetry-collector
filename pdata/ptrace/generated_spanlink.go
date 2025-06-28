@@ -117,3 +117,13 @@ func (ms SpanLink) CopyTo(dest SpanLink) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
+
+// Equal checks equality with another SpanLink
+func (ms SpanLink) Equal(val SpanLink) bool {
+	return ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID() &&
+		ms.TraceState().Equal(val.TraceState()) &&
+		ms.Flags() == val.Flags() &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

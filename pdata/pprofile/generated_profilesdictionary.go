@@ -96,3 +96,14 @@ func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	ms.AttributeTable().CopyTo(dest.AttributeTable())
 	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
 }
+
+// Equal checks equality with another ProfilesDictionary
+func (ms ProfilesDictionary) Equal(val ProfilesDictionary) bool {
+	return ms.MappingTable().Equal(val.MappingTable()) &&
+		ms.LocationTable().Equal(val.LocationTable()) &&
+		ms.FunctionTable().Equal(val.FunctionTable()) &&
+		ms.LinkTable().Equal(val.LinkTable()) &&
+		ms.StringTable().Equal(val.StringTable()) &&
+		ms.AttributeTable().Equal(val.AttributeTable()) &&
+		ms.AttributeUnits().Equal(val.AttributeUnits())
+}

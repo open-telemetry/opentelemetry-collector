@@ -89,3 +89,10 @@ func (ms Line) CopyTo(dest Line) {
 	dest.SetLine(ms.Line())
 	dest.SetColumn(ms.Column())
 }
+
+// Equal checks equality with another Line
+func (ms Line) Equal(val Line) bool {
+	return ms.FunctionIndex() == val.FunctionIndex() &&
+		ms.Line() == val.Line() &&
+		ms.Column() == val.Column()
+}

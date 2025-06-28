@@ -110,10 +110,20 @@ func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
 	if ms.HasMappingIndex() {
 		dest.SetMappingIndex(ms.MappingIndex())
+	} else {
+		dest.RemoveMappingIndex()
 	}
-
 	dest.SetAddress(ms.Address())
 	ms.Line().CopyTo(dest.Line())
 	dest.SetIsFolded(ms.IsFolded())
 	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
+}
+
+// Equal checks equality with another Location
+func (ms Location) Equal(val Location) bool {
+	return ms.HasMappingIndex() == val.HasMappingIndex() && (!ms.HasMappingIndex() || ms.MappingIndex() == val.MappingIndex()) &&
+		ms.Address() == val.Address() &&
+		ms.Line().Equal(val.Line()) &&
+		ms.IsFolded() == val.IsFolded() &&
+		ms.AttributeIndices().Equal(val.AttributeIndices())
 }

@@ -146,6 +146,22 @@ func Test{{ .structName }}All(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func Test{{ .structName }}_Equal(t *testing.T) {
+	es1 := New{{ .structName }}()
+	es2 := New{{ .structName }}()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTest{{ .structName }}()
+	es2 = generateTest{{ .structName }}()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = New{{ .structName }}()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 {{ if eq .type "sliceOfPtrs" -}}
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()

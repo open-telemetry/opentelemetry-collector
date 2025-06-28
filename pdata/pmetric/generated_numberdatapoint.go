@@ -143,7 +143,16 @@ func (ms NumberDataPoint) CopyTo(dest NumberDataPoint) {
 	case NumberDataPointValueTypeInt:
 		dest.SetIntValue(ms.IntValue())
 	}
-
 	ms.Exemplars().CopyTo(dest.Exemplars())
 	dest.SetFlags(ms.Flags())
+}
+
+// Equal checks equality with another NumberDataPoint
+func (ms NumberDataPoint) Equal(val NumberDataPoint) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.ValueType() == val.ValueType() &&
+		ms.Exemplars().Equal(val.Exemplars()) &&
+		ms.Flags() == val.Flags()
 }

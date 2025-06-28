@@ -163,6 +163,19 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another LocationSlice
+func (es LocationSlice) Equal(val LocationSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Location elements within LocationSlice given the
 // provided less function so that two instances of LocationSlice
 // can be compared.

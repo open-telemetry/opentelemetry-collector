@@ -83,3 +83,10 @@ func (ms Sum) CopyTo(dest Sum) {
 	dest.SetIsMonotonic(ms.IsMonotonic())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
+
+// Equal checks equality with another Sum
+func (ms Sum) Equal(val Sum) bool {
+	return ms.AggregationTemporality() == val.AggregationTemporality() &&
+		ms.IsMonotonic() == val.IsMonotonic() &&
+		ms.DataPoints().Equal(val.DataPoints())
+}

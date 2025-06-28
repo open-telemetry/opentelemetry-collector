@@ -97,3 +97,11 @@ func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
+
+// Equal checks equality with another SpanEvent
+func (ms SpanEvent) Equal(val SpanEvent) bool {
+	return ms.Timestamp() == val.Timestamp() &&
+		ms.Name() == val.Name() &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

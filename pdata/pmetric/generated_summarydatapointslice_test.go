@@ -142,6 +142,22 @@ func TestSummaryDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestSummaryDataPointSlice_Equal(t *testing.T) {
+	es1 := NewSummaryDataPointSlice()
+	es2 := NewSummaryDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestSummaryDataPointSlice()
+	es2 = generateTestSummaryDataPointSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewSummaryDataPointSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestSummaryDataPointSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointSlice()
 	es.Sort(func(a, b SummaryDataPoint) bool {

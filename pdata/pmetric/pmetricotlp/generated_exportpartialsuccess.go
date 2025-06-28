@@ -77,3 +77,9 @@ func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.SetRejectedDataPoints(ms.RejectedDataPoints())
 	dest.SetErrorMessage(ms.ErrorMessage())
 }
+
+// Equal checks equality with another ExportPartialSuccess
+func (ms ExportPartialSuccess) Equal(val ExportPartialSuccess) bool {
+	return ms.RejectedDataPoints() == val.RejectedDataPoints() &&
+		ms.ErrorMessage() == val.ErrorMessage()
+}

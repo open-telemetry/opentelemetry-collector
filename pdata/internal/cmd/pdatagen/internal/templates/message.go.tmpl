@@ -79,3 +79,15 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	{{ .GenerateCopyToValue $.messageStruct }}
 	{{- end }}
 }
+
+// Equal checks equality with another {{ .structName }}
+func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
+	{{- if eq (len .fields) 0 }}
+	return true
+	{{- else }}
+	return {{ range $index, $field := .fields -}}
+		{{- if $index }} &&
+		{{ end }}{{ $field.GenerateEqualComparison $.messageStruct }}
+	{{- end }}
+	{{- end }}
+}

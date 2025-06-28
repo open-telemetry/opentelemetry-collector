@@ -42,6 +42,19 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
 }
 
+func TestSpanLink_Equal(t *testing.T) {
+	ms1 := NewSpanLink()
+	ms2 := NewSpanLink()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSpanLink()
+	ms2 = generateTestSpanLink()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSpanLink()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())

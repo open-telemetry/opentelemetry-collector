@@ -41,6 +41,19 @@ func TestScopeLogs_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState)) })
 }
 
+func TestScopeLogs_Equal(t *testing.T) {
+	ms1 := NewScopeLogs()
+	ms2 := NewScopeLogs()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestScopeLogs()
+	ms2 = generateTestScopeLogs()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewScopeLogs()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

@@ -77,3 +77,9 @@ func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.SetAttributeKeyStrindex(ms.AttributeKeyStrindex())
 	dest.SetUnitStrindex(ms.UnitStrindex())
 }
+
+// Equal checks equality with another AttributeUnit
+func (ms AttributeUnit) Equal(val AttributeUnit) bool {
+	return ms.AttributeKeyStrindex() == val.AttributeKeyStrindex() &&
+		ms.UnitStrindex() == val.UnitStrindex()
+}

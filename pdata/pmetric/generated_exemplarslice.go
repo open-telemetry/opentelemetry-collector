@@ -155,3 +155,16 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 		newExemplar(&(*es.orig)[i], es.state).CopyTo(newExemplar(&(*dest.orig)[i], dest.state))
 	}
 }
+
+// Equal checks equality with another ExemplarSlice
+func (es ExemplarSlice) Equal(val ExemplarSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}

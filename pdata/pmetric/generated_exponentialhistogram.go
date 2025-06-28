@@ -72,3 +72,9 @@ func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
+
+// Equal checks equality with another ExponentialHistogram
+func (ms ExponentialHistogram) Equal(val ExponentialHistogram) bool {
+	return ms.AggregationTemporality() == val.AggregationTemporality() &&
+		ms.DataPoints().Equal(val.DataPoints())
+}

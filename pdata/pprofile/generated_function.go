@@ -101,3 +101,11 @@ func (ms Function) CopyTo(dest Function) {
 	dest.SetFilenameStrindex(ms.FilenameStrindex())
 	dest.SetStartLine(ms.StartLine())
 }
+
+// Equal checks equality with another Function
+func (ms Function) Equal(val Function) bool {
+	return ms.NameStrindex() == val.NameStrindex() &&
+		ms.SystemNameStrindex() == val.SystemNameStrindex() &&
+		ms.FilenameStrindex() == val.FilenameStrindex() &&
+		ms.StartLine() == val.StartLine()
+}

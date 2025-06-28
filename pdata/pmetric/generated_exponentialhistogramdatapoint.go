@@ -234,15 +234,36 @@ func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoin
 	dest.SetFlags(ms.Flags())
 	if ms.HasSum() {
 		dest.SetSum(ms.Sum())
+	} else {
+		dest.RemoveSum()
 	}
-
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
+	} else {
+		dest.RemoveMin()
 	}
-
 	if ms.HasMax() {
 		dest.SetMax(ms.Max())
+	} else {
+		dest.RemoveMax()
 	}
-
 	dest.SetZeroThreshold(ms.ZeroThreshold())
+}
+
+// Equal checks equality with another ExponentialHistogramDataPoint
+func (ms ExponentialHistogramDataPoint) Equal(val ExponentialHistogramDataPoint) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.Count() == val.Count() &&
+		ms.Scale() == val.Scale() &&
+		ms.ZeroCount() == val.ZeroCount() &&
+		ms.Positive().Equal(val.Positive()) &&
+		ms.Negative().Equal(val.Negative()) &&
+		ms.Exemplars().Equal(val.Exemplars()) &&
+		ms.Flags() == val.Flags() &&
+		ms.HasSum() == val.HasSum() && (!ms.HasSum() || ms.Sum() == val.Sum()) &&
+		ms.HasMin() == val.HasMin() && (!ms.HasMin() || ms.Min() == val.Min()) &&
+		ms.HasMax() == val.HasMax() && (!ms.HasMax() || ms.Max() == val.Max()) &&
+		ms.ZeroThreshold() == val.ZeroThreshold()
 }

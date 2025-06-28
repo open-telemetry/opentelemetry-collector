@@ -140,8 +140,16 @@ func (ms Exemplar) CopyTo(dest Exemplar) {
 	case ExemplarValueTypeInt:
 		dest.SetIntValue(ms.IntValue())
 	}
-
 	ms.FilteredAttributes().CopyTo(dest.FilteredAttributes())
 	dest.SetTraceID(ms.TraceID())
 	dest.SetSpanID(ms.SpanID())
+}
+
+// Equal checks equality with another Exemplar
+func (ms Exemplar) Equal(val Exemplar) bool {
+	return ms.Timestamp() == val.Timestamp() &&
+		ms.ValueType() == val.ValueType() &&
+		ms.FilteredAttributes().Equal(val.FilteredAttributes()) &&
+		ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID()
 }

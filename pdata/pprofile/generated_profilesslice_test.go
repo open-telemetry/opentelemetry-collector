@@ -142,6 +142,22 @@ func TestProfilesSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestProfilesSlice_Equal(t *testing.T) {
+	es1 := NewProfilesSlice()
+	es2 := NewProfilesSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestProfilesSlice()
+	es2 = generateTestProfilesSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewProfilesSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestProfilesSlice_Sort(t *testing.T) {
 	es := generateTestProfilesSlice()
 	es.Sort(func(a, b Profile) bool {

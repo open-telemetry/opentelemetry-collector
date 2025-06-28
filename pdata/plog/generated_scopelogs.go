@@ -78,3 +78,10 @@ func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.LogRecords().CopyTo(dest.LogRecords())
 }
+
+// Equal checks equality with another ScopeLogs
+func (ms ScopeLogs) Equal(val ScopeLogs) bool {
+	return ms.Scope().Equal(val.Scope()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.LogRecords().Equal(val.LogRecords())
+}

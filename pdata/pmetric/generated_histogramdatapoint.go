@@ -196,14 +196,32 @@ func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.SetFlags(ms.Flags())
 	if ms.HasSum() {
 		dest.SetSum(ms.Sum())
+	} else {
+		dest.RemoveSum()
 	}
-
 	if ms.HasMin() {
 		dest.SetMin(ms.Min())
+	} else {
+		dest.RemoveMin()
 	}
-
 	if ms.HasMax() {
 		dest.SetMax(ms.Max())
+	} else {
+		dest.RemoveMax()
 	}
+}
 
+// Equal checks equality with another HistogramDataPoint
+func (ms HistogramDataPoint) Equal(val HistogramDataPoint) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.Timestamp() == val.Timestamp() &&
+		ms.Count() == val.Count() &&
+		ms.BucketCounts().Equal(val.BucketCounts()) &&
+		ms.ExplicitBounds().Equal(val.ExplicitBounds()) &&
+		ms.Exemplars().Equal(val.Exemplars()) &&
+		ms.Flags() == val.Flags() &&
+		ms.HasSum() == val.HasSum() && (!ms.HasSum() || ms.Sum() == val.Sum()) &&
+		ms.HasMin() == val.HasMin() && (!ms.HasMin() || ms.Min() == val.Min()) &&
+		ms.HasMax() == val.HasMax() && (!ms.HasMax() || ms.Max() == val.Max())
 }

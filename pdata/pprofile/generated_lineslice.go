@@ -163,6 +163,19 @@ func (es LineSlice) CopyTo(dest LineSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another LineSlice
+func (es LineSlice) Equal(val LineSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Line elements within LineSlice given the
 // provided less function so that two instances of LineSlice
 // can be compared.

@@ -142,6 +142,22 @@ func TestSpanSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestSpanSlice_Equal(t *testing.T) {
+	es1 := NewSpanSlice()
+	es2 := NewSpanSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestSpanSlice()
+	es2 = generateTestSpanSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewSpanSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestSpanSlice_Sort(t *testing.T) {
 	es := generateTestSpanSlice()
 	es.Sort(func(a, b Span) bool {

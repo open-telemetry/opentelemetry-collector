@@ -163,6 +163,19 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another LinkSlice
+func (es LinkSlice) Equal(val LinkSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Link elements within LinkSlice given the
 // provided less function so that two instances of LinkSlice
 // can be compared.

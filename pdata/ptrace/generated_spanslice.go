@@ -163,6 +163,19 @@ func (es SpanSlice) CopyTo(dest SpanSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another SpanSlice
+func (es SpanSlice) Equal(val SpanSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Span elements within SpanSlice given the
 // provided less function so that two instances of SpanSlice
 // can be compared.

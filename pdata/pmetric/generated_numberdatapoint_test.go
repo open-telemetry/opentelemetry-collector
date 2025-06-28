@@ -41,6 +41,19 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
 }
 
+func TestNumberDataPoint_Equal(t *testing.T) {
+	ms1 := NewNumberDataPoint()
+	ms2 := NewNumberDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestNumberDataPoint()
+	ms2 = generateTestNumberDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewNumberDataPoint()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())

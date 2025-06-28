@@ -78,3 +78,10 @@ func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Profiles().CopyTo(dest.Profiles())
 }
+
+// Equal checks equality with another ScopeProfiles
+func (ms ScopeProfiles) Equal(val ScopeProfiles) bool {
+	return ms.Scope().Equal(val.Scope()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.Profiles().Equal(val.Profiles())
+}

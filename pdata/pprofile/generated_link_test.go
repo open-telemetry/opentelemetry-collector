@@ -42,6 +42,19 @@ func TestLink_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
 }
 
+func TestLink_Equal(t *testing.T) {
+	ms1 := NewLink()
+	ms2 := NewLink()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestLink()
+	ms2 = generateTestLink()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewLink()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestLink_TraceID(t *testing.T) {
 	ms := NewLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())

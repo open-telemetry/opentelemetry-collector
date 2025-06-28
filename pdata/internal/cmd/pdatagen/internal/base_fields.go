@@ -287,6 +287,8 @@ type baseField interface {
 	GenerateSetWithTestValue(ms *messageValueStruct) string
 
 	GenerateCopyToValue(ms *messageValueStruct) string
+
+	GenerateEqualComparison(ms *messageValueStruct) string
 }
 
 type sliceField struct {
@@ -324,6 +326,10 @@ func (sf *sliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 
 func (sf *sliceField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + sf.fieldName + "().CopyTo(dest." + sf.fieldName + "())"
+}
+
+func (sf *sliceField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "())"
 }
 
 func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -388,6 +394,10 @@ func (mf *messageValueField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + mf.fieldName + "().CopyTo(dest." + mf.fieldName + "())"
 }
 
+func (mf *messageValueField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "())"
+}
+
 func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
@@ -445,6 +455,10 @@ func (pf *primitiveField) GenerateSetWithTestValue(*messageValueStruct) string {
 
 func (pf *primitiveField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tdest.Set" + pf.fieldName + "(ms." + pf.fieldName + "())"
+}
+
+func (pf *primitiveField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + pf.fieldName + "() == val." + pf.fieldName + "()"
 }
 
 func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any {
@@ -515,6 +529,10 @@ func (ptf *primitiveTypedField) GenerateCopyToValue(*messageValueStruct) string 
 	return "\tdest.Set" + ptf.fieldName + "(ms." + ptf.fieldName + "())"
 }
 
+func (ptf *primitiveTypedField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()"
+}
+
 func (ptf *primitiveTypedField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"structName": ms.getName(),
@@ -575,6 +593,10 @@ func (psf *primitiveSliceField) GenerateSetWithTestValue(*messageValueStruct) st
 
 func (psf *primitiveSliceField) GenerateCopyToValue(*messageValueStruct) string {
 	return "\tms." + psf.fieldName + "().CopyTo(dest." + psf.fieldName + "())"
+}
+
+func (psf *primitiveSliceField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "())"
 }
 
 func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -642,8 +664,12 @@ func (of *oneOfField) GenerateCopyToValue(ms *messageValueStruct) string {
 	for _, v := range of.values {
 		v.GenerateCopyToValue(ms, of, sb)
 	}
-	sb.WriteString("\t}\n")
+	sb.WriteString("\t}")
 	return sb.String()
+}
+
+func (of *oneOfField) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()"
 }
 
 func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
@@ -833,9 +859,11 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 }
 
 func (opv *optionalPrimitiveValue) GenerateCopyToValue(*messageValueStruct) string {
-	return "if ms.Has" + opv.fieldName + "(){\n" +
-		"\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n" +
-		"}\n"
+	return "\tif ms.Has" + opv.fieldName + "() {\n\t\tdest.Set" + opv.fieldName + "(ms." + opv.fieldName + "())\n\t} else {\n\t\tdest.Remove" + opv.fieldName + "()\n\t}"
+}
+
+func (opv *optionalPrimitiveValue) GenerateEqualComparison(*messageValueStruct) string {
+	return "ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || ms." + opv.fieldName + "() == val." + opv.fieldName + "())"
 }
 
 func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[string]any {

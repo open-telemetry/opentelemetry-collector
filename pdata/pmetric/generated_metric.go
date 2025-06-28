@@ -256,5 +256,13 @@ func (ms Metric) CopyTo(dest Metric) {
 	case MetricTypeSummary:
 		ms.Summary().CopyTo(dest.SetEmptySummary())
 	}
+}
 
+// Equal checks equality with another Metric
+func (ms Metric) Equal(val Metric) bool {
+	return ms.Name() == val.Name() &&
+		ms.Description() == val.Description() &&
+		ms.Unit() == val.Unit() &&
+		ms.Metadata().Equal(val.Metadata()) &&
+		ms.Type() == val.Type()
 }

@@ -142,6 +142,22 @@ func TestMappingSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestMappingSlice_Equal(t *testing.T) {
+	es1 := NewMappingSlice()
+	es2 := NewMappingSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestMappingSlice()
+	es2 = generateTestMappingSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewMappingSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestMappingSlice_Sort(t *testing.T) {
 	es := generateTestMappingSlice()
 	es.Sort(func(a, b Mapping) bool {

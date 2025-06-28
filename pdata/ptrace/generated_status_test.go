@@ -40,6 +40,19 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
 }
 
+func TestStatus_Equal(t *testing.T) {
+	ms1 := NewStatus()
+	ms2 := NewStatus()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestStatus()
+	ms2 = generateTestStatus()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewStatus()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestStatus_Code(t *testing.T) {
 	ms := NewStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())

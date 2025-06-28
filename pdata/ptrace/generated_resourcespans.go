@@ -78,3 +78,10 @@ func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.ScopeSpans().CopyTo(dest.ScopeSpans())
 }
+
+// Equal checks equality with another ResourceSpans
+func (ms ResourceSpans) Equal(val ResourceSpans) bool {
+	return ms.Resource().Equal(val.Resource()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.ScopeSpans().Equal(val.ScopeSpans())
+}

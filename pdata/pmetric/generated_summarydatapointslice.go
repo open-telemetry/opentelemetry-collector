@@ -163,6 +163,19 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another SummaryDataPointSlice
+func (es SummaryDataPointSlice) Equal(val SummaryDataPointSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the SummaryDataPoint elements within SummaryDataPointSlice given the
 // provided less function so that two instances of SummaryDataPointSlice
 // can be compared.

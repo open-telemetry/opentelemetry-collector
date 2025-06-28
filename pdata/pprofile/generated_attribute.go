@@ -72,3 +72,9 @@ func (ms Attribute) CopyTo(dest Attribute) {
 	dest.SetKey(ms.Key())
 	ms.Value().CopyTo(dest.Value())
 }
+
+// Equal checks equality with another Attribute
+func (ms Attribute) Equal(val Attribute) bool {
+	return ms.Key() == val.Key() &&
+		ms.Value().Equal(val.Value())
+}

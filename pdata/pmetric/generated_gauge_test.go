@@ -40,6 +40,19 @@ func TestGauge_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newGauge(&otlpmetrics.Gauge{}, &sharedState)) })
 }
 
+func TestGauge_Equal(t *testing.T) {
+	ms1 := NewGauge()
+	ms2 := NewGauge()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestGauge()
+	ms2 = generateTestGauge()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewGauge()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestGauge_DataPoints(t *testing.T) {
 	ms := NewGauge()
 	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())

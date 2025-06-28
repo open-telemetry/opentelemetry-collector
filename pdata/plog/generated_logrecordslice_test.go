@@ -142,6 +142,22 @@ func TestLogRecordSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestLogRecordSlice_Equal(t *testing.T) {
+	es1 := NewLogRecordSlice()
+	es2 := NewLogRecordSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestLogRecordSlice()
+	es2 = generateTestLogRecordSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewLogRecordSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestLogRecordSlice_Sort(t *testing.T) {
 	es := generateTestLogRecordSlice()
 	es.Sort(func(a, b LogRecord) bool {

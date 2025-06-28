@@ -41,6 +41,19 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
 }
 
+func TestScopeSpans_Equal(t *testing.T) {
+	ms1 := NewScopeSpans()
+	ms2 := NewScopeSpans()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestScopeSpans()
+	ms2 = generateTestScopeSpans()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewScopeSpans()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

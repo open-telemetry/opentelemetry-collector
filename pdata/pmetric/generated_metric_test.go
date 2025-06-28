@@ -41,6 +41,19 @@ func TestMetric_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
 }
 
+func TestMetric_Equal(t *testing.T) {
+	ms1 := NewMetric()
+	ms2 := NewMetric()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestMetric()
+	ms2 = generateTestMetric()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewMetric()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Name())

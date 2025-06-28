@@ -163,6 +163,19 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another ResourceProfilesSlice
+func (es ResourceProfilesSlice) Equal(val ResourceProfilesSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ResourceProfiles elements within ResourceProfilesSlice given the
 // provided less function so that two instances of ResourceProfilesSlice
 // can be compared.

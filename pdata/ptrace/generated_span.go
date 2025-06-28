@@ -218,3 +218,23 @@ func (ms Span) CopyTo(dest Span) {
 	dest.SetDroppedLinksCount(ms.DroppedLinksCount())
 	ms.Status().CopyTo(dest.Status())
 }
+
+// Equal checks equality with another Span
+func (ms Span) Equal(val Span) bool {
+	return ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID() &&
+		ms.TraceState().Equal(val.TraceState()) &&
+		ms.ParentSpanID() == val.ParentSpanID() &&
+		ms.Name() == val.Name() &&
+		ms.Flags() == val.Flags() &&
+		ms.Kind() == val.Kind() &&
+		ms.StartTimestamp() == val.StartTimestamp() &&
+		ms.EndTimestamp() == val.EndTimestamp() &&
+		ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount() &&
+		ms.Events().Equal(val.Events()) &&
+		ms.DroppedEventsCount() == val.DroppedEventsCount() &&
+		ms.Links().Equal(val.Links()) &&
+		ms.DroppedLinksCount() == val.DroppedLinksCount() &&
+		ms.Status().Equal(val.Status())
+}

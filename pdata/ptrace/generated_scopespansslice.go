@@ -163,6 +163,19 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	*dest.orig = wrappers
 }
 
+// Equal checks equality with another ScopeSpansSlice
+func (es ScopeSpansSlice) Equal(val ScopeSpansSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ScopeSpans elements within ScopeSpansSlice given the
 // provided less function so that two instances of ScopeSpansSlice
 // can be compared.

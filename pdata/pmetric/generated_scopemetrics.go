@@ -78,3 +78,10 @@ func (ms ScopeMetrics) CopyTo(dest ScopeMetrics) {
 	dest.SetSchemaUrl(ms.SchemaUrl())
 	ms.Metrics().CopyTo(dest.Metrics())
 }
+
+// Equal checks equality with another ScopeMetrics
+func (ms ScopeMetrics) Equal(val ScopeMetrics) bool {
+	return ms.Scope().Equal(val.Scope()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.Metrics().Equal(val.Metrics())
+}

@@ -142,6 +142,22 @@ func TestResourceMetricsSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestResourceMetricsSlice_Equal(t *testing.T) {
+	es1 := NewResourceMetricsSlice()
+	es2 := NewResourceMetricsSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestResourceMetricsSlice()
+	es2 = generateTestResourceMetricsSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewResourceMetricsSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+}
+
 func TestResourceMetricsSlice_Sort(t *testing.T) {
 	es := generateTestResourceMetricsSlice()
 	es.Sort(func(a, b ResourceMetrics) bool {

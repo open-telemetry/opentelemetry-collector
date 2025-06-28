@@ -76,3 +76,9 @@ func (ms Resource) CopyTo(dest Resource) {
 	ms.Attributes().CopyTo(dest.Attributes())
 	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
 }
+
+// Equal checks equality with another Resource
+func (ms Resource) Equal(val Resource) bool {
+	return ms.Attributes().Equal(val.Attributes()) &&
+		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+}

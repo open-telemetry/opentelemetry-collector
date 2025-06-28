@@ -40,6 +40,19 @@ func TestAttributeUnit_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState)) })
 }
 
+func TestAttributeUnit_Equal(t *testing.T) {
+	ms1 := NewAttributeUnit()
+	ms2 := NewAttributeUnit()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestAttributeUnit()
+	ms2 = generateTestAttributeUnit()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewAttributeUnit()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestAttributeUnit_AttributeKeyStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
 	assert.Equal(t, int32(0), ms.AttributeKeyStrindex())

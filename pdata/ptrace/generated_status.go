@@ -78,3 +78,9 @@ func (ms Status) CopyTo(dest Status) {
 	dest.SetCode(ms.Code())
 	dest.SetMessage(ms.Message())
 }
+
+// Equal checks equality with another Status
+func (ms Status) Equal(val Status) bool {
+	return ms.Code() == val.Code() &&
+		ms.Message() == val.Message()
+}

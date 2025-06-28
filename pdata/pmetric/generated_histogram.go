@@ -71,3 +71,9 @@ func (ms Histogram) CopyTo(dest Histogram) {
 	dest.SetAggregationTemporality(ms.AggregationTemporality())
 	ms.DataPoints().CopyTo(dest.DataPoints())
 }
+
+// Equal checks equality with another Histogram
+func (ms Histogram) Equal(val Histogram) bool {
+	return ms.AggregationTemporality() == val.AggregationTemporality() &&
+		ms.DataPoints().Equal(val.DataPoints())
+}

@@ -41,6 +41,19 @@ func TestAttribute_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
 }
 
+func TestAttribute_Equal(t *testing.T) {
+	ms1 := NewAttribute()
+	ms2 := NewAttribute()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestAttribute()
+	ms2 = generateTestAttribute()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewAttribute()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())

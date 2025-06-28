@@ -40,6 +40,19 @@ func TestSummary_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
 }
 
+func TestSummary_Equal(t *testing.T) {
+	ms1 := NewSummary()
+	ms2 := NewSummary()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSummary()
+	ms2 = generateTestSummary()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSummary()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSummary_DataPoints(t *testing.T) {
 	ms := NewSummary()
 	assert.Equal(t, NewSummaryDataPointSlice(), ms.DataPoints())
