@@ -110,7 +110,9 @@ require (
 	go.opentelemetry.io/collector/config/configtls v1.34.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.128.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.34.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.128.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.128.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.61.0 // indirect
@@ -202,8 +204,6 @@ replace go.opentelemetry.io/collector/config/configcompression => ../config/conf
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../client
@@ -243,5 +243,9 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extens
 replace go.opentelemetry.io/collector/config/configmiddleware => ../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../extension/extensionlimiter
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata

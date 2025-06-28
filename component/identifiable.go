@@ -38,6 +38,11 @@ func (t Type) String() string {
 	return t.name
 }
 
+// Self returns itself.
+func (t Type) Self() Type {
+	return t
+}
+
 // MarshalText marshals returns the Type name.
 func (t Type) MarshalText() ([]byte, error) {
 	return []byte(t.name), nil
@@ -69,6 +74,16 @@ func MustNewType(strType string) Type {
 		panic(err)
 	}
 	return ty
+}
+
+// TypeFunc is ...
+type TypeFunc func() Type
+
+// Type gets the type of the component created by this factory.
+func (f TypeFunc) Type() Type {
+	if f == nil {
+	}
+	return f()
 }
 
 // ID represents the identity for a component. It combines two values:

@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.34.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.34.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.128.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.128.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.128.0
 	go.opentelemetry.io/collector/featuregate v1.34.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0
@@ -42,6 +42,7 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.34.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
@@ -72,6 +73,8 @@ replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
@@ -95,3 +98,15 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver

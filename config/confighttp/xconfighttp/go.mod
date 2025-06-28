@@ -23,7 +23,10 @@ require (
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -35,11 +38,17 @@ require (
 	go.opentelemetry.io/collector/config/configmiddleware v0.128.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.34.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.34.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.34.0 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension v1.34.0 // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.34.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.128.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionlimiter v0.0.0-00010101000000-000000000000 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.128.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.34.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.128.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
@@ -94,3 +103,17 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../../
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../../pdata/testdata
+
+replace go.opentelemetry.io/collector/receiver => ../../../receiver
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../../receiver/xreceiver
