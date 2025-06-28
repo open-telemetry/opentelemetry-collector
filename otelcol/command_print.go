@@ -84,8 +84,8 @@ func newPrintInitialConfigSubCommand(set CollectorSettings, flagSet *flag.FlagSe
 	return cmd
 }
 
-// newPrintValidatedConfigSubCommand constructs a new validated config print sub command using the given CollectorSettings.
-func newPrintValidatedConfigSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
+// newPrintTypedConfigSubCommand constructs a new validated config print sub command using the given CollectorSettings.
+func newPrintTypedConfigSubCommand(set CollectorSettings, flagSet *flag.FlagSet) *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
