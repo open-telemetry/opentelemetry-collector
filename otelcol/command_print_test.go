@@ -8,16 +8,50 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/confmap/provider/yamlprovider"
+	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
-func TestPrintCommand(t *testing.T) {
+// otlpFactories creates factories that include OTLP components for testing sensitive data
+func otlpFactories() (Factories, error) {
+	var factories Factories
+	var err error
+
+	if factories.Receivers, err = MakeFactoryMap(otlpreceiver.NewFactory()); err != nil {
+		return Factories{}, err
+	}
+
+	if factories.Exporters, err = MakeFactoryMap(otlpexporter.NewFactory()); err != nil {
+		return Factories{}, err
+	}
+
+	if factories.Processors, err = MakeFactoryMap(processortest.NewNopFactory()); err != nil {
+		return Factories{}, err
+	}
+
+	if factories.Extensions, err = MakeFactoryMap(extensiontest.NewNopFactory()); err != nil {
+		return Factories{}, err
+	}
+
+	if factories.Connectors, err = MakeFactoryMap(connectortest.NewNopFactory()); err != nil {
+		return Factories{}, err
+	}
+
+	return factories, nil
+}
+
+func TestPrintInitialConfigCommand(t *testing.T) {
 	tests := []struct {
 		name      string
 		set       confmap.ResolverSettings
@@ -79,7 +113,7 @@ func TestPrintCommand(t *testing.T) {
 			set := ConfigProviderSettings{
 				ResolverSettings: test.set,
 			}
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			err := cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
@@ -90,8 +124,8 @@ func TestPrintCommand(t *testing.T) {
 	}
 }
 
-func TestPrintCommandFeaturegateDisabled(t *testing.T) {
-	cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
+func TestPrintInitialConfigCommandFeaturegateDisabled(t *testing.T) {
+	cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
 			DefaultScheme: "foo",
@@ -104,7 +138,7 @@ func TestPrintCommandFeaturegateDisabled(t *testing.T) {
 	require.ErrorContains(t, err, "print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
 }
 
-func TestConfig(t *testing.T) {
+func TestPrintInitialConfig(t *testing.T) {
 	tests := []struct {
 		name        string
 		configs     []string
@@ -153,7 +187,7 @@ func TestConfig(t *testing.T) {
 			oldStdout := os.Stdout
 			os.Stdout = tmpFile
 
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
 			require.NoError(t, cmd.Execute())
 
 			// restore os.Stdout
@@ -174,4 +208,137 @@ func TestConfig(t *testing.T) {
 			require.Equal(t, expectedConfig, actualConfig)
 		})
 	}
+}
+
+func TestPrintValidatedConfigCommand(t *testing.T) {
+	// Test with minimal nop configuration
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"yaml:service:\n  pipelines:\n    traces:\n      receivers: [nop]\n      exporters: [nop]"},
+				ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
+				DefaultScheme:     "yaml",
+			},
+		},
+	}
+
+	cmd := newPrintValidatedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	require.NoError(t, cmd.Execute())
+}
+
+func TestPrintValidatedConfigCommandJSON(t *testing.T) {
+	// Test JSON format output with DefaultScheme override
+	factories, err := nopFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"yaml:service:\n  pipelines:\n    traces:\n      receivers: [nop]\n      exporters: [nop]"},
+				ProviderFactories: []confmap.ProviderFactory{yamlprovider.NewFactory()},
+				DefaultScheme:     "yaml", // YAML as default scheme
+			},
+		},
+	}
+
+	// Create command with JSON format flag
+	cmd := newPrintValidatedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	cmd.SetArgs([]string{"--format", "json"})
+	require.NoError(t, cmd.Execute())
+}
+
+func TestPrintConfigCommandWithSensitiveData(t *testing.T) {
+	// Test that print-config shows [REDACTED] for sensitive data
+	factories, err := otlpFactories()
+	require.NoError(t, err)
+
+	set := CollectorSettings{
+		Factories: func() (Factories, error) { return factories, nil },
+		ConfigProviderSettings: ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:              []string{"file:testdata/config_with_sensitive_data.yaml"},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+				DefaultScheme:     "file",
+			},
+		},
+	}
+
+	// Capture output
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := newPrintValidatedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	err = cmd.Execute()
+
+	// Restore stdout and get output
+	w.Close()
+	os.Stdout = oldStdout
+	buf.ReadFrom(r)
+	output := buf.String()
+
+	// Should succeed with OTLP factories and show [REDACTED] for sensitive data
+	require.NoError(t, err, "Command should execute successfully with OTLP factories")
+	
+	// Verify that sensitive data is redacted
+	assert.Contains(t, output, "[REDACTED]")
+	assert.NotContains(t, output, "Bearer secret-token")
+	assert.NotContains(t, output, "super-secret-key")
+
+	// Verify basic structure is still there
+	assert.Contains(t, output, "receivers:")
+	assert.Contains(t, output, "exporters:")
+	assert.Contains(t, output, "service:")
+}
+
+func TestPrintInitialConfigWithSensitiveData(t *testing.T) {
+	// Test that print-initial-config shows the raw configuration values (not redacted)
+	require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(printCommandFeatureFlag.ID(), false))
+	}()
+
+	set := ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs:              []string{"file:testdata/config_with_sensitive_data.yaml"},
+			ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+			DefaultScheme:     "file",
+		},
+	}
+
+	// Capture output
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+	err := cmd.Execute()
+
+	// Restore stdout and get output
+	w.Close()
+	os.Stdout = oldStdout
+	buf.ReadFrom(r)
+	output := buf.String()
+
+	// Initial config should succeed since it doesn't validate against factories
+	require.NoError(t, err, "Command should execute successfully")
+	
+	// Verify output contains the raw sensitive data, not [REDACTED]
+	assert.Contains(t, output, "Bearer secret-token")
+	assert.Contains(t, output, "super-secret-key")
+	assert.NotContains(t, output, "[REDACTED]")
+
+	// Verify basic structure is there
+	assert.Contains(t, output, "receivers:")
+	assert.Contains(t, output, "exporters:")
+	assert.Contains(t, output, "service:")
+
+	// Note: print-initial-config shows raw values from the config file
 }
