@@ -194,6 +194,23 @@ func (c Config) Validate() error {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
+	// Ensure certificate is not set using both file and PEM
+	if c.hasCertFile() && c.hasCertPem() {
+		return errors.New("provide either certificate file or PEM, but not both")
+	}
+
+	// Ensure key is not set using both file and PEM
+	if c.hasKeyFile() && c.hasKeyPem() {
+		return errors.New("provide either key file or PEM, but not both")
+	}
+
+	// Require both certificate and key if either is provided
+	certProvided := c.hasCert()
+	keyProvided := c.hasKey()
+	if certProvided != keyProvided {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -206,6 +223,29 @@ func (c Config) Validate() error {
 
 	if maxTLS < minTLS && maxTLS != defaultMaxTLSVersion {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
+	}
+
+	return nil
+}
+
+func (c ClientConfig) Validate() error {
+	return c.Config.Validate()
+}
+
+func (c ServerConfig) Validate() error {
+	if err := c.Config.Validate(); err != nil {
+		return err
+	}
+
+	// Require cert+key if TLS settings are present or any cert fields are set.
+	// Allow empty config to support cases where TLS is disabled or set up later.
+	hasTLSSettings := c.MinVersion != "" || c.MaxVersion != "" || len(c.CipherSuites) > 0 ||
+		c.ReloadInterval != 0 || len(c.CurvePreferences) > 0 || c.hasCA() || c.ClientCAFile != ""
+
+	hasCertSettings := c.hasCertFile() || c.hasCertPem() || c.hasKeyFile() || c.hasKeyPem()
+
+	if (hasTLSSettings || hasCertSettings) && !c.hasCert() {
+		return errors.New("server TLS configuration requires a certificate and key")
 	}
 
 	return nil
