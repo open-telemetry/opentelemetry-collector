@@ -194,23 +194,21 @@ func (c Config) Validate() error {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
-	// Prevent mixing file and PEM configurations first
-	if (c.hasCertFile() || c.hasKeyFile()) && (c.hasCertPem() || c.hasKeyPem()) {
-		return errors.New("provide either certificate files or PEM strings, but not both")
+	// Ensure certificate is not set using both file and PEM
+	if c.hasCertFile() && c.hasCertPem() {
+		return errors.New("provide either certificate file or PEM, but not both")
 	}
 
-	// Validate certificate configuration pairs
-	if c.hasCertFile() && !c.hasKeyFile() {
-		return errors.New("provide both certificate and key files for TLS configuration")
+	// Ensure key is not set using both file and PEM
+	if c.hasKeyFile() && c.hasKeyPem() {
+		return errors.New("provide either key file or PEM, but not both")
 	}
-	if c.hasKeyFile() && !c.hasCertFile() {
-		return errors.New("provide both certificate and key files for TLS configuration")
-	}
-	if c.hasCertPem() && !c.hasKeyPem() {
-		return errors.New("provide both certificate and key PEM for TLS configuration")
-	}
-	if c.hasKeyPem() && !c.hasCertPem() {
-		return errors.New("provide both certificate and key PEM for TLS configuration")
+
+	// Require both certificate and key if either is provided
+	certProvided := c.hasCert()
+	keyProvided := c.hasKey()
+	if certProvided != keyProvided {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
 	}
 
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
