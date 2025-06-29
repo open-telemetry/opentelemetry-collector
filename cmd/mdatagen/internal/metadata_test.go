@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/invalid_stability.yaml",
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'status.stability': unsupported stability level: \"incorrectstability\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'status.stability' unsupported stability level: \"incorrectstability\"",
 		},
 		{
 			name:    "testdata/no_stability_component.yaml",

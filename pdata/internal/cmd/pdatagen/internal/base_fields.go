@@ -4,7 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
-	"bytes"
 	"strings"
 	"text/template"
 )
@@ -44,6 +43,13 @@ const setTestValueTemplate = `{{ if .isCommon -}}
 	{{-	end -}}
 	{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))`
 
+const copyOrigSliceTemplate = `dest.{{ .originFieldName }} = 
+{{- if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
+{{- .returnType }}(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
+
+const copyOrigMessageTemplate = `{{ if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
+{{- .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})`
+
 const accessorsMessageValueTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .isCommon }}
@@ -75,6 +81,10 @@ func (ms {{ .structName }}) Set{{ .fieldName }}(v {{ .returnType }}) {
 	ms.{{ .origAccessor }}.{{ .originFieldName }} = v
 }`
 
+const setPrimitiveTestValueTemplate = `tv.orig.{{ .originFieldName }} = {{ .testValue }}`
+
+const copyOrigPrimitiveTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
+
 const accessorsPrimitiveSliceTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldName }}, ms.state))
@@ -102,7 +112,14 @@ const oneOfTypeAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncNa
 
 {{ range .values -}}
 {{ .GenerateTests $.baseStruct $.oneOfField }}
-{{ end }}`
+{{ end }}
+`
+
+const oneOfTypeCopyOrigTestTemplate = `switch t := src.{{ .originFieldName }}.(type) {
+{{- range .values }}
+{{ .GenerateCopyOrig $.baseStruct $.oneOfField }}
+{{- end }}
+}`
 
 const accessorsOneOfMessageTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 //
@@ -147,7 +164,12 @@ func Test{{ .structName }}_CopyTo_{{ .fieldName }}(t *testing.T) {
 	assert.Equal(t, ms, dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originStructName }}{}, &sharedState)) })
-}`
+}
+`
+
+const oneOfMessageSetTestFieldTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .fieldName -}}{ 
+{{- .fieldName }}: &{{ .originFieldPackageName }}.{{ .fieldName }}{}}
+fillTest{{ .returnType }}(new{{ .returnType }}(tv.orig.Get{{ .returnType }}(), tv.state))`
 
 const copyToValueOneOfMessageTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
@@ -189,7 +211,18 @@ const accessorsOneOfPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .acce
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).Set{{ .accessorFieldName }}({{ .testValue }}) })
-}`
+}
+`
+
+const oneOfPrimitiveSetTestFieldTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+{{- .originFieldName }}: {{ .testValue }}}`
+
+const oneOfPrimitiveCopyOrigFieldTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+	dest.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+{{- .originFieldName }}: t.{{ .originFieldName }}}`
+
+const oneOfPrimitiveSwitchCaseTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+	return {{ .typeName }}`
 
 const accessorsPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
@@ -287,6 +320,15 @@ const accessorsOptionalPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .f
 	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
+const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
+{{- .fieldName }}: {{ .testValue }}}`
+
+const optionalPrimitiveCopyOrigTemplate = `if src.{{ .fieldName }}_ == nil {
+	dest.{{ .fieldName }}_ = nil
+} else {
+	dest.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: src.Get{{ .fieldName }}(){{ "}" }}
+}`
+
 type baseField interface {
 	GenerateAccessors(ms *messageValueStruct) string
 
@@ -304,41 +346,23 @@ type sliceField struct {
 }
 
 func (sf *sliceField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorSliceTemplate").Parse(accessorSliceTemplate))
-	if err := t.Execute(sb, sf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsSliceTestTemplate").Parse(accessorsSliceTestTemplate))
-	if err := t.Execute(sb, sf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("setTestValueTemplate").Parse(setTestValueTemplate))
-	if err := t.Execute(sb, sf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) GenerateCopyOrig(ms *messageValueStruct) string {
-	of := sf.origFieldName()
-	co := "copyOrig"
-	if usedByOtherDataTypes(ms.packageName) {
-		co = "CopyOrig"
-	} else if usedByOtherDataTypes(sf.returnSlice.getPackageName()) {
-		co = "internal.CopyOrig"
-	}
-	return "\tdest." + of + " = " + co + sf.returnSlice.getName() + "(dest." + of + ", src." + of + ")"
+	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -375,38 +399,23 @@ type messageValueField struct {
 }
 
 func (mf *messageValueField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsMessageValueTemplate").Parse(accessorsMessageValueTemplate))
-	if err := t.Execute(sb, mf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, mf.templateFields(ms))
 }
 
 func (mf *messageValueField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsMessageValueTestTemplate").Parse(accessorsMessageValueTestTemplate))
-	if err := t.Execute(sb, mf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, mf.templateFields(ms))
 }
 
 func (mf *messageValueField) GenerateSetWithTestValue(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("setTestValueTemplate").Parse(setTestValueTemplate))
-	if err := t.Execute(sb, mf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, mf.templateFields(ms))
 }
 
-func (mf *messageValueField) GenerateCopyOrig(*messageValueStruct) string {
-	co := "copyOrig"
-	if usedByOtherDataTypes(mf.returnMessage.packageName) {
-		co = "internal.CopyOrig"
-	}
-	return "\t" + co + mf.returnMessage.getName() + "(&dest." + mf.fieldName + ", &src." + mf.fieldName + ")"
+func (mf *messageValueField) GenerateCopyOrig(ms *messageValueStruct) string {
+	t := template.Must(template.New("copyOrigMessageTemplate").Parse(copyOrigMessageTemplate))
+	return executeTemplate(t, mf.templateFields(ms))
 }
 
 func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]any {
@@ -439,33 +448,23 @@ type primitiveField struct {
 }
 
 func (pf *primitiveField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveTemplate").Parse(accessorsPrimitiveTemplate))
-	if err := t.Execute(sb, pf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, pf.templateFields(ms))
 }
 
 func (pf *primitiveField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveTestTemplate").Parse(accessorsPrimitiveTestTemplate))
-	if err := t.Execute(sb, pf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, pf.templateFields(ms))
 }
 
-func (pf *primitiveField) GenerateSetWithTestValue(*messageValueStruct) string {
-	originFieldName := pf.fieldName
-	if pf.originFieldName != "" {
-		originFieldName = pf.originFieldName
-	}
-	return "\ttv.orig." + originFieldName + " = " + pf.testVal
+func (pf *primitiveField) GenerateSetWithTestValue(ms *messageValueStruct) string {
+	t := template.Must(template.New("setPrimitiveTestValueTemplate").Parse(setPrimitiveTestValueTemplate))
+	return executeTemplate(t, pf.templateFields(ms))
 }
 
-func (pf *primitiveField) GenerateCopyOrig(*messageValueStruct) string {
-	return "\tdest." + pf.origFieldName() + " = src." + pf.origFieldName()
+func (pf *primitiveField) GenerateCopyOrig(ms *messageValueStruct) string {
+	t := template.Must(template.New("copyOrigPrimitiveTemplate").Parse(copyOrigPrimitiveTemplate))
+	return executeTemplate(t, pf.templateFields(ms))
 }
 
 func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any {
@@ -509,33 +508,23 @@ type primitiveTypedField struct {
 }
 
 func (ptf *primitiveTypedField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveTypedTemplate").Parse(accessorsPrimitiveTypedTemplate))
-	if err := t.Execute(sb, ptf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, ptf.templateFields(ms))
 }
 
 func (ptf *primitiveTypedField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveTypedTestTemplate").Parse(accessorsPrimitiveTypedTestTemplate))
-	if err := t.Execute(sb, ptf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *primitiveTypedField) GenerateSetWithTestValue(*messageValueStruct) string {
-	originFieldName := ptf.fieldName
-	if ptf.originFieldName != "" {
-		originFieldName = ptf.originFieldName
-	}
-	return "\ttv.orig." + originFieldName + " = " + ptf.returnType.testVal
+func (ptf *primitiveTypedField) GenerateSetWithTestValue(ms *messageValueStruct) string {
+	t := template.Must(template.New("setPrimitiveTestValueTemplate").Parse(setPrimitiveTestValueTemplate))
+	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *primitiveTypedField) GenerateCopyOrig(*messageValueStruct) string {
-	return "\tdest." + ptf.origFieldName() + " = src." + ptf.origFieldName()
+func (ptf *primitiveTypedField) GenerateCopyOrig(ms *messageValueStruct) string {
+	t := template.Must(template.New("copyOrigPrimitiveTemplate").Parse(copyOrigPrimitiveTemplate))
+	return executeTemplate(t, ptf.templateFields(ms))
 }
 
 func (ptf *primitiveTypedField) templateFields(ms *messageValueStruct) map[string]any {
@@ -577,35 +566,23 @@ type primitiveSliceField struct {
 }
 
 func (psf *primitiveSliceField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveSliceTemplate").Parse(accessorsPrimitiveSliceTemplate))
-	if err := t.Execute(sb, psf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, psf.templateFields(ms))
 }
 
 func (psf *primitiveSliceField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsPrimitiveSliceTestTemplate").Parse(accessorsPrimitiveSliceTestTemplate))
-	if err := t.Execute(sb, psf.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, psf.templateFields(ms))
 }
 
-func (psf *primitiveSliceField) GenerateSetWithTestValue(*messageValueStruct) string {
-	return "\ttv.orig." + psf.fieldName + " = " + psf.testVal
+func (psf *primitiveSliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
+	t := template.Must(template.New("setPrimitiveTestValueTemplate").Parse(setPrimitiveTestValueTemplate))
+	return executeTemplate(t, psf.templateFields(ms))
 }
 
 func (psf *primitiveSliceField) GenerateCopyOrig(ms *messageValueStruct) string {
-	co := "copyOrig"
-	if usedByOtherDataTypes(ms.packageName) {
-		co = "CopyOrig"
-	} else if usedByOtherDataTypes(psf.returnPackageName) {
-		co = "internal.CopyOrig"
-	}
-	return "\tdest." + psf.fieldName + " = " + co + psf.returnType + "(dest." + psf.fieldName + ", " + "src." + psf.fieldName + ")"
+	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
+	return executeTemplate(t, psf.templateFields(ms))
 }
 
 func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -617,13 +594,16 @@ func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[strin
 			}
 			return ""
 		}(),
-		"returnType":     psf.returnType,
-		"defaultVal":     psf.defaultVal,
-		"fieldName":      psf.fieldName,
-		"lowerFieldName": strings.ToLower(psf.fieldName),
-		"testValue":      psf.testVal,
-		"origAccessor":   origAccessor(ms.packageName),
-		"stateAccessor":  stateAccessor(ms.packageName),
+		"isCommon":           usedByOtherDataTypes(psf.returnPackageName),
+		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
+		"returnType":         psf.returnType,
+		"defaultVal":         psf.defaultVal,
+		"fieldName":          psf.fieldName,
+		"originFieldName":    psf.fieldName,
+		"lowerFieldName":     strings.ToLower(psf.fieldName),
+		"testValue":          psf.testVal,
+		"origAccessor":       origAccessor(ms.packageName),
+		"stateAccessor":      stateAccessor(ms.packageName),
 	}
 }
 
@@ -638,12 +618,8 @@ type oneOfField struct {
 }
 
 func (of *oneOfField) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("oneOfTypeAccessorTemplate").Parse(oneOfTypeAccessorTemplate))
-	if err := t.Execute(sb, of.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, of.templateFields(ms))
 }
 
 func (of *oneOfField) typeFuncName() string {
@@ -655,12 +631,8 @@ func (of *oneOfField) typeFuncName() string {
 }
 
 func (of *oneOfField) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("oneOfTypeAccessorTestTemplate").Parse(oneOfTypeAccessorTestTemplate))
-	if err := t.Execute(sb, of.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, of.templateFields(ms))
 }
 
 func (of *oneOfField) GenerateSetWithTestValue(ms *messageValueStruct) string {
@@ -668,13 +640,8 @@ func (of *oneOfField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 }
 
 func (of *oneOfField) GenerateCopyOrig(ms *messageValueStruct) string {
-	sb := &bytes.Buffer{}
-	sb.WriteString("\tswitch t := src." + of.originFieldName + ".(type) {\n")
-	for _, v := range of.values {
-		v.GenerateCopyOrig(ms, of, sb)
-	}
-	sb.WriteString("\t}")
-	return sb.String()
+	t := template.Must(template.New("oneOfTypeCopyOrigTestTemplate").Parse(oneOfTypeCopyOrigTestTemplate))
+	return executeTemplate(t, of.templateFields(ms))
 }
 
 func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
@@ -699,7 +666,7 @@ type oneOfValue interface {
 	GenerateAccessors(ms *messageValueStruct, of *oneOfField) string
 	GenerateTests(ms *messageValueStruct, of *oneOfField) string
 	GenerateSetWithTestValue(ms *messageValueStruct, of *oneOfField) string
-	GenerateCopyOrig(ms *messageValueStruct, of *oneOfField, sb *bytes.Buffer)
+	GenerateCopyOrig(ms *messageValueStruct, of *oneOfField) string
 	GenerateTypeSwitchCase(ms *messageValueStruct, of *oneOfField) string
 }
 
@@ -712,22 +679,13 @@ type oneOfPrimitiveValue struct {
 }
 
 func (opv *oneOfPrimitiveValue) GenerateAccessors(ms *messageValueStruct, of *oneOfField) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOneOfPrimitiveTemplate").Parse(accessorsOneOfPrimitiveTemplate))
-	if err := t.Execute(sb, opv.templateFields(ms, of)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
 func (opv *oneOfPrimitiveValue) GenerateTests(ms *messageValueStruct, of *oneOfField) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOneOfPrimitiveTestTemplate").Parse(accessorsOneOfPrimitiveTestTemplate))
-	if err := t.Execute(sb, opv.templateFields(ms, of)); err != nil {
-		panic(err)
-	}
-	sb.WriteString("\n")
-	return sb.String()
+	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
 func (opv *oneOfPrimitiveValue) accessorFieldName(of *oneOfField) string {
@@ -738,18 +696,18 @@ func (opv *oneOfPrimitiveValue) accessorFieldName(of *oneOfField) string {
 }
 
 func (opv *oneOfPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStruct, of *oneOfField) string {
-	return "\ttv.orig." + of.originFieldName + " = &" + ms.originFullName + "_" + opv.originFieldName + "{" + opv.
-		originFieldName + ":" + opv.testVal + "}"
+	t := template.Must(template.New("oneOfPrimitiveSetTestFieldTemplate").Parse(oneOfPrimitiveSetTestFieldTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
-func (opv *oneOfPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct, of *oneOfField, sb *bytes.Buffer) {
-	sb.WriteString("\tcase *" + ms.originFullName + "_" + opv.originFieldName + ":\n")
-	sb.WriteString("\tdest." + of.originFieldName + " = &" + ms.originFullName + "_" + opv.originFieldName + "{" + opv.originFieldName + ": t." + opv.originFieldName + "}\n")
+func (opv *oneOfPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct, of *oneOfField) string {
+	t := template.Must(template.New("oneOfPrimitiveCopyOrigFieldTemplate").Parse(oneOfPrimitiveCopyOrigFieldTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
 func (opv *oneOfPrimitiveValue) GenerateTypeSwitchCase(ms *messageValueStruct, of *oneOfField) string {
-	return "\tcase *" + ms.originFullName + "_" + opv.originFieldName + ":\n" +
-		"\t\treturn " + of.typeName + opv.fieldName
+	t := template.Must(template.New("oneOfPrimitiveCopyOrigFieldTemplate").Parse(oneOfPrimitiveSwitchCaseTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
 func (opv *oneOfPrimitiveValue) templateFields(ms *messageValueStruct, of *oneOfField) map[string]any {
@@ -779,46 +737,34 @@ type oneOfMessageValue struct {
 }
 
 func (omv *oneOfMessageValue) GenerateAccessors(ms *messageValueStruct, of *oneOfField) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOneOfMessageTemplate").Parse(accessorsOneOfMessageTemplate))
-	if err := t.Execute(sb, omv.templateFields(ms, of)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
 func (omv *oneOfMessageValue) GenerateTests(ms *messageValueStruct, of *oneOfField) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOneOfMessageTestTemplate").Parse(accessorsOneOfMessageTestTemplate))
-	if err := t.Execute(sb, omv.templateFields(ms, of)); err != nil {
-		panic(err)
-	}
-	sb.WriteString("\n")
-	return sb.String()
+	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
 func (omv *oneOfMessageValue) GenerateSetWithTestValue(ms *messageValueStruct, of *oneOfField) string {
-	return "\ttv.orig." + of.originFieldName + " = &" + ms.originFullName + "_" + omv.fieldName + "{" + omv.
-		fieldName + ": &" + omv.originFieldPackageName + "." + omv.fieldName + "{}}\n" +
-		"\tfillTest" + omv.returnMessage.structName + "(new" + omv.fieldName + "(tv.orig.Get" + omv.fieldName + "(), tv.state))"
+	t := template.Must(template.New("oneOfMessageSetTestFieldTemplate").Parse(oneOfMessageSetTestFieldTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
-func (omv *oneOfMessageValue) GenerateCopyOrig(ms *messageValueStruct, of *oneOfField, sb *bytes.Buffer) {
+func (omv *oneOfMessageValue) GenerateCopyOrig(ms *messageValueStruct, of *oneOfField) string {
 	t := template.Must(template.New("copyToValueOneOfMessageTemplate").Parse(copyToValueOneOfMessageTemplate))
-	if err := t.Execute(sb, omv.templateFields(ms, of)); err != nil {
-		panic(err)
-	}
-	sb.WriteString("\n")
+	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
 func (omv *oneOfMessageValue) GenerateTypeSwitchCase(ms *messageValueStruct, of *oneOfField) string {
-	return "\tcase *" + ms.originFullName + "_" + omv.fieldName + ":\n" +
-		"\t\treturn " + of.typeName + omv.fieldName
+	t := template.Must(template.New("oneOfPrimitiveCopyOrigFieldTemplate").Parse(oneOfPrimitiveSwitchCaseTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
 func (omv *oneOfMessageValue) templateFields(ms *messageValueStruct, of *oneOfField) map[string]any {
 	return map[string]any{
 		"fieldName":               omv.fieldName,
+		"originFieldName":         omv.fieldName,
 		"originOneOfFieldName":    of.originFieldName,
 		"typeName":                of.typeName + omv.fieldName,
 		"structName":              ms.getName(),
@@ -841,34 +787,23 @@ type optionalPrimitiveValue struct {
 }
 
 func (opv *optionalPrimitiveValue) GenerateAccessors(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOptionalPrimitiveValueTemplate").Parse(accessorsOptionalPrimitiveValueTemplate))
-	if err := t.Execute(sb, opv.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	return sb.String()
+	return executeTemplate(t, opv.templateFields(ms))
 }
 
 func (opv *optionalPrimitiveValue) GenerateAccessorsTest(ms *messageValueStruct) string {
-	sb := &strings.Builder{}
 	t := template.Must(template.New("accessorsOptionalPrimitiveTestTemplate").Parse(accessorsOptionalPrimitiveTestTemplate))
-	if err := t.Execute(sb, opv.templateFields(ms)); err != nil {
-		panic(err)
-	}
-	sb.WriteString("\n")
-	return sb.String()
+	return executeTemplate(t, opv.templateFields(ms))
 }
 
 func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStruct) string {
-	return "\ttv.orig." + opv.fieldName + "_ = &" + ms.originFullName + "_" + opv.fieldName + "{" + opv.fieldName + ":" + opv.testVal + "}"
+	t := template.Must(template.New("optionalPrimitiveSetTestTemplate").Parse(optionalPrimitiveSetTestTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
 }
 
 func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) string {
-	return "if src." + opv.fieldName + "_ == nil {\n" +
-		"\tdest." + opv.fieldName + "_ = nil\n" +
-		"} else {\n" +
-		"\tdest." + opv.fieldName + "_ = &" + ms.originFullName + "_" + opv.fieldName + "{" + opv.fieldName + ": src.Get" + opv.fieldName + "()}\n" +
-		"}"
+	t := template.Must(template.New("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
 }
 
 func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[string]any {
