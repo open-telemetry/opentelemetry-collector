@@ -24,8 +24,14 @@ func NewInt64Slice(orig *[]int64, state *State) Int64Slice {
 }
 
 func CopyOrigInt64Slice(dst, src []int64) []int64 {
-	dst = dst[:0]
-	return append(dst, src...)
+	if cap(dst) < len(src) {
+		dst = make([]int64, len(src))
+	}
+	dst = dst[:len(src)]
+	for i := 0; i < len(src); i++ {
+		dst[i] = src[i]
+	}
+	return dst
 }
 
 func FillTestInt64Slice(tv Int64Slice) {
