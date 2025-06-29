@@ -81,6 +81,10 @@ func TestSample_LinkIndex(t *testing.T) {
 	assert.Equal(t, int32(1), ms.LinkIndex())
 	ms.RemoveLinkIndex()
 	assert.False(t, ms.HasLinkIndex())
+	dest := NewSample()
+	dest.SetLinkIndex(int32(1))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasLinkIndex())
 }
 
 func TestSample_TimestampsUnixNano(t *testing.T) {
