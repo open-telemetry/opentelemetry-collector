@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
@@ -32,10 +34,11 @@ type shutdownable interface {
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
-		name         string
-		wantCoreType any
-		wantErr      error
-		cfg          Config
+		name          string
+		wantCoreType  any
+		disableTeeing bool
+		wantErr       error
+		cfg           Config
 	}{
 		{
 			name:         "no log config",
@@ -81,6 +84,30 @@ func TestNewLogger(t *testing.T) {
 			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
 		},
 		{
+			name: "log config with processors and tee'ing disabled",
+			cfg: Config{
+				Logs: LogsConfig{
+					Level:             zapcore.DebugLevel,
+					Development:       true,
+					Encoding:          "console",
+					DisableCaller:     true,
+					DisableStacktrace: true,
+					InitialFields:     map[string]any{"fieldKey": "filed-value"},
+					Processors: []config.LogRecordProcessor{
+						{
+							Batch: &config.BatchLogRecordProcessor{
+								Exporter: config.LogRecordExporter{
+									Console: config.Console{},
+								},
+							},
+						},
+					},
+				},
+			},
+			disableTeeing: true,
+			wantCoreType:  "*zapcore.levelFilterCore",
+		},
+		{
 			name: "log config with sampling",
 			cfg: Config{
 				Logs: LogsConfig{
@@ -109,6 +136,12 @@ func TestNewLogger(t *testing.T) {
 				Processors: tt.cfg.Logs.Processors,
 			}}))
 
+			if tt.disableTeeing == true {
+				_ = featuregate.GlobalRegistry().Set(disableConsoleLoggingWhenProviderEnabled.ID(), true)
+				defer func() {
+					_ = featuregate.GlobalRegistry().Set(disableConsoleLoggingWhenProviderEnabled.ID(), false)
+				}()
+			}
 			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
