@@ -62,6 +62,31 @@ func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
 	}
 }
 
+func CopyValue(src otlpcommon.AnyValue) otlpcommon.AnyValue {
+	switch sv := src.Value.(type) {
+	case *otlpcommon.AnyValue_KvlistValue:
+		mv := &otlpcommon.AnyValue_KvlistValue{KvlistValue: &otlpcommon.KeyValueList{}}
+		if sv.KvlistValue != nil {
+			mv.KvlistValue.Values = CopyOrigMap(mv.KvlistValue.Values, sv.KvlistValue.Values)
+		}
+		return otlpcommon.AnyValue{Value: mv}
+	case *otlpcommon.AnyValue_ArrayValue:
+		dv := &otlpcommon.AnyValue_ArrayValue{ArrayValue: &otlpcommon.ArrayValue{}}
+		if sv.ArrayValue != nil {
+			dv.ArrayValue.Values = CopyOrigSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
+		}
+		return otlpcommon.AnyValue{Value: dv}
+	case *otlpcommon.AnyValue_BytesValue:
+		bv := &otlpcommon.AnyValue_BytesValue{}
+		bv.BytesValue = make([]byte, len(sv.BytesValue))
+		copy(bv.BytesValue, sv.BytesValue)
+		return otlpcommon.AnyValue{Value: bv}
+	default:
+		// Primitive immutable type, no need for deep copy.
+		return otlpcommon.AnyValue{Value: sv}
+	}
+}
+
 func FillTestValue(dest Value) {
 	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }

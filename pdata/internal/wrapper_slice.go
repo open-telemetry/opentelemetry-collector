@@ -25,12 +25,9 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 }
 
 func CopyOrigSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
-	if cap(dest) < len(src) {
-		dest = make([]otlpcommon.AnyValue, len(src))
-	}
-	dest = dest[:len(src)]
+	dest = dest[:0]
 	for i := 0; i < len(src); i++ {
-		CopyOrigValue(&dest[i], &src[i])
+		dest = append(dest, CopyValue(src[i]))
 	}
 	return dest
 }
