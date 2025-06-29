@@ -29,7 +29,7 @@ func TestTracesSink(t *testing.T) {
 	td := testdata.GenerateTraces(1)
 	want := make([]ptrace.Traces, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeTraces(context.Background(), td))
+		require.NoError(t, sink.ConsumeTraces(t.Context(), td))
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllTraces())
@@ -44,7 +44,7 @@ func TestMetricsSink(t *testing.T) {
 	md := testdata.GenerateMetrics(1)
 	want := make([]pmetric.Metrics, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeMetrics(context.Background(), md))
+		require.NoError(t, sink.ConsumeMetrics(t.Context(), md))
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllMetrics())
@@ -59,7 +59,7 @@ func TestLogsSink(t *testing.T) {
 	md := testdata.GenerateLogs(1)
 	want := make([]plog.Logs, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeLogs(context.Background(), md))
+		require.NoError(t, sink.ConsumeLogs(t.Context(), md))
 		want = append(want, md)
 	}
 	assert.Equal(t, want, sink.AllLogs())
@@ -74,7 +74,7 @@ func TestProfilesSink(t *testing.T) {
 	td := testdata.GenerateProfiles(1)
 	want := make([]pprofile.Profiles, 0, 7)
 	for i := 0; i < 7; i++ {
-		require.NoError(t, sink.ConsumeProfiles(context.Background(), td))
+		require.NoError(t, sink.ConsumeProfiles(t.Context(), td))
 		want = append(want, td)
 	}
 	assert.Equal(t, want, sink.AllProfiles())
@@ -91,7 +91,7 @@ func TestTracesSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(t.Context(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeTraces(ctx, td))
 		want = append(want, td)
 		wantCtx = append(wantCtx, ctx)
@@ -120,7 +120,7 @@ func TestMetricsSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(t.Context(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeMetrics(ctx, md))
 		want = append(want, md)
 		wantCtx = append(wantCtx, ctx)
@@ -149,7 +149,7 @@ func TestLogsSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(t.Context(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeLogs(ctx, md))
 		want = append(want, md)
 		wantCtx = append(wantCtx, ctx)
@@ -178,7 +178,7 @@ func TestProfilesSinkWithContext(t *testing.T) {
 	wantCtx := make([]context.Context, 0, 7)
 
 	for i := 0; i < 7; i++ {
-		ctx := context.WithValue(context.Background(), testKey(i), fmt.Sprintf("value-%d", i))
+		ctx := context.WithValue(t.Context(), testKey(i), fmt.Sprintf("value-%d", i))
 		require.NoError(t, sink.ConsumeProfiles(ctx, td))
 		want = append(want, td)
 		wantCtx = append(wantCtx, ctx)
@@ -243,7 +243,7 @@ func TestSinkContextTransformation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a context with initial values
-			initialCtx := context.WithValue(context.Background(), ctxKey("initial-key"), "initial-value")
+			initialCtx := context.WithValue(t.Context(), ctxKey("initial-key"), "initial-value")
 
 			// Create a context chain to simulate transformation
 			transformedCtx := context.WithValue(initialCtx, ctxKey("transformed-key"), "transformed-value")
@@ -271,7 +271,7 @@ func TestContextTransformationChain(t *testing.T) {
 	sink := new(TracesSink)
 
 	// Create a context transformation chain
-	baseCtx := context.Background()
+	baseCtx := t.Context()
 	ctx1 := context.WithValue(baseCtx, ctxKey("step1"), "value1")
 	ctx2 := context.WithValue(ctx1, ctxKey("step2"), "value2")
 	ctx3 := context.WithValue(ctx2, ctxKey("step3"), "value3")
@@ -306,7 +306,7 @@ func TestConcurrentContextTransformations(t *testing.T) {
 			defer wg.Done()
 			key := ctxKey(fmt.Sprintf("goroutine-%d", idx))
 			value := fmt.Sprintf("value-%d", idx)
-			ctx := context.WithValue(context.Background(), key, value)
+			ctx := context.WithValue(t.Context(), key, value)
 
 			td := testdata.GenerateTraces(1)
 			if err := sink.ConsumeTraces(ctx, td); err != nil {
