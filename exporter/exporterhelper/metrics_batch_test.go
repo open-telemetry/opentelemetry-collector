@@ -136,6 +136,99 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestSplitMetricsWithDataPointSplit(t *testing.T) {
+	generateTestMetrics := func(metricType pmetric.MetricType) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("test_metric")
+		m.SetDescription("test_description")
+		m.SetUnit("test_unit")
+		m.Metadata().PutStr("test_metadata_key", "test_metadata_value")
+
+		const numDataPoints = 2
+
+		switch metricType {
+		case pmetric.MetricTypeSum:
+			sum := m.SetEmptySum()
+			for i := 0; i < numDataPoints; i++ {
+				sum.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeGauge:
+			gauge := m.SetEmptyGauge()
+			for i := 0; i < numDataPoints; i++ {
+				gauge.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeHistogram:
+			hist := m.SetEmptyHistogram()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				hist.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			expHist := m.SetEmptyExponentialHistogram()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				expHist.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		case pmetric.MetricTypeSummary:
+			summary := m.SetEmptySummary()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				summary.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		}
+		return md
+	}
+
+	tests := []struct {
+		name       string
+		metricType pmetric.MetricType
+	}{
+		{
+			name:       "sum",
+			metricType: pmetric.MetricTypeSum,
+		},
+		{
+			name:       "gauge",
+			metricType: pmetric.MetricTypeGauge,
+		},
+		{
+			name:       "histogram",
+			metricType: pmetric.MetricTypeHistogram,
+		},
+		{
+			name:       "exponential_histogram",
+			metricType: pmetric.MetricTypeExponentialHistogram,
+		},
+		{
+			name:       "summary",
+			metricType: pmetric.MetricTypeSummary,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Generate metrics with 2 data points.
+			mr1 := newMetricsRequest(generateTestMetrics(tt.metricType))
+
+			// Split by data point, so maxSize is 1.
+			res, err := mr1.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+			require.NoError(t, err)
+			require.Len(t, res, 2)
+
+			for _, req := range res {
+				actualRequest := req.(*metricsRequest)
+				// Each split request should contain one data point.
+				assert.Equal(t, 1, actualRequest.ItemsCount())
+				m := actualRequest.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "test_metric", m.Name())
+				assert.Equal(t, "test_description", m.Description())
+				assert.Equal(t, "test_unit", m.Unit())
+				assert.Equal(t, 1, m.Metadata().Len())
+				val, ok := m.Metadata().Get("test_metadata_key")
+				assert.True(t, ok)
+				assert.Equal(t, "test_metadata_value", val.AsString())
+			}
+		})
+	}
+}
+
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newMetricsRequest(testdata.GenerateMetrics(18)) // 18 metrics, 36 data points
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
@@ -259,7 +352,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			maxSize:       s.MetricsSize(testdata.GenerateMetrics(4)),
 			mr1:           newMetricsRequest(pmetric.NewMetrics()),
 			mr2:           newMetricsRequest(testdata.GenerateMetrics(10)),
-			expectedSizes: []int{706, 504, 625, 378},
+			expectedSizes: []int{706, 533, 642, 378},
 		},
 		{
 			name:          "merge_and_split",
@@ -267,7 +360,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))/2 + metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11))/2,
 			mr1:           newMetricsRequest(testdata.GenerateMetrics(8)),
 			mr2:           newMetricsRequest(testdata.GenerateMetrics(20)),
-			expectedSizes: []int{2107, 2022, 1954, 290},
+			expectedSizes: []int{2123, 2038, 1983, 290},
 		},
 		{
 			name:    "scope_metrics_split",
@@ -281,7 +374,7 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 				return md
 			}()),
 			mr2:           nil,
-			expectedSizes: []int{706, 700, 85},
+			expectedSizes: []int{706, 719, 85},
 		},
 	}
 	for _, tt := range tests {
