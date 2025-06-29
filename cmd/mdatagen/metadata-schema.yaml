@@ -78,6 +78,8 @@ attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: indicates whether the attribute is optional or not.
+    optional:
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.

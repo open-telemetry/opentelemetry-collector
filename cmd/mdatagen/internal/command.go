@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -217,6 +218,40 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
 				},
+				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Events {
+						for _, attribute := range event.Attributes {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+					return used
+				},
+				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Metrics {
+						for _, attribute := range event.Attributes {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+					return used
+				},
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]
 				},
@@ -300,7 +335,7 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
 				// with a `/` for it to find the file.
-			}).ParseFS(TemplateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
+			}).ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
 func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, error) {
