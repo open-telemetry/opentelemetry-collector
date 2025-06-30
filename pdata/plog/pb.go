@@ -6,6 +6,7 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var _ MarshalSizer = (*ProtoMarshaler)(nil)
@@ -28,6 +29,14 @@ func (e *ProtoMarshaler) ResourceLogsSize(rl ResourceLogs) int {
 
 func (e *ProtoMarshaler) ScopeLogsSize(sl ScopeLogs) int {
 	return sl.orig.Size()
+}
+
+func (e *ProtoMarshaler) ResourceLogsItemSize(rl pcommon.Resource) int {
+	return otlplogs.ResourceItemSize(*internal.GetOrigResource(internal.Resource(rl)))
+}
+
+func (e *ProtoMarshaler) ScopeLogsItemSize(sl pcommon.InstrumentationScope) int {
+	return otlplogs.ScopeItemSize(*internal.GetOrigInstrumentationScope(internal.InstrumentationScope(sl)))
 }
 
 func (e *ProtoMarshaler) LogRecordSize(lr LogRecord) int {
