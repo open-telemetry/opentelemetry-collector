@@ -93,14 +93,14 @@ type Factory interface {
 // FactoryOption apply changes to Factory.
 type FactoryOption interface {
 	// applyOption applies the option.
-	applyOption(o *factory)
+	applyOption(o *factoryImpl, cfgType component.Type)
 }
 
 // factoryOptionFunc is an FactoryOption created through a function.
-type factoryOptionFunc func(*factory)
+type factoryOptionFunc func(*factoryImpl, component.Type)
 
-func (f factoryOptionFunc) applyOption(o *factory) {
-	f(o)
+func (f factoryOptionFunc) applyOption(o *factoryImpl, cfgType component.Type) {
+	f(o, cfgType)
 }
 
 // CreateTracesFunc is the equivalent of Factory.CreateTraces.
@@ -112,103 +112,137 @@ type CreateMetricsFunc func(context.Context, Settings, component.Config, consume
 // CreateLogsFunc is the equivalent of Factory.CreateLogs.
 type CreateLogsFunc func(context.Context, Settings, component.Config, consumer.Logs) (Logs, error)
 
-type factory struct {
-	cfgType component.Type
-	component.CreateDefaultConfigFunc
-	createTracesFunc      CreateTracesFunc
-	tracesStabilityLevel  component.StabilityLevel
-	createMetricsFunc     CreateMetricsFunc
-	metricsStabilityLevel component.StabilityLevel
-	createLogsFunc        CreateLogsFunc
-	logsStabilityLevel    component.StabilityLevel
+// TracesStabilityFunc is a functional way to construct Factory implementations.
+type TracesStabilityFunc func() component.StabilityLevel
+
+// MetricsStabilityFunc is a functional way to construct Factory implementations.
+type MetricsStabilityFunc func() component.StabilityLevel
+
+// LogsStabilityFunc is a functional way to construct Factory implementations.
+type LogsStabilityFunc func() component.StabilityLevel
+
+type factoryImpl struct {
+	component.Factory
+	CreateTracesFunc
+	TracesStabilityFunc
+	CreateMetricsFunc
+	MetricsStabilityFunc
+	CreateLogsFunc
+	LogsStabilityFunc
 }
 
-func (f *factory) Type() component.Type {
-	return f.cfgType
+var _ Factory = factoryImpl{}
+
+func (f factoryImpl) unexportedFactoryFunc() {}
+
+func (f TracesStabilityFunc) TracesStability() component.StabilityLevel {
+	if f == nil {
+		return component.StabilityLevelUndefined
+	}
+	return f()
 }
 
-func (f *factory) unexportedFactoryFunc() {}
-
-func (f *factory) TracesStability() component.StabilityLevel {
-	return f.tracesStabilityLevel
+func (f MetricsStabilityFunc) MetricsStability() component.StabilityLevel {
+	if f == nil {
+		return component.StabilityLevelUndefined
+	}
+	return f()
 }
 
-func (f *factory) MetricsStability() component.StabilityLevel {
-	return f.metricsStabilityLevel
+func (f LogsStabilityFunc) LogsStability() component.StabilityLevel {
+	if f == nil {
+		return component.StabilityLevelUndefined
+	}
+	return f()
 }
 
-func (f *factory) LogsStability() component.StabilityLevel {
-	return f.logsStabilityLevel
+type creator[A, B any] func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error)
+
+func typeChecked[A, B any](cf creator[A, B], cfgType component.Type) creator[A, B] {
+	return func(ctx context.Context, set Settings, cfg component.Config, next A) (B, error) {
+		if set.ID.Type() != cfgType {
+			var zero B
+			return zero, internal.ErrIDMismatch(set.ID, cfgType)
+		}
+		return cf(ctx, set, cfg, next)
+	}
 }
 
-func (f *factory) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
-	if f.createTracesFunc == nil {
+func (f CreateTracesFunc) CreateTraces(ctx context.Context, set Settings, cfg component.Config, next consumer.Traces) (Traces, error) {
+	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
-	}
-
-	return f.createTracesFunc(ctx, set, cfg, next)
+	return f(ctx, set, cfg, next)
 }
 
-func (f *factory) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
-	if f.createMetricsFunc == nil {
+func (f CreateMetricsFunc) CreateMetrics(ctx context.Context, set Settings, cfg component.Config, next consumer.Metrics) (Metrics, error) {
+	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
-	}
-
-	return f.createMetricsFunc(ctx, set, cfg, next)
+	return f(ctx, set, cfg, next)
 }
 
-func (f *factory) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
-	if f.createLogsFunc == nil {
+func (f CreateLogsFunc) CreateLogs(ctx context.Context, set Settings, cfg component.Config, next consumer.Logs) (Logs, error) {
+	if f == nil {
 		return nil, pipeline.ErrSignalNotSupported
 	}
 
-	if set.ID.Type() != f.Type() {
-		return nil, internal.ErrIDMismatch(set.ID, f.Type())
-	}
-
-	return f.createLogsFunc(ctx, set, cfg, next)
+	return f(ctx, set, cfg, next)
 }
 
 // WithTraces overrides the default "error not supported" implementation for Factory.CreateTraces and the default "undefined" stability level.
 func WithTraces(createTraces CreateTracesFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory) {
-		o.tracesStabilityLevel = sl
-		o.createTracesFunc = createTraces
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
+		o.TracesStabilityFunc = sl.Self
+		o.CreateTracesFunc = CreateTracesFunc(typeChecked[consumer.Traces, Traces](creator[consumer.Traces, Traces](createTraces), cfgType))
 	})
 }
 
 // WithMetrics overrides the default "error not supported" implementation for Factory.CreateMetrics and the default "undefined" stability level.
 func WithMetrics(createMetrics CreateMetricsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory) {
-		o.metricsStabilityLevel = sl
-		o.createMetricsFunc = createMetrics
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
+		o.MetricsStabilityFunc = sl.Self
+		o.CreateMetricsFunc = CreateMetricsFunc(typeChecked[consumer.Metrics, Metrics](creator[consumer.Metrics, Metrics](createMetrics), cfgType))
 	})
 }
 
 // WithLogs overrides the default "error not supported" implementation for Factory.CreateLogs and the default "undefined" stability level.
 func WithLogs(createLogs CreateLogsFunc, sl component.StabilityLevel) FactoryOption {
-	return factoryOptionFunc(func(o *factory) {
-		o.logsStabilityLevel = sl
-		o.createLogsFunc = createLogs
+	return factoryOptionFunc(func(o *factoryImpl, cfgType component.Type) {
+		o.LogsStabilityFunc = sl.Self
+		o.CreateLogsFunc = CreateLogsFunc(typeChecked[consumer.Logs, Logs](creator[consumer.Logs, Logs](createLogs), cfgType))
 	})
 }
 
 // NewFactory returns a Factory.
 func NewFactory(cfgType component.Type, createDefaultConfig component.CreateDefaultConfigFunc, options ...FactoryOption) Factory {
-	f := &factory{
-		cfgType:                 cfgType,
-		CreateDefaultConfigFunc: createDefaultConfig,
+	f := factoryImpl{
+		Factory: component.NewFactoryImpl(cfgType.Self, createDefaultConfig),
 	}
 	for _, opt := range options {
-		opt.applyOption(f)
+		opt.applyOption(&f, cfgType)
 	}
 	return f
+}
+
+func NewFactoryImpl(
+	factory component.Factory,
+	tracesFunc CreateTracesFunc,
+	tracesStab TracesStabilityFunc,
+	metricsFunc CreateMetricsFunc,
+	mtricsStab MetricsStabilityFunc,
+	createLogs CreateLogsFunc,
+	logsStab LogsStabilityFunc,
+) Factory {
+	return factoryImpl{
+		Factory:              factory,
+		CreateTracesFunc:     tracesFunc,
+		TracesStabilityFunc:  tracesStab,
+		CreateMetricsFunc:    metricsFunc,
+		MetricsStabilityFunc: mtricsStab,
+		CreateLogsFunc:       createLogs,
+		LogsStabilityFunc:    logsStab,
+	}
 }

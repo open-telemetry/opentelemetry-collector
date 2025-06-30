@@ -77,6 +77,20 @@ func (f ShutdownFunc) Shutdown(ctx context.Context) error {
 	return f(ctx)
 }
 
+type componentImpl struct {
+	StartFunc
+	ShutdownFunc
+}
+
+var _ Component = componentImpl{}
+
+func NewComponentImpl(sf StartFunc, shf ShutdownFunc) Component {
+	return componentImpl{
+		StartFunc: sf,
+		ShutdownFunc: shf,
+	}
+}
+
 // Kind represents component kinds.
 type Kind struct {
 	name string
@@ -109,6 +123,10 @@ const (
 	StabilityLevelBeta
 	StabilityLevelStable
 )
+
+func (sl *StabilityLevel) Self() StabilityLevel {
+	return *sl
+}
 
 func (sl *StabilityLevel) UnmarshalText(in []byte) error {
 	str := strings.ToLower(string(in))
@@ -193,4 +211,18 @@ type CreateDefaultConfigFunc func() Config
 // CreateDefaultConfig implements Factory.CreateDefaultConfig().
 func (f CreateDefaultConfigFunc) CreateDefaultConfig() Config {
 	return f()
+}
+
+type factoryImpl struct {
+	TypeFunc
+	CreateDefaultConfigFunc
+}
+
+var _ Factory = factoryImpl{}
+
+func NewFactoryImpl(tf TypeFunc, cf CreateDefaultConfigFunc) Factory {
+	return factoryImpl{
+		TypeFunc: tf,
+		CreateDefaultConfigFunc: cf,
+	}
 }

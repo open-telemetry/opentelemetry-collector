@@ -31,9 +31,7 @@ type testClientMiddleware struct {
 }
 
 func newTestMiddlewareConfig(name string) configmiddleware.Config {
-	return configmiddleware.Config{
-		ID: component.MustNewID(name),
-	}
+	return configmiddleware.Config(component.MustNewID(name))
 }
 
 func newTestClientMiddleware(name string) extension.Extension {
@@ -162,9 +160,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 					Insecure: true,
 				},
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("nonexistent"),
-					},
+					configmiddleware.Config(component.MustNewID("nonexistent")),
 				},
 			},
 			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
@@ -182,9 +178,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 					Insecure: true,
 				},
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("errormw"),
-					},
+					configmiddleware.Config(component.MustNewID("errormw")),
 				},
 			},
 			errText: "get options failed",
