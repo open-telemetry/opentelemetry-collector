@@ -7,20 +7,20 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.35.0
 	go.opentelemetry.io/collector/component v1.35.0
-	go.opentelemetry.io/collector/component/componenttest v0.128.0
-	go.opentelemetry.io/collector/config/configauth v0.128.0
+	go.opentelemetry.io/collector/component/componenttest v0.129.0
+	go.opentelemetry.io/collector/config/configauth v0.129.0
 	go.opentelemetry.io/collector/config/configcompression v1.35.0
-	go.opentelemetry.io/collector/config/configmiddleware v0.128.0
+	go.opentelemetry.io/collector/config/configmiddleware v0.129.0
 	go.opentelemetry.io/collector/config/confignet v1.35.0
 	go.opentelemetry.io/collector/config/configopaque v1.35.0
 	go.opentelemetry.io/collector/config/configtls v1.35.0
 	go.opentelemetry.io/collector/extension v1.35.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.35.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.128.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.128.0
-	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.128.0
+	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.129.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.129.0
+	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.129.0
 	go.opentelemetry.io/collector/pdata v1.35.0
-	go.opentelemetry.io/collector/pdata/testdata v0.128.0
+	go.opentelemetry.io/collector/pdata/testdata v0.129.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
 	go.opentelemetry.io/otel v1.36.0
 	go.uber.org/goleak v1.3.0
@@ -45,8 +45,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.35.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.128.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.129.0 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.129.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
 	go.opentelemetry.io/otel/log v0.12.2 // indirect
 	go.opentelemetry.io/otel/metric v1.36.0 // indirect
