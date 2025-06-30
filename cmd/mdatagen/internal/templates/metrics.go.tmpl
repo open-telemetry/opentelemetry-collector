@@ -74,6 +74,26 @@ type metricInfo struct {
     Name string
 }
 
+{{ if getMetricOptionalAttributes .Attributes }}
+type MetricAttributeOption interface {
+	apply(pmetric.NumberDataPoint)
+}
+
+type metricAttributeOptionFunc func(pmetric.NumberDataPoint)
+
+func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
+	maof(dp)
+}
+
+{{ range getMetricOptionalAttributes .Attributes }}
+func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
+	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
+		{{- template "putAttribute" . }}
+	})
+}
+{{ end }}
+{{ end }}
+
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
 	data     pmetric.Metric // data buffer for generated metric.
@@ -99,7 +119,7 @@ func (m *metric{{ $name.Render }}) init() {
 }
 
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
+{{- range $metric.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasOptionalAttribute $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
 	if !m.config.Enabled {
 		return
 	}
@@ -108,16 +128,16 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{- range $metric.Attributes }}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+    {{- if not (attributeInfo .).Optional -}}
+	{{- template "putAttribute" . -}}
 	{{- end }}
 	{{- end }}
+
+	{{- if $metric.HasOptionalAttribute $.Attributes }}
+    for _, op := range options {
+        op.apply(dp)
+    }
+    {{- end }}
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -357,8 +377,14 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
 	{{- range $metric.Attributes -}}
+	{{- if not (attributeInfo .).Optional -}}
 	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
-	{{- end }})
+	{{- end -}}
+	{{- end -}}
+	{{- if $metric.HasOptionalAttribute $.Attributes -}}
+	, options... MetricAttributeOption
+	{{- end -}}
+	)
 	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
 	{{- if $metric.Data.HasMetricInputType }}
 	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
@@ -372,8 +398,14 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- end }}
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
 		{{- range $metric.Attributes -}}
+		{{- if not (attributeInfo .).Optional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end }})
+		{{- end -}}
+		{{- end -}}
+		{{- if $metric.HasOptionalAttribute $.Attributes -}}
+        , options...
+        {{- end -}}
+        )
 	{{- if $metric.Data.HasMetricInputType }}
 	return nil
 	{{- end }}
