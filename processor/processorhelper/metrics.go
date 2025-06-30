@@ -6,6 +6,7 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -50,8 +51,8 @@ func NewMetrics(
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
 
-		ps := newProcessorStart()
-		defer obs.recordDuration(ctx, ps)
+		startTime := time.Now()
+		defer obs.recordDuration(ctx, startTime)
 
 		pointsIn := md.DataPointCount()
 

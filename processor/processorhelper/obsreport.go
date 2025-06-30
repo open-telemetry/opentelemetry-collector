@@ -42,16 +42,7 @@ func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), or.otelAttrs)
 }
 
-func (or *obsReport) recordDuration(ctx context.Context, ps processorStart) {
-	duration := time.Since(ps.Time)
-	durationSecs := duration.Seconds()
-	or.telemetryBuilder.ProcessorDuration.Record(ctx, durationSecs, or.otelAttrs)
-}
-
-type processorStart struct {
-	time.Time
-}
-
-func newProcessorStart() processorStart {
-	return processorStart{time.Now()}
+func (or *obsReport) recordDuration(ctx context.Context, startTime time.Time) {
+	duration := time.Since(startTime)
+	or.telemetryBuilder.ProcessorDuration.Record(ctx, duration.Seconds(), or.otelAttrs)
 }
