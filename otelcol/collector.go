@@ -340,19 +340,20 @@ func (col *Collector) Run(ctx context.Context) error {
 
 	// Control loop: selects between channels for various interrupts - when this loop is broken, the collector exits.
 	// If a configuration reload fails, we return without waiting for graceful shutdown.
+	var controlErr error
 LOOP:
 	for {
 		select {
 		case err := <-col.configProvider.Watch():
 			if err != nil {
-				col.service.Logger().Error("Config watch failed", zap.Error(err))
+				controlErr = fmt.Errorf("watching config: %w", err)
 				break LOOP
 			}
 			if err = col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
 		case err := <-col.asyncErrorChannel:
-			col.service.Logger().Error("Asynchronous error received, terminating process", zap.Error(err))
+			controlErr = err
 			break LOOP
 		case s := <-col.signalsChannel:
 			col.service.Logger().Info("Received signal from OS", zap.String("signal", s.String()))
@@ -371,7 +372,11 @@ LOOP:
 			return col.shutdown(context.Background())
 		}
 	}
-	return col.shutdown(ctx)
+	shutdownErr := col.shutdown(ctx)
+	// In the event that shutdown was triggered because of a fatal collector error (e.g. config watcher failure or
+	// a component status transitioned to StatusFatalError), propagate that along with any error from shutting down
+	// to ensure that the process terminates with a non-zero exit code.
+	return errors.Join(controlErr, shutdownErr)
 }
 
 func (col *Collector) shutdown(ctx context.Context) error {

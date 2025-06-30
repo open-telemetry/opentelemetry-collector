@@ -14,6 +14,7 @@ import (
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/eventlog"
 
@@ -27,6 +28,11 @@ type windowsService struct {
 	flags    *flag.FlagSet
 }
 
+type collectorState struct {
+	state State
+	err   error
+}
+
 // NewSvcHandler constructs a new svc.Handler using the given CollectorSettings.
 func NewSvcHandler(set CollectorSettings) svc.Handler {
 	return &windowsService{settings: set, flags: flags(featuregate.GlobalRegistry())}
@@ -37,59 +43,75 @@ func (s *windowsService) Execute(args []string, requests <-chan svc.ChangeReques
 	// The first argument supplied to service.Execute is the service name. If this is
 	// not provided for some reason, raise a relevant error to the system event log
 	if len(args) == 0 {
-		return false, 1213 // 1213: ERROR_INVALID_SERVICENAME
+		return false, uint32(windows.ERROR_INVALID_SERVICENAME)
 	}
 
 	elog, err := openEventLog(args[0])
 	if err != nil {
-		return false, 1501 // 1501: ERROR_EVENTLOG_CANT_START
+		return false, uint32(windows.ERROR_EVENTLOG_CANT_START)
 	}
 
-	colErrorChannel := make(chan error, 1)
-
-	changes <- svc.Status{State: svc.StartPending}
-	if err = s.start(elog, colErrorChannel); err != nil {
+	// Start the collector in the background and then begin responding to service control requests.
+	// The state channel will report if it reaches a running state and/or finishes execution (possibly
+	// with an error).
+	// NOTE: The `services.msc` GUI disables stop option for SERVICE_START_PENDING, but it is still
+	//		 possible to send SERVICE_CONTROL_STOP using `sc.exe` / PowerShell / Windows API.
+	changes <- svc.Status{State: svc.StartPending, Accepts: svc.AcceptStop | svc.AcceptShutdown}
+	colStateChannel, err := s.startAsync(elog)
+	if err != nil {
 		elog.Error(3, fmt.Sprintf("failed to start service: %v", err))
-		return false, 1064 // 1064: ERROR_EXCEPTION_IN_SERVICE
+		return false, uint32(windows.ERROR_EXCEPTION_IN_SERVICE)
 	}
-	changes <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
 
-	for req := range requests {
-		switch req.Cmd {
-		case svc.Interrogate:
-			changes <- req.CurrentStatus
+	// The service is always updated with SERVICE_STOPPED by svc.Run, using the returned `errno` to
+	// indicate whether it was successful or finished abnormally.
+	for {
+		select {
+		case req := <-requests:
+			switch req.Cmd {
+			case svc.Interrogate:
+				changes <- req.CurrentStatus
 
-		case svc.Stop, svc.Shutdown:
-			changes <- svc.Status{State: svc.StopPending}
-			if err = s.stop(colErrorChannel); err != nil {
-				elog.Error(3, fmt.Sprintf("errors occurred while shutting down the service: %v", err))
+			case svc.Stop, svc.Shutdown:
+				// Asynchronously begin the stop process. Once col.Run finishes, a state update will
+				// be received and handled to return an appropriate result.
+				changes <- svc.Status{State: svc.StopPending}
+				s.col.Shutdown()
+
+			default:
+				elog.Warning(3, fmt.Sprintf("unexpected service control request #%d", req.Cmd))
+				return false, uint32(windows.ERROR_CALL_NOT_IMPLEMENTED)
 			}
-			changes <- svc.Status{State: svc.Stopped}
-			return false, 0
-
-		default:
-			elog.Error(3, fmt.Sprintf("unexpected service control request #%d", req.Cmd))
-			return false, 1052 // 1052: ERROR_INVALID_SERVICE_CONTROL
+		case colState := <-colStateChannel:
+			if colState.state == StateRunning {
+				// Start has completed, notify the service manager.
+				changes <- svc.Status{State: svc.Running, Accepts: svc.AcceptStop | svc.AcceptShutdown}
+			} else if colState.state == StateClosed {
+				if colState.err == nil {
+					// col.Run exited cleanly as the result of a shutdown request.
+					return false, uint32(windows.NO_ERROR)
+				}
+				elog.Error(3, fmt.Sprintf("Fatal error: %v", colState.err))
+				return false, uint32(windows.ERROR_EXCEPTION_IN_SERVICE)
+			}
 		}
 	}
-
-	return false, 0
 }
 
-func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) error {
+func (s *windowsService) startAsync(elog *eventlog.Log) (<-chan collectorState, error) {
 	// Parse all the flags manually.
 	if err := s.flags.Parse(os.Args[1:]); err != nil {
-		return err
+		return nil, err
 	}
 
 	var err error
 	err = updateSettingsUsingFlags(&s.settings, s.flags)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	s.col, err = NewCollector(s.settings)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// The logging options need to be in place before the collector Run method is called
@@ -101,32 +123,44 @@ func (s *windowsService) start(elog *eventlog.Log, colErrorChannel chan error) e
 	// when the zap.Logger is created by the telemetry.
 	s.col.set.LoggingOptions = loggingOptionsWithEventLogCore(elog, &s.col.serviceConfig, s.col.set.LoggingOptions)
 
-	// col.Run blocks until receiving a SIGTERM signal, so needs to be started
-	// asynchronously, but it will exit early if an error occurs on startup
-	go func() {
-		colErrorChannel <- s.col.Run(context.Background())
-	}()
+	// State updates are sent back via this channel.
+	// It's never explicitly closed because multiple, unsynchronized goroutines send to it
+	// (one for reporting back when finished with any error and one for monitoring startup).
+	colStateChannel := make(chan collectorState)
 
-	// wait until the collector server is in the Running state
+	// col.Run blocks until receiving a SIGTERM signal or fatal error, so it's executed to
+	// completion in a goroutine with the return error being captured and sent to the state
+	// state update channel.
 	go func() {
-		for {
-			state := s.col.GetState()
-			if state == StateRunning {
-				colErrorChannel <- nil
-				break
-			}
-			time.Sleep(time.Millisecond * 200)
+		err := s.col.Run(context.Background())
+		colStateChannel <- collectorState{
+			state: StateClosed,
+			err:   err,
 		}
 	}()
 
-	// wait until the collector server is in the Running state, or an error was returned
-	return <-colErrorChannel
-}
+	// Monitor for the collector to reach the Running state in the background and then send
+	// a state update so the service manager can transition from START_PENDING -> STARTED.
+	go func() {
+		for {
+			state := s.col.GetState()
+			switch state {
+			case StateRunning:
+				colStateChannel <- collectorState{state: StateRunning}
+				return
+			case StateClosed:
+				// Collector finished running - any error will be reported by the other goroutine.
+				return
+			default:
+				// Still starting, poll again in a bit.
+				time.Sleep(time.Millisecond * 200)
+			}
+		}
+	}()
 
-func (s *windowsService) stop(colErrorChannel chan error) error {
-	s.col.Shutdown()
-	// return the response of col.Start
-	return <-colErrorChannel
+	// Return immediately, the caller can monitor the returned channel to know when the collector has reached
+	// the running state and/or stopped with an error.
+	return colStateChannel, nil
 }
 
 func openEventLog(serviceName string) (*eventlog.Log, error) {
