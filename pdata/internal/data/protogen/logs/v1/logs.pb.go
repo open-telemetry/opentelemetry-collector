@@ -919,11 +919,8 @@ func (m *LogsData) Size() (n int) {
 	return n
 }
 
-func (m *ResourceLogs) ItemSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	l := m.Resource.Size()
+func ResourceItemSize(resource v1.Resource) int {
+	l := resource.Size()
 	return 1 + l + sovLogs(uint64(l))
 }
 
@@ -933,7 +930,7 @@ func (m *ResourceLogs) Size() (n int) {
 	}
 	var l int
 	_ = l
-	n += m.ItemSize()
+	n += ResourceItemSize(m.Resource)
 	if len(m.ScopeLogs) > 0 {
 		for _, e := range m.ScopeLogs {
 			l = e.Size()
@@ -953,11 +950,8 @@ func (m *ResourceLogs) Size() (n int) {
 	return n
 }
 
-func (m *ScopeLogs) ItemSize() (n int) {
-	if m == nil {
-		return 0
-	}
-	l := m.Scope.Size()
+func ScopeItemSize(scope v11.InstrumentationScope) int {
+	l := scope.Size()
 	return 1 + l + sovLogs(uint64(l))
 }
 
@@ -967,7 +961,7 @@ func (m *ScopeLogs) Size() (n int) {
 	}
 	var l int
 	_ = l
-	n += m.ItemSize()
+	n += ScopeItemSize(m.Scope)
 	if len(m.LogRecords) > 0 {
 		for _, e := range m.LogRecords {
 			l = e.Size()
