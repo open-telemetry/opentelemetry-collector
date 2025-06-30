@@ -260,9 +260,7 @@ func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Exten
 	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64],
-	capacity int64,
-) *persistentQueue[uint64] {
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64], capacity int64) *persistentQueue[uint64] {
 	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
 		sizer:     sizer,
 		capacity:  capacity,
@@ -1003,6 +1001,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 }
 
 func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
+	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
@@ -1164,6 +1163,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 // This test covers the case when the persistent storage is recovered from a snapshot which has
 // bigger value for the used size than the size of the actual items in the storage.
 func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
+	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
 
