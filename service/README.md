@@ -155,3 +155,13 @@ extensions:
 ```bash
    ./otelcorecol print-initial-config --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
 ```
+
+This command shows the resolved configuration before validation, which may contain sensitive values.
+
+## How to examine the validated configuration with component defaults applied?
+
+```bash
+   ./otelcorecol print-config --config=file:examples/local/otel-config.yaml --format=yaml
+```
+
+This command validates the configuration through the full component pipeline and shows the final configuration with all component defaults resolved. Sensitive values (like headers and certificates) are redacted for security. Supports both `--format=yaml` and `--format=json` output.
