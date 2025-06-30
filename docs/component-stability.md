@@ -87,6 +87,17 @@ Stable components MUST be compatible between minor versions unless critical secu
 component owner MUST provide a migration path and a reasonable time frame for users to upgrade. The same rules from beta
 components apply to stable when it comes to configuration changes.
 
+#### Testing requirements
+
+Stable components MUST have a comprehensive test suite. In particular they MUST have:
+1. A **test coverage** that exceeds the highest between 80% coverage and the repository-wide
+minimum. The unit test suite SHOULD cover all configuration options. The coverage MUST be shown as
+part of the component documentation.
+2. At least one **lifecycle test** that tests the component's initialization with a valid
+   configuration and ensures proper context propagation if applicable.
+3. At least one **benchmark test** for each stable signal. The component's documentation MUST
+   include a link to the latest run of benchmark results.
+
 #### Documentation requirements
 
 Stable components should have a complete set of documentation, including:
@@ -98,6 +109,9 @@ Stable components should have a complete set of documentation, including:
   what they provide.
 - Compatibility guarantees with external dependencies including the versions it is compatible with
   and under what conditions.
+- Guidance related to the component's usage in production environments, including how to scale a deployment of this component properly if it needs special considerations.
+- If stateful, how to configure the component to use persistent storage and how to gracefully
+  shutdown and restart the component.
 - Warnings about known limitations and ways to misuse the component.
 
 Receivers that produce a fixed set of telemetry should document the telemetry they produce,
@@ -259,6 +273,43 @@ To move within the 'Maintained' ladder ("graduate"), the process for doing so is
    the component.
 3. If approved, a PR to change the stability level should be opened and MUST be approved by all
    listed code owners.
+
+## Graduation criteria
+
+In addition to the requirements outlined above, additional criteria should be met before a component
+can graduate to a higher stability level. These ensure that the component is ready for the increased
+usage and scrutiny that comes with a higher stability level, and that the community around it is
+sufficiently healthy.
+
+If the graduation criteria are not met, the approver should provide feedback on what is missing and
+how to address it. The component owners can then address the feedback and re-request graduation on
+the same issue.
+
+## In development to alpha
+
+No additional criteria are required to graduate from development to alpha.
+The component still needs to meet the general requirements for alpha components.
+
+## Alpha to beta
+
+To graduate any signal from alpha to beta on a component:
+1. The component MUST have at least two active code owners.
+3. Within the 30 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
+   been reviewed and replied to appropriately.
+
+## Beta to stable
+
+To graduate any signal from beta to stable on a component:
+1. The component MUST have at least three active code owners.
+2. The component benchmark results MUST have been updated within the last 30 days and published in the component's README.
+3. Within the 60 days prior to the graduation request, the code owners MUST have reviewed and
+   replied to at least 80% of the issues and pull requests opened against the component. This
+   excludes general PRs or issues that are not specific to the component itself (e.g. repo-wide API
+   updates). It is not necessary that the issues and PRs are closed or merged, but that they have
+   been reviewed and replied to appropriately.
 
 ## Deprecation Information
 

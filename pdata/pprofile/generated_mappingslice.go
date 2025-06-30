@@ -109,6 +109,10 @@ func (es MappingSlice) AppendEmpty() Mapping {
 func (es MappingSlice) MoveAndAppendTo(dest MappingSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -141,22 +145,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MappingSlice) CopyTo(dest MappingSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newMapping((*es.orig)[i], es.state).CopyTo(newMapping((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.Mapping, srcLen)
-	wrappers := make([]*otlpprofiles.Mapping, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newMapping((*es.orig)[i], es.state).CopyTo(newMapping(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigMappingSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Mapping elements within MappingSlice given the
@@ -165,4 +154,19 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 func (es MappingSlice) Sort(less func(a, b Mapping) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Mapping {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Mapping, len(src))
+		data := make([]otlpprofiles.Mapping, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigMapping(dest[i], src[i])
+	}
+	return dest
 }

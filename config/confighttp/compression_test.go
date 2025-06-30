@@ -25,6 +25,7 @@ import (
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/featuregate"
 )
 
 func TestHTTPClientCompression(t *testing.T) {
@@ -32,6 +33,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	compressedGzipBody := compressGzip(t, testBody)
 	compressedZlibBody := compressZlib(t, testBody)
 	compressedDeflateBody := compressZlib(t, testBody)
+	compressedSnappyFramedBody := compressSnappyFramed(t, testBody)
 	compressedSnappyBody := compressSnappy(t, testBody)
 	compressedZstdBody := compressZstd(t, testBody)
 	compressedLz4Body := compressLz4(t, testBody)
@@ -39,11 +41,12 @@ func TestHTTPClientCompression(t *testing.T) {
 	const invalidGzipLevel configcompression.Level = 100
 
 	tests := []struct {
-		name        string
-		encoding    configcompression.Type
-		level       configcompression.Level
-		reqBody     []byte
-		shouldError bool
+		name                string
+		encoding            configcompression.Type
+		level               configcompression.Level
+		framedSnappyEnabled bool
+		reqBody             []byte
+		shouldError         bool
 	}{
 		{
 			name:        "ValidEmpty",
@@ -99,16 +102,31 @@ func TestHTTPClientCompression(t *testing.T) {
 			shouldError: false,
 		},
 		{
-			name:        "ValidSnappy",
-			encoding:    configcompression.TypeSnappy,
-			reqBody:     compressedSnappyBody.Bytes(),
-			shouldError: false,
+			name:                "ValidSnappy",
+			encoding:            configcompression.TypeSnappy,
+			framedSnappyEnabled: true,
+			reqBody:             compressedSnappyBody.Bytes(),
+			shouldError:         false,
 		},
 		{
 			name:        "InvalidSnappy",
 			encoding:    configcompression.TypeSnappy,
 			level:       gzip.DefaultCompression,
 			reqBody:     compressedSnappyBody.Bytes(),
+			shouldError: true,
+		},
+		{
+			name:                "ValidSnappyFramed",
+			encoding:            configcompression.TypeSnappyFramed,
+			framedSnappyEnabled: true,
+			reqBody:             compressedSnappyFramedBody.Bytes(),
+			shouldError:         false,
+		},
+		{
+			name:        "InvalidSnappyFramed",
+			encoding:    configcompression.TypeSnappyFramed,
+			level:       gzip.DefaultCompression,
+			reqBody:     compressedSnappyFramedBody.Bytes(),
 			shouldError: true,
 		},
 		{
@@ -134,6 +152,8 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
+
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				assert.NoError(t, err, "failed to read request body: %v", err)
@@ -193,7 +213,7 @@ func TestHTTPCustomDecompression(t *testing.T) {
 			return io.NopCloser(strings.NewReader("decompressed body")), nil
 		},
 	}
-	srv := httptest.NewServer(httpContentDecompressor(handler, defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, decoders))
+	srv := httptest.NewServer(httpContentDecompressor(handler, defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms(), decoders))
 
 	t.Cleanup(srv.Close)
 
@@ -214,11 +234,12 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	testBody := []byte("uncompressed_text")
 	noDecoders := map[string]func(io.ReadCloser) (io.ReadCloser, error){}
 	tests := []struct {
-		name     string
-		encoding string
-		reqBody  *bytes.Buffer
-		respCode int
-		respBody string
+		name                string
+		encoding            string
+		reqBody             *bytes.Buffer
+		respCode            int
+		respBody            string
+		framedSnappyEnabled bool
 	}{
 		{
 			name:     "NoCompression",
@@ -251,9 +272,25 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respCode: http.StatusOK,
 		},
 		{
+			name:                "ValidSnappyFramed",
+			encoding:            "x-snappy-framed",
+			framedSnappyEnabled: true,
+			reqBody:             compressSnappyFramed(t, testBody),
+			respCode:            http.StatusOK,
+		},
+		{
 			name:     "ValidSnappy",
 			encoding: "snappy",
 			reqBody:  compressSnappy(t, testBody),
+			respCode: http.StatusOK,
+		},
+		{
+			// Should work even without the framed snappy feature gate enabled,
+			// since during decompression we're peeking the compression header
+			// and identifying which snappy encoding was used.
+			name:     "ValidSnappyFramedAsSnappy",
+			encoding: "snappy",
+			reqBody:  compressSnappyFramed(t, testBody),
 			respCode: http.StatusOK,
 		},
 		{
@@ -291,11 +328,19 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 			respBody: "invalid input: magic number mismatch",
 		},
 		{
+			name:                "InvalidSnappyFramed",
+			encoding:            "x-snappy-framed",
+			framedSnappyEnabled: true,
+			reqBody:             bytes.NewBuffer(testBody),
+			respCode:            http.StatusBadRequest,
+			respBody:            "snappy: corrupt input",
+		},
+		{
 			name:     "InvalidSnappy",
 			encoding: "snappy",
 			reqBody:  bytes.NewBuffer(testBody),
 			respCode: http.StatusBadRequest,
-			respBody: "snappy: corrupt input",
+			respBody: "snappy: corrupt input\n",
 		},
 		{
 			name:     "UnsupportedCompression",
@@ -307,6 +352,8 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
+
 			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -318,7 +365,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 				assert.NoError(t, err, "failed to read request body: %v", err)
 				assert.EqualValues(t, testBody, string(body))
 				w.WriteHeader(http.StatusOK)
-			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms, noDecoders))
+			}), defaultMaxRequestBodySize, defaultErrorHandler, defaultCompressionAlgorithms(), noDecoders))
 			t.Cleanup(srv.Close)
 
 			req, err := http.NewRequest(http.MethodGet, srv.URL, tt.reqBody)
@@ -415,7 +462,7 @@ func TestOverrideCompressionList(t *testing.T) {
 	}), defaultMaxRequestBodySize, defaultErrorHandler, configuredDecoders, nil))
 	t.Cleanup(srv.Close)
 
-	req, err := http.NewRequest(http.MethodGet, srv.URL, compressSnappy(t, []byte("123decompressed body")))
+	req, err := http.NewRequest(http.MethodGet, srv.URL, compressSnappyFramed(t, []byte("123decompressed body")))
 	require.NoError(t, err, "failed to create request to test handler")
 	req.Header.Set("Content-Encoding", "snappy")
 
@@ -435,9 +482,10 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name     string
-		encoding string
-		compress func(tb testing.TB, payload []byte) *bytes.Buffer
+		name                string
+		encoding            string
+		compress            func(tb testing.TB, payload []byte) *bytes.Buffer
+		framedSnappyEnabled bool
 	}{
 		// None encoding is ignored since it does not
 		// enforce the max body size if content encoding header is not set
@@ -457,6 +505,12 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressZlib,
 		},
 		{
+			name:                "x-snappy-framed",
+			encoding:            "x-snappy-framed",
+			compress:            compressSnappyFramed,
+			framedSnappyEnabled: true,
+		},
+		{
 			name:     "snappy",
 			encoding: "snappy",
 			compress: compressSnappy,
@@ -468,7 +522,8 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel() // TODO: Re-enable parallel tests once feature gate is removed. We can't parallelize since registry is shared.
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tc.framedSnappyEnabled))
 
 			h := httpContentDecompressor(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -479,7 +534,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 				}),
 				1024,
 				defaultErrorHandler,
-				defaultCompressionAlgorithms,
+				defaultCompressionAlgorithms(),
 				availableDecoders,
 			)
 
@@ -517,12 +572,20 @@ func compressZlib(tb testing.TB, body []byte) *bytes.Buffer {
 	return &buf
 }
 
-func compressSnappy(tb testing.TB, body []byte) *bytes.Buffer {
+func compressSnappyFramed(tb testing.TB, body []byte) *bytes.Buffer {
 	var buf bytes.Buffer
 	sw := snappy.NewBufferedWriter(&buf)
 	_, err := sw.Write(body)
 	require.NoError(tb, err)
 	require.NoError(tb, sw.Close())
+	return &buf
+}
+
+func compressSnappy(tb testing.TB, body []byte) *bytes.Buffer {
+	var buf bytes.Buffer
+	compressed := snappy.Encode(nil, body)
+	_, err := buf.Write(compressed)
+	require.NoError(tb, err)
 	return &buf
 }
 

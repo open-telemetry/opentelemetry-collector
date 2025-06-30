@@ -47,6 +47,44 @@ func DefaultMetricsConfig() MetricsConfig {
 }
 {{- end }}
 
+{{ if .Events }}
+// EventConfig provides common config for a particular event.
+type EventConfig struct {
+	Enabled bool `mapstructure:"enabled"`
+
+	enabledSetByUser bool
+}
+
+func (ec *EventConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(ec)
+	if err != nil {
+		return err
+	}
+	ec.enabledSetByUser = parser.IsSet("enabled")
+	return nil
+}
+
+// EventsConfig provides config for {{ .Type }} events.
+type EventsConfig struct {
+	{{- range $name, $event := .Events }}
+	{{ $name.Render }} EventConfig `mapstructure:"{{ $name }}"`
+	{{- end }}
+}
+
+func DefaultEventsConfig() EventsConfig {
+	return EventsConfig{
+		{{- range $name, $event := .Events }}
+		{{ $name.Render }}: EventConfig{
+			Enabled: {{ $event.Enabled }},
+		},
+		{{- end }}
+	}
+}
+{{- end }}
+
 {{ if .ResourceAttributes -}}
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
@@ -59,6 +97,15 @@ type ResourceAttributeConfig struct {
 	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
 	// MetricsInclude has higher priority than MetricsExclude.
 	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+	{{- end }}
+	{{- if .Events }}
+	// Experimental: EventsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only events with matching resource attribute values will be emitted.
+	EventsInclude []filter.Config `mapstructure:"events_include"`
+	// Experimental: EventsExclude defines a list of filters for attribute values.
+	// If the list is not empty, events with matching resource attribute values will not be emitted.
+	// EventsInclude has higher priority than EventsExclude.
+	EventsExclude []filter.Config `mapstructure:"events_exclude"`
 	{{- end }}
 
 	enabledSetByUser bool
@@ -106,6 +153,25 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
+		{{- if .ResourceAttributes }}
+		ResourceAttributes: DefaultResourceAttributesConfig(),
+		{{- end }}
+	}
+}
+{{- end }}
+
+{{ if .Events -}}
+// LogsBuilderConfig is a configuration for {{ .Type }} logs builder.
+type LogsBuilderConfig struct {
+	Events EventsConfig `mapstructure:"events"`
+	{{- if .ResourceAttributes }}
+	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
+	{{- end }}
+}
+
+func DefaultLogsBuilderConfig() LogsBuilderConfig {
+	return LogsBuilderConfig {
+		Events: DefaultEventsConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}

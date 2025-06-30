@@ -22,6 +22,8 @@ func TestHistogramDataPoint_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewHistogramDataPoint(), ms)
 	assert.Equal(t, generateTestHistogramDataPoint(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestHistogramDataPoint(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
 	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).MoveTo(dest) })
@@ -108,6 +110,10 @@ func TestHistogramDataPoint_Sum(t *testing.T) {
 	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
 	ms.RemoveSum()
 	assert.False(t, ms.HasSum())
+	dest := NewHistogramDataPoint()
+	dest.SetSum(float64(17.13))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
@@ -118,6 +124,10 @@ func TestHistogramDataPoint_Min(t *testing.T) {
 	assert.InDelta(t, float64(9.23), ms.Min(), 0.01)
 	ms.RemoveMin()
 	assert.False(t, ms.HasMin())
+	dest := NewHistogramDataPoint()
+	dest.SetMin(float64(9.23))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasMin())
 }
 
 func TestHistogramDataPoint_Max(t *testing.T) {
@@ -128,6 +138,10 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 	assert.InDelta(t, float64(182.55), ms.Max(), 0.01)
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
+	dest := NewHistogramDataPoint()
+	dest.SetMax(float64(182.55))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasMax())
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {

@@ -8,8 +8,10 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -24,13 +26,14 @@ const (
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
-	Queue[T]
+	queue.Queue[T]
 	tb                *metadata.TelemetryBuilder
 	metricAttr        metric.MeasurementOption
 	enqueueFailedInst metric.Int64Counter
+	tracer            trace.Tracer
 }
 
-func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
+func newObsQueue[T request.Request](set Settings[T], delegate queue.Queue[T]) (queue.Queue[T], error) {
 	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
 	if err != nil {
 		return nil, err
@@ -54,10 +57,13 @@ func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T
 		return nil, err
 	}
 
+	tracer := metadata.Tracer(set.Telemetry)
+
 	or := &obsQueue[T]{
 		Queue:      delegate,
 		tb:         tb,
 		metricAttr: metric.WithAttributeSet(attribute.NewSet(exporterAttr)),
+		tracer:     tracer,
 	}
 
 	switch set.Signal {
@@ -81,7 +87,11 @@ func (or *obsQueue[T]) Offer(ctx context.Context, req T) error {
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
 	numItems := req.ItemsCount()
+
+	ctx, span := or.tracer.Start(ctx, "exporter/enqueue")
 	err := or.Queue.Offer(ctx, req)
+	span.End()
+
 	// No metrics recorded for profiles, remove enqueueFailedInst check with nil when profiles metrics available.
 	if err != nil && or.enqueueFailedInst != nil {
 		or.enqueueFailedInst.Add(ctx, int64(numItems), or.metricAttr)

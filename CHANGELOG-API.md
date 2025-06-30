@@ -7,6 +7,107 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.34.0/v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated NewProfilesRequestExporter function from xexporterhelper package (#13157)
+- `confighttp`: Remove pointer to field `cookies` in confighttp.ClientConfig (#13116)
+- `otlpreceiver`: Use `configoptional.Optional` to define optional configuration sections in the OTLP receiver. Remove `Unmarshal` method. (#13119)
+- `confighttp,configgrpc`: Rename `ClientConfig.TLSSetting` and `ServerConfig.TLSSetting` to `ClientConfig.TLS` and `ServerConfig.TLS`. (#13115)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+  Note that the batcher is temporarily a noop.
+- `pipeline`: Remove deprecated MustNewID[WithName] (#13139)
+
+### 🚀 New components 🚀
+
+- `configoptional`: Add a new configoptional module to support optional configuration fields. (#12981)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Introduce `MoveAndAppendTo` methods to the generated primitive slices (#13074)
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Correctly distinguish between `nil` and empty map values on the `ToStringMap` method (#13161)
+  This means that `ToStringMap()` method can now return a nil map if the original value was `nil`.
+  If you were not doing so already, make sure to check for `nil` before writing to the map to avoid panics.
+  
+- `confighttp`: Make the `NewDefaultServerConfig` function return a nil TLS config by default. (#13129)
+  - The previous default was a TLS config with no certificates, which would fail at runtime.
+  
+
+<!-- previous-version -->
+
+## v1.33.0/v0.127.0
+
+### 🛑 Breaking changes 🛑
+
+- `mdatagen`: Add context parameter for recording event to set traceID and spanID (#12571)
+- `otlpreceiver`: Use wrapper type for URL paths (#13046)
+
+### 🚩 Deprecations 🚩
+
+- `pipeline`: Deprecate MustNewID and MustNewIDWithName (#12831)
+- `pdata/profile`: Replace AddAttribute with the PutAttribute helper method to modify the content of attributable records. (#12798)
+
+### 💡 Enhancements 💡
+
+- `consumer/consumertest`: Add context to sinks (#13039)
+- `cmd/mdatagen`: Add events in generated documentation (#12571)
+- `confmap`: Add a `Conf.Delete` method to remove a path from the configuration map. (#13064)
+- `confmap`: Support running Unmarshal hooks on nil values. (#12981)
+
+<!-- previous-version -->
+
+## v1.32.0/v0.126.0
+
+### 🚩 Deprecations 🚩
+
+- `configauth`: Deprecate `configauth.Authentication` in favor of `configauth.Config`. (#12875)
+
+### 💡 Enhancements 💡
+
+- `cmd/mdatagen`: Add type definition for events in mdatagen (#12571)
+- `cmd/mdatagen`: Add functions for processing structured events in mdatagen (#12571)
+
+<!-- previous-version -->
+
+## v1.31.0/v0.125.0
+
+### 🚩 Deprecations 🚩
+
+- `extensionauthtest`: Deprecate NewErrorClient in favor of NewErrClient. (#12874)
+
+### 💡 Enhancements 💡
+
+- `xextension/storage`: ErrStorageFull error added to xextension/storage contract (#12925)
+- `pdata`: Add MoveTo to pcommon.Value, only type missing this (#12877)
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix MoveTo when moving to the same destination (#12887)
+
+<!-- previous-version -->
+
+## v1.30.0/v0.124.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterbatcher`: Remove deprecated package exporterbatcher (#12780)
+- `exporterqueue`: Remove deprecated package exporterqueue (#12779)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Add variable for metric name in mdatagen (#12459)
+  Access metric name via `metadata.MetricsInfo.<metric-variable>.Name`
+- `client`: Add support for iterating over client metadata keys (#12804)
+- `service`: Adds the GetFactory interface to the hostcapabilities package (#12789)
+- `cmd/mdatagen`: Add the foundational changes necessary for supporting logs data in `mdatagen` (#12571)
+
+<!-- previous-version -->
+
 ## v1.29.0/v0.123.0
 
 ### 🛑 Breaking changes 🛑
@@ -241,7 +342,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 💡 Enhancements 💡
 
-- `componenttest`: Add helper to get a metric for componentest.Telemetry (#12215)
+- `componenttest`: Add helper to get a metric for componenttest.Telemetry (#12215)
 - `componenttest`: Extract componenttest.Telemetry as generic struct for telemetry testing (#12151)
 - `mdatagen`: Generate assert function for each metric in mdatagen (#12179)
 - `metadatatest`: Generate NewSettings that accepts componenttest.Telemetry (#12216)
@@ -414,14 +515,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   Factory.CreateExtension -> Factory.Create |
   Factory.ExtensionStability -> Factory.Stability
   
-- `exporter`: Deprecate funcs that repeate exporter in name (#11370)
+- `exporter`: Deprecate funcs that repeat exporter in name (#11370)
   Factory.Create[Traces|Metrics|Logs|Profiles]Exporter -> Factory.Create[Traces|Metrics|Logs|Profiles] |
   Factory.[Traces|Metrics|Logs|Profiles]ExporterStability -> Factory.[Traces|Metrics|Logs|Profiles]Stability
   
 
 ### 🚀 New components 🚀
 
-- `consumererrorprofiles`: Add new module consumereerrorprofiles for consumer error profiles. (#11131)
+- `consumererrorprofiles`: Add new module consumererrorprofiles for consumer error profiles. (#11131)
 
 ### 💡 Enhancements 💡
 
@@ -948,7 +1049,7 @@ Use the `ProviderFactories` and `ConverterFactories` fields instead.
   - obsreporttest.TestTelemetry -> componenttest.TestTelemetry
   - obsreporttest.SetupTelemetry -> componenttest.SetupTelemetry
   - obsreporttest.CheckScraperMetrics -> TestTelemetry.CheckScraperMetrics
-  - obserporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
+  - obsreporttest.TestTelemetry.TelemetrySettings -> componenttest.TestTelemetry.TelemetrySettings()
   
 - `confignet`: Deprecates `DialContext` and `ListenContext` functions. Use `Dial` and `Listen` instead. (#9258)
   Unlike the previous `Dial` and `Listen` functions, the new `Dial` and `Listen` functions take a `context.Context` like `DialContext` and `ListenContext`.

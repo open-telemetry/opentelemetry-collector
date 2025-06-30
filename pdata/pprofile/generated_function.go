@@ -41,6 +41,10 @@ func NewFunction() Function {
 func (ms Function) MoveTo(dest Function) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.Function{}
 }
@@ -92,8 +96,12 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	dest.SetNameStrindex(ms.NameStrindex())
-	dest.SetSystemNameStrindex(ms.SystemNameStrindex())
-	dest.SetFilenameStrindex(ms.FilenameStrindex())
-	dest.SetStartLine(ms.StartLine())
+	copyOrigFunction(dest.orig, ms.orig)
+}
+
+func copyOrigFunction(dest, src *otlpprofiles.Function) {
+	dest.NameStrindex = src.NameStrindex
+	dest.SystemNameStrindex = src.SystemNameStrindex
+	dest.FilenameStrindex = src.FilenameStrindex
+	dest.StartLine = src.StartLine
 }

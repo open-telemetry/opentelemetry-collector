@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/invalid_stability.yaml",
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'status.stability': unsupported stability level: \"incorrectstability\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'status.stability' unsupported stability level: \"incorrectstability\"",
 		},
 		{
 			name:    "testdata/no_stability_component.yaml",
@@ -78,6 +78,10 @@ func TestValidate(t *testing.T) {
 			wantErr: "metric \"default.metric\": missing metric description",
 		},
 		{
+			name:    "testdata/events/no_description.yaml",
+			wantErr: "event \"default.event\": missing event description",
+		},
+		{
 			name:    "testdata/no_metric_unit.yaml",
 			wantErr: "metric \"default.metric\": missing metric unit",
 		},
@@ -98,6 +102,10 @@ func TestValidate(t *testing.T) {
 		{
 			name:    "testdata/unknown_metric_attribute.yaml",
 			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
+		},
+		{
+			name:    "testdata/events/unknown_attribute.yaml",
+			wantErr: "event \"system.event\" refers to undefined attributes: [missing]",
 		},
 		{
 			name:    "testdata/unused_attribute.yaml",
@@ -170,4 +178,47 @@ func contains(r string, rs []string) bool {
 		}
 	}
 	return false
+}
+
+func TestCodeCovID(t *testing.T) {
+	tests := []struct {
+		md   Metadata
+		want string
+	}{
+		{
+			md: Metadata{
+				Type: "aes",
+				Status: &Status{
+					Class:              "provider",
+					CodeCovComponentID: "my_custom_id",
+				},
+			},
+			want: "my_custom_id",
+		},
+		{
+			md: Metadata{
+				Type: "count",
+				Status: &Status{
+					Class: "connector",
+				},
+			},
+			want: "connector_count",
+		},
+		{
+			md: Metadata{
+				Type: "file",
+				Status: &Status{
+					Class: "exporter",
+				},
+			},
+			want: "exporter_file",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.md.Type, func(t *testing.T) {
+			got := tt.md.GetCodeCovComponentID()
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

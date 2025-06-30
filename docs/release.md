@@ -26,6 +26,7 @@ Before the release, make sure there are no open release blockers in [core](https
 ## Releasing opentelemetry-collector
 
 1. Update Contrib to use the latest in development version of Core by running [Update contrib to the latest core source](https://github.com/open-telemetry/opentelemetry-collector-contrib/actions/workflows/update-otel.yaml). This is to ensure that the latest core does not break contrib in any way. If the job is failing for any reason, you can do it locally by running `make update-otel` in Contrib root directory and pushing a PR. If you are unable to run `make update-otel`, it is possible to skip this step and resolve conflicts with Contrib after Core is released, but this is generally inadvisable.
+   - While this PR is open, all merging in Core is automatically halted via the `Merge freeze / Check` CI check.
    -  🛑 **Do not move forward until this PR is merged.**
 
 2. Determine the version number that will be assigned to the release. Usually, we increment the minor version number and set the patch number to 0. In this document, we are using `v0.85.0` as the version to be released, following `v0.84.0`.
@@ -44,24 +45,23 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Check out main and ensure it has the "Prepare release" commit in your local
-   copy by pulling in the latest from `open-telemetry/opentelemetry-collector`
-   Use this commit to create a branch named `release/<release-series>` (e.g.
-   `release/v0.85.x`). Push the new branch to
-   `open-telemetry/opentelemetry-collector`. Assuming your upstream remote is
-   named `upstream`, you can try the following commands:
-   - `git checkout main && git fetch upstream && git rebase upstream/main`
-   - `git switch -c release/<release series>` # append the commit hash of the PR in the last step if it is not the head of mainline
-   - `git push -u upstream release/<release series>`
-
-5. Make sure you are on `release/<release-series>`. Tag the module groups with the new release version by running:
+4. On your local machine, make sure you are on the `main` branch and that the PR from step 3 is incorporated **at the head of your branch** (this is required to ensure the proper commit is used for the release tags and branch creation below). Tag the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
    - `make push-tags MODSET=beta` for the beta modules group,
    - `make push-tags MODSET=stable` for the stable modules group, only if there were changes since the last release.
    
-6. Wait for the new tag build to pass successfully.
+   **Note**: Pushing the **beta** tags will automatically trigger the [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml) GitHub Action, which will create the release branch (e.g. `release/v0.127.x`) from the commit that prepared the release. Pushing stable tags, if required, will not trigger creation of an additional release branch.
+
+5. Wait for the "Automation - Release Branch" workflow to complete successfully. This workflow will automatically:
+   - Detect the version from the pushed beta tags
+   - Use the commit on which the tags were pushed as the "prepare release" commit
+   - Create a new release branch (e.g. `release/v0.127.x`) from that commit
+   
+   If the workflow fails, you can check the [Actions tab](https://github.com/open-telemetry/opentelemetry-collector/actions) for details. The underlying script (./.github/workflows/scripts/release-branch.sh) can also be tested and run locally if needed by setting the GITHUB_REF environment variable (e.g., `GITHUB_REF=refs/tags/v0.85.0 ./.github/workflows/scripts/release-branch.sh`).
+   
+6. Wait for the tag-triggered build workflows to pass successfully.
 
 7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
@@ -95,10 +95,10 @@ Before the release, make sure there are no open release blockers in [core](https
 
 The last step of the release process creates artifacts for the new version of the collector and publishes images to Dockerhub. The steps in this portion of the release are done in the [opentelemetry-collector-releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repo.
 
-1. Run the GitHub Action workflow "Update Version in Distributions and Prepare PR" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
+1. Run the GitHub Action workflow "[Update Version in Distributions and Prepare PR](https://github.com/open-telemetry/opentelemetry-collector-releases/actions/workflows/update-version.yaml)" which will update the minor version automatically (e.g. v0.116.0 -> v0.117.0) or manually provide a new version if releasing a bugfix or skipping a version. Select "create pr" option.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-2. Check out main and ensure it has the "Prepare release" commit in your local
+2. Check out main and ensure it has the "Update version from ..." commit in your local
    copy by pulling in the latest from
    `open-telemetry/opentelemetry-collector-releases`. Assuming your upstream
    remote is named `upstream`, you can try running:
@@ -177,20 +177,22 @@ When considering making a bugfix release on the `v0.N.x` release cycle, the bug 
     - Changing the configuration to an easy to find value.
 2. The bug happens in common setups. To gauge this, maintainers can consider the following:
     - If the bug is specific to a certain platform, and if that platform is in [Tier 1](../docs/platform-support.md#tiered-platform-support-model).
-    - The bug happens with the default configuration or with a commonly used one (e.g. has been reported by multiple people)
+    - The bug happens with the default configuration or with one that is known to be used in production.
 3. The bug is sufficiently severe. For example (non-exhaustive list):
     - The bug makes the Collector crash reliably
     - The bug makes the Collector fail to start under an accepted configuration
     - The bug produces significant data loss
     - The bug makes the Collector negatively affect its environment (e.g. significantly affects its host machine)
+    - The bug makes it difficult to troubleshoot or debug Collector setups
 
 We aim to provide a release that fixes security-related issues in at most 30 days since they are publicly announced; with the current release schedule this means security issues will typically not warrant a bugfix release. An exception is critical vulnerabilities (CVSSv3 score >= 9.0), which will warrant a release within five business days.
 
 The OpenTelemetry Collector maintainers will ultimately have the responsibility to assess if a given bug or security issue fulfills all the necessary criteria and may grant exceptions in a case-by-case basis.
+If the maintainers are unable to reach consensus within one working day, we will lean towards releasing a bugfix version.
 
 ### Bugfix release procedure
 
-The following documents the procedure to release a bugfix
+The release manager of a minor version is responsible for releasing any bugfix versions on this release series. The following documents the procedure to release a bugfix
 
 1. Create a pull request against the `release/<release-series>` (e.g. `release/v0.90.x`) branch to apply the fix.
 2. Make sure you are on `release/<release-series>`. Prepare release commits with `prepare-release` make target, e.g. `make prepare-release PREVIOUS_VERSION=0.90.0 RELEASE_CANDIDATE=0.90.1 MODSET=beta`, and create a pull request against the `release/<release-series>` branch.
@@ -217,14 +219,13 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-04-14 | v0.124.0 | [@atoulme](https://github.com/atoulme)               |
-| 2025-04-28 | v0.125.0 | [@songy23](https://github.com/songy23)               |
-| 2025-05-12 | v0.126.0 | [@dmitryax](https://github.com/dmitryax)             |
-| 2025-05-26 | v0.127.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
-| 2025-06-30 | v0.129.0 | [@jpkrohling](https://github.com/jpkrohling)         |
-| 2025-07-14 | v0.130.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
-| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                   |
-| 2025-08-11 | v0.132.0 | [@mx-psi](https://github.com/mx-psi)                 |
-| 2025-08-18 | v0.133.0 | [@evan-bradley](https://github.com/evan-bradley)     |
-| 2025-09-01 | v0.134.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
+| 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
+| 2025-07-14 | v0.130.0 | [@jmacd](https://github.com/jmacd)                   |
+| 2025-07-28 | v0.131.0 | [@mx-psi](https://github.com/mx-psi)                 |
+| 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
+| 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
+| 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
+| 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
+| 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
+| 2025-10-13 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |

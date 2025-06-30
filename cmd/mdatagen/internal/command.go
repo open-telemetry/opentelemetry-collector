@@ -158,11 +158,11 @@ func run(ymlPath string) error {
 		}
 	}
 
-	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 { // if there's metrics or internal metrics, generate documentation for them
+	if len(md.Metrics) != 0 || len(md.Telemetry.Metrics) != 0 || len(md.ResourceAttributes) != 0 || len(md.Events) != 0 { // if there's metrics or internal metrics or events, generate documentation for them
 		toGenerate[filepath.Join(tmplDir, "documentation.md.tmpl")] = filepath.Join(ymlDir, "documentation.md")
 	}
 
-	if len(md.Metrics) > 0 || len(md.ResourceAttributes) > 0 {
+	if len(md.Metrics) > 0 || len(md.Events) > 0 || len(md.ResourceAttributes) > 0 {
 		testdataDir := filepath.Join(codeDir, "testdata")
 		if err = os.MkdirAll(filepath.Join(codeDir, "testdata"), 0o700); err != nil {
 			return fmt.Errorf("unable to create output directory %q: %w", testdataDir, err)
@@ -219,6 +219,9 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				},
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]
+				},
+				"eventInfo": func(en EventName) Event {
+					return md.Events[en]
 				},
 				"telemetryInfo": func(mn MetricName) Metric {
 					return md.Telemetry.Metrics[mn]

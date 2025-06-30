@@ -53,7 +53,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func clientConfig(endpoint string, headers map[string]configopaque.String, tlsSetting configtls.ClientConfig, compression configcompression.Type) confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
-	clientConfig.TLSSetting = tlsSetting
+	clientConfig.TLS = tlsSetting
 	clientConfig.Compression = compression
 	if endpoint != "" {
 		clientConfig.Endpoint = endpoint

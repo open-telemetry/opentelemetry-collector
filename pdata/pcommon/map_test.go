@@ -416,6 +416,11 @@ func TestMap_MoveTo(t *testing.T) {
 	// Test MoveTo from empty to non-empty
 	NewMap().MoveTo(dest)
 	assert.Equal(t, 0, dest.Len())
+
+	dest.PutStr("k", "v")
+	dest.MoveTo(dest)
+	assert.Equal(t, 1, dest.Len())
+	assert.Equal(t, map[string]any{"k": "v"}, dest.AsRaw())
 }
 
 func TestMap_CopyTo(t *testing.T) {

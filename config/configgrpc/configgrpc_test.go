@@ -51,7 +51,7 @@ func newMockAuthServer(auth func(ctx context.Context, sources map[string][]strin
 }
 
 func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
-	expectedKeepaliveClientConfig := &KeepaliveClientConfig{
+	expectedKeepaliveClientConfig := KeepaliveClientConfig{
 		Time:    time.Second * 10,
 		Timeout: time.Second * 10,
 	}
@@ -60,9 +60,10 @@ func TestNewDefaultKeepaliveClientConfig(t *testing.T) {
 }
 
 func TestNewDefaultClientConfig(t *testing.T) {
-	expected := &ClientConfig{
-		TLSSetting:   configtls.NewDefaultClientConfig(),
-		Keepalive:    NewDefaultKeepaliveClientConfig(),
+	keepalive := NewDefaultKeepaliveClientConfig()
+	expected := ClientConfig{
+		TLS:          configtls.NewDefaultClientConfig(),
+		Keepalive:    &keepalive,
 		BalancerName: BalancerName(),
 	}
 
@@ -72,14 +73,14 @@ func TestNewDefaultClientConfig(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerParameters(t *testing.T) {
-	expectedParams := &KeepaliveServerParameters{}
+	expectedParams := KeepaliveServerParameters{}
 	params := NewDefaultKeepaliveServerParameters()
 
 	assert.Equal(t, expectedParams, params)
 }
 
 func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
-	expectedPolicy := &KeepaliveEnforcementPolicy{}
+	expectedPolicy := KeepaliveEnforcementPolicy{}
 
 	policy := NewDefaultKeepaliveEnforcementPolicy()
 
@@ -87,17 +88,17 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 }
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
-	expected := &KeepaliveServerConfig{
-		ServerParameters:  NewDefaultKeepaliveServerParameters(),
-		EnforcementPolicy: NewDefaultKeepaliveEnforcementPolicy(),
+	expected := KeepaliveServerConfig{
+		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 	result := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, expected, result)
 }
 
 func TestNewDefaultServerConfig(t *testing.T) {
-	expected := &ServerConfig{
-		Keepalive: NewDefaultKeepaliveServerConfig(),
+	expected := ServerConfig{
+		Keepalive: ptr(NewDefaultKeepaliveServerConfig()),
 	}
 
 	result := NewDefaultServerConfig()
@@ -113,14 +114,14 @@ var (
 
 func TestDefaultGrpcClientSettings(t *testing.T) {
 	gcs := &ClientConfig{
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
 	opts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
 	require.NoError(t, err)
 	/* Expecting 2 DialOptions:
-	 * - WithTransportCredentials (TLSSetting)
+	 * - WithTransportCredentials (TLS)
 	 * - WithStatsHandler (always, for self-telemetry)
 	 */
 	assert.Len(t, opts, 2)
@@ -128,7 +129,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 
 func TestGrpcClientExtraOption(t *testing.T) {
 	gcs := &ClientConfig{
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -141,7 +142,7 @@ func TestGrpcClientExtraOption(t *testing.T) {
 	)
 	require.NoError(t, err)
 	/* Expecting 3 DialOptions:
-	 * - WithTransportCredentials (TLSSetting)
+	 * - WithTransportCredentials (TLS)
 	 * - WithStatsHandler (always, for self-telemetry)
 	 * - extraOpt
 	 */
@@ -163,7 +164,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeGzip,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -176,7 +177,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -192,7 +193,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeSnappy,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -205,7 +206,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -221,7 +222,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				},
 				Endpoint:    "localhost:1234",
 				Compression: configcompression.TypeZstd,
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: false,
 				},
 				Keepalive: &KeepaliveClientConfig{
@@ -234,7 +235,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 				WaitForReady:    true,
 				BalancerName:    "round_robin",
 				Authority:       "pseudo-authority",
-				Auth:            &configauth.Authentication{AuthenticatorID: testAuthID},
+				Auth:            &configauth.Config{AuthenticatorID: testAuthID},
 			},
 			host: &mockHost{
 				ext: map[component.ID]component.Component{
@@ -249,7 +250,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 			require.NoError(t, err)
 			/* Expecting 11 DialOptions:
 			 * - WithDefaultCallOptions (Compression)
-			 * - WithTransportCredentials (TLSSetting)
+			 * - WithTransportCredentials (TLS)
 			 * - WithDefaultServiceConfig (BalancerName)
 			 * - WithAuthority (Authority)
 			 * - WithStatsHandler (always, for self-telemetry)
@@ -277,7 +278,7 @@ func TestHeaders(t *testing.T) {
 	// Create client and send request to server with headers
 	resp, errResp := sendTestRequest(t, ClientConfig{
 		Endpoint: addr,
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -299,7 +300,7 @@ func TestDefaultGrpcServerSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 3)
 }
@@ -312,6 +313,7 @@ func TestGrpcServerExtraOption(t *testing.T) {
 	}
 	extraOpt := grpc.ConnectionTimeout(1_000_000_000)
 	opts, err := gss.getGrpcServerOptions(
+		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		[]ToServerOption{WithGrpcServerOption(extraOpt)},
@@ -379,7 +381,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			Endpoint:  "localhost:1234",
 			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.ServerConfig{
+		TLS: &configtls.ServerConfig{
 			Config:       configtls.Config{},
 			ClientCAFile: "",
 		},
@@ -401,7 +403,7 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 			},
 		},
 	}
-	opts, err := gss.getGrpcServerOptions(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
+	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
 	require.NoError(t, err)
 	assert.Len(t, opts, 10)
 }
@@ -412,7 +414,7 @@ func TestGrpcServerAuthSettings(t *testing.T) {
 			Endpoint: "0.0.0.0:1234",
 		},
 	}
-	gss.Auth = &configauth.Authentication{
+	gss.Auth = &configauth.Config{
 		AuthenticatorID: mockID,
 	}
 
@@ -433,7 +435,7 @@ func TestGrpcClientConfigInvalidBalancer(t *testing.T) {
 		},
 		Endpoint:    "localhost:1234",
 		Compression: "gzip",
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: false,
 		},
 		Keepalive: &KeepaliveClientConfig{
@@ -461,7 +463,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
@@ -477,7 +479,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				Headers:     nil,
 				Endpoint:    "",
 				Compression: "",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
@@ -491,7 +493,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "failed to resolve authenticator \"doesntexist\": authenticator not found",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
+				Auth:     &configauth.Config{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{ext: map[component.ID]component.Component{}},
 		},
@@ -499,7 +501,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "no extensions configuration available",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				Auth:     &configauth.Authentication{AuthenticatorID: doesntExistID},
+				Auth:     &configauth.Config{AuthenticatorID: doesntExistID},
 			},
 			host: &mockHost{},
 		},
@@ -507,7 +509,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"zlib\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "zlib",
@@ -518,7 +520,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"deflate\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "deflate",
@@ -529,7 +531,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 			err: "unsupported compression type \"bad\"",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 				Compression: "bad",
@@ -552,7 +554,7 @@ func TestUseSecure(t *testing.T) {
 		Headers:     nil,
 		Endpoint:    "",
 		Compression: "",
-		TLSSetting:  configtls.ClientConfig{},
+		TLS:         configtls.ClientConfig{},
 		Keepalive:   nil,
 	}
 	dialOpts, err := gcs.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
@@ -572,7 +574,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CAFile: "/doesnt/exist",
 					},
@@ -586,7 +588,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "/doesnt/exist",
 					},
@@ -600,7 +602,7 @@ func TestGRPCServerSettingsError(t *testing.T) {
 					Endpoint:  "127.0.0.1:1234",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: &configtls.ServerConfig{
 					ClientCAFile: "/doesnt/exist",
 				},
 			},
@@ -737,13 +739,13 @@ func TestHttpReception(t *testing.T) {
 					Endpoint:  "localhost:0",
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: test.tlsServerCreds,
+				TLS: test.tlsServerCreds,
 			})
 			defer s.Stop()
 
 			resp, errResp := sendTestRequest(t, ClientConfig{
-				Endpoint:   addr,
-				TLSSetting: *test.tlsClientCreds,
+				Endpoint: addr,
+				TLS:      *test.tlsClientCreds,
 			})
 			if test.hasError {
 				require.Error(t, errResp)
@@ -771,7 +773,7 @@ func TestReceiveOnUnixDomainSocket(t *testing.T) {
 
 	resp, errResp := sendTestRequest(t, ClientConfig{
 		Endpoint: "unix://" + addr,
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	})
@@ -954,7 +956,7 @@ func TestClientInfoInterceptors(t *testing.T) {
 			{
 				resp, errResp := sendTestRequest(t, ClientConfig{
 					Endpoint: addr,
-					TLSSetting: configtls.ClientConfig{
+					TLS: configtls.ClientConfig{
 						Insecure: true,
 					},
 				})
@@ -1144,9 +1146,13 @@ func (gts *grpcTraceServer) Export(ctx context.Context, _ ptraceotlp.ExportReque
 }
 
 func (gts *grpcTraceServer) startTestServer(t *testing.T, gss ServerConfig) (*grpc.Server, string) {
+	return gts.startTestServerWithHost(t, gss, componenttest.NewNopHost())
+}
+
+func (gts *grpcTraceServer) startTestServerWithHost(t *testing.T, gss ServerConfig, host component.Host, opts ...ToServerOption) (*grpc.Server, string) {
 	listener, err := gss.NetAddr.Listen(context.Background())
 	require.NoError(t, err)
-	server, err := gss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	server, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), opts...)
 	require.NoError(t, err)
 	ptraceotlp.RegisterGRPCServer(server, gts)
 	go func() {
@@ -1155,8 +1161,30 @@ func (gts *grpcTraceServer) startTestServer(t *testing.T, gss ServerConfig) (*gr
 	return server, listener.Addr().String()
 }
 
+func (gts *grpcTraceServer) startTestServerWithHostError(_ *testing.T, gss ServerConfig, host component.Host, opts ...ToServerOption) (*grpc.Server, error) {
+	listener, err := gss.NetAddr.Listen(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer listener.Close()
+
+	server, err := gss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	ptraceotlp.RegisterGRPCServer(server, gts)
+	return server, nil
+}
+
+// sendTestRequest issues a ptraceotlp export request and captures metadata.
 func sendTestRequest(t *testing.T, gcs ClientConfig) (ptraceotlp.ExportResponse, error) {
-	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	return sendTestRequestWithHost(t, gcs, componenttest.NewNopHost())
+}
+
+// sendTestRequestWithHost is similar to sendTestRequest but allows specifying the host
+func sendTestRequestWithHost(t *testing.T, gcs ClientConfig, host component.Host) (ptraceotlp.ExportResponse, error) {
+	grpcClientConn, errClient := gcs.ToClientConn(context.Background(), host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, errClient)
 	defer func() { assert.NoError(t, grpcClientConn.Close()) }()
 	c := ptraceotlp.NewGRPCClient(grpcClientConn)

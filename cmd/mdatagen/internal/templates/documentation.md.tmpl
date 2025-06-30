@@ -34,11 +34,41 @@
 
 {{- end -}}
 
+{{- define "event-documentation" -}}
+{{- $eventName := . }}
+{{- $event := $eventName | eventInfo -}}
+
+### {{ $eventName }}
+
+{{ $event.Description }}
+
+{{- if $event.ExtendedDocumentation }}
+
+{{ $event.ExtendedDocumentation }}
+
+{{- end }}
+
+{{- if $event.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+{{- range $event.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- end }}
+
+{{- end }}
+
+{{- end -}}
+
 {{- define "telemetry-documentation" -}}
 {{- $metricName := . }}
 {{- $metric := $metricName | telemetryInfo -}}
 
-### otelcol_{{ $metricName }}
+### {{ if $metric.Prefix -}}{{ $metric.Prefix }}{{- else -}}otelcol_{{- end -}}{{ $metricName }}
 
 {{ $metric.Description }}{{ $metric.Stability }}
 
@@ -53,6 +83,19 @@
 | {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
 
+{{- if $metric.Attributes }}
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+{{- range $metric.Attributes }}
+{{- $attribute := . | attributeInfo }}
+| {{ $attribute.Name }} | {{ $attribute.Description }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- end }}
+
+{{- end }}
 
 {{- end -}}
 
@@ -106,6 +149,50 @@ metrics:
 {{- $optionalMetricSeen = true }}
 
 {{ template "metric-documentation" $metricName }}
+
+{{- end }}
+{{- end }}
+
+{{- if .Events }}
+
+## Default Events
+
+The following events are emitted by default. Each of them can be disabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: false
+```
+
+{{- range $eventName, $event := .Events }}
+{{- if $event.Enabled }}
+
+{{ template "event-documentation" $eventName }}
+
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- $optionalEventSeen := false }}
+{{- range $eventName, $event := .Events }}
+{{- if not $event.Enabled }}
+{{- if not $optionalEventSeen }}
+
+## Optional Events
+
+The following events are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+events:
+  <event_name>:
+    enabled: true
+```
+
+{{- end }}
+{{- $optionalEventSeen = true }}
+
+{{ template "event-documentation" $eventName }}
 
 {{- end }}
 {{- end }}

@@ -109,6 +109,10 @@ func (es LocationSlice) AppendEmpty() Location {
 func (es LocationSlice) MoveAndAppendTo(dest LocationSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -141,22 +145,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newLocation((*es.orig)[i], es.state).CopyTo(newLocation((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.Location, srcLen)
-	wrappers := make([]*otlpprofiles.Location, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newLocation((*es.orig)[i], es.state).CopyTo(newLocation(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigLocationSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the
@@ -165,4 +154,19 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 func (es LocationSlice) Sort(less func(a, b Location) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.Location {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Location, len(src))
+		data := make([]otlpprofiles.Location, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigLocation(dest[i], src[i])
+	}
+	return dest
 }

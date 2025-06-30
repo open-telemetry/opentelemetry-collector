@@ -16,10 +16,12 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	pdatareq "go.opentelemetry.io/collector/pdata/xpdata/request"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 )
 
@@ -60,16 +62,31 @@ func newProfilesRequest(pd pprofile.Profiles) exporterhelper.Request {
 
 type profilesEncoding struct{}
 
-func (profilesEncoding) Unmarshal(bytes []byte) (exporterhelper.Request, error) {
+var _ exporterhelper.QueueBatchEncoding[request.Request] = profilesEncoding{}
+
+func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
+	if queue.PersistRequestContextOnRead {
+		ctx, profiles, err := pdatareq.UnmarshalProfiles(bytes)
+		if errors.Is(err, pdatareq.ErrInvalidFormat) {
+			// fall back to unmarshaling without context
+			profiles, err = profilesUnmarshaler.UnmarshalProfiles(bytes)
+		}
+		return ctx, newProfilesRequest(profiles), err
+	}
 	profiles, err := profilesUnmarshaler.UnmarshalProfiles(bytes)
 	if err != nil {
-		return nil, err
+		var req request.Request
+		return context.Background(), req, err
 	}
-	return newProfilesRequest(profiles), nil
+	return context.Background(), newProfilesRequest(profiles), nil
 }
 
-func (profilesEncoding) Marshal(req exporterhelper.Request) ([]byte, error) {
-	return profilesMarshaler.MarshalProfiles(req.(*profilesRequest).pd)
+func (profilesEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
+	profiles := req.(*profilesRequest).pd
+	if queue.PersistRequestContextOnWrite {
+		return pdatareq.MarshalProfiles(ctx, profiles)
+	}
+	return profilesMarshaler.MarshalProfiles(profiles)
 }
 
 func (req *profilesRequest) OnError(err error) exporterhelper.Request {
@@ -131,9 +148,6 @@ func requestFromProfiles() exporterhelper.RequestConverterFunc[pprofile.Profiles
 		return newProfilesRequest(profiles), nil
 	}
 }
-
-// Deprecated: [v0.124.0] use NewProfilesRequest.
-var NewProfilesRequestExporter = NewProfilesRequest
 
 // NewProfilesRequest creates a new profiles exporter based on a custom ProfilesConverter and Sender.
 // Experimental: This API is at the early stage of development and may change without backward compatibility

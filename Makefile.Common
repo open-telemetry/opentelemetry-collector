@@ -26,6 +26,7 @@ JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
+CHECKAPI     := $(TOOLS_BIN_DIR)/checkapi
 CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
@@ -39,8 +40,6 @@ IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
 PORTO        := $(TOOLS_BIN_DIR)/porto
-SEMCONVGEN   := $(TOOLS_BIN_DIR)/semconvgen
-SEMCONVKIT   := $(TOOLS_BIN_DIR)/semconvkit
 GOTESTSUM    := $(TOOLS_BIN_DIR)/gotestsum
 
 .PHONY: install-tools

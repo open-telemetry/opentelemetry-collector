@@ -3,9 +3,9 @@ module go.opentelemetry.io/collector/service/hostcapabilities
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/component v1.29.0
-	go.opentelemetry.io/collector/pipeline v0.123.0
-	go.opentelemetry.io/collector/service v0.123.0
+	go.opentelemetry.io/collector/component v1.34.0
+	go.opentelemetry.io/collector/pipeline v0.128.0
+	go.opentelemetry.io/collector/service v0.128.0
 )
 
 require (
@@ -15,22 +15,22 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.29.0 // indirect
-	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
-	go.opentelemetry.io/otel v1.35.0 // indirect
-	go.opentelemetry.io/otel/log v0.11.0 // indirect
-	go.opentelemetry.io/otel/metric v1.35.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
-	go.opentelemetry.io/otel/trace v1.35.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.34.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.128.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.34.0 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0 // indirect
+	go.opentelemetry.io/otel v1.36.0 // indirect
+	go.opentelemetry.io/otel/log v0.12.2 // indirect
+	go.opentelemetry.io/otel/metric v1.36.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
-	google.golang.org/grpc v1.71.1 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250519155744-55703ea1f237 // indirect
+	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 )
 
@@ -80,7 +80,7 @@ replace (
 	go.opentelemetry.io/collector/receiver => ../../receiver
 	go.opentelemetry.io/collector/receiver/receivertest => ../../receiver/receivertest
 	go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
-	go.opentelemetry.io/collector/semconv => ../../semconv
+
 	go.opentelemetry.io/collector/service => ..
 )
 
@@ -89,3 +89,11 @@ replace go.opentelemetry.io/collector/otelcol => ../../otelcol
 replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
 
 replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
+
+replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata

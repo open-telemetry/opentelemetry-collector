@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -51,27 +50,16 @@ func TestConfig_Validate(t *testing.T) {
 	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` or `bytes` sizer")
 
 	cfg = newTestConfig()
+	cfg.QueueSize = cfg.Batch.MinSize - 1
+	require.EqualError(t, cfg.Validate(), "`min_size` must be less than or equal to `queue_size`")
+
+	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeBytes
 	require.NoError(t, cfg.Validate())
 
 	// Confirm Validate doesn't return error with invalid config when feature is disabled
 	cfg.Enabled = false
 	assert.NoError(t, cfg.Validate())
-}
-
-func TestConfigDeprecatedBlockingUnmarshal(t *testing.T) {
-	conf := confmap.NewFromStringMap(map[string]any{
-		"enabled":       true,
-		"num_consumers": 2,
-		"queue_size":    100,
-		"blocking":      true,
-	})
-
-	qCfg := Config{}
-	assert.False(t, qCfg.BlockOnOverflow)
-	require.NoError(t, conf.Unmarshal(&qCfg))
-	assert.True(t, qCfg.BlockOnOverflow)
-	assert.True(t, qCfg.hasBlocking)
 }
 
 func TestBatchConfig_Validate(t *testing.T) {

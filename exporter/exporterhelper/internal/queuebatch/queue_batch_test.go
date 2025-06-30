@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -44,15 +45,15 @@ type fakeEncoding struct {
 	mr request.Request
 }
 
-func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
-func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
-	return f.mr, nil
+func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
+	return context.Background(), f.mr, nil
 }
 
-func newFakeEncoding(mr request.Request) Encoding[request.Request] {
+func newFakeEncoding(mr request.Request) queue.Encoding[request.Request] {
 	return &fakeEncoding{mr: mr}
 }
 
@@ -404,6 +405,48 @@ func TestQueueBatch_MergeOrSplit(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
+func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := newTestConfig()
+	cfg.Batch = &BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		MinSize:      10,
+	}
+
+	type partitionKey struct{}
+	set := newFakeRequestSettings()
+	set.Partitioner = NewPartitioner(func(ctx context.Context, _ request.Request) string {
+		key := ctx.Value(partitionKey{}).(string)
+		return key
+	})
+
+	qb, err := NewQueueBatch(set, cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	// should be sent right away by reaching the minimum items size.
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	// Neither batch should be flushed since they haven't reached min threshold.
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, 0, sink.ItemsCount())
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 16
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 28
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
 func TestQueueBatch_Shutdown(t *testing.T) {
 	sink := requesttest.NewSink()
 	qb, err := NewQueueBatch(newFakeRequestSettings(), newTestConfig(), sink.Export)
@@ -449,40 +492,6 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
-// Validate that the batch is cancelled once the first request in the request is cancelled
-func TestQueueBatch_BatchCancelled(t *testing.T) {
-	sink := requesttest.NewSink()
-	cfg := newTestConfig()
-	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 2
-	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
-	require.NoError(t, err)
-	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
-
-	// send 2 blockOnOverflow requests
-	wg := sync.WaitGroup{}
-	ctx, cancel := context.WithCancel(context.Background())
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.ErrorIs(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 1, Delay: 100 * time.Millisecond}), context.Canceled)
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(100 * time.Millisecond) // ensure this call is the second
-		assert.ErrorIs(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1, Delay: 100 * time.Millisecond}), context.Canceled)
-	}()
-	cancel() // canceling the first request should cancel the whole batch
-	wg.Wait()
-
-	// nothing should be delivered
-	assert.Equal(t, 0, sink.RequestsCount())
-	assert.Equal(t, 0, sink.ItemsCount())
-
-	require.NoError(t, qb.Shutdown(context.Background()))
-}
-
 func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
@@ -512,47 +521,6 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 
 	assert.Equal(t, 2, sink.RequestsCount())
 	assert.Equal(t, 3, sink.ItemsCount())
-}
-
-func TestQueueBatchWithTimeout(t *testing.T) {
-	sink := requesttest.NewSink()
-	cfg := newTestConfig()
-	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 10
-	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
-	require.NoError(t, err)
-	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
-
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-	// Send 3 concurrent requests that should be merged in one batch
-	wg := sync.WaitGroup{}
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go func() {
-			assert.NoError(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4}))
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-	assert.Equal(t, 1, sink.RequestsCount())
-	assert.Equal(t, 12, sink.ItemsCount())
-
-	// 3 requests with a 90ms cumulative delay must be cancelled by the timeout sender
-	for i := 0; i < 3; i++ {
-		wg.Add(1)
-		go func() {
-			assert.Error(t, qb.Send(ctx, &requesttest.FakeRequest{Items: 4, Delay: 30 * time.Millisecond}))
-			wg.Done()
-		}()
-	}
-	wg.Wait()
-
-	require.NoError(t, qb.Shutdown(context.Background()))
-
-	// The sink should not change
-	assert.Equal(t, 1, sink.RequestsCount())
-	assert.Equal(t, 12, sink.ItemsCount())
 }
 
 func TestQueueBatchTimerResetNoConflict(t *testing.T) {

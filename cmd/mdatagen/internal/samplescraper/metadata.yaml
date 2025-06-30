@@ -6,9 +6,11 @@ github_project: open-telemetry/opentelemetry-collector
 sem_conv_version: 1.9.0
 
 status:
+  disable_codecov_badge: true
   class: scraper
   stability:
     stable: [metrics]
+    development: [logs]
   distributions: []
   unsupported_platforms: [freebsd, illumos]
   codeowners:
@@ -134,7 +136,7 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
-    extended_documentation: The metric will be will be removed soon.
+    extended_documentation: The metric will be removed soon.
     unit: s
     sum:
       value_type: double

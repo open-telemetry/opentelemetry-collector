@@ -43,6 +43,9 @@ func TestNewUInt64Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, uint64(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, uint64(1), mv.At(0))
 }
 
 func TestUInt64SliceReadOnly(t *testing.T) {
@@ -93,6 +96,25 @@ func TestUInt64SliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestUInt64SliceMoveAndAppendTo(t *testing.T) {
+	// Test moving from an empty slice
+	ms := NewUInt64Slice()
+	ms2 := NewUInt64Slice()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, NewUInt64Slice(), ms2)
+	assert.Equal(t, ms.Len(), 0)
+
+	// Test moving to empty slice
+	ms.FromRaw([]uint64{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
+
+	// Test moving to a non empty slice
+	ms.FromRaw([]uint64{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
 }
 
 func TestUInt64SliceEqual(t *testing.T) {

@@ -43,6 +43,9 @@ func TestNewInt32Slice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, int32(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, int32(1), mv.At(0))
 }
 
 func TestInt32SliceReadOnly(t *testing.T) {
@@ -93,6 +96,25 @@ func TestInt32SliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestInt32SliceMoveAndAppendTo(t *testing.T) {
+	// Test moving from an empty slice
+	ms := NewInt32Slice()
+	ms2 := NewInt32Slice()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, NewInt32Slice(), ms2)
+	assert.Equal(t, ms.Len(), 0)
+
+	// Test moving to empty slice
+	ms.FromRaw([]int32{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
+
+	// Test moving to a non empty slice
+	ms.FromRaw([]int32{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
 }
 
 func TestInt32SliceEqual(t *testing.T) {

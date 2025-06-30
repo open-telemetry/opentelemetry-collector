@@ -15,6 +15,8 @@ type Level int
 
 type CompressionParams struct {
 	Level Level `mapstructure:"level"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const (
@@ -22,6 +24,7 @@ const (
 	TypeZlib                Type = "zlib"
 	TypeDeflate             Type = "deflate"
 	TypeSnappy              Type = "snappy"
+	TypeSnappyFramed        Type = "x-snappy-framed"
 	TypeZstd                Type = "zstd"
 	TypeLz4                 Type = "lz4"
 	typeNone                Type = "none"
@@ -41,6 +44,7 @@ func (ct *Type) UnmarshalText(in []byte) error {
 		typ == TypeZlib ||
 		typ == TypeDeflate ||
 		typ == TypeSnappy ||
+		typ == TypeSnappyFramed ||
 		typ == TypeZstd ||
 		typ == TypeLz4 ||
 		typ == typeNone ||
@@ -66,7 +70,7 @@ func (ct *Type) ValidateParams(p CompressionParams) error {
 		return nil
 	}
 	if p.Level != 0 {
-		return fmt.Errorf("unsupported parameters %+v for compression type %q", p, *ct)
+		return fmt.Errorf("unsupported parameters {Level:%+v} for compression type %q", p.Level, *ct)
 	}
 	return nil
 }

@@ -7,6 +7,7 @@ github_project: open-telemetry/opentelemetry-collector
 sem_conv_version: 1.9.0
 
 status:
+  disable_codecov_badge: true
   class: receiver
   stability:
     development: [logs]
@@ -105,6 +106,30 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+events:
+  default.event:
+    enabled: true
+    description: Example event enabled by default.
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+    warnings:
+      if_enabled_not_set: This event will be disabled by default soon.
+
+  default.event.to_be_renamed:
+    enabled: false
+    description: "[DEPRECATED] Example event disabled by default."
+    extended_documentation: The event will be renamed soon.
+    attributes: [ string_attr, boolean_attr, boolean_attr2 ]
+    warnings:
+      if_configured: This event is deprecated and will be renamed soon.
+
+  default.event.to_be_removed:
+    enabled: true
+    description: "[DEPRECATED] Example to-be-removed event enabled by default."
+    extended_documentation: The event will be removed soon.
+    warnings:
+      if_enabled: This event is deprecated and will be removed soon.
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+
 metrics:
   default.metric:
     enabled: true
@@ -142,7 +167,7 @@ metrics:
   default.metric.to_be_removed:
     enabled: true
     description: "[DEPRECATED] Non-monotonic delta sum double metric enabled by default."
-    extended_documentation: The metric will be will be removed soon.
+    extended_documentation: The metric will be removed soon.
     unit: s
     sum:
       value_type: double

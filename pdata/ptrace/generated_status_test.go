@@ -21,6 +21,8 @@ func TestStatus_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewStatus(), ms)
 	assert.Equal(t, generateTestStatus(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestStatus(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newStatus(&otlptrace.Status{}, &sharedState)) })
 	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).MoveTo(dest) })

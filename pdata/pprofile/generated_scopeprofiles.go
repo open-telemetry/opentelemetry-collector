@@ -42,6 +42,10 @@ func NewScopeProfiles() ScopeProfiles {
 func (ms ScopeProfiles) MoveTo(dest ScopeProfiles) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.ScopeProfiles{}
 }
@@ -70,7 +74,11 @@ func (ms ScopeProfiles) Profiles() ProfilesSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
-	ms.Scope().CopyTo(dest.Scope())
-	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.Profiles().CopyTo(dest.Profiles())
+	copyOrigScopeProfiles(dest.orig, ms.orig)
+}
+
+func copyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
+	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
+	dest.SchemaUrl = src.SchemaUrl
+	dest.Profiles = copyOrigProfilesSlice(dest.Profiles, src.Profiles)
 }

@@ -43,6 +43,9 @@ func TestNewByteSlice(t *testing.T) {
 	ms.MoveTo(mv)
 	assert.Equal(t, 3, mv.Len())
 	assert.Equal(t, byte(1), mv.At(0))
+	mv.MoveTo(mv)
+	assert.Equal(t, 3, mv.Len())
+	assert.Equal(t, byte(1), mv.At(0))
 }
 
 func TestByteSliceReadOnly(t *testing.T) {
@@ -93,6 +96,25 @@ func TestByteSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestByteSliceMoveAndAppendTo(t *testing.T) {
+	// Test moving from an empty slice
+	ms := NewByteSlice()
+	ms2 := NewByteSlice()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, NewByteSlice(), ms2)
+	assert.Equal(t, ms.Len(), 0)
+
+	// Test moving to empty slice
+	ms.FromRaw([]byte{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
+
+	// Test moving to a non empty slice
+	ms.FromRaw([]byte{1, 2, 3})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
 }
 
 func TestByteSliceEqual(t *testing.T) {

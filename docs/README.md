@@ -37,7 +37,7 @@ For a library to be considered an OpenTelemetry Collector component, it _MUST_
 implement a [Component interface](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component)
 defined by the OpenTelemetry Collector SIG.
 
-Components require a [unique identfier](https://pkg.go.dev/go.opentelemetry.io/collector/component#ID)
+Components require a [unique identifier](https://pkg.go.dev/go.opentelemetry.io/collector/component#ID)
 to be included in an OpenTelemetry Collector. In the event of a name collision,
 the components resulting in the collision cannot be used simultaneously in a single OpenTelemetry
 Collector. In order to resolve this, the clashing components must use different identifiers.

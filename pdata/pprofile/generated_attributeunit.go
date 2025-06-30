@@ -41,6 +41,10 @@ func NewAttributeUnit() AttributeUnit {
 func (ms AttributeUnit) MoveTo(dest AttributeUnit) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.AttributeUnit{}
 }
@@ -70,6 +74,10 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	dest.SetAttributeKeyStrindex(ms.AttributeKeyStrindex())
-	dest.SetUnitStrindex(ms.UnitStrindex())
+	copyOrigAttributeUnit(dest.orig, ms.orig)
+}
+
+func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
+	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
+	dest.UnitStrindex = src.UnitStrindex
 }

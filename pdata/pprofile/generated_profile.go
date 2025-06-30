@@ -43,6 +43,10 @@ func NewProfile() Profile {
 func (ms Profile) MoveTo(dest Profile) {
 	ms.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if ms.orig == dest.orig {
+		return
+	}
 	*dest.orig = *ms.orig
 	*ms.orig = otlpprofiles.Profile{}
 }
@@ -57,44 +61,9 @@ func (ms Profile) Sample() SampleSlice {
 	return newSampleSlice(&ms.orig.Sample, ms.state)
 }
 
-// MappingTable returns the MappingTable associated with this Profile.
-func (ms Profile) MappingTable() MappingSlice {
-	return newMappingSlice(&ms.orig.MappingTable, ms.state)
-}
-
-// LocationTable returns the LocationTable associated with this Profile.
-func (ms Profile) LocationTable() LocationSlice {
-	return newLocationSlice(&ms.orig.LocationTable, ms.state)
-}
-
 // LocationIndices returns the LocationIndices associated with this Profile.
 func (ms Profile) LocationIndices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state))
-}
-
-// FunctionTable returns the FunctionTable associated with this Profile.
-func (ms Profile) FunctionTable() FunctionSlice {
-	return newFunctionSlice(&ms.orig.FunctionTable, ms.state)
-}
-
-// AttributeTable returns the AttributeTable associated with this Profile.
-func (ms Profile) AttributeTable() AttributeTableSlice {
-	return newAttributeTableSlice(&ms.orig.AttributeTable, ms.state)
-}
-
-// AttributeUnits returns the AttributeUnits associated with this Profile.
-func (ms Profile) AttributeUnits() AttributeUnitSlice {
-	return newAttributeUnitSlice(&ms.orig.AttributeUnits, ms.state)
-}
-
-// LinkTable returns the LinkTable associated with this Profile.
-func (ms Profile) LinkTable() LinkSlice {
-	return newLinkSlice(&ms.orig.LinkTable, ms.state)
-}
-
-// StringTable returns the StringTable associated with this Profile.
-func (ms Profile) StringTable() pcommon.StringSlice {
-	return pcommon.StringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state))
 }
 
 // Time returns the time associated with this Profile.
@@ -151,15 +120,15 @@ func (ms Profile) CommentStrindices() pcommon.Int32Slice {
 	return pcommon.Int32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state))
 }
 
-// DefaultSampleTypeStrindex returns the defaultsampletypestrindex associated with this Profile.
-func (ms Profile) DefaultSampleTypeStrindex() int32 {
-	return ms.orig.DefaultSampleTypeStrindex
+// DefaultSampleTypeIndex returns the defaultsampletypeindex associated with this Profile.
+func (ms Profile) DefaultSampleTypeIndex() int32 {
+	return ms.orig.DefaultSampleTypeIndex
 }
 
-// SetDefaultSampleTypeStrindex replaces the defaultsampletypestrindex associated with this Profile.
-func (ms Profile) SetDefaultSampleTypeStrindex(v int32) {
+// SetDefaultSampleTypeIndex replaces the defaultsampletypeindex associated with this Profile.
+func (ms Profile) SetDefaultSampleTypeIndex(v int32) {
 	ms.state.AssertMutable()
-	ms.orig.DefaultSampleTypeStrindex = v
+	ms.orig.DefaultSampleTypeIndex = v
 }
 
 // ProfileID returns the profileid associated with this Profile.
@@ -208,26 +177,23 @@ func (ms Profile) OriginalPayload() pcommon.ByteSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	ms.SampleType().CopyTo(dest.SampleType())
-	ms.Sample().CopyTo(dest.Sample())
-	ms.MappingTable().CopyTo(dest.MappingTable())
-	ms.LocationTable().CopyTo(dest.LocationTable())
-	ms.LocationIndices().CopyTo(dest.LocationIndices())
-	ms.FunctionTable().CopyTo(dest.FunctionTable())
-	ms.AttributeTable().CopyTo(dest.AttributeTable())
-	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
-	ms.LinkTable().CopyTo(dest.LinkTable())
-	ms.StringTable().CopyTo(dest.StringTable())
-	dest.SetTime(ms.Time())
-	dest.SetDuration(ms.Duration())
-	dest.SetStartTime(ms.StartTime())
-	ms.PeriodType().CopyTo(dest.PeriodType())
-	dest.SetPeriod(ms.Period())
-	ms.CommentStrindices().CopyTo(dest.CommentStrindices())
-	dest.SetDefaultSampleTypeStrindex(ms.DefaultSampleTypeStrindex())
-	dest.SetProfileID(ms.ProfileID())
-	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
-	dest.SetDroppedAttributesCount(ms.DroppedAttributesCount())
-	dest.SetOriginalPayloadFormat(ms.OriginalPayloadFormat())
-	ms.OriginalPayload().CopyTo(dest.OriginalPayload())
+	copyOrigProfile(dest.orig, ms.orig)
+}
+
+func copyOrigProfile(dest, src *otlpprofiles.Profile) {
+	dest.SampleType = copyOrigValueTypeSlice(dest.SampleType, src.SampleType)
+	dest.Sample = copyOrigSampleSlice(dest.Sample, src.Sample)
+	dest.LocationIndices = internal.CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
+	dest.TimeNanos = src.TimeNanos
+	dest.DurationNanos = src.DurationNanos
+	dest.TimeNanos = src.TimeNanos
+	copyOrigValueType(&dest.PeriodType, &src.PeriodType)
+	dest.Period = src.Period
+	dest.CommentStrindices = internal.CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
+	dest.DefaultSampleTypeIndex = src.DefaultSampleTypeIndex
+	dest.ProfileId = src.ProfileId
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
+	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
 }

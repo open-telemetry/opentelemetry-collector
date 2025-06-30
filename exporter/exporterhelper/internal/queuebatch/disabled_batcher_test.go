@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
@@ -36,12 +37,12 @@ func TestDisabledBatcher(t *testing.T) {
 			sink := requesttest.NewSink()
 			ba := newDisabledBatcher(sink.Export)
 
-			mq := newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-				sizer:           request.RequestsSizer[request.Request]{},
-				capacity:        1000,
-				blockOnOverflow: true,
-			})
-			q := newAsyncQueue(mq, tt.maxWorkers, ba.Consume)
+			q := queue.NewQueue[request.Request](queue.Settings[request.Request]{
+				Sizer:           request.RequestsSizer[request.Request]{},
+				Capacity:        1000,
+				BlockOnOverflow: true,
+				NumConsumers:    tt.maxWorkers,
+			}, ba.Consume)
 
 			require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))

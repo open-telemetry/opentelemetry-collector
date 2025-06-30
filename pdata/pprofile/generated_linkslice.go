@@ -109,6 +109,10 @@ func (es LinkSlice) AppendEmpty() Link {
 func (es LinkSlice) MoveAndAppendTo(dest LinkSlice) {
 	es.state.AssertMutable()
 	dest.state.AssertMutable()
+	// If they point to the same data, they are the same, nothing to do.
+	if es.orig == dest.orig {
+		return
+	}
 	if *dest.orig == nil {
 		// We can simply move the entire vector and avoid any allocations.
 		*dest.orig = *es.orig
@@ -141,22 +145,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LinkSlice) CopyTo(dest LinkSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newLink((*es.orig)[i], es.state).CopyTo(newLink((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.Link, srcLen)
-	wrappers := make([]*otlpprofiles.Link, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newLink((*es.orig)[i], es.state).CopyTo(newLink(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigLinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Link elements within LinkSlice given the
@@ -165,4 +154,19 @@ func (es LinkSlice) CopyTo(dest LinkSlice) {
 func (es LinkSlice) Sort(less func(a, b Link) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.Link, len(src))
+		data := make([]otlpprofiles.Link, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigLink(dest[i], src[i])
+	}
+	return dest
 }

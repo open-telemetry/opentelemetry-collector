@@ -34,7 +34,7 @@ func TestConfmapMarshalConfigHTTP(t *testing.T) {
 		"idle_timeout":        60 * time.Second,
 		"read_header_timeout": 60 * time.Second,
 		"response_headers":    map[string]any{},
-		"tls":                 map[string]any{},
+		"tls":                 nil,
 		"write_timeout":       30 * time.Second,
 	}, conf.ToStringMap())
 

@@ -21,6 +21,8 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	ms.MoveTo(dest)
 	assert.Equal(t, NewExportPartialSuccess(), ms)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
+	dest.MoveTo(dest)
+	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.MoveTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
 	assert.Panics(t, func() {
