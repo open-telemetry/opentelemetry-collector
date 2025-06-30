@@ -4,6 +4,7 @@
 package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 
 import (
+	"context"
 	"slices"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -22,7 +23,11 @@ type tracerProviderWithAttributesSdk struct {
 	attrs []attribute.KeyValue
 }
 
-// TracerProviderWithAttributes creates a TracerProvider with a new set of injected instrumentation scope attributes.
+// TracerProviderWithAttributes creates a TracerProvider with a new set of injected
+// instrumentation scope attributes.
+//
+// Tracers created by the returned TracerProvider will also inject attributes from
+// the context, as added by ContextWithAttributes. These will be added as span attributes.
 func TracerProviderWithAttributes(tp trace.TracerProvider, attrs attribute.Set) trace.TracerProvider {
 	if tpwa, ok := tp.(tracerProviderWithAttributesSdk); ok {
 		tp = tpwa.TracerProvider
@@ -48,7 +53,7 @@ func tracerWithAttributes(tp trace.TracerProvider, attrs []attribute.KeyValue, n
 	newAttrs := append(slices.Clone(attrs), attrSet.ToSlice()...)
 	// append our attribute set option to overwrite the old one
 	opts = append(opts, trace.WithInstrumentationAttributes(newAttrs...))
-	return tp.Tracer(name, opts...)
+	return contextAttributesTracer{Tracer: tp.Tracer(name, opts...)}
 }
 
 func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
@@ -57,4 +62,19 @@ func (tpwa tracerProviderWithAttributes) Tracer(name string, options ...trace.Tr
 
 func (tpwa tracerProviderWithAttributesSdk) Tracer(name string, options ...trace.TracerOption) trace.Tracer {
 	return tracerWithAttributes(tpwa.TracerProvider, tpwa.attrs, name, options...)
+}
+
+// contextAttributesTracer is a wrapper around trace.Tracer that adds attributes to spans based on the context.
+type contextAttributesTracer struct {
+	trace.Tracer
+}
+
+func (t contextAttributesTracer) Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	if attrs, ok := attributesFromContext(ctx); ok {
+		// Prepend the attributes from the context to the span start options,
+		// so any callsite options passed to Tracer.Start take precedence.
+		var opt trace.SpanStartOption = trace.WithAttributes(attrs.ToSlice()...)
+		opts = slices.Insert(opts, 0, opt)
+	}
+	return t.Tracer.Start(ctx, spanName, opts...)
 }
