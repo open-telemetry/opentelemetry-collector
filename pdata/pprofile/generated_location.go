@@ -115,7 +115,12 @@ func copyOrigLocation(dest, src *otlpprofiles.Location) {
 	if src.MappingIndex_ == nil {
 		dest.MappingIndex_ = nil
 	} else {
-		dest.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: src.GetMappingIndex()}
+		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
+		if !ok {
+			destMappingIndex = &otlpprofiles.Location_MappingIndex{}
+			dest.MappingIndex_ = destMappingIndex
+		}
+		destMappingIndex.MappingIndex = src.GetMappingIndex()
 	}
 	dest.Address = src.Address
 	dest.Line = copyOrigLineSlice(dest.Line, src.Line)

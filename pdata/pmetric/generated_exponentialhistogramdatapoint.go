@@ -239,17 +239,32 @@ func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	if src.Sum_ == nil {
 		dest.Sum_ = nil
 	} else {
-		dest.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: src.GetSum()}
+		destSum, ok := dest.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
+		if !ok {
+			destSum = &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
+			dest.Sum_ = destSum
+		}
+		destSum.Sum = src.GetSum()
 	}
 	if src.Min_ == nil {
 		dest.Min_ = nil
 	} else {
-		dest.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: src.GetMin()}
+		destMin, ok := dest.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min)
+		if !ok {
+			destMin = &otlpmetrics.ExponentialHistogramDataPoint_Min{}
+			dest.Min_ = destMin
+		}
+		destMin.Min = src.GetMin()
 	}
 	if src.Max_ == nil {
 		dest.Max_ = nil
 	} else {
-		dest.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: src.GetMax()}
+		destMax, ok := dest.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max)
+		if !ok {
+			destMax = &otlpmetrics.ExponentialHistogramDataPoint_Max{}
+			dest.Max_ = destMax
+		}
+		destMax.Max = src.GetMax()
 	}
 	dest.ZeroThreshold = src.ZeroThreshold
 }

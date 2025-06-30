@@ -326,7 +326,12 @@ const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .origi
 const optionalPrimitiveCopyOrigTemplate = `if src.{{ .fieldName }}_ == nil {
 	dest.{{ .fieldName }}_ = nil
 } else {
-	dest.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: src.Get{{ .fieldName }}(){{ "}" }}
+	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
+	if !ok {
+		dest{{ .fieldName }} = &{{ .originStructType }}{}
+		dest.{{ .fieldName }}_ = dest{{ .fieldName }}
+	}
+	dest{{ .fieldName }}.{{ .fieldName }} = src.Get{{ .fieldName }}()
 }`
 
 type baseField interface {
