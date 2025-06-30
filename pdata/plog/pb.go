@@ -30,6 +30,14 @@ func (e *ProtoMarshaler) ScopeLogsSize(sl ScopeLogs) int {
 	return sl.orig.Size()
 }
 
+func (e *ProtoMarshaler) ResourceLogsItemSize(rl ResourceLogs) int {
+	return rl.orig.ItemSize()
+}
+
+func (e *ProtoMarshaler) ScopeLogsItemSize(sl ScopeLogs) int {
+	return sl.orig.ItemSize()
+}
+
 func (e *ProtoMarshaler) LogRecordSize(lr LogRecord) int {
 	return lr.orig.Size()
 }
