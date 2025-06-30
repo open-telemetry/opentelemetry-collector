@@ -11,7 +11,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ### 🛑 Breaking changes 🛑
 
-- `semconv`: Removing deprecated semconv package (#13071)
 - `exporterhelper`: Remove deprecated sending_queue::blocking options, use sending_queue::block_on_overflow. (#13211)
 
 ### 💡 Enhancements 💡

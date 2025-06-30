@@ -11,6 +11,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 ### 🛑 Breaking changes 🛑
 
+- `semconv`: Removing deprecated semconv package (#13071)
 - `configgrpc,confighttp`: Unify return type of `NewDefault*Config` functions to return a struct instead of a pointer. (#13169)
 - `exporterhelper`: QueueBatchEncoding interface is changed to support marshaling and unmarshaling of request context. (#13188)
 
