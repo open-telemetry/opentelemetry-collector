@@ -11,6 +11,7 @@ dist:
   name: otelcorecol
   description: Local OpenTelemetry Collector binary, testing only.
   version: 0.123.0-dev
+  package: main
 
 receivers:
   - gomod: go.opentelemetry.io/collector/receiver/nopreceiver v0.123.0
