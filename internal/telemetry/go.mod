@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.34.0
-	go.opentelemetry.io/collector/pdata v1.34.0
-	go.opentelemetry.io/collector/pipeline v0.128.0
+	go.opentelemetry.io/collector/featuregate v1.35.0
+	go.opentelemetry.io/collector/pdata v1.35.0
+	go.opentelemetry.io/collector/pipeline v0.129.0
 	go.opentelemetry.io/contrib/bridges/otelzap v0.11.0
 	go.opentelemetry.io/otel v1.36.0
 	go.opentelemetry.io/otel/log v0.12.2
