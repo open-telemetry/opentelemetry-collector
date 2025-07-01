@@ -83,7 +83,7 @@ func run(ymlPath string) error {
 	}
 
 	if md.Config != nil {
-		err = generateConfigGoCode(ymlDir, packageName, md.Config)
+		err = generateConfigGoCode(ymlDir, packageName, md.Config, md.ConfigSources)
 		if err != nil {
 			return err
 		}
@@ -213,8 +213,8 @@ func run(ymlPath string) error {
 	return nil
 }
 
-func generateConfigGoCode(dir string, goPkgName string, conf any) error {
-	output, err := GenerateConfig(goPkgName, dir, conf)
+func generateConfigGoCode(dir string, goPkgName string, conf any, cfgSources []ConfigSource) error {
+	output, err := GenerateConfig(goPkgName, dir, conf, cfgSources)
 	if err != nil {
 		return fmt.Errorf("error generating config %w", err)
 	}

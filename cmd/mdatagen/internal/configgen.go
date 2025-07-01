@@ -26,7 +26,7 @@ const (
 // The output is a map, where:
 // * The key is the absolute path to the file which must be written.
 // * The value is the content of the file.
-func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, error) {
+func GenerateConfig(goPkgName string, dir string, conf any, cfgSources []ConfigSource) (map[string]string, error) {
 	// load config
 	jsonBytes, err := json.Marshal(conf)
 	if err != nil {
@@ -46,53 +46,13 @@ func GenerateConfig(goPkgName string, dir string, conf any) (map[string]string, 
 	// TODO: Make this configurable?
 	repoRootDir := "../../"
 
-	// TODO: Make this configurable. Or find a way to get rid of this mapping?
-	schemaMappings := []generator.SchemaMapping{
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/exporter/exporterhelper/queue_sender",
-		// 	PackageName: "go.opentelemetry.io/collector/exporter/exporterhelper",
-		// 	OutputName:  "./exporter/exporterhelper/queue_sender.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configretry/backoff/retry_on_failure",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configretry",
-		// 	OutputName:  "./config/configretry/backoff.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configtelemetry/configtelemetry",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configtelemetry",
-		// 	OutputName:  "./config/configtelemetry/configtelemetry.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/confighttp/confighttp",
-		// 	PackageName: "go.opentelemetry.io/collector/config/confighttp",
-		// 	OutputName:  "./config/confighttp/confighttp.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/exporter/exporterhelper/timeout_sender",
-		// 	PackageName: "go.opentelemetry.io/collector/exporter/exporterhelper",
-		// 	OutputName:  "./exporter/exporterhelper/timeout_sender.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configtls/configtls",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configtls",
-		// 	OutputName:  "./config/configtls/configtls.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configcompression/configcompression",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configcompression",
-		// 	OutputName:  "./config/configcompression/compressiontype.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configauth/configauth",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configauth",
-		// 	OutputName:  "./config/configauth/configauth.go",
-		// },
-		// {
-		// 	SchemaID:    "opentelemetry.io/collector/config/configopaque",
-		// 	PackageName: "go.opentelemetry.io/collector/config/configopaque",
-		// 	OutputName:  "./config/configopaque/opaque.go",
-		// },
+	schemaMappings := []generator.SchemaMapping{}
+	for _, cfgSource := range cfgSources {
+		schemaMappings = append(schemaMappings, generator.SchemaMapping{
+			SchemaID:    cfgSource.SchemaID,
+			PackageName: cfgSource.PackageName,
+			OutputName:  cfgSource.OutputName,
+		})
 	}
 	for i := range schemaMappings {
 		if schemaMappings[i].OutputName != "" {

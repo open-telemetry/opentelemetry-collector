@@ -1,0 +1,20 @@
+type: batch
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  disable_codecov_badge: true
+  class: processor
+  stability:
+    beta: [ traces, metrics, logs ]
+  distributions: [ core, contrib, k8s ]
+
+config:
+  type: object
+  additionalProperties: false
+  properties:
+    ExampleType:
+      type: object
+      properties:
+        ExampleString:
+          type: string
+          default: ""
