@@ -79,7 +79,7 @@ this case for HTTP servers. Interestingly, the single-method
 `http.RoundTripper` interface, representing the same interaction for
 HTTP clients, does not have a `RoundTripperFunc` in the base library
 (consequently, this codebase defines [it for testing middleware
-extensions](`../../extension/extensionmiddleware/extensionmiddlewaretest/nop.go`)). In
+extensions](https://github.com/open-telemetry/opentelemetry-collector/blob/64088871efb1b873c3d53ed3b7f0ce7140c0d7e2/extension/extensionmiddleware/extensionmiddlewaretest/nop.go#L23)). In
 this codebase, the pattern is applied extensively.
 
 ### 2. Compose Function Types into Interface Implementations
