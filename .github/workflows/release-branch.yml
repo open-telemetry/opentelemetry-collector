@@ -8,6 +8,9 @@ on:
       - 'v0.[0-9]+.[0-9]+'
       - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
 
+permissions:
+  contents: read
+
 jobs:
   release-branch:
     runs-on: ubuntu-latest

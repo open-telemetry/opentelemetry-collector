@@ -6,6 +6,9 @@ on:
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
