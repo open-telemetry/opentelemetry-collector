@@ -113,13 +113,18 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	dest.SetLocationsStartIndex(ms.LocationsStartIndex())
-	dest.SetLocationsLength(ms.LocationsLength())
-	ms.Value().CopyTo(dest.Value())
-	ms.AttributeIndices().CopyTo(dest.AttributeIndices())
-	if ms.HasLinkIndex() {
-		dest.SetLinkIndex(ms.LinkIndex())
-	}
+	copyOrigSample(dest.orig, ms.orig)
+}
 
-	ms.TimestampsUnixNano().CopyTo(dest.TimestampsUnixNano())
+func copyOrigSample(dest, src *otlpprofiles.Sample) {
+	dest.LocationsStartIndex = src.LocationsStartIndex
+	dest.LocationsLength = src.LocationsLength
+	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
+	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	if src.LinkIndex_ == nil {
+		dest.LinkIndex_ = nil
+	} else {
+		dest.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: src.GetLinkIndex()}
+	}
+	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }
