@@ -4,8 +4,12 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
+	"context"
+
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -13,7 +17,9 @@ import (
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
-func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error) {
+func newLogger(ctx context.Context, set Settings, cfg telemetryConfig, res *resource.Resource, sdk *config.SDK) (
+	_ *zap.Logger, _ log.LoggerProvider, resultErr error,
+) {
 	// Copied from NewProductionConfig.
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
@@ -46,10 +52,10 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	// We do NOT add them to the logger using With, because that would apply to all logs, even ones
 	// exported through the core that wraps the LoggerProvider, meaning that the attributes would
 	// be exported twice.
-	if set.Resource != nil && len(set.Resource.Attributes()) > 0 {
+	if len(res.Attributes()) > 0 {
 		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
 			var fields []zap.Field
-			for _, attr := range set.Resource.Attributes() {
+			for _, attr := range res.Attributes() {
 				fields = append(fields, zap.String(string(attr.Key), attr.Value.Emit()))
 			}
 
@@ -62,8 +68,8 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
 
-		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
-			lp = set.SDK.LoggerProvider()
+		if len(cfg.Logs.Processors) > 0 {
+			lp = sdk.LoggerProvider()
 			core = componentattribute.NewOTelTeeCoreWithAttributes(
 				core,
 				lp,
@@ -83,7 +89,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 	return logger, lp, nil
 }
 
-func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
+func newSampledCore(core zapcore.Core, sc *logsSamplingConfig) zapcore.Core {
 	// Create a logger that samples every Nth message after the first M messages every S seconds
 	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
 	return componentattribute.NewSamplerCoreWithAttributes(

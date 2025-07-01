@@ -7,14 +7,23 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
 
-// Config defines the configurable settings for service telemetry.
-type Config struct {
-	Logs    LogsConfig    `mapstructure:"logs"`
-	Metrics MetricsConfig `mapstructure:"metrics"`
-	Traces  TracesConfig  `mapstructure:"traces,omitempty"`
+// disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
+// potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
+var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"telemetry.disableHighCardinalityMetrics",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
+		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
+
+// telemetryConfig defines the configurable settings for service telemetry.
+type telemetryConfig struct {
+	Logs    logsConfig    `mapstructure:"logs"`
+	Metrics metricsConfig `mapstructure:"metrics"`
+	Traces  tracesConfig  `mapstructure:"traces,omitempty"`
 
 	// Resource specifies user-defined attributes to include with all emitted telemetry.
 	// Note that some attributes are added automatically (e.g. service.version) even
@@ -26,30 +35,35 @@ type Config struct {
 // LogsConfig defines the configurable settings for service telemetry logs.
 // This MUST be compatible with zap.Config. Cannot use directly zap.Config because
 // the collector uses mapstructure and not yaml tags.
-type LogsConfig = migration.LogsConfigV030
+type logsConfig = migration.LogsConfigV030
 
 // LogsSamplingConfig sets a sampling strategy for the logger. Sampling caps the
 // global CPU and I/O load that logging puts on your process while attempting
 // to preserve a representative subset of your logs.
-type LogsSamplingConfig = migration.LogsSamplingConfig
+type logsSamplingConfig = migration.LogsSamplingConfig
 
 // MetricsConfig exposes the common Telemetry configuration for one component.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
-type MetricsConfig = migration.MetricsConfigV030
+type metricsConfig = migration.MetricsConfigV030
 
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
-type TracesConfig = migration.TracesConfigV030
+type tracesConfig = migration.TracesConfigV030
 
 // Validate checks whether the current configuration is valid
-func (c *Config) Validate() error {
+func (c *telemetryConfig) Validate() error {
 	// Check when service telemetry metric level is not none, the metrics readers should not be empty
 	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
 		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
 	}
 
-	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
-		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+	if c.Metrics.Views != nil {
+		if c.Metrics.Level != configtelemetry.LevelDetailed {
+			return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+		}
+		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+			return errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
+		}
 	}
 
 	return nil
