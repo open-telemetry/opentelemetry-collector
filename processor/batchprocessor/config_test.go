@@ -19,7 +19,11 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
-	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
+	assert.Equal(t, &Config{
+		SendBatchSize:            8192,
+		Timeout:                  200 * time.Millisecond,
+		MetadataCardinalityLimit: 1000,
+	}, cfg)
 }
 
 func TestUnmarshalConfig(t *testing.T) {

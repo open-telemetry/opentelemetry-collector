@@ -1,0 +1,4 @@
+- filename: config.go
+  contents: "./config.go"
+- filename: compressiontype.go
+  contents: "./configcompression/compressiontype.go"
