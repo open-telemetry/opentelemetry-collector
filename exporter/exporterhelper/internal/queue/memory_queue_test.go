@@ -24,7 +24,7 @@ func (s sizerInt64) Sizeof(el int64) int64 {
 }
 
 func TestMemoryQueue(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 7})
 	require.NoError(t, q.Offer(context.Background(), 1))
 	assert.EqualValues(t, 1, q.Size())
 	assert.EqualValues(t, 7, q.Capacity())
@@ -53,7 +53,7 @@ func TestMemoryQueue(t *testing.T) {
 }
 
 func TestMemoryQueueBlockingCancelled(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 5, blockOnOverflow: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 5, BlockOnOverflow: true})
 	require.NoError(t, q.Offer(context.Background(), 3))
 	ctx, cancel := context.WithCancel(context.Background())
 	wg := sync.WaitGroup{}
@@ -73,7 +73,7 @@ func TestMemoryQueueBlockingCancelled(t *testing.T) {
 }
 
 func TestMemoryQueueDrainWhenShutdown(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 7})
 	require.NoError(t, q.Offer(context.Background(), 1))
 	require.NoError(t, q.Offer(context.Background(), 3))
 
@@ -93,17 +93,17 @@ func TestMemoryQueueDrainWhenShutdown(t *testing.T) {
 }
 
 func TestMemoryQueueOfferInvalidSize(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 1})
 	require.ErrorIs(t, q.Offer(context.Background(), -1), errInvalidSize)
 }
 
 func TestMemoryQueueRejectOverCapacityElements(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 7, blockOnOverflow: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 7, BlockOnOverflow: true})
 	require.ErrorIs(t, q.Offer(context.Background(), 8), errSizeTooLarge)
 }
 
 func TestMemoryQueueOfferZeroSize(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 1})
 	require.NoError(t, q.Offer(context.Background(), 0))
 	require.NoError(t, q.Shutdown(context.Background()))
 	// Because the size 0 is ignored, nothing to drain.
@@ -111,7 +111,7 @@ func TestMemoryQueueOfferZeroSize(t *testing.T) {
 }
 
 func TestMemoryQueueZeroCapacity(t *testing.T) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 1})
 	require.NoError(t, q.Offer(context.Background(), 1))
 	require.ErrorIs(t, q.Offer(context.Background(), 1), ErrQueueIsFull)
 	require.NoError(t, q.Shutdown(context.Background()))
@@ -120,7 +120,7 @@ func TestMemoryQueueZeroCapacity(t *testing.T) {
 func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 	wg := sync.WaitGroup{}
 	myErr := errors.New("test error")
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100, WaitForResult: true})
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 	wg.Add(1)
 	go func() {
@@ -138,7 +138,7 @@ func TestMemoryQueueWaitForResultPassErrorBack(t *testing.T) {
 func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100, WaitForResult: true})
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
@@ -167,7 +167,7 @@ func TestMemoryQueueWaitForResultCancelIncomingRequest(t *testing.T) {
 func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 	wg := sync.WaitGroup{}
 	stop := make(chan struct{})
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100, WaitForResult: true})
 	require.NoError(t, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
@@ -197,7 +197,7 @@ func TestMemoryQueueWaitForResultSizeAndCapacity(t *testing.T) {
 func BenchmarkMemoryQueueWaitForResult(b *testing.B) {
 	wg := sync.WaitGroup{}
 	consumed := &atomic.Int64{}
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 1000, waitForResult: true})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 1000, WaitForResult: true})
 	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Consume async new data.
