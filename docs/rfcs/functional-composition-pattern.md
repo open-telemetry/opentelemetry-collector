@@ -18,9 +18,11 @@ For every method in the public interface, a corresponding `type
 exist, having the matching signature.
 
 For every interface type, there is a corresponding functional
-constructor `func New<Type>(<Method1>Func, <Method2>Func, ...) Type`
-in the same package for constructing a functional composition of
-interface methods.
+constructor to enable a functional composition of interface methods,
+`func New<Type>(<Method1>Func, {...}, ...Option) Type` which accepts
+the initially-required method set and uses a Functional Option pattern
+for forwards compatibility, even when there are no options at the
+start.
 
 Interface stability for exported interface types is our primary
 objective. The Functional Composition pattern supports safe interface
@@ -34,8 +36,8 @@ number_, because public interface types are always provided through a
 package-provided implementation.
 
 As a key requirement, every function must have a simple "no-op"
-implementation corresponding with the zero value of the
-`<Method>Func`. The expression `New<Type>(nil, nil, ...)` is the empty
+behavior corresponding with the zero value of the `<Method>Func`. The
+expression `New<Type>(nil, nil, ...)` is the "empty" do-nothing
 implementation for each type.
 
 ## Key concepts
@@ -123,19 +125,24 @@ type rateLimiterImpl struct {
 ### 3. Use Constructors for Interface Values
 
 Provide constructor functions rather than exposing concrete types. By
-default, each interface should provide a `func
-New<Type>(<Method1>Func, <Method2>Func, ...) Type` for all methods,
-using the concrete implementation struct. For example:
+default, each interface should provide a `New<Type>` constructor for
+all which returns the corresponding concrete implementation
+struct. Methods are "required" when they are explicitly listed as
+parameters methods are arguments in the constructor. In addition, a
+Functional Optional pattern is provided for use by future optional
+methods.
+
+For example:
 
 ```go
-func NewRateReservation(wf WaitTimeFunc, cf CancelFunc) RateReservation {
+func NewRateReservation(wf WaitTimeFunc, cf CancelFunc, _ ...RateReservationOption) RateReservation {
     return rateReservationImpl{
         WaitTimeFunc: wf,
         CancelFunc:   cf,
     }
 }
 
-func NewRateLimiter(f ReserveRateFunc) RateLimiter {
+func NewRateLimiter(f ReserveRateFunc, _ ...RateLimiterOption) RateLimiter {
     return rateLimiterImpl{ReserveRateFunc: f}
 }
 ```
@@ -276,6 +283,11 @@ func modifiedFactory() Factory {
     return component.NewFactory(otype.Self, cfg.Self)
 }    
 ```
+
+### 6. How to apply the Functional Option pattern
+
+The functional option pattern is well known. For the Functional
+Composition pattern, we require the use of Functional Option arguments
 
 ## Examples
 
