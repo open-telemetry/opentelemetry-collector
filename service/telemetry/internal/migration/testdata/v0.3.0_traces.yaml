@@ -19,3 +19,8 @@ processors:
           headers:
           - name: "key1"
             value: "value1"
+sampler:
+  parent_based:
+    root:
+      trace_id_ratio_based:
+        ratio: 0.01

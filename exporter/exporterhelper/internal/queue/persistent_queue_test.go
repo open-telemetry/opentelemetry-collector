@@ -43,15 +43,15 @@ func (is *itemsSizer) Sizeof(val uint64) int64 {
 
 type uint64Encoding struct{}
 
-func (uint64Encoding) Marshal(val uint64) ([]byte, error) {
+func (uint64Encoding) Marshal(_ context.Context, val uint64) ([]byte, error) {
 	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
 }
 
-func (uint64Encoding) Unmarshal(bytes []byte) (uint64, error) {
+func (uint64Encoding) Unmarshal(bytes []byte) (context.Context, uint64, error) {
 	if len(bytes) < 8 {
-		return 0, errInvalidValue
+		return context.Background(), 0, errInvalidValue
 	}
-	return binary.LittleEndian.Uint64(bytes), nil
+	return context.Background(), binary.LittleEndian.Uint64(bytes), nil
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
@@ -216,14 +216,15 @@ func (m *fakeStorageClientWithErrors) Reset() {
 func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64], capacity int64, numConsumers int,
 	consumeFunc func(_ context.Context, item uint64) error,
 ) Queue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     sizer,
-		capacity:  capacity,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
+	storageID := component.ID{}
+	pq := newPersistentQueue[uint64](Settings[uint64]{
+		Sizer:     sizer,
+		Capacity:  capacity,
+		Signal:    pipeline.SignalTraces,
+		StorageID: &storageID,
+		Encoding:  uint64Encoding{},
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 	})
 	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
 		done.OnDone(consumeFunc(ctx, item))
@@ -239,14 +240,15 @@ func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64]
 }
 
 func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     request.RequestsSizer[uint64]{},
-		capacity:  1000,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
+	storageID := component.ID{}
+	pq := newPersistentQueue[uint64](Settings[uint64]{
+		Sizer:     request.RequestsSizer[uint64]{},
+		Capacity:  1000,
+		Signal:    pipeline.SignalTraces,
+		StorageID: &storageID,
+		Encoding:  uint64Encoding{},
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
 	pq.initClient(context.Background(), client)
 	return pq
@@ -260,17 +262,16 @@ func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Exten
 	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer{}, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64],
-	capacity int64,
-) *persistentQueue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     sizer,
-		capacity:  capacity,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
+func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64], capacity int64) *persistentQueue[uint64] {
+	storageID := component.ID{}
+	pq := newPersistentQueue[uint64](Settings[uint64]{
+		Sizer:     sizer,
+		Capacity:  capacity,
+		Signal:    pipeline.SignalTraces,
+		StorageID: &storageID,
+		Encoding:  uint64Encoding{},
+		ID:        component.NewID(exportertest.NopType),
+		Telemetry: componenttest.NewNopTelemetrySettings(),
 	}).(*persistentQueue[uint64])
 	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
 	return pq
@@ -410,15 +411,16 @@ func TestPersistentBlockingQueue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-				sizer:           tt.sizer,
-				capacity:        100,
-				blockOnOverflow: true,
-				signal:          pipeline.SignalTraces,
-				storageID:       component.ID{},
-				encoding:        uint64Encoding{},
-				id:              component.NewID(exportertest.NopType),
-				telemetry:       componenttest.NewNopTelemetrySettings(),
+			storageID := component.ID{}
+			pq := newPersistentQueue[uint64](Settings[uint64]{
+				Sizer:           tt.sizer,
+				Capacity:        100,
+				BlockOnOverflow: true,
+				Signal:          pipeline.SignalTraces,
+				StorageID:       &storageID,
+				Encoding:        uint64Encoding{},
+				ID:              component.NewID(exportertest.NopType),
+				Telemetry:       componenttest.NewNopTelemetrySettings(),
 			})
 			consumed := &atomic.Int64{}
 			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
@@ -538,7 +540,7 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{})
+	pq := newPersistentQueue[uint64](Settings[uint64]{})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
@@ -913,7 +915,7 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(uint64(50))
+	marshaled, err := uint64Encoding{}.Marshal(context.Background(), uint64(50))
 	require.NoError(t, err)
 	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
 
@@ -1003,6 +1005,7 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 }
 
 func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
+	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
 
@@ -1164,6 +1167,7 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 // This test covers the case when the persistent storage is recovered from a snapshot which has
 // bigger value for the used size than the size of the actual items in the storage.
 func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
+	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
 

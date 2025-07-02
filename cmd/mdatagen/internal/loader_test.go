@@ -4,6 +4,8 @@
 package internal
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -12,6 +14,22 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
+
+func TestTwoPackagesInDirectory(t *testing.T) {
+	contents, err := os.ReadFile("testdata/twopackages.yaml")
+	require.NoError(t, err)
+	tempDir := t.TempDir()
+	metadataPath := filepath.Join(tempDir, "metadata.yaml")
+	// we create a trivial module and packages to avoid having invalid go checked into our test directory.
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "go.mod"), []byte("module twopackages"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package1.go"), []byte("package package1"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(tempDir, "package2.go"), []byte("package package2"), 0o600))
+	require.NoError(t, os.WriteFile(metadataPath, contents, 0o600))
+
+	_, err = LoadMetadata(metadataPath)
+	require.Error(t, err)
+	require.ErrorContains(t, err, "unable to determine package name: [go list -f {{.ImportPath}}] failed: (stderr) found packages package1 (package1.go) and package2 (package2.go)")
+}
 
 func TestLoadMetadata(t *testing.T) {
 	tests := []struct {
@@ -179,6 +197,22 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "map_attr",
 					},
+					"optional_int_attr": {
+						Description: "An optional attribute with an integer value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeInt,
+						},
+						FullName: "optional_int_attr",
+						Optional: true,
+					},
+					"optional_string_attr": {
+						Description: "An optional attribute with any string value",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "optional_string_attr",
+						Optional: true,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -194,7 +228,7 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"optional.metric": {
 						Enabled:     false,
@@ -206,7 +240,7 @@ func TestLoadMetadata(t *testing.T) {
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"optional.metric.empty_unit": {
 						Enabled:     false,
@@ -255,7 +289,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfEnabledNotSet: "This event will be disabled by default soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"default.event.to_be_renamed": {
 						Enabled:               false,
@@ -264,7 +298,7 @@ func TestLoadMetadata(t *testing.T) {
 						Warnings: Warnings{
 							IfConfigured: "This event is deprecated and will be renamed soon.",
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2"},
+						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"default.event.to_be_removed": {
 						Enabled:               true,
@@ -348,7 +382,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "subcomponent",
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 			},
@@ -358,7 +392,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
@@ -376,7 +410,7 @@ func TestLoadMetadata(t *testing.T) {
 			want: Metadata{
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
-				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal",
+				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
@@ -390,37 +424,41 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'resource_attributes[string.resource.attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': missing required field: `enabled`",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' missing required field: `enabled`",
 		},
 		{
 			name:    "testdata/events/no_enabled.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'events[system.event]': missing required field: `enabled`",
+			wantErr: "decoding failed due to the following error(s):\n\n'events[system.event]' missing required field: `enabled`",
 		},
 		{
 			name: "testdata/no_value_type.yaml",
 			want: Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\n" +
-				"error decoding 'sum': missing required field: `value_type`",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' decoding failed due to the following error(s):\n\n" +
+				"'sum' missing required field: `value_type`",
 		},
 		{
 			name:    "testdata/unknown_value_type.yaml",
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[system.cpu.time]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'value_type': invalid value_type: \"unknown\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[system.cpu.time]' decoding failed due to the following error(s):\n\n'sum' decoding failed due to the following error(s):\n\n'value_type' invalid value_type: \"unknown\"",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'metrics[default.metric]': decoding failed due to the following error(s):\n\nerror decoding 'sum': decoding failed due to the following error(s):\n\nerror decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'metrics[default.metric]' decoding failed due to the following error(s):\n\n'sum' decoding failed due to the following error(s):\n\n'aggregation_temporality' invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\nerror decoding 'attributes[used_attr].type': invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
+		},
+		{
+			name:    "testdata/~~this file doesn't exist~~.yaml",
+			wantErr: "unable to read the file file:testdata/~~this file doesn't exist~~.yaml",
 		},
 	}
 	for _, tt := range tests {
@@ -428,7 +466,7 @@ func TestLoadMetadata(t *testing.T) {
 			got, err := LoadMetadata(tt.name)
 			if tt.wantErr != "" {
 				require.Error(t, err)
-				require.EqualError(t, err, tt.wantErr)
+				require.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, tt.want, got)

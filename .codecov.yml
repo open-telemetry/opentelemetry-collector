@@ -19,4 +19,5 @@ coverage:
 
 ignore:
   - "pdata/internal/data/protogen/**/*"
+  - "**/*.pb.go"
   - "cmd/mdatagen/third_party/**/*"

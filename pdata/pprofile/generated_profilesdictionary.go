@@ -88,11 +88,15 @@ func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	ms.MappingTable().CopyTo(dest.MappingTable())
-	ms.LocationTable().CopyTo(dest.LocationTable())
-	ms.FunctionTable().CopyTo(dest.FunctionTable())
-	ms.LinkTable().CopyTo(dest.LinkTable())
-	ms.StringTable().CopyTo(dest.StringTable())
-	ms.AttributeTable().CopyTo(dest.AttributeTable())
-	ms.AttributeUnits().CopyTo(dest.AttributeUnits())
+	copyOrigProfilesDictionary(dest.orig, ms.orig)
+}
+
+func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
+	dest.MappingTable = copyOrigMappingSlice(dest.MappingTable, src.MappingTable)
+	dest.LocationTable = copyOrigLocationSlice(dest.LocationTable, src.LocationTable)
+	dest.FunctionTable = copyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)
+	dest.LinkTable = copyOrigLinkSlice(dest.LinkTable, src.LinkTable)
+	dest.StringTable = internal.CopyOrigStringSlice(dest.StringTable, src.StringTable)
+	dest.AttributeTable = copyOrigAttributeTableSlice(dest.AttributeTable, src.AttributeTable)
+	dest.AttributeUnits = copyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
 }

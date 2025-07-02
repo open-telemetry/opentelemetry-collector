@@ -14,10 +14,10 @@ import (
 
 type Encoding[T any] interface {
 	// Marshal is a function that can marshal a request into bytes.
-	Marshal(T) ([]byte, error)
+	Marshal(context.Context, T) ([]byte, error)
 
 	// Unmarshal is a function that can unmarshal bytes into a request.
-	Unmarshal([]byte) (T, error)
+	Unmarshal([]byte) (context.Context, T, error)
 }
 
 // ErrQueueIsFull is the error returned when an item is offered to the Queue and the queue is full and setup to
@@ -71,24 +71,9 @@ type Settings[T any] struct {
 func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) Queue[T] {
 	// Configure memory queue or persistent based on the config.
 	if set.StorageID == nil {
-		return newAsyncQueue(newMemoryQueue[T](memoryQueueSettings[T]{
-			sizer:           set.Sizer,
-			capacity:        set.Capacity,
-			waitForResult:   set.WaitForResult,
-			blockOnOverflow: set.BlockOnOverflow,
-		}), set.NumConsumers, next)
+		return newAsyncQueue(newMemoryQueue[T](set), set.NumConsumers, next)
 	}
-	return newAsyncQueue(newPersistentQueue[T](persistentQueueSettings[T]{
-		sizer:           set.Sizer,
-		sizerType:       set.SizerType,
-		capacity:        set.Capacity,
-		blockOnOverflow: set.BlockOnOverflow,
-		signal:          set.Signal,
-		storageID:       *set.StorageID,
-		encoding:        set.Encoding,
-		id:              set.ID,
-		telemetry:       set.Telemetry,
-	}), set.NumConsumers, next)
+	return newAsyncQueue(newPersistentQueue[T](set), set.NumConsumers, next)
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.
