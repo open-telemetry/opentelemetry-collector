@@ -27,21 +27,7 @@ func (mn MetricName) RenderUnexported() (string, error) {
 }
 
 type Metric struct {
-	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
-
-	// Warnings that will be shown to user under specified conditions.
-	Warnings Warnings `mapstructure:"warnings"`
-
-	// Description of the metric.
-	Description string `mapstructure:"description"`
-
-	// The stability level of the metric.
-	Stability Stability `mapstructure:"stability"`
-
-	// ExtendedDocumentation of the metric. If specified, this will
-	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+	Signal `mapstructure:",squash"`
 
 	// Optional can be used to specify metrics that may
 	// or may not be present in all cases, depending on configuration.
@@ -56,9 +42,6 @@ type Metric struct {
 	Gauge *Gauge `mapstructure:"gauge,omitempty"`
 	// Histogram stores metadata for histogram metric type
 	Histogram *Histogram `mapstructure:"histogram,omitempty"`
-
-	// Attributes is the list of attributes that the metric emits.
-	Attributes []AttributeName `mapstructure:"attributes"`
 
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
