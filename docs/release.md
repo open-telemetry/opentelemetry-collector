@@ -236,3 +236,4 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-10-20 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |
 | 2025-11-03 | v0.138.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
 | 2025-11-17 | v0.139.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
+| 2025-12-01 | v0.140.0 | [@dmathieu](https://github.com/dmathieu)             |
