@@ -145,22 +145,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newAttributeUnit((*es.orig)[i], es.state).CopyTo(newAttributeUnit((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.AttributeUnit, srcLen)
-	wrappers := make([]*otlpprofiles.AttributeUnit, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newAttributeUnit((*es.orig)[i], es.state).CopyTo(newAttributeUnit(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
@@ -169,4 +154,19 @@ func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 func (es AttributeUnitSlice) Sort(less func(a, b AttributeUnit) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.AttributeUnit, len(src))
+		data := make([]otlpprofiles.AttributeUnit, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigAttributeUnit(dest[i], src[i])
+	}
+	return dest
 }

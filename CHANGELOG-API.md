@@ -7,6 +7,28 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `semconv`: Removing deprecated semconv package (#13071)
+- `configgrpc,confighttp`: Unify return type of `NewDefault*Config` functions to return a struct instead of a pointer. (#13169)
+- `exporterhelper`: QueueBatchEncoding interface is changed to support marshaling and unmarshaling of request context. (#13188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `Equal` method on the `Mapping` type (#13197)
+- `configoptional`: Make unmarshaling into `None[T]` work the same as unmarshaling into `(*T)(nil)`. (#13168)
+- `configoptional`: Add a confmap.Marshaler implementation for configoptional.Optional (#13196)
+- `pdata/pprofile`: Introduce `Equal` methods on the `Line` and `Location` types (#13150)
+- `pdata/pprofile`: Add new helper method `SetMapping` to set a new mapping on a location. (#13197)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Distinguish between empty and nil values when marshaling `confmap.Conf` structs. (#13196)
+
+<!-- previous-version -->
+
 ## v1.34.0/v0.128.0
 
 ### 🛑 Breaking changes 🛑

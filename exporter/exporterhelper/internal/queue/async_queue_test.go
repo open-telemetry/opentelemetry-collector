@@ -18,7 +18,7 @@ import (
 
 func TestAsyncMemoryQueue(t *testing.T) {
 	consumed := &atomic.Int64{}
-	ac := newAsyncQueue(newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100}),
+	ac := newAsyncQueue(newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100}),
 		1, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -34,7 +34,7 @@ func TestAsyncMemoryQueue(t *testing.T) {
 func TestAsyncMemoryQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
 	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, blockOnOverflow: true}),
+		newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100, BlockOnOverflow: true}),
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -58,7 +58,7 @@ func TestAsyncMemoryQueueBlocking(t *testing.T) {
 func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
 	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true, blockOnOverflow: true}),
+		newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 100, WaitForResult: true, BlockOnOverflow: true}),
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -82,7 +82,7 @@ func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 	stop := make(chan struct{})
 	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 10, blockOnOverflow: true}),
+		newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: 10, BlockOnOverflow: true}),
 		1, func(_ context.Context, _ int64, done Done) {
 			<-stop
 			done.OnDone(nil)
@@ -110,7 +110,7 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 }
 
 func BenchmarkAsyncMemoryQueue(b *testing.B) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: int64(10 * b.N)})
+	q := newMemoryQueue[int64](Settings[int64]{Sizer: sizerInt64{}, Capacity: int64(10 * b.N)})
 	consumed := &atomic.Int64{}
 	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
 	ac := newAsyncQueue(q, 1, func(_ context.Context, _ int64, done Done) {

@@ -150,32 +150,10 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.{{ .origAccessor }})
-	if srcLen <= destCap {
-		(*dest.{{ .origAccessor }}) = (*dest.{{ .origAccessor }})[:srcLen:destCap]
-
-	{{- if eq .type "sliceOfPtrs" }}
-		for i := range *es.{{ .origAccessor }} {
-			new{{ .elementName }}((*es.{{ .origAccessor }})[i], es.{{ .stateAccessor }}).CopyTo(new{{ .elementName }}((*dest.{{ .origAccessor }})[i], dest.{{ .stateAccessor }}))
-		}
-		return
-	}
-	origs := make([]{{ .originName }}, srcLen)
-	wrappers := make([]*{{ .originName }}, srcLen)
-	for i := range *es.{{ .origAccessor }} {
-		wrappers[i] = &origs[i]
-		new{{ .elementName }}((*es.{{ .origAccessor }})[i], es.{{ .stateAccessor }}).CopyTo(new{{ .elementName }}(wrappers[i], dest.{{ .stateAccessor }}))
-	}
-	*dest.{{ .origAccessor }} = wrappers
-
+	{{- if .isCommon }}
+	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .structName }}(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 	{{- else }}
-	} else {
-		(*dest.{{ .origAccessor }}) = make([]{{ .originElementType }}, srcLen)
-	}
-	for i := range *es.{{ .origAccessor }} {
-		{{ .newElement }}.CopyTo(new{{ .elementName }}(&(*dest.{{ .origAccessor }})[i], dest.{{ .stateAccessor }}))
-	}
+	*dest.{{ .origAccessor }} = copyOrig{{ .structName }}(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 	{{- end }}
 }
 
@@ -196,5 +174,23 @@ func (ms {{ .structName }}) getOrig() *[]{{ .originElementType }} {
 
 func (ms {{ .structName }}) getState() *internal.State {
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+}
+{{- else }}
+
+func copyOrig{{ .structName }}(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
+	if cap(dest) < len(src) {
+		dest = make([]{{ .originElementType }}, len(src))
+		{{- if eq .type "sliceOfPtrs" }}
+		data := make([]{{ .originName }}, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+		{{- end }}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrig{{ .elementName }}({{ .originElementPtr }}dest[i], {{ .originElementPtr }}src[i])
+	}
+	return dest
 }
 {{- end }}
