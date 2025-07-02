@@ -15,7 +15,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -48,18 +47,6 @@ var indexDonePool = sync.Pool{
 	},
 }
 
-type persistentQueueSettings[T any] struct {
-	sizer           request.Sizer[T]
-	sizerType       request.SizerType
-	capacity        int64
-	blockOnOverflow bool
-	signal          pipeline.Signal
-	storageID       component.ID
-	encoding        Encoding[T]
-	id              component.ID
-	telemetry       component.TelemetrySettings
-}
-
 // persistentQueue provides a persistent queue implementation backed by file storage extension
 //
 // Write index describes the position at which next item is going to be stored.
@@ -83,7 +70,7 @@ type persistentQueueSettings[T any] struct {
 //	 index          index   x
 //	                        xxxx deleted
 type persistentQueue[T any] struct {
-	set    persistentQueueSettings[T]
+	set    Settings[T]
 	logger *zap.Logger
 	client storage.Client
 
@@ -97,10 +84,10 @@ type persistentQueue[T any] struct {
 }
 
 // newPersistentQueue creates a new queue backed by file storage; name and signal must be a unique combination that identifies the queue storage
-func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] {
+func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
 	pq := &persistentQueue[T]{
 		set:    set,
-		logger: set.telemetry.Logger,
+		logger: set.Telemetry.Logger,
 	}
 	pq.hasMoreElements = sync.NewCond(&pq.mu)
 	pq.hasMoreSpace = newCond(&pq.mu)
@@ -109,7 +96,7 @@ func newPersistentQueue[T any](set persistentQueueSettings[T]) readableQueue[T] 
 
 // Start starts the persistentQueue with the given number of consumers.
 func (pq *persistentQueue[T]) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := toStorageClient(ctx, pq.set.storageID, host, pq.set.id, pq.set.signal)
+	storageClient, err := toStorageClient(ctx, *pq.set.StorageID, host, pq.set.ID, pq.set.Signal)
 	if err != nil {
 		return err
 	}
@@ -124,7 +111,7 @@ func (pq *persistentQueue[T]) Size() int64 {
 }
 
 func (pq *persistentQueue[T]) Capacity() int64 {
-	return pq.set.capacity
+	return pq.set.Capacity
 }
 
 func (pq *persistentQueue[T]) initClient(ctx context.Context, client storage.Client) {
@@ -198,9 +185,9 @@ func (pq *persistentQueue[T]) Offer(ctx context.Context, req T) error {
 
 // putInternal is the internal version that requires caller to hold the mutex lock.
 func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
-	reqSize := pq.set.sizer.Sizeof(req)
-	for pq.metadata.QueueSize+reqSize > pq.set.capacity {
-		if !pq.set.blockOnOverflow {
+	reqSize := pq.set.Sizer.Sizeof(req)
+	for pq.metadata.QueueSize+reqSize > pq.set.Capacity {
+		if !pq.set.BlockOnOverflow {
 			return ErrQueueIsFull
 		}
 		if err := pq.hasMoreSpace.Wait(ctx); err != nil {
@@ -208,7 +195,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		}
 	}
 
-	reqBuf, err := pq.set.encoding.Marshal(ctx, req)
+	reqBuf, err := pq.set.Encoding.Marshal(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -248,7 +235,7 @@ func (pq *persistentQueue[T]) Read(ctx context.Context) (context.Context, T, Don
 			}
 			if consumed {
 				id := indexDonePool.Get().(*indexDone)
-				id.reset(index, pq.set.sizer.Sizeof(req), pq)
+				id.reset(index, pq.set.Sizer.Sizeof(req), pq)
 				return reqCtx, req, id, true
 			}
 			// More space available, data was dropped.
@@ -278,7 +265,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 	var request T
 	restoredCtx := context.Background()
 	if err == nil {
-		restoredCtx, request, err = pq.set.encoding.Unmarshal(getOp.Value)
+		restoredCtx, request, err = pq.set.Encoding.Unmarshal(getOp.Value)
 	}
 
 	if err != nil {
@@ -381,7 +368,7 @@ func (pq *persistentQueue[T]) retrieveAndEnqueueNotDispatchedReqs(ctx context.Co
 			pq.logger.Warn("Failed retrieving item", zap.String(zapKey, op.Key), zap.Error(errValueNotSet))
 			continue
 		}
-		reqCtx, req, err := pq.set.encoding.Unmarshal(op.Value)
+		reqCtx, req, err := pq.set.Encoding.Unmarshal(op.Value)
 		// If error happened or item is nil, it will be efficiently ignored
 		if err != nil {
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))

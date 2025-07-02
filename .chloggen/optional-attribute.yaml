@@ -4,13 +4,13 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: configoptional
+component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a confmap.Marshaler implementation for configoptional.Optional"
+note: Add support for optional attribute
 
 # One or more tracking issues or pull requests related to the change
-issues: [13196]
+issues: [12571]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
