@@ -348,14 +348,21 @@ type sliceField struct {
 	fieldName       string
 	originFieldName string
 	returnSlice     baseSlice
+	hideAccessors   bool
 }
 
 func (sf *sliceField) GenerateAccessors(ms *messageValueStruct) string {
+	if sf.hideAccessors {
+		return ""
+	}
 	t := template.Must(template.New("accessorSliceTemplate").Parse(accessorSliceTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) GenerateAccessorsTest(ms *messageValueStruct) string {
+	if sf.hideAccessors {
+		return ""
+	}
 	t := template.Must(template.New("accessorsSliceTestTemplate").Parse(accessorsSliceTestTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
