@@ -65,11 +65,10 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 }
 
 func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
-	// Create filtered package info for internal files - no imports needed for simple wrapper structs
 	internalPackageInfo := &PackageInfo{
 		name:        "internal",
 		path:        "internal",
-		imports:     []string{}, // No imports needed for internal wrapper structs
+		imports:     []string{},
 		testImports: packageInfo.testImports,
 	}
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(internalPackageInfo)))
@@ -121,11 +120,10 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 }
 
 func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
-	// Create filtered package info for internal files - no imports needed for simple wrapper structs
 	internalPackageInfo := &PackageInfo{
 		name:        "internal",
 		path:        "internal",
-		imports:     []string{}, // No imports needed for internal wrapper structs
+		imports:     []string{},
 		testImports: packageInfo.testImports,
 	}
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(internalPackageInfo)))

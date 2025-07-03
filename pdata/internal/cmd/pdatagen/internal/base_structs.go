@@ -37,10 +37,8 @@ func (ms *messageValueStruct) generateTests(packageInfo *PackageInfo) []byte {
 }
 
 func (ms *messageValueStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	// Create filtered package info for internal files - add necessary imports based on origin type
 	var imports []string
 
-	// Add necessary imports based on the origin type
 	if strings.Contains(ms.originFullName, "otlpcommon.") {
 		imports = append(imports, `otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`)
 	}

@@ -435,7 +435,6 @@ func (mf *messageValueField) GenerateEqualComparison(ms *messageValueStruct) str
 		fieldCheck := `(cfg.ShouldIgnoreField("` + mf.fieldName + `") || `
 		return fieldCheck + "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "(), opts...))"
 	}
-	// For non-pcommon packages, use simple equality without options
 	return "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "())"
 }
 
@@ -497,7 +496,6 @@ func (pf *primitiveField) GenerateEqualComparison(ms *messageValueStruct) string
 		}
 		return fieldCheck + "ms." + pf.fieldName + "() == val." + pf.fieldName + "()" + ")"
 	}
-	// For non-pcommon packages, use simple equality
 	return "ms." + pf.fieldName + "() == val." + pf.fieldName + "()"
 }
 
@@ -566,7 +564,6 @@ func (ptf *primitiveTypedField) GenerateEqualComparison(ms *messageValueStruct) 
 		fieldCheck := `(cfg.ShouldIgnoreField("` + ptf.fieldName + `") || `
 		return fieldCheck + "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()" + ")"
 	}
-	// For non-pcommon packages, use simple equality
 	return "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()"
 }
 
@@ -633,7 +630,6 @@ func (psf *primitiveSliceField) GenerateEqualComparison(ms *messageValueStruct) 
 		fieldCheck := `(cfg.ShouldIgnoreField("` + psf.fieldName + `") || `
 		return fieldCheck + "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "(), opts...))"
 	}
-	// For non-pcommon packages, use simple equality without options
 	return "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "())"
 }
 
@@ -732,7 +728,6 @@ func (of *oneOfField) GenerateEqualComparison(ms *messageValueStruct) string {
 		return fieldCheck + "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()" + ")"
 	}
 
-	// For non-pcommon packages, use simple type and value comparison
 	var valueComparisons []string
 	for _, value := range of.values {
 		switch v := value.(type) {
@@ -934,7 +929,6 @@ func (opv *optionalPrimitiveValue) GenerateEqualComparison(ms *messageValueStruc
 		return fieldCheck + "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + ")))"
 	}
 
-	// For non-pcommon packages, use simple equality
 	valueComparison := "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
 	return "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + "))"
 }

@@ -47,11 +47,10 @@ func (iss *primitiveSliceStruct) generateTests(packageInfo *PackageInfo) []byte 
 
 func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []byte {
 	var sb bytes.Buffer
-	// Create filtered package info for internal files - no imports needed for simple wrapper structs
 	internalPackageInfo := &PackageInfo{
 		name:        "internal",
 		path:        "internal",
-		imports:     []string{}, // No imports needed for internal wrapper structs
+		imports:     []string{},
 		testImports: packageInfo.testImports,
 	}
 	if err := primitiveSliceInternalTemplate.Execute(&sb, iss.templateFields(internalPackageInfo)); err != nil {
