@@ -9,13 +9,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/log"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -26,9 +26,12 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
-type shutdownable interface {
-	Shutdown(context.Context) error
-}
+const (
+	version       = "1.2.3"
+	service       = "test-service"
+	testAttribute = "test-attribute"
+	testValue     = "test-value"
+)
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
@@ -38,10 +41,9 @@ func TestNewLogger(t *testing.T) {
 		cfg          Config
 	}{
 		{
-			name:         "no log config",
-			cfg:          Config{},
-			wantErr:      errors.New("no encoder name specified"),
-			wantCoreType: nil,
+			name:    "no log config",
+			cfg:     Config{},
+			wantErr: errors.New("no encoder name specified"),
 		},
 		{
 			name: "log config with no processors",
@@ -55,7 +57,6 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -78,7 +79,6 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
 		},
 		{
 			name: "log config with sampling",
@@ -100,30 +100,22 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.samplerCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
-		testCoreType := func(t *testing.T, wantCoreType any) {
+		t.Run(tt.name, func(t *testing.T) {
 			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
 				Processors: tt.cfg.Logs.Processors,
 			}}))
 
-			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
+			_, _, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
-				require.Nil(t, wantCoreType)
 			} else {
 				require.NoError(t, err)
-				gotType := reflect.TypeOf(l.Core()).String()
-				require.Equal(t, wantCoreType, gotType)
-				if prov, ok := lp.(shutdownable); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
+				assert.NoError(t, sdk.Shutdown(context.Background()))
 			}
-		}
-
-		testCoreType(t, tt.wantCoreType)
+		})
 	}
 }
 
@@ -251,16 +243,12 @@ func TestNewLoggerWithResource(t *testing.T) {
 	}
 }
 
-func TestOTLPLogExport(t *testing.T) {
-	version := "1.2.3"
-	service := "test-service"
-	testAttribute := "test-attribute"
-	testValue := "test-value"
+func TestLoggerProvider(t *testing.T) {
 	receivedLogs := 0
 	totalLogs := 10
 
 	// Create a backend to receive the logs and assert the content
-	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+	lp := newOTLPLoggerProvider(t, zapcore.InfoLevel, func(_ http.ResponseWriter, request *http.Request) {
 		body, err := io.ReadAll(request.Body)
 		assert.NoError(t, err)
 		defer request.Body.Close()
@@ -274,9 +262,9 @@ func TestOTLPLogExport(t *testing.T) {
 		rl := logs.ResourceLogs().At(0)
 
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		assert.Equal(t, resourceAttrs[string(semconv.ServiceNameKey)], service)
-		assert.Equal(t, resourceAttrs[string(semconv.ServiceVersionKey)], version)
-		assert.Equal(t, resourceAttrs[testAttribute], testValue)
+		assert.Equal(t, service, resourceAttrs[string(semconv.ServiceNameKey)])
+		assert.Equal(t, version, resourceAttrs[string(semconv.ServiceVersionKey)])
+		assert.Equal(t, testValue, resourceAttrs[testAttribute])
 
 		// Check that the resource attributes are not duplicated in the log records
 		sl := rl.ScopeLogs().At(0)
@@ -287,35 +275,74 @@ func TestOTLPLogExport(t *testing.T) {
 		assert.NotContains(t, attrs, testAttribute)
 
 		receivedLogs++
-
-		writer.WriteHeader(http.StatusOK)
 	})
-	defer srv.Close()
 
-	processors := []config.LogRecordProcessor{
-		{
-			Simple: &config.SimpleLogRecordProcessor{
-				Exporter: config.LogRecordExporter{
-					OTLP: &config.OTLP{
-						Endpoint: ptr(srv.URL),
-						Protocol: ptr("http/protobuf"),
-						Insecure: ptr(true),
-					},
+	// Generate some logs to send to the backend
+	logger := lp.Logger("name")
+	for i := 0; i < totalLogs; i++ {
+		var record log.Record
+		record.SetBody(log.StringValue("Test log message"))
+		logger.Emit(context.Background(), record)
+	}
+
+	// Ensure the correct number of logs were received
+	require.Equal(t, totalLogs, receivedLogs)
+}
+
+func TestLoggerProviderLevel(t *testing.T) {
+	minLevel := zapcore.DebugLevel
+	maxLevel := zapcore.FatalLevel
+
+	for i := minLevel - 1; i <= maxLevel; i++ {
+		t.Run(i.String(), func(t *testing.T) {
+			lp := newOTLPLoggerProvider(t, i, func(http.ResponseWriter, *http.Request) {})
+			logger := lp.Logger("name")
+
+			// All levels will permit fatal logs.
+			assert.True(t, logger.Enabled(context.Background(), log.EnabledParameters{
+				Severity: log.SeverityFatal4,
+			}))
+
+			switch i {
+			// undefined level permits everything
+			case minLevel - 1, zapcore.DebugLevel:
+				assert.True(t, logger.Enabled(context.Background(), log.EnabledParameters{
+					Severity: log.SeverityDebug,
+				}))
+			default:
+				assert.False(t, logger.Enabled(context.Background(), log.EnabledParameters{
+					Severity: log.SeverityDebug,
+				}))
+			}
+		})
+	}
+}
+
+func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.HandlerFunc) log.LoggerProvider {
+	srv := createBackend("/v1/logs", handler)
+	t.Cleanup(srv.Close)
+
+	processors := []config.LogRecordProcessor{{
+		Simple: &config.SimpleLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Endpoint: ptr(srv.URL),
+					Protocol: ptr("http/protobuf"),
+					Insecure: ptr(true),
 				},
 			},
 		},
-	}
+	}}
 
 	cfg := Config{
 		Logs: LogsConfig{
-			Level:       zapcore.DebugLevel,
-			Development: true,
-			Encoding:    "json",
-			Processors:  processors,
+			Level:      level,
+			Encoding:   "json",
+			Processors: processors,
 		},
 	}
 
-	sdk, _ := config.NewSDK(
+	sdk, err := config.NewSDK(
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
 				LoggerProvider: &config.LoggerProvider{
@@ -332,31 +359,18 @@ func TestOTLPLogExport(t *testing.T) {
 			},
 		),
 	)
-
-	l, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
 	require.NoError(t, err)
-	require.NotNil(t, l)
+	t.Cleanup(func() {
+		assert.NoError(t, sdk.Shutdown(context.Background()))
+	})
+
+	_, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, lp)
-
-	defer func() {
-		if prov, ok := lp.(shutdownable); ok {
-			require.NoError(t, prov.Shutdown(context.Background()))
-		}
-	}()
-
-	// Reset counter for each test case
-	receivedLogs = 0
-
-	// Generate some logs to send to the backend
-	for i := 0; i < totalLogs; i++ {
-		l.Info("Test log message")
-	}
-
-	// Ensure the correct number of logs were received
-	require.Equal(t, totalLogs, receivedLogs)
+	return lp
 }
 
-func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
+func createBackend(endpoint string, handler func(http.ResponseWriter, *http.Request)) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc(endpoint, handler)
 	return httptest.NewServer(mux)
