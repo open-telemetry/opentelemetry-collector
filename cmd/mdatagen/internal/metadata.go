@@ -348,16 +348,16 @@ type Signal struct {
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
 
-	// Description of the event.
+	// Description of the signal.
 	Description string `mapstructure:"description"`
 
-	// The stability level of the event.
+	// The stability level of the signal.
 	Stability Stability `mapstructure:"stability"`
 
-	// Extended documentation of the event. If specified, this will be appended to the description used in generated documentation.
+	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
-	// Attributes is the list of attributes that the event emits.
+	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
 }
 
