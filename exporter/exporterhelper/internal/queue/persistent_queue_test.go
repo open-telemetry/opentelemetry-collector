@@ -520,13 +520,11 @@ func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
 
 func TestPersistentQueue_CorruptedData(t *testing.T) {
 	cases := []struct {
-		name                               string
-		corruptAllData                     bool
-		corruptSomeData                    bool
-		corruptCurrentlyDispatchedItemsKey bool
-		corruptReadIndex                   bool
-		corruptWriteIndex                  bool
-		desiredQueueSize                   int64
+		name                    string
+		corruptAllData          bool
+		corruptSomeData         bool
+		corruptQueueMetadataKey bool
+		desiredQueueSize        int64
 	}{
 		{
 			name:             "corrupted no items",
@@ -543,27 +541,16 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
-			name:                               "corrupted dispatched items key",
-			corruptCurrentlyDispatchedItemsKey: true,
-			desiredQueueSize:                   2,
+			name:                    "corrupted queueMetadata key",
+			corruptQueueMetadataKey: true,
+			desiredQueueSize:        0,
 		},
 		{
-			name:             "corrupted read index",
-			corruptReadIndex: true,
-			desiredQueueSize: 1, // The dispatched item.
-		},
-		{
-			name:              "corrupted write index",
-			corruptWriteIndex: true,
-			desiredQueueSize:  1, // The dispatched item.
-		},
-		{
-			name:                               "corrupted everything",
-			corruptAllData:                     true,
-			corruptCurrentlyDispatchedItemsKey: true,
-			corruptReadIndex:                   true,
-			corruptWriteIndex:                  true,
-			desiredQueueSize:                   0,
+			name:                    "corrupted everything",
+			corruptAllData:          true,
+			corruptSomeData:         true,
+			corruptQueueMetadataKey: true,
+			desiredQueueSize:        0,
 		},
 	}
 
@@ -593,16 +580,8 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, ps.client.Set(context.Background(), "2", badBytes))
 			}
 
-			if c.corruptCurrentlyDispatchedItemsKey {
-				require.NoError(t, ps.client.Set(context.Background(), currentlyDispatchedItemsKey, badBytes))
-			}
-
-			if c.corruptReadIndex {
-				require.NoError(t, ps.client.Set(context.Background(), readIndexKey, badBytes))
-			}
-
-			if c.corruptWriteIndex {
-				require.NoError(t, ps.client.Set(context.Background(), writeIndexKey, badBytes))
+			if c.corruptQueueMetadataKey {
+				require.NoError(t, ps.client.Set(context.Background(), queueMetadataKey, badBytes))
 			}
 
 			// Cannot close until we corrupt the data because the
@@ -891,10 +870,14 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 func TestPersistentQueue_StorageFull(t *testing.T) {
 	marshaled, err := int64Encoding{}.Marshal(context.Background(), int64(50))
 	require.NoError(t, err)
-	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
+	maxSizeInBytes := len(marshaled) * 50 // arbitrary small number
 
 	client := newFakeBoundedStorageClient(maxSizeInBytes)
 	ps := createTestPersistentQueueWithClient(client)
+
+	// Advance protobuf meta.readIndex>0 as a non-default placeholder to ensure accurate small amount calculations
+	require.NoError(t, ps.Offer(context.Background(), int64(50)))
+	require.True(t, consume(ps, func(context.Context, int64) error { return nil }))
 
 	// Put enough items in to fill the underlying storage
 	reqCount := int64(0)
@@ -910,8 +893,8 @@ func TestPersistentQueue_StorageFull(t *testing.T) {
 	// Check that the size is correct
 	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
 
-	// Manually set the storage to only have a small amount of free space left (needs 24).
-	newMaxSize := client.GetSizeInBytes() + 23
+	// Manually set the storage to only have a small amount of free space left (needs 46).
+	newMaxSize := client.GetSizeInBytes() + 45
 	client.SetMaxSizeInBytes(newMaxSize)
 
 	// Take out all the items
@@ -979,7 +962,6 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 }
 
 func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
-	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
 	ext := storagetest.NewMockStorageExtension(nil)
 	pq := createTestPersistentQueueWithItemsSizer(t, ext, 100)
 
@@ -1049,37 +1031,36 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 
 	newPQ := createTestPersistentQueueWithItemsSizer(t, ext, 100)
 
-	// The queue items size cannot be restored.
-	assert.Equal(t, int64(0), newPQ.Size())
+	// After restart with ItemsSizer enabled, the queue size is recalculated by itemSizer: 20 + 25.
+	assert.Equal(t, int64(45), newPQ.Size())
 
 	require.NoError(t, newPQ.Offer(context.Background(), int64(10)))
 
-	// Only new items are correctly reflected
-	assert.Equal(t, int64(10), newPQ.Size())
+	assert.Equal(t, int64(55), newPQ.Size())
 
 	// Consuming a restored request should reduce the restored size by 20 but it should not go to below zero
 	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
 		assert.Equal(t, int64(20), val)
 		return nil
 	}))
-	assert.Equal(t, int64(0), newPQ.Size())
+	assert.Equal(t, int64(35), newPQ.Size())
 
 	// Consuming another restored request should not affect the restored size since it's already dropped to 0.
 	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
 		assert.Equal(t, int64(25), val)
 		return nil
 	}))
-	assert.Equal(t, int64(0), newPQ.Size())
+	assert.Equal(t, int64(10), newPQ.Size())
 
 	// Adding another batch should update the size accordingly
 	require.NoError(t, newPQ.Offer(context.Background(), int64(25)))
-	assert.Equal(t, int64(25), newPQ.Size())
+	assert.Equal(t, int64(35), newPQ.Size())
 
 	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
 		assert.Equal(t, int64(10), val)
 		return nil
 	}))
-	assert.Equal(t, int64(15), newPQ.Size())
+	assert.Equal(t, int64(25), newPQ.Size())
 
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
@@ -1138,44 +1119,63 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
 
-// This test covers the case when the persistent storage is recovered from a snapshot which has
-// bigger value for the used size than the size of the actual items in the storage.
-func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
-	t.Skip("Restore when https://github.com/open-telemetry/opentelemetry-collector/issues/12890 is done")
+func TestPersistentQueue_SizerLegacyFormatMigration(t *testing.T) {
+	// Test data setup
+	const (
+		req        int64  = 10
+		readIndex  uint64 = 3
+		writeIndex uint64 = 5
+	)
+	currentlyDispatchedItems := []uint64{1, 2}
+	encoding := int64Encoding{}
+
 	ext := storagetest.NewMockStorageExtension(nil)
+	client, err := ext.GetClient(context.Background(), component.KindExporter,
+		component.NewID(exportertest.NopType), "traces")
+	require.NoError(t, err)
+
+	// Set legacy metadata keys
+	legacyMetadata := map[string][]byte{
+		legacyReadIndexKey:                itemIndexToBytes(readIndex),
+		legacyWriteIndexKey:               itemIndexToBytes(writeIndex),
+		legacyCurrentlyDispatchedItemsKey: itemIndexArrayToBytes(currentlyDispatchedItems),
+	}
+	for key, value := range legacyMetadata {
+		require.NoError(t, client.Set(context.Background(), key, value))
+	}
+
+	// Add items to storage corresponding to the legacy writeIndex and itemSizer
+	for i := uint64(1); i < writeIndex; i++ {
+		itemData, marshalErr := encoding.Marshal(context.Background(), req)
+		require.NoError(t, marshalErr)
+		require.NoError(t, client.Set(context.Background(), getItemKey(i), itemData))
+	}
+
+	require.NoError(t, client.Close(context.Background()))
+
+	// Create a new persistent queue, which should trigger migration
 	pq := createTestPersistentQueueWithItemsSizer(t, ext, 1000)
+	// Calculate expected values after migration
+	// Dispatched items are re-queued, affecting writeIndex and queueSize.
+	expectedWriteIndex := writeIndex + uint64(len(currentlyDispatchedItems))
 
-	assert.Equal(t, int64(0), pq.Size())
+	// Assert queue state
+	assert.Equal(t, readIndex, pq.metadata.ReadIndex)
+	assert.Equal(t, expectedWriteIndex, pq.metadata.WriteIndex)
+	assert.Empty(t, pq.metadata.CurrentlyDispatchedItems)
+	assert.Zero(t, pq.Size())
 
-	for i := 0; i < 6; i++ {
-		require.NoError(t, pq.Offer(context.Background(), int64(10)))
+	// Assert new metadata in storage
+	metadataBytes, err := pq.client.Get(context.Background(), queueMetadataKey)
+	require.NoError(t, err)
+	require.NotNil(t, metadataBytes)
+
+	// Verify legacy keys were cleaned up
+	for key := range legacyMetadata {
+		val, err := pq.client.Get(context.Background(), key)
+		require.NoError(t, err, "Error when checking for legacy key: %s", key)
+		assert.Nil(t, val, "Legacy key %s should have been cleaned up from storage", key)
 	}
-	assert.Equal(t, int64(60), pq.Size())
-
-	// Consume 30 items
-	for i := 0; i < 3; i++ {
-		assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
-	}
-	// The used size is now 30, but the snapshot should have 50, because it's taken every 5 read/writes.
-	assert.Equal(t, int64(30), pq.Size())
-
-	// Create a new queue pointed to the same storage
-	newPQ := createTestPersistentQueueWithItemsSizer(t, ext, 1000)
-
-	// This is an incorrect size restored from the snapshot.
-	// In reality the size should be 30. Once the queue is drained, it will be updated to the correct size.
-	assert.Equal(t, int64(50), newPQ.Size())
-
-	assert.True(t, consume(newPQ, func(context.Context, int64) error { return nil }))
-	assert.True(t, consume(newPQ, func(context.Context, int64) error { return nil }))
-	assert.Equal(t, int64(30), newPQ.Size())
-
-	// Now the size must be correctly reflected
-	assert.True(t, consume(newPQ, func(context.Context, int64) error { return nil }))
-	assert.Equal(t, int64(0), newPQ.Size())
-
-	require.NoError(t, newPQ.Shutdown(context.Background()))
-	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[int64], compare []uint64) {
