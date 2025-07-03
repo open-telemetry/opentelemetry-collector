@@ -51,6 +51,11 @@ func TestInstrumentationScope_Equal(t *testing.T) {
 
 	ms2 = NewInstrumentationScope()
 	assert.False(t, ms1.Equal(ms2))
+
+	// Test with CompareOption
+	ms1 = generateTestInstrumentationScope()
+	ms2 = generateTestInstrumentationScope()
+	assert.True(t, ms1.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func TestInstrumentationScope_Name(t *testing.T) {

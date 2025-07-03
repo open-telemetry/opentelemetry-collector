@@ -127,6 +127,13 @@ func TestStringSliceEqual(t *testing.T) {
 
 	ms2.Append("a", "b", "c")
 	assert.True(t, ms.Equal(ms2))
+
+	// Test with CompareOption
+	ms = NewStringSlice()
+	ms2 = NewStringSlice()
+	ms.Append("a", "b", "c")
+	ms2.Append("a", "b", "c")
+	assert.True(t, ms.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func BenchmarkStringSliceEqual(b *testing.B) {

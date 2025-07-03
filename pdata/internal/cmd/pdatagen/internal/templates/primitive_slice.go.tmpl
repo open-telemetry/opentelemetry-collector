@@ -133,7 +133,27 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	*dest.getOrig() = internal.CopyOrig{{ .structName }}(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another {{ .structName }}
+// Equal checks equality with another {{ .structName }}.
+{{- if eq .packageName "pcommon" }}
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms {{ .structName }}) Equal(val {{ .structName }}, opts ...CompareOption) bool {
+	{{- if eq .itemType "float64" }}
+	cfg := NewCompareConfig(opts)
+	if len(*ms.getOrig()) != len(*val.getOrig()) {
+		return false
+	}
+	for i := 0; i < len(*ms.getOrig()); i++ {
+		if !cfg.CompareFloat64((*ms.getOrig())[i], (*val.getOrig())[i]) {
+			return false
+		}
+	}
+	return true
+	{{- else }}
+	return slices.Equal(*ms.getOrig(), *val.getOrig())
+	{{- end }}
+}
+{{- else }}
 func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }
+{{- end }}

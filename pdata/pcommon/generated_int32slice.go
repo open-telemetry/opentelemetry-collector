@@ -134,7 +134,8 @@ func (ms Int32Slice) CopyTo(dest Int32Slice) {
 	*dest.getOrig() = internal.CopyOrigInt32Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another Int32Slice
-func (ms Int32Slice) Equal(val Int32Slice) bool {
+// Equal checks equality with another Int32Slice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms Int32Slice) Equal(val Int32Slice, opts ...CompareOption) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }

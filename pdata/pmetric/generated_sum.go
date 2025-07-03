@@ -88,7 +88,7 @@ func copyOrigSum(dest, src *otlpmetrics.Sum) {
 	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-// Equal checks equality with another Sum
+// Equal checks equality with another Sum.
 func (ms Sum) Equal(val Sum) bool {
 	return ms.AggregationTemporality() == val.AggregationTemporality() &&
 		ms.IsMonotonic() == val.IsMonotonic() &&

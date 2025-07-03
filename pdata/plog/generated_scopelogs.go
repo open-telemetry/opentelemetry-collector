@@ -83,7 +83,7 @@ func copyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
 	dest.LogRecords = copyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
 }
 
-// Equal checks equality with another ScopeLogs
+// Equal checks equality with another ScopeLogs.
 func (ms ScopeLogs) Equal(val ScopeLogs) bool {
 	return ms.Scope().Equal(val.Scope()) &&
 		ms.SchemaUrl() == val.SchemaUrl() &&

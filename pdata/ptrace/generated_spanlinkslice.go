@@ -148,7 +148,7 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	*dest.orig = copyOrigSpanLinkSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another SpanLinkSlice
+// Equal checks equality with another SpanLinkSlice.
 // In order to match equality, the order of elements must be the same.
 func (es SpanLinkSlice) Equal(val SpanLinkSlice) bool {
 	if es.Len() != val.Len() {

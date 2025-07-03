@@ -148,7 +148,7 @@ func (es SummaryDataPointSlice) CopyTo(dest SummaryDataPointSlice) {
 	*dest.orig = copyOrigSummaryDataPointSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another SummaryDataPointSlice
+// Equal checks equality with another SummaryDataPointSlice.
 // In order to match equality, the order of elements must be the same.
 func (es SummaryDataPointSlice) Equal(val SummaryDataPointSlice) bool {
 	if es.Len() != val.Len() {

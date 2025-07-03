@@ -161,7 +161,7 @@ func copyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.HasInlineFrames = src.HasInlineFrames
 }
 
-// Equal checks equality with another Mapping
+// Equal checks equality with another Mapping.
 func (ms Mapping) Equal(val Mapping) bool {
 	return ms.MemoryStart() == val.MemoryStart() &&
 		ms.MemoryLimit() == val.MemoryLimit() &&

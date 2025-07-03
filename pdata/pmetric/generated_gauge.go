@@ -64,7 +64,7 @@ func copyOrigGauge(dest, src *otlpmetrics.Gauge) {
 	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-// Equal checks equality with another Gauge
+// Equal checks equality with another Gauge.
 func (ms Gauge) Equal(val Gauge) bool {
 	return ms.DataPoints().Equal(val.DataPoints())
 }

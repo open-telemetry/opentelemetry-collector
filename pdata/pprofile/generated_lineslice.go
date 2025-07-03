@@ -148,7 +148,7 @@ func (es LineSlice) CopyTo(dest LineSlice) {
 	*dest.orig = copyOrigLineSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another LineSlice
+// Equal checks equality with another LineSlice.
 // In order to match equality, the order of elements must be the same.
 func (es LineSlice) Equal(val LineSlice) bool {
 	if es.Len() != val.Len() {

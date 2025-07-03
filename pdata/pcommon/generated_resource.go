@@ -76,8 +76,10 @@ func (ms Resource) CopyTo(dest Resource) {
 	internal.CopyOrigResource(dest.getOrig(), ms.getOrig())
 }
 
-// Equal checks equality with another Resource
-func (ms Resource) Equal(val Resource) bool {
-	return ms.Attributes().Equal(val.Attributes()) &&
-		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+// Equal checks equality with another Resource.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms Resource) Equal(val Resource, opts ...CompareOption) bool {
+	cfg := NewCompareConfig(opts)
+	return (cfg.ShouldIgnoreField("Attributes") || ms.Attributes().Equal(val.Attributes(), opts...)) &&
+		(cfg.ShouldIgnoreField("DroppedAttributesCount") || ms.DroppedAttributesCount() == val.DroppedAttributesCount())
 }

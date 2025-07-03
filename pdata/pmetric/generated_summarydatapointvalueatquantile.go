@@ -7,8 +7,6 @@
 package pmetric
 
 import (
-	"math"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 )
@@ -84,8 +82,8 @@ func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataP
 	dest.Value = src.Value
 }
 
-// Equal checks equality with another SummaryDataPointValueAtQuantile
+// Equal checks equality with another SummaryDataPointValueAtQuantile.
 func (ms SummaryDataPointValueAtQuantile) Equal(val SummaryDataPointValueAtQuantile) bool {
-	return math.Abs(ms.Quantile()-val.Quantile()) < 0.01 &&
-		math.Abs(ms.Value()-val.Value()) < 0.01
+	return ms.Quantile() == val.Quantile() &&
+		ms.Value() == val.Value()
 }

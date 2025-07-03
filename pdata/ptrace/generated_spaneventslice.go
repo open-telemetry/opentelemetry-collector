@@ -148,7 +148,7 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 	*dest.orig = copyOrigSpanEventSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another SpanEventSlice
+// Equal checks equality with another SpanEventSlice.
 // In order to match equality, the order of elements must be the same.
 func (es SpanEventSlice) Equal(val SpanEventSlice) bool {
 	if es.Len() != val.Len() {

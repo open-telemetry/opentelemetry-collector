@@ -134,7 +134,8 @@ func (ms ByteSlice) CopyTo(dest ByteSlice) {
 	*dest.getOrig() = internal.CopyOrigByteSlice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another ByteSlice
-func (ms ByteSlice) Equal(val ByteSlice) bool {
+// Equal checks equality with another ByteSlice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms ByteSlice) Equal(val ByteSlice, opts ...CompareOption) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }

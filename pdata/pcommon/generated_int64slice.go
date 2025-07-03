@@ -134,7 +134,8 @@ func (ms Int64Slice) CopyTo(dest Int64Slice) {
 	*dest.getOrig() = internal.CopyOrigInt64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another Int64Slice
-func (ms Int64Slice) Equal(val Int64Slice) bool {
+// Equal checks equality with another Int64Slice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms Int64Slice) Equal(val Int64Slice, opts ...CompareOption) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }

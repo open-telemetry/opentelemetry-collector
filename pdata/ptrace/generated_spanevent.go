@@ -102,7 +102,7 @@ func copyOrigSpanEvent(dest, src *otlptrace.Span_Event) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-// Equal checks equality with another SpanEvent
+// Equal checks equality with another SpanEvent.
 func (ms SpanEvent) Equal(val SpanEvent) bool {
 	return ms.Timestamp() == val.Timestamp() &&
 		ms.Name() == val.Name() &&

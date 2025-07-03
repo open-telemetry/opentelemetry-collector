@@ -83,7 +83,7 @@ func copyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
 	dest.ScopeMetrics = copyOrigScopeMetricsSlice(dest.ScopeMetrics, src.ScopeMetrics)
 }
 
-// Equal checks equality with another ResourceMetrics
+// Equal checks equality with another ResourceMetrics.
 func (ms ResourceMetrics) Equal(val ResourceMetrics) bool {
 	return ms.Resource().Equal(val.Resource()) &&
 		ms.SchemaUrl() == val.SchemaUrl() &&

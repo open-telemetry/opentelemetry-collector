@@ -122,7 +122,7 @@ func copyOrigSpanLink(dest, src *otlptrace.Span_Link) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-// Equal checks equality with another SpanLink
+// Equal checks equality with another SpanLink.
 func (ms SpanLink) Equal(val SpanLink) bool {
 	return ms.TraceID() == val.TraceID() &&
 		ms.SpanID() == val.SpanID() &&

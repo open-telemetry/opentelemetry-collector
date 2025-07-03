@@ -8,8 +8,11 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"iter"`,
 			`"math"`,
+			`"slices"`,
 			`"sort"`,
+			`"strings"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,

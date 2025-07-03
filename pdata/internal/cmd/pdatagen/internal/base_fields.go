@@ -4,6 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -367,7 +368,12 @@ func (sf *sliceField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
-func (sf *sliceField) GenerateEqualComparison(*messageValueStruct) string {
+func (sf *sliceField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + sf.fieldName + `") || `
+		return fieldCheck + "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "(), opts...))"
+	}
+	// For non-pcommon packages, use simple equality without options
 	return "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "())"
 }
 
@@ -424,7 +430,12 @@ func (mf *messageValueField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
-func (mf *messageValueField) GenerateEqualComparison(*messageValueStruct) string {
+func (mf *messageValueField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + mf.fieldName + `") || `
+		return fieldCheck + "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "(), opts...))"
+	}
+	// For non-pcommon packages, use simple equality without options
 	return "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "())"
 }
 
@@ -477,11 +488,16 @@ func (pf *primitiveField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
-func (pf *primitiveField) GenerateEqualComparison(*messageValueStruct) string {
-	// Use approximate equality for float64 fields to handle floating point precision issues
-	if pf.returnType == "float64" {
-		return "math.Abs(ms." + pf.fieldName + "() - val." + pf.fieldName + "()) < 0.01"
+func (pf *primitiveField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + pf.fieldName + `") || `
+		// Use configurable tolerance for float64 fields
+		if pf.returnType == "float64" {
+			return fieldCheck + "cfg.CompareFloat64(ms." + pf.fieldName + "(), val." + pf.fieldName + "()))"
+		}
+		return fieldCheck + "ms." + pf.fieldName + "() == val." + pf.fieldName + "()" + ")"
 	}
+	// For non-pcommon packages, use simple equality
 	return "ms." + pf.fieldName + "() == val." + pf.fieldName + "()"
 }
 
@@ -545,7 +561,12 @@ func (ptf *primitiveTypedField) GenerateCopyOrig(ms *messageValueStruct) string 
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *primitiveTypedField) GenerateEqualComparison(*messageValueStruct) string {
+func (ptf *primitiveTypedField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + ptf.fieldName + `") || `
+		return fieldCheck + "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()" + ")"
+	}
+	// For non-pcommon packages, use simple equality
 	return "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()"
 }
 
@@ -607,7 +628,12 @@ func (psf *primitiveSliceField) GenerateCopyOrig(ms *messageValueStruct) string 
 	return executeTemplate(t, psf.templateFields(ms))
 }
 
-func (psf *primitiveSliceField) GenerateEqualComparison(*messageValueStruct) string {
+func (psf *primitiveSliceField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + psf.fieldName + `") || `
+		return fieldCheck + "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "(), opts...))"
+	}
+	// For non-pcommon packages, use simple equality without options
 	return "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "())"
 }
 
@@ -670,7 +696,65 @@ func (of *oneOfField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, of.templateFields(ms))
 }
 
-func (of *oneOfField) GenerateEqualComparison(*messageValueStruct) string {
+func (of *oneOfField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + of.originFieldName + `") || `
+
+		// For OneOf fields, we need to compare both type and value
+		var valueComparisons []string
+		for _, value := range of.values {
+			switch v := value.(type) {
+			case *oneOfPrimitiveValue:
+				var comp string
+				typeName := of.typeName + v.fieldName
+				if v.returnType == "float64" {
+					comp = fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && cfg.CompareFloat64(ms.%sValue(), val.%sValue()))",
+						of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				} else {
+					comp = fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%sValue() == val.%sValue())",
+						of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				}
+				valueComparisons = append(valueComparisons, comp)
+			case *oneOfMessageValue:
+				typeName := of.typeName + v.fieldName
+				comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%s().Equal(val.%s(), opts...))",
+					of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				valueComparisons = append(valueComparisons, comp)
+			}
+		}
+
+		// Always include comparison for when both are of the same type (including Empty)
+		if len(valueComparisons) > 0 {
+			return fieldCheck + "(ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "() && (" + strings.Join(valueComparisons, " || ") + " || ms." + of.typeFuncName() + "() == " + of.typeName + "Empty))" + ")"
+		}
+
+		// Fallback to type-only comparison
+		return fieldCheck + "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()" + ")"
+	}
+
+	// For non-pcommon packages, use simple type and value comparison
+	var valueComparisons []string
+	for _, value := range of.values {
+		switch v := value.(type) {
+		case *oneOfPrimitiveValue:
+			typeName := of.typeName + v.fieldName
+			comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%sValue() == val.%sValue())",
+				of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+			valueComparisons = append(valueComparisons, comp)
+		case *oneOfMessageValue:
+			typeName := of.typeName + v.fieldName
+			comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%s().Equal(val.%s()))",
+				of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+			valueComparisons = append(valueComparisons, comp)
+		}
+	}
+
+	// Always include comparison for when both are of the same type (including Empty)
+	if len(valueComparisons) > 0 {
+		return "(ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "() && (" + strings.Join(valueComparisons, " || ") + " || ms." + of.typeFuncName() + "() == " + of.typeName + "Empty))"
+	}
+
+	// Fallback to type-only comparison
 	return "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()"
 }
 
@@ -836,15 +920,23 @@ func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) stri
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
-func (opv *optionalPrimitiveValue) GenerateEqualComparison(*messageValueStruct) string {
-	// Use approximate equality for float64 fields to handle floating point precision issues
-	var valueComparison string
-	if opv.returnType == "float64" {
-		valueComparison = "math.Abs(ms." + opv.fieldName + "() - val." + opv.fieldName + "()) < 0.01"
-	} else {
-		valueComparison = "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
+func (opv *optionalPrimitiveValue) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + opv.fieldName + `") || `
+
+		// Use configurable tolerance for float64 fields
+		var valueComparison string
+		if opv.returnType == "float64" {
+			valueComparison = "cfg.CompareFloat64(ms." + opv.fieldName + "(), val." + opv.fieldName + "())"
+		} else {
+			valueComparison = "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
+		}
+		return fieldCheck + "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + ")))"
 	}
-	return "ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + ")"
+
+	// For non-pcommon packages, use simple equality
+	valueComparison := "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
+	return "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + "))"
 }
 
 func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[string]any {

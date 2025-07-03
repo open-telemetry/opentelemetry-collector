@@ -148,7 +148,7 @@ func (es ResourceMetricsSlice) CopyTo(dest ResourceMetricsSlice) {
 	*dest.orig = copyOrigResourceMetricsSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ResourceMetricsSlice
+// Equal checks equality with another ResourceMetricsSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ResourceMetricsSlice) Equal(val ResourceMetricsSlice) bool {
 	if es.Len() != val.Len() {

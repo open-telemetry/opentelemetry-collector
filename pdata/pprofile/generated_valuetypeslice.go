@@ -148,7 +148,7 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	*dest.orig = copyOrigValueTypeSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ValueTypeSlice
+// Equal checks equality with another ValueTypeSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ValueTypeSlice) Equal(val ValueTypeSlice) bool {
 	if es.Len() != val.Len() {

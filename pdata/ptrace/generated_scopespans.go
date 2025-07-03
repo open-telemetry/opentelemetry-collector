@@ -83,7 +83,7 @@ func copyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
 	dest.Spans = copyOrigSpanSlice(dest.Spans, src.Spans)
 }
 
-// Equal checks equality with another ScopeSpans
+// Equal checks equality with another ScopeSpans.
 func (ms ScopeSpans) Equal(val ScopeSpans) bool {
 	return ms.Scope().Equal(val.Scope()) &&
 		ms.SchemaUrl() == val.SchemaUrl() &&

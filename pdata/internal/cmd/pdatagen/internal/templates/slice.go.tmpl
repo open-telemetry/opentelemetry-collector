@@ -157,8 +157,22 @@ func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	{{- end }}
 }
 
-// Equal checks equality with another {{ .structName }}
+// Equal checks equality with another {{ .structName }}.
 // In order to match equality, the order of elements must be the same.
+{{- if eq .packageName "pcommon" }}
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (es {{ .structName }}) Equal(val {{ .structName }}, opts ...CompareOption) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i), opts...) {
+			return false
+		}
+	}
+	return true
+}
+	{{- else }}
 func (es {{ .structName }}) Equal(val {{ .structName }}) bool {
 	if es.Len() != val.Len() {
 		return false
@@ -169,7 +183,8 @@ func (es {{ .structName }}) Equal(val {{ .structName }}) bool {
 		}
 	}
 	return true
-}
+	}
+	{{- end }}
 
 {{ if eq .type "sliceOfPtrs" -}}
 // Sort sorts the {{ .elementName }} elements within {{ .structName }} given the

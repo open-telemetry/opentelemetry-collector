@@ -127,6 +127,13 @@ func TestByteSliceEqual(t *testing.T) {
 
 	ms2.Append(1, 2, 3)
 	assert.True(t, ms.Equal(ms2))
+
+	// Test with CompareOption
+	ms = NewByteSlice()
+	ms2 = NewByteSlice()
+	ms.Append(1, 2, 3)
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func BenchmarkByteSliceEqual(b *testing.B) {

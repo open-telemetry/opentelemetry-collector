@@ -282,11 +282,11 @@ func copyOrigMetric(dest, src *otlpmetrics.Metric) {
 	}
 }
 
-// Equal checks equality with another Metric
+// Equal checks equality with another Metric.
 func (ms Metric) Equal(val Metric) bool {
 	return ms.Name() == val.Name() &&
 		ms.Description() == val.Description() &&
 		ms.Unit() == val.Unit() &&
 		ms.Metadata().Equal(val.Metadata()) &&
-		ms.Type() == val.Type()
+		(ms.Type() == val.Type() && ((ms.Type() == MetricTypeGauge && val.Type() == MetricTypeGauge && ms.Gauge().Equal(val.Gauge())) || (ms.Type() == MetricTypeSum && val.Type() == MetricTypeSum && ms.Sum().Equal(val.Sum())) || (ms.Type() == MetricTypeHistogram && val.Type() == MetricTypeHistogram && ms.Histogram().Equal(val.Histogram())) || (ms.Type() == MetricTypeExponentialHistogram && val.Type() == MetricTypeExponentialHistogram && ms.ExponentialHistogram().Equal(val.ExponentialHistogram())) || (ms.Type() == MetricTypeSummary && val.Type() == MetricTypeSummary && ms.Summary().Equal(val.Summary())) || ms.Type() == MetricTypeEmpty))
 }

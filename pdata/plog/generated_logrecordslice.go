@@ -148,7 +148,7 @@ func (es LogRecordSlice) CopyTo(dest LogRecordSlice) {
 	*dest.orig = copyOrigLogRecordSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another LogRecordSlice
+// Equal checks equality with another LogRecordSlice.
 // In order to match equality, the order of elements must be the same.
 func (es LogRecordSlice) Equal(val LogRecordSlice) bool {
 	if es.Len() != val.Len() {

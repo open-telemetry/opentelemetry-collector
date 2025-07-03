@@ -7,8 +7,6 @@
 package pmetric
 
 import (
-	"math"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -256,7 +254,7 @@ func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	dest.ZeroThreshold = src.ZeroThreshold
 }
 
-// Equal checks equality with another ExponentialHistogramDataPoint
+// Equal checks equality with another ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Equal(val ExponentialHistogramDataPoint) bool {
 	return ms.Attributes().Equal(val.Attributes()) &&
 		ms.StartTimestamp() == val.StartTimestamp() &&
@@ -268,8 +266,8 @@ func (ms ExponentialHistogramDataPoint) Equal(val ExponentialHistogramDataPoint)
 		ms.Negative().Equal(val.Negative()) &&
 		ms.Exemplars().Equal(val.Exemplars()) &&
 		ms.Flags() == val.Flags() &&
-		ms.HasSum() == val.HasSum() && (!ms.HasSum() || math.Abs(ms.Sum()-val.Sum()) < 0.01) &&
-		ms.HasMin() == val.HasMin() && (!ms.HasMin() || math.Abs(ms.Min()-val.Min()) < 0.01) &&
-		ms.HasMax() == val.HasMax() && (!ms.HasMax() || math.Abs(ms.Max()-val.Max()) < 0.01) &&
-		math.Abs(ms.ZeroThreshold()-val.ZeroThreshold()) < 0.01
+		(ms.HasSum() == val.HasSum() && (!ms.HasSum() || ms.Sum() == val.Sum())) &&
+		(ms.HasMin() == val.HasMin() && (!ms.HasMin() || ms.Min() == val.Min())) &&
+		(ms.HasMax() == val.HasMax() && (!ms.HasMax() || ms.Max() == val.Max())) &&
+		ms.ZeroThreshold() == val.ZeroThreshold()
 }

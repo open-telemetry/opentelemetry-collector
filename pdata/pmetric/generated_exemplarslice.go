@@ -147,7 +147,7 @@ func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	*dest.orig = copyOrigExemplarSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ExemplarSlice
+// Equal checks equality with another ExemplarSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ExemplarSlice) Equal(val ExemplarSlice) bool {
 	if es.Len() != val.Len() {

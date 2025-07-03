@@ -94,7 +94,7 @@ func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.AggregationTemporality = src.AggregationTemporality
 }
 
-// Equal checks equality with another ValueType
+// Equal checks equality with another ValueType.
 func (ms ValueType) Equal(val ValueType) bool {
 	return ms.TypeStrindex() == val.TypeStrindex() &&
 		ms.UnitStrindex() == val.UnitStrindex() &&

@@ -223,7 +223,7 @@ func copyOrigSpan(dest, src *otlptrace.Span) {
 	copyOrigStatus(&dest.Status, &src.Status)
 }
 
-// Equal checks equality with another Span
+// Equal checks equality with another Span.
 func (ms Span) Equal(val Span) bool {
 	return ms.TraceID() == val.TraceID() &&
 		ms.SpanID() == val.SpanID() &&

@@ -148,7 +148,7 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	*dest.orig = copyOrigScopeProfilesSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ScopeProfilesSlice
+// Equal checks equality with another ScopeProfilesSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ScopeProfilesSlice) Equal(val ScopeProfilesSlice) bool {
 	if es.Len() != val.Len() {

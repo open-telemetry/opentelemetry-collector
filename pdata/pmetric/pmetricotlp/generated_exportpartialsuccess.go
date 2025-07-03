@@ -82,7 +82,7 @@ func copyOrigExportPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsP
 	dest.ErrorMessage = src.ErrorMessage
 }
 
-// Equal checks equality with another ExportPartialSuccess
+// Equal checks equality with another ExportPartialSuccess.
 func (ms ExportPartialSuccess) Equal(val ExportPartialSuccess) bool {
 	return ms.RejectedDataPoints() == val.RejectedDataPoints() &&
 		ms.ErrorMessage() == val.ErrorMessage()

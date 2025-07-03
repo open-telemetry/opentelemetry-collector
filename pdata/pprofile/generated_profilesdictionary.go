@@ -101,7 +101,7 @@ func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.AttributeUnits = copyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
 }
 
-// Equal checks equality with another ProfilesDictionary
+// Equal checks equality with another ProfilesDictionary.
 func (ms ProfilesDictionary) Equal(val ProfilesDictionary) bool {
 	return ms.MappingTable().Equal(val.MappingTable()) &&
 		ms.LocationTable().Equal(val.LocationTable()) &&

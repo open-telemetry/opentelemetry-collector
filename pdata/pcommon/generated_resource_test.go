@@ -51,6 +51,11 @@ func TestResource_Equal(t *testing.T) {
 
 	ms2 = NewResource()
 	assert.False(t, ms1.Equal(ms2))
+
+	// Test with CompareOption
+	ms1 = generateTestResource()
+	ms2 = generateTestResource()
+	assert.True(t, ms1.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func TestResource_Attributes(t *testing.T) {

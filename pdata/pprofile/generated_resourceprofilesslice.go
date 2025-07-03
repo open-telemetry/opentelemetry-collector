@@ -148,7 +148,7 @@ func (es ResourceProfilesSlice) CopyTo(dest ResourceProfilesSlice) {
 	*dest.orig = copyOrigResourceProfilesSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ResourceProfilesSlice
+// Equal checks equality with another ResourceProfilesSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ResourceProfilesSlice) Equal(val ResourceProfilesSlice) bool {
 	if es.Len() != val.Len() {

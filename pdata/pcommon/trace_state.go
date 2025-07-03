@@ -56,7 +56,8 @@ func (ms TraceState) CopyTo(dest TraceState) {
 	*dest.getOrig() = *ms.getOrig()
 }
 
-// Equal checks equality with another TraceState
-func (ms TraceState) Equal(val TraceState) bool {
+// Equal checks equality with another TraceState.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms TraceState) Equal(val TraceState, _ ...CompareOption) bool {
 	return *ms.getOrig() == *val.getOrig()
 }

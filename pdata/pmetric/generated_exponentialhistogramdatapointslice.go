@@ -148,7 +148,7 @@ func (es ExponentialHistogramDataPointSlice) CopyTo(dest ExponentialHistogramDat
 	*dest.orig = copyOrigExponentialHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ExponentialHistogramDataPointSlice
+// Equal checks equality with another ExponentialHistogramDataPointSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ExponentialHistogramDataPointSlice) Equal(val ExponentialHistogramDataPointSlice) bool {
 	if es.Len() != val.Len() {

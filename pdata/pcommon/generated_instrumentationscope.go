@@ -98,10 +98,12 @@ func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
 }
 
-// Equal checks equality with another InstrumentationScope
-func (ms InstrumentationScope) Equal(val InstrumentationScope) bool {
-	return ms.Name() == val.Name() &&
-		ms.Version() == val.Version() &&
-		ms.Attributes().Equal(val.Attributes()) &&
-		ms.DroppedAttributesCount() == val.DroppedAttributesCount()
+// Equal checks equality with another InstrumentationScope.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms InstrumentationScope) Equal(val InstrumentationScope, opts ...CompareOption) bool {
+	cfg := NewCompareConfig(opts)
+	return (cfg.ShouldIgnoreField("Name") || ms.Name() == val.Name()) &&
+		(cfg.ShouldIgnoreField("Version") || ms.Version() == val.Version()) &&
+		(cfg.ShouldIgnoreField("Attributes") || ms.Attributes().Equal(val.Attributes(), opts...)) &&
+		(cfg.ShouldIgnoreField("DroppedAttributesCount") || ms.DroppedAttributesCount() == val.DroppedAttributesCount())
 }

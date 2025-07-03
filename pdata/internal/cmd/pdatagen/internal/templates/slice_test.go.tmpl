@@ -172,6 +172,13 @@ func Test{{ .structName }}_Equal(t *testing.T) {
 		// This should return false since elements are different
 		assert.False(t, es1.Equal(es2))
 	}
+	{{- if eq .packageName "pcommon" }}
+	
+	// Test with CompareOption
+	es1 = generateTest{{ .structName }}()
+	es2 = generateTest{{ .structName }}()
+	assert.True(t, es1.Equal(es2, FloatTolerance(0.1)))
+	{{- end }}
 }
 
 {{ if eq .type "sliceOfPtrs" -}}

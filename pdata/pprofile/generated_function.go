@@ -106,7 +106,7 @@ func copyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.StartLine = src.StartLine
 }
 
-// Equal checks equality with another Function
+// Equal checks equality with another Function.
 func (ms Function) Equal(val Function) bool {
 	return ms.NameStrindex() == val.NameStrindex() &&
 		ms.SystemNameStrindex() == val.SystemNameStrindex() &&

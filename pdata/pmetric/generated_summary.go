@@ -64,7 +64,7 @@ func copyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = copyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
 
-// Equal checks equality with another Summary
+// Equal checks equality with another Summary.
 func (ms Summary) Equal(val Summary) bool {
 	return ms.DataPoints().Equal(val.DataPoints())
 }

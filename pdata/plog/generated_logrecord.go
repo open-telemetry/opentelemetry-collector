@@ -180,7 +180,7 @@ func copyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
 
-// Equal checks equality with another LogRecord
+// Equal checks equality with another LogRecord.
 func (ms LogRecord) Equal(val LogRecord) bool {
 	return ms.ObservedTimestamp() == val.ObservedTimestamp() &&
 		ms.Timestamp() == val.Timestamp() &&

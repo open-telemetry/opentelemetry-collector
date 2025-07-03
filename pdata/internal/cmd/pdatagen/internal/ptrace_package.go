@@ -8,7 +8,11 @@ var ptrace = &Package{
 		name: "ptrace",
 		path: "ptrace",
 		imports: []string{
+			`"iter"`,
+			`"math"`,
+			`"slices"`,
 			`"sort"`,
+			`"strings"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,

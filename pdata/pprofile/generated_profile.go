@@ -198,7 +198,7 @@ func copyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
 }
 
-// Equal checks equality with another Profile
+// Equal checks equality with another Profile.
 func (ms Profile) Equal(val Profile) bool {
 	return ms.SampleType().Equal(val.SampleType()) &&
 		ms.Sample().Equal(val.Sample()) &&

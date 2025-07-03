@@ -148,7 +148,7 @@ func (es NumberDataPointSlice) CopyTo(dest NumberDataPointSlice) {
 	*dest.orig = copyOrigNumberDataPointSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another NumberDataPointSlice
+// Equal checks equality with another NumberDataPointSlice.
 // In order to match equality, the order of elements must be the same.
 func (es NumberDataPointSlice) Equal(val NumberDataPointSlice) bool {
 	if es.Len() != val.Len() {

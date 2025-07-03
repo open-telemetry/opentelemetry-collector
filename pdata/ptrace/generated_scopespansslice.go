@@ -148,7 +148,7 @@ func (es ScopeSpansSlice) CopyTo(dest ScopeSpansSlice) {
 	*dest.orig = copyOrigScopeSpansSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another ScopeSpansSlice
+// Equal checks equality with another ScopeSpansSlice.
 // In order to match equality, the order of elements must be the same.
 func (es ScopeSpansSlice) Equal(val ScopeSpansSlice) bool {
 	if es.Len() != val.Len() {

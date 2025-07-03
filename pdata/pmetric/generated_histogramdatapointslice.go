@@ -148,7 +148,7 @@ func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	*dest.orig = copyOrigHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
-// Equal checks equality with another HistogramDataPointSlice
+// Equal checks equality with another HistogramDataPointSlice.
 // In order to match equality, the order of elements must be the same.
 func (es HistogramDataPointSlice) Equal(val HistogramDataPointSlice) bool {
 	if es.Len() != val.Len() {

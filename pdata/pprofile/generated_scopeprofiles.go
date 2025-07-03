@@ -83,7 +83,7 @@ func copyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	dest.Profiles = copyOrigProfilesSlice(dest.Profiles, src.Profiles)
 }
 
-// Equal checks equality with another ScopeProfiles
+// Equal checks equality with another ScopeProfiles.
 func (ms ScopeProfiles) Equal(val ScopeProfiles) bool {
 	return ms.Scope().Equal(val.Scope()) &&
 		ms.SchemaUrl() == val.SchemaUrl() &&
