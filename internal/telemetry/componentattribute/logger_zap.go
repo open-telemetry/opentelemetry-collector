@@ -78,36 +78,30 @@ type otelTeeCoreWithAttributes struct {
 	consoleCore zapcore.Core
 	lp          log.LoggerProvider
 	scopeName   string
-	level       zapcore.Level
 }
 
 var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 
-// NewOTelTeeCoreWithAttributes wraps a Zap core in order to copy logs to a [log.LoggerProvider] using [otelzap]. For the copied
-// logs, component attributes are injected as instrumentation scope attributes.
+// NewOTelTeeCoreWithAttributes wraps a Zap core in order to copy logs to a [log.LoggerProvider] using [otelzap].
+// For the copied logs, component attributes are injected as instrumentation scope attributes.
 //
 // This is used when service::telemetry::logs::processors is configured.
-func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, level zapcore.Level, attrs attribute.Set) zapcore.Core {
-	otelCore, err := zapcore.NewIncreaseLevelCore(otelzap.NewCore(
+func NewOTelTeeCoreWithAttributes(consoleCore zapcore.Core, lp log.LoggerProvider, scopeName string, attrs attribute.Set) zapcore.Core {
+	otelCore := otelzap.NewCore(
 		scopeName,
 		otelzap.WithLoggerProvider(lp),
 		otelzap.WithAttributes(attrs.ToSlice()...),
-	), zap.NewAtomicLevelAt(level))
-	if err != nil {
-		panic(err)
-	}
-
+	)
 	return &otelTeeCoreWithAttributes{
 		Core:        zapcore.NewTee(consoleCore, otelCore),
 		consoleCore: consoleCore,
 		lp:          lp,
 		scopeName:   scopeName,
-		level:       level,
 	}
 }
 
 func (ocwa *otelTeeCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
-	return NewOTelTeeCoreWithAttributes(tryWithAttributeSet(ocwa.consoleCore, attrs), ocwa.lp, ocwa.scopeName, ocwa.level, attrs)
+	return NewOTelTeeCoreWithAttributes(tryWithAttributeSet(ocwa.consoleCore, attrs), ocwa.lp, ocwa.scopeName, attrs)
 }
 
 type samplerCoreWithAttributes struct {
