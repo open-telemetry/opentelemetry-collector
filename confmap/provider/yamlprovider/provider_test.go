@@ -4,7 +4,6 @@
 package yamlprovider
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,25 +19,25 @@ func TestValidateProviderScheme(t *testing.T) {
 
 func TestEmpty(t *testing.T) {
 	sp := createProvider()
-	_, err := sp.Retrieve(context.Background(), "", nil)
+	_, err := sp.Retrieve(t.Context(), "", nil)
 	require.Error(t, err)
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestInvalidYAML(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:[invalid,", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:[invalid,", nil)
 	require.NoError(t, err)
 	raw, err := ret.AsRaw()
 	require.NoError(t, err)
 	assert.IsType(t, "", raw)
 
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestOneValue(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch::timeout: 2s", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:processors::batch::timeout: 2s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -49,12 +48,12 @@ func TestOneValue(t *testing.T) {
 			},
 		},
 	}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestNamedComponent(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:processors::batch/foo::timeout: 3s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -65,12 +64,12 @@ func TestNamedComponent(t *testing.T) {
 			},
 		},
 	}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestMapEntry(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:processors: {batch/foo::timeout: 3s, batch::timeout: 2s}", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -84,12 +83,12 @@ func TestMapEntry(t *testing.T) {
 			},
 		},
 	}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestArrayEntry(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:service::extensions: [zpages, zpages/foo]", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:service::extensions: [zpages, zpages/foo]", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -101,12 +100,12 @@ func TestArrayEntry(t *testing.T) {
 			},
 		},
 	}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestNewLine(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:processors::batch/foo::timeout: 3s\nprocessors::batch::timeout: 2s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -120,17 +119,17 @@ func TestNewLine(t *testing.T) {
 			},
 		},
 	}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func TestDotSeparator(t *testing.T) {
 	sp := createProvider()
-	ret, err := sp.Retrieve(context.Background(), "yaml:processors.batch.timeout: 4s", nil)
+	ret, err := sp.Retrieve(t.Context(), "yaml:processors.batch.timeout: 4s", nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	assert.Equal(t, map[string]any{"processors.batch.timeout": "4s"}, retMap.ToStringMap())
-	assert.NoError(t, sp.Shutdown(context.Background()))
+	assert.NoError(t, sp.Shutdown(t.Context()))
 }
 
 func createProvider() confmap.Provider {

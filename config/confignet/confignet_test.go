@@ -4,7 +4,6 @@
 package confignet
 
 import (
-	"context"
 	"errors"
 	"net"
 	"testing"
@@ -40,7 +39,7 @@ func TestAddrConfigTimeout(t *testing.T) {
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial(context.Background())
+	_, err := nac.Dial(t.Context())
 	require.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -57,7 +56,7 @@ func TestTCPAddrConfigTimeout(t *testing.T) {
 			Timeout: -1 * time.Second,
 		},
 	}
-	_, err := nac.Dial(context.Background())
+	_, err := nac.Dial(t.Context())
 	require.Error(t, err)
 	var netErr net.Error
 	if errors.As(err, &netErr) {
@@ -72,7 +71,7 @@ func TestAddrConfig(t *testing.T) {
 		Endpoint:  "localhost:0",
 		Transport: TransportTypeTCP,
 	}
-	ln, err := nas.Listen(context.Background())
+	ln, err := nas.Listen(t.Context())
 	require.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -93,7 +92,7 @@ func TestAddrConfig(t *testing.T) {
 		Transport: TransportTypeTCP,
 	}
 	var conn net.Conn
-	conn, err = nac.Dial(context.Background())
+	conn, err = nac.Dial(t.Context())
 	require.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
@@ -123,7 +122,7 @@ func TestTCPAddrConfig(t *testing.T) {
 	nas := &TCPAddrConfig{
 		Endpoint: "localhost:0",
 	}
-	ln, err := nas.Listen(context.Background())
+	ln, err := nas.Listen(t.Context())
 	require.NoError(t, err)
 	done := make(chan bool, 1)
 
@@ -143,7 +142,7 @@ func TestTCPAddrConfig(t *testing.T) {
 		Endpoint: ln.Addr().String(),
 	}
 	var conn net.Conn
-	conn, err = nac.Dial(context.Background())
+	conn, err = nac.Dial(t.Context())
 	require.NoError(t, err)
 	_, err = conn.Write([]byte("test"))
 	assert.NoError(t, err)
