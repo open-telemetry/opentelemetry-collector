@@ -8,13 +8,11 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/contrib/propagators/b3"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/embedded"
 	"go.opentelemetry.io/otel/trace/noop"
 
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -48,24 +46,6 @@ type noopNoContextTracerProvider struct {
 
 func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) trace.Tracer {
 	return &noopNoContextTracer{}
-}
-
-// newTracerProvider creates a new TracerProvider from Config.
-func newTracerProvider(set Settings, cfg Config) (trace.TracerProvider, error) {
-	if noopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
-		return &noopNoContextTracerProvider{}, nil
-	}
-
-	if tp, err := textMapPropagatorFromConfig(cfg.Traces.Propagators); err == nil {
-		otel.SetTextMapPropagator(tp)
-	} else {
-		return nil, err
-	}
-
-	if set.SDK != nil {
-		return set.SDK.TracerProvider(), nil
-	}
-	return nil, errors.New("no sdk set")
 }
 
 func textMapPropagatorFromConfig(props []string) (propagation.TextMapPropagator, error) {

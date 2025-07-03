@@ -10,7 +10,6 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -18,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
 var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -32,8 +33,13 @@ type Settings struct {
 	BuildInfo         component.BuildInfo
 	AsyncErrorChannel chan error
 	ZapOptions        []zap.Option
-	SDK               *config.SDK
-	Resource          *resource.Resource
+}
+
+type Providers struct {
+	Logger         *zap.Logger
+	LoggerProvider log.LoggerProvider
+	MeterProvider  metric.MeterProvider
+	TracerProvider trace.TracerProvider
 }
 
 // Factory is factory interface for telemetry.
@@ -44,14 +50,20 @@ type Factory interface {
 	// TODO: Should we just inherit from component.Factory?
 	CreateDefaultConfig() component.Config
 
-	// CreateLogger creates a logger.
-	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error)
+	// CreateResource creates a pcommon.Resource representing the collector,
+	// based on the provided settings and configuration. This may be used by
+	// components in their internal telemetry.
+	//
+	// TODO what is the resource used for? Should it be injected into all the
+	// internal telemetry, and be encapsulated?
+	CreateResource(context.Context, Settings, component.Config) (pcommon.Resource, error)
 
-	// CreateTracerProvider creates a TracerProvider.
-	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
-
-	// CreateMeterProvider creates a MeterProvider.
-	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
+	// CreateProviders creates the logger, meter, and tracer providers for
+	// the collector's internal telemetry.
+	//
+	// TODO should CreateProviders be CreateTelemetrySettings instead,
+	// and return a component.TelemetrySettings?
+	CreateProviders(context.Context, Settings, component.Config) (Providers, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
@@ -60,17 +72,18 @@ type Factory interface {
 // NewFactory creates a new Factory.
 func NewFactory() Factory {
 	return newFactory(createDefaultConfig,
-		withLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
-			c := *cfg.(*Config)
-			return newLogger(set, c)
+		withResource(func(ctx context.Context, set Settings, cfg component.Config) (pcommon.Resource, error) {
+			c := cfg.(*telemetryConfig)
+			res := resource.New(set.BuildInfo, c.Resource)
+			pcommonRes := pcommon.NewResource()
+			for _, keyValue := range res.Attributes() {
+				pcommonRes.Attributes().PutStr(string(keyValue.Key), keyValue.Value.AsString())
+			}
+			return pcommonRes, nil
 		}),
-		withTracerProvider(func(_ context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
-			c := *cfg.(*Config)
-			return newTracerProvider(set, c)
-		}),
-		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
-			c := *cfg.(*Config)
-			return newMeterProvider(set, c)
+		withProviders(func(ctx context.Context, set Settings, cfg component.Config) (Providers, error) {
+			c := *cfg.(*telemetryConfig)
+			return newProviders(ctx, set, c)
 		}),
 	)
 }
@@ -81,12 +94,12 @@ func createDefaultConfig() component.Config {
 		metricsHost = ""
 	}
 
-	return &Config{
-		Logs: LogsConfig{
+	return &telemetryConfig{
+		Logs: logsConfig{
 			Level:       zapcore.InfoLevel,
 			Development: false,
 			Encoding:    "console",
-			Sampling: &LogsSamplingConfig{
+			Sampling: &logsSamplingConfig{
 				Enabled:    true,
 				Tick:       10 * time.Second,
 				Initial:    10,
@@ -98,7 +111,7 @@ func createDefaultConfig() component.Config {
 			DisableStacktrace: false,
 			InitialFields:     map[string]any(nil),
 		},
-		Metrics: MetricsConfig{
+		Metrics: metricsConfig{
 			Level: configtelemetry.LevelNormal,
 			MeterProvider: config.MeterProvider{
 				Readers: []config.MetricReader{
