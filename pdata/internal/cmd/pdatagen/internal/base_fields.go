@@ -323,10 +323,15 @@ const accessorsOptionalPrimitiveTestTemplate = `func Test{{ .structName }}_{{ .f
 const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
-const optionalPrimitiveCopyOrigTemplate = `if src.{{ .fieldName }}_ == nil {
-	dest.{{ .fieldName }}_ = nil
+const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
+	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
+	if !ok {
+		dest{{ .fieldName }} = &{{ .originStructType }}{}
+		dest.{{ .fieldName }}_ = dest{{ .fieldName }}
+	}
+	dest{{ .fieldName }}.{{ .fieldName }} = src{{ .fieldName }}.{{ .fieldName }}
 } else {
-	dest.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: src.Get{{ .fieldName }}(){{ "}" }}
+	dest.{{ .fieldName }}_ = nil
 }`
 
 type baseField interface {
@@ -343,14 +348,21 @@ type sliceField struct {
 	fieldName       string
 	originFieldName string
 	returnSlice     baseSlice
+	hideAccessors   bool
 }
 
 func (sf *sliceField) GenerateAccessors(ms *messageValueStruct) string {
+	if sf.hideAccessors {
+		return ""
+	}
 	t := template.Must(template.New("accessorSliceTemplate").Parse(accessorSliceTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
 func (sf *sliceField) GenerateAccessorsTest(ms *messageValueStruct) string {
+	if sf.hideAccessors {
+		return ""
+	}
 	t := template.Must(template.New("accessorsSliceTestTemplate").Parse(accessorsSliceTestTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }

@@ -121,10 +121,15 @@ func copyOrigSample(dest, src *otlpprofiles.Sample) {
 	dest.LocationsLength = src.LocationsLength
 	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
 	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	if src.LinkIndex_ == nil {
-		dest.LinkIndex_ = nil
+	if srcLinkIndex, ok := src.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
+		destLinkIndex, ok := dest.LinkIndex_.(*otlpprofiles.Sample_LinkIndex)
+		if !ok {
+			destLinkIndex = &otlpprofiles.Sample_LinkIndex{}
+			dest.LinkIndex_ = destLinkIndex
+		}
+		destLinkIndex.LinkIndex = srcLinkIndex.LinkIndex
 	} else {
-		dest.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: src.GetLinkIndex()}
+		dest.LinkIndex_ = nil
 	}
 	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }

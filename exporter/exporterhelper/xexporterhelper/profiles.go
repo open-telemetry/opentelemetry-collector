@@ -35,14 +35,11 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 	return exporterhelper.QueueBatchSettings{
-		Encoding: profilesEncoding{},
-		Sizers: map[exporterhelper.RequestSizerType]request.Sizer[exporterhelper.Request]{
-			exporterhelper.RequestSizerTypeRequests: exporterhelper.NewRequestsSizer(),
-			exporterhelper.RequestSizerTypeItems:    request.NewItemsSizer(),
-			exporterhelper.RequestSizerTypeBytes: request.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
-					return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
-				},
+		Encoding:   profilesEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: request.BaseSizer{
+			SizeofFunc: func(req request.Request) int64 {
+				return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
 			},
 		},
 	}

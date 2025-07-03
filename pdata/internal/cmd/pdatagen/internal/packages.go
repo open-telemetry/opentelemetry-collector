@@ -26,6 +26,7 @@ var AllPackages = []*Package{
 	ptraceotlp,
 	pprofile,
 	pprofileotlp,
+	xpdataEntity,
 }
 
 // Package is a struct used to generate files.
@@ -82,5 +83,5 @@ func (p *Package) GenerateInternalFiles() error {
 // usedByOtherDataTypes defines if the package is used by other data types and orig fields of the package's structs
 // need to be accessible from other pdata packages.
 func usedByOtherDataTypes(packageName string) bool {
-	return packageName == "pcommon"
+	return packageName == "pcommon" || packageName == "entity"
 }
