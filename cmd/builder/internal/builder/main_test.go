@@ -5,6 +5,9 @@ package builder
 
 import (
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io"
 	"os"
 	"path"
@@ -479,4 +482,59 @@ func getWorkspaceDir() string {
 	// The goal is find the root of the repo so we can replace the root module.
 	_, thisFile, _, _ := runtime.Caller(0)
 	return filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))))
+}
+
+// TestNonMainPackageComplete tests that when setting Distribution.Package to a non-main value (e.g., "collector"),
+// all generated Go source files in the OpenTelemetry Collector builder have their 'package' clause set to the configured package name,
+// and not to "main" or any other value.
+// This helps ensure that the generated code is suitable for import as a Go library (not just an executable), and will not encounter build/runtime issues from a wrong package name.
+func TestNonMainPackageComplete(t *testing.T) {
+	var err error
+	dir := t.TempDir()
+	cfg, err := NewDefaultConfig()
+	require.NoError(t, err)
+
+	cfg.Distribution.Package = "collector"
+	cfg.Distribution.OutputPath = dir
+
+	require.NoError(t, cfg.Validate())
+
+	err = Generate(cfg)
+	require.NoError(t, err)
+
+	// List of all expected generated Go source files to check.
+	files := []string{
+		"components.go",
+		"main.go",
+		"main_others.go",
+		"main_windows.go",
+	}
+
+	for _, file := range files {
+		filePath := filepath.Join(dir, file)
+		ast, err := parseGoFile(filePath)
+		require.NoError(t, err, "Failed to parse package clause in %s", filePath)
+		pkg := ast.Name.Name
+		assert.Equalf(t, cfg.Distribution.Package, pkg, "package name mismatch in %s", file)
+
+	}
+}
+
+func parseGoFile(filename string) (*ast.File, error) {
+	info, err := os.Stat(filename)
+	if err != nil {
+		return nil, fmt.Errorf("file does not exist: %w", err)
+	}
+	if info.IsDir() {
+		return nil, fmt.Errorf("input is a directory, not a file: %s", filename)
+	}
+	fset := token.NewFileSet()
+	astFile, err := parser.ParseFile(fset, filename, nil, parser.PackageClauseOnly)
+	if err != nil {
+		return nil, err
+	}
+	if astFile.Name == nil {
+		return nil, fmt.Errorf("package clause not found in file: %s", filename)
+	}
+	return astFile, nil
 }
