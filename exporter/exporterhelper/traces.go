@@ -32,14 +32,11 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewTracesQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding: tracesEncoding{},
-		Sizers: map[RequestSizerType]request.Sizer[Request]{
-			RequestSizerTypeRequests: NewRequestsSizer(),
-			RequestSizerTypeItems:    request.NewItemsSizer(),
-			RequestSizerTypeBytes: request.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
-					return int64(tracesMarshaler.TracesSize(req.(*tracesRequest).td))
-				},
+		Encoding:   tracesEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: request.BaseSizer{
+			SizeofFunc: func(req request.Request) int64 {
+				return int64(tracesMarshaler.TracesSize(req.(*tracesRequest).td))
 			},
 		},
 	}
