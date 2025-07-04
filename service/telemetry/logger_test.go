@@ -104,16 +104,20 @@ func TestNewLogger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
-				Processors: tt.cfg.Logs.Processors,
-			}}))
+			buildInfo := component.BuildInfo{}
+			sdk, err := NewSDK(context.Background(), &tt.cfg, resource.New(buildInfo, nil))
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, sdk.Shutdown(context.Background()))
+			}()
 
-			_, _, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
+			l, lp, err := newLogger(Settings{SDK: sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
 				require.NoError(t, err)
-				assert.NoError(t, sdk.Shutdown(context.Background()))
+				assert.NotNil(t, l)
+				assert.NotNil(t, lp)
 			}
 		})
 	}
@@ -311,31 +315,17 @@ func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.Handl
 			Encoding:   "json",
 			Processors: processors,
 		},
+		Resource: map[string]*string{testAttribute: ptr(testValue)},
 	}
 
-	sdk, err := config.NewSDK(
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: processors,
-				},
-				Resource: &config.Resource{
-					SchemaUrl: ptr(""),
-					Attributes: []config.AttributeNameValue{
-						{Name: string(semconv.ServiceNameKey), Value: service},
-						{Name: string(semconv.ServiceVersionKey), Value: version},
-						{Name: testAttribute, Value: testValue},
-					},
-				},
-			},
-		),
-	)
+	buildInfo := component.BuildInfo{Command: service, Version: version}
+	sdk, err := NewSDK(context.Background(), &cfg, resource.New(buildInfo, cfg.Resource))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, sdk.Shutdown(context.Background()))
 	})
 
-	_, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
+	_, lp, err := newLogger(Settings{SDK: sdk}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, lp)
 	return lp

@@ -69,8 +69,8 @@ func TestTelemetryConfiguration(t *testing.T) {
 						Readers: []config.MetricReader{
 							{
 								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-									Host: newPtr("127.0.0.1"),
-									Port: newPtr(3333),
+									Host: ptr("127.0.0.1"),
+									Port: ptr(3333),
 								}}},
 							},
 						},
@@ -91,8 +91,8 @@ func TestTelemetryConfiguration(t *testing.T) {
 						Readers: []config.MetricReader{
 							{
 								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-									Host: newPtr("127.0.0.1"),
-									Port: newPtr(3333),
+									Host: ptr("127.0.0.1"),
+									Port: ptr(3333),
 								}}},
 							},
 						},
@@ -171,4 +171,14 @@ func TestSampledLogger(t *testing.T) {
 			assert.NotNil(t, logger)
 		})
 	}
+}
+
+func setFeatureGateEnabled(t *testing.T, gate *featuregate.Gate, enabled bool) {
+	t.Helper()
+	prev := gate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), enabled))
+	t.Cleanup(func() {
+		// Restore previous value.
+		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), prev))
+	})
 }

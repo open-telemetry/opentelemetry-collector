@@ -145,8 +145,8 @@ func generateConfig() *Config {
 					Readers: []config.MetricReader{
 						{
 							Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-								Host: newPtr("localhost"),
-								Port: newPtr(8080),
+								Host: ptr("localhost"),
+								Port: ptr(8080),
 							}}},
 						},
 					},

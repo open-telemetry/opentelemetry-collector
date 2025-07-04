@@ -47,10 +47,13 @@ func (c *Config) Validate() error {
 	if c.Metrics.Level != configtelemetry.LevelNone && len(c.Metrics.Readers) == 0 {
 		return errors.New("collector telemetry metrics reader should exist when metric level is not none")
 	}
-
-	if c.Metrics.Views != nil && c.Metrics.Level != configtelemetry.LevelDetailed {
-		return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+	if c.Metrics.Views != nil {
+		if c.Metrics.Level != configtelemetry.LevelDetailed {
+			return errors.New("service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed")
+		}
+		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
+			return errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
+		}
 	}
-
 	return nil
 }

@@ -19,8 +19,10 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/promtest"
+	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
 const (
@@ -33,18 +35,46 @@ const (
 
 var testInstanceID = "test_instance_id"
 
-func TestTelemetryInit(t *testing.T) {
+func TestMetrics(t *testing.T) {
 	type metricValue struct {
 		value  float64
 		labels map[string]string
 	}
 
-	for _, tt := range []struct {
-		name            string
+	for name, tt := range map[string]struct {
+		level           configtelemetry.Level
+		setup           func(t *testing.T) // optional testcase setup
 		expectedMetrics map[string]metricValue
 	}{
-		{
-			name: "UseOpenTelemetryForInternalMetrics",
+		"normal": {
+			level: configtelemetry.LevelNormal,
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+					labels: map[string]string{
+						"cause": "encoding",
+					},
+				},
+			},
+		},
+		"detailed": {
+			level: configtelemetry.LevelDetailed,
 			expectedMetrics: map[string]metricValue{
 				metricPrefix + otelPrefix + counterName: {
 					value: 13,
@@ -91,48 +121,81 @@ func TestTelemetryInit(t *testing.T) {
 				},
 			},
 		},
+		"detailed_with_high_cardinality_metrics_disabled": {
+			level: configtelemetry.LevelDetailed,
+			setup: func(t *testing.T) {
+				setFeatureGateEnabled(t, disableHighCardinalityMetricsFeatureGate, true)
+			},
+			expectedMetrics: map[string]metricValue{
+				metricPrefix + otelPrefix + counterName: {
+					value: 13,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + grpcPrefix + counterName: {
+					value: 11,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				metricPrefix + httpPrefix + counterName: {
+					value: 10,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"target_info": {
+					value: 0,
+					labels: map[string]string{
+						"service_name":        "otelcol",
+						"service_version":     "latest",
+						"service_instance_id": testInstanceID,
+					},
+				},
+				"promhttp_metric_handler_errors_total": {
+					value: 0,
+					labels: map[string]string{
+						"cause": "encoding",
+					},
+				},
+			},
+		},
 	} {
 		prom := promtest.GetAvailableLocalAddressPrometheus(t)
 		endpoint := fmt.Sprintf("http://%s:%d/metrics", *prom.Host, *prom.Port)
-		cfg := Config{
-			Metrics: MetricsConfig{
-				Level: configtelemetry.LevelDetailed,
-				MeterProvider: config.MeterProvider{
-					Readers: []config.MetricReader{{
-						Pull: &config.PullMetricReader{
-							Exporter: config.PullMetricExporter{Prometheus: prom},
-						},
-					}},
-				},
-			},
-		}
-		t.Run(tt.name, func(t *testing.T) {
-			sdk, err := config.NewSDK(
-				config.WithContext(context.Background()),
-				config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
-					MeterProvider: &config.MeterProvider{
-						Readers: cfg.Metrics.Readers,
-					},
-					Resource: &config.Resource{
-						SchemaUrl: ptr(""),
-						Attributes: []config.AttributeNameValue{
-							{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
-							{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
-							{Name: string(semconv.ServiceVersionKey), Value: "latest"},
-						},
-					},
-				}),
-			)
-			require.NoError(t, err)
 
-			mp, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
+		t.Run(name, func(t *testing.T) {
+			if tt.setup != nil {
+				tt.setup(t)
+			}
+
+			cfg := createDefaultConfig().(*Config)
+			cfg.Resource = map[string]*string{
+				string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
+			}
+			cfg.Metrics.Level = tt.level
+			cfg.Metrics.Readers = []config.MetricReader{{
+				Pull: &config.PullMetricReader{
+					Exporter: config.PullMetricExporter{Prometheus: prom},
+				},
+			}}
+
+			buildInfo := component.BuildInfo{Command: "otelcol", Version: "latest"}
+			sdk, err := NewSDK(context.Background(), cfg, resource.New(buildInfo, cfg.Resource))
 			require.NoError(t, err)
 			defer func() {
-				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
+				assert.NoError(t, sdk.Shutdown(context.Background()))
 			}()
 
+			mp, err := newMeterProvider(Settings{SDK: sdk}, *cfg)
+			require.NoError(t, err)
 			createTestMetrics(t, mp)
 
 			metrics := getMetricsFromPrometheus(t, endpoint)
@@ -216,39 +279,18 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 // See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
 func TestInstrumentEnabled(t *testing.T) {
 	prom := promtest.GetAvailableLocalAddressPrometheus(t)
-	cfg := Config{
-		Metrics: MetricsConfig{
-			Level: configtelemetry.LevelDetailed,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
-				}},
-			},
-		},
-	}
-	sdk, err := config.NewSDK(
-		config.WithContext(context.Background()),
-		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
-			MeterProvider: &config.MeterProvider{
-				Readers: cfg.Metrics.Readers,
-			},
-			Resource: &config.Resource{
-				SchemaUrl: ptr(""),
-				Attributes: []config.AttributeNameValue{
-					{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
-					{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
-					{Name: string(semconv.ServiceVersionKey), Value: "latest"},
-				},
-			},
-		}),
-	)
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
+	}}
+
+	sdk, err := NewSDK(context.Background(), cfg, resource.New(component.BuildInfo{}, nil))
 	require.NoError(t, err)
-	meterProvider, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
 	defer func() {
-		if prov, ok := meterProvider.(interface{ Shutdown(context.Context) error }); ok {
-			require.NoError(t, prov.Shutdown(context.Background()))
-		}
+		require.NoError(t, sdk.Shutdown(context.Background()))
 	}()
+
+	meterProvider, err := newMeterProvider(Settings{SDK: sdk}, *cfg)
 	require.NoError(t, err)
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
@@ -257,45 +299,33 @@ func TestInstrumentEnabled(t *testing.T) {
 
 	intCnt, err := meter.Int64Counter("int64.counter")
 	require.NoError(t, err)
-	_, ok := intCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64Counter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intCnt)
 
 	intUpDownCnt, err := meter.Int64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intUpDownCnt)
 
 	intHist, err := meter.Int64Histogram("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intHist.(enabledInstrument)
-	assert.True(t, ok, "Int64Histogram does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intHist)
 
 	intGauge, err := meter.Int64Gauge("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intGauge.(enabledInstrument)
-	assert.True(t, ok, "Int64Gauge does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intGauge)
 
 	floatCnt, err := meter.Float64Counter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64Counter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatCnt)
 
 	floatUpDownCnt, err := meter.Float64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatUpDownCnt)
 
 	floatHist, err := meter.Float64Histogram("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatHist.(enabledInstrument)
-	assert.True(t, ok, "Float64Histogram does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatHist)
 
 	floatGauge, err := meter.Float64Gauge("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatGauge.(enabledInstrument)
-	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
-}
-
-func ptr[T any](v T) *T {
-	return &v
+	assert.Implements(t, new(enabledInstrument), floatGauge)
 }

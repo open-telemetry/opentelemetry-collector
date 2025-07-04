@@ -836,8 +836,8 @@ func newConfigWatcherExtensionFactory(name component.Type) extension.Factory {
 	)
 }
 
-func newPtr[T int | string](str T) *T {
-	return &str
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func TestValidateGraph(t *testing.T) {
