@@ -98,10 +98,8 @@ func (ms {{ .structName }}) Equal(val {{ .structName }}, opts ...CompareOption) 
 	return true
 	{{- else }}
 	cfg := NewCompareConfig(opts)
-	return {{ range $index, $field := .fields -}}
-		{{- if $index }} &&
-		{{ end }}{{ $field.GenerateEqualComparison $.messageStruct }}
-	{{- end }}
+	return {{ range $index, $field := .fields }}{{ if $index }} &&
+		{{ end }}{{ $field.GenerateEqualComparison $.messageStruct }}{{ end }}
 	{{- end }}
 }
 {{- else }}
@@ -109,10 +107,8 @@ func (ms {{ .structName }}) Equal(val {{ .structName }}) bool {
 	{{- if eq (len .fields) 0 }}
 	return true
 	{{- else }}
-	return {{ range $index, $field := .fields -}}
-		{{- if $index }} &&
-		{{ end }}{{ $field.GenerateEqualComparison $.messageStruct }}
-	{{- end }}
+	return {{ range $index, $field := .fields }}{{ if $index }} &&
+		{{ end }}{{ $field.GenerateEqualComparison $.messageStruct }}{{ end }}
 	{{- end }}
 }
 {{- end }}

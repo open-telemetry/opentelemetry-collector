@@ -60,6 +60,13 @@ func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []by
 }
 
 func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[string]any {
+	sliceImports := []string{
+		`"iter"`,
+		`"slices"`,
+		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
+	}
+
 	return map[string]any{
 		"structName":           iss.structName,
 		"itemType":             iss.itemType,
@@ -69,7 +76,7 @@ func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[st
 		"testSetVal":           iss.testSetVal,
 		"testNewVal":           iss.testNewVal,
 		"packageName":          packageInfo.name,
-		"imports":              packageInfo.imports,
+		"imports":              sliceImports,
 		"testImports":          packageInfo.testImports,
 	}
 }

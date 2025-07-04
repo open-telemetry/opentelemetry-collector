@@ -138,7 +138,18 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 // Optionally accepts CompareOption arguments to customize comparison behavior.
 func (ms {{ .structName }}) Equal(val {{ .structName }}, opts ...CompareOption) bool {
 	{{- if eq .itemType "float64" }}
+	// For backward compatibility: if no options provided, use strict slice comparison
+	if len(opts) == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+	
 	cfg := NewCompareConfig(opts)
+	// If tolerance is 0 (strict), use fast slice comparison
+	if cfg.floatTolerance == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+	
+	// Use tolerance-based comparison
 	if len(*ms.getOrig()) != len(*val.getOrig()) {
 		return false
 	}

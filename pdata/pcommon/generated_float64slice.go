@@ -8,6 +8,7 @@ package pcommon
 
 import (
 	"iter"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 )
@@ -136,7 +137,18 @@ func (ms Float64Slice) CopyTo(dest Float64Slice) {
 // Equal checks equality with another Float64Slice.
 // Optionally accepts CompareOption arguments to customize comparison behavior.
 func (ms Float64Slice) Equal(val Float64Slice, opts ...CompareOption) bool {
+	// For backward compatibility: if no options provided, use strict slice comparison
+	if len(opts) == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+
 	cfg := NewCompareConfig(opts)
+	// If tolerance is 0 (strict), use fast slice comparison
+	if cfg.floatTolerance == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+
+	// Use tolerance-based comparison
 	if len(*ms.getOrig()) != len(*val.getOrig()) {
 		return false
 	}
