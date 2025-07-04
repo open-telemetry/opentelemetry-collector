@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
@@ -25,6 +26,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	attributeSet                      attribute.Set
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
@@ -57,6 +59,36 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+	return func(mb *TelemetryBuilder) {
+		mb.attributeSet = s
+	}
+}
+
+func (builder *TelemetryBuilder) RecordConnectorConsumedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ConnectorConsumedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordConnectorConsumedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ConnectorConsumedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordConnectorProducedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ConnectorProducedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordConnectorProducedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ConnectorProducedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterConsumedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterConsumedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterConsumedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ExporterConsumedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 // RegisterProcessCPUSecondsCallback sets callback for observable ProcessCPUSeconds metric.
@@ -147,6 +179,30 @@ func (builder *TelemetryBuilder) RegisterProcessUptimeCallback(cb metric.Float64
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
+}
+
+func (builder *TelemetryBuilder) RecordProcessorConsumedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorConsumedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorConsumedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorConsumedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorProducedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorProducedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorProducedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorProducedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordReceiverProducedItemsDataPoint(ctx context.Context, val int64) {
+	builder.ReceiverProducedItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordReceiverProducedSizeDataPoint(ctx context.Context, val int64) {
+	builder.ReceiverProducedSize.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 type observerInt64 struct {
