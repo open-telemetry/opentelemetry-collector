@@ -6,6 +6,7 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 import (
 	"context"
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/otel/trace"
 
@@ -49,6 +50,10 @@ func NewTraces(
 	traceConsumer, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
 		span := trace.SpanFromContext(ctx)
 		span.AddEvent("Start processing.", eventOptions)
+
+		startTime := time.Now()
+		defer obs.recordDuration(ctx, startTime)
+
 		spansIn := td.SpanCount()
 
 		var errFunc error
