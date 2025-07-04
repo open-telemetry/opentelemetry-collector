@@ -90,7 +90,7 @@ func TestCore(t *testing.T) {
 			createLogger: func() (*zap.Logger, logRecorder) {
 				core, observed := createZapCore()
 				recorder := logtest.NewRecorder()
-				core = NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", zap.DebugLevel, attribute.NewSet())
+				core = NewOTelTeeCoreWithAttributes(core, recorder, "testinstr", attribute.NewSet())
 				return zap.New(core), logRecorder{zapLogs: observed, otelLogs: recorder}
 			},
 			check: func(t *testing.T, rec logRecorder) {
