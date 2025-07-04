@@ -316,6 +316,15 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"isCommand": func() bool {
 					return md.Status.Class == "cmd"
 				},
+				"measurementFunc": func(s string) string {
+					switch s {
+					case "Int64Counter", "Float64Counter":
+						return "Add"
+					case "Int64Gauge", "Float64Gauge", "Int64Histogram", "Float64Histogram":
+						return "Record"
+					}
+					return "unsupported instrument"
+				},
 				"supportsLogs":             func() bool { return md.supportsSignal("logs") },
 				"supportsMetrics":          func() bool { return md.supportsSignal("metrics") },
 				"supportsTraces":           func() bool { return md.supportsSignal("traces") },

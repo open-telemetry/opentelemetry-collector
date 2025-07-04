@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
@@ -25,6 +26,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	attributeSet                       attribute.Set
 	meter                              metric.Meter
 	mu                                 sync.Mutex
 	registrations                      []metric.Registration
@@ -46,6 +48,24 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+	return func(mb *TelemetryBuilder) {
+		mb.attributeSet = s
+	}
+}
+
+func (builder *TelemetryBuilder) RecordProcessorBatchBatchSendSizeDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorBatchBatchSendSize.Record(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorBatchBatchSendSizeBytesDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorBatchBatchSendSizeBytes.Record(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorBatchBatchSizeTriggerSendDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorBatchBatchSizeTriggerSend.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
 // RegisterProcessorBatchMetadataCardinalityCallback sets callback for observable ProcessorBatchMetadataCardinality metric.
 func (builder *TelemetryBuilder) RegisterProcessorBatchMetadataCardinalityCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -59,6 +79,10 @@ func (builder *TelemetryBuilder) RegisterProcessorBatchMetadataCardinalityCallba
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
+}
+
+func (builder *TelemetryBuilder) RecordProcessorBatchTimeoutTriggerSendDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorBatchTimeoutTriggerSend.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 type observerInt64 struct {
