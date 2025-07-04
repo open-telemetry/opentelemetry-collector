@@ -26,10 +26,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
-type shutdownable interface {
-	Shutdown(context.Context) error
-}
-
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -105,11 +101,14 @@ func TestNewLogger(t *testing.T) {
 	}
 	for _, tt := range tests {
 		testCoreType := func(t *testing.T, wantCoreType any) {
-			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
-				Processors: tt.cfg.Logs.Processors,
-			}}))
+			buildInfo := component.BuildInfo{}
+			sdk, err := NewSDK(context.Background(), &tt.cfg, resource.New(buildInfo, nil))
+			require.NoError(t, err)
+			defer func() {
+				require.NoError(t, sdk.Shutdown(context.Background()))
+			}()
 
-			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
+			l, _, err := newLogger(Settings{SDK: sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 				require.Nil(t, wantCoreType)
@@ -117,9 +116,6 @@ func TestNewLogger(t *testing.T) {
 				require.NoError(t, err)
 				gotType := reflect.TypeOf(l.Core()).String()
 				require.Equal(t, wantCoreType, gotType)
-				if prov, ok := lp.(shutdownable); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
 			}
 		}
 
@@ -313,36 +309,20 @@ func TestOTLPLogExport(t *testing.T) {
 			Encoding:    "json",
 			Processors:  processors,
 		},
+		Resource: map[string]*string{testAttribute: ptr(testValue)},
 	}
 
-	sdk, _ := config.NewSDK(
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: processors,
-				},
-				Resource: &config.Resource{
-					SchemaUrl: ptr(""),
-					Attributes: []config.AttributeNameValue{
-						{Name: string(semconv.ServiceNameKey), Value: service},
-						{Name: string(semconv.ServiceVersionKey), Value: version},
-						{Name: testAttribute, Value: testValue},
-					},
-				},
-			},
-		),
-	)
+	buildInfo := component.BuildInfo{Command: service, Version: version}
+	sdk, err := NewSDK(context.Background(), &cfg, resource.New(buildInfo, cfg.Resource))
+	require.NoError(t, err)
+	defer func() {
+		assert.NoError(t, sdk.Shutdown(context.Background()))
+	}()
 
-	l, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
+	l, lp, err := newLogger(Settings{SDK: sdk}, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, l)
 	require.NotNil(t, lp)
-
-	defer func() {
-		if prov, ok := lp.(shutdownable); ok {
-			require.NoError(t, prov.Shutdown(context.Background()))
-		}
-	}()
 
 	// Reset counter for each test case
 	receivedLogs = 0

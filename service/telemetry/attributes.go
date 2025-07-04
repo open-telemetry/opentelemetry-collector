@@ -1,16 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package service // import "go.opentelemetry.io/collector/service"
+package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
-
-	"go.opentelemetry.io/collector/service/telemetry"
 )
 
-func attributes(res *sdkresource.Resource, cfg telemetry.Config) []config.AttributeNameValue {
+func attributes(res *sdkresource.Resource, cfg *Config) []config.AttributeNameValue {
 	attrsMap := map[string]any{}
 	for _, r := range res.Attributes() {
 		attrsMap[string(r.Key)] = r.Value.AsString()
