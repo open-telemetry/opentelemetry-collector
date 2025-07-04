@@ -6,11 +6,12 @@ package processorhelper // import "go.opentelemetry.io/collector/processor/proce
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/internal"
 	"go.opentelemetry.io/collector/processor/processorhelper/internal/metadata"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 const signalKey = "otel.signal"
