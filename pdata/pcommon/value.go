@@ -429,7 +429,7 @@ func (v Value) AsRaw() any {
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
 
-func (v Value) Equal(c Value) bool {
+func (v Value) Equal(c Value, opts ...CompareOption) bool {
 	if v.Type() != c.Type() {
 		return false
 	}
@@ -442,15 +442,19 @@ func (v Value) Equal(c Value) bool {
 	case ValueTypeBool:
 		return v.Bool() == c.Bool()
 	case ValueTypeDouble:
+		if len(opts) > 0 {
+			cfg := NewCompareConfig(opts)
+			return cfg.CompareFloat64(v.Double(), c.Double())
+		}
 		return v.Double() == c.Double()
 	case ValueTypeInt:
 		return v.Int() == c.Int()
 	case ValueTypeBytes:
-		return v.Bytes().Equal(c.Bytes())
+		return v.Bytes().Equal(c.Bytes(), opts...)
 	case ValueTypeMap:
-		return v.Map().Equal(c.Map())
+		return v.Map().Equal(c.Map(), opts...)
 	case ValueTypeSlice:
-		return v.Slice().Equal(c.Slice())
+		return v.Slice().Equal(c.Slice(), opts...)
 	}
 
 	return false

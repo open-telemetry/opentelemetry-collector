@@ -41,6 +41,19 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState)) })
 }
 
+func TestResourceLogs_Equal(t *testing.T) {
+	ms1 := NewResourceLogs()
+	ms2 := NewResourceLogs()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestResourceLogs()
+	ms2 = generateTestResourceLogs()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewResourceLogs()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	internal.FillTestResource(internal.Resource(ms.Resource()))

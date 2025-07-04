@@ -82,3 +82,10 @@ func copyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeLogs = copyOrigScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
 }
+
+// Equal checks equality with another ResourceLogs.
+func (ms ResourceLogs) Equal(val ResourceLogs) bool {
+	return ms.Resource().Equal(val.Resource()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.ScopeLogs().Equal(val.ScopeLogs())
+}

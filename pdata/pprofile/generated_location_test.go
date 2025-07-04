@@ -41,6 +41,19 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 }
 
+func TestLocation_Equal(t *testing.T) {
+	ms1 := NewLocation()
+	ms2 := NewLocation()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestLocation()
+	ms2 = generateTestLocation()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewLocation()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, int32(0), ms.MappingIndex())

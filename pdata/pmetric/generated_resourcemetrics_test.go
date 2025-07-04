@@ -41,6 +41,19 @@ func TestResourceMetrics_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState)) })
 }
 
+func TestResourceMetrics_Equal(t *testing.T) {
+	ms1 := NewResourceMetrics()
+	ms2 := NewResourceMetrics()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestResourceMetrics()
+	ms2 = generateTestResourceMetrics()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewResourceMetrics()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	internal.FillTestResource(internal.Resource(ms.Resource()))

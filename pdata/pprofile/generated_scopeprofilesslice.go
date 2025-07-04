@@ -148,6 +148,20 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	*dest.orig = copyOrigScopeProfilesSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another ScopeProfilesSlice.
+// In order to match equality, the order of elements must be the same.
+func (es ScopeProfilesSlice) Equal(val ScopeProfilesSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ScopeProfiles elements within ScopeProfilesSlice given the
 // provided less function so that two instances of ScopeProfilesSlice
 // can be compared.

@@ -41,6 +41,19 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState)) })
 }
 
+func TestResourceSpans_Equal(t *testing.T) {
+	ms1 := NewResourceSpans()
+	ms2 := NewResourceSpans()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestResourceSpans()
+	ms2 = generateTestResourceSpans()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewResourceSpans()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	internal.FillTestResource(internal.Resource(ms.Resource()))

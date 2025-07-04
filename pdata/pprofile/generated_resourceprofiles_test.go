@@ -41,6 +41,19 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
 }
 
+func TestResourceProfiles_Equal(t *testing.T) {
+	ms1 := NewResourceProfiles()
+	ms2 := NewResourceProfiles()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestResourceProfiles()
+	ms2 = generateTestResourceProfiles()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewResourceProfiles()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
 	internal.FillTestResource(internal.Resource(ms.Resource()))

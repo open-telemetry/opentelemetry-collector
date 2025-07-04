@@ -292,8 +292,9 @@ func (m Map) FromRaw(rawMap map[string]any) error {
 	return errs
 }
 
-// Equal checks equality with another Map
-func (m Map) Equal(val Map) bool {
+// Equal checks equality with another Map.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (m Map) Equal(val Map, opts ...CompareOption) bool {
 	if m.Len() != val.Len() {
 		return false
 	}
@@ -307,7 +308,7 @@ func (m Map) Equal(val Map) bool {
 			return fullEqual
 		}
 
-		if !v.Equal(vv) {
+		if !v.Equal(vv, opts...) {
 			fullEqual = false
 		}
 		return fullEqual

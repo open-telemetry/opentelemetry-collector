@@ -42,6 +42,19 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
 }
 
+func TestLogRecord_Equal(t *testing.T) {
+	ms1 := NewLogRecord()
+	ms2 := NewLogRecord()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestLogRecord()
+	ms2 = generateTestLogRecord()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewLogRecord()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.Timestamp(0), ms.ObservedTimestamp())

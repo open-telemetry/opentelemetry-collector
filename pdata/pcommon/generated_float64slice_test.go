@@ -127,6 +127,13 @@ func TestFloat64SliceEqual(t *testing.T) {
 
 	ms2.Append(1, 2, 3)
 	assert.True(t, ms.Equal(ms2))
+
+	// Test with CompareOption
+	ms = NewFloat64Slice()
+	ms2 = NewFloat64Slice()
+	ms.Append(1, 2, 3)
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func BenchmarkFloat64SliceEqual(b *testing.B) {

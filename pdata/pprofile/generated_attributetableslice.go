@@ -147,6 +147,20 @@ func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	*dest.orig = copyOrigAttributeTableSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another AttributeTableSlice.
+// In order to match equality, the order of elements must be the same.
+func (es AttributeTableSlice) Equal(val AttributeTableSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
 	if cap(dest) < len(src) {
 		dest = make([]v1.KeyValue, len(src))

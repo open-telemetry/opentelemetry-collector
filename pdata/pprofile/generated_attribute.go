@@ -76,3 +76,9 @@ func copyOrigAttribute(dest, src *v1.KeyValue) {
 	dest.Key = src.Key
 	internal.CopyOrigValue(&dest.Value, &src.Value)
 }
+
+// Equal checks equality with another Attribute.
+func (ms Attribute) Equal(val Attribute) bool {
+	return ms.Key() == val.Key() &&
+		ms.Value().Equal(val.Value())
+}

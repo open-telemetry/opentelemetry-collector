@@ -83,3 +83,9 @@ func copyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
 }
+
+// Equal checks equality with another Link.
+func (ms Link) Equal(val Link) bool {
+	return ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID()
+}
