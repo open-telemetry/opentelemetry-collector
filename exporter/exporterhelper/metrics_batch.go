@@ -177,13 +177,21 @@ func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.Me
 		destMetric, removedSize = extractGaugeDataPoints(srcMetric.Gauge(), capacity, sz)
 	case pmetric.MetricTypeSum:
 		destMetric, removedSize = extractSumDataPoints(srcMetric.Sum(), capacity, sz)
+		destMetric.Sum().SetIsMonotonic(srcMetric.Sum().IsMonotonic())
+		destMetric.Sum().SetAggregationTemporality(srcMetric.Sum().AggregationTemporality())
 	case pmetric.MetricTypeHistogram:
 		destMetric, removedSize = extractHistogramDataPoints(srcMetric.Histogram(), capacity, sz)
+		destMetric.Histogram().SetAggregationTemporality(srcMetric.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
 		destMetric, removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), capacity, sz)
+		destMetric.ExponentialHistogram().SetAggregationTemporality(srcMetric.ExponentialHistogram().AggregationTemporality())
 	case pmetric.MetricTypeSummary:
 		destMetric, removedSize = extractSummaryDataPoints(srcMetric.Summary(), capacity, sz)
 	}
+	destMetric.SetName(srcMetric.Name())
+	destMetric.SetDescription(srcMetric.Description())
+	destMetric.SetUnit(srcMetric.Unit())
+	srcMetric.Metadata().CopyTo(destMetric.Metadata())
 	return destMetric, removedSize
 }
 

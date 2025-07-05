@@ -153,10 +153,9 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
-		Encoding: fakeEncoding{},
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-		},
+		Encoding:   fakeEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: requesttest.NewBytesSizer(),
 	}
 }
 

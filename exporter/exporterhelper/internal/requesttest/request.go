@@ -110,3 +110,11 @@ func RequestFromLogsFunc(err error) func(context.Context, plog.Logs) (request.Re
 		return &FakeRequest{Items: ld.LogRecordCount()}, err
 	}
 }
+
+func NewBytesSizer() request.Sizer[request.Request] {
+	return request.BaseSizer{
+		SizeofFunc: func(req request.Request) int64 {
+			return int64(req.(*FakeRequest).Bytes)
+		},
+	}
+}

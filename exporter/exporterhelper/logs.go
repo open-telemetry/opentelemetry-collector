@@ -32,14 +32,11 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewLogsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding: logsEncoding{},
-		Sizers: map[RequestSizerType]request.Sizer[Request]{
-			RequestSizerTypeRequests: NewRequestsSizer(),
-			RequestSizerTypeItems:    request.NewItemsSizer(),
-			RequestSizerTypeBytes: request.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
-					return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
-				},
+		Encoding:   logsEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: request.BaseSizer{
+			SizeofFunc: func(req request.Request) int64 {
+				return int64(logsMarshaler.LogsSize(req.(*logsRequest).ld))
 			},
 		},
 	}
