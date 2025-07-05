@@ -1,0 +1,19 @@
+logs:
+  level: info
+  development: true
+  disable_caller: true
+  disable_stacktrace: true
+  encoding: console
+  output_paths: [stderr]
+  error_output_paths: [stderr]
+  initial_fields:
+    fieldKey: fieldValue
+  sampling:
+    enabled: false
+    tick: 1s
+    initial: 234
+    thereafter: 567
+  processors:
+    - batch:
+        exporter:
+          console: {}
