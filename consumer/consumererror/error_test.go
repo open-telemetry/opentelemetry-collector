@@ -295,3 +295,21 @@ func TestError_Retryable(t *testing.T) {
 		})
 	}
 }
+
+func TestSuccessCodes(t *testing.T) {
+	require.Panics(t, func() {
+		NewOTLPHTTPError(nil, 200)
+	})
+	require.Panics(t, func() {
+		NewOTLPHTTPError(nil, 299)
+	})
+	require.NotPanics(t, func() {
+		NewOTLPHTTPError(nil, 199)
+	})
+	require.NotPanics(t, func() {
+		NewOTLPHTTPError(nil, 300)
+	})
+	require.Panics(t, func() {
+		NewOTLPGRPCError(nil, status.New(codes.OK, ""))
+	})
+}

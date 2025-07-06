@@ -30,7 +30,14 @@ var _ error = (*Error)(nil)
 
 // NewOTLPHTTPError records an HTTP status code that was received from a server
 // during data submission.
+//
+// NOTE: This function will panic if passed an HTTP status between 200 and 299 inclusive.
+// This is to reserve the behavior for handling these codes for the future.
 func NewOTLPHTTPError(origErr error, httpStatus int) error {
+	// Matches what is considered a successful response in the OTLP/HTTP Exporter.
+	if httpStatus >= 200 && httpStatus <= 299 {
+		panic("NewOTLPHTTPError should not be called with a success code")
+	}
 	var retryable bool
 	switch httpStatus {
 	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
@@ -42,12 +49,19 @@ func NewOTLPHTTPError(origErr error, httpStatus int) error {
 
 // NewOTLPGRPCError records a gRPC status code that was received from a server
 // during data submission.
+//
+// NOTE: This function will panic if passed a *status.Status with an underlying
+// code of codes.OK. This is to reserve the behavior for handling this code for
+// the future.
 func NewOTLPGRPCError(origErr error, status *status.Status) error {
 	var retryable bool
 	if status != nil {
 		switch status.Code() {
 		case codes.Canceled, codes.DeadlineExceeded, codes.Aborted, codes.OutOfRange, codes.Unavailable, codes.DataLoss:
 			retryable = true
+		// Matches what is considered a successful response in the OTLP Exporter.
+		case codes.OK:
+			panic("NewOTLPGRPCError should not be called with an OK code")
 		}
 	}
 
