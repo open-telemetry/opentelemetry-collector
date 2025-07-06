@@ -5,6 +5,7 @@ package consumererror // import "go.opentelemetry.io/collector/consumer/consumer
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"google.golang.org/grpc/codes"
@@ -75,7 +76,14 @@ func NewRetryableError(origErr error) error {
 
 // Error implements the error interface.
 func (e *Error) Error() string {
-	return e.error.Error()
+	if e.error != nil {
+		return e.error.Error()
+	}
+
+	if e.grpcStatus != nil {
+		return fmt.Sprintf("received gRPC status %q", e.grpcStatus.Code())
+	}
+	return fmt.Sprintf("received HTTP status %d", e.httpStatus)
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
