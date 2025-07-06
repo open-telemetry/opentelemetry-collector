@@ -310,7 +310,7 @@ func TestSuccessCodes(t *testing.T) {
 		require.Error(t, NewOTLPHTTPError(nil, 300))
 	})
 	require.Panics(t, func() {
-		NewOTLPGRPCError(nil, status.New(codes.OK, ""))
+		_ = NewOTLPGRPCError(nil, status.New(codes.OK, ""))
 	})
 	require.NotPanics(t, func() {
 		require.Error(t, NewOTLPGRPCError(nil, status.New(codes.AlreadyExists, "")))
