@@ -153,19 +153,18 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
-		Encoding: fakeEncoding{},
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-		},
+		Encoding:   fakeEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: requesttest.NewBytesSizer(),
 	}
 }
 
 type fakeEncoding struct{}
 
-func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
-func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
-	return &requesttest.FakeRequest{}, nil
+func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
+	return context.Background(), &requesttest.FakeRequest{}, nil
 }

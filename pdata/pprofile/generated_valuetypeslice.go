@@ -145,22 +145,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newValueType((*es.orig)[i], es.state).CopyTo(newValueType((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.ValueType, srcLen)
-	wrappers := make([]*otlpprofiles.ValueType, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newValueType((*es.orig)[i], es.state).CopyTo(newValueType(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigValueTypeSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ValueType elements within ValueTypeSlice given the
@@ -169,4 +154,19 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 func (es ValueTypeSlice) Sort(less func(a, b ValueType) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.ValueType, len(src))
+		data := make([]otlpprofiles.ValueType, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigValueType(dest[i], src[i])
+	}
+	return dest
 }

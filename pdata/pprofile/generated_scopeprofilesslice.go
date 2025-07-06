@@ -145,22 +145,7 @@ func (es ScopeProfilesSlice) RemoveIf(f func(ScopeProfiles) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 	dest.state.AssertMutable()
-	srcLen := es.Len()
-	destCap := cap(*dest.orig)
-	if srcLen <= destCap {
-		(*dest.orig) = (*dest.orig)[:srcLen:destCap]
-		for i := range *es.orig {
-			newScopeProfiles((*es.orig)[i], es.state).CopyTo(newScopeProfiles((*dest.orig)[i], dest.state))
-		}
-		return
-	}
-	origs := make([]otlpprofiles.ScopeProfiles, srcLen)
-	wrappers := make([]*otlpprofiles.ScopeProfiles, srcLen)
-	for i := range *es.orig {
-		wrappers[i] = &origs[i]
-		newScopeProfiles((*es.orig)[i], es.state).CopyTo(newScopeProfiles(wrappers[i], dest.state))
-	}
-	*dest.orig = wrappers
+	*dest.orig = copyOrigScopeProfilesSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeProfiles elements within ScopeProfilesSlice given the
@@ -169,4 +154,19 @@ func (es ScopeProfilesSlice) CopyTo(dest ScopeProfilesSlice) {
 func (es ScopeProfilesSlice) Sort(less func(a, b ScopeProfiles) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+func copyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlpprofiles.ScopeProfiles {
+	if cap(dest) < len(src) {
+		dest = make([]*otlpprofiles.ScopeProfiles, len(src))
+		data := make([]otlpprofiles.ScopeProfiles, len(src))
+		for i := range src {
+			dest[i] = &data[i]
+		}
+	}
+	dest = dest[:len(src)]
+	for i := range src {
+		copyOrigScopeProfiles(dest[i], src[i])
+	}
+	return dest
 }

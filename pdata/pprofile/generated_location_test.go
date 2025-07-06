@@ -49,6 +49,10 @@ func TestLocation_MappingIndex(t *testing.T) {
 	assert.Equal(t, int32(1), ms.MappingIndex())
 	ms.RemoveMappingIndex()
 	assert.False(t, ms.HasMappingIndex())
+	dest := NewLocation()
+	dest.SetMappingIndex(int32(1))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasMappingIndex())
 }
 
 func TestLocation_Address(t *testing.T) {

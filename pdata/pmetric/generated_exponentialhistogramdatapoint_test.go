@@ -138,6 +138,10 @@ func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
 	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
 	ms.RemoveSum()
 	assert.False(t, ms.HasSum())
+	dest := NewExponentialHistogramDataPoint()
+	dest.SetSum(float64(17.13))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -148,6 +152,10 @@ func TestExponentialHistogramDataPoint_Min(t *testing.T) {
 	assert.InDelta(t, float64(9.23), ms.Min(), 0.01)
 	ms.RemoveMin()
 	assert.False(t, ms.HasMin())
+	dest := NewExponentialHistogramDataPoint()
+	dest.SetMin(float64(9.23))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasMin())
 }
 
 func TestExponentialHistogramDataPoint_Max(t *testing.T) {
@@ -158,6 +166,10 @@ func TestExponentialHistogramDataPoint_Max(t *testing.T) {
 	assert.InDelta(t, float64(182.55), ms.Max(), 0.01)
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
+	dest := NewExponentialHistogramDataPoint()
+	dest.SetMax(float64(182.55))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasMax())
 }
 
 func TestExponentialHistogramDataPoint_ZeroThreshold(t *testing.T) {

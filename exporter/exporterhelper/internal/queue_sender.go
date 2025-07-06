@@ -13,6 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
@@ -20,8 +21,9 @@ import (
 
 // QueueBatchSettings is a subset of the queuebatch.Settings that are needed when used within an Exporter.
 type QueueBatchSettings[T any] struct {
-	Encoding    queuebatch.Encoding[T]
-	Sizers      map[request.SizerType]request.Sizer[T]
+	Encoding    queue.Encoding[T]
+	ItemsSizer  request.Sizer[T]
+	BytesSizer  request.Sizer[T]
 	Partitioner queuebatch.Partitioner[T]
 }
 

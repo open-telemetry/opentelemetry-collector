@@ -7,7 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-tpm v0.9.5
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/config/configopaque v1.34.0
+	go.opentelemetry.io/collector/config/configopaque v1.35.0
 )
 
 require (
