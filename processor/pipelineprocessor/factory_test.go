@@ -25,8 +25,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config := cfg.(*Config)
 	assert.Equal(t, time.Duration(0), config.TimeoutConfig.Timeout)
-	assert.Equal(t, exporterhelper.NewDefaultQueueConfig(), config.QueueConfig)
-	assert.Equal(t, configretry.NewDefaultBackOffConfig(), config.RetryConfig)
+	
+	// Queue should be disabled by default
+	expectedQueueConfig := exporterhelper.NewDefaultQueueConfig()
+	expectedQueueConfig.Enabled = false
+	assert.Equal(t, expectedQueueConfig, config.QueueConfig)
+	
+	// Retry should be disabled by default
+	expectedRetryConfig := configretry.NewDefaultBackOffConfig()
+	expectedRetryConfig.Enabled = false
+	assert.Equal(t, expectedRetryConfig, config.RetryConfig)
 }
 
 func TestCreateTracesProcessor(t *testing.T) {

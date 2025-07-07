@@ -30,12 +30,18 @@ func NewFactory() processor.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueConfig := exporterhelper.NewDefaultQueueConfig()
+	queueConfig.Enabled = false
+	
+	retryConfig := configretry.NewDefaultBackOffConfig()
+	retryConfig.Enabled = false
+	
 	return &Config{
 		TimeoutConfig: exporterhelper.TimeoutConfig{
 			Timeout: defaultTimeout,
 		},
-		QueueConfig: exporterhelper.NewDefaultQueueConfig(),
-		RetryConfig: configretry.NewDefaultBackOffConfig(),
+		QueueConfig: queueConfig,
+		RetryConfig: retryConfig,
 	}
 }
 
