@@ -45,7 +45,7 @@ type memoryQueue[T any] struct {
 // capacity is the capacity of the queue.
 func newMemoryQueue[T any](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		sizer:           set.Sizer,
+		sizer:           set.activeSizer(),
 		cap:             set.Capacity,
 		items:           &linkedQueue[T]{},
 		waitForResult:   set.WaitForResult,
