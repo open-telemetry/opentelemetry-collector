@@ -216,7 +216,7 @@ func TestLoadMetadata(t *testing.T) {
 						Optional: true,
 					},
 					"required_attr_to_be_optional": {
-						Description: "An required string attribute will be optional in metric/event level.",
+						Description: "An required string attribute will be optional in the metric and event levels.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
@@ -224,7 +224,7 @@ func TestLoadMetadata(t *testing.T) {
 						Optional: false,
 					},
 					"optional_attr_to_be_required": {
-						Description: "An optional string attribute will be required in metric/event level.",
+						Description: "An optional string attribute will be required in the metric and event levels.",
 						Type: ValueType{
 							ValueType: pcommon.ValueTypeStr,
 						},
