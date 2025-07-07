@@ -74,6 +74,10 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	dest.SetRejectedProfiles(ms.RejectedProfiles())
-	dest.SetErrorMessage(ms.ErrorMessage())
+	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+}
+
+func copyOrigExportPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {
+	dest.RejectedProfiles = src.RejectedProfiles
+	dest.ErrorMessage = src.ErrorMessage
 }

@@ -85,7 +85,11 @@ func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	dest.SetTypeStrindex(ms.TypeStrindex())
-	dest.SetUnitStrindex(ms.UnitStrindex())
-	dest.SetAggregationTemporality(ms.AggregationTemporality())
+	copyOrigValueType(dest.orig, ms.orig)
+}
+
+func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
+	dest.TypeStrindex = src.TypeStrindex
+	dest.UnitStrindex = src.UnitStrindex
+	dest.AggregationTemporality = src.AggregationTemporality
 }
