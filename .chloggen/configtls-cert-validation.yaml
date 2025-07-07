@@ -16,9 +16,9 @@ issues: [13130]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Enhanced `configtls.Config.Validate()` to ensure certificate and key pairs are properly configured.
-  Added `configtls.ServerConfig.Validate()` to require certificates when TLS settings are configured.
-  Added `configtls.ClientConfig.Validate()` for consistent validation interface.
+  Internalized config validation to prevent unwanted recursion.
+  Improved certificate/key validation logic for early error detection.
+  ClientConfig skips validation when Insecure is true and no CA is set.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
