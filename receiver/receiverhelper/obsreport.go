@@ -7,6 +7,7 @@ package receiverhelper // import "go.opentelemetry.io/collector/receiver/receive
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -19,6 +20,12 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
+
+
+// This context key is needed because Go's context package requires unique types as keys to avoid collisions
+// between different packages that might use the same string key. Using an empty struct type ensures
+// type safety and prevents accidental key conflicts.
+type ctxKeyReceiverStartTime struct{}
 
 // ObsReport is a helper to add observability to a receiver.
 type ObsReport struct {
@@ -75,7 +82,8 @@ func newReceiver(cfg ObsReportSettings) (*ObsReport, error) {
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartTracesOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, internal.ReceiveTraceDataOperationSuffix)
+	ctx := rec.startOp(operationCtx, internal.ReceiveTraceDataOperationSuffix)
+	return context.WithValue(ctx, ctxKeyReceiverStartTime{}, time.Now())
 }
 
 // EndTracesOp completes the receive operation that was started with
@@ -86,6 +94,7 @@ func (rec *ObsReport) EndTracesOp(
 	numReceivedSpans int,
 	err error,
 ) {
+	rec.recordDuration(receiverCtx)
 	rec.endOp(receiverCtx, format, numReceivedSpans, err, pipeline.SignalTraces)
 }
 
@@ -93,7 +102,8 @@ func (rec *ObsReport) EndTracesOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartLogsOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, internal.ReceiverLogsOperationSuffix)
+	ctx := rec.startOp(operationCtx, internal.ReceiverLogsOperationSuffix)
+	return context.WithValue(ctx, ctxKeyReceiverStartTime{}, time.Now())
 }
 
 // EndLogsOp completes the receive operation that was started with
@@ -104,6 +114,7 @@ func (rec *ObsReport) EndLogsOp(
 	numReceivedLogRecords int,
 	err error,
 ) {
+	rec.recordDuration(receiverCtx)
 	rec.endOp(receiverCtx, format, numReceivedLogRecords, err, pipeline.SignalLogs)
 }
 
@@ -111,7 +122,8 @@ func (rec *ObsReport) EndLogsOp(
 // The returned context should be used in other calls to the obsreport functions
 // dealing with the same receive operation.
 func (rec *ObsReport) StartMetricsOp(operationCtx context.Context) context.Context {
-	return rec.startOp(operationCtx, internal.ReceiverMetricsOperationSuffix)
+	ctx := rec.startOp(operationCtx, internal.ReceiverMetricsOperationSuffix)
+	return context.WithValue(ctx, ctxKeyReceiverStartTime{}, time.Now())
 }
 
 // EndMetricsOp completes the receive operation that was started with
@@ -122,6 +134,7 @@ func (rec *ObsReport) EndMetricsOp(
 	numReceivedPoints int,
 	err error,
 ) {
+	rec.recordDuration(receiverCtx)
 	rec.endOp(receiverCtx, format, numReceivedPoints, err, pipeline.SignalMetrics)
 }
 
@@ -212,4 +225,13 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
+}
+
+// recordDuration records the duration of the receiver operation if the start time is present in the context.
+func (rec *ObsReport) recordDuration(ctx context.Context) {
+	start, ok := ctx.Value(ctxKeyReceiverStartTime{}).(time.Time)
+	if !ok {
+		return
+	}
+	rec.telemetryBuilder.ReceiverDuration.Record(ctx, time.Since(start).Seconds(), rec.otelAttrs)
 }
