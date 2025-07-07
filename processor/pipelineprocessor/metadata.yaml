@@ -1,0 +1,7 @@
+type: pipeline
+github_project: open-telemetry/opentelemetry-collector
+
+status:
+  class: processor
+  stability:
+    development: [ traces, metrics, logs ]

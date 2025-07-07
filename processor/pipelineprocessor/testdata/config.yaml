@@ -1,0 +1,38 @@
+# Example configuration for the pipeline processor
+# This processor provides queue, batch, retry, and timeout capabilities
+# using the same configuration structure as the OTLP exporter.
+
+pipeline:
+  # Timeout configuration (required, defaults to 5s)
+  timeout: 10s
+  
+  # Queue configuration (optional, disabled by default)
+  sending_queue:
+    enabled: true
+    num_consumers: 10
+    queue_size: 1000
+    block_on_overflow: false
+    
+    # Optional batching within the queue
+    batch:
+      flush_timeout: 1s
+      min_size: 100
+      max_size: 1000
+  
+  # Retry configuration (optional, enabled by default)
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 30s
+    max_elapsed_time: 5m
+    multiplier: 1.5
+
+pipeline/custom:
+  # Minimal configuration with only timeout
+  timeout: 5s
+  
+  # Disable queue and retry
+  sending_queue:
+    enabled: false
+  retry_on_failure:
+    enabled: false
