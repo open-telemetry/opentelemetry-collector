@@ -5,3 +5,4 @@ status:
   class: processor
   stability:
     development: [ traces, metrics, logs ]
+    alpha: [ profiles ]

@@ -7,9 +7,12 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 )
 
 // newTracesProcessor creates a new traces processor that uses exporterhelper capabilities.
@@ -75,5 +78,27 @@ func newLogsProcessor(set processor.Settings, nextConsumer consumer.Logs, cfg *C
 		exporterhelper.WithTimeout(cfg.TimeoutConfig),
 		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithQueueBatch(cfg.QueueConfig, exporterhelper.NewLogsQueueBatchSettings()),
+	)
+}
+
+// newProfilesProcessor creates a new profiles processor that uses exporterhelper capabilities.
+func newProfilesProcessor(set processor.Settings, nextConsumer xconsumer.Profiles, cfg *Config) (xprocessor.Profiles, error) {
+	// Convert processor settings to exporter settings
+	exporterSet := exporter.Settings{
+		ID:                set.ID,
+		TelemetrySettings: set.TelemetrySettings,
+		BuildInfo:         set.BuildInfo,
+	}
+
+	// Use xexporterhelper to create a profiles exporter with all the features
+	return xexporterhelper.NewProfilesExporter(
+		context.Background(),
+		exporterSet,
+		cfg,
+		nextConsumer.ConsumeProfiles,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(cfg.TimeoutConfig),
+		exporterhelper.WithRetry(cfg.RetryConfig),
+		exporterhelper.WithQueueBatch(cfg.QueueConfig, xexporterhelper.NewProfilesQueueBatchSettings()),
 	)
 }

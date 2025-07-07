@@ -25,12 +25,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	config := cfg.(*Config)
 	assert.Equal(t, time.Duration(0), config.TimeoutConfig.Timeout)
-	
+
 	// Queue should be disabled by default
 	expectedQueueConfig := exporterhelper.NewDefaultQueueConfig()
 	expectedQueueConfig.Enabled = false
 	assert.Equal(t, expectedQueueConfig, config.QueueConfig)
-	
+
 	// Retry should be disabled by default
 	expectedRetryConfig := configretry.NewDefaultBackOffConfig()
 	expectedRetryConfig.Enabled = false

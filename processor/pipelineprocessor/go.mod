@@ -10,15 +10,17 @@ require (
 	go.opentelemetry.io/collector/confmap v1.35.0
 	go.opentelemetry.io/collector/consumer v1.35.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.0
+	go.opentelemetry.io/collector/consumer/xconsumer v0.129.0
 	go.opentelemetry.io/collector/exporter v1.35.0
+	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.129.0
 	go.opentelemetry.io/collector/pdata v1.35.0
 	go.opentelemetry.io/collector/processor v1.35.0
 	go.opentelemetry.io/collector/processor/processortest v0.129.0
+	go.opentelemetry.io/collector/processor/xprocessor v0.129.0
 	go.opentelemetry.io/otel/metric v1.37.0
 	go.opentelemetry.io/otel/sdk/metric v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
 )
 
 require (
@@ -44,7 +46,8 @@ require (
 	go.opentelemetry.io/collector/client v1.35.0 // indirect
 	go.opentelemetry.io/collector/component/componentstatus v0.129.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.129.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.129.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumererror/xconsumererror v0.129.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.129.0 // indirect
 	go.opentelemetry.io/collector/extension v1.35.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.129.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.35.0 // indirect
@@ -53,12 +56,14 @@ require (
 	go.opentelemetry.io/collector/pdata/testdata v0.129.0 // indirect
 	go.opentelemetry.io/collector/pdata/xpdata v0.129.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.129.0 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.129.0 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.129.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.37.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
@@ -66,7 +71,6 @@ require (
 	google.golang.org/grpc v1.73.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace go.opentelemetry.io/collector/processor => ../
@@ -129,3 +133,11 @@ replace go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper =>
 replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../consumer/consumererror/xconsumererror
 
 replace go.opentelemetry.io/collector/pipeline/xpipeline => ../../pipeline/xpipeline
+
+replace go.opentelemetry.io/collector/processor/xprocessor => ../xprocessor
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/processor/processortest => ../processortest
+
+replace go.opentelemetry.io/collector/confmap => ../../confmap
