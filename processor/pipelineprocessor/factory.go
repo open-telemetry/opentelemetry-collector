@@ -4,7 +4,6 @@ package pipelineprocessor // import "go.opentelemetry.io/collector/processor/pip
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -16,7 +15,8 @@ import (
 
 const (
 	// defaultTimeout is the default timeout for the processor.
-	defaultTimeout = 5 * time.Second
+	// 0 means no timeout is applied, allowing the context to pass through.
+	defaultTimeout = 0
 )
 
 // NewFactory returns a new factory for the Pipeline processor.

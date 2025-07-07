@@ -31,7 +31,30 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	expected := factory.CreateDefaultConfig().(*Config)
+	expected := &Config{
+		TimeoutConfig: exporterhelper.TimeoutConfig{
+			Timeout: 10 * time.Second,
+		},
+		QueueConfig: exporterhelper.QueueConfig{
+			Enabled:      true,
+			NumConsumers: 10,
+			QueueSize:    1000,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
+			Batch: &exporterhelper.BatchConfig{
+				FlushTimeout: 1 * time.Second,
+				MinSize:      100,
+				MaxSize:      1000,
+			},
+		},
+		RetryConfig: configretry.BackOffConfig{
+			Enabled:             true,
+			InitialInterval:     5 * time.Second,
+			MaxInterval:         30 * time.Second,
+			MaxElapsedTime:      5 * time.Minute,
+			Multiplier:          1.5,
+			RandomizationFactor: 0.5,
+		},
+	}
 	assert.Equal(t, expected, cfg)
 }
 

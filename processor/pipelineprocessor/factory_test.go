@@ -6,6 +6,7 @@ package pipelineprocessor
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -23,7 +24,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
 	config := cfg.(*Config)
-	assert.Equal(t, defaultTimeout, config.TimeoutConfig.Timeout)
+	assert.Equal(t, time.Duration(0), config.TimeoutConfig.Timeout)
 	assert.Equal(t, exporterhelper.NewDefaultQueueConfig(), config.QueueConfig)
 	assert.Equal(t, configretry.NewDefaultBackOffConfig(), config.RetryConfig)
 }
