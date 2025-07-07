@@ -22,9 +22,8 @@ type TracesConfigV030 struct {
 	// tracecontext and  b3 are supported. By default, the value is set to empty list and
 	// context propagation is disabled.
 	Propagators []string `mapstructure:"propagators"`
-	// Processors allow configuration of span processors to emit spans to
-	// any number of supported backends.
-	Processors []config.SpanProcessor `mapstructure:"processors"`
+
+	config.TracerProvider `mapstructure:",squash"`
 }
 
 func (c *TracesConfigV030) Unmarshal(conf *confmap.Conf) error {
@@ -67,9 +66,6 @@ type MetricsConfigV030 struct {
 	//  - "detailed" adds dimensions and views to the previous levels.
 	Level configtelemetry.Level `mapstructure:"level"`
 
-	// Deprecated: [v0.111.0] use readers configuration.
-	Address string `mapstructure:"address,omitempty"`
-
 	config.MeterProvider `mapstructure:",squash"`
 }
 
@@ -77,8 +73,7 @@ func (c *MetricsConfigV030) Unmarshal(conf *confmap.Conf) error {
 	unmarshaled := *c
 	if err := conf.Unmarshal(c); err != nil {
 		v02 := metricsConfigV020{
-			Level:   unmarshaled.Level,
-			Address: unmarshaled.Address,
+			Level: unmarshaled.Level,
 		}
 		// try unmarshaling using v0.2.0 struct
 		if e := conf.Unmarshal(&v02); e != nil {

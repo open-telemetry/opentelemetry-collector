@@ -10,6 +10,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -32,6 +33,7 @@ type Settings struct {
 	AsyncErrorChannel chan error
 	ZapOptions        []zap.Option
 	SDK               *config.SDK
+	Resource          *resource.Resource
 }
 
 // Factory is factory interface for telemetry.

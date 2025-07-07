@@ -8,6 +8,7 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
@@ -28,15 +30,12 @@ import (
 
 func newFakeRequestSettings() Settings[request.Request] {
 	return Settings[request.Request]{
-		Signal:    pipeline.SignalMetrics,
-		ID:        component.NewID(exportertest.NopType),
-		Telemetry: componenttest.NewNopTelemetrySettings(),
-		Encoding:  newFakeEncoding(&requesttest.FakeRequest{}),
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-			request.SizerTypeItems:    request.NewItemsSizer(),
-			request.SizerTypeBytes:    newFakeBytesSizer(),
-		},
+		Signal:     pipeline.SignalMetrics,
+		ID:         component.NewID(exportertest.NopType),
+		Telemetry:  componenttest.NewNopTelemetrySettings(),
+		Encoding:   newFakeEncoding(&requesttest.FakeRequest{}),
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: requesttest.NewBytesSizer(),
 	}
 }
 
@@ -44,15 +43,15 @@ type fakeEncoding struct {
 	mr request.Request
 }
 
-func (f fakeEncoding) Marshal(request.Request) ([]byte, error) {
+func (f fakeEncoding) Marshal(context.Context, request.Request) ([]byte, error) {
 	return []byte("mockRequest"), nil
 }
 
-func (f fakeEncoding) Unmarshal([]byte) (request.Request, error) {
-	return f.mr, nil
+func (f fakeEncoding) Unmarshal([]byte) (context.Context, request.Request, error) {
+	return context.Background(), f.mr, nil
 }
 
-func newFakeEncoding(mr request.Request) Encoding[request.Request] {
+func newFakeEncoding(mr request.Request) queue.Encoding[request.Request] {
 	return &fakeEncoding{mr: mr}
 }
 
@@ -188,8 +187,11 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	mockReq := &requesttest.FakeRequest{Items: 2}
 	qSet := newFakeRequestSettings()
 	qSet.Encoding = newFakeEncoding(mockReq)
+
+	consumed := &atomic.Bool{}
 	done := make(chan struct{})
 	qb, err := NewQueueBatch(qSet, cfg, func(context.Context, request.Request) error {
+		consumed.Store(true)
 		<-done
 		return experr.NewShutdownErr(errors.New("could not export data"))
 	})
@@ -206,7 +208,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 
 	// first wait for the item to be consumed from the queue
 	assert.Eventually(t, func() bool {
-		return qb.queue.Size() == 0
+		return consumed.Load()
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// shuts down the exporter, unsent data should be preserved as in-flight data in the persistent queue.
@@ -401,6 +403,48 @@ func TestQueueBatch_MergeOrSplit(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return sink.RequestsCount() == 5 && sink.ItemsCount() == 38
 	}, 1*time.Second, 10*time.Millisecond)
+	require.NoError(t, qb.Shutdown(context.Background()))
+}
+
+func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
+	sink := requesttest.NewSink()
+	cfg := newTestConfig()
+	cfg.Batch = &BatchConfig{
+		FlushTimeout: 100 * time.Millisecond,
+		MinSize:      10,
+	}
+
+	type partitionKey struct{}
+	set := newFakeRequestSettings()
+	set.Partitioner = NewPartitioner(func(ctx context.Context, _ request.Request) string {
+		key := ctx.Value(partitionKey{}).(string)
+		return key
+	})
+
+	qb, err := NewQueueBatch(set, cfg, sink.Export)
+	require.NoError(t, err)
+	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
+
+	// should be sent right away by reaching the minimum items size.
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	// Neither batch should be flushed since they haven't reached min threshold.
+	assert.Equal(t, 0, sink.RequestsCount())
+	assert.Equal(t, 0, sink.ItemsCount())
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p1"), &requesttest.FakeRequest{Items: 8}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 1 && sink.ItemsCount() == 16
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
+	require.NoError(t, qb.Send(context.WithValue(context.Background(), partitionKey{}, "p2"), &requesttest.FakeRequest{Items: 6}))
+
+	assert.Eventually(t, func() bool {
+		return sink.RequestsCount() == 2 && sink.ItemsCount() == 28
+	}, 500*time.Millisecond, 10*time.Millisecond)
+
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 

@@ -7,6 +7,88 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated sending_queue::blocking options, use sending_queue::block_on_overflow. (#13211)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Taught mdatagen to print the `go list` stderr output on failures, and to run `go list` where the metadata file is. (#13205)
+- `service`: Support setting `sampler` and `limits` under `service::telemetry::traces` (#13201)
+  This allows users to enable sampling and set span limits on internal Collector traces using the
+  OpenTelemetry SDK declarative configuration.
+  
+- `pdata/pprofile`: Add new helper methods `FromLocationIndices` and `PutLocation` to read and modify the content of locations. (#13150)
+- `exporterhelper`: Preserve request span context and client information in the persistent queue. (#11740, #13220, #13232)
+  It allows internal collector spans and client information to propagate through the persistent queue used by 
+  the exporters. The same way as it's done for the in-memory queue.
+  Currently, it is behind the exporter.PersistRequestContext feature gate, which can be enabled by adding 
+  `--feature-gates=exporter.PersistRequestContext` to the collector command line. An exporter buffer stored by
+  a previous version of the collector (or by a collector with the feature gate disabled) can be read by a newer
+  collector with the feature enabled. However, the reverse is not supported: a buffer stored by a newer collector with
+  the feature enabled cannot be read by an older collector (or by a collector with the feature gate disabled).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix copying of optional fields when the source is unset. (#13268)
+- `service`: Only allocate one set of internal log sampling counters (#13014)
+  The case where logs are only exported to stdout was fixed in v0.126.0;
+  this new fix also covers the case where logs are exported through OTLP.
+  
+
+<!-- previous-version -->
+
+## v1.34.0/v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Mark "telemetry.disableAddressFieldForInternalTelemetry" as stable (#13152)
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Update the HTTP server span naming to use the HTTP method and route pattern instead of the path. (#12468)
+  The HTTP server span name will now be formatted as `<http.request.method> <http.route>`.
+  If a route pattern is not available, it will fall back to `<http.request.method>`.
+  
+- `service`: Use configured loggers to log errors as soon as it is available (#13081)
+- `service`: Remove stabilized featuregate useOtelWithSDKConfigurationForInternalTelemetry (#13152)
+
+### 🧰 Bug fixes 🧰
+
+- `telemetry`: Add generated resource attributes to the printed log messages. (#13110)
+  If service.name, service.version, or service.instance.id are not specified in the config, they will be generated automatically.
+  This change ensures that these attributes are also included in the printed log messages.
+  
+- `mdatagen`: Fix generation when there are no events in the metadata. (#13123)
+- `confmap`: Do not panic on assigning nil maps to non-nil maps (#13117)
+- `pdata`: Fix event_name skipped when unmarshalling LogRecord from JSON (#13127)
+
+<!-- previous-version -->
+
+## v1.33.0/v0.127.0
+
+### 🚩 Deprecations 🚩
+
+- `semconv`: Deprecating the semconv package in favour of go.opentelemetry.io/otel/semconv (#13012)
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Display resource and scope in `normal` verbosity (#10515)
+- `service`: Add size metrics defined in Pipeline Component Telemetry RFC (#13032)
+  See [Pipeline Component Telemetry RFC](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/rfcs/component-universal-telemetry.md) for more details:
+    - `otelcol.receiver.produced.size`
+    - `otelcol.processor.consumed.size`
+    - `otelcol.processor.produced.size`
+    - `otelcol.connector.consumed.size`
+    - `otelcol.connector.produced.size`
+    - `otelcol.exporter.consumed.size`
+  
+
+<!-- previous-version -->
+
 ## v1.32.0/v0.126.0
 
 ### 🛑 Breaking changes 🛑
@@ -1056,7 +1138,7 @@ This release includes 2 very important breaking changes.
 - `configcompression`: Mark module as Stable. (#9571)
 - `cmd/mdatagen`: Use go package name for the scope name by default and add an option to provide the scope name in metadata.yaml. (#9693)
 - `cmd/mdatagen`: Generate the lifecycle tests for components by default. (#9683)
-  It's encouraged to have lifecycle tests for all components enadled, but they can be disabled if needed 
+  It's encouraged to have lifecycle tests for all components enabled, but they can be disabled if needed 
   in metadata.yaml with `skip_lifecycle: true` and `skip_shutdown: true` under `tests` section.
   
 - `cmd/mdatagen`: optimize the mdatagen for the case like batchprocessor which use a common struct to implement consumer.Traces, consumer.Metrics, consumer.Logs in the meantime. (#9688)
@@ -1714,8 +1796,8 @@ This release includes 2 very important breaking changes.
 - `componenttest`: Remove deprecated funcs from componenttest (#6836)
 - `batchprocessor`: Remove deprecated batchprocessor.MetricViews and batchprocessor.OtelMetricViews (#6861)
 - `component`: Remove deprecated component.[Factories|MakeProcessorFactoryMap] and componenttest.NewNopFactories (#6835)
-- `config`: Remove deprecated cofig.*Settings (#6837)
-- `obsereporttest`: Remove deprecated obsereporttest.SetupTelemetryWithID (#6861)
+- `config`: Remove deprecated config.*Settings (#6837)
+- `obsreporttest`: Remove deprecated obsreporttest.SetupTelemetryWithID (#6861)
 - `component`: Remove deprecated component [Traces|Metrics|Logs]Processor and ProcessorFactory (#6884)
 - `service`: Remove deprecated service service.ConfigService and service.ConfigServicePipeline (#6859)
 
@@ -2651,7 +2733,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Update OTLP to v0.17.0 (#5335)
 - Add optional min/max fields to histograms (#5399)
 - User-defined Resource attributes can be specified under `service.telemetry.resource`
-  configuration key and will be included as metric lables for own telemetry.
+  configuration key and will be included as metric labels for own telemetry.
   If `service.instance.id` is not specified it will be auto-generated. Previously
   `service.instance.id` was always auto-generated, so the default of the new
   behavior matches the old behavior. (#5402)
@@ -2799,9 +2881,9 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 - Deprecate global flag in `featuregates` (#5060)
 - Deprecate last funcs/structs in componenthelper (#5069)
 - Change structs in otlpgrpc to follow standard go encoding interfaces (#5062)
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalJSON`.
-  - Deprecate `[Traces|Metrics|Logs][Reques|Response].Marshal` in favor of `MarshalProto`.
-  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Reques|Response]` in favor of `UnmarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalJSON`.
+  - Deprecate `[Traces|Metrics|Logs][Request|Response].Marshal` in favor of `MarshalProto`.
+  - Deprecate `UnmarshalJSON[Traces|Metrics|Logs][Request|Response]` in favor of `UnmarshalProto`.
 - Deprecating following pdata methods/types following OTLP v0.15.0 upgrade (#5076):
       - InstrumentationLibrary is now InstrumentationScope
       - NewInstrumentationLibrary is now NewInstrumentationScope
@@ -3047,7 +3129,7 @@ There isn't a valid core binary for this release. Use v0.57.2 instead.
 
 - Remove reference to `defaultcomponents` in core and deprecate `include_core` flag (#4087)
 - Remove `config.NewConfigMapFrom[File|Buffer]`, add testonly version (#4502)
-- `configtls`: TLS 1.2 is the new default mininum version (#4503)
+- `configtls`: TLS 1.2 is the new default minimum version (#4503)
 - `confighttp`: `ToServer` now accepts a `component.Host`, in line with gRPC's counterpart (#4514)
 - CORS configuration for OTLP/HTTP receivers has been moved into a `cors:` block, instead of individual `cors_allowed_origins` and `cors_allowed_headers` settings (#4492)
 
@@ -3841,7 +3923,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 - Add `CustomRoundTripper` function to httpclientconfig (#2085)
 - Allow for more logging options to be passed to `service` (#2132)
 - Add config parameters for `jaeger` receiver (#2068)
-- Map unset status code for `jaegar` translator as per spec (#2134)
+- Map unset status code for `jaeger` translator as per spec (#2134)
 - Add more trace annotations to the queue-retry logic (#2136)
 - Add config settings for component telemetry (#2148)
 - Use net.SplitHostPort for IPv6 support in `prometheus` receiver (#2154)
@@ -4091,7 +4173,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
 ### 🚀 New components 🚀
 
 - Receivers
-  - `fluentfoward` runs a TCP server that accepts events via the [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) (#1173)
+  - `fluentforward` runs a TCP server that accepts events via the [Fluent Forward protocol](https://github.com/fluent/fluentd/wiki/Forward-Protocol-Specification-v1) (#1173)
 - Exporters
   - `kafka` exports traces to Kafka (#1439)
 - Extensions
@@ -4162,7 +4244,7 @@ This release is marked as "bad" since the metrics pipelines will produce bad dat
   of different versions
 - Make "--new-metrics" command line flag the default (#1148)
 - Change `endpoint` to `url` in Zipkin exporter config (#1186)
-- Change `tls_credentials` to `tls_settings` in Jaegar receiver config (#1233)
+- Change `tls_credentials` to `tls_settings` in Jaeger receiver config (#1233)
 - OTLP receiver config change for `protocols` to support mTLS (#1223)
 - Remove `export_resource_labels` flag from Zipkin exporter (#1163)
 

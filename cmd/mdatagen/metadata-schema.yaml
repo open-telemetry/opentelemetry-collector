@@ -78,6 +78,8 @@ attributes:
     enum: [string]
     # Required: attribute value type.
     type: <string|int|double|bool|bytes|slice|map>
+    # Optional: indicates whether the attribute is optional or not.
+    optional:
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
@@ -115,6 +117,28 @@ metrics:
        # functions will parse the value from string to value_type.
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
+    attributes: [string]
+
+# Optional: map of event names with the key being the event name and value
+# being described below.
+events:
+  <event.name>:
+    # Required: whether the event is collected by default.
+    enabled: bool
+    # Required: event description.
+    description:
+    # Optional: extended documentation of the event.
+    extended_documentation:
+    # Optional: warnings that will be shown to user under specified conditions.
+    warnings:
+      # A warning that will be displayed if the event is enabled in user config.
+      # Should be used for deprecated default events that will be removed soon.
+      if_enabled:
+      # A warning that will be displayed if `enabled` field is not set explicitly in user config.
+      if_enabled_not_set:
+      # A warning that will be displayed if the event is configured by user in any way.
+      if_configured:
+    # Optional: array of attributes that were defined in the attributes section that are emitted by this event.
     attributes: [string]
 
 # Lifecycle tests generated for this component.

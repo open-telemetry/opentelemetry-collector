@@ -63,19 +63,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: errMissingServicePipelines,
 		},
 		{
-			name: "invalid-service-pipeline-type",
-			cfgFn: func(*testing.T) Config {
-				cfg := generateConfig(t)
-				cfg[pipeline.MustNewID("wrongtype")] = &PipelineConfig{
-					Receivers:  []component.ID{component.MustNewID("nop")},
-					Processors: []component.ID{component.MustNewID("nop")},
-					Exporters:  []component.ID{component.MustNewID("nop")},
-				}
-				return cfg
-			},
-			expected: errors.New(`unknown signal "wrongtype"`),
-		},
-		{
 			name: "disabled-featuregate-profiles",
 			cfgFn: func(*testing.T) Config {
 				cfg := generateConfig(t)
@@ -126,8 +113,7 @@ func TestNoPipelinesFeatureGate(t *testing.T) {
 	require.Error(t, xconfmap.Validate(cfg))
 
 	gate := AllowNoPipelines
-	err := featuregate.GlobalRegistry().Set(gate.ID(), true)
-	require.NoError(t, err)
+	require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), true))
 	defer func() {
 		require.NoError(t, featuregate.GlobalRegistry().Set(gate.ID(), false))
 	}()

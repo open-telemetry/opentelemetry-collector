@@ -54,19 +54,6 @@ func TestConfigValidate(t *testing.T) {
 			expected: errors.New(`references processor "nop" multiple times`),
 		},
 		{
-			name: "invalid-service-pipeline-type",
-			cfgFn: func() *Config {
-				cfg := generateConfig()
-				cfg.Pipelines[pipeline.MustNewID("wrongtype")] = &pipelines.PipelineConfig{
-					Receivers:  []component.ID{component.MustNewID("nop")},
-					Processors: []component.ID{component.MustNewID("nop")},
-					Exporters:  []component.ID{component.MustNewID("nop")},
-				}
-				return cfg
-			},
-			expected: errors.New(`pipeline "wrongtype": unknown signal "wrongtype"`),
-		},
-		{
 			name: "invalid-telemetry-metric-config",
 			cfgFn: func() *Config {
 				cfg := generateConfig()
@@ -100,7 +87,7 @@ func TestConfmapMarshalConfig(t *testing.T) {
 		Telemetry: defaultTelConfig,
 	}))
 	assert.Equal(t, map[string]any{
-		"pipelines": map[string]any{},
+		"pipelines": map[string]any(nil),
 		"telemetry": map[string]any{
 			"logs": map[string]any{
 				"encoding":           "console",

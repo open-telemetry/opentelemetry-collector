@@ -19,7 +19,6 @@ type tracesConfigV020 struct {
 
 type metricsConfigV020 struct {
 	Level   configtelemetry.Level    `mapstructure:"level"`
-	Address string                   `mapstructure:"address"`
 	Readers []configv02.MetricReader `mapstructure:"readers"`
 }
 
@@ -166,7 +165,6 @@ func metricsConfigV02ToV03(v2 metricsConfigV020, v3 *MetricsConfigV030) error {
 		}
 	}
 	v3.Level = v2.Level
-	v3.Address = v2.Address
 	v3.Readers = readers
 	return nil
 }

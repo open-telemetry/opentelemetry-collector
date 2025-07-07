@@ -29,9 +29,6 @@ func TestNewQueueSenderFailedRequestDropped(t *testing.T) {
 		Signal:    pipeline.SignalMetrics,
 		ID:        component.NewID(exportertest.NopType),
 		Telemetry: componenttest.NewNopTelemetrySettings(),
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-		},
 	}
 	logger, observed := observer.New(zap.ErrorLevel)
 	qSet.Telemetry.Logger = zap.New(logger)
