@@ -4,7 +4,6 @@
 package envprovider
 
 import (
-	"context"
 	"fmt"
 	"testing"
 
@@ -34,28 +33,28 @@ func TestValidateProviderScheme(t *testing.T) {
 
 func TestEmptyName(t *testing.T) {
 	env := createProvider()
-	_, err := env.Retrieve(context.Background(), "", nil)
+	_, err := env.Retrieve(t.Context(), "", nil)
 	require.Error(t, err)
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, env.Shutdown(t.Context()))
 }
 
 func TestUnsupportedScheme(t *testing.T) {
 	env := createProvider()
-	_, err := env.Retrieve(context.Background(), "https://", nil)
+	_, err := env.Retrieve(t.Context(), "https://", nil)
 	require.Error(t, err)
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, env.Shutdown(t.Context()))
 }
 
 func TestInvalidYAML(t *testing.T) {
 	const envName = "invalid_yaml"
 	t.Setenv(envName, "[invalid,")
 	env := createProvider()
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	raw, err := ret.AsRaw()
 	require.NoError(t, err)
 	assert.IsType(t, "", raw)
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, env.Shutdown(t.Context()))
 }
 
 func TestEnv(t *testing.T) {
@@ -63,7 +62,7 @@ func TestEnv(t *testing.T) {
 	t.Setenv(envName, validYAML)
 
 	env := createProvider()
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -73,7 +72,7 @@ func TestEnv(t *testing.T) {
 	})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, env.Shutdown(t.Context()))
 }
 
 func TestEnvWithLogger(t *testing.T) {
@@ -83,7 +82,7 @@ func TestEnvWithLogger(t *testing.T) {
 	logger := zap.New(core)
 
 	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
@@ -93,7 +92,7 @@ func TestEnvWithLogger(t *testing.T) {
 	})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
-	require.NoError(t, env.Shutdown(context.Background()))
+	require.NoError(t, env.Shutdown(t.Context()))
 	assert.Equal(t, 0, ol.Len())
 }
 
@@ -103,14 +102,14 @@ func TestUnsetEnvWithLoggerWarn(t *testing.T) {
 	logger := zap.New(core)
 
 	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
-	require.NoError(t, env.Shutdown(context.Background()))
+	require.NoError(t, env.Shutdown(t.Context()))
 
 	assert.Equal(t, 1, ol.Len())
 	logLine := ol.All()[0]
@@ -124,9 +123,9 @@ func TestEnvVarNameRestriction(t *testing.T) {
 	t.Setenv(envName, validYAML)
 
 	env := createProvider()
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	assert.Equal(t, err, fmt.Errorf("environment variable \"default%%config\" has invalid name: must match regex %s", envvar.ValidationRegexp))
-	require.NoError(t, env.Shutdown(context.Background()))
+	require.NoError(t, env.Shutdown(t.Context()))
 	assert.Nil(t, ret)
 }
 
@@ -138,14 +137,14 @@ func TestEmptyEnvWithLoggerWarn(t *testing.T) {
 	logger := zap.New(core)
 
 	env := NewFactory().Create(confmap.ProviderSettings{Logger: logger})
-	ret, err := env.Retrieve(context.Background(), envSchemePrefix+envName, nil)
+	ret, err := env.Retrieve(t.Context(), envSchemePrefix+envName, nil)
 	require.NoError(t, err)
 	retMap, err := ret.AsConf()
 	require.NoError(t, err)
 	expectedMap := confmap.NewFromStringMap(map[string]any{})
 	assert.Equal(t, expectedMap.ToStringMap(), retMap.ToStringMap())
 
-	require.NoError(t, env.Shutdown(context.Background()))
+	require.NoError(t, env.Shutdown(t.Context()))
 
 	assert.Equal(t, 1, ol.Len())
 	logLine := ol.All()[0]
@@ -176,7 +175,7 @@ func TestEnvWithDefaultValue(t *testing.T) {
 			if !tt.unset {
 				t.Setenv("MY_VAR", tt.value)
 			}
-			ret, err := env.Retrieve(context.Background(), tt.uri, nil)
+			ret, err := env.Retrieve(t.Context(), tt.uri, nil)
 			if tt.expectedErr != "" {
 				require.ErrorContains(t, err, tt.expectedErr)
 				return
@@ -187,7 +186,7 @@ func TestEnvWithDefaultValue(t *testing.T) {
 			assert.Equal(t, tt.expectedVal, str)
 		})
 	}
-	assert.NoError(t, env.Shutdown(context.Background()))
+	assert.NoError(t, env.Shutdown(t.Context()))
 }
 
 func createProvider() confmap.Provider {

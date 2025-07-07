@@ -4,7 +4,6 @@
 package e2etest
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -26,13 +25,13 @@ func targetNested[T any](t *testing.T, value string) {
 	if err != nil {
 		return
 	}
-	confNested, errResolveNested := resolver.Resolve(context.Background())
+	confNested, errResolveNested := resolver.Resolve(t.Context())
 
 	err = os.Setenv("ENV", value) //nolint:usetesting
 	if err != nil {
 		return
 	}
-	confSimple, errResolveSimple := resolver.Resolve(context.Background())
+	confSimple, errResolveSimple := resolver.Resolve(t.Context())
 	require.Equal(t, errResolveNested, errResolveSimple)
 	if errResolveNested != nil {
 		return

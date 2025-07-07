@@ -230,7 +230,7 @@ func TestResolverErrors(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			_, errN := resolver.Resolve(context.Background())
+			_, errN := resolver.Resolve(t.Context())
 			if tt.expectResolveErr {
 				assert.Error(t, errN)
 				return
@@ -244,14 +244,14 @@ func TestResolverErrors(t *testing.T) {
 			}
 			require.NoError(t, errW)
 
-			_, errC := resolver.Resolve(context.Background())
+			_, errC := resolver.Resolve(t.Context())
 			if tt.expectCloseErr {
 				assert.Error(t, errC)
 				return
 			}
 			require.NoError(t, errN)
 
-			errS := resolver.Shutdown(context.Background())
+			errS := resolver.Shutdown(t.Context())
 			if tt.expectShutdownErr {
 				assert.Error(t, errS)
 				return
@@ -315,7 +315,7 @@ func TestBackwardsCompatibilityForFilePath(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			_, err = resolver.Resolve(context.Background())
+			_, err = resolver.Resolve(t.Context())
 			assert.ErrorContains(t, err, tt.errMessage, tt.name)
 		})
 	}
@@ -334,7 +334,7 @@ func TestResolver(t *testing.T) {
 		ConverterFactories: nil,
 	})
 	require.NoError(t, err)
-	_, errN := resolver.Resolve(context.Background())
+	_, errN := resolver.Resolve(t.Context())
 	require.NoError(t, errN)
 	assert.Equal(t, int32(0), numCalls.Load())
 
@@ -343,18 +343,18 @@ func TestResolver(t *testing.T) {
 
 	// Repeat Resolve/Watch.
 
-	_, errN = resolver.Resolve(context.Background())
+	_, errN = resolver.Resolve(t.Context())
 	require.NoError(t, errN)
 	assert.Equal(t, int32(1), numCalls.Load())
 
 	errW = <-resolver.Watch()
 	require.NoError(t, errW)
 
-	_, errN = resolver.Resolve(context.Background())
+	_, errN = resolver.Resolve(t.Context())
 	require.NoError(t, errN)
 	assert.Equal(t, int32(2), numCalls.Load())
 
-	errC := resolver.Shutdown(context.Background())
+	errC := resolver.Shutdown(t.Context())
 	require.NoError(t, errC)
 	assert.Equal(t, int32(3), numCalls.Load())
 }
@@ -393,7 +393,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 		ConverterFactories: nil,
 	})
 	require.NoError(t, err)
-	_, errN := resolver.Resolve(context.Background())
+	_, errN := resolver.Resolve(t.Context())
 	require.NoError(t, errN)
 
 	var watcherWG sync.WaitGroup
@@ -406,7 +406,7 @@ func TestResolverShutdownClosesWatch(t *testing.T) {
 		watcherWG.Done()
 	}()
 
-	require.NoError(t, resolver.Shutdown(context.Background()))
+	require.NoError(t, resolver.Shutdown(t.Context()))
 	watcherWG.Wait()
 }
 
@@ -505,7 +505,7 @@ func runScenario(t *testing.T, path string) {
 				DefaultScheme:     "file",
 			})
 			require.NoError(t, err)
-			conf, err := resolver.Resolve(context.Background())
+			conf, err := resolver.Resolve(t.Context())
 			require.NoError(t, err)
 			mergedConf := conf.ToStringMap()
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)

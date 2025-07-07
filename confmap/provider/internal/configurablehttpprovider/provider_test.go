@@ -4,7 +4,6 @@
 package configurablehttpprovider
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/tls"
@@ -117,9 +116,9 @@ func TestFunctionalityDownloadFileHTTP(t *testing.T) {
 	fp := newConfigurableHTTPProvider(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(answerGet))
 	defer ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	_, err := fp.Retrieve(t.Context(), ts.URL, nil)
 	assert.NoError(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
@@ -208,7 +207,7 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 				fp.caCertPath = tt.certPath
 			}
 			fp.insecureSkipVerify = tt.skipHostnameValidation
-			_, err = fp.Retrieve(context.Background(), fmt.Sprintf("https://%s:%s", tt.hostName, tsURL.Port()), nil)
+			_, err = fp.Retrieve(t.Context(), fmt.Sprintf("https://%s:%s", tt.hostName, tsURL.Port()), nil)
 			if tt.shouldError {
 				assert.Error(t, err)
 			} else {
@@ -220,14 +219,14 @@ func TestFunctionalityDownloadFileHTTPS(t *testing.T) {
 
 func TestUnsupportedScheme(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
-	_, err := fp.Retrieve(context.Background(), "https://...", nil)
+	_, err := fp.Retrieve(t.Context(), "https://...", nil)
 	require.Error(t, err)
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 
 	fp = New(HTTPSScheme, confmaptest.NewNopProviderSettings())
-	_, err = fp.Retrieve(context.Background(), "http://...", nil)
+	_, err = fp.Retrieve(t.Context(), "http://...", nil)
 	require.Error(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
+	assert.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestEmptyURI(t *testing.T) {
@@ -236,18 +235,18 @@ func TestEmptyURI(t *testing.T) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	_, err := fp.Retrieve(t.Context(), ts.URL, nil)
 	require.Error(t, err)
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestRetrieveFromShutdownServer(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	ts := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	_, err := fp.Retrieve(t.Context(), ts.URL, nil)
 	require.Error(t, err)
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestNonExistent(t *testing.T) {
@@ -256,9 +255,9 @@ func TestNonExistent(t *testing.T) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
 	defer ts.Close()
-	_, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	_, err := fp.Retrieve(t.Context(), ts.URL, nil)
 	require.Error(t, err)
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestInvalidYAML(t *testing.T) {
@@ -271,18 +270,18 @@ func TestInvalidYAML(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	ret, err := fp.Retrieve(context.Background(), ts.URL, nil)
+	ret, err := fp.Retrieve(t.Context(), ts.URL, nil)
 	require.NoError(t, err)
 	raw, err := ret.AsRaw()
 	require.NoError(t, err)
 	assert.Equal(t, "wrong : [", raw)
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestScheme(t *testing.T) {
 	fp := New(HTTPScheme, confmaptest.NewNopProviderSettings())
 	assert.Equal(t, "http", fp.Scheme())
-	require.NoError(t, fp.Shutdown(context.Background()))
+	require.NoError(t, fp.Shutdown(t.Context()))
 }
 
 func TestValidateProviderScheme(t *testing.T) {
@@ -312,7 +311,7 @@ func TestInvalidURI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.uri, func(t *testing.T) {
-			_, err := fp.Retrieve(context.Background(), tt.uri, nil)
+			_, err := fp.Retrieve(t.Context(), tt.uri, nil)
 			assert.ErrorContains(t, err, tt.err)
 		})
 	}

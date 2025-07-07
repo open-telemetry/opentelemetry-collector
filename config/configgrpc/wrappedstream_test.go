@@ -29,7 +29,7 @@ func TestWrapServerStream(t *testing.T) {
 }
 
 func TestDoubleWrapping(t *testing.T) {
-	fake := &fakeServerStream{ctx: context.Background()}
+	fake := &fakeServerStream{ctx: t.Context()}
 	wrapped := wrapServerStream(fake.Context(), fake)
 	assert.Same(t, wrapped, wrapServerStream(wrapped.Context(), wrapped)) // should be noop
 	assert.Equal(t, fake, wrapped.ServerStream)

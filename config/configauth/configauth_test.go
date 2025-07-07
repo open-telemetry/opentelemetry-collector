@@ -4,7 +4,6 @@
 package configauth
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,7 +43,7 @@ func TestGetServer(t *testing.T) {
 				mockID: tt.authenticator,
 			}
 
-			authenticator, err := cfg.GetServerAuthenticator(context.Background(), ext)
+			authenticator, err := cfg.GetServerAuthenticator(t.Context(), ext)
 
 			// verify
 			if tt.expected != nil {
@@ -63,7 +62,7 @@ func TestGetServerFails(t *testing.T) {
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
 
-	authenticator, err := cfg.GetServerAuthenticator(context.Background(), map[component.ID]component.Component{})
+	authenticator, err := cfg.GetServerAuthenticator(t.Context(), map[component.ID]component.Component{})
 	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
@@ -95,7 +94,7 @@ func TestGetHTTPClient(t *testing.T) {
 				mockID: tt.authenticator,
 			}
 
-			authenticator, err := cfg.GetHTTPClientAuthenticator(context.Background(), ext)
+			authenticator, err := cfg.GetHTTPClientAuthenticator(t.Context(), ext)
 
 			// verify
 			if tt.expected != nil {
@@ -113,7 +112,7 @@ func TestGetGRPCClientFails(t *testing.T) {
 	cfg := &Config{
 		AuthenticatorID: component.MustNewID("does_not_exist"),
 	}
-	authenticator, err := cfg.GetGRPCClientAuthenticator(context.Background(), map[component.ID]component.Component{})
+	authenticator, err := cfg.GetGRPCClientAuthenticator(t.Context(), map[component.ID]component.Component{})
 	require.ErrorIs(t, err, errAuthenticatorNotFound)
 	assert.Nil(t, authenticator)
 }
