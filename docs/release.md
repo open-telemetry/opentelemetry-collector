@@ -166,10 +166,13 @@ releases and add new schedules to the bottom of the list.
 
 7. When using a new GitHub Actions workflow in opentelemetry-collector-releases
    for the first time during a release, a workflow may fail. If it is possible
-   to fix the workflow, you can update the release tag to the commit with the
-   fix and re-run the release; it is safe to re-run the workflows that already
-   succeeded. Publishing container images can be done multiple times, and
-   publishing artifacts to GitHub will fail without any adverse effects.
+   to fix the workflow, a maintainer can update the release tag to the commit
+   with the fix and re-run the release. (Note: This cannot be done by
+   approvers.)
+   
+   It is safe to re-run the workflows that already succeeded. Publishing
+   container images can be done multiple times, and publishing artifacts or
+   pushing OCB/Supervisor tags to GitHub will fail without any adverse effects.
 
 ## Bugfix releases
 
