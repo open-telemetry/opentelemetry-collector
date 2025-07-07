@@ -36,16 +36,6 @@ func TestConfig_Validate(t *testing.T) {
 	require.EqualError(t, cfg.Validate(), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()
-	cfg.Sizer = request.SizerTypeBytes
-	cfg.StorageID = &storageID
-	require.EqualError(t, cfg.Validate(), "persistent queue configured with `storage` only supports `requests` sizer")
-
-	cfg = newTestConfig()
-	cfg.Sizer = request.SizerTypeItems
-	cfg.StorageID = &storageID
-	require.EqualError(t, cfg.Validate(), "persistent queue configured with `storage` only supports `requests` sizer")
-
-	cfg = newTestConfig()
 	cfg.Sizer = request.SizerTypeRequests
 	require.EqualError(t, cfg.Validate(), "`batch` supports only `items` or `bytes` sizer")
 

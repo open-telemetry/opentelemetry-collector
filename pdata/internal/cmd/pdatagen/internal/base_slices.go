@@ -53,6 +53,7 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 		"elementName":        ss.element.structName,
 		"originName":         ss.element.originFullName,
 		"originElementType":  "*" + ss.element.originFullName,
+		"originElementPtr":   "",
 		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
 		"newElement":         "new" + ss.element.structName + "((*es." + orig + ")[i], es." + state + ")",
 		"origAccessor":       orig,
@@ -64,11 +65,7 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 }
 
 func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceInternalTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
@@ -89,19 +86,11 @@ func (ss *sliceOfValues) getPackageName() string {
 }
 
 func (ss *sliceOfValues) generate(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfValues) generateTests(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceTestTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceTestTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any {
@@ -113,6 +102,7 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 		"elementName":        ss.element.structName,
 		"originName":         ss.element.originFullName,
 		"originElementType":  ss.element.originFullName,
+		"originElementPtr":   "&",
 		"emptyOriginElement": ss.element.originFullName + "{}",
 		"newElement":         "new" + ss.element.structName + "(&(*es." + orig + ")[i], es." + state + ")",
 		"origAccessor":       orig,
@@ -124,11 +114,7 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 }
 
 func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceInternalTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
 var _ baseStruct = (*sliceOfValues)(nil)

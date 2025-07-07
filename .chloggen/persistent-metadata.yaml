@@ -1,16 +1,16 @@
 # Use this changelog template to create an entry for release notes.
 
 # One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
-change_type: breaking
+change_type: deprecation
 
 # The name of the component, or a single word describing the area of concern, (e.g. otlpreceiver)
-component: configgrpc,confighttp
+component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Unify return type of `NewDefault*Config` functions to return a struct instead of a pointer.
+note: Deprecate NewRequestsSizer always supported.
 
 # One or more tracking issues or pull requests related to the change
-issues: [13169]
+issues: [13262]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.

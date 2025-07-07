@@ -74,7 +74,11 @@ func (ms ScopeProfiles) Profiles() ProfilesSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
-	ms.Scope().CopyTo(dest.Scope())
-	dest.SetSchemaUrl(ms.SchemaUrl())
-	ms.Profiles().CopyTo(dest.Profiles())
+	copyOrigScopeProfiles(dest.orig, ms.orig)
+}
+
+func copyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
+	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
+	dest.SchemaUrl = src.SchemaUrl
+	dest.Profiles = copyOrigProfilesSlice(dest.Profiles, src.Profiles)
 }
