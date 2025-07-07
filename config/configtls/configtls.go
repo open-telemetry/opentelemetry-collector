@@ -189,7 +189,7 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
-func (c Config) Validate() error {
+func (c Config) validate() error {
 	if c.hasCAFile() && c.hasCAPem() {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
@@ -207,7 +207,11 @@ func (c Config) Validate() error {
 	// Require both certificate and key if either is provided
 	certProvided := c.hasCert()
 	keyProvided := c.hasKey()
-	if certProvided != keyProvided {
+	if certProvided && !keyProvided {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
+	if !certProvided && keyProvided {
 		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
 	}
 
@@ -229,25 +233,16 @@ func (c Config) Validate() error {
 }
 
 func (c ClientConfig) Validate() error {
-	return c.Config.Validate()
+	if c.Insecure && !c.hasCA() {
+		return nil
+	}
+	return c.Config.validate()
 }
 
 func (c ServerConfig) Validate() error {
-	if err := c.Config.Validate(); err != nil {
+	if err := c.Config.validate(); err != nil {
 		return err
 	}
-
-	// Require cert+key if TLS settings are present or any cert fields are set.
-	// Allow empty config to support cases where TLS is disabled or set up later.
-	hasTLSSettings := c.MinVersion != "" || c.MaxVersion != "" || len(c.CipherSuites) > 0 ||
-		c.ReloadInterval != 0 || len(c.CurvePreferences) > 0 || c.hasCA() || c.ClientCAFile != ""
-
-	hasCertSettings := c.hasCertFile() || c.hasCertPem() || c.hasKeyFile() || c.hasKeyPem()
-
-	if (hasTLSSettings || hasCertSettings) && !c.hasCert() {
-		return errors.New("server TLS configuration requires a certificate and key")
-	}
-
 	return nil
 }
 

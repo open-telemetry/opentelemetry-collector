@@ -682,7 +682,8 @@ func TestConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.tlsConfig.Validate()
+			clientConfig := ClientConfig{Config: test.tlsConfig}
+			err := clientConfig.Validate()
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
@@ -969,7 +970,6 @@ func TestServerConfigValidate(t *testing.T) {
 					MinVersion: "1.2",
 				},
 			},
-			errorTxt: "server TLS configuration requires a certificate and key",
 		},
 		{
 			name: "Server config with cipher suites but no certificates",
@@ -978,7 +978,6 @@ func TestServerConfigValidate(t *testing.T) {
 					CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
 				},
 			},
-			errorTxt: "server TLS configuration requires a certificate and key",
 		},
 		{
 			name: "Server config with reload interval but no certificates",
@@ -987,7 +986,6 @@ func TestServerConfigValidate(t *testing.T) {
 					ReloadInterval: time.Minute,
 				},
 			},
-			errorTxt: "server TLS configuration requires a certificate and key",
 		},
 		{
 			name: "Server config with mixed cert file and key PEM",
@@ -1014,14 +1012,12 @@ func TestServerConfigValidate(t *testing.T) {
 					CAFile: "ca.pem",
 				},
 			},
-			errorTxt: "server TLS configuration requires a certificate and key",
 		},
 		{
 			name: "Server config with client CA file but no certificates",
 			serverConfig: ServerConfig{
 				ClientCAFile: "client-ca.pem",
 			},
-			errorTxt: "server TLS configuration requires a certificate and key",
 		},
 		{
 			name: "Server config with both cert file and cert PEM",
@@ -1058,6 +1054,12 @@ func TestClientConfigValidate(t *testing.T) {
 		{
 			name:         "Valid empty client config",
 			clientConfig: ClientConfig{},
+		},
+		{
+			name: "Valid insecure client config",
+			clientConfig: ClientConfig{
+				Insecure: true,
+			},
 		},
 		{
 			name: "Valid client config with certificates",
