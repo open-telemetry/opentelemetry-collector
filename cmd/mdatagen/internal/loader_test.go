@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
@@ -213,6 +215,22 @@ func TestLoadMetadata(t *testing.T) {
 						FullName: "optional_string_attr",
 						Optional: true,
 					},
+					"required_attr_to_be_optional": {
+						Description: "An required string attribute will be optional in metric/event level.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "required_attr_to_be_optional",
+						Optional: false,
+					},
+					"optional_attr_to_be_required": {
+						Description: "An optional string attribute will be required in metric/event level.",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "optional_attr_to_be_required",
+						Optional: true,
+					},
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
@@ -223,7 +241,15 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfEnabledNotSet: "This metric will be disabled by default soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr", "required_attr_to_be_optional", "optional_attr_to_be_required"},
+							AttributeOverrides: map[AttributeName]AttributeOverride{
+								"required_attr_to_be_optional": {
+									Optional: true,
+								},
+								"optional_attr_to_be_required": {
+									Optional: false,
+								},
+							},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -239,7 +265,7 @@ func TestLoadMetadata(t *testing.T) {
 							Warnings: Warnings{
 								IfConfigured: "This metric is deprecated and will be removed soon.",
 							},
-							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr", "required_attr_to_be_optional", "optional_attr_to_be_required"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
@@ -495,7 +521,10 @@ func TestLoadMetadata(t *testing.T) {
 				require.ErrorContains(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
+				cmpOpts := cmp.Options{
+					cmpopts.IgnoreFields(Signal{}, "Metadata"),
+				}
+				require.Empty(t, cmp.Diff(tt.want, got, cmpOpts))
 			}
 		})
 	}

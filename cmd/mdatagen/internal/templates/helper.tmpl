@@ -1,15 +1,15 @@
 {{- define "putAttribute" -}}
-	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "[]any" }}
-	dp.Attributes().PutEmptySlice("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
-	{{- else if eq (attributeInfo .).Type.Primitive "map[string]any" }}
-	dp.Attributes().PutEmptyMap("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
+	{{- if eq $.Attr.Type.Primitive "[]byte" }}
+	dp.Attributes().PutEmptyBytes("{{ $.Attr.Name }}").FromRaw({{ $.Name.RenderUnexported }}AttributeValue)
+	{{- else if eq $.Attr.Type.Primitive "[]any" }}
+	dp.Attributes().PutEmptySlice("{{ $.Attr.Name }}").FromRaw({{ $.Name.RenderUnexported }}AttributeValue)
+	{{- else if eq $.Attr.Type.Primitive "map[string]any" }}
+	dp.Attributes().PutEmptyMap("{{ $.Attr.Name }}").FromRaw({{ $.Name.RenderUnexported }}AttributeValue)
 	{{- else }}
-	dp.Attributes().Put{{ (attributeInfo .).Type }}("{{ (attributeInfo .).Name }}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().Put{{ $.Attr.Type }}("{{ $.Attr.Name }}", {{ $.Name.RenderUnexported }}AttributeValue)
 	{{- end }}
 {{- end -}}
 
 {{- define "getAttributeValue" -}}
-{{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
+{{ if $.Attr.Enum }}Attribute{{ $.Name.Render }}{{ (index $.Attr.Enum 0) | publicVar }}{{ else }}{{ $.Attr.TestValue }}{{ end }}
 {{- end -}}

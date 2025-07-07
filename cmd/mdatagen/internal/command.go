@@ -14,7 +14,6 @@ import (
 	"regexp"
 	"runtime/debug"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 
@@ -215,42 +214,71 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				"publicVar": func(s string) (string, error) {
 					return FormatIdentifier(s, true)
 				},
-				"attributeInfo": func(an AttributeName) Attribute {
-					return md.Attributes[an]
-				},
-				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
-					seen := make(map[AttributeName]bool)
-					used := make([]AttributeName, 0)
+				"getEventOptionalAttributes": func() map[AttributeName]Attribute {
+					results := make(map[AttributeName]Attribute)
 
 					for _, event := range md.Events {
-						for _, attribute := range event.Attributes {
-							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
-								used = append(used, attribute)
-								seen[attribute] = true
+						for _, name := range event.Attributes {
+							if _, seen := results[name]; seen {
+								continue
+							}
+
+							if attr, exists := md.Attributes[name]; exists && attr.Optional {
+								results[name] = attr
+							}
+						}
+
+						for name, override := range event.AttributeOverrides {
+							if _, seen := results[name]; seen {
+								continue
+							}
+
+							if attr, exists := md.Attributes[name]; exists && override.Optional {
+								attr.Optional = true
+								results[name] = attr
 							}
 						}
 					}
-					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
-
-					return used
+					return results
 				},
-				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
-					seen := make(map[AttributeName]bool)
-					used := make([]AttributeName, 0)
+				"getMetricOptionalAttributes": func() map[AttributeName]Attribute {
+					results := make(map[AttributeName]Attribute)
 
-					for _, event := range md.Metrics {
-						for _, attribute := range event.Attributes {
-							v, exists := attrs[attribute]
-							if exists && v.Optional && !seen[attribute] {
-								used = append(used, attribute)
-								seen[attribute] = true
+					for _, metric := range md.Metrics {
+						for _, name := range metric.Attributes {
+							if _, seen := results[name]; seen {
+								continue
+							}
+
+							if attr, exists := md.Attributes[name]; exists && attr.Optional {
+								results[name] = attr
+							}
+						}
+
+						for name, override := range metric.AttributeOverrides {
+							if _, seen := results[name]; seen {
+								continue
+							}
+
+							if attr, exists := md.Attributes[name]; exists && override.Optional {
+								attr.Optional = true
+								results[name] = attr
 							}
 						}
 					}
-					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
-
-					return used
+					return results
+				},
+				"pairAttribute": func(name AttributeName, attr Attribute) struct {
+					Name AttributeName
+					Attr Attribute
+				} {
+					return struct {
+						Name AttributeName
+						Attr Attribute
+					}{
+						Name: name,
+						Attr: attr,
+					}
 				},
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]

@@ -197,6 +197,16 @@ func TestRunContents(t *testing.T) {
 			wantComponentTestGenerated: true,
 		},
 		{
+			yml:                        "with_attribute_override.yaml",
+			wantConfigGenerated:        true,
+			wantMetricsGenerated:       true,
+			wantEventsGenerated:        true,
+			wantLogsGenerated:          true,
+			wantReadmeGenerated:        true,
+			wantStatusGenerated:        true,
+			wantComponentTestGenerated: true,
+		},
+		{
 			yml:                        "events/basic_event.yaml",
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,

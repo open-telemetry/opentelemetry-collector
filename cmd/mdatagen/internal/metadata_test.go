@@ -55,7 +55,7 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:    "testdata/invalid_stability.yaml",
-			wantErr: "decoding failed due to the following error(s):\n\n'status.stability' unsupported stability level: \"incorrectstability\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'' decoding failed due to the following error(s):\n\n'status.stability' unsupported stability level: \"incorrectstability\"",
 		},
 		{
 			name:    "testdata/no_stability_component.yaml",
@@ -104,7 +104,15 @@ func TestValidate(t *testing.T) {
 			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
 		},
 		{
+			name:    "testdata/unknown_metric_attribute_override.yaml",
+			wantErr: "metric \"system.cpu.time\" refers to undefined attributes: [missing]",
+		},
+		{
 			name:    "testdata/events/unknown_attribute.yaml",
+			wantErr: "event \"system.event\" refers to undefined attributes: [missing]",
+		},
+		{
+			name:    "testdata/events/unknown_attribute_override.yaml",
 			wantErr: "event \"system.event\" refers to undefined attributes: [missing]",
 		},
 		{

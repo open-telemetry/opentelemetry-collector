@@ -25,7 +25,7 @@
 | Name | Description | Values | Optional |
 | ---- | ----------- | ------ | -------- |
 {{- range $metric.Attributes }}
-{{- $attribute := . | attributeInfo }}
+{{- $attribute := . | $metric.AttributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Optional }} |
 {{- end }}
@@ -52,12 +52,12 @@
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
 {{- range $event.Attributes }}
-{{- $attribute := . | attributeInfo }}
+{{- $attribute := . | $event.AttributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Optional }} |
 {{- end }}
 
 {{- end }}
@@ -90,7 +90,7 @@
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 {{- range $metric.Attributes }}
-{{- $attribute := . | attributeInfo }}
+{{- $attribute := . | $metric.AttributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
 {{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
 {{- end }}

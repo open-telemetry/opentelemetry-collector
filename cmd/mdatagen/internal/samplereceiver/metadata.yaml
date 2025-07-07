@@ -116,6 +116,16 @@ attributes:
     type: string
     optional: true
 
+  required_attr_to_be_optional:
+    description: An required string attribute will be optional in the metric and event levels.
+    type: string
+    optional: false
+
+  optional_attr_to_be_required:
+    description: An optional string attribute will be required in the metric and event levels.
+    type: string
+    optional: true
+
 events:
   default.event:
     enabled: true
@@ -150,7 +160,12 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr, optional_int_attr, optional_string_attr]
+    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr, optional_int_attr, optional_string_attr, required_attr_to_be_optional, optional_attr_to_be_required]
+    xattributes:
+      required_attr_to_be_optional:
+        optional: true
+      optional_attr_to_be_required:
+        optional: false
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
@@ -160,7 +175,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2, optional_string_attr]
+    attributes: [string_attr, boolean_attr, boolean_attr2, optional_string_attr, required_attr_to_be_optional, optional_attr_to_be_required]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 
