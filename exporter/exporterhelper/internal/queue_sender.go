@@ -34,8 +34,6 @@ func NewDefaultQueueConfig() queuebatch.Config {
 		// This default is probably still too high, and may be adjusted further down in a future release
 		QueueSize:       1_000,
 		BlockOnOverflow: false,
-		StorageID:       nil,
-		Batch:           nil,
 	}
 }
 

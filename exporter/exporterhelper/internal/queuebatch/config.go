@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -31,10 +32,9 @@ type Config struct {
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
 	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
 
-	// StorageID if not empty, enables the persistent storage and uses the component specified
+	// StorageID, if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
-	// TODO: This will be changed to Optional when available.
-	StorageID *component.ID `mapstructure:"storage"`
+	StorageID configoptional.Optional[component.ID] `mapstructure:"storage"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
@@ -43,8 +43,7 @@ type Config struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
-	// TODO: This will be changed to Optional when available.
-	Batch *BatchConfig `mapstructure:"batch"`
+	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
 }
 
 // Validate checks if the Config is valid
@@ -62,18 +61,18 @@ func (cfg *Config) Validate() error {
 	}
 
 	// Only support request sizer for persistent queue at this moment.
-	if cfg.StorageID != nil && cfg.WaitForResult {
+	if cfg.StorageID.HasValue() && cfg.WaitForResult {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	if cfg.Batch != nil {
+	if cfg.Batch.HasValue() {
 		// Only support items or bytes sizer for batch at this moment.
 		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
 			return errors.New("`batch` supports only `items` or `bytes` sizer")
 		}
 
 		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.MinSize > cfg.QueueSize {
+		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
 		}
 	}
