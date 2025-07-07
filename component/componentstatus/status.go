@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Reporter is an extra interface for `component.Host` implementations.
@@ -84,8 +85,9 @@ func (s Status) String() string {
 
 // Event contains a status and timestamp, and can contain an error
 type Event struct {
-	status Status
-	err    error
+	attributes attribute.Set
+	status     Status
+	err        error
 	// TODO: consider if a timestamp is necessary in the default Event struct or is needed only for the healthcheckv2 extension
 	// https://github.com/open-telemetry/opentelemetry-collector/issues/10763
 	timestamp time.Time
@@ -101,6 +103,11 @@ func (ev *Event) Err() error {
 	return ev.err
 }
 
+// Attributes returns the attributes associated with the Event.
+func (ev *Event) Attributes() attribute.Set {
+	return ev.attributes
+}
+
 // Timestamp returns the timestamp associated with the Event
 func (ev *Event) Timestamp() time.Time {
 	return ev.timestamp
@@ -111,8 +118,21 @@ func (ev *Event) Timestamp() time.Time {
 // constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
 func NewEvent(status Status) *Event {
 	return &Event{
-		status:    status,
-		timestamp: time.Now(),
+		attributes: *attribute.EmptySet(),
+		status:     status,
+		timestamp:  time.Now(),
+	}
+}
+
+// NewEvent creates and returns a Event with the specified status and
+// attributes, and sets the timestamp time.Now().
+// To set an error on the event for an error status use one of the dedicated
+// constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
+func NewEventWithAttributesSet(status Status, attributes attribute.Set) *Event {
+	return &Event{
+		attributes: attributes,
+		status:     status,
+		timestamp:  time.Now(),
 	}
 }
 

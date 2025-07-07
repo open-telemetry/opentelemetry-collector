@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 func TestNewStatusEvent(t *testing.T) {
@@ -29,6 +30,15 @@ func TestNewStatusEvent(t *testing.T) {
 			require.Equal(t, status, ev.Status())
 			require.NoError(t, ev.Err())
 			require.False(t, ev.Timestamp().IsZero())
+			require.Equal(t, *attribute.EmptySet(), ev.Attributes())
+		})
+		t.Run(fmt.Sprintf("%s without error and attributes set", status), func(t *testing.T) {
+			attrSet := attribute.NewSet(attribute.String("test", "a"))
+			ev := NewEventWithAttributesSet(status, attrSet)
+			require.Equal(t, status, ev.Status())
+			require.NoError(t, ev.Err())
+			require.False(t, ev.Timestamp().IsZero())
+			require.Equal(t, attrSet, ev.Attributes())
 		})
 	}
 }
