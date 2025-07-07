@@ -45,18 +45,23 @@ Before the release, make sure there are no open release blockers in [core](https
    - If the PR needs updated in any way you can make the changes in a fork and PR those changes into the `prepare-release-prs/x` branch. You do not need to wait for the CI to pass in this prep-to-prep PR.
    -  🛑 **Do not move forward until this PR is merged.** 🛑
 
-4. Manually run the action [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml). This action will create a new branch (for a new release, e.g. `v0.127.0`). Bugfix releases are currently out of scope for this action/script.
-   - Make sure to specify `v0.BETA.x` release-series argument (e.g. `v0.127.x`).
-   - If the above does not work, the underlying script (./.github/workflows/scripts/release-branch.sh) can be tested and run locally passing appropriate variables and arguments for upstream name, release series, etc.
-
-5. On your local machine, make sure have pulled `release/<release-series>` that was created on upstream in step 4. Tag the module groups with the new release version by running:
+4. On your local machine, make sure you are on the `main` branch and that the PR from step 3 is incorporated **at the head of your branch** (this is required to ensure the proper commit is used for the release tags and branch creation below). Tag the module groups with the new release version by running:
 
    ⚠️ If you set your remote using `https` you need to include `REMOTE=https://github.com/open-telemetry/opentelemetry-collector.git` in each command. ⚠️
 
    - `make push-tags MODSET=beta` for the beta modules group,
    - `make push-tags MODSET=stable` for the stable modules group, only if there were changes since the last release.
    
-6. Wait for the new tag build to pass successfully.
+   **Note**: Pushing the **beta** tags will automatically trigger the [Automation - Release Branch](https://github.com/open-telemetry/opentelemetry-collector/actions/workflows/release-branch.yml) GitHub Action, which will create the release branch (e.g. `release/v0.127.x`) from the commit that prepared the release. Pushing stable tags, if required, will not trigger creation of an additional release branch.
+
+5. Wait for the "Automation - Release Branch" workflow to complete successfully. This workflow will automatically:
+   - Detect the version from the pushed beta tags
+   - Use the commit on which the tags were pushed as the "prepare release" commit
+   - Create a new release branch (e.g. `release/v0.127.x`) from that commit
+   
+   If the workflow fails, you can check the [Actions tab](https://github.com/open-telemetry/opentelemetry-collector/actions) for details. The underlying script (./.github/workflows/scripts/release-branch.sh) can also be tested and run locally if needed by setting the GITHUB_REF environment variable (e.g., `GITHUB_REF=refs/tags/v0.85.0 ./.github/workflows/scripts/release-branch.sh`).
+   
+6. Wait for the tag-triggered build workflows to pass successfully.
 
 7. A new `v0.85.0` source code release should be automatically created on Github by now. Its description should already contain the corresponding CHANGELOG.md and CHANGELOG-API.md contents.
 
@@ -82,9 +87,9 @@ Before the release, make sure there are no open release blockers in [core](https
 
    - `make push-tags MODSET=contrib-base`
 
-4. Wait for the new tag build to pass successfully.
+4. Wait for the new tag build to pass successfully. A new `v0.85.0` release should be automatically created on Github by now, with the description containing the changelog for the new release.
 
-5. A new `v0.85.0` release should be automatically created on Github by now. Edit it and use the contents from the CHANGELOG.md as the release's description. At the top of the release notes add a section listing the unmaintained components ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)).
+5. Manually edit the release description, and add a section listing the unmaintained components at the top ([example](https://github.com/open-telemetry/opentelemetry-collector-contrib/releases/tag/v0.114.0)). The list of unmaintained components can be found by [searching for issues with the "unmaintained" label](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aissue%20state%3Aopen%20label%3Aunmaintained).
 
 ## Producing the artifacts
 
@@ -132,7 +137,16 @@ releases and add new schedules to the bottom of the list.
 ## Troubleshooting
 
 1. `unknown revision internal/coreinternal/v0.85.0` -- This is typically an indication that there's a dependency on a new module. You can fix it by adding a new `replaces` entry to the `go.mod` for the affected module.
-2. `commitChangesToNewBranch failed: invalid merge` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling. The current workaround is to clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
+2. `unable to tag modules: unable to load repo config: branch config: invalid merge` when running `make push-tags` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/47) with our release tooling, caused by a bug in `go-git`.
+
+    It occurs if you have branches in your local repository whose entry in `.git/config` has a `merge` attribute not starting with `refs/heads`. This can typically happen when checking out PR branches using the Github CLI tool, for which the `merge` attribute starts with `refs/pull`.
+
+    A possible workaround is to:
+    - Comment out the problematic lines with `sed -E -i.bak 's/(merge = refs\/pull)/#\1/' .git/config`;
+    - Try `make push-tags` again;
+    - Restore the config with `mv .git/config.bak .git/config`.
+
+    If that doesn't work, you can clone a fresh copy of the repository and try again. Note that you may need to set up a `fork` remote pointing to your own fork for the release tooling to work properly.
 3. `could not run Go Mod Tidy: go mod tidy failed` when running `multimod` -- This is a [known issue](https://github.com/open-telemetry/opentelemetry-go-build-tools/issues/46) with our release tooling. The current workaround is to run `make gotidy` manually after the multimod tool fails and commit the result.
 4. `Incorrect version "X" of "go.opentelemetry.io/collector/component" is included in "X"` in CI after `make update-otel` -- It could be because the make target was run too soon after updating Core and the goproxy hasn't updated yet.  Try running `export GOPROXY=direct` and then `make update-otel`.
 5. `error: failed to push some refs to 'https://github.com/open-telemetry/opentelemetry-collector-contrib.git'` during `make push-tags` -- If you encounter this error the `make push-tags` target will terminate without pushing all the tags. Using the output of the `make push-tags` target, save all the un-pushed the tags in `tags.txt` and then use this make target to complete the push:
@@ -156,8 +170,6 @@ releases and add new schedules to the bottom of the list.
    fix and re-run the release; it is safe to re-run the workflows that already
    succeeded. Publishing container images can be done multiple times, and
    publishing artifacts to GitHub will fail without any adverse effects.
-
-8. `unable to tag modules: unable to load repo config: branch config: invalid merge` when running `make push-tags` -- this is likely a bug with go-git. The current work-around is to clone the repository again and push the tags from the fresh clone.  
 
 ## Bugfix releases
 
@@ -214,8 +226,6 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-06-09 | v0.128.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
-| 2025-06-30 | v0.129.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
 | 2025-07-14 | v0.130.0 | [@jmacd](https://github.com/jmacd)                   |
 | 2025-07-28 | v0.131.0 | [@mx-psi](https://github.com/mx-psi)                 |
 | 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
@@ -223,4 +233,7 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |
 | 2025-09-22 | v0.135.0 | [@songy23](https://github.com/songy23)               |
 | 2025-10-06 | v0.136.0 | [@dmitryax](https://github.com/dmitryax)             |
-| 2025-10-13 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |
+| 2025-10-20 | v0.137.0 | [@codeboten](https://github.com/codeboten)           |
+| 2025-11-03 | v0.138.0 | [@bogdandrutu](https://github.com/bogdandrutu)       |
+| 2025-11-17 | v0.139.0 | [@jade-guiton-dd](https://github.com/jade-guiton-dd) |
+| 2025-12-01 | v0.140.0 | [@dmathieu](https://github.com/dmathieu)             |

@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.34.0
+	go.opentelemetry.io/collector/pdata v1.35.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.73.0
 )
