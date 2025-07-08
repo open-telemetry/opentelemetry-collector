@@ -61,7 +61,7 @@ func AssertEqualReceiverAcceptedSpans(t *testing.T, tt *componenttest.Telemetry,
 
 func AssertEqualReceiverDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_receiver_duration_seconds",
+		Name:        "otelcol_receiver_duration",
 		Description: "Duration of time taken to process a batch of telemetry data through the receiver. [alpha]",
 		Unit:        "s",
 		Data: metricdata.Histogram[float64]{
@@ -69,7 +69,7 @@ func AssertEqualReceiverDuration(t *testing.T, tt *componenttest.Telemetry, dps 
 			DataPoints:  dps,
 		},
 	}
-	got, err := tt.GetMetric("otelcol_receiver_duration_seconds")
+	got, err := tt.GetMetric("otelcol_receiver_duration")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }

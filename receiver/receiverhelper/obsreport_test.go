@@ -448,9 +448,9 @@ func TestReceiverDurationMetricWithoutStartTimeForMetrics(t *testing.T) {
 	// Verify that no duration metric was recorded
 	// Since the metric is not recorded when there's no start time, we expect an error
 	// when trying to get the metric
-	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	_, err = tt.GetMetric("otelcol_receiver_duration")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration' not found")
 }
 
 func TestReceiverDurationMetricWithStartTimeForTraces(t *testing.T) {
@@ -501,9 +501,9 @@ func TestReceiverDurationMetricWithoutStartTimeForTraces(t *testing.T) {
 	rec.EndTracesOp(ctx, format, 7, nil)
 
 	// Verify that no duration metric was recorded
-	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	_, err = tt.GetMetric("otelcol_receiver_duration")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration' not found")
 }
 func TestReceiverDurationMetricWithStartTimeForLogs(t *testing.T) {
 	tt := componenttest.NewTelemetry()
@@ -553,7 +553,7 @@ func TestReceiverDurationMetricWithoutStartTimeForLogs(t *testing.T) {
 	rec.EndLogsOp(ctx, format, 7, nil)
 
 	// Verify that no duration metric was recorded
-	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	_, err = tt.GetMetric("otelcol_receiver_duration")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration' not found")
 }
