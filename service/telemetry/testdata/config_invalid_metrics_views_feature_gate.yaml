@@ -1,0 +1,5 @@
+metrics:
+  level: detailed
+  views:
+    - selector: {}
+      stream: {}
