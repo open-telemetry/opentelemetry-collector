@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.opentelemetry.io/otel/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -328,14 +327,6 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	srv.telemetrySettings.Logger.Debug("debug_message")
 	assert.Equal(t, 1, observedLogs.FilterMessage("warn_message").Len())
 	assert.Equal(t, 0, observedLogs.FilterMessage("info_message").Len())
-	assert.False(t, srv.loggerProvider.Logger("test").Enabled(
-		context.Background(),
-		log.EnabledParameters{Severity: log.SeverityInfo},
-	))
-	assert.True(t, srv.loggerProvider.Logger("test").Enabled(
-		context.Background(),
-		log.EnabledParameters{Severity: log.SeverityWarn},
-	))
 	require.Len(t, received, 1)
 	assert.Equal(t,
 		"warn_message",

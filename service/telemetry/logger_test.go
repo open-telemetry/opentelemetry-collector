@@ -289,35 +289,6 @@ func TestLoggerProvider(t *testing.T) {
 	require.Equal(t, totalLogs, receivedLogs)
 }
 
-func TestLoggerProviderLevel(t *testing.T) {
-	minLevel := zapcore.DebugLevel
-	maxLevel := zapcore.FatalLevel
-
-	for i := minLevel - 1; i <= maxLevel; i++ {
-		t.Run(i.String(), func(t *testing.T) {
-			lp := newOTLPLoggerProvider(t, i, func(http.ResponseWriter, *http.Request) {})
-			logger := lp.Logger("name")
-
-			// All levels will permit fatal logs.
-			assert.True(t, logger.Enabled(context.Background(), log.EnabledParameters{
-				Severity: log.SeverityFatal4,
-			}))
-
-			switch i {
-			// undefined level permits everything
-			case minLevel - 1, zapcore.DebugLevel:
-				assert.True(t, logger.Enabled(context.Background(), log.EnabledParameters{
-					Severity: log.SeverityDebug,
-				}))
-			default:
-				assert.False(t, logger.Enabled(context.Background(), log.EnabledParameters{
-					Severity: log.SeverityDebug,
-				}))
-			}
-		})
-	}
-}
-
 func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.HandlerFunc) log.LoggerProvider {
 	srv := createBackend("/v1/logs", handler)
 	t.Cleanup(srv.Close)

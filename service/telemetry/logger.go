@@ -4,8 +4,6 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/log/noop"
 	"go.uber.org/zap"
@@ -68,13 +66,7 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	var lp log.LoggerProvider
 	if set.SDK != nil {
-		// Make sure the returned LoggerProvider filters logs based on
-		// the configured zap logger level. Otherwise the tee core that
-		// the service package creates will increase the level.
-		lp = &minsevLoggerProvider{
-			LoggerProvider: set.SDK.LoggerProvider(),
-			severity:       convertLevel(logger.Level()),
-		}
+		lp = set.SDK.LoggerProvider()
 	} else {
 		lp = noop.NewLoggerProvider()
 	}
@@ -90,52 +82,4 @@ func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
 		sc.Initial,
 		sc.Thereafter,
 	)
-}
-
-// minsevLoggerProvider wraps a LoggerProvider, and filters logs based on the
-// configured zap logger level. Ideally we would use the opentelemetry-go-contrib
-// minsev processor, but it is not currently possible to pass in processors when
-// constructing a LoggerProvider via otelconf.
-type minsevLoggerProvider struct {
-	log.LoggerProvider
-	severity log.Severity
-}
-
-func (p *minsevLoggerProvider) Logger(name string, options ...log.LoggerOption) log.Logger {
-	logger := p.LoggerProvider.Logger(name, options...)
-	return &minsevLogger{Logger: logger, severity: p.severity}
-}
-
-type minsevLogger struct {
-	log.Logger
-	severity log.Severity
-}
-
-func (l *minsevLogger) Enabled(ctx context.Context, param log.EnabledParameters) bool {
-	if param.Severity < l.severity {
-		return false
-	}
-	return l.Logger.Enabled(ctx, param)
-}
-
-// Copied from otelzap
-func convertLevel(level zapcore.Level) log.Severity {
-	switch level {
-	case zapcore.DebugLevel:
-		return log.SeverityDebug
-	case zapcore.InfoLevel:
-		return log.SeverityInfo
-	case zapcore.WarnLevel:
-		return log.SeverityWarn
-	case zapcore.ErrorLevel:
-		return log.SeverityError
-	case zapcore.DPanicLevel:
-		return log.SeverityFatal1
-	case zapcore.PanicLevel:
-		return log.SeverityFatal2
-	case zapcore.FatalLevel:
-		return log.SeverityFatal3
-	default:
-		return log.SeverityUndefined
-	}
 }
