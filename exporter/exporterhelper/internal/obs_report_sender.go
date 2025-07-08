@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -40,13 +41,14 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName         string
+	tracer           trace.Tracer
+	spanAttrs        trace.SpanStartEventOption
+	metricAttr       metric.MeasurementOption
+	telemetryBuilder *metadata.TelemetryBuilder
+	itemsSentInst    metric.Int64Counter
+	itemsFailedInst  metric.Int64Counter
+	next             sender.Sender[K]
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -59,11 +61,12 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:     metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:       next,
+		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:           metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		telemetryBuilder: telemetryBuilder,
+		next:             next,
 	}
 
 	switch signal {
@@ -84,9 +87,14 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 }
 
 func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
+	start := time.Now()
 	// Have to read the number of items before sending the request since the request can
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
+	defer func() {
+		ors.telemetryBuilder.ExporterDuration.Record(c, time.Since(start).Seconds(), ors.metricAttr)
+	}()
+
 	items := req.ItemsCount()
 	// Forward the data to the next consumer (this pusher is the next).
 	err := ors.next.Send(c, req)

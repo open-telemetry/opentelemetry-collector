@@ -93,3 +93,11 @@ Number of spans successfully sent to destination. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
+
+### otelcol_exporter_duration_seconds
+
+Duration of the export operation. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |

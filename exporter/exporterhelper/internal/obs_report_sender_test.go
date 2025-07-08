@@ -235,6 +235,27 @@ func TestExportLogsOp(t *testing.T) {
 	}
 }
 
+func TestExportDurationMetric(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	obsrep, err := newObsReportSender(
+		exporter.Settings{ID: exporterID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+		pipeline.SignalTraces,
+		sender.NewSender(func(context.Context, request.Request) error { return nil }),
+	)
+	require.NoError(t, err)
+
+	// Send a request to trigger duration measurement
+	err = obsrep.Send(context.Background(), &requesttest.FakeRequest{Items: 5})
+	require.NoError(t, err)
+
+	// Verify that duration metric was recorded by checking if the metric exists
+	// The exact value is hard to test since it's very small, but we can verify the metric is recorded
+	_, err = tt.GetMetric("otelcol_exporter_duration_seconds")
+	require.NoError(t, err, "Duration metric should be recorded")
+}
+
 type testParams struct {
 	items int
 	err   error
