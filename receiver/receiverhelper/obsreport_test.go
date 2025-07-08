@@ -505,6 +505,7 @@ func TestReceiverDurationMetricWithoutStartTimeForTraces(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration' not found")
 }
+
 func TestReceiverDurationMetricWithStartTimeForLogs(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })

@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
 
-
 // This context key is needed because Go's context package requires unique types as keys to avoid collisions
 // between different packages that might use the same string key. Using an empty struct type ensures
 // type safety and prevents accidental key conflicts.
