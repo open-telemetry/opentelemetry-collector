@@ -252,7 +252,7 @@ func TestExportDurationMetric(t *testing.T) {
 
 	// Verify that duration metric was recorded by checking if the metric exists
 	// The exact value is hard to test since it's very small, but we can verify the metric is recorded
-	_, err = tt.GetMetric("otelcol_exporter_duration_seconds")
+	_, err = tt.GetMetric("otelcol_exporter_duration")
 	require.NoError(t, err, "Duration metric should be recorded")
 }
 

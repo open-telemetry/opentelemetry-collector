@@ -44,7 +44,7 @@ type obsReportSender[K request.Request] struct {
 	spanName         string
 	tracer           trace.Tracer
 	spanAttrs        trace.SpanStartEventOption
-	metricAttr       metric.MeasurementOption
+	metricAttrs      metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 	itemsSentInst    metric.Int64Counter
 	itemsFailedInst  metric.Int64Counter
@@ -64,7 +64,7 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
 		tracer:           metadata.Tracer(set.TelemetrySettings),
 		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		metricAttrs:      metric.WithAttributeSet(attribute.NewSet(expAttr)),
 		telemetryBuilder: telemetryBuilder,
 		next:             next,
 	}
@@ -92,7 +92,7 @@ func (ors *obsReportSender[K]) Send(ctx context.Context, req K) error {
 	// be modified by the downstream components like the batcher.
 	c := ors.startOp(ctx)
 	defer func() {
-		ors.telemetryBuilder.ExporterDuration.Record(c, time.Since(start).Seconds(), ors.metricAttr)
+		ors.telemetryBuilder.ExporterDuration.Record(c, time.Since(start).Seconds(), ors.metricAttrs)
 	}()
 
 	items := req.ItemsCount()
@@ -118,11 +118,11 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 
 	// No metrics recorded for profiles.
 	if ors.itemsSentInst != nil {
-		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttr)
+		ors.itemsSentInst.Add(ctx, numSent, ors.metricAttrs)
 	}
 	// No metrics recorded for profiles.
 	if ors.itemsFailedInst != nil {
-		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttr)
+		ors.itemsFailedInst.Add(ctx, numFailedToSend, ors.metricAttrs)
 	}
 
 	span := trace.SpanFromContext(ctx)
