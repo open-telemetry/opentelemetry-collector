@@ -75,20 +75,38 @@ func NewRetryableError(origErr error) error {
 }
 
 // Error implements the error interface.
+//
+// If an error object was given, that is used.
+// Otherwise, the gRPC error from the status.Status is used,
+// or an error message containing the HTTP status code is given.
 func (e *Error) Error() string {
 	if e.error != nil {
 		return e.error.Error()
 	}
 
 	if e.grpcStatus != nil {
-		return fmt.Sprintf("received gRPC status %q", e.grpcStatus.Code())
+		return e.grpcStatus.Err().Error()
+	} else if e.httpStatus > 0 {
+		return fmt.Sprintf("network error: received HTTP status %d", e.httpStatus)
 	}
-	return fmt.Sprintf("received HTTP status %d", e.httpStatus)
+
+	return "uninitialized consumererror.Error"
 }
 
 // Unwrap returns the wrapped error for use by `errors.Is` and `errors.As`.
+//
+// If an error object was not passed but a gRPC `status.Status` was passed,
+// the underlying error from the status is returned.
 func (e *Error) Unwrap() error {
-	return e.error
+	if e.error != nil {
+		return e.error
+	}
+
+	if e.grpcStatus != nil {
+		return e.grpcStatus.Err()
+	}
+
+	return nil
 }
 
 // IsRetryable returns true if the error was created with NewRetryableError, if

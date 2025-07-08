@@ -59,13 +59,39 @@ func Test_Error(t *testing.T) {
 }
 
 func TestUnwrap(t *testing.T) {
-	err := &Error{
-		error: errTest,
+	grpcErr := status.New(codes.InvalidArgument, "not allowed")
+	testCases := []struct {
+		name     string
+		err      *Error
+		expected error
+	}{
+		{
+			name: "Error object",
+			err: &Error{
+				error:      errTest,
+				grpcStatus: grpcErr,
+			},
+			expected: errTest,
+		},
+		{
+			name: "gRPC error",
+			err: &Error{
+				grpcStatus: grpcErr,
+			},
+			expected: grpcErr.Err(),
+		},
+		{
+			name:     "zero value struct",
+			err:      &Error{},
+			expected: nil,
+		},
 	}
 
-	unwrapped := err.Unwrap()
-
-	require.Equal(t, errTest, unwrapped)
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.err.Unwrap())
+		})
+	}
 }
 
 func TestAs(t *testing.T) {
@@ -81,11 +107,46 @@ func TestAs(t *testing.T) {
 }
 
 func TestError_Error(t *testing.T) {
-	err := &Error{
-		error: errTest,
+	testCases := []struct {
+		name     string
+		err      *Error
+		expected string
+	}{
+		{
+			name: "Error object",
+			err: &Error{
+				error:      errTest,
+				grpcStatus: status.New(codes.InvalidArgument, "not allowed"),
+				httpStatus: 400,
+			},
+			expected: errTest.Error(),
+		},
+		{
+			name: "gRPC error",
+			err: &Error{
+				grpcStatus: status.New(codes.InvalidArgument, "not allowed"),
+			},
+			expected: "rpc error: code = InvalidArgument desc = not allowed",
+		},
+		{
+			name: "HTTP error",
+			err: &Error{
+				httpStatus: 400,
+			},
+			expected: "network error: received HTTP status 400",
+		},
+		{
+			name:     "zero value struct",
+			err:      &Error{},
+			expected: "uninitialized consumererror.Error",
+		},
 	}
 
-	require.Equal(t, errTest.Error(), err.Error())
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.expected, tt.err.Error())
+		})
+	}
 }
 
 func TestError_Unwrap(t *testing.T) {
