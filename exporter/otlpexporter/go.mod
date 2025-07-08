@@ -132,8 +132,6 @@ replace go.opentelemetry.io/collector/client => ../../client
 
 replace go.opentelemetry.io/collector/config/configretry => ../../config/configretry
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
@@ -176,5 +174,9 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata

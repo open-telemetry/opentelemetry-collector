@@ -84,6 +84,8 @@ replace go.opentelemetry.io/collector/config/configtls => ../configtls
 
 replace go.opentelemetry.io/collector/extension => ../../extension
 
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
 replace go.opentelemetry.io/collector/extension/extensionauth => ../../extension/extensionauth
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware

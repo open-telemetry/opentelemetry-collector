@@ -204,8 +204,6 @@ replace go.opentelemetry.io/collector/config/configcompression => ../config/conf
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../client

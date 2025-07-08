@@ -78,3 +78,23 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extensionmiddleware
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer => ../../consumer
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest

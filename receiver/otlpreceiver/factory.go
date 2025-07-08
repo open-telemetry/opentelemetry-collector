@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/receiver/xreceiver"
+	"go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/consumerlimiter"
 )
 
 const (
@@ -29,13 +30,18 @@ const (
 
 // NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
-	return xreceiver.NewFactory(
-		metadata.Type,
-		createDefaultConfig,
-		xreceiver.WithTraces(createTraces, metadata.TracesStability),
-		xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
-		xreceiver.WithLogs(createLog, metadata.LogsStability),
-		xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
+	return consumerlimiter.NewLimitedFactory(
+		xreceiver.NewFactory(
+			metadata.Type,
+			createDefaultConfig,
+			xreceiver.WithTraces(createTraces, metadata.TracesStability),
+			xreceiver.WithMetrics(createMetrics, metadata.MetricsStability),
+			xreceiver.WithLogs(createLog, metadata.LogsStability),
+			xreceiver.WithProfiles(createProfiles, metadata.ProfilesStability),
+		),
+		func(cfg component.Config) consumerlimiter.Config {
+			return cfg.(*Config).Limiter
+		},
 	)
 }
 

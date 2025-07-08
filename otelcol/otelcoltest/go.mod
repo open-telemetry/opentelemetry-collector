@@ -162,8 +162,6 @@ replace go.opentelemetry.io/collector/extension => ../../extension
 
 replace go.opentelemetry.io/collector/exporter => ../../exporter
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

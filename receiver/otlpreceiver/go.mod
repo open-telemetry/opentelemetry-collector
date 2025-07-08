@@ -87,6 +87,7 @@ require (
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
@@ -132,8 +133,6 @@ replace go.opentelemetry.io/collector/consumer => ../../consumer
 
 replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../../client
@@ -166,3 +165,7 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter

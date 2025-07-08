@@ -11,9 +11,13 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.uber.org/multierr"
 	"google.golang.org/grpc"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionlimiter"
+	grpclimiter "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/grpc"
+	httplimiter "go.opentelemetry.io/collector/extension/extensionlimiter/limiterhelper/http"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
 )
 
@@ -26,11 +30,17 @@ var (
 )
 
 // Middleware defines the extension ID for a middleware component.
-type Config struct {
-	// ID specifies the name of the extension to use.
-	ID component.ID `mapstructure:"id,omitempty"`
-	// prevent unkeyed literal initialization
-	_ struct{}
+type Config component.ID
+
+func (cfg *Config) UnmarshalText(in []byte) error {
+	var id component.ID
+	err := id.UnmarshalText(in)
+	*cfg = Config(id)
+	return err
+}
+
+func resolveFailed(id component.ID) error {
+	return fmt.Errorf("failed to resolve middleware %q: %w", id, errMiddlewareNotFound)
 }
 
 // GetHTTPClientRoundTripper attempts to select the appropriate
@@ -39,13 +49,20 @@ type Config struct {
 // found, an error is returned.  This should only be used by HTTP
 // clients.
 func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[component.ID]component.Component) (func(http.RoundTripper) (http.RoundTripper, error), error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if client, ok := ext.(extensionmiddleware.HTTPClient); ok {
 			return client.GetHTTPRoundTripper, nil
 		}
+		if limiter, ok := ext.(extensionlimiter.AnyProvider); ok {
+			limiter, err := httplimiter.NewClientLimiter(limiter)
+			if err != nil {
+				return nil, err
+			}
+			return limiter.GetHTTPRoundTripper, nil
+		}
 		return nil, errNotHTTPClient
 	}
-	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetHTTPServerHandler attempts to select the appropriate
@@ -54,14 +71,21 @@ func (m Config) GetHTTPClientRoundTripper(_ context.Context, extensions map[comp
 // found, an error is returned.  This should only be used by HTTP
 // servers.
 func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component.ID]component.Component) (func(http.Handler) (http.Handler, error), error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if server, ok := ext.(extensionmiddleware.HTTPServer); ok {
 			return server.GetHTTPHandler, nil
+		}
+		if limiter, ok := ext.(extensionlimiter.AnyProvider); ok {
+			limiter, err := httplimiter.NewServerLimiter(limiter)
+			if err != nil {
+				return nil, err
+			}
+			return limiter.GetHTTPHandler, nil
 		}
 		return nil, errNotHTTPServer
 	}
 
-	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetGRPCClientOptions attempts to select the appropriate
@@ -69,13 +93,20 @@ func (m Config) GetHTTPServerHandler(_ context.Context, extensions map[component
 // returns the gRPC dial options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC clients.
 func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.DialOption, error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if client, ok := ext.(extensionmiddleware.GRPCClient); ok {
 			return client.GetGRPCClientOptions()
 		}
+		if limiter, ok := ext.(extensionlimiter.AnyProvider); ok {
+			lim, err := grpclimiter.NewClientLimiter(limiter)
+			if err != nil {
+				return nil, err
+			}
+			return lim.GetGRPCClientOptions()
+		}
 		return nil, errNotGRPCClient
 	}
-	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+	return nil, resolveFailed(component.ID(m))
 }
 
 // GetGRPCServerOptions attempts to select the appropriate
@@ -83,12 +114,42 @@ func (m Config) GetGRPCClientOptions(_ context.Context, extensions map[component
 // returns the gRPC server options. If a middleware is not found, an
 // error is returned.  This should only be used by gRPC servers.
 func (m Config) GetGRPCServerOptions(_ context.Context, extensions map[component.ID]component.Component) ([]grpc.ServerOption, error) {
-	if ext, found := extensions[m.ID]; found {
+	if ext, found := extensions[component.ID(m)]; found {
 		if server, ok := ext.(extensionmiddleware.GRPCServer); ok {
 			return server.GetGRPCServerOptions()
+		}
+		if limiter, ok := ext.(extensionlimiter.AnyProvider); ok {
+			lim, err := grpclimiter.NewServerLimiter(limiter)
+			if err != nil {
+				return nil, err
+			}
+			return lim.GetGRPCServerOptions()
 		}
 		return nil, errNotGRPCServer
 	}
 
-	return nil, fmt.Errorf("failed to resolve middleware %q: %w", m.ID, errMiddlewareNotFound)
+	return nil, resolveFailed(component.ID(m))
+}
+
+// GetBaseLimiters gets a list of basic limiters.  These can be
+// upgraded to any kind of limiter, subject to restrictions documented
+// in that extension interface, using limiterhelper.MiddlewaresToLimiterProvider.
+func GetBaseLimiters(host component.Host, cfgs []Config) ([]extensionlimiter.AnyProvider, error) {
+	var err error
+	var lims []extensionlimiter.AnyProvider
+	all := host.GetExtensions()
+	for _, m := range cfgs {
+		ext, ok := all[component.ID(m)]
+		if !ok {
+			err = multierr.Append(err, resolveFailed(component.ID(m)))
+			continue
+		}
+		if lim, ok := ext.(extensionlimiter.AnyProvider); ok {
+			lims = append(lims, lim)
+		} else {
+			// Note: In this case, we skip the middleware
+			// that is not a limiter.
+		}
+	}
+	return lims, err
 }

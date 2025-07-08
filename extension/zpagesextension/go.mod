@@ -35,12 +35,15 @@ require (
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
 	github.com/knadh/koanf/v2 v2.2.1 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
@@ -126,3 +129,17 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extens
 replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/configmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/pdata/pprofile => ../../pdata/pprofile
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver
+
+replace go.opentelemetry.io/collector/pdata/testdata => ../../pdata/testdata

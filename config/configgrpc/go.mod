@@ -105,3 +105,13 @@ replace go.opentelemetry.io/collector/pipeline => ../../pipeline
 replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/extension/extensionlimiter => ../../extension/extensionlimiter
+
+replace go.opentelemetry.io/collector/consumer/xconsumer => ../../consumer/xconsumer
+
+replace go.opentelemetry.io/collector/receiver/xreceiver => ../../receiver/xreceiver
+
+replace go.opentelemetry.io/collector/consumer/consumertest => ../../consumer/consumertest
+
+replace go.opentelemetry.io/collector/receiver => ../../receiver

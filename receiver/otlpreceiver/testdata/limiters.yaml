@@ -1,0 +1,12 @@
+# The following entry initializes the default OTLP receiver.
+# The full name of this receiver is `otlp` and can be referenced in pipelines by 'otlp'.
+protocols:
+  grpc:
+    middleware:
+    - one/a
+    - two
+  http:
+    middleware:
+    - three/b
+    - four
+limiter: five/c

@@ -122,9 +122,7 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 					Transport: confignet.TransportTypeTCP,
 				},
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("nonexistent"),
-					},
+					configmiddleware.Config(component.MustNewID("nonexistent")),
 				},
 			},
 			errText: "failed to resolve middleware \"nonexistent\": middleware not found",
@@ -142,9 +140,7 @@ func TestServerMiddlewareToServerErrors(t *testing.T) {
 					Transport: confignet.TransportTypeTCP,
 				},
 				Middlewares: []configmiddleware.Config{
-					{
-						ID: component.MustNewID("errormw"),
-					},
+					configmiddleware.Config(component.MustNewID("errormw")),
 				},
 			},
 			errText: "get server options failed",

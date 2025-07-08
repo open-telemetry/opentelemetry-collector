@@ -175,8 +175,6 @@ replace go.opentelemetry.io/collector/config/configtls => ../config/configtls
 
 replace go.opentelemetry.io/collector/config/configopaque => ../config/configopaque
 
-replace go.opentelemetry.io/collector/consumer/xconsumer => ../consumer/xconsumer
-
 replace go.opentelemetry.io/collector/consumer/consumertest => ../consumer/consumertest
 
 replace go.opentelemetry.io/collector/client => ../client

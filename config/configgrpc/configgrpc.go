@@ -207,7 +207,7 @@ type ServerConfig struct {
 	IncludeMetadata bool `mapstructure:"include_metadata,omitempty"`
 
 	// Middlewares for the gRPC server.
-	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
