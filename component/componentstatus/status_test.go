@@ -35,7 +35,7 @@ func TestNewStatusEvent(t *testing.T) {
 		t.Run(fmt.Sprintf("%s without error and attributes", status), func(t *testing.T) {
 			eventAttrs := pcommon.NewMap()
 			require.NoError(t, eventAttrs.FromRaw(map[string]any{"test": "a"}))
-			ev := NewEventWithAttributes(status, eventAttrs)
+			ev := NewEvent(status, WithAttributes(eventAttrs))
 			require.Equal(t, status, ev.Status())
 			require.NoError(t, ev.Err())
 			require.False(t, ev.Timestamp().IsZero())

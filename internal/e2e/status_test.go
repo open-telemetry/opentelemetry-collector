@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/service"
@@ -133,30 +134,32 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 
 		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
 
-		var expectedEvents []componentstatus.Status
+		var expectedEvents []*componentstatus.Event
 		// The StatusOk is not guaranteed to be in the slice, set it according to the number of captured states
 		assert.True(t, len(events) == 4 || len(events) == 5)
+		receiverTestAttrs := pcommon.NewMap()
+		receiverTestAttrs.PutStr("scraper", "test")
 		if len(events) == 4 {
-			expectedEvents = []componentstatus.Status{
-				componentstatus.StatusStarting,
-				componentstatus.StatusRecoverableError,
-				componentstatus.StatusStopping,
-				componentstatus.StatusStopped,
+			expectedEvents = []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusRecoverableError, componentstatus.WithAttributes(receiverTestAttrs)),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewEvent(componentstatus.StatusStopped),
 			}
 		} else {
-			expectedEvents = []componentstatus.Status{
-				componentstatus.StatusStarting,
-				componentstatus.StatusRecoverableError,
-				componentstatus.StatusOK,
-				componentstatus.StatusStopping,
-				componentstatus.StatusStopped,
+			expectedEvents = []*componentstatus.Event{
+				componentstatus.NewEvent(componentstatus.StatusStarting),
+				componentstatus.NewEvent(componentstatus.StatusRecoverableError, componentstatus.WithAttributes(receiverTestAttrs)),
+				componentstatus.NewEvent(componentstatus.StatusOK),
+				componentstatus.NewEvent(componentstatus.StatusStopping),
+				componentstatus.NewEvent(componentstatus.StatusStopped),
 			}
 		}
 
 		eventStr := ""
 		for i, e := range events {
 			eventStr += fmt.Sprintf("%v,", e.Status())
-			assert.Equal(t, expectedEvents[i], e.Status())
+			assert.Equal(t, expectedEvents[i].Status(), e.Status())
 		}
 		t.Logf("events received: %v", eventStr)
 	}
@@ -174,7 +177,14 @@ func newReceiverFactory() receiver.Factory {
 type testReceiver struct{}
 
 func (t *testReceiver) Start(_ context.Context, host component.Host) error {
-	componentstatus.ReportStatus(host, componentstatus.NewRecoverableErrorEvent(errors.New("test recoverable error")))
+	scraperAttrs := pcommon.NewMap()
+	scraperAttrs.PutStr("scraper", "test")
+	componentstatus.ReportStatus(host, componentstatus.NewEvent(
+		componentstatus.StatusRecoverableError,
+		componentstatus.WithError(errors.New("test recoverable error")),
+		componentstatus.WithAttributes(scraperAttrs),
+	))
+
 	go func() {
 		componentstatus.ReportStatus(host, componentstatus.NewEvent(componentstatus.StatusOK))
 		wg.Done()
