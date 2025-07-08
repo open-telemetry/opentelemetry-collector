@@ -83,11 +83,13 @@ func (s Status) String() string {
 	return "StatusNone"
 }
 
-// Event contains a status and timestamp, and can contain an error
+// Event contains a status, a timestamp, optional error information, and additional attributes
 type Event struct {
+	// attributes provides additional context or metadata for the event.
 	attributes pcommon.Map
-	status     Status
-	err        error
+
+	status Status
+	err    error
 	// TODO: consider if a timestamp is necessary in the default Event struct or is needed only for the healthcheckv2 extension
 	// https://github.com/open-telemetry/opentelemetry-collector/issues/10763
 	timestamp time.Time
@@ -103,7 +105,7 @@ func (ev *Event) Err() error {
 	return ev.err
 }
 
-// Attributes returns the attributes associated with the Event.
+// Attributes returns the attributes (pcommon.Map) associated with the Event.
 func (ev *Event) Attributes() pcommon.Map {
 	return ev.attributes
 }
@@ -113,7 +115,7 @@ func (ev *Event) Timestamp() time.Time {
 	return ev.timestamp
 }
 
-// NewEvent creates and returns a Event with the specified status and sets the timestamp
+// NewEvent creates and returns an Event with the specified status and sets the timestamp
 // time.Now(). To set an error on the event for an error status use one of the dedicated
 // constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
 func NewEvent(status Status) *Event {
@@ -124,8 +126,8 @@ func NewEvent(status Status) *Event {
 	}
 }
 
-// NewEvent creates and returns a Event with the specified status and
-// attributes, and sets the timestamp time.Now().
+// NewEventWithAttributes creates and returns an Event with the given status and attributes,
+// setting its timestamp to time.Now().
 // To set an error on the event for an error status use one of the dedicated
 // constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
 func NewEventWithAttributes(status Status, attributes pcommon.Map) *Event {
