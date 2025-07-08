@@ -189,7 +189,7 @@ func (r *certReloader) GetCertificate() (*tls.Certificate, error) {
 	return r.cert, nil
 }
 
-func (c Config) validate() error {
+func (c Config) Validate() error {
 	if c.hasCAFile() && c.hasCAPem() {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
@@ -226,14 +226,11 @@ func (c Config) validate() error {
 }
 
 func (c ClientConfig) Validate() error {
-	if c.Insecure && !c.hasCA() {
-		return nil
-	}
-	return c.Config.validate()
+	return c.Config.Validate()
 }
 
 func (c ServerConfig) Validate() error {
-	if err := c.Config.validate(); err != nil {
+	if err := c.Config.Validate(); err != nil {
 		return err
 	}
 	// For servers, both certificate and key are always required

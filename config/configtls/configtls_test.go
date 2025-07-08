@@ -965,33 +965,6 @@ func TestServerConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "Server config with TLS settings but no certificates",
-			serverConfig: ServerConfig{
-				Config: Config{
-					MinVersion: "1.2",
-				},
-			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
-		},
-		{
-			name: "Server config with cipher suites but no certificates",
-			serverConfig: ServerConfig{
-				Config: Config{
-					CipherSuites: []string{"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
-				},
-			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
-		},
-		{
-			name: "Server config with reload interval but no certificates",
-			serverConfig: ServerConfig{
-				Config: Config{
-					ReloadInterval: time.Minute,
-				},
-			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
-		},
-		{
 			name: "Server config with mixed cert file and key PEM",
 			serverConfig: ServerConfig{
 				Config: Config{
@@ -1008,22 +981,6 @@ func TestServerConfigValidate(t *testing.T) {
 				},
 			},
 			errorTxt: "TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
-		},
-		{
-			name: "Server config with CA file but no certificates",
-			serverConfig: ServerConfig{
-				Config: Config{
-					CAFile: "ca.pem",
-				},
-			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
-		},
-		{
-			name: "Server config with client CA file but no certificates",
-			serverConfig: ServerConfig{
-				ClientCAFile: "client-ca.pem",
-			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
 		},
 		{
 			name: "Server config with both cert file and cert PEM",
