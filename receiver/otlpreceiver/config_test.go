@@ -163,10 +163,6 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestUnmarshalConfigUnix(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
 	require.NoError(t, err)
