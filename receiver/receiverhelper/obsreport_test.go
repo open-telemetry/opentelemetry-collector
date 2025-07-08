@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -394,4 +395,165 @@ func testTelemetry(t *testing.T, testFunc func(t *testing.T, tt *componenttest.T
 	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
 
 	testFunc(t, tt)
+}
+
+func TestReceiverDurationMetricWithStartTimeForMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is recorded when context has start time
+	ctx := rec.StartMetricsOp(context.Background())
+	require.NotNil(t, ctx)
+
+	// Add a small delay to ensure measurable duration
+	time.Sleep(10 * time.Millisecond)
+
+	rec.EndMetricsOp(ctx, format, 7, nil)
+
+	// Verify that duration metric was recorded
+	// Use IgnoreValue() to ignore the exact duration value since it can vary
+	metadatatest.AssertEqualReceiverDuration(t, tt,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Count: 1,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
+}
+
+func TestReceiverDurationMetricWithoutStartTimeForMetrics(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is NOT recorded when context doesn't have start time
+	ctx := context.Background() // Context without start time
+	rec.EndMetricsOp(ctx, format, 7, nil)
+
+	// Verify that no duration metric was recorded
+	// Since the metric is not recorded when there's no start time, we expect an error
+	// when trying to get the metric
+	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
+}
+
+func TestReceiverDurationMetricWithStartTimeForTraces(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is recorded when context has start time for traces
+	ctx := rec.StartTracesOp(context.Background())
+	require.NotNil(t, ctx)
+
+	// Add a small delay to ensure measurable duration
+	time.Sleep(10 * time.Millisecond)
+
+	rec.EndTracesOp(ctx, format, 7, nil)
+
+	// Verify that duration metric was recorded
+	metadatatest.AssertEqualReceiverDuration(t, tt,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Count: 1,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
+}
+
+func TestReceiverDurationMetricWithoutStartTimeForTraces(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is NOT recorded when context doesn't have start time for traces
+	ctx := context.Background() // Context without start time
+	rec.EndTracesOp(ctx, format, 7, nil)
+
+	// Verify that no duration metric was recorded
+	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
+}
+func TestReceiverDurationMetricWithStartTimeForLogs(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is recorded when context has start time for logs
+	ctx := rec.StartLogsOp(context.Background())
+	require.NotNil(t, ctx)
+
+	// Add a small delay to ensure measurable duration
+	time.Sleep(10 * time.Millisecond)
+
+	rec.EndLogsOp(ctx, format, 7, nil)
+
+	// Verify that duration metric was recorded
+	metadatatest.AssertEqualReceiverDuration(t, tt,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ReceiverKey, receiverID.String()),
+					attribute.String(internal.TransportKey, transport)),
+				Count: 1,
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
+}
+
+func TestReceiverDurationMetricWithoutStartTimeForLogs(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	rec, err := NewObsReport(ObsReportSettings{
+		ReceiverID:             receiverID,
+		Transport:              transport,
+		ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
+	})
+	require.NoError(t, err)
+
+	// Test that duration metric is NOT recorded when context doesn't have start time for logs
+	ctx := context.Background() // Context without start time
+	rec.EndLogsOp(ctx, format, 7, nil)
+
+	// Verify that no duration metric was recorded
+	_, err = tt.GetMetric("otelcol_receiver_duration_seconds")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "metric 'otelcol_receiver_duration_seconds' not found")
 }
