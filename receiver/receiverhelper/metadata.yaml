@@ -69,7 +69,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    receiver_duration:
+    receiver_duration_seconds:
       enabled: true
       stability:
         level: alpha

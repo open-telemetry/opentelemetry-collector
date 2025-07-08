@@ -83,7 +83,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverDuration, err = builder.meter.Float64Histogram(
-		"otelcol_receiver_duration",
+		"otelcol_receiver_duration_seconds",
 		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the receiver. [alpha]"),
 		metric.WithUnit("s"),
 	)

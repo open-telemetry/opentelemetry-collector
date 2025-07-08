@@ -30,7 +30,7 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
-### otelcol_receiver_duration
+### otelcol_receiver_duration_seconds
 
 Duration of time taken to process a batch of telemetry data through the receiver. [alpha]
 
