@@ -166,10 +166,13 @@ releases and add new schedules to the bottom of the list.
 
 7. When using a new GitHub Actions workflow in opentelemetry-collector-releases
    for the first time during a release, a workflow may fail. If it is possible
-   to fix the workflow, you can update the release tag to the commit with the
-   fix and re-run the release; it is safe to re-run the workflows that already
-   succeeded. Publishing container images can be done multiple times, and
-   publishing artifacts to GitHub will fail without any adverse effects.
+   to fix the workflow, a maintainer can update the release tag to the commit
+   with the fix and re-run the release. (Note: This cannot be done by
+   approvers.)
+   
+   It is safe to re-run the workflows that already succeeded. Publishing
+   container images can be done multiple times, and publishing artifacts or
+   pushing OCB/Supervisor tags to GitHub will fail without any adverse effects.
 
 ## Bugfix releases
 
@@ -226,8 +229,8 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 
 | Date       | Version  | Release manager                                      |
 |------------|----------|------------------------------------------------------|
-| 2025-07-14 | v0.130.0 | [@jmacd](https://github.com/jmacd)                   |
-| 2025-07-28 | v0.131.0 | [@mx-psi](https://github.com/mx-psi)                 |
+| 2025-07-14 | v0.130.0 | [@mx-psi](https://github.com/mx-psi)                 |
+| 2025-07-28 | v0.131.0 | [@jmacd](https://github.com/jmacd)                   |
 | 2025-08-11 | v0.132.0 | [@evan-bradley](https://github.com/evan-bradley)     |
 | 2025-08-25 | v0.133.0 | [@TylerHelmuth](https://github.com/TylerHelmuth)     |
 | 2025-09-08 | v0.134.0 | [@atoulme](https://github.com/atoulme)               |

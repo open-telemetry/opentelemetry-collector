@@ -234,4 +234,6 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmid
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
+
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
