@@ -10,15 +10,12 @@ component: configtls
 note: Add early validation for TLS server configurations to fail fast when certificates are missing instead of failing at runtime.
 
 # One or more tracking issues or pull requests related to the change
-issues: [13130]
+issues: [13130, 13245]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  Internalized config validation to prevent unwanted recursion.
-  Improved certificate/key validation logic for early error detection.
-  ClientConfig skips validation when Insecure is true and no CA is set.
+subtext:
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
