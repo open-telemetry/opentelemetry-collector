@@ -203,15 +203,8 @@ func (c Config) validate() error {
 	if c.hasKeyFile() && c.hasKeyPem() {
 		return errors.New("provide either key file or PEM, but not both")
 	}
-
 	// Require both certificate and key if either is provided
-	certProvided := c.hasCert()
-	keyProvided := c.hasKey()
-	if certProvided && !keyProvided {
-		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
-	}
-
-	if !certProvided && keyProvided {
+	if c.hasCert() != c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
 	}
 
@@ -242,6 +235,10 @@ func (c ClientConfig) Validate() error {
 func (c ServerConfig) Validate() error {
 	if err := c.Config.validate(); err != nil {
 		return err
+	}
+	// For servers, both certificate and key are always required
+	if !c.hasCert() && !c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key for server connections")
 	}
 	return nil
 }
