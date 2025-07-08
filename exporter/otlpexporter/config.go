@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -25,28 +24,8 @@ type Config struct {
 	RetryConfig   configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
 	ClientConfig  configgrpc.ClientConfig         `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
-	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
-	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved
-	//
-	// Deprecated: [v0.123.0] batch configuration moving to queue configuration.
-	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck // SA1019
-
-	// remove at the same time as BatcherConfig
-	hasBatcher bool
-}
-
-func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if conf.IsSet("batcher") {
-		c.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck // SA1019
-		c.BatcherConfig.Enabled = false
-		c.hasBatcher = true
-	}
-
-	if err := conf.Unmarshal(c); err != nil {
-		return err
-	}
-
-	return nil
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

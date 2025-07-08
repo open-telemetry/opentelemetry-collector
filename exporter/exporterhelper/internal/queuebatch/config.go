@@ -66,11 +66,6 @@ func (cfg *Config) Validate() error {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	// Only support request sizer for persistent queue at this moment.
-	if cfg.StorageID != nil && cfg.Sizer != request.SizerTypeRequests {
-		return errors.New("persistent queue configured with `storage` only supports `requests` sizer")
-	}
-
 	if cfg.Batch != nil {
 		// Only support items or bytes sizer for batch at this moment.
 		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
