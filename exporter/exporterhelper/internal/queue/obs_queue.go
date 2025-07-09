@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queuebatch"
+package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadata"
-	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -26,14 +25,14 @@ const (
 
 // obsQueue is a helper to add observability to a queue.
 type obsQueue[T request.Request] struct {
-	queue.Queue[T]
+	Queue[T]
 	tb                *metadata.TelemetryBuilder
 	metricAttr        metric.MeasurementOption
 	enqueueFailedInst metric.Int64Counter
 	tracer            trace.Tracer
 }
 
-func newObsQueue[T request.Request](set Settings[T], delegate queue.Queue[T]) (queue.Queue[T], error) {
+func newObsQueue[T request.Request](set Settings[T], delegate Queue[T]) (Queue[T], error) {
 	tb, err := metadata.NewTelemetryBuilder(set.Telemetry)
 	if err != nil {
 		return nil, err
