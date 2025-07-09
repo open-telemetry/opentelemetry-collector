@@ -106,11 +106,21 @@ attributes:
     description: Attribute with a map value.
     type: map
 
+  optional_int_attr:
+    description: An optional attribute with an integer value
+    type: int
+    optional: true
+
+  optional_string_attr:
+    description: An optional attribute with any string value
+    type: string
+    optional: true
+
 events:
   default.event:
     enabled: true
     description: Example event enabled by default.
-    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr ]
+    attributes: [ string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr, optional_int_attr, optional_string_attr]
     warnings:
       if_enabled_not_set: This event will be disabled by default soon.
 
@@ -118,7 +128,7 @@ events:
     enabled: false
     description: "[DEPRECATED] Example event disabled by default."
     extended_documentation: The event will be renamed soon.
-    attributes: [ string_attr, boolean_attr, boolean_attr2 ]
+    attributes: [ string_attr, boolean_attr, boolean_attr2, optional_string_attr ]
     warnings:
       if_configured: This event is deprecated and will be renamed soon.
 
@@ -140,7 +150,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr]
+    attributes: [string_attr, overridden_int_attr, enum_attr, slice_attr, map_attr, optional_int_attr, optional_string_attr]
     warnings:
       if_enabled_not_set: This metric will be disabled by default soon.
 
@@ -150,7 +160,7 @@ metrics:
     unit: "1"
     gauge:
       value_type: double
-    attributes: [string_attr, boolean_attr, boolean_attr2]
+    attributes: [string_attr, boolean_attr, boolean_attr2, optional_string_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
 

@@ -21,7 +21,8 @@ type Settings[T any] struct {
 	ID          component.ID
 	Telemetry   component.TelemetrySettings
 	Encoding    queue.Encoding[T]
-	Sizers      map[request.SizerType]request.Sizer[T]
+	ItemsSizer  request.Sizer[T]
+	BytesSizer  request.Sizer[T]
 	Partitioner Partitioner[T]
 }
 
@@ -54,8 +55,8 @@ func newQueueBatch(
 	next sender.SendFunc[request.Request],
 	oldBatcher bool,
 ) (*QueueBatch, error) {
-	sizer, ok := set.Sizers[cfg.Sizer]
-	if !ok {
+	sizer := activeSizer(cfg.Sizer, set.ItemsSizer, set.BytesSizer)
+	if sizer == nil {
 		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
 	}
 
@@ -72,15 +73,16 @@ func newQueueBatch(
 		bSet.sizer = request.NewItemsSizer()
 	}
 	b := NewBatcher(cfg.Batch, bSet)
-	if cfg.Batch != nil {
+	if cfg.Batch.HasValue() {
 		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
 		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
 	}
 
-	q := queue.NewQueue[request.Request](queue.Settings[request.Request]{
-		Sizer:           sizer,
+	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
 		SizerType:       cfg.Sizer,
+		ItemsSizer:      set.ItemsSizer,
+		BytesSizer:      set.BytesSizer,
 		Capacity:        cfg.QueueSize,
 		NumConsumers:    cfg.NumConsumers,
 		WaitForResult:   cfg.WaitForResult,
@@ -91,6 +93,9 @@ func newQueueBatch(
 		ID:              set.ID,
 		Telemetry:       set.Telemetry,
 	}, b.Consume)
+	if err != nil {
+		return nil, err
+	}
 
 	oq, err := newObsQueue(set, q)
 	if err != nil {
@@ -121,4 +126,15 @@ func (qs *QueueBatch) Shutdown(ctx context.Context) error {
 // Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueBatch) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
+}
+
+func activeSizer[T any](sizerType request.SizerType, itemsSizer, bytesSizer request.Sizer[T]) request.Sizer[T] {
+	switch sizerType {
+	case request.SizerTypeBytes:
+		return bytesSizer
+	case request.SizerTypeItems:
+		return itemsSizer
+	default:
+		return request.RequestsSizer[T]{}
+	}
 }

@@ -41,13 +41,13 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -106,13 +106,13 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -186,13 +186,13 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -256,13 +256,13 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -390,13 +390,5 @@ func (fd fakeDone) OnDone(err error) {
 		fd.errors.Add(1)
 	} else {
 		fd.success.Add(1)
-	}
-}
-
-func newFakeBytesSizer() request.Sizer[request.Request] {
-	return request.BaseSizer{
-		SizeofFunc: func(req request.Request) int64 {
-			return int64(req.(*requesttest.FakeRequest).Bytes)
-		},
 	}
 }

@@ -69,6 +69,10 @@ func (ms Attribute) Value() pcommon.Value {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
-	dest.SetKey(ms.Key())
-	ms.Value().CopyTo(dest.Value())
+	copyOrigAttribute(dest.orig, ms.orig)
+}
+
+func copyOrigAttribute(dest, src *v1.KeyValue) {
+	dest.Key = src.Key
+	internal.CopyOrigValue(&dest.Value, &src.Value)
 }
