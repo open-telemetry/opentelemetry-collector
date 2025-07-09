@@ -1,14 +1,26 @@
-dist:
-  name: otelcol-test
-  module: go.opentelemetry.io/collector/builder/test/core
-  output_path: {{ .OutputPath }}
-  package: collector
-
 extensions:
-  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.129.0
+  zpages:
+    endpoint: "localhost:55699"
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.129.0
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "localhost:8318"
+processors:
 
 exporters:
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.129.0
+  debug:
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  extensions: [zpages]
+  pipelines:
+    traces:
+      receivers:
+        - otlp
+      processors: []
+      exporters:
+        - debug

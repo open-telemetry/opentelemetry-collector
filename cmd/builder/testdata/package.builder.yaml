@@ -1,0 +1,14 @@
+dist:
+  name: otelcol-test
+  module: go.opentelemetry.io/collector/builder/test/core
+  output_path: {{ .OutputPath }}/collector
+  package: collector
+
+extensions:
+  - gomod: go.opentelemetry.io/collector/extension/zpagesextension v0.129.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.129.0
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.129.0

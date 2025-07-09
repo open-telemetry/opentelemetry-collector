@@ -13,6 +13,11 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
+
 	"go.opentelemetry.io/collector/cmd/builder/internal"
 
 	"github.com/stretchr/testify/require"
@@ -35,27 +40,29 @@ func TestCollectorBuildAndRun(t *testing.T) {
 	tests := []struct {
 		builderYAML   string
 		runConfigYAML string
-		packageName   string
+		healthPort    int
 	}{
-		// {
-		// 	builderYAML:   "core.otel.yaml",
-		// 	runConfigYAML: "otel.yaml",
-		// 	packageName:   "main",
-		// },
 		{
-			builderYAML:   "package.otel.yaml",
-			runConfigYAML: "otel.yaml",
-			packageName:   "collector",
+			builderYAML:   "core.builder.yaml",
+			runConfigYAML: "core.otel.yaml",
+			healthPort:    55680,
+		},
+		{
+			builderYAML:   "package.builder.yaml",
+			runConfigYAML: "package.otel.yaml",
+			healthPort:    55699,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.builderYAML, func(t *testing.T) {
 			tmpdir := t.TempDir()
-			// todo should be read config, not use packageName
-			collectorBin := getCollectorBin(t, tmpdir, tt.builderYAML, tt.packageName)
+
+			collectorBin := getCollectorBin(t, tmpdir, tt.builderYAML)
 
 			var colBuf bytes.Buffer
-			runConfig := filepath.Join("testdata", tt.runConfigYAML)
+			runConfig, err := filepath.Abs(filepath.Join("testdata", tt.runConfigYAML))
+			require.NoError(t, err)
+
 			otelCmd := exec.Command(collectorBin, "--config", runConfig) //nolint:gosec
 			otelCmd.Stdout = &colBuf
 			otelCmd.Stderr = &colBuf
@@ -65,8 +72,8 @@ func TestCollectorBuildAndRun(t *testing.T) {
 				_ = otelCmd.Process.Kill()
 				_, _ = otelCmd.Process.Wait()
 			}()
-			// todo test is parallel
-			servicez := "http://localhost:55679/debug/servicez"
+
+			servicez := fmt.Sprintf("http://localhost:%d/debug/servicez", tt.healthPort)
 			ok := false
 			deadline := time.Now().Add(20 * time.Second)
 			for time.Now().Before(deadline) {
@@ -88,29 +95,29 @@ func TestCollectorBuildAndRun(t *testing.T) {
 	}
 }
 
-func getCollectorBin(t *testing.T, tmpdir string, yamlPath string, packageName string) string {
-	if packageName == "" || packageName == "main" {
-		collectorBin := filepath.Join(tmpdir, "otelcol-test")
-		renderedYAML := filepath.Join(tmpdir, "builder.rendered.yaml")
-		renderTmplFile(t,
-			yamlPath,
-			renderedYAML,
-			map[string]any{"OutputPath": tmpdir},
-		)
-		buildCollector(t, renderedYAML)
-		require.FileExists(t, collectorBin)
-		return collectorBin
-	}
-	// build wrapper
-	builderPkgDir := filepath.Join(tmpdir, packageName)
-	require.NoError(t, os.MkdirAll(builderPkgDir, 0o700))
+func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 	renderedYAML := filepath.Join(tmpdir, "builder.rendered.yaml")
+
 	renderTmplFile(t,
 		yamlPath,
 		renderedYAML,
-		map[string]any{"OutputPath": builderPkgDir},
+		map[string]any{"OutputPath": tmpdir},
 	)
+
+	cfg := unmarshalConf(t, renderedYAML)
+
+	packageName := cfg.Distribution.Package
+
+	collectorBin := filepath.Join(tmpdir, cfg.Distribution.Name)
 	buildCollector(t, renderedYAML)
+
+	if packageName == "" || packageName == "main" {
+		require.FileExists(t, collectorBin)
+		return collectorBin
+	}
+
+	// build wrapper
+	builderPkgDir := cfg.Distribution.OutputPath
 
 	renderTmplFile(t,
 		"export.go.tql",
@@ -137,12 +144,12 @@ func getCollectorBin(t *testing.T, tmpdir string, yamlPath string, packageName s
 
 	require.NoError(t, runCmd(wrapperDir, "go", "mod", "tidy"))
 
-	binName := "otelcol-test"
+	binName := cfg.Distribution.Name
 	if runtime.GOOS == "windows" {
 		binName += ".exe"
 	}
 
-	collectorBin := filepath.Join(wrapperDir, binName)
+	collectorBin = filepath.Join(wrapperDir, binName)
 	require.NoError(t, runCmd(wrapperDir, "go", "build", "-o", collectorBin, "main.go"))
 
 	require.FileExists(t, collectorBin)
@@ -168,4 +175,14 @@ func buildCollector(t *testing.T, configPath string) {
 	cmd.SetErr(&outBuf)
 	err = cmd.Execute()
 	require.NoError(t, err, "builder execution failed: %s", outBuf.String())
+}
+
+func unmarshalConf(t *testing.T, yamlPath string) builder.Config {
+	k := koanf.New(".")
+	require.NoError(t, k.Load(file.Provider(yamlPath), yaml.Parser()))
+
+	cfg := builder.Config{}
+	require.NoError(t, k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "mapstructure"}))
+
+	return cfg
 }
