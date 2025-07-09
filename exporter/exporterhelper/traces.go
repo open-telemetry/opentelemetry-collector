@@ -59,7 +59,7 @@ type tracesEncoding struct{}
 var _ QueueBatchEncoding[Request] = tracesEncoding{}
 
 func (tracesEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, traces, err := pdatareq.UnmarshalTraces(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -77,7 +77,7 @@ func (tracesEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) 
 
 func (tracesEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
 	traces := req.(*tracesRequest).td
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalTraces(ctx, traces)
 	}
 	return tracesMarshaler.MarshalTraces(traces)
