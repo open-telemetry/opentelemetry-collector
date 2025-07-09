@@ -226,7 +226,10 @@ func (c Config) Validate() error {
 }
 
 func (c ClientConfig) Validate() error {
-	return c.Config.Validate()
+	if err := c.Config.Validate(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c ServerConfig) Validate() error {

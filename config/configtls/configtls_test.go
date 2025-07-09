@@ -682,8 +682,7 @@ func TestConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			clientConfig := ClientConfig{Config: test.tlsConfig}
-			err := clientConfig.Validate()
+			err := test.tlsConfig.Validate()
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
