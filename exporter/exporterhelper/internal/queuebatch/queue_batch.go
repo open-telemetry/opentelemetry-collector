@@ -97,12 +97,7 @@ func newQueueBatch(
 		return nil, err
 	}
 
-	oq, err := newObsQueue(set, q)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueBatch{queue: oq, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
