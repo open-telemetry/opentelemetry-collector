@@ -73,7 +73,7 @@ func newQueueBatch(
 		bSet.sizer = request.NewItemsSizer()
 	}
 	b := NewBatcher(cfg.Batch, bSet)
-	if cfg.Batch != nil {
+	if cfg.Batch.HasValue() {
 		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
 		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
@@ -97,12 +97,7 @@ func newQueueBatch(
 		return nil, err
 	}
 
-	oq, err := newObsQueue(set, q)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueBatch{queue: oq, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
