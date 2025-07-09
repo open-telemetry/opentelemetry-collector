@@ -111,17 +111,17 @@ func TestUnmarshalConfig(t *testing.T) {
 						Endpoint:  "localhost:4317",
 						Transport: confignet.TransportTypeTCP,
 					},
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "test.crt",
 							KeyFile:  "test.key",
 						},
-					},
+					}),
 					MaxRecvMsgSizeMiB:    32,
 					MaxConcurrentStreams: 16,
 					ReadBufferSize:       1024,
 					WriteBufferSize:      1024,
-					Keepalive: &configgrpc.KeepaliveServerConfig{
+					Keepalive: configoptional.Some(configgrpc.KeepaliveServerConfig{
 						ServerParameters: &configgrpc.KeepaliveServerParameters{
 							MaxConnectionIdle:     11 * time.Second,
 							MaxConnectionAge:      12 * time.Second,
@@ -133,7 +133,7 @@ func TestUnmarshalConfig(t *testing.T) {
 							MinTime:             10 * time.Second,
 							PermitWithoutStream: true,
 						},
-					},
+					}),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
@@ -163,10 +163,6 @@ func TestUnmarshalConfig(t *testing.T) {
 		}, cfg)
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestUnmarshalConfigUnix(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "uds.yaml"))
 	require.NoError(t, err)
@@ -182,7 +178,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 						Transport: confignet.TransportTypeUnix,
 					},
 					ReadBufferSize: 512 * 1024,
-					Keepalive:      ptr(configgrpc.NewDefaultKeepaliveServerConfig()),
+					Keepalive:      configoptional.Some(configgrpc.NewDefaultKeepaliveServerConfig()),
 				}),
 				HTTP: configoptional.Some(HTTPConfig{
 					ServerConfig: confighttp.ServerConfig{
