@@ -226,16 +226,10 @@ func (c Config) Validate() error {
 }
 
 func (c ClientConfig) Validate() error {
-	if err := c.Config.Validate(); err != nil {
-		return err
-	}
 	return nil
 }
 
 func (c ServerConfig) Validate() error {
-	if err := c.Config.Validate(); err != nil {
-		return err
-	}
 	// For servers, both certificate and key are always required
 	if !c.hasCert() && !c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
