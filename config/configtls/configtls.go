@@ -203,6 +203,7 @@ func (c Config) Validate() error {
 	if c.hasKeyFile() && c.hasKeyPem() {
 		return errors.New("provide either key file or PEM, but not both")
 	}
+
 	// Require both certificate and key if either is provided
 	if c.hasCert() != c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")

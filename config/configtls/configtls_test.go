@@ -942,12 +942,12 @@ func TestServerConfigValidate(t *testing.T) {
 		errorTxt     string
 	}{
 		{
-			name:         "requires certificates for server",
+			name:         "server config without certificates",
 			serverConfig: ServerConfig{},
 			errorTxt:     "TLS configuration must include both certificate and key for server connections",
 		},
 		{
-			name: "accepts cert and key files",
+			name: "valid server config with cert and key files",
 			serverConfig: ServerConfig{
 				Config: Config{
 					CertFile: "cert.pem",
@@ -956,11 +956,20 @@ func TestServerConfigValidate(t *testing.T) {
 			},
 		},
 		{
-			name: "accepts cert and key PEM",
+			name: "valid server config with cert and key PEM",
 			serverConfig: ServerConfig{
 				Config: Config{
 					CertPem: "cert-pem",
 					KeyPem:  "key-pem",
+				},
+			},
+		},
+		{
+			name: "valid server config with mixed cert file and key PEM",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyPem:   "key-pem",
 				},
 			},
 		},
@@ -986,7 +995,7 @@ func TestServerConfigValidateWithConfmap(t *testing.T) {
 		errorTxt     string
 	}{
 		{
-			name: "cert without key via confmap validation",
+			name: "server config with cert file but no key via confmap validation",
 			serverConfig: ServerConfig{
 				Config: Config{
 					CertFile: "cert.pem",
@@ -995,7 +1004,16 @@ func TestServerConfigValidateWithConfmap(t *testing.T) {
 			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
 		},
 		{
-			name: "cert file and PEM conflict via confmap validation",
+			name: "server config with key file but no cert via confmap validation",
+			serverConfig: ServerConfig{
+				Config: Config{
+					KeyFile: "key.pem",
+				},
+			},
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
+		},
+		{
+			name: "server config with both cert file and cert PEM via confmap validation",
 			serverConfig: ServerConfig{
 				Config: Config{
 					CertFile: "cert.pem",
@@ -1027,21 +1045,30 @@ func TestClientConfigValidate(t *testing.T) {
 		errorTxt     string
 	}{
 		{
-			name:         "empty config",
+			name:         "valid empty client config",
 			clientConfig: ClientConfig{},
 		},
 		{
-			name: "insecure connection",
+			name: "valid client config with insecure connection",
 			clientConfig: ClientConfig{
 				Insecure: true,
 			},
 		},
 		{
-			name: "with certificates",
+			name: "valid client config with cert and key files",
 			clientConfig: ClientConfig{
 				Config: Config{
 					CertFile: "cert.pem",
 					KeyFile:  "key.pem",
+				},
+			},
+		},
+		{
+			name: "valid client config with mixed cert file and key PEM",
+			clientConfig: ClientConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					KeyPem:   "key-pem",
 				},
 			},
 		},
@@ -1067,22 +1094,22 @@ func TestClientConfigValidateWithConfmap(t *testing.T) {
 		errorTxt     string
 	}{
 		{
-			name: "invalid TLS version via confmap validation",
-			clientConfig: ClientConfig{
-				Config: Config{
-					MinVersion: "invalid",
-				},
-			},
-			errorTxt: `config: invalid TLS min_version: unsupported TLS version: "invalid"`,
-		},
-		{
-			name: "cert without key via confmap validation",
+			name: "client config with cert file but no key via confmap validation",
 			clientConfig: ClientConfig{
 				Config: Config{
 					CertFile: "cert.pem",
 				},
 			},
 			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
+		},
+		{
+			name: "client config with invalid TLS version via confmap validation",
+			clientConfig: ClientConfig{
+				Config: Config{
+					MinVersion: "invalid",
+				},
+			},
+			errorTxt: `config: invalid TLS min_version: unsupported TLS version: "invalid"`,
 		},
 	}
 
