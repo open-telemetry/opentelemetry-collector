@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -16,11 +19,10 @@ import (
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/cmd/builder/internal"
-
-	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/cmd/builder/internal/builder"
 )
 
 func renderTmplFile(t *testing.T, filePath string, outPath string, data map[string]any) {
