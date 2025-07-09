@@ -516,7 +516,6 @@ func TestNonMainPackageComplete(t *testing.T) {
 		require.NoError(t, err, "Failed to parse package clause in %s", filePath)
 		pkg := ast.Name.Name
 		assert.Equalf(t, cfg.Distribution.Package, pkg, "package name mismatch in %s", file)
-
 	}
 }
 

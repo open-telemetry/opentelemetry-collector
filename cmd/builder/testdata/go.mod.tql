@@ -1,0 +1,11 @@
+module collectorwrapper
+// todo go version should be dynamic
+go 1.24.4
+
+require {{ .ImportPath }} v0.0.0
+
+require (
+	{{ .Package }} v0.0.0
+)
+
+replace {{ .ImportPath }} => {{ .PkgDir }}

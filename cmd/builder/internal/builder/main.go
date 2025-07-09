@@ -110,9 +110,8 @@ func Compile(cfg *Config) error {
 		// The build will produce a binary file, but without a 'main' function, it cannot be executed.
 		cfg.Logger.Info("Package is not 'main'; compiling will produce a non-executable binary (no main function). Output is for use as a Go library.")
 		return nil
-	} else {
-		cfg.Logger.Info("Compiling")
 	}
+	cfg.Logger.Info("Compiling")
 
 	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
 	gcflags := ""

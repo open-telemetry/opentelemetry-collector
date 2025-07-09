@@ -1,0 +1,5 @@
+package {{ .Package }}
+
+func ExportedMain() {
+	main()
+}
