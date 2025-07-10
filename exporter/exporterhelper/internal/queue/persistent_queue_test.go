@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -232,7 +231,8 @@ func newSettings(sizerType request.SizerType, capacity int64) Settings[int64] {
 
 func newSettingsWithStorage(sizerType request.SizerType, capacity int64) Settings[int64] {
 	set := newSettings(sizerType, capacity)
-	set.StorageID = configoptional.Some(component.ID{})
+	storageID := component.ID{}
+	set.StorageID = &storageID
 	return set
 }
 
@@ -513,7 +513,8 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := newPersistentQueue[int64](Settings[int64]{StorageID: configoptional.Some(component.ID{})})
+	storageID := component.ID{}
+	pq := newPersistentQueue[int64](Settings[int64]{StorageID: &storageID})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
