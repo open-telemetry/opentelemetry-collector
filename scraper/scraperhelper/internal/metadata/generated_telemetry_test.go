@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	embeddedmetric "go.opentelemetry.io/otel/metric/embedded"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
@@ -42,6 +43,16 @@ func (m mockTracerProvider) Tracer(name string, opts ...trace.TracerOption) trac
 	return mockTracer{name: name}
 }
 
+type mockRegisterer struct {
+	embeddedmetric.Registration
+	unregistered bool
+}
+
+func (mr *mockRegisterer) Unregister() error {
+	mr.unregistered = true
+	return nil
+}
+
 func TestProviders(t *testing.T) {
 	set := component.TelemetrySettings{
 		MeterProvider:  mockMeterProvider{},
@@ -66,9 +77,20 @@ func TestProviders(t *testing.T) {
 func TestNewTelemetryBuilder(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	applied := false
-	_, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
+	attributeSet := attribute.NewSet(
+		attribute.String("attr-1", "val-1"),
+	)
+	builder, err := NewTelemetryBuilder(set, telemetryBuilderOptionFunc(func(b *TelemetryBuilder) {
 		applied = true
-	}))
+	}), WithAttributeSet(attributeSet))
+	registerer := &mockRegisterer{}
+	builder.registrations = append(builder.registrations, registerer)
 	require.NoError(t, err)
 	require.True(t, applied)
+
+	require.NoError(t, err)
+	require.True(t, applied)
+	require.Equal(t, attributeSet, builder.attributeSet)
+	builder.Shutdown()
+	require.True(t, registerer.unregistered)
 }
