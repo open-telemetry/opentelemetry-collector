@@ -226,10 +226,6 @@ func (c Config) Validate() error {
 	return nil
 }
 
-func (c ClientConfig) Validate() error {
-	return nil
-}
-
 func (c ServerConfig) Validate() error {
 	// For servers, both certificate and key are always required
 	if !c.hasCert() && !c.hasKey() {

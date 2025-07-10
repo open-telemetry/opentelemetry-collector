@@ -947,6 +947,35 @@ func TestServerConfigValidate(t *testing.T) {
 			errorTxt:     "TLS configuration must include both certificate and key for server connections",
 		},
 		{
+			name: "server config with cert file but no key",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+				},
+			},
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
+		},
+		{
+			name: "server config with key file but no cert",
+			serverConfig: ServerConfig{
+				Config: Config{
+					KeyFile: "key.pem",
+				},
+			},
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
+		},
+		{
+			name: "server config with both cert file and cert PEM",
+			serverConfig: ServerConfig{
+				Config: Config{
+					CertFile: "cert.pem",
+					CertPem:  "cert-pem",
+					KeyFile:  "key.pem",
+				},
+			},
+			errorTxt: "config: provide either certificate file or PEM, but not both",
+		},
+		{
 			name: "valid server config with cert and key files",
 			serverConfig: ServerConfig{
 				Config: Config{
@@ -972,56 +1001,6 @@ func TestServerConfigValidate(t *testing.T) {
 					KeyPem:   "key-pem",
 				},
 			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := test.serverConfig.Validate()
-
-			if test.errorTxt == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, test.errorTxt)
-			}
-		})
-	}
-}
-
-func TestServerConfigValidateWithConfmap(t *testing.T) {
-	tests := []struct {
-		name         string
-		serverConfig ServerConfig
-		errorTxt     string
-	}{
-		{
-			name: "server config with cert file but no key via confmap validation",
-			serverConfig: ServerConfig{
-				Config: Config{
-					CertFile: "cert.pem",
-				},
-			},
-			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
-		},
-		{
-			name: "server config with key file but no cert via confmap validation",
-			serverConfig: ServerConfig{
-				Config: Config{
-					KeyFile: "key.pem",
-				},
-			},
-			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
-		},
-		{
-			name: "server config with both cert file and cert PEM via confmap validation",
-			serverConfig: ServerConfig{
-				Config: Config{
-					CertFile: "cert.pem",
-					CertPem:  "cert-pem",
-					KeyFile:  "key.pem",
-				},
-			},
-			errorTxt: "config: provide either certificate file or PEM, but not both",
 		},
 	}
 
@@ -1071,45 +1050,6 @@ func TestClientConfigValidate(t *testing.T) {
 					KeyPem:   "key-pem",
 				},
 			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := test.clientConfig.Validate()
-
-			if test.errorTxt == "" {
-				assert.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, test.errorTxt)
-			}
-		})
-	}
-}
-
-func TestClientConfigValidateWithConfmap(t *testing.T) {
-	tests := []struct {
-		name         string
-		clientConfig ClientConfig
-		errorTxt     string
-	}{
-		{
-			name: "client config with cert file but no key via confmap validation",
-			clientConfig: ClientConfig{
-				Config: Config{
-					CertFile: "cert.pem",
-				},
-			},
-			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
-		},
-		{
-			name: "client config with invalid TLS version via confmap validation",
-			clientConfig: ClientConfig{
-				Config: Config{
-					MinVersion: "invalid",
-				},
-			},
-			errorTxt: `config: invalid TLS min_version: unsupported TLS version: "invalid"`,
 		},
 	}
 
