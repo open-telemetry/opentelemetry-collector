@@ -9,7 +9,9 @@ require (
 	go.opentelemetry.io/collector/client v1.35.0
 	go.opentelemetry.io/collector/component v1.35.0
 	go.opentelemetry.io/collector/component/componenttest v0.129.0
+	go.opentelemetry.io/collector/config/configoptional v0.129.0
 	go.opentelemetry.io/collector/config/configretry v1.35.0
+	go.opentelemetry.io/collector/confmap v1.35.0
 	go.opentelemetry.io/collector/consumer v1.35.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.129.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.129.0
@@ -36,9 +38,16 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-viper/mapstructure/v2 v2.3.0 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/knadh/koanf/maps v0.1.2 // indirect
+	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
+	github.com/knadh/koanf/v2 v2.2.1 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -52,6 +61,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.129.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/otel/log v0.13.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
@@ -108,3 +118,7 @@ replace go.opentelemetry.io/collector/internal/telemetry => ../internal/telemetr
 replace go.opentelemetry.io/collector/client => ../client
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
+
+replace go.opentelemetry.io/collector/confmap => ../confmap
+
+replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional

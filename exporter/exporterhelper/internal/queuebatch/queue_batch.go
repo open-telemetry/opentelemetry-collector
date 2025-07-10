@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
@@ -21,7 +20,8 @@ type Settings[T any] struct {
 	ID          component.ID
 	Telemetry   component.TelemetrySettings
 	Encoding    queue.Encoding[T]
-	Sizers      map[request.SizerType]request.Sizer[T]
+	ItemsSizer  request.Sizer[T]
+	BytesSizer  request.Sizer[T]
 	Partitioner Partitioner[T]
 }
 
@@ -35,52 +35,26 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	return newQueueBatch(set, cfg, next, false)
-}
-
-func NewQueueBatchLegacyBatcher(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-) (*QueueBatch, error) {
-	set.Telemetry.Logger.Warn("Configuring the exporter batcher capability separately is now deprecated. " +
-		"Use sending_queue::batch instead.")
-	return newQueueBatch(set, cfg, next, true)
-}
-
-func newQueueBatch(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-	oldBatcher bool,
-) (*QueueBatch, error) {
-	sizer, ok := set.Sizers[cfg.Sizer]
-	if !ok {
-		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
-	}
-
-	bSet := batcherSettings[request.Request]{
-		sizerType:   cfg.Sizer,
-		sizer:       sizer,
+	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
+		itemsSizer:  set.ItemsSizer,
+		bytesSizer:  set.BytesSizer,
 		partitioner: set.Partitioner,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
+	})
+	if err != nil {
+		return nil, err
 	}
-	if oldBatcher {
-		// If a user configures the old batcher, we only can support "items" sizer.
-		bSet.sizerType = request.SizerTypeItems
-		bSet.sizer = request.NewItemsSizer()
-	}
-	b := NewBatcher(cfg.Batch, bSet)
-	if cfg.Batch != nil {
+	if cfg.Batch.HasValue() {
 		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
 		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
 	}
 
-	q := queue.NewQueue[request.Request](queue.Settings[request.Request]{
-		Sizer:           sizer,
+	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
 		SizerType:       cfg.Sizer,
+		ItemsSizer:      set.ItemsSizer,
+		BytesSizer:      set.BytesSizer,
 		Capacity:        cfg.QueueSize,
 		NumConsumers:    cfg.NumConsumers,
 		WaitForResult:   cfg.WaitForResult,
@@ -91,13 +65,11 @@ func newQueueBatch(
 		ID:              set.ID,
 		Telemetry:       set.Telemetry,
 	}, b.Consume)
-
-	oq, err := newObsQueue(set, q)
 	if err != nil {
 		return nil, err
 	}
 
-	return &QueueBatch{queue: oq, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
