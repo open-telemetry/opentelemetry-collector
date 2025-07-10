@@ -11,6 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.35.0
 	go.opentelemetry.io/collector/config/configgrpc v0.129.0
 	go.opentelemetry.io/collector/config/configopaque v1.35.0
+	go.opentelemetry.io/collector/config/configoptional v0.129.0
 	go.opentelemetry.io/collector/config/configretry v1.35.0
 	go.opentelemetry.io/collector/config/configtls v1.35.0
 	go.opentelemetry.io/collector/confmap v1.35.0
@@ -178,3 +179,5 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional

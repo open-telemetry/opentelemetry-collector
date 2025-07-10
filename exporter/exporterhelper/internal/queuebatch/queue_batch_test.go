@@ -17,6 +17,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/experr"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
@@ -59,7 +60,7 @@ func TestQueueBatchStopWhileWaiting(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.NumConsumers = 1
-	cfg.Batch = nil
+	cfg.Batch = configoptional.Optional[BatchConfig]{}
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -118,7 +119,7 @@ func TestQueueBatchHappyPath(t *testing.T) {
 	require.NoError(t, qb.Shutdown(context.Background()))
 }
 
-func TestQueueBatchHappyPathLegacyBatcher(t *testing.T) {
+func TestQueueBatchDifferentSizers(t *testing.T) {
 	// Set up the config so that the request is accepted in the queue
 	// because the bytes size is used for the queue,
 	// but split because the items size is used for batch.
@@ -129,14 +130,15 @@ func TestQueueBatchHappyPathLegacyBatcher(t *testing.T) {
 		QueueSize:       100,
 		BlockOnOverflow: false,
 		NumConsumers:    1,
-		Batch: &BatchConfig{
+		Batch: configoptional.Some(BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        request.SizerTypeItems,
 			MinSize:      100,
 			MaxSize:      200,
-		},
+		}),
 	}
 	sink := requesttest.NewSink()
-	qb, err := NewQueueBatchLegacyBatcher(newFakeRequestSettings(), cfg, sink.Export)
+	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, qb.Send(context.Background(), &requesttest.FakeRequest{Items: 1000, Bytes: 100}))
@@ -149,7 +151,7 @@ func TestQueueBatchHappyPathLegacyBatcher(t *testing.T) {
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	cfg.StorageID = configoptional.Some(storageID)
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -166,7 +168,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	cfg.StorageID = configoptional.Some(storageID)
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -182,7 +184,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	cfg := newTestConfig()
 	cfg.NumConsumers = 1
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = &storageID
+	cfg.StorageID = configoptional.Some(storageID)
 
 	mockReq := &requesttest.FakeRequest{Items: 2}
 	qSet := newFakeRequestSettings()
@@ -242,19 +244,21 @@ func TestQueueBatch_Merge(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		batchCfg *BatchConfig
+		batchCfg BatchConfig
 	}{
 		{
 			name: "split_disabled",
-			batchCfg: &BatchConfig{
+			batchCfg: BatchConfig{
 				FlushTimeout: 100 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 			},
 		},
 		{
 			name: "split_high_limit",
-			batchCfg: &BatchConfig{
+			batchCfg: BatchConfig{
 				FlushTimeout: 100 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      1000,
 			},
@@ -265,7 +269,7 @@ func TestQueueBatch_Merge(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := requesttest.NewSink()
 			cfg := newTestConfig()
-			cfg.Batch = tt.batchCfg
+			cfg.Batch = configoptional.Some(tt.batchCfg)
 			qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 			require.NoError(t, err)
 			require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -305,29 +309,32 @@ func TestQueueBatch_Merge(t *testing.T) {
 func TestQueueBatch_BatchExportError(t *testing.T) {
 	tests := []struct {
 		name             string
-		batchCfg         *BatchConfig
+		batchCfg         BatchConfig
 		expectedRequests int
 		expectedItems    int
 	}{
 		{
 			name: "merge_only",
-			batchCfg: &BatchConfig{
+			batchCfg: BatchConfig{
 				FlushTimeout: 200 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 			},
 		},
 		{
 			name: "merge_without_split_triggered",
-			batchCfg: &BatchConfig{
+			batchCfg: BatchConfig{
 				FlushTimeout: 200 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      200,
 			},
 		},
 		{
 			name: "merge_with_split_triggered",
-			batchCfg: &BatchConfig{
+			batchCfg: BatchConfig{
 				FlushTimeout: 200 * time.Millisecond,
+				Sizer:        request.SizerTypeItems,
 				MinSize:      10,
 				MaxSize:      20,
 			},
@@ -339,7 +346,7 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := requesttest.NewSink()
 			cfg := newTestConfig()
-			cfg.Batch = tt.batchCfg
+			cfg.Batch = configoptional.Some(tt.batchCfg)
 			qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 			require.NoError(t, err)
 			require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -371,11 +378,12 @@ func TestQueueBatch_BatchExportError(t *testing.T) {
 func TestQueueBatch_MergeOrSplit(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
-	cfg.Batch = &BatchConfig{
+	cfg.Batch = configoptional.Some(BatchConfig{
 		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
 		MaxSize:      10,
-	}
+	})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -409,10 +417,11 @@ func TestQueueBatch_MergeOrSplit(t *testing.T) {
 func TestQueueBatch_MergeOrSplit_Multibatch(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
-	cfg.Batch = &BatchConfig{
+	cfg.Batch = configoptional.Some(BatchConfig{
 		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
-	}
+	})
 
 	type partitionKey struct{}
 	set := newFakeRequestSettings()
@@ -470,7 +479,7 @@ func TestQueueBatch_BatchBlocking(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 3
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 3})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -497,7 +506,7 @@ func TestQueueBatch_DrainActiveRequests(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 2
+	cfg.Batch = configoptional.Some(BatchConfig{Sizer: request.SizerTypeItems, MinSize: 2})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -528,8 +537,7 @@ func TestQueueBatchTimerResetNoConflict(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 8
-	cfg.Batch.FlushTimeout = 100 * time.Millisecond
+	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 100 * time.Millisecond, MinSize: 8})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -559,8 +567,7 @@ func TestQueueBatchTimerFlush(t *testing.T) {
 	sink := requesttest.NewSink()
 	cfg := newTestConfig()
 	cfg.WaitForResult = true
-	cfg.Batch.MinSize = 8
-	cfg.Batch.FlushTimeout = 100 * time.Millisecond
+	cfg.Batch = configoptional.Some(BatchConfig{FlushTimeout: 100 * time.Millisecond, Sizer: request.SizerTypeItems, MinSize: 8})
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sink.Export)
 	require.NoError(t, err)
 	require.NoError(t, qb.Start(context.Background(), componenttest.NewNopHost()))
@@ -603,9 +610,10 @@ func newTestConfig() Config {
 		NumConsumers:    runtime.NumCPU(),
 		QueueSize:       100_000,
 		BlockOnOverflow: true,
-		Batch: &BatchConfig{
+		Batch: configoptional.Some(BatchConfig{
 			FlushTimeout: 200 * time.Millisecond,
+			Sizer:        request.SizerTypeItems,
 			MinSize:      2048,
-		},
+		}),
 	}
 }

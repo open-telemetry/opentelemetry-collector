@@ -28,7 +28,6 @@ type batch struct {
 type partitionBatcher struct {
 	cfg            BatchConfig
 	wp             *workerPool
-	sizerType      request.SizerType
 	sizer          request.Sizer[request.Request]
 	consumeFunc    sender.SendFunc[request.Request]
 	stopWG         sync.WaitGroup
@@ -40,7 +39,6 @@ type partitionBatcher struct {
 
 func newPartitionBatcher(
 	cfg BatchConfig,
-	sizerType request.SizerType,
 	sizer request.Sizer[request.Request],
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
@@ -48,7 +46,6 @@ func newPartitionBatcher(
 	return &partitionBatcher{
 		cfg:         cfg,
 		wp:          wp,
-		sizerType:   sizerType,
 		sizer:       sizer,
 		consumeFunc: next,
 		shutdownCh:  make(chan struct{}, 1),
@@ -65,7 +62,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
-		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, nil)
+		reqList, mergeSplitErr := req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, nil)
 		if mergeSplitErr != nil || len(reqList) == 0 {
 			done.OnDone(mergeSplitErr)
 			qb.currentBatchMu.Unlock()
@@ -99,7 +96,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		return
 	}
 
-	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.sizerType, req)
+	reqList, mergeSplitErr := qb.currentBatch.req.MergeSplit(ctx, int(qb.cfg.MaxSize), qb.cfg.Sizer, req)
 	// If failed to merge signal all Done callbacks from the current batch as well as the current request and reset the current batch.
 	if mergeSplitErr != nil || len(reqList) == 0 {
 		done.OnDone(mergeSplitErr)

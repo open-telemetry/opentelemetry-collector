@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionmiddleware"
@@ -103,12 +104,12 @@ func TestClientMiddlewareOrdering(t *testing.T) {
 
 	// Start a gRPC server that will record the incoming metadata
 	server := &grpcTraceServer{}
-	srv, addr := server.startTestServer(t, ServerConfig{
+	srv, addr := server.startTestServer(t, configoptional.Some(ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "localhost:0",
 			Transport: confignet.TransportTypeTCP,
 		},
-	})
+	}))
 	defer srv.Stop()
 
 	// Create client config with middleware extensions
