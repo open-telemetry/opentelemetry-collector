@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -36,7 +37,7 @@ func (req *tracesRequest) MergeSplit(_ context.Context, maxSize int, szt Request
 	if maxSize == 0 {
 		return []Request{req}, nil
 	}
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz)
 }
 
 func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
@@ -47,15 +48,33 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 	req.td.ResourceSpans().MoveAndAppendTo(dst.td.ResourceSpans())
 }
 
-func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) []Request {
+func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]Request, error) {
 	var res []Request
-	for req.size(sz) > maxSize {
-		td, rmSize := extractTraces(req.td, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
-		res = append(res, newTracesRequest(td))
+	var td ptrace.Traces
+	rmSize := -1
+
+	previousSize := req.size(sz)
+
+	for req.size(sz) > maxSize && rmSize != 0 {
+		td, rmSize = extractTraces(req.td, maxSize, sz)
+		if td.SpanCount() > 0 {
+			req.setCachedSize(req.size(sz) - rmSize)
+			res = append(res, newTracesRequest(td))
+		}
 	}
+
+	if req.size(sz) == previousSize && req.size(sz) > maxSize {
+		err := fmt.Errorf(
+			"partial success: failed to split traces request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
+			req.size(sz),
+			maxSize,
+			req.td.SpanCount(),
+		)
+		return res, err
+	}
+
 	res = append(res, req)
-	return res
+	return res, nil
 }
 
 // extractTraces extracts a new traces with a maximum number of spans.

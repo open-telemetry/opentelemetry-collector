@@ -6,6 +6,8 @@ import (
 	"context"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -21,6 +23,7 @@ type multiBatcher struct {
 	partitioner Partitioner[request.Request]
 	consumeFunc sender.SendFunc[request.Request]
 	shards      sync.Map
+	logger      *zap.Logger
 }
 
 func newMultiBatcher(
@@ -29,6 +32,7 @@ func newMultiBatcher(
 	wp *workerPool,
 	partitioner Partitioner[request.Request],
 	next sender.SendFunc[request.Request],
+	logger *zap.Logger,
 ) *multiBatcher {
 	return &multiBatcher{
 		cfg:         bCfg,
@@ -36,6 +40,7 @@ func newMultiBatcher(
 		sizer:       sizer,
 		partitioner: partitioner,
 		consumeFunc: next,
+		logger:      logger,
 	}
 }
 
@@ -46,7 +51,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	if found {
 		return s.(*partitionBatcher)
 	}
-	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.wp, mb.consumeFunc)
+	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.wp, mb.consumeFunc, mb.logger)
 	_ = newS.Start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.

@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
@@ -26,6 +28,7 @@ type batcherSettings[T any] struct {
 	partitioner Partitioner[T]
 	next        sender.SendFunc[T]
 	maxWorkers  int
+	logger      *zap.Logger
 }
 
 func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[request.Request]) (Batcher[request.Request], error) {
@@ -39,10 +42,10 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 	}
 
 	if set.partitioner == nil {
-		return newPartitionBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next), nil
+		return newPartitionBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next, set.logger), nil
 	}
 
-	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next), nil
+	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next, set.logger), nil
 }
 
 func activeSizer[T any](sizerType request.SizerType, itemsSizer, bytesSizer request.Sizer[T]) request.Sizer[T] {
