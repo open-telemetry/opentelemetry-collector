@@ -20,7 +20,7 @@ import (
 )
 
 
-{{ if getEventOptionalAttributes .Attributes }}
+{{ if getEventOptionalAttributes }}
 type EventAttributeOption interface {
 	apply(plog.LogRecord)
 }
@@ -31,10 +31,10 @@ func (eaof eventAttributeOptionFunc) apply(lr plog.LogRecord) {
 	eaof(lr)
 }
 
-{{ range getEventOptionalAttributes .Attributes }}
-func With{{ .Render }}EventAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) EventAttributeOption {
+{{ range $name, $attr := getEventOptionalAttributes }}
+func With{{ $name.Render }}EventAttribute({{ $name.RenderUnexported }}AttributeValue {{ $attr.Type.Primitive }}) EventAttributeOption {
 	return eventAttributeOptionFunc(func(dp plog.LogRecord) {
-		{{- template "putAttribute" . }}
+		{{- template "putAttribute" (pairAttribute $name $attr) }}
 	})
 }
 {{ end }}
@@ -47,7 +47,7 @@ type event{{ $name.Render }} struct {
 }
 
 func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pcommon.Timestamp
-{{- range $event.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{end}}{{- if $event.HasOptionalAttribute $.Attributes -}}, options ...EventAttributeOption{{- end -}}) {
+{{- range $event.Attributes -}}{{- if not ($event.AttributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ ($event.AttributeInfo .).Type.Primitive }}{{ end }}{{end}}{{- if $event.HasOptionalAttribute -}}, options ...EventAttributeOption{{- end -}}) {
 	if !e.config.Enabled {
 		return
 	}
@@ -61,12 +61,13 @@ func (e *event{{ $name.Render }}) recordEvent(ctx context.Context, timestamp pco
 	}
 
 	{{- range $event.Attributes }}
-	{{- if not (attributeInfo .).Optional -}}
-	{{- template "putAttribute" . }}
+	{{- $attr := . | $event.AttributeInfo }}
+	{{- if not $attr.Optional -}}
+	{{- template "putAttribute" (pairAttribute . $attr) }}
 	{{- end }}
 	{{- end }}
 
-    {{ if $event.HasOptionalAttribute $.Attributes }}
+    {{ if $event.HasOptionalAttribute }}
 	for _, op := range options {
 		op.apply(dp)
 	}
@@ -271,20 +272,22 @@ func (lb *LogsBuilder) Emit(options ...ResourceLogsOption) plog.Logs {
 // Record{{ $name.Render }}Event adds a log record of {{ $name }} event.
 func (lb *LogsBuilder) Record{{ $name.Render }}Event(ctx context.Context, timestamp pcommon.Timestamp
 	{{- range $event.Attributes -}}
-	{{- if not (attributeInfo .).Optional -}}
-	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ (attributeInfo .).Type.Primitive }}{{ end }}
+	{{- $attr := . | $event.AttributeInfo -}}
+	{{- if not $attr.Optional -}}
+	, {{ .RenderUnexported }}AttributeValue {{ if $attr.Enum }}Attribute{{ .Render }}{{ else }}{{ $attr.Type.Primitive }}{{ end }}
 	{{- end -}}
 	{{- end -}}
-	{{- if $event.HasOptionalAttribute $.Attributes -}}
+	{{- if $event.HasOptionalAttribute -}}
 	, options... EventAttributeOption
 	{{- end -}}) {
 	lb.event{{ $name.Render }}.recordEvent(ctx, timestamp
 		{{- range $event.Attributes -}}
-		{{- if not (attributeInfo .).Optional -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- $attr := . | $event.AttributeInfo -}}
+		{{- if not $attr.Optional -}}
+		, {{ .RenderUnexported }}AttributeValue{{ if $attr.Enum }}.String(){{ end }}
 		{{- end -}}
 		{{- end -}}
-		{{- if $event.HasOptionalAttribute $.Attributes -}}
+		{{- if $event.HasOptionalAttribute -}}
 		, options...
 		{{- end -}})
 }

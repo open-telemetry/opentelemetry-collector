@@ -1,0 +1,17 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+events:
+  system.event:
+    enabled: true
+    description: The system event collected by opentelemetry collector.
+    attributes: []
+    xattributes:
+      missing:
+        optional: true

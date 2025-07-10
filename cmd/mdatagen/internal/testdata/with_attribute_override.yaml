@@ -1,0 +1,89 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+attributes:
+  optional_int_attr:
+    description: Optional int attr.
+    type: string
+    optional: true
+
+  required_int_attr:
+    description: Required int attr.
+    type: string
+    optional: false
+
+metrics:
+  default_metric:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [optional_int_attr, required_int_attr]
+  default_metric_with_optional_attr_overridden:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [optional_int_attr]
+    xattributes:
+      optional_int_attr:
+        optional: false
+  default_metric_with_required_attr_overridden:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [required_int_attr]
+    xattributes:
+      required_int_attr:
+        optional: true
+  default_metric_with_overrides:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [ optional_int_attr, required_int_attr ]
+    xattributes:
+      optional_int_attr:
+        optional: false
+      required_int_attr:
+        optional: true
+
+events:
+  default_event:
+    enabled: true
+    description: Event.
+    attributes: [optional_int_attr, required_int_attr]
+  default_event_with_optional_attr_overridden:
+    enabled: true
+    description: Event.
+    attributes: [optional_int_attr]
+    xattributes:
+      optional_int_attr:
+        optional: false
+  default_event_with_required_attr_overridden:
+    enabled: true
+    description: Event.
+    attributes: [required_int_attr]
+    xattributes:
+      required_int_attr:
+        optional: true
+  default_event_with_overrides:
+    enabled: true
+    description: Event.
+    attributes: [optional_int_attr, required_int_attr]
+    xattributes:
+      optional_int_attr:
+        optional: false
+      required_int_attr:
+        optional: true

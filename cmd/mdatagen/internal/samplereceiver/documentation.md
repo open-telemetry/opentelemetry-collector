@@ -33,6 +33,8 @@ The metric will be become optional soon.
 | map_attr | Attribute with a map value. | Any Map | false |
 | optional_int_attr | An optional attribute with an integer value | Any Int | true |
 | optional_string_attr | An optional attribute with any string value | Any Str | true |
+| required_attr_to_be_optional | An required string attribute will be optional in the metric and event levels. | Any Str | true |
+| optional_attr_to_be_required | An optional string attribute will be required in the metric and event levels. | Any Str | false |
 
 ### default.metric.to_be_removed
 
@@ -88,6 +90,8 @@ metrics:
 | boolean_attr | Attribute with a boolean value. | Any Bool | false |
 | boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
 | optional_string_attr | An optional attribute with any string value | Any Str | true |
+| required_attr_to_be_optional | An required string attribute will be optional in the metric and event levels. | Any Str | false |
+| optional_attr_to_be_required | An optional string attribute will be required in the metric and event levels. | Any Str | true |
 
 ### optional.metric.empty_unit
 
@@ -120,15 +124,15 @@ Example event enabled by default.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| state | Integer attribute with overridden name. | Any Int |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
-| slice_attr | Attribute with a slice value. | Any Slice |
-| map_attr | Attribute with a map value. | Any Map |
-| optional_int_attr | An optional attribute with an integer value | Any Int |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| state | Integer attribute with overridden name. | Any Int | false |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
+| slice_attr | Attribute with a slice value. | Any Slice | false |
+| map_attr | Attribute with a map value. | Any Map | false |
+| optional_int_attr | An optional attribute with an integer value | Any Int | true |
+| optional_string_attr | An optional attribute with any string value | Any Str | true |
 
 ### default.event.to_be_removed
 
@@ -138,13 +142,13 @@ The event will be removed soon.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| state | Integer attribute with overridden name. | Any Int |
-| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` |
-| slice_attr | Attribute with a slice value. | Any Slice |
-| map_attr | Attribute with a map value. | Any Map |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| state | Integer attribute with overridden name. | Any Int | false |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
+| slice_attr | Attribute with a slice value. | Any Slice | false |
+| map_attr | Attribute with a map value. | Any Map | false |
 
 ## Optional Events
 
@@ -164,12 +168,12 @@ The event will be renamed soon.
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| string_attr | Attribute with any string value. | Any Str |
-| boolean_attr | Attribute with a boolean value. | Any Bool |
-| boolean_attr2 | Another attribute with a boolean value. | Any Bool |
-| optional_string_attr | An optional attribute with any string value | Any Str |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| boolean_attr | Attribute with a boolean value. | Any Bool | false |
+| boolean_attr2 | Another attribute with a boolean value. | Any Bool | false |
+| optional_string_attr | An optional attribute with any string value | Any Str | true |
 
 ## Resource Attributes
 

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -164,6 +165,29 @@ func (md *Metadata) supportsSignal(signal string) bool {
 	return false
 }
 
+func (md *Metadata) Unmarshal(parser *confmap.Conf) error {
+	err := parser.Unmarshal(md)
+	for key := range md.Metrics {
+		metric := md.Metrics[key]
+		metric.Metadata = md
+		md.Metrics[key] = metric
+	}
+
+	for key := range md.Events {
+		event := md.Events[key]
+		event.Metadata = md
+		md.Events[key] = event
+	}
+
+	for key := range md.Telemetry.Metrics {
+		metric := md.Telemetry.Metrics[key]
+		metric.Metadata = md
+		md.Telemetry.Metrics[key] = metric
+	}
+
+	return err
+}
+
 func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName]Attribute, usedAttrs map[AttributeName]bool) error {
 	var errs error
 	for mn, m := range metrics {
@@ -179,6 +203,13 @@ func validateMetrics(metrics map[MetricName]Metric, attributes map[AttributeName
 				unknownAttrs = append(unknownAttrs, attr)
 			}
 		}
+
+		for an := range m.AttributeOverrides {
+			if _, ok := attributes[an]; !ok {
+				unknownAttrs = append(unknownAttrs, an)
+			}
+		}
+
 		if len(unknownAttrs) > 0 {
 			errs = errors.Join(errs, fmt.Errorf(`metric "%v" refers to undefined attributes: %v`, mn, unknownAttrs))
 		}
@@ -201,6 +232,13 @@ func validateEvents(events map[EventName]Event, attributes map[AttributeName]Att
 				unknownAttrs = append(unknownAttrs, attr)
 			}
 		}
+
+		for an := range e.AttributeOverrides {
+			if _, ok := attributes[an]; !ok {
+				unknownAttrs = append(unknownAttrs, an)
+			}
+		}
+
 		if len(unknownAttrs) > 0 {
 			errs = errors.Join(errs, fmt.Errorf(`event "%v" refers to undefined attributes: %v`, en, unknownAttrs))
 		}
@@ -308,6 +346,10 @@ type Attribute struct {
 	Optional bool `mapstructure:"optional"`
 }
 
+type AttributeOverride struct {
+	Optional bool `mapstructure:"optional"`
+}
+
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
 func (a Attribute) Name() AttributeName {
 	if a.NameOverride != "" {
@@ -342,6 +384,8 @@ func (a Attribute) TestValue() string {
 }
 
 type Signal struct {
+	Metadata *Metadata `mapstructure:"-"`
+
 	// Enabled defines whether the signal is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
 
@@ -359,13 +403,36 @@ type Signal struct {
 
 	// Attributes is the list of attributes that the signal emits.
 	Attributes []AttributeName `mapstructure:"attributes"`
+
+	// AttributeOverride hold property override values in the signal level.
+	AttributeOverrides map[AttributeName]AttributeOverride `mapstructure:"xattributes"`
 }
 
-func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+func (s Signal) HasOptionalAttribute() bool {
 	for _, attr := range s.Attributes {
-		if v, exists := attrs[attr]; exists && v.Optional {
+		if v, exists := s.Metadata.Attributes[attr]; exists && v.Optional {
+			return true
+		}
+	}
+
+	for attr := range s.AttributeOverrides {
+		if v, exists := s.Metadata.Attributes[attr]; exists && v.Optional {
 			return true
 		}
 	}
 	return false
+}
+
+func (s Signal) AttributeInfo(an AttributeName) Attribute {
+	attr, exists := s.Metadata.Attributes[an]
+
+	if !exists {
+		return Attribute{}
+	}
+
+	if override, exists := s.AttributeOverrides[an]; exists {
+		attr.Optional = override.Optional
+	}
+
+	return attr
 }

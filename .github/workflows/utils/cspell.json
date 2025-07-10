@@ -440,6 +440,7 @@
       "vanityurl",
       "vmmetrics",
       "withauth",
+      "xattributes",
       "xconfighttp",
       "xconfmap",
       "xconnector",
