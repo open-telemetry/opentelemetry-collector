@@ -110,7 +110,12 @@ func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 
 	packageName := cfg.Distribution.Package
 
-	collectorBin := filepath.Join(tmpdir, cfg.Distribution.Name)
+	binName := cfg.Distribution.Name
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+
+	collectorBin := filepath.Join(tmpdir, binName)
 	buildCollector(t, renderedYAML)
 
 	if packageName == "" || packageName == "main" {
@@ -145,11 +150,6 @@ func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 	)
 
 	require.NoError(t, runCmd(wrapperDir, "go", "mod", "tidy"))
-
-	binName := cfg.Distribution.Name
-	if runtime.GOOS == "windows" {
-		binName += ".exe"
-	}
 
 	collectorBin = filepath.Join(wrapperDir, binName)
 	require.NoError(t, runCmd(wrapperDir, "go", "build", "-o", collectorBin, "main.go"))

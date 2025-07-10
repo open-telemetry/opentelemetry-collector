@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -116,7 +117,11 @@ func Compile(cfg *Config) error {
 	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
 	gcflags := ""
 
-	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
+	binName := cfg.Distribution.Name
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	args := []string{"build", "-trimpath", "-o", binName}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
 		ldflags = cfg.LDFlags
