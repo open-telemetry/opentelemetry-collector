@@ -19,6 +19,7 @@ import (
 func TestMultiBatcher_NoTimeout(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
 	}
 	sink := requesttest.NewSink()
@@ -26,7 +27,6 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 	type partitionKey struct{}
 
 	ba := newMultiBatcher(cfg,
-		request.SizerTypeItems,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
@@ -70,6 +70,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 func TestMultiBatcher_Timeout(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
 	}
 	sink := requesttest.NewSink()
@@ -77,7 +78,6 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 	type partitionKey struct{}
 
 	ba := newMultiBatcher(cfg,
-		request.SizerTypeItems,
 		request.NewItemsSizer(),
 		newWorkerPool(1),
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
