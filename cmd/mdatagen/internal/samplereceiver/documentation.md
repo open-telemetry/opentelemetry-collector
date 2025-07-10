@@ -62,6 +62,28 @@ Monotonic cumulative sum int metric with string input_type enabled by default.
 | slice_attr | Attribute with a slice value. | Any Slice | false |
 | map_attr | Attribute with a map value. | Any Map | false |
 
+### system.cpu.time
+
+Monotonic cumulative sum int metric enabled by default.
+
+The metric will be become optional soon.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic | Stability | Semantic Convention |
+| ---- | ----------- | ---------- | ----------------------- | --------- | --------- | ------------------- |
+| s | Sum | Int | Cumulative | true | stable | [system.cpu.time](https://github.com/open-telemetry/semantic-conventions/blob/v1.35.0/docs/system/system-metrics.md#metric-systemcputime) |
+
+#### Attributes
+
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
+| string_attr | Attribute with any string value. | Any Str | false |
+| state | Integer attribute with overridden name. | Any Int | false |
+| enum_attr | Attribute with a known set of string values. | Str: ``red``, ``green``, ``blue`` | false |
+| slice_attr | Attribute with a slice value. | Any Slice | false |
+| map_attr | Attribute with a map value. | Any Map | false |
+| optional_int_attr | An optional attribute with an integer value | Any Int | true |
+| optional_string_attr | An optional attribute with any string value | Any Str | true |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -214,7 +236,7 @@ Queue capacity - sync gauge example.
 
 ### otelcol_queue_length
 
-This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]
+This metric is optional and therefore not initialized in NewTelemetryBuilder. [development]
 
 For example this metric only exists if feature A is enabled.
 

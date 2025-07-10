@@ -71,7 +71,7 @@ func AssertEqualQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []m
 func AssertEqualQueueLength(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_queue_length",
-		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]",
+		Description: "This metric is optional and therefore not initialized in NewTelemetryBuilder. [development]",
 		Unit:        "{items}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,

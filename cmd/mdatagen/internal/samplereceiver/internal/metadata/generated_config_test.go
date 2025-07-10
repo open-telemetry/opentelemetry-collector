@@ -32,6 +32,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MetricInputType:          MetricConfig{Enabled: true},
 					OptionalMetric:           MetricConfig{Enabled: true},
 					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
+					SystemCPUTime:            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -54,6 +55,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MetricInputType:          MetricConfig{Enabled: false},
 					OptionalMetric:           MetricConfig{Enabled: false},
 					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+					SystemCPUTime:            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},

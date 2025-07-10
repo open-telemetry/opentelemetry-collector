@@ -124,7 +124,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.QueueLength, err = builder.meter.Int64ObservableGauge(
 		"otelcol_queue_length",
-		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [alpha]"),
+		metric.WithDescription("This metric is optional and therefore not initialized in NewTelemetryBuilder. [development]"),
 		metric.WithUnit("{items}"),
 	)
 	errs = errors.Join(errs, err)
