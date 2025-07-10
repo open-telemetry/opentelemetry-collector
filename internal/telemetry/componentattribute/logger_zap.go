@@ -4,6 +4,7 @@
 package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 
 import (
+	"errors"
 	"reflect"
 	"time"
 
@@ -133,9 +134,11 @@ func (ocwa *otelTeeCoreWithAttributes) Check(entry zapcore.Entry, ce *zapcore.Ch
 	return ce
 }
 
-func (ocwa *otelTeeCoreWithAttributes) Write(entry zapcore.Entry, fields []zapcore.Field) error {
-	err := ocwa.sourceCore.Write(entry, fields)
-	return multierr.Append(err, ocwa.otelCore.Write(entry, fields))
+func (ocwa *otelTeeCoreWithAttributes) Write(zapcore.Entry, []zapcore.Field) error {
+	// This wrapper's Write method should not be called. The underlying sourceCore
+	// and otelCore will add themselves to the CheckedEntry, which will result in their
+	// Write methods being called directly.
+	return errors.New("Write should not be called directly")
 }
 
 func (ocwa *otelTeeCoreWithAttributes) Sync() error {

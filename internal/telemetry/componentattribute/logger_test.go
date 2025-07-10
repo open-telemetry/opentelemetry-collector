@@ -4,13 +4,16 @@
 package componentattribute
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/log/logtest"
+	"go.opentelemetry.io/otel/log/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -133,6 +136,50 @@ func TestCore(t *testing.T) {
 	}
 }
 
+func TestNewOTelTeeCoreWithAttributes(t *testing.T) {
+	// Only log at Info level. Debug level logs should not be copied to the LoggerProvider.
+	t.Run("copy_accepted_logs", func(t *testing.T) {
+		observerCore, _ := observer.New(zap.InfoLevel)
+		recorder := logtest.NewRecorder()
+		core := NewOTelTeeCoreWithAttributes(observerCore, recorder, "scope", attribute.NewSet())
+		timestamp := time.Now()
+		logger := zap.New(core, zap.WithClock(constantClock(timestamp)))
+
+		loggerWith := logger.With(zap.String("logger_key", "logger_value"))
+		loggerWith.Info("message", zap.String("record_key", "record_value"))
+		loggerWith.Debug("dropped") // should not be recorded due to observer's level
+
+		logtest.AssertEqual(t, logtest.Recording{
+			logtest.Scope{Name: "scope"}: []logtest.Record{{
+				Context:      context.Background(),
+				Timestamp:    timestamp,
+				Severity:     log.SeverityInfo,
+				SeverityText: "info",
+				Body:         log.StringValue("message"),
+				Attributes: []log.KeyValue{
+					log.String("logger_key", "logger_value"),
+					log.String("record_key", "record_value"),
+				},
+			}},
+		}, recorder.Result())
+
+		require.EqualError(t, core.Write(zapcore.Entry{}, nil), "Write should not be called directly")
+		require.NoError(t, logger.Sync()) // no-op for otelzap
+	})
+	t.Run("noop_loggerprovider", func(t *testing.T) {
+		// Using a noop LoggerProvider should not impact the main zap core.
+		observerCore, observedLogs := observer.New(zap.InfoLevel)
+		noopProvider := noop.NewLoggerProvider()
+		core := NewOTelTeeCoreWithAttributes(observerCore, noopProvider, "scope", attribute.NewSet())
+		logger := zap.New(core)
+
+		logger.Info("message", zap.String("key", "value"))
+		logger.Debug("dropped") // should not be recorded due to observer's level
+
+		assert.Equal(t, 1, observedLogs.Len())
+	})
+}
+
 func TestSamplerCore(t *testing.T) {
 	tick := time.Second
 	// Drop identical messages after the first two
@@ -229,3 +276,8 @@ func TestSamplerCorePanic(t *testing.T) {
 		tryWithAttributeSet(sampler, attribute.NewSet())
 	})
 }
+
+type constantClock time.Time
+
+func (c constantClock) Now() time.Time                       { return time.Time(c) }
+func (c constantClock) NewTicker(time.Duration) *time.Ticker { return &time.Ticker{} }
