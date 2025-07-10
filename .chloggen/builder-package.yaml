@@ -7,7 +7,7 @@ change_type: enhancement
 component: builder
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: Enhanced the builder to support additional configuration options for component initialization.
 
 # One or more tracking issues or pull requests related to the change
 issues: [13296]
