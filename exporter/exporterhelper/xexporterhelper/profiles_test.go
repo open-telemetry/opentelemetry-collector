@@ -59,13 +59,13 @@ func TestProfilesRequest(t *testing.T) {
 }
 
 func TestProfilesExporter_InvalidName(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushProfilesData(nil))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), nil, newPushProfilesData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilConfig, err)
 }
 
 func TestProfilesExporter_NilLogger(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exporter.Settings{}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	le, err := NewProfiles(context.Background(), exporter.Settings{}, &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	require.Nil(t, le)
 	require.Equal(t, errNilLogger, err)
 }
@@ -77,7 +77,7 @@ func TestProfilesRequestExporter_NilLogger(t *testing.T) {
 }
 
 func TestProfilesExporter_NilPushProfilesData(t *testing.T) {
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, nil)
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, nil)
 	require.Nil(t, le)
 	require.Equal(t, errNilPushProfileData, err)
 }
@@ -96,7 +96,7 @@ func TestProfilesRequestExporter_NilProfilesConverter(t *testing.T) {
 
 func TestProfilesExporter_Default(t *testing.T) {
 	ld := pprofile.NewProfiles()
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -121,7 +121,7 @@ func TestProfilesRequestExporter_Default(t *testing.T) {
 
 func TestProfilesExporter_WithCapabilities(t *testing.T) {
 	capabilities := consumer.Capabilities{MutatesData: true}
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithCapabilities(capabilities))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithCapabilities(capabilities))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 
@@ -141,7 +141,7 @@ func TestProfilesRequestExporter_WithCapabilities(t *testing.T) {
 func TestProfilesExporter_Default_ReturnError(t *testing.T) {
 	ld := pprofile.NewProfiles()
 	want := errors.New("my_error")
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(want))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, want, le.ConsumeProfiles(context.Background(), ld))
@@ -219,7 +219,7 @@ func TestProfiles_WithPersistentQueue(t *testing.T) {
 			})
 
 			ts := consumertest.ProfilesSink{}
-			te, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithQueue(qCfg))
+			te, err := NewProfiles(context.Background(), set, &fakeProfilesExporterConfig, ts.ConsumeProfiles, exporterhelper.WithQueue(qCfg))
 			require.NoError(t, err)
 			require.NoError(t, te.Start(context.Background(), host))
 			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
@@ -248,7 +248,7 @@ func TestProfilesExporter_WithSpan(t *testing.T) {
 	otel.SetTracerProvider(set.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(nil))
+	le, err := NewProfiles(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(nil))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, nil)
@@ -275,7 +275,7 @@ func TestProfilesExporter_WithSpan_ReturnError(t *testing.T) {
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
 	want := errors.New("my_error")
-	le, err := NewProfilesExporter(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(want))
+	le, err := NewProfiles(context.Background(), set, &fakeProfilesExporterConfig, newPushProfilesData(want))
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	checkWrapSpanForProfilesExporter(t, sr, set.TracerProvider.Tracer("test"), le, want)
@@ -299,7 +299,7 @@ func TestProfilesExporter_WithShutdown(t *testing.T) {
 	shutdownCalled := false
 	shutdown := func(context.Context) error { shutdownCalled = true; return nil }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdown))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
@@ -324,7 +324,7 @@ func TestProfilesExporter_WithShutdown_ReturnError(t *testing.T) {
 	want := errors.New("my_error")
 	shutdownErr := func(context.Context) error { return want }
 
-	le, err := NewProfilesExporter(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
+	le, err := NewProfiles(context.Background(), exportertest.NewNopSettings(exportertest.NopType), &fakeProfilesExporterConfig, newPushProfilesData(nil), exporterhelper.WithShutdown(shutdownErr))
 	assert.NotNil(t, le)
 	require.NoError(t, err)
 
