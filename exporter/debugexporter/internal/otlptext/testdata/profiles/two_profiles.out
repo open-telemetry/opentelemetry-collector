@@ -9,6 +9,16 @@ Mapping #0
     Has line numbers: true
     Has inline frames: true
 Location #0
+    Mapping index: 0
+    Address: 1
+    Is folded: false
+    Attributes: []
+Location #1
+    Mapping index: 0
+    Address: 2
+    Is folded: false
+    Attributes: []
+Location #2
     Mapping index: 3
     Address: 4
     Line #0
@@ -29,6 +39,7 @@ Link table:
      -> Trace ID: Str(0302030405060708090a0b0c0d0e0f10)
      -> Span ID: Str(1112131415161718)
 String table:
+    
     foobar
 ResourceProfiles #0
 Resource SchemaURL: 
@@ -44,7 +55,7 @@ Profile #0
     Dropped attributes count: 1
     Location indices: [1]
     Sample #0
-        Location length: 10
+        Location length: 1
         Value: [4]
         Attributes:
              -> key: value
@@ -53,9 +64,9 @@ Profile #1
     Start time     : 2020-02-11 20:26:12.000000321 +0000 UTC
     Duration       : 2020-02-11 20:26:13.000000789 +0000 UTC
     Dropped attributes count: 0
-    Location indices: []
+    Location indices: [1]
     Sample #0
-        Location length: 20
+        Location length: 1
         Value: [9]
         Attributes:
              -> key: value

@@ -22,6 +22,7 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
 
 	dic := td.ProfilesDictionary()
+	dic.StringTable().Append("")
 	attr := dic.AttributeTable().AppendEmpty()
 	attr.SetKey("key")
 	attr.Value().SetStr("value")
@@ -33,35 +34,52 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	for i := 0; i < profilesCount; i++ {
 		switch i % 2 {
 		case 0:
-			fillProfileOne(ss.AppendEmpty())
+			fillProfileOne(dic, ss.AppendEmpty())
 		case 1:
-			fillProfileTwo(ss.AppendEmpty())
+			fillProfileTwo(dic, ss.AppendEmpty())
 		}
 	}
+
 	return td
 }
 
-func fillProfileOne(profile pprofile.Profile) {
+func fillProfileOne(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	profile.SetProfileID([16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	profile.SetTime(profileStartTimestamp)
 	profile.SetDuration(profileEndTimestamp)
 	profile.SetDroppedAttributesCount(1)
+	profile.PeriodType().SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
+
+	st := profile.SampleType().AppendEmpty()
+	st.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
+
+	loc := pprofile.NewLocation()
+	loc.SetAddress(1)
+	_ = pprofile.PutLocation(dic.LocationTable(), profile, loc)
 
 	sample := profile.Sample().AppendEmpty()
-	sample.SetLocationsStartIndex(2)
-	sample.SetLocationsLength(10)
+	sample.SetLocationsStartIndex(0)
+	sample.SetLocationsLength(1)
 	sample.Value().Append(4)
 	sample.AttributeIndices().Append(0)
 }
 
-func fillProfileTwo(profile pprofile.Profile) {
+func fillProfileTwo(dic pprofile.ProfilesDictionary, profile pprofile.Profile) {
 	profile.SetProfileID([16]byte{0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	profile.SetTime(profileStartTimestamp)
 	profile.SetDuration(profileEndTimestamp)
+	profile.PeriodType().SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
+
+	st := profile.SampleType().AppendEmpty()
+	st.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
+
+	loc := pprofile.NewLocation()
+	loc.SetAddress(2)
+	_ = pprofile.PutLocation(dic.LocationTable(), profile, loc)
 
 	sample := profile.Sample().AppendEmpty()
-	sample.SetLocationsStartIndex(7)
-	sample.SetLocationsLength(20)
+	sample.SetLocationsStartIndex(0)
+	sample.SetLocationsLength(1)
 	sample.Value().Append(9)
 	sample.AttributeIndices().Append(0)
 }
