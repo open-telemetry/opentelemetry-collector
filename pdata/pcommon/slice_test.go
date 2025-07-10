@@ -54,6 +54,24 @@ func TestSliceReadOnly(t *testing.T) {
 	assert.Panics(t, func() { _ = es.FromRaw([]any{3}) })
 }
 
+func TestSliceReadOnlyValues(t *testing.T) {
+	state := internal.StateReadOnly
+	es := newSlice(&[]otlpcommon.AnyValue{
+		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v1"}},
+		{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v2"}},
+	}, &state)
+
+	// Value returned by At(i) must be read-only.
+	av := es.At(0)
+	assert.NotEmpty(t, av)
+	assert.Panics(t, func() { av.SetStr("foo") })
+
+	// Yielded values from All() must be read-only.
+	for _, iv := range es.All() {
+		assert.Panics(t, func() { iv.SetStr("foo") })
+	}
+}
+
 func TestSlice_CopyTo(t *testing.T) {
 	dest := NewSlice()
 	// Test CopyTo to empty
@@ -191,4 +209,22 @@ func BenchmarkSliceEqual(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		_ = es.Equal(cmp)
 	}
+}
+
+func TestSlice_AsReadOnly(t *testing.T) {
+	src := NewSlice()
+	src.AppendEmpty().SetStr("v1")
+	src.AppendEmpty().SetStr("v2")
+
+	cp := src.AsReadOnly()
+
+	// Assert read-only state and values
+	readOnlyState := internal.StateReadOnly
+	assert.Equal(t, &readOnlyState, cp.getState())
+	assert.NotEqual(t, src, cp)
+	assert.Equal(t, src.AsRaw(), cp.AsRaw())
+
+	// Assert it's a shallow copy
+	src.At(0).SetStr("shallow")
+	assert.Equal(t, src.At(0).AsRaw(), cp.At(0).AsRaw())
 }
