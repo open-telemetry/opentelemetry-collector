@@ -134,7 +134,8 @@ func (ms StringSlice) CopyTo(dest StringSlice) {
 	*dest.getOrig() = internal.CopyOrigStringSlice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another StringSlice
-func (ms StringSlice) Equal(val StringSlice) bool {
+// Equal checks equality with another StringSlice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms StringSlice) Equal(val StringSlice, opts ...CompareOption) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }

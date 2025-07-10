@@ -40,6 +40,19 @@ func TestHistogram_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
 }
 
+func TestHistogram_Equal(t *testing.T) {
+	ms1 := NewHistogram()
+	ms2 := NewHistogram()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestHistogram()
+	ms2 = generateTestHistogram()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewHistogram()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())

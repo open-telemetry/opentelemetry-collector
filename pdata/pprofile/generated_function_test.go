@@ -40,6 +40,19 @@ func TestFunction_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
 }
 
+func TestFunction_Equal(t *testing.T) {
+	ms1 := NewFunction()
+	ms2 := NewFunction()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestFunction()
+	ms2 = generateTestFunction()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewFunction()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestFunction_NameStrindex(t *testing.T) {
 	ms := NewFunction()
 	assert.Equal(t, int32(0), ms.NameStrindex())

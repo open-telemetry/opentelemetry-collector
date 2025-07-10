@@ -148,6 +148,20 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	*dest.orig = copyOrigSpanLinkSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another SpanLinkSlice.
+// In order to match equality, the order of elements must be the same.
+func (es SpanLinkSlice) Equal(val SpanLinkSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
 // provided less function so that two instances of SpanLinkSlice
 // can be compared.

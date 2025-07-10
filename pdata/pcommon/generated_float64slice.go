@@ -134,7 +134,28 @@ func (ms Float64Slice) CopyTo(dest Float64Slice) {
 	*dest.getOrig() = internal.CopyOrigFloat64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another Float64Slice
-func (ms Float64Slice) Equal(val Float64Slice) bool {
-	return slices.Equal(*ms.getOrig(), *val.getOrig())
+// Equal checks equality with another Float64Slice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms Float64Slice) Equal(val Float64Slice, opts ...CompareOption) bool {
+	// For backward compatibility: if no options provided, use strict slice comparison
+	if len(opts) == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+
+	cfg := NewCompareConfig(opts)
+	// If tolerance is 0 (strict), use fast slice comparison
+	if cfg.floatTolerance == 0 {
+		return slices.Equal(*ms.getOrig(), *val.getOrig())
+	}
+
+	// Use tolerance-based comparison
+	if len(*ms.getOrig()) != len(*val.getOrig()) {
+		return false
+	}
+	for i := 0; i < len(*ms.getOrig()); i++ {
+		if !cfg.CompareFloat64((*ms.getOrig())[i], (*val.getOrig())[i]) {
+			return false
+		}
+	}
+	return true
 }

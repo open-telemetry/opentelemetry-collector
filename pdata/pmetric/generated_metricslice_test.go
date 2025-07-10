@@ -142,6 +142,34 @@ func TestMetricSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestMetricSlice_Equal(t *testing.T) {
+	es1 := NewMetricSlice()
+	es2 := NewMetricSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestMetricSlice()
+	es2 = generateTestMetricSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewMetricSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+
+	// Test element-wise inequality - create two slices with same length but different elements
+	if es1.Len() > 0 {
+		es1 = generateTestMetricSlice()
+		es2 = NewMetricSlice()
+		// Make es2 same length as es1 but with empty elements
+		for i := 0; i < es1.Len(); i++ {
+			es2.AppendEmpty()
+		}
+		// This should return false since elements are different
+		assert.False(t, es1.Equal(es2))
+	}
+}
+
 func TestMetricSlice_Sort(t *testing.T) {
 	es := generateTestMetricSlice()
 	es.Sort(func(a, b Metric) bool {

@@ -93,3 +93,10 @@ func copyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.Line = src.Line
 	dest.Column = src.Column
 }
+
+// Equal checks equality with another Line.
+func (ms Line) Equal(val Line) bool {
+	return ms.FunctionIndex() == val.FunctionIndex() &&
+		ms.Line() == val.Line() &&
+		ms.Column() == val.Column()
+}

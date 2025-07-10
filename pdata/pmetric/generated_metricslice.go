@@ -148,6 +148,20 @@ func (es MetricSlice) CopyTo(dest MetricSlice) {
 	*dest.orig = copyOrigMetricSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another MetricSlice.
+// In order to match equality, the order of elements must be the same.
+func (es MetricSlice) Equal(val MetricSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Metric elements within MetricSlice given the
 // provided less function so that two instances of MetricSlice
 // can be compared.

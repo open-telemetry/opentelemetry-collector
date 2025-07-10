@@ -148,6 +148,20 @@ func (es SampleSlice) CopyTo(dest SampleSlice) {
 	*dest.orig = copyOrigSampleSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another SampleSlice.
+// In order to match equality, the order of elements must be the same.
+func (es SampleSlice) Equal(val SampleSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the Sample elements within SampleSlice given the
 // provided less function so that two instances of SampleSlice
 // can be compared.

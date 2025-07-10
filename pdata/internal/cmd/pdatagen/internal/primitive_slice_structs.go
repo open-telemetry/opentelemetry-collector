@@ -47,13 +47,26 @@ func (iss *primitiveSliceStruct) generateTests(packageInfo *PackageInfo) []byte 
 
 func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []byte {
 	var sb bytes.Buffer
-	if err := primitiveSliceInternalTemplate.Execute(&sb, iss.templateFields(packageInfo)); err != nil {
+	internalPackageInfo := &PackageInfo{
+		name:        "internal",
+		path:        "internal",
+		imports:     []string{},
+		testImports: packageInfo.testImports,
+	}
+	if err := primitiveSliceInternalTemplate.Execute(&sb, iss.templateFields(internalPackageInfo)); err != nil {
 		panic(err)
 	}
 	return sb.Bytes()
 }
 
 func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[string]any {
+	sliceImports := []string{
+		`"iter"`,
+		`"slices"`,
+		``,
+		`"go.opentelemetry.io/collector/pdata/internal"`,
+	}
+
 	return map[string]any{
 		"structName":           iss.structName,
 		"itemType":             iss.itemType,
@@ -63,7 +76,7 @@ func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[st
 		"testSetVal":           iss.testSetVal,
 		"testNewVal":           iss.testNewVal,
 		"packageName":          packageInfo.name,
-		"imports":              packageInfo.imports,
+		"imports":              sliceImports,
 		"testImports":          packageInfo.testImports,
 	}
 }

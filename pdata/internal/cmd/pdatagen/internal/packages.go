@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 const header = `// Copyright The OpenTelemetry Authors
@@ -51,6 +52,14 @@ func (p *Package) GenerateFiles() error {
 			return err
 		}
 	}
+
+	// Generate compare_options.go file only for pcommon package
+	if p.info.name == "pcommon" {
+		if err := p.generateCompareOptionsFile(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -84,4 +93,22 @@ func (p *Package) GenerateInternalFiles() error {
 // need to be accessible from other pdata packages.
 func usedByOtherDataTypes(packageName string) bool {
 	return packageName == "pcommon" || packageName == "entity"
+}
+
+// generateCompareOptionsFile generates the compare_options.go file for the package
+func (p *Package) generateCompareOptionsFile() error {
+	tmpl, err := template.ParseFiles(filepath.Join("internal", "cmd", "pdatagen", "internal", "templates", "compare_options.go.tmpl"))
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(filepath.Join(p.info.path, "compare_options.go"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return tmpl.Execute(file, map[string]string{
+		"packageName": p.info.name,
+	})
 }

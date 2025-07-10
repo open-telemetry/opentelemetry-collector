@@ -81,3 +81,9 @@ func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex
 }
+
+// Equal checks equality with another AttributeUnit.
+func (ms AttributeUnit) Equal(val AttributeUnit) bool {
+	return ms.AttributeKeyStrindex() == val.AttributeKeyStrindex() &&
+		ms.UnitStrindex() == val.UnitStrindex()
+}

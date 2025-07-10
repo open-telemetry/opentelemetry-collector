@@ -82,3 +82,10 @@ func copyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Metrics = copyOrigMetricSlice(dest.Metrics, src.Metrics)
 }
+
+// Equal checks equality with another ScopeMetrics.
+func (ms ScopeMetrics) Equal(val ScopeMetrics) bool {
+	return ms.Scope().Equal(val.Scope()) &&
+		ms.SchemaUrl() == val.SchemaUrl() &&
+		ms.Metrics().Equal(val.Metrics())
+}

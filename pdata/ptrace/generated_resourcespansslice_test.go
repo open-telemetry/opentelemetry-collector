@@ -142,6 +142,34 @@ func TestResourceSpansSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestResourceSpansSlice_Equal(t *testing.T) {
+	es1 := NewResourceSpansSlice()
+	es2 := NewResourceSpansSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestResourceSpansSlice()
+	es2 = generateTestResourceSpansSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewResourceSpansSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+
+	// Test element-wise inequality - create two slices with same length but different elements
+	if es1.Len() > 0 {
+		es1 = generateTestResourceSpansSlice()
+		es2 = NewResourceSpansSlice()
+		// Make es2 same length as es1 but with empty elements
+		for i := 0; i < es1.Len(); i++ {
+			es2.AppendEmpty()
+		}
+		// This should return false since elements are different
+		assert.False(t, es1.Equal(es2))
+	}
+}
+
 func TestResourceSpansSlice_Sort(t *testing.T) {
 	es := generateTestResourceSpansSlice()
 	es.Sort(func(a, b ResourceSpans) bool {

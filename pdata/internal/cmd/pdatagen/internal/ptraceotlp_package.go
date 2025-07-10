@@ -12,6 +12,7 @@ var ptraceotlp = &Package{
 		name: "ptraceotlp",
 		path: filepath.Join("ptrace", "ptraceotlp"),
 		imports: []string{
+			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 		},
 		testImports: []string{
