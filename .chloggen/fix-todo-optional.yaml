@@ -7,7 +7,7 @@ change_type: breaking
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use configoptional for optional fields in exporterhelper
+note: Use configoptional for sending_queue::batch field
 
 # One or more tracking issues or pull requests related to the change
 issues: [13345]
