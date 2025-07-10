@@ -343,7 +343,7 @@ func TestLoadMetadata(t *testing.T) {
 						"request_duration": {
 							Signal: Signal{
 								Enabled:     true,
-								Stability:   Stability{Level: "alpha"},
+								Stability:   Stability{Level: "development"},
 								Description: "Duration of request",
 							},
 							Unit: strPtr("s"),
@@ -370,7 +370,7 @@ func TestLoadMetadata(t *testing.T) {
 						"queue_length": {
 							Signal: Signal{
 								Enabled:               true,
-								Stability:             Stability{Level: "alpha"},
+								Stability:             Stability{Level: "development"},
 								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
 								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
 							},

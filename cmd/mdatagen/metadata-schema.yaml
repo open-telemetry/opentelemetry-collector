@@ -85,6 +85,15 @@ attributes:
 # being described below.
 metrics:
   <metric.name>:
+    # Required: the metric stability
+    stability:
+      # Required: the level of stability
+      level: <development|stable|deprecated>
+      # Optional: the version current stability was introduced
+      from:
+    # Optional: the reference to a semantic convention. Required when stability_level equals stable
+    semantic_convention:
+      semconv_ref:
     # Required: whether the metric is collected by default.
     enabled: bool
     # Required: metric description.

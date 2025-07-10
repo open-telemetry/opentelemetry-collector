@@ -354,6 +354,9 @@ type Signal struct {
 	// The stability level of the signal.
 	Stability Stability `mapstructure:"stability"`
 
+	// The stability level of the metric.
+	SemanticConvention *SemanticConvention `mapstructure:"semantic_convention"`
+
 	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
 	ExtendedDocumentation string `mapstructure:"extended_documentation"`
 
