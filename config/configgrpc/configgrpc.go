@@ -484,13 +484,13 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	if gss.Keepalive.HasValue() {
 		keepaliveConfig := gss.Keepalive.Get()
 		if keepaliveConfig.ServerParameters.HasValue() {
-			svrParams := keepaliveConfig.ServerParameters
+			svrParams := keepaliveConfig.ServerParameters.Get()
 			opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
-				MaxConnectionIdle:     svrParams.Get().MaxConnectionIdle,
-				MaxConnectionAge:      svrParams.Get().MaxConnectionAge,
-				MaxConnectionAgeGrace: svrParams.Get().MaxConnectionAgeGrace,
-				Time:                  svrParams.Get().Time,
-				Timeout:               svrParams.Get().Timeout,
+				MaxConnectionIdle:     svrParams.MaxConnectionIdle,
+				MaxConnectionAge:      svrParams.MaxConnectionAge,
+				MaxConnectionAgeGrace: svrParams.MaxConnectionAgeGrace,
+				Time:                  svrParams.Time,
+				Timeout:               svrParams.Timeout,
 			}))
 		}
 		// The default values referenced in the GRPC are set within the server, so this code doesn't need
