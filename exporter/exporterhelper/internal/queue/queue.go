@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -55,25 +56,58 @@ type Queue[T any] interface {
 
 // Settings define internal parameters for a new Queue creation.
 type Settings[T any] struct {
-	Sizer           request.Sizer[T]
+	ItemsSizer      request.Sizer[T]
+	BytesSizer      request.Sizer[T]
 	SizerType       request.SizerType
 	Capacity        int64
 	NumConsumers    int
 	WaitForResult   bool
 	BlockOnOverflow bool
 	Signal          pipeline.Signal
-	StorageID       *component.ID
+	StorageID       configoptional.Optional[component.ID]
 	Encoding        Encoding[T]
 	ID              component.ID
 	Telemetry       component.TelemetrySettings
 }
 
-func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) Queue[T] {
-	// Configure memory queue or persistent based on the config.
-	if set.StorageID == nil {
-		return newAsyncQueue(newMemoryQueue[T](set), set.NumConsumers, next)
+func (set *Settings[T]) activeSizer() request.Sizer[T] {
+	switch set.SizerType {
+	case request.SizerTypeBytes:
+		return set.BytesSizer
+	case request.SizerTypeItems:
+		return set.ItemsSizer
+	default:
+		return request.RequestsSizer[T]{}
 	}
-	return newAsyncQueue(newPersistentQueue[T](set), set.NumConsumers, next)
+}
+
+func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
+	q, err := newBaseQueue(set)
+	if err != nil {
+		return nil, err
+	}
+
+	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next))
+	if err != nil {
+		return nil, err
+	}
+
+	return oq, nil
+}
+
+func newBaseQueue[T any](set Settings[T]) (readableQueue[T], error) {
+	// Configure memory queue or persistent based on the config.
+	if !set.StorageID.HasValue() {
+		return newMemoryQueue[T](set), nil
+	}
+	if set.ItemsSizer == nil {
+		return nil, errors.New("PersistentQueue requires ItemsSizer to be set")
+	}
+	if set.BytesSizer == nil {
+		return nil, errors.New("PersistentQueue requires BytesSizer to be set")
+	}
+
+	return newPersistentQueue[T](set), nil
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.

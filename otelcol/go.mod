@@ -31,7 +31,7 @@ require (
 	go.uber.org/zap v1.27.0
 	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.34.0
 	google.golang.org/grpc v1.73.0
 )
 
@@ -224,5 +224,7 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../config/confi
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../extension/extensionmiddleware
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extension/extensionmiddleware/extensionmiddlewaretest
+
+replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata

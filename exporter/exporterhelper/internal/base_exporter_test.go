@@ -15,6 +15,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
@@ -52,8 +53,7 @@ func TestQueueOptionsWithRequestExporter(t *testing.T) {
 	require.Error(t, err)
 
 	qCfg := NewDefaultQueueConfig()
-	storageID := component.NewID(component.MustNewType("test"))
-	qCfg.StorageID = &storageID
+	qCfg.StorageID = configoptional.Some(component.MustNewID("test"))
 	_, err = NewBaseExporter(exportertest.NewNopSettings(exportertest.NopType), pipeline.SignalMetrics, noopExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithRetry(configretry.NewDefaultBackOffConfig()),
@@ -68,11 +68,10 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	qCfg := NewDefaultQueueConfig()
-	qCfg.Enabled = false
+	qCfg.WaitForResult = true
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(qCfg),
-		WithBatcher(NewDefaultBatcherConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
@@ -102,11 +101,6 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
-				func() Option {
-					bs := NewDefaultBatcherConfig()
-					bs.Enabled = false
-					return WithBatcher(bs)
-				}(),
 			},
 		},
 		{
@@ -116,11 +110,6 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueueBatch(qs, newFakeQueueBatch())
-				}(),
-				func() Option {
-					bs := NewDefaultBatcherConfig()
-					bs.Enabled = false
-					return WithBatcher(bs)
 				}(),
 			},
 		},
@@ -153,10 +142,9 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
-		Encoding: fakeEncoding{},
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-		},
+		Encoding:   fakeEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: requesttest.NewBytesSizer(),
 	}
 }
 
