@@ -8,8 +8,6 @@ import (
 	"go.opentelemetry.io/otel/log/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
@@ -60,7 +58,12 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 
 	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
 		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return newSampledCore(core, cfg.Logs.Sampling)
+			return zapcore.NewSamplerWithOptions(
+				core,
+				cfg.Logs.Sampling.Tick,
+				cfg.Logs.Sampling.Initial,
+				cfg.Logs.Sampling.Thereafter,
+			)
 		}))
 	}
 
@@ -71,15 +74,4 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		lp = noop.NewLoggerProvider()
 	}
 	return logger, lp, nil
-}
-
-func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
-	// Create a logger that samples every Nth message after the first M messages every S seconds
-	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	return componentattribute.NewSamplerCoreWithAttributes(
-		core,
-		sc.Tick,
-		sc.Initial,
-		sc.Thereafter,
-	)
 }

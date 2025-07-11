@@ -4,9 +4,6 @@
 package componentattribute // import "go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 
 import (
-	"reflect"
-	"time"
-
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
@@ -17,7 +14,7 @@ import (
 
 // Interface for Zap cores that support setting and resetting a set of component attributes.
 //
-// There are three wrappers that implement this interface:
+// There are two wrappers that implement this interface:
 //
 //   - [NewConsoleCoreWithAttributes] injects component attributes as Zap fields.
 //
@@ -27,12 +24,6 @@ import (
 //     copied logs, component attributes are injected as instrumentation scope attributes.
 //
 //     This is used when service::telemetry::logs::processors is configured.
-//
-//   - [NewWrapperCoreWithAttributes] applies a wrapper function to a core, similar to
-//     [zap.WrapCore]. It allows setting component attributes on the inner core and reapplying the
-//     wrapper function when needed.
-//
-//     This is used when adding [zapcore.NewSamplerWithOptions] to our logger stack.
 type coreWithAttributes interface {
 	zapcore.Core
 	withAttributeSet(attribute.Set) zapcore.Core
@@ -143,60 +134,6 @@ func (ocwa *otelTeeCoreWithAttributes) Write(entry zapcore.Entry, fields []zapco
 func (ocwa *otelTeeCoreWithAttributes) Sync() error {
 	err := ocwa.sourceCore.Sync()
 	return multierr.Append(err, ocwa.otelCore.Sync())
-}
-
-type samplerCoreWithAttributes struct {
-	zapcore.Core
-	from zapcore.Core
-}
-
-var _ coreWithAttributes = (*samplerCoreWithAttributes)(nil)
-
-func NewSamplerCoreWithAttributes(inner zapcore.Core, tick time.Duration, first int, thereafter int) zapcore.Core {
-	return &samplerCoreWithAttributes{
-		Core: zapcore.NewSamplerWithOptions(inner, tick, first, thereafter),
-		from: inner,
-	}
-}
-
-func checkSamplerType(ty reflect.Type) bool {
-	if ty.Kind() != reflect.Pointer {
-		return false
-	}
-	ty = ty.Elem()
-	if ty.Kind() != reflect.Struct {
-		return false
-	}
-	innerField, ok := ty.FieldByName("Core")
-	if !ok {
-		return false
-	}
-	return reflect.TypeFor[zapcore.Core]().AssignableTo(innerField.Type)
-}
-
-func (ssc *samplerCoreWithAttributes) withAttributeSet(attrs attribute.Set) zapcore.Core {
-	newInner := tryWithAttributeSet(ssc.from, attrs)
-
-	// Relevant Zap code: https://github.com/uber-go/zap/blob/fcf8ee58669e358bbd6460bef5c2ee7a53c0803a/zapcore/sampler.go#L168
-	// We need to create a new Zap sampler core with the same settings but with a new inner core,
-	// while reusing the very RAM-intensive `counters` data structure.
-	// The `With` method does something similar, but it only replaces pre-set fields, not the Core.
-	// However, we can use `reflect` to accomplish this.
-	// This hack can be removed once Zap supports this use case.
-	// Tracking issue: https://github.com/uber-go/zap/issues/1498
-	val1 := reflect.ValueOf(ssc.Core)
-	if !checkSamplerType(val1.Type()) { // To avoid a more esoteric panic message below
-		panic("Unexpected Zap sampler type; see github.com/open-telemetry/opentelemetry-collector/issues/13014")
-	}
-	val2 := reflect.New(val1.Type().Elem())                        // core2 := new(sampler)
-	val2.Elem().Set(val1.Elem())                                   // *core2 = *core1
-	val2.Elem().FieldByName("Core").Set(reflect.ValueOf(newInner)) // core2.Core = newInner
-	newSampler := val2.Interface().(zapcore.Core)
-
-	return samplerCoreWithAttributes{
-		Core: newSampler,
-		from: newInner,
-	}
 }
 
 // ZapLoggerWithAttributes creates a Zap Logger with a new set of injected component attributes.
