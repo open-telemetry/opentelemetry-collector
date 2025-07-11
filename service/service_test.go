@@ -298,6 +298,12 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	}
 
 	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Sampling = &telemetry.LogsSamplingConfig{
+		Enabled:    true,
+		Tick:       time.Minute,
+		Initial:    2,
+		Thereafter: 0,
+	}
 	cfg.Telemetry.Logs.Processors = []config.LogRecordProcessor{{
 		Simple: &config.SimpleLogRecordProcessor{
 			Exporter: config.LogRecordExporter{
@@ -321,16 +327,23 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	// propagated to the final one provided to components.
 	require.NotNil(t, srv.telemetrySettings.Logger)
 	assert.Equal(t, zapcore.WarnLevel, srv.telemetrySettings.Logger.Level())
-	srv.telemetrySettings.Logger.Warn("warn_message")
-	srv.telemetrySettings.Logger.Info("info_message")
-	srv.telemetrySettings.Logger.Debug("debug_message")
-	assert.Equal(t, 1, observedLogs.FilterMessage("warn_message").Len())
-	assert.Equal(t, 0, observedLogs.FilterMessage("info_message").Len())
-	require.Len(t, received, 1)
-	assert.Equal(t,
-		"warn_message",
-		received[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(),
-	)
+
+	// Log 5 messages at different levels. Only the warning messages should
+	// be accepted, and only 2 of those due to sampling.
+	for i := 0; i < 5; i++ {
+		srv.telemetrySettings.Logger.Warn("warn_message")
+		srv.telemetrySettings.Logger.Info("info_message")
+		srv.telemetrySettings.Logger.Debug("debug_message")
+	}
+	assert.Equal(t, 2, observedLogs.Len())
+	assert.Equal(t, 2, observedLogs.FilterMessage("warn_message").Len())
+	require.Len(t, received, 2)
+	for _, logs := range received {
+		assert.Equal(t,
+			"warn_message",
+			logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(),
+		)
+	}
 }
 
 func TestServiceTelemetryMetrics(t *testing.T) {
