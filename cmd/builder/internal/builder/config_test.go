@@ -295,6 +295,7 @@ func TestNewDefaultConfig(t *testing.T) {
 	assert.Empty(t, cfg.LDFlags)
 	assert.False(t, cfg.GCSet)
 	assert.Empty(t, cfg.GCFlags)
+	assert.Equal(t, "main", cfg.Distribution.Package)
 }
 
 func TestNewBuiltinConfig(t *testing.T) {
