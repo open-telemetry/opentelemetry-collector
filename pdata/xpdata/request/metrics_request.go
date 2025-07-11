@@ -26,12 +26,13 @@ func MarshalMetrics(ctx context.Context, ld pmetric.Metrics) ([]byte, error) {
 
 // UnmarshalMetrics unmarshals a byte slice into pmetric.Metrics and the context.
 func UnmarshalMetrics(buf []byte) (context.Context, pmetric.Metrics, error) {
+	ctx := context.Background()
 	if !isRequestPayloadV1(buf) {
-		return context.Background(), pmetric.Metrics{}, ErrInvalidFormat
+		return ctx, pmetric.Metrics{}, ErrInvalidFormat
 	}
 	mr := reqint.MetricsRequest{}
 	if err := mr.Unmarshal(buf); err != nil {
-		return context.Background(), pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics request: %w", err)
+		return ctx, pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics request: %w", err)
 	}
-	return decodeContext(mr.RequestContext), pmetric.Metrics(internal.MetricsFromProto(*mr.MetricsData)), nil
+	return decodeContext(ctx, mr.RequestContext), pmetric.Metrics(internal.MetricsFromProto(*mr.MetricsData)), nil
 }

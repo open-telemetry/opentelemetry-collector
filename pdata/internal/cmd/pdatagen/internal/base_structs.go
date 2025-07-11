@@ -3,10 +3,6 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
-import (
-	"bytes"
-)
-
 type baseStruct interface {
 	getName() string
 	generate(packageInfo *PackageInfo) []byte
@@ -29,27 +25,15 @@ func (ms *messageValueStruct) getName() string {
 }
 
 func (ms *messageValueStruct) generate(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := messageTemplate.Execute(&sb, ms.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(messageTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageValueStruct) generateTests(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := messageTestTemplate.Execute(&sb, ms.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(messageTestTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageValueStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := messageInternalTemplate.Execute(&sb, ms.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageValueStruct) templateFields(packageInfo *PackageInfo) map[string]any {

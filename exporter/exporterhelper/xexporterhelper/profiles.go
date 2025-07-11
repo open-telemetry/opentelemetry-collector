@@ -35,14 +35,11 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewProfilesQueueBatchSettings() exporterhelper.QueueBatchSettings {
 	return exporterhelper.QueueBatchSettings{
-		Encoding: profilesEncoding{},
-		Sizers: map[exporterhelper.RequestSizerType]request.Sizer[exporterhelper.Request]{
-			exporterhelper.RequestSizerTypeRequests: exporterhelper.NewRequestsSizer(),
-			exporterhelper.RequestSizerTypeItems:    request.NewItemsSizer(),
-			exporterhelper.RequestSizerTypeBytes: request.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
-					return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
-				},
+		Encoding:   profilesEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: request.BaseSizer{
+			SizeofFunc: func(req request.Request) int64 {
+				return int64(profilesMarshaler.ProfilesSize(req.(*profilesRequest).pd))
 			},
 		},
 	}
@@ -65,7 +62,7 @@ type profilesEncoding struct{}
 var _ exporterhelper.QueueBatchEncoding[request.Request] = profilesEncoding{}
 
 func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, profiles, err := pdatareq.UnmarshalProfiles(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -83,7 +80,7 @@ func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Reques
 
 func (profilesEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
 	profiles := req.(*profilesRequest).pd
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalProfiles(ctx, profiles)
 	}
 	return profilesMarshaler.MarshalProfiles(profiles)
@@ -117,8 +114,8 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
-func NewProfilesExporter(
+// NewProfiles creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
+func NewProfiles(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -134,6 +131,9 @@ func NewProfilesExporter(
 	return NewProfilesRequest(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
+
+// Deprecated: [v0.130.0] use NewProfiles.
+var NewProfilesExporter = NewProfiles
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
