@@ -18,6 +18,10 @@ var supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Lev
 	configtelemetry.LevelDetailed: {},
 }
 
+type OutputConfig struct {
+	Attributes []string `mapstructure:"attributes"`
+}
+
 // Config defines configuration for debug exporter.
 type Config struct {
 	// Verbosity defines the debug exporter verbosity.
@@ -31,6 +35,9 @@ type Config struct {
 
 	// UseInternalLogger defines whether the exporter sends the output to the collector's internal logger.
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
+
+	// OutputConfig defines how the exporter would output attributes
+	Output OutputConfig `mapstructure:"output"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}

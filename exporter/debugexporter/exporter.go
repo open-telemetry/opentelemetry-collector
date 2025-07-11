@@ -5,12 +5,14 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
+	"slices"
 
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -24,9 +26,10 @@ type debugExporter struct {
 	metricsMarshaler  pmetric.Marshaler
 	tracesMarshaler   ptrace.Marshaler
 	profilesMarshaler pprofile.Marshaler
+	outputConfig      OutputConfig
 }
 
-func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level, outputConfig OutputConfig) *debugExporter {
 	var logsMarshaler plog.Marshaler
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
@@ -49,7 +52,15 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 		metricsMarshaler:  metricsMarshaler,
 		tracesMarshaler:   tracesMarshaler,
 		profilesMarshaler: profilesMarshaler,
+		outputConfig:      outputConfig,
 	}
+}
+
+func matchAttributes(key string, outputConfig OutputConfig) bool {
+	if len(outputConfig.Attributes) == 0 {
+		return true
+	}
+	return slices.Contains(outputConfig.Attributes, key)
 }
 
 func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
@@ -58,6 +69,22 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 		zap.Int("spans", td.SpanCount()))
 	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
+	}
+
+	for _, rs := range td.ResourceSpans().All() {
+		rs.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+			return !matchAttributes(k, s.outputConfig)
+		})
+		for _, ss := range rs.ScopeSpans().All() {
+			ss.Scope().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+				return !matchAttributes(k, s.outputConfig)
+			})
+			for _, span := range ss.Spans().All() {
+				span.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+					return !matchAttributes(k, s.outputConfig)
+				})
+			}
+		}
 	}
 
 	buf, err := s.tracesMarshaler.MarshalTraces(td)
@@ -77,6 +104,17 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 		return nil
 	}
 
+	for _, rm := range md.ResourceMetrics().All() {
+		rm.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+			return !matchAttributes(k, s.outputConfig)
+		})
+		for _, sm := range rm.ScopeMetrics().All() {
+			sm.Scope().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+				return !matchAttributes(k, s.outputConfig)
+			})
+		}
+	}
+
 	buf, err := s.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
@@ -92,6 +130,19 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 
 	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
+	}
+
+	for _, resourceLog := range ld.ResourceLogs().All() {
+		resourceLog.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+			return !matchAttributes(k, s.outputConfig)
+		})
+		for _, scopeLog := range resourceLog.ScopeLogs().All() {
+			for _, logRecord := range scopeLog.LogRecords().All() {
+				logRecord.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
+					return !matchAttributes(k, s.outputConfig)
+				})
+			}
+		}
 	}
 
 	buf, err := s.logsMarshaler.MarshalLogs(ld)
