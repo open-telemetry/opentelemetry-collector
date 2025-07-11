@@ -317,9 +317,8 @@ func TestServiceTelemetryLogging(t *testing.T) {
 		assert.NoError(t, srv.Shutdown(context.Background()))
 	}()
 
-	// The level we configured for the core should not have changed.
-	// If it did, it would mean that the LoggerProvider was not configured
-	// to filter logs according to the configured level.
+	// The level we configured on the initial Zap logger should have
+	// propagated to the final one provided to components.
 	require.NotNil(t, srv.telemetrySettings.Logger)
 	assert.Equal(t, zapcore.WarnLevel, srv.telemetrySettings.Logger.Level())
 	srv.telemetrySettings.Logger.Warn("warn_message")
