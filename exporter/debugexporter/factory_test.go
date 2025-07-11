@@ -5,10 +5,13 @@ package debugexporter
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -55,5 +58,37 @@ func TestCreateFactoryProfiles(t *testing.T) {
 
 	te, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(factory.Type()), cfg)
 	require.NoError(t, err)
-	assert.NotNil(t, te)
+	require.NotNil(t, te)
+}
+
+func TestCreateCustomLoggerOutputPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	logFile := tmpDir + "/test_output.log"
+	errFile := tmpDir + "/test_error.log"
+
+	ws, closeLog, err := zap.Open(logFile)
+	require.NoError(t, err)
+	errWs, closeErr, err := zap.Open(errFile)
+	require.NoError(t, err)
+
+	encoderCfg := zap.NewDevelopmentEncoderConfig()
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderCfg),
+		ws,
+		zapcore.InfoLevel,
+	)
+	logger := zap.New(core, zap.ErrorOutput(errWs))
+
+	logMsg := "test log output path"
+	logger.Info(logMsg)
+	require.NoError(t, logger.Sync())
+
+	// Close the file handles explicitly
+	closeLog()
+	closeErr()
+
+	//nolint:gosec
+	data, err := os.ReadFile(logFile)
+	require.NoError(t, err)
+	require.Contains(t, string(data), logMsg)
 }
