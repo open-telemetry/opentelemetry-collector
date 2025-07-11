@@ -137,8 +137,8 @@ func TestCore(t *testing.T) {
 }
 
 func TestNewOTelTeeCoreWithAttributes(t *testing.T) {
-	// Only log at Info level. Debug level logs should not be copied to the LoggerProvider.
 	t.Run("copy_accepted_logs", func(t *testing.T) {
+		// Only log at Info level. Debug level logs should not be copied to the LoggerProvider.
 		observerCore, _ := observer.New(zap.InfoLevel)
 		recorder := logtest.NewRecorder()
 		core := NewOTelTeeCoreWithAttributes(observerCore, recorder, "scope", attribute.NewSet())
@@ -164,6 +164,15 @@ func TestNewOTelTeeCoreWithAttributes(t *testing.T) {
 		}, recorder.Result())
 
 		require.NoError(t, logger.Sync()) // no-op for otelzap
+	})
+	t.Run("nop_core", func(t *testing.T) {
+		// Using zapcore.NewNopCore should result in no logs being sent to the LoggerProvider.
+		recorder := logtest.NewRecorder()
+		core := NewOTelTeeCoreWithAttributes(zapcore.NewNopCore(), recorder, "scope", attribute.NewSet())
+		logger := zap.New(core)
+
+		logger.Error("message")
+		logtest.AssertEqual(t, logtest.Recording{logtest.Scope{Name: "scope"}: nil}, recorder.Result())
 	})
 	t.Run("noop_loggerprovider", func(t *testing.T) {
 		// Using a noop LoggerProvider should not impact the main zap core.
