@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Reporter is an extra interface for `component.Host` implementations.
@@ -82,8 +83,11 @@ func (s Status) String() string {
 	return "StatusNone"
 }
 
-// Event contains a status and timestamp, and can contain an error
+// Event contains a status, a timestamp, optional error information, and additional attributes
 type Event struct {
+	// attributes provides additional context or metadata for the event.
+	attributes pcommon.Map
+
 	status Status
 	err    error
 	// TODO: consider if a timestamp is necessary in the default Event struct or is needed only for the healthcheckv2 extension
@@ -101,45 +105,76 @@ func (ev *Event) Err() error {
 	return ev.err
 }
 
+// Attributes returns the attributes (pcommon.Map) associated with the Event.
+func (ev *Event) Attributes() pcommon.Map {
+	return ev.attributes
+}
+
 // Timestamp returns the timestamp associated with the Event
 func (ev *Event) Timestamp() time.Time {
 	return ev.timestamp
 }
 
-// NewEvent creates and returns a Event with the specified status and sets the timestamp
-// time.Now(). To set an error on the event for an error status use one of the dedicated
-// constructors (e.g. NewRecoverableErrorEvent, NewPermanentErrorEvent, NewFatalErrorEvent)
-func NewEvent(status Status) *Event {
-	return &Event{
-		status:    status,
-		timestamp: time.Now(),
+// EventBuilderOption is a sealed interface wrapping options for [NewEvent].
+type EventBuilderOption interface {
+	applyOption(*Event)
+}
+
+type eventOptionFunc func(*Event)
+
+func (f eventOptionFunc) applyOption(event *Event) {
+	f(event)
+}
+
+// NewEvent creates and returns an Event with the specified options and sets the timestamp
+// time.Now(). To set an error on the event for an error status use the
+// WithError with one of the dedicated status (e.g. StatusRecoverableError, StatusPermanentError, StatusFatalError)
+func NewEvent(st Status, opts ...EventBuilderOption) *Event {
+	event := &Event{
+		timestamp:  time.Now(),
+		attributes: pcommon.NewMap(),
+		status:     st,
 	}
+
+	for _, opt := range opts {
+		opt.applyOption(event)
+	}
+
+	return event
+}
+
+// WithAttributes sets the Event attributes.
+func WithAttributes(attributes pcommon.Map) EventBuilderOption {
+	return eventOptionFunc(func(e *Event) {
+		e.attributes = attributes
+	})
+}
+
+// WithError sets the Event error.
+func WithError(err error) EventBuilderOption {
+	return eventOptionFunc(func(e *Event) {
+		e.err = err
+	})
 }
 
 // NewRecoverableErrorEvent wraps a transient error
 // passed as argument as a Event with a status StatusRecoverableError
 // and a timestamp set to time.Now().
 func NewRecoverableErrorEvent(err error) *Event {
-	ev := NewEvent(StatusRecoverableError)
-	ev.err = err
-	return ev
+	return NewEvent(StatusRecoverableError, WithError(err))
 }
 
 // NewPermanentErrorEvent wraps an error requiring human intervention to fix
 // passed as argument as a Event with a status StatusPermanentError
 // and a timestamp set to time.Now().
 func NewPermanentErrorEvent(err error) *Event {
-	ev := NewEvent(StatusPermanentError)
-	ev.err = err
-	return ev
+	return NewEvent(StatusPermanentError, WithError(err))
 }
 
 // NewFatalErrorEvent wraps the fatal runtime error passed as argument as a Event
 // with a status StatusFatalError and a timestamp set to time.Now().
 func NewFatalErrorEvent(err error) *Event {
-	ev := NewEvent(StatusFatalError)
-	ev.err = err
-	return ev
+	return NewEvent(StatusFatalError, WithError(err))
 }
 
 // StatusIsError returns true for error statuses (e.g. StatusRecoverableError,
