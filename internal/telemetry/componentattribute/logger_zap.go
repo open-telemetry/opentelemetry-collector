@@ -88,7 +88,9 @@ var _ coreWithAttributes = (*otelTeeCoreWithAttributes)(nil)
 // For the copied logs, component attributes are injected as instrumentation scope attributes.
 //
 // Note that we intentionally do not use zapcore.NewTee here, because it will simply duplicate all log entries
-// to each core. We only want to copy logs to the [log.LoggerProvider] if the provided core accepts the log.
+// to each core. The provided Zap core may have sampling or a minimum log level applied to it, so in order to
+// maintain consistency we need to ensure that only the logs accepted by the provided core are copied to the
+// log.LoggerProvider.
 func NewOTelTeeCoreWithAttributes(core zapcore.Core, lp log.LoggerProvider, scopeName string, attrs attribute.Set) zapcore.Core {
 	otelCore := otelzap.NewCore(
 		scopeName,
