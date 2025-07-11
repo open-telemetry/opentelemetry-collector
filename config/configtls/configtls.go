@@ -194,6 +194,21 @@ func (c Config) Validate() error {
 		return errors.New("provide either a CA file or the PEM-encoded string, but not both")
 	}
 
+	// Ensure certificate is not set using both file and PEM
+	if c.hasCertFile() && c.hasCertPem() {
+		return errors.New("provide either certificate file or PEM, but not both")
+	}
+
+	// Ensure key is not set using both file and PEM
+	if c.hasKeyFile() && c.hasKeyPem() {
+		return errors.New("provide either key file or PEM, but not both")
+	}
+
+	// Require both certificate and key if either is provided
+	if c.hasCert() != c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -208,6 +223,14 @@ func (c Config) Validate() error {
 		return errors.New("invalid TLS configuration: min_version cannot be greater than max_version")
 	}
 
+	return nil
+}
+
+func (c ServerConfig) Validate() error {
+	// For servers, both certificate and key are always required
+	if !c.hasCert() && !c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key for server connections")
+	}
 	return nil
 }
 
