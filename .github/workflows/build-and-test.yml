@@ -6,9 +6,10 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
     types: [checks_requested]
-  pull_request:
+  pull_request: # zizmor: ignore[cache-poisoning] Workflow is not used to publish artifacts
 
-permissions: read-all
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
@@ -20,6 +21,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -43,6 +46,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -67,6 +72,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -92,6 +99,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -154,6 +163,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -186,16 +197,20 @@ jobs:
     needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.unittest-matrix.result }}
+        run: echo ${UNITTEST_RESULT}
+        env:
+          UNITTEST_RESULT: ${{ needs.unittest-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.unittest-matrix.result }} ]]
+          if [[ success == ${UNITTEST_RESULT} ]]
           then
             echo "All matrix jobs passed!"
           else
             echo "One or more matrix jobs failed."
             false
           fi
+        env:
+          UNITTEST_RESULT: ${{ needs.unittest-matrix.result }}
 
   test-coverage:
     runs-on: ubuntu-latest
@@ -203,6 +218,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
@@ -267,6 +284,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
