@@ -443,7 +443,9 @@ func zpagesHealthy(zpagesAddr string) bool {
 		if err != nil {
 			return false
 		}
-		defer resp.Body.Close()
+		if resp.Body.Close() != nil {
+			return false
+		}
 		if resp.StatusCode != http.StatusOK {
 			return false
 		}
