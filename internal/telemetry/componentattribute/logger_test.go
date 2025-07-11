@@ -163,7 +163,6 @@ func TestNewOTelTeeCoreWithAttributes(t *testing.T) {
 			}},
 		}, recorder.Result())
 
-		require.EqualError(t, core.Write(zapcore.Entry{}, nil), "Write should not be called directly")
 		require.NoError(t, logger.Sync()) // no-op for otelzap
 	})
 	t.Run("noop_loggerprovider", func(t *testing.T) {
@@ -175,6 +174,39 @@ func TestNewOTelTeeCoreWithAttributes(t *testing.T) {
 
 		logger.Info("message", zap.String("key", "value"))
 		logger.Debug("dropped") // should not be recorded due to observer's level
+
+		assert.Equal(t, 1, observedLogs.Len())
+	})
+	t.Run("direct_write", func(t *testing.T) {
+		observerCore, observedLogs := observer.New(zap.InfoLevel)
+		recorder := logtest.NewRecorder()
+		core := NewOTelTeeCoreWithAttributes(observerCore, recorder, "scope", attribute.NewSet())
+
+		// Per https://pkg.go.dev/go.uber.org/zap/zapcore#Core:
+		//
+		//   If called, Write should always log the Entry and Fields;
+		//   it should not replicate the logic of Check.
+		//
+		// Even though the observer has been configured with Info level,
+		// Debug level logs should therefore be written.
+		require.NoError(t, core.Write(zapcore.Entry{
+			Level:   zapcore.DebugLevel,
+			Message: "m",
+		}, []zapcore.Field{{
+			Key:    "k",
+			Type:   zapcore.StringType,
+			String: "s",
+		}}))
+
+		logtest.AssertEqual(t, logtest.Recording{
+			logtest.Scope{Name: "scope"}: []logtest.Record{{
+				Context:      context.Background(),
+				Severity:     log.SeverityDebug,
+				SeverityText: "debug",
+				Body:         log.StringValue("m"),
+				Attributes:   []log.KeyValue{log.String("k", "s")},
+			}},
+		}, recorder.Result())
 
 		assert.Equal(t, 1, observedLogs.Len())
 	})
