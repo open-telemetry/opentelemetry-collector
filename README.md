@@ -23,6 +23,7 @@
   <a href="https://github.com/open-telemetry/opentelemetry-collector/releases">
     <img alt="GitHub release (latest by date including pre-releases)" src="https://img.shields.io/github/v/release/open-telemetry/opentelemetry-collector?include_prereleases&style=for-the-badge">
   </a>
+  </br>
   <a href="https://www.bestpractices.dev/projects/8404"><img src="https://www.bestpractices.dev/projects/8404/badge">
   </a>
   <a href="https://bugs.chromium.org/p/oss-fuzz/issues/list?sort=-opened&can=1&q=proj:opentelemetry">
@@ -188,6 +189,7 @@ the role of the [release manager](./docs/release.md#release-manager).
 
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Chao Weng](https://github.com/sincejune), AppDynamics
+- [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
 
 For more information about the triager role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#triager).
@@ -201,22 +203,22 @@ For more information about the emeritus role, see the [community repository](htt
 
 ### Emeritus Approvers
 
+- [Anthony Mirabella](https://github.com/Aneurysm9)
+- [Daniel Jaglowski](https://github.com/djaglowski)
 - [James Bebbington](https://github.com/james-bebbington)
 - [Jay Camp](https://github.com/jrcamp)
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling)
 - [Nail Islamov](https://github.com/nilebox)
 - [Owais Lone](https://github.com/owais)
 - [Rahul Patel](https://github.com/rghetia)
 - [Steven Karis](https://github.com/sjkaris)
-- [Anthony Mirabella](https://github.com/Aneurysm9)
-- [Daniel Jaglowski](https://github.com/djaglowski)
 
 For more information about the emeritus role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#emeritus-maintainerapprovertriager).
 
 ### Emeritus Triagers
 
-- [Andrew Hsu](https://github.com/andrewhsu)
 - [Alolita Sharma](https://github.com/alolita)
+- [Andrew Hsu](https://github.com/andrewhsu)
 - [Punya Biswal](https://github.com/punya)
 - [Steve Flanders](https://github.com/flands)
 
