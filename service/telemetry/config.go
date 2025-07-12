@@ -5,26 +5,10 @@ package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"errors"
-	"fmt"
-	"net"
-	"strconv"
-
-	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/service/telemetry/internal/migration"
 )
-
-var _ confmap.Unmarshaler = (*Config)(nil)
-
-var disableAddressFieldForInternalTelemetryFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.disableAddressFieldForInternalTelemetry",
-	featuregate.StageBeta,
-	featuregate.WithRegisterFromVersion("v0.111.0"),
-	featuregate.WithRegisterToVersion("v0.123.0"),
-	featuregate.WithRegisterDescription("controls whether the deprecated address field for internal telemetry is still supported"))
 
 // Config defines the configurable settings for service telemetry.
 type Config struct {
@@ -56,53 +40,6 @@ type MetricsConfig = migration.MetricsConfigV030
 // TracesConfig exposes the common Telemetry configuration for collector's internal spans.
 // Experimental: *NOTE* this structure is subject to change or removal in the future.
 type TracesConfig = migration.TracesConfigV030
-
-func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c); err != nil {
-		return err
-	}
-
-	// If the support for "metrics::address" is disabled, nothing to do.
-	// TODO: when this gate is marked stable remove the whole Unmarshal definition.
-	if disableAddressFieldForInternalTelemetryFeatureGate.IsEnabled() {
-		return nil
-	}
-
-	if len(c.Metrics.Address) != 0 { //nolint:staticcheck // SA1019
-		host, port, err := net.SplitHostPort(c.Metrics.Address) //nolint:staticcheck // SA1019
-		if err != nil {
-			return fmt.Errorf("failing to parse metrics address %q: %w", c.Metrics.Address, err) //nolint:staticcheck // SA1019
-		}
-		portInt, err := strconv.Atoi(port)
-		if err != nil {
-			return fmt.Errorf("failing to extract the port from the metrics address %q: %w", c.Metrics.Address, err) //nolint:staticcheck // SA1019
-		}
-
-		// User did not overwrite readers, so we will remove the default configured reader.
-		if !conf.IsSet("metrics::readers") {
-			c.Metrics.Readers = nil
-		}
-
-		c.Metrics.Readers = append(c.Metrics.Readers, config.MetricReader{
-			Pull: &config.PullMetricReader{
-				Exporter: config.PullMetricExporter{
-					Prometheus: &config.Prometheus{
-						Host:              &host,
-						Port:              &portInt,
-						WithoutScopeInfo:  newPtr(true),
-						WithoutUnits:      newPtr(true),
-						WithoutTypeSuffix: newPtr(true),
-						WithResourceConstantLabels: &config.IncludeExclude{
-							Included: []string{},
-						},
-					},
-				},
-			},
-		})
-	}
-
-	return nil
-}
 
 // Validate checks whether the current configuration is valid
 func (c *Config) Validate() error {

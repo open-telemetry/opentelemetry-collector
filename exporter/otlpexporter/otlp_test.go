@@ -306,7 +306,7 @@ func TestSendTraces(t *testing.T) {
 	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -407,7 +407,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			useTLS: false,
 			scheme: "http://",
 			gRPCClientSettings: configgrpc.ClientConfig{
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 			},
@@ -430,7 +430,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			cfg.ClientConfig = test.gRPCClientSettings
 			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
 			if test.useTLS {
-				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
+				cfg.ClientConfig.TLS.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings(factory.Type())
 			exp, err := factory.CreateTraces(context.Background(), set, cfg)
@@ -478,7 +478,7 @@ func TestSendMetrics(t *testing.T) {
 	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -583,7 +583,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		// Need to wait for every request blocking until either request timeouts or succeed.
@@ -643,7 +643,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -694,7 +694,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 	cfg.RetryConfig.InitialInterval = 0
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -775,7 +775,7 @@ func TestSendLogData(t *testing.T) {
 	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 	}
@@ -879,7 +879,7 @@ func TestSendProfiles(t *testing.T) {
 	cfg.QueueConfig.Enabled = false
 	cfg.ClientConfig = configgrpc.ClientConfig{
 		Endpoint: ln.Addr().String(),
-		TLSSetting: configtls.ClientConfig{
+		TLS: configtls.ClientConfig{
 			Insecure: true,
 		},
 		Headers: map[string]configopaque.String{
@@ -980,7 +980,7 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 			useTLS: false,
 			scheme: "http://",
 			gRPCClientSettings: configgrpc.ClientConfig{
-				TLSSetting: configtls.ClientConfig{
+				TLS: configtls.ClientConfig{
 					Insecure: true,
 				},
 			},
@@ -1003,7 +1003,7 @@ func TestSendProfilesWhenEndpointHasHttpScheme(t *testing.T) {
 			cfg.ClientConfig = test.gRPCClientSettings
 			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
 			if test.useTLS {
-				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
+				cfg.ClientConfig.TLS.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings(factory.Type())
 			exp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)

@@ -98,6 +98,25 @@ func TestStringSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestStringSliceMoveAndAppendTo(t *testing.T) {
+	// Test moving from an empty slice
+	ms := NewStringSlice()
+	ms2 := NewStringSlice()
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, NewStringSlice(), ms2)
+	assert.Equal(t, ms.Len(), 0)
+
+	// Test moving to empty slice
+	ms.FromRaw([]string{"a", "b", "c"})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 3)
+
+	// Test moving to a non empty slice
+	ms.FromRaw([]string{"a", "b", "c"})
+	ms.MoveAndAppendTo(ms2)
+	assert.Equal(t, ms2.Len(), 6)
+}
+
 func TestStringSliceEqual(t *testing.T) {
 	ms := NewStringSlice()
 	ms2 := NewStringSlice()

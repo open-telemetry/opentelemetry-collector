@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp/internal"
 	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 )
@@ -53,8 +54,8 @@ type ClientConfig struct {
 	// ProxyURL setting for the collector
 	ProxyURL string `mapstructure:"proxy_url,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
+	// TLS struct exposes TLS client configuration.
+	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
 	// Default is 0.
@@ -74,7 +75,7 @@ type ClientConfig struct {
 	Headers map[string]configopaque.String `mapstructure:"headers,omitempty"`
 
 	// Auth configuration for outgoing HTTP calls.
-	Auth *configauth.Config `mapstructure:"auth,omitempty"`
+	Auth configoptional.Optional[configauth.Config] `mapstructure:"auth,omitempty"`
 
 	// The compression key for supported compression types within collector.
 	Compression configcompression.Type `mapstructure:"compression,omitempty"`
@@ -116,7 +117,7 @@ type ClientConfig struct {
 	// If not set or set to 0, it defaults to 15s.
 	HTTP2PingTimeout time.Duration `mapstructure:"http2_ping_timeout,omitempty"`
 	// Cookies configures the cookie management of the HTTP client.
-	Cookies *CookiesConfig `mapstructure:"cookies,omitempty"`
+	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
@@ -164,7 +165,7 @@ type ToClientOption interface {
 
 // ToClient creates an HTTP client.
 func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	tlsCfg, err := hcs.TLSSetting.LoadTLSConfig(ctx)
+	tlsCfg, err := hcs.TLS.LoadTLSConfig(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -225,13 +226,14 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// The Auth RoundTripper should always be the innermost to ensure that
 	// request signing-based auth mechanisms operate after compression
 	// and header middleware modifies the request
-	if hcs.Auth != nil {
+	if hcs.Auth.HasValue() {
 		ext := host.GetExtensions()
 		if ext == nil {
 			return nil, errors.New("extensions configuration not found")
 		}
 
-		httpCustomAuthRoundTripper, aerr := hcs.Auth.GetHTTPClientAuthenticator(ctx, ext)
+		auth := hcs.Auth.Get()
+		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -273,7 +275,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	}
 
 	var jar http.CookieJar
-	if hcs.Cookies != nil && hcs.Cookies.Enabled {
+	if hcs.Cookies.Enabled {
 		jar, err = cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
 		if err != nil {
 			return nil, err
@@ -314,14 +316,14 @@ type ServerConfig struct {
 	// Endpoint configures the listening address for the server.
 	Endpoint string `mapstructure:"endpoint,omitempty"`
 
-	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting *configtls.ServerConfig `mapstructure:"tls"`
+	// TLS struct exposes TLS client configuration.
+	TLS configoptional.Optional[configtls.ServerConfig] `mapstructure:"tls"`
 
 	// CORS configures the server for HTTP cross-origin resource sharing (CORS).
-	CORS *CORSConfig `mapstructure:"cors"`
+	CORS configoptional.Optional[CORSConfig] `mapstructure:"cors"`
 
 	// Auth for this receiver
-	Auth *AuthConfig `mapstructure:"auth,omitempty"`
+	Auth configoptional.Optional[AuthConfig] `mapstructure:"auth,omitempty"`
 
 	// MaxRequestBodySize sets the maximum request body size in bytes. Default: 20MiB.
 	MaxRequestBodySize int64 `mapstructure:"max_request_body_size,omitempty"`
@@ -376,11 +378,8 @@ type ServerConfig struct {
 // NewDefaultServerConfig returns ServerConfig type object with default values.
 // We encourage to use this function to create an object of ServerConfig.
 func NewDefaultServerConfig() ServerConfig {
-	tlsDefaultServerConfig := configtls.NewDefaultServerConfig()
 	return ServerConfig{
 		ResponseHeaders:   map[string]configopaque.String{},
-		TLSSetting:        &tlsDefaultServerConfig,
-		CORS:              NewDefaultCORSConfig(),
 		WriteTimeout:      30 * time.Second,
 		ReadHeaderTimeout: 1 * time.Minute,
 		IdleTimeout:       1 * time.Minute,
@@ -405,9 +404,9 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 		return nil, err
 	}
 
-	if hss.TLSSetting != nil {
+	if hss.TLS.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -486,25 +485,27 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 		handler = maxRequestBodySizeInterceptor(handler, hss.MaxRequestBodySize)
 	}
 
-	if hss.Auth != nil {
-		server, err := hss.Auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+	if hss.Auth.HasValue() {
+		auth := hss.Auth.Get()
+		server, err := auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		handler = authInterceptor(handler, server, hss.Auth.RequestParameters, serverOpts)
+		handler = authInterceptor(handler, server, auth.RequestParameters, serverOpts)
 	}
 
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) > 0 {
+		corsConfig := hss.CORS.Get()
 		co := cors.Options{
-			AllowedOrigins:   hss.CORS.AllowedOrigins,
+			AllowedOrigins:   corsConfig.AllowedOrigins,
 			AllowCredentials: true,
-			AllowedHeaders:   hss.CORS.AllowedHeaders,
-			MaxAge:           hss.CORS.MaxAge,
+			AllowedHeaders:   corsConfig.AllowedHeaders,
+			MaxAge:           corsConfig.MaxAge,
 		}
 		handler = cors.New(co).Handler(handler)
 	}
-	if hss.CORS != nil && len(hss.CORS.AllowedOrigins) == 0 && len(hss.CORS.AllowedHeaders) > 0 {
+	if hss.CORS.HasValue() && len(hss.CORS.Get().AllowedOrigins) == 0 && len(hss.CORS.Get().AllowedHeaders) > 0 {
 		settings.Logger.Warn("The CORS configuration specifies allowed headers but no allowed origins, and is therefore ignored.")
 	}
 
@@ -517,7 +518,17 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 			otelhttp.WithTracerProvider(settings.TracerProvider),
 			otelhttp.WithPropagators(otel.GetTextMapPropagator()),
 			otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
-				return r.URL.Path
+				// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name:
+				//
+				//   "HTTP span names SHOULD be {method} {target} if there is a (low-cardinality) target available.
+				//   If there is no (low-cardinality) {target} available, HTTP span names SHOULD be {method}.
+				//   ...
+				//   Instrumentation MUST NOT default to using URI path as a {target}."
+				//
+				if r.Pattern != "" {
+					return r.Method + " " + r.Pattern
+				}
+				return r.Method
 			}),
 			otelhttp.WithMeterProvider(settings.MeterProvider),
 		},
@@ -586,8 +597,8 @@ type CORSConfig struct {
 }
 
 // NewDefaultCORSConfig creates a default cross-origin resource sharing (CORS) configuration.
-func NewDefaultCORSConfig() *CORSConfig {
-	return &CORSConfig{}
+func NewDefaultCORSConfig() CORSConfig {
+	return CORSConfig{}
 }
 
 func authInterceptor(next http.Handler, server extensionauth.Server, requestParams []string, serverOpts *internal.ToServerOptions) http.Handler {

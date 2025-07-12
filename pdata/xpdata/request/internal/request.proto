@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package opentelemetry.collector.pdata.xpdata.internal;
+
+option go_package = "go.opentelemetry.io/collector/pdata/xpdata/internal";
+
+import "gogoproto/gogo.proto";
+
+import "opentelemetry/proto/trace/v1/trace.proto";
+import "opentelemetry/proto/metrics/v1/metrics.proto";
+import "opentelemetry/proto/logs/v1/logs.proto";
+import "opentelemetry/proto/common/v1/common.proto";
+import "opentelemetry/proto/profiles/v1development/profiles.proto";
+
+// SpanContext represents a span context encoded associated with a telemetry export request.
+message SpanContext {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+  fixed32 trace_flags = 3;
+  string trace_state = 4;
+  bool remote = 5;
+}
+
+message IPAddr {
+  bytes ip = 1;
+  string zone = 2;
+}
+
+message TCPAddr {
+  bytes ip = 1;
+  int64 port = 2;
+  string zone = 3;
+}
+
+message UDPAddr {
+  bytes ip = 1;
+  int64 port = 2;
+  string zone = 3;
+}
+
+message UnixAddr {
+  string name = 1;
+  string net = 2;
+}
+
+// RequestContext represents metadata associated with a telemetry export request.
+message RequestContext {
+  SpanContext span_context = 1;
+
+  // ClientMetadata contains additional metadata about the client making the request.
+  repeated opentelemetry.proto.common.v1.KeyValue client_metadata = 2 [ (gogoproto.nullable) = false ];
+
+  // ClientAddress contains the address of the client making the request.
+  oneof client_address {
+    IPAddr ip = 3;
+    TCPAddr tcp = 4;
+    UDPAddr udp = 5;
+    UnixAddr unix = 6;
+  }
+}
+
+// The following messages are wrappers around standard OpenTelemetry data types.
+// They embed request-level context and a version discriminator to ensure they are not wire-compatible with
+// the canonical OpenTelemetry proto messages.
+//
+// Each wrapper reserves field tag 1 for a `fixed32` (protobuf wire type 5) format_version field, which makes it
+// structurally incompatible with the standard OTLP messages which use tag 1 for the data message field (protobuf wire type 2).
+// This ensures old and new formats cannot be confused during decoding.
+
+message TracesRequest {
+  fixed32 format_version = 1;
+  RequestContext request_context = 2;
+  opentelemetry.proto.trace.v1.TracesData traces_data = 3;
+}
+
+message MetricsRequest {
+  fixed32 format_version = 1;
+  RequestContext request_context = 2;
+  opentelemetry.proto.metrics.v1.MetricsData metrics_data = 3;
+}
+
+message LogsRequest {
+  fixed32 format_version = 1;
+  RequestContext request_context = 2;
+  opentelemetry.proto.logs.v1.LogsData logs_data = 3;
+}
+
+message ProfilesRequest {
+  fixed32 format_version = 1;
+  RequestContext request_context = 2;
+  opentelemetry.proto.profiles.v1development.ProfilesData profiles_data = 3;
+}
