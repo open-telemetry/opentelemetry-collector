@@ -7,8 +7,6 @@ import (
 	"context"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -16,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"

@@ -7,14 +7,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
