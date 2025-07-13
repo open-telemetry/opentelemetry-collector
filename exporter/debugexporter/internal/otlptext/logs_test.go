@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/testdata"
@@ -83,7 +84,7 @@ func TestLogsText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTextLogsMarshaler().MarshalLogs(tt.in)
+			got, err := NewTextLogsMarshaler(internal.NewDefaultOutputConfig()).MarshalLogs(tt.in)
 			require.NoError(t, err)
 			out, err := os.ReadFile(filepath.Join("testdata", "logs", tt.out))
 			require.NoError(t, err)

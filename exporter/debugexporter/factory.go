@@ -5,6 +5,7 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"time"
 
 	"go.uber.org/zap"
@@ -47,6 +48,7 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
+		Output:             internal.NewDefaultOutputConfig(),
 	}
 }
 

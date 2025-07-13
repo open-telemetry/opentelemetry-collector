@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 )
 
 // supportedLevels in this exporter's configuration.
@@ -16,10 +17,6 @@ var supportedLevels map[configtelemetry.Level]struct{} = map[configtelemetry.Lev
 	configtelemetry.LevelBasic:    {},
 	configtelemetry.LevelNormal:   {},
 	configtelemetry.LevelDetailed: {},
-}
-
-type OutputConfig struct {
-	Attributes []string `mapstructure:"attributes"`
 }
 
 // Config defines configuration for debug exporter.
@@ -37,7 +34,7 @@ type Config struct {
 	UseInternalLogger bool `mapstructure:"use_internal_logger"`
 
 	// OutputConfig defines how the exporter would output attributes
-	Output OutputConfig `mapstructure:"output"`
+	Output internal.OutputConfig `mapstructure:"output"`
 
 	// prevent unkeyed literal initialization
 	_ struct{}
@@ -49,6 +46,18 @@ var _ component.Config = (*Config)(nil)
 func (cfg *Config) Validate() error {
 	if _, ok := supportedLevels[cfg.Verbosity]; !ok {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
+	}
+
+	if len(cfg.Output.Record.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Record.AttributesOutputConfig.Include) > 0 {
+		return fmt.Errorf("cannot specify both include and exclude attributes for record")
+	}
+
+	if len(cfg.Output.Scope.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Scope.AttributesOutputConfig.Include) > 0 {
+		return fmt.Errorf("cannot specify both include and exclude attributes for scope")
+	}
+
+	if len(cfg.Output.Resource.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Resource.AttributesOutputConfig.Include) > 0 {
+		return fmt.Errorf("cannot specify both include and exclude attributes for resource")
 	}
 
 	return nil

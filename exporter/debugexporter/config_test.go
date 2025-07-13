@@ -4,6 +4,7 @@
 package debugexporter
 
 import (
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"path/filepath"
 	"testing"
 
@@ -34,6 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				Output:             internal.NewDefaultOutputConfig(),
 			},
 		},
 		{

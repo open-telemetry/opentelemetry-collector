@@ -7,8 +7,10 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -28,7 +30,24 @@ func (b *dataBuffer) logAttr(attr string, value any) {
 	b.logEntry("    %-15s: %s", attr, value)
 }
 
-func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
+func (b *dataBuffer) matchAttributes(key string, cfg *internal.AttributesOutputConfig) bool {
+	// If no include or exclude is specified, match all.
+	if len(cfg.Include) == 0 && len(cfg.Exclude) == 0 {
+		return true
+	}
+
+	if len(cfg.Include) > 0 {
+		return slices.Contains(cfg.Include, key)
+	}
+
+	if len(cfg.Exclude) > 0 {
+		return !slices.Contains(cfg.Exclude, key)
+	}
+
+	return true
+}
+
+func (b *dataBuffer) logAttributes(header string, m pcommon.Map, attrCfg *internal.AttributesOutputConfig) {
 	if m.Len() == 0 {
 		return
 	}
@@ -43,8 +62,17 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map) {
 	}
 
 	for k, v := range m.All() {
-		b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
+		if attrCfg == nil {
+			b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
+		} else {
+			if attrCfg.Enabled {
+				if b.matchAttributes(k, attrCfg) {
+					b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
+				}
+			}
+		}
 	}
+
 }
 
 func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, indentVal int) {
@@ -68,12 +96,12 @@ func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, 
 	}
 }
 
-func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope) {
+func (b *dataBuffer) logInstrumentationScope(il pcommon.InstrumentationScope, attrCfg *internal.AttributesOutputConfig) {
 	b.logEntry(
 		"InstrumentationScope %s %s",
 		il.Name(),
 		il.Version())
-	b.logAttributes("InstrumentationScope attributes", il.Attributes())
+	b.logAttributes("InstrumentationScope attributes", il.Attributes(), attrCfg)
 }
 
 func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
@@ -84,36 +112,36 @@ func (b *dataBuffer) logMetricDescriptor(md pmetric.Metric) {
 	b.logEntry("     -> DataType: %s", md.Type().String())
 }
 
-func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric) {
+func (b *dataBuffer) logMetricDataPoints(m pmetric.Metric, attrCfg *internal.AttributesOutputConfig) {
 	switch m.Type() {
 	case pmetric.MetricTypeEmpty:
 		return
 	case pmetric.MetricTypeGauge:
-		b.logNumberDataPoints(m.Gauge().DataPoints())
+		b.logNumberDataPoints(m.Gauge().DataPoints(), attrCfg)
 	case pmetric.MetricTypeSum:
 		data := m.Sum()
 		b.logEntry("     -> IsMonotonic: %t", data.IsMonotonic())
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logNumberDataPoints(data.DataPoints())
+		b.logNumberDataPoints(data.DataPoints(), attrCfg)
 	case pmetric.MetricTypeHistogram:
 		data := m.Histogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logHistogramDataPoints(data.DataPoints())
+		b.logHistogramDataPoints(data.DataPoints(), attrCfg)
 	case pmetric.MetricTypeExponentialHistogram:
 		data := m.ExponentialHistogram()
 		b.logEntry("     -> AggregationTemporality: %s", data.AggregationTemporality().String())
-		b.logExponentialHistogramDataPoints(data.DataPoints())
+		b.logExponentialHistogramDataPoints(data.DataPoints(), attrCfg)
 	case pmetric.MetricTypeSummary:
 		data := m.Summary()
-		b.logDoubleSummaryDataPoints(data.DataPoints())
+		b.logDoubleSummaryDataPoints(data.DataPoints(), attrCfg)
 	}
 }
 
-func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
+func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice, attrCfg *internal.AttributesOutputConfig) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("NumberDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
+		b.logDataPointAttributes(p.Attributes(), attrCfg)
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -128,11 +156,11 @@ func (b *dataBuffer) logNumberDataPoints(ps pmetric.NumberDataPointSlice) {
 	}
 }
 
-func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) {
+func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice, attrCfg *internal.AttributesOutputConfig) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("HistogramDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
+		b.logDataPointAttributes(p.Attributes(), attrCfg)
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -162,11 +190,11 @@ func (b *dataBuffer) logHistogramDataPoints(ps pmetric.HistogramDataPointSlice) 
 	}
 }
 
-func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice) {
+func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHistogramDataPointSlice, attrCfg *internal.AttributesOutputConfig) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("ExponentialHistogramDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
+		b.logDataPointAttributes(p.Attributes(), attrCfg)
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -221,11 +249,11 @@ func (b *dataBuffer) logExponentialHistogramDataPoints(ps pmetric.ExponentialHis
 	}
 }
 
-func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice) {
+func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice, attrCfg *internal.AttributesOutputConfig) {
 	for i := 0; i < ps.Len(); i++ {
 		p := ps.At(i)
 		b.logEntry("SummaryDataPoints #%d", i)
-		b.logDataPointAttributes(p.Attributes())
+		b.logDataPointAttributes(p.Attributes(), attrCfg)
 
 		b.logEntry("StartTimestamp: %s", p.StartTimestamp())
 		b.logEntry("Timestamp: %s", p.Timestamp())
@@ -240,8 +268,8 @@ func (b *dataBuffer) logDoubleSummaryDataPoints(ps pmetric.SummaryDataPointSlice
 	}
 }
 
-func (b *dataBuffer) logDataPointAttributes(attributes pcommon.Map) {
-	b.logAttributes("Data point attributes", attributes)
+func (b *dataBuffer) logDataPointAttributes(attributes pcommon.Map, attrCfg *internal.AttributesOutputConfig) {
+	b.logAttributes("Data point attributes", attributes, attrCfg)
 }
 
 func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
@@ -256,7 +284,7 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 		b.logEntry("     -> Name: %s", e.Name())
 		b.logEntry("     -> Timestamp: %s", e.Timestamp())
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
-		b.logAttributes("     -> Attributes:", e.Attributes())
+		b.logAttributes("     -> Attributes:", e.Attributes(), nil)
 	}
 }
 
@@ -274,7 +302,7 @@ func (b *dataBuffer) logLinks(description string, sl ptrace.SpanLinkSlice) {
 		b.logEntry("     -> ID: %s", l.SpanID())
 		b.logEntry("     -> TraceState: %s", l.TraceState().AsRaw())
 		b.logEntry("     -> DroppedAttributesCount: %d", l.DroppedAttributesCount())
-		b.logAttributes("     -> Attributes:", l.Attributes())
+		b.logAttributes("     -> Attributes:", l.Attributes(), nil)
 	}
 }
 
@@ -297,7 +325,7 @@ func (b *dataBuffer) logExemplars(description string, se pmetric.ExemplarSlice) 
 		case pmetric.ExemplarValueTypeDouble:
 			b.logEntry("     -> Value: %f", e.DoubleValue())
 		}
-		b.logAttributes("     -> FilteredAttributes", e.FilteredAttributes())
+		b.logAttributes("     -> FilteredAttributes", e.FilteredAttributes(), nil)
 	}
 }
 

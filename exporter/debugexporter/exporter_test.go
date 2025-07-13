@@ -16,6 +16,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -89,7 +90,7 @@ func TestProfilesNoErrors(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed, OutputConfig{})
+	le := newDebugExporter(zaptest.NewLogger(t), configtelemetry.LevelDetailed, internal.OutputConfig{})
 	require.NotNil(t, le)
 
 	errWant := errors.New("my error")
@@ -103,13 +104,49 @@ func TestErrors(t *testing.T) {
 	assert.Equal(t, errWant, le.pushProfiles(context.Background(), pprofile.NewProfiles()))
 }
 
-func TestAttributesFilter(t *testing.T) {
+func TestResourceAttributesFilter(t *testing.T) {
 	observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 	observedLogger := zap.New(observedZapCore)
-	exporterWithMultipleAttributesConfig := newDebugExporter(observedLogger, configtelemetry.LevelDetailed, OutputConfig{
-		Attributes: []string{"attribute.b", "attribute.c"},
+	exporterWithMultipleAttributesConfig := newDebugExporter(
+		observedLogger,
+		configtelemetry.LevelDetailed,
+		internal.OutputConfig{
+			Resource: internal.ResourceOutputConfig{
+				AttributesOutputConfig: internal.AttributesOutputConfig{
+					Include: []string{"attribute.b", "attribute.c"},
+					Enabled: true,
+				},
+				Enabled: true,
+			},
+			Record: internal.RecordOutputConfig{
+				Enabled: true,
+				AttributesOutputConfig: internal.AttributesOutputConfig{
+					Include: []string{"attribute.b", "attribute.c"},
+					Enabled: true,
+				},
+			},
+			Scope: internal.ScopeOutputConfig{
+				Enabled: true,
+				AttributesOutputConfig: internal.AttributesOutputConfig{
+					Include: []string{"attribute.b", "attribute.c"},
+					Enabled: true,
+				},
+			},
+		})
+	exporterWithoutAttributesConfig := newDebugExporter(observedLogger, configtelemetry.LevelDetailed, internal.OutputConfig{
+		Resource: internal.ResourceOutputConfig{
+			Enabled: true,
+			AttributesOutputConfig: internal.AttributesOutputConfig{
+				Enabled: true,
+			},
+		},
+		Scope: internal.ScopeOutputConfig{
+			Enabled: true,
+		},
+		Record: internal.RecordOutputConfig{
+			Enabled: true,
+		},
 	})
-	exporterWithoutAttributesConfig := newDebugExporter(observedLogger, configtelemetry.LevelDetailed, OutputConfig{})
 
 	testCases := []struct {
 		name           string

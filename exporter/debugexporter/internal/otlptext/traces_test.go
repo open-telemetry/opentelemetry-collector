@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
@@ -35,7 +36,7 @@ func TestTracesText(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewTextTracesMarshaler().MarshalTraces(tt.in)
+			got, err := NewTextTracesMarshaler(internal.NewDefaultOutputConfig()).MarshalTraces(tt.in)
 			require.NoError(t, err)
 			out, err := os.ReadFile(filepath.Join("testdata", "traces", tt.out))
 			require.NoError(t, err)
