@@ -93,3 +93,216 @@ func TestLogsText(t *testing.T) {
 		})
 	}
 }
+
+func TestLogsWithOutputConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		in     plog.Logs
+		out    string
+		config internal.OutputConfig
+	}{
+		{
+			name: "marshal_logs_with_attributes_filter_include",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_with_attributes_filter_exclude",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_with_record_disabled",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter_with_record_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_with_scope_disabled",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter_with_scope_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_with_resource_disabled",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter_with_resource_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_logs_with_attributes_disabled",
+			in:   generateBasicLogs(),
+			out:  "log_with_attributes_filter_with_attributes_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep", "app", "instance_num"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewTextLogsMarshaler(tt.config).MarshalLogs(tt.in)
+			require.NoError(t, err)
+			out, err := os.ReadFile(filepath.Join("testdata", "logs", tt.out))
+			require.NoError(t, err)
+			expected := strings.ReplaceAll(string(out), "\r", "")
+			assert.Equal(t, expected, string(got))
+		})
+	}
+}
+
+func generateBasicLogs() plog.Logs {
+	ls := plog.NewLogs()
+	rl := ls.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("attribute.keep", "resource-keep")
+	rl.Resource().Attributes().PutStr("attribute.remove", "resource-remove")
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().Attributes().PutStr("attribute.keep", "scope-keep")
+	sl.Scope().Attributes().PutStr("attribute.remove", "scope-remove")
+	l := sl.LogRecords().AppendEmpty()
+	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)))
+	l.SetSeverityNumber(plog.SeverityNumberInfo)
+	l.SetSeverityText("Info")
+	l.SetEventName("event_name")
+	l.Body().SetStr("This is a log message")
+	attrs := l.Attributes()
+	attrs.PutStr("app", "server")
+	attrs.PutInt("instance_num", 1)
+	attrs.PutStr("attribute.keep", "logRecord-keep")
+	attrs.PutStr("attribute.remove", "logRecord-remove")
+	l.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	l.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
+	return ls
+}

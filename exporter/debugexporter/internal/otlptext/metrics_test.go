@@ -55,3 +55,245 @@ func TestMetricsText(t *testing.T) {
 		})
 	}
 }
+
+func TestMetricsWithOutputConfig(t *testing.T) {
+	tests := []struct {
+		name   string
+		in     pmetric.Metrics
+		out    string
+		config internal.OutputConfig
+	}{
+		{
+			name: "marshal_metrics_with_attributes_filter_include",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_include.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_with_attributes_filter_exclude",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_exclude.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Exclude: []string{"attribute.remove"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_with_record_disabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_with_record_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_with_scope_disabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_with_scope_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_with_resource_disabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_with_resource_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: false,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: true,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+		{
+			name: "marshal_metrics_with_attributes_disabled",
+			in:   generateBasicMetrics(),
+			out:  "metric_with_attributes_filter_with_attributes_disabled.out",
+			config: internal.OutputConfig{
+				Scope: internal.ScopeOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Record: internal.RecordOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+				Resource: internal.ResourceOutputConfig{
+					Enabled: true,
+					AttributesOutputConfig: internal.AttributesOutputConfig{
+						Enabled: false,
+						Include: []string{"attribute.keep"},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewTextMetricsMarshaler(tt.config).MarshalMetrics(tt.in)
+			require.NoError(t, err)
+			out, err := os.ReadFile(filepath.Join("testdata", "metrics", tt.out))
+			require.NoError(t, err)
+			expected := strings.ReplaceAll(string(out), "\r", "")
+			assert.Equal(t, expected, string(got))
+		})
+	}
+}
+
+func generateBasicMetrics() pmetric.Metrics {
+	md := testdata.GenerateMetricsAllTypes()
+	rm := md.ResourceMetrics().At(0)
+	rm.Resource().Attributes().PutStr("attribute.keep", "resource-keep")
+	rm.Resource().Attributes().PutStr("attribute.remove", "resource-remove")
+	sm := rm.ScopeMetrics().At(0)
+	sm.Scope().Attributes().PutStr("attribute.keep", "scope-keep")
+	sm.Scope().Attributes().PutStr("attribute.remove", "scope-remove")
+
+	for i := 0; i < sm.Metrics().Len(); i++ {
+		m := sm.Metrics().At(i)
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
+			dps := m.Gauge().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				dp.Attributes().PutStr("attribute.keep", "metric-keep")
+				dp.Attributes().PutStr("attribute.remove", "metric-remove")
+			}
+		case pmetric.MetricTypeSum:
+			dps := m.Sum().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				dp.Attributes().PutStr("attribute.keep", "metric-keep")
+				dp.Attributes().PutStr("attribute.remove", "metric-remove")
+			}
+		case pmetric.MetricTypeHistogram:
+			dps := m.Histogram().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				dp.Attributes().PutStr("attribute.keep", "metric-keep")
+				dp.Attributes().PutStr("attribute.remove", "metric-remove")
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			dps := m.ExponentialHistogram().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				dp.Attributes().PutStr("attribute.keep", "metric-keep")
+				dp.Attributes().PutStr("attribute.remove", "metric-remove")
+			}
+		case pmetric.MetricTypeSummary:
+			dps := m.Summary().DataPoints()
+			for j := 0; j < dps.Len(); j++ {
+				dp := dps.At(j)
+				dp.Attributes().PutStr("attribute.keep", "metric-keep")
+				dp.Attributes().PutStr("attribute.remove", "metric-remove")
+			}
+		}
+	}
+
+	return md
+}

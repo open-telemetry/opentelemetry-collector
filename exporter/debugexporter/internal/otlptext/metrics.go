@@ -40,6 +40,9 @@ func (t textMetricsMarshaler) MarshalMetrics(md pmetric.Metrics) ([]byte, error)
 			ilm := ilms.At(j)
 			buf.logEntry("ScopeMetrics SchemaURL: %s", ilm.SchemaUrl())
 			buf.logInstrumentationScope(ilm.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
+			if !t.outputConfig.Record.Enabled {
+				continue
+			}
 			metrics := ilm.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
 				buf.logEntry("Metric #%d", k)

@@ -4,6 +4,7 @@
 package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexporter"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -48,16 +49,16 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("verbosity level %q is not supported", cfg.Verbosity)
 	}
 
-	if len(cfg.Output.Record.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Record.AttributesOutputConfig.Include) > 0 {
-		return fmt.Errorf("cannot specify both include and exclude attributes for record")
+	if len(cfg.Output.Record.Exclude) > 0 && len(cfg.Output.Record.Include) > 0 {
+		return errors.New("cannot specify both include and exclude attributes for record")
 	}
 
-	if len(cfg.Output.Scope.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Scope.AttributesOutputConfig.Include) > 0 {
-		return fmt.Errorf("cannot specify both include and exclude attributes for scope")
+	if len(cfg.Output.Scope.Exclude) > 0 && len(cfg.Output.Scope.Include) > 0 {
+		return errors.New("cannot specify both include and exclude attributes for scope")
 	}
 
 	if len(cfg.Output.Resource.AttributesOutputConfig.Exclude) > 0 && len(cfg.Output.Resource.AttributesOutputConfig.Include) > 0 {
-		return fmt.Errorf("cannot specify both include and exclude attributes for resource")
+		return errors.New("cannot specify both include and exclude attributes for resource")
 	}
 
 	return nil

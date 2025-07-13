@@ -5,8 +5,9 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"time"
+
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

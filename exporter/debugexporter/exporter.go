@@ -5,7 +5,6 @@ package debugexporter // import "go.opentelemetry.io/collector/exporter/debugexp
 
 import (
 	"context"
-	"slices"
 
 	"go.uber.org/zap"
 
@@ -56,13 +55,6 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level, outpu
 	}
 }
 
-func matchAttributes(key string, outputConfig internal.OutputConfig) bool {
-	if len(outputConfig.Record.AttributesOutputConfig.Include) == 0 {
-		return true
-	}
-	return slices.Contains(outputConfig.Record.AttributesOutputConfig.Include, key)
-}
-
 func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	s.logger.Info("Traces",
 		zap.Int("resource spans", td.ResourceSpans().Len()),
@@ -70,22 +62,6 @@ func (s *debugExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
-
-	//for _, rs := range td.ResourceSpans().All() {
-	//	rs.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//		return !matchAttributes(k, s.outputConfig)
-	//	})
-	//	for _, ss := range rs.ScopeSpans().All() {
-	//		ss.Scope().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//			return !matchAttributes(k, s.outputConfig)
-	//		})
-	//		for _, span := range ss.Spans().All() {
-	//			span.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//				return !matchAttributes(k, s.outputConfig)
-	//			})
-	//		}
-	//	}
-	//}
 
 	buf, err := s.tracesMarshaler.MarshalTraces(td)
 	if err != nil {
@@ -104,17 +80,6 @@ func (s *debugExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error
 		return nil
 	}
 
-	//for _, rm := range md.ResourceMetrics().All() {
-	//	rm.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//		return !matchAttributes(k, s.outputConfig)
-	//	})
-	//	for _, sm := range rm.ScopeMetrics().All() {
-	//		sm.Scope().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//			return !matchAttributes(k, s.outputConfig)
-	//		})
-	//	}
-	//}
-
 	buf, err := s.metricsMarshaler.MarshalMetrics(md)
 	if err != nil {
 		return err
@@ -131,19 +96,6 @@ func (s *debugExporter) pushLogs(_ context.Context, ld plog.Logs) error {
 	if s.verbosity == configtelemetry.LevelBasic {
 		return nil
 	}
-
-	//for _, resourceLog := range ld.ResourceLogs().All() {
-	//	resourceLog.Resource().Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//		return !matchAttributes(k, s.outputConfig)
-	//	})
-	//	for _, scopeLog := range resourceLog.ScopeLogs().All() {
-	//		for _, logRecord := range scopeLog.LogRecords().All() {
-	//			logRecord.Attributes().RemoveIf(func(k string, _ pcommon.Value) bool {
-	//				return !matchAttributes(k, s.outputConfig)
-	//			})
-	//		}
-	//	}
-	//}
 
 	buf, err := s.logsMarshaler.MarshalLogs(ld)
 	if err != nil {

@@ -4,9 +4,10 @@
 package debugexporter
 
 import (
-	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"path/filepath"
 	"testing"
+
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

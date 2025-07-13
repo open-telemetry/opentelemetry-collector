@@ -64,15 +64,12 @@ func (b *dataBuffer) logAttributes(header string, m pcommon.Map, attrCfg *intern
 	for k, v := range m.All() {
 		if attrCfg == nil {
 			b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
-		} else {
-			if attrCfg.Enabled {
-				if b.matchAttributes(k, attrCfg) {
-					b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
-				}
+		} else if attrCfg.Enabled {
+			if b.matchAttributes(k, attrCfg) {
+				b.logEntry("%s %s: %s", attrPrefix, k, valueToString(v))
 			}
 		}
 	}
-
 }
 
 func (b *dataBuffer) logAttributesWithIndentation(header string, m pcommon.Map, indentVal int) {
@@ -272,7 +269,7 @@ func (b *dataBuffer) logDataPointAttributes(attributes pcommon.Map, attrCfg *int
 	b.logAttributes("Data point attributes", attributes, attrCfg)
 }
 
-func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
+func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice, attrConf *internal.AttributesOutputConfig) {
 	if se.Len() == 0 {
 		return
 	}
@@ -284,7 +281,7 @@ func (b *dataBuffer) logEvents(description string, se ptrace.SpanEventSlice) {
 		b.logEntry("     -> Name: %s", e.Name())
 		b.logEntry("     -> Timestamp: %s", e.Timestamp())
 		b.logEntry("     -> DroppedAttributesCount: %d", e.DroppedAttributesCount())
-		b.logAttributes("     -> Attributes:", e.Attributes(), nil)
+		b.logAttributes("     -> Attributes:", e.Attributes(), attrConf)
 	}
 }
 

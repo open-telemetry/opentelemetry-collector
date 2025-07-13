@@ -63,7 +63,7 @@ func (t textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("Status message", span.Status().Message())
 
 				buf.logAttributes("Attributes", span.Attributes(), &t.outputConfig.Record.AttributesOutputConfig)
-				buf.logEvents("Events", span.Events())
+				buf.logEvents("Events", span.Events(), &t.outputConfig.Record.AttributesOutputConfig)
 				buf.logLinks("Links", span.Links())
 			}
 		}
