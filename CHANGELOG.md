@@ -17,7 +17,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `exporterhelper`: Enable items and bytes sizers for persistent queue (#12881)
 - `exporterhelper`: Refactor persistent storage size backup to always record it. (#12890)
-- `exporterhelper`: Add suppport to configure a different Sizer for the batcher than the queue (#13313)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
 - `yaml`: Replaced `sigs.k8s.io/yaml` with `go.yaml.in/yaml` for improved support and long-term maintainability. (#13308)
 
 ### 🧰 Bug fixes 🧰
