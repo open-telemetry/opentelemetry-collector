@@ -34,7 +34,7 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
   
 - `pdata`: Document that changing pcommon.Map (Remove/removeIf/Put*) invalidates Value references obtained via Get. (#13073)
 - `cmd/mdatagen`: Add support for optional attribute (#12571)
-- `exporterhelper`: Add suppport to configure a different Sizer for the batcher than the queue (#13313)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
 - `pdata`: Add support for the new resource-entity reference API as part of the experimental xpdata package. (#13264)
 
 <!-- previous-version -->
