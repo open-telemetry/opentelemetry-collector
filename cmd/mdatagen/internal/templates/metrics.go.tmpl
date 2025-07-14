@@ -96,9 +96,10 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data       pmetric.Metric  // data buffer for generated metric.
+	config     MetricConfig    // metric config provided by user.
+  attributes AttributeConfig // metric attributes info provided by user.
+	capacity   int             // max observed number of data points added to the metric.
 }
 
 // init fills {{ $name }} metric with initial data.
@@ -156,8 +157,11 @@ func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
-	m := metric{{ $name.Render }}{config: cfg}
+func newMetric{{ $name.Render }}(cfg MetricConfig, attributes AttributesConfig) metric{{ $name.Render }} {
+	m := metric{{ $name.Render }}{
+    config: cfg,
+    attributes: attributes 
+    }
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -244,7 +248,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 		metricsBuffer: pmetric.NewMetrics(),
 		buildInfo:     settings.BuildInfo,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}, mbc.Attributes),
 		{{- end }}
 		{{ if .ResourceAttributes -}}
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),

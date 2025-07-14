@@ -31,6 +31,8 @@ type Metadata struct {
 	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
+	// Attribute aggrigation type.
+	AttributeAggregation string `mapstructure:"attribute_aggregation"`
 	// Metrics that can be emitted by the component.
 	Metrics map[MetricName]Metric `mapstructure:"metrics"`
 	// Events that can be emitted by the component.
