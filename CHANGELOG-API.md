@@ -7,6 +7,38 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.36.0/v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Use configoptional for sending_queue::batch field (#13345)
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13250, #13252)
+  Components using `configgrpc` package may need to update config values.
+- `confighttp`: Use configooptional.Optional in confighttp (#9478)
+- `exporterhelper`: Remove sizer map in favor of items/bytes sizers. Request based is automatically supported. (#13262)
+- `pdata/pprofile`: Remove field Profile.StartTime from pdata/pprofile (#13315)
+  Remove Profile.StartTime from OTel Profiling signal.
+- `exporterhelper`: Remove deprecated old batcher config (#13003)
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate NewRequestsSizer always supported. (#13262)
+- `xexporterhelper`: Introduce NewProfiles method and deprecate NewProfilesExporter (#13372)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add `Error` type (#7047)
+  This type can contain information about errors that allow components (e.g. exporters)
+  to communicate error information back up the pipeline.
+  
+- `pdata`: Document that changing pcommon.Map (Remove/removeIf/Put*) invalidates Value references obtained via Get. (#13073)
+- `cmd/mdatagen`: Add support for optional attribute (#12571)
+- `exporterhelper`: Add suppport to configure a different Sizer for the batcher than the queue (#13313)
+- `pdata`: Add support for the new resource-entity reference API as part of the experimental xpdata package. (#13264)
+
+<!-- previous-version -->
+
 ## v1.35.0/v0.129.0
 
 ### 🛑 Breaking changes 🛑
