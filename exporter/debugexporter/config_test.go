@@ -123,6 +123,54 @@ func TestValidate(t *testing.T) {
 				Verbosity: configtelemetry.LevelDetailed,
 			},
 		},
+		{
+			name: "both include and exclude for scope",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Scope: internal.ScopeOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for scope",
+		},
+		{
+			name: "both include and exclude for resource",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Resource: internal.ResourceOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for resource",
+		},
+		{
+			name: "both include and exclude for record",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Record: internal.RecordOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for record",
+		},
 	}
 
 	for _, tt := range tests {
