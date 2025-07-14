@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build windows
+//go:build !notpm && windows
 
 package configtls // import "go.opentelemetry.io/collector/config/configtls"
 
