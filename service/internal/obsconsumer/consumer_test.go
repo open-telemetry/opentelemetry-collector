@@ -10,6 +10,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
@@ -18,32 +22,35 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/internal/obsconsumer"
-	"go.opentelemetry.io/otel/attribute"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 type failingConsumer struct {
 	err error
 }
 
-var _ consumer.Metrics = (*failingConsumer)(nil)
-var _ consumer.Logs = (*failingConsumer)(nil)
-var _ consumer.Traces = (*failingConsumer)(nil)
-var _ xconsumer.Profiles = (*failingConsumer)(nil)
+var (
+	_ consumer.Metrics   = (*failingConsumer)(nil)
+	_ consumer.Logs      = (*failingConsumer)(nil)
+	_ consumer.Traces    = (*failingConsumer)(nil)
+	_ xconsumer.Profiles = (*failingConsumer)(nil)
+)
 
 func (*failingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{}
 }
+
 func (fc *failingConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return fc.err
 }
+
 func (fc *failingConsumer) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return fc.err
 }
+
 func (fc *failingConsumer) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return fc.err
 }
+
 func (fc *failingConsumer) ConsumeProfiles(_ context.Context, _ pprofile.Profiles) error {
 	return fc.err
 }
