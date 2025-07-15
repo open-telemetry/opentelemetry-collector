@@ -12,10 +12,15 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled    bool             `mapstructure:"enabled"`
-  Attributes AttributesConfig 
+	Enabled          bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
+}
+
+// AttributeConfig holds whether a specific attribute is enabled or disabled in
+// the config
+type AttributeConfig struct {
+  Enabled bool `mapstructure:"enabled"`
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -35,6 +40,14 @@ type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
 	{{ $name.Render }} MetricConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
+}
+
+// AttributesConfig provides attribute config for configured {{ .Type }} metric
+// attributes.
+type AttributesConfig struct {
+  {{- range $name, $attribute := .Attributes }}
+  {{ $name.Render }} AttributeConfig `mapstructure:"{{ $name }}"`
+  {{- end }}
 }
 
 func DefaultMetricsConfig() MetricsConfig {
