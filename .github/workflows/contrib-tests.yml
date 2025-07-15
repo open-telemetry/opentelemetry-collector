@@ -14,7 +14,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   contrib-tests-prepare:
@@ -23,6 +24,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Prepare Contrib Tests
         run: |
           contrib_path=/tmp/opentelemetry-collector-contrib
@@ -58,6 +61,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Download contrib
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -79,13 +84,17 @@ jobs:
     needs: [contrib-tests-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.contrib-tests-matrix.result }}
+        run: echo ${MATRIX_RESULT}
+        env:
+          MATRIX_RESULT: ${{ needs.contrib-tests-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.contrib-tests-matrix.result }} ]]
+          if [[ success == ${MATRIX_RESULT} ]]
           then
             echo "All matrix jobs passed!"
           else
             echo "One or more matrix jobs failed."
             false
           fi
+        env:
+          MATRIX_RESULT: ${{ needs.contrib-tests-matrix.result }}
