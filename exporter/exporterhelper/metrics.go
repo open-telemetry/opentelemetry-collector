@@ -59,7 +59,7 @@ type metricsEncoding struct{}
 var _ QueueBatchEncoding[Request] = metricsEncoding{}
 
 func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, metrics, err := pdatareq.UnmarshalMetrics(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -77,7 +77,7 @@ func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error)
 
 func (metricsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
 	metrics := req.(*metricsRequest).md
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalMetrics(ctx, metrics)
 	}
 	return metricsMarshaler.MarshalMetrics(metrics)
