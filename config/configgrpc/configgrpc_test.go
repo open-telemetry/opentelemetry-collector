@@ -90,8 +90,8 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 	expected := KeepaliveServerConfig{
-		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
-		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
+		ServerParameters:  configoptional.Some(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 	result := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, expected, result)
@@ -391,17 +391,17 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 		ReadBufferSize:       1024,
 		WriteBufferSize:      1024,
 		Keepalive: configoptional.Some(KeepaliveServerConfig{
-			ServerParameters: &KeepaliveServerParameters{
+			ServerParameters: configoptional.Some(KeepaliveServerParameters{
 				MaxConnectionIdle:     time.Second,
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: time.Second,
 				Time:                  time.Second,
 				Timeout:               time.Second,
-			},
-			EnforcementPolicy: &KeepaliveEnforcementPolicy{
+			}),
+			EnforcementPolicy: configoptional.Some(KeepaliveEnforcementPolicy{
 				MinTime:             time.Second,
 				PermitWithoutStream: true,
-			},
+			}),
 		}),
 	}
 	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
