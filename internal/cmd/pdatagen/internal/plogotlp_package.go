@@ -1,17 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
+package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
 import (
 	"path/filepath"
 )
 
-var pprofileotlp = &Package{
+var plogotlp = &Package{
 	info: &PackageInfo{
-		name: "pprofileotlp",
-		path: filepath.Join("pprofile", "pprofileotlp"),
+		name: "plogotlp",
+		path: filepath.Join("plog", "plogotlp"),
 		imports: []string{
-			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
+			`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 		},
 		testImports: []string{
 			`"testing"`,
@@ -22,17 +22,17 @@ var pprofileotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
-		exportProfilesPartialSuccess,
+		exportLogsPartialSuccess,
 	},
 }
 
-var exportProfilesPartialSuccess = &messageValueStruct{
+var exportLogsPartialSuccess = &messageValueStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
-	originFullName: "otlpcollectorprofile.ExportProfilesPartialSuccess",
+	originFullName: "otlpcollectorlog.ExportLogsPartialSuccess",
 	fields: []baseField{
 		&primitiveField{
-			fieldName:  "RejectedProfiles",
+			fieldName:  "RejectedLogRecords",
 			returnType: "int64",
 			defaultVal: `int64(0)`,
 			testVal:    `int64(13)`,

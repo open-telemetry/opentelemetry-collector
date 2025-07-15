@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.23.1
 	go.opentelemetry.io/build-tools/githubgen v0.23.1
 	go.opentelemetry.io/build-tools/multimod v0.23.1
+	go.opentelemetry.io/collector/internal/cmd/pdatagen v0.130.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/tools v0.34.0
 	golang.org/x/vuln v1.1.4
@@ -254,3 +255,5 @@ retract (
 	v0.57.1 // Release failed, use v0.57.2
 	v0.57.0 // Release failed, use v0.57.2
 )
+
+replace go.opentelemetry.io/collector/internal/cmd/pdatagen => ../cmd/pdatagen
