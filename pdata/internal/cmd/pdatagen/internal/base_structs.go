@@ -3,6 +3,10 @@
 
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
+import (
+	"strings"
+)
+
 type baseStruct interface {
 	getName() string
 	generate(packageInfo *PackageInfo) []byte
@@ -33,7 +37,22 @@ func (ms *messageValueStruct) generateTests(packageInfo *PackageInfo) []byte {
 }
 
 func (ms *messageValueStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(packageInfo)))
+	var imports []string
+
+	if strings.Contains(ms.originFullName, "otlpcommon.") {
+		imports = append(imports, `otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`)
+	}
+	if strings.Contains(ms.originFullName, "otlpresource.") {
+		imports = append(imports, `otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`)
+	}
+
+	internalPackageInfo := &PackageInfo{
+		name:        "internal",
+		path:        "internal",
+		imports:     imports,
+		testImports: packageInfo.testImports,
+	}
+	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(internalPackageInfo)))
 }
 
 func (ms *messageValueStruct) templateFields(packageInfo *PackageInfo) map[string]any {

@@ -40,6 +40,24 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState)) })
 }
 
+func TestInstrumentationScope_Equal(t *testing.T) {
+	ms1 := NewInstrumentationScope()
+	ms2 := NewInstrumentationScope()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestInstrumentationScope()
+	ms2 = generateTestInstrumentationScope()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewInstrumentationScope()
+	assert.False(t, ms1.Equal(ms2))
+
+	// Test with CompareOption
+	ms1 = generateTestInstrumentationScope()
+	ms2 = generateTestInstrumentationScope()
+	assert.True(t, ms1.Equal(ms2, FloatTolerance(0.1)))
+}
+
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Empty(t, ms.Name())

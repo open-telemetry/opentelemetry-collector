@@ -8,6 +8,11 @@ var pprofile = &Package{
 		name: "pprofile",
 		path: "pprofile",
 		imports: []string{
+			`"iter"`,
+			`"math"`,
+			`"slices"`,
+			`"strings"`,
+			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,

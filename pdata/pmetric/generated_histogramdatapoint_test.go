@@ -41,6 +41,19 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
 }
 
+func TestHistogramDataPoint_Equal(t *testing.T) {
+	ms1 := NewHistogramDataPoint()
+	ms2 := NewHistogramDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestHistogramDataPoint()
+	ms2 = generateTestHistogramDataPoint()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewHistogramDataPoint()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())

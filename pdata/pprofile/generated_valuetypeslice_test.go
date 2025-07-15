@@ -142,6 +142,34 @@ func TestValueTypeSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestValueTypeSlice_Equal(t *testing.T) {
+	es1 := NewValueTypeSlice()
+	es2 := NewValueTypeSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestValueTypeSlice()
+	es2 = generateTestValueTypeSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewValueTypeSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+
+	// Test element-wise inequality - create two slices with same length but different elements
+	if es1.Len() > 0 {
+		es1 = generateTestValueTypeSlice()
+		es2 = NewValueTypeSlice()
+		// Make es2 same length as es1 but with empty elements
+		for i := 0; i < es1.Len(); i++ {
+			es2.AppendEmpty()
+		}
+		// This should return false since elements are different
+		assert.False(t, es1.Equal(es2))
+	}
+}
+
 func TestValueTypeSlice_Sort(t *testing.T) {
 	es := generateTestValueTypeSlice()
 	es.Sort(func(a, b ValueType) bool {

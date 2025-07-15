@@ -148,6 +148,20 @@ func (es ResourceSpansSlice) CopyTo(dest ResourceSpansSlice) {
 	*dest.orig = copyOrigResourceSpansSlice(*dest.orig, *es.orig)
 }
 
+// Equal checks equality with another ResourceSpansSlice.
+// In order to match equality, the order of elements must be the same.
+func (es ResourceSpansSlice) Equal(val ResourceSpansSlice) bool {
+	if es.Len() != val.Len() {
+		return false
+	}
+	for i := 0; i < es.Len(); i++ {
+		if !es.At(i).Equal(val.At(i)) {
+			return false
+		}
+	}
+	return true
+}
+
 // Sort sorts the ResourceSpans elements within ResourceSpansSlice given the
 // provided less function so that two instances of ResourceSpansSlice
 // can be compared.

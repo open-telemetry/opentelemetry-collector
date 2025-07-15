@@ -8,6 +8,9 @@ var pcommon = &Package{
 		name: "pcommon",
 		path: "pcommon",
 		imports: []string{
+			`"iter"`,
+			`"slices"`,
+			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,

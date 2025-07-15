@@ -40,6 +40,19 @@ func TestValueType_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newValueType(&otlpprofiles.ValueType{}, &sharedState)) })
 }
 
+func TestValueType_Equal(t *testing.T) {
+	ms1 := NewValueType()
+	ms2 := NewValueType()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestValueType()
+	ms2 = generateTestValueType()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewValueType()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.TypeStrindex())

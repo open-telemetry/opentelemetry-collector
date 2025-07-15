@@ -40,6 +40,19 @@ func TestSum_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
 }
 
+func TestSum_Equal(t *testing.T) {
+	ms1 := NewSum()
+	ms2 := NewSum()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestSum()
+	ms2 = generateTestSum()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewSum()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())

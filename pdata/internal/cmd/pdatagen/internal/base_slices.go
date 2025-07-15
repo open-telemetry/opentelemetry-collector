@@ -65,7 +65,13 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 }
 
 func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+	internalPackageInfo := &PackageInfo{
+		name:        "internal",
+		path:        "internal",
+		imports:     []string{},
+		testImports: packageInfo.testImports,
+	}
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(internalPackageInfo)))
 }
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
@@ -114,7 +120,13 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 }
 
 func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+	internalPackageInfo := &PackageInfo{
+		name:        "internal",
+		path:        "internal",
+		imports:     []string{},
+		testImports: packageInfo.testImports,
+	}
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(internalPackageInfo)))
 }
 
 var _ baseStruct = (*sliceOfValues)(nil)

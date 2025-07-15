@@ -142,6 +142,34 @@ func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func TestSummaryDataPointValueAtQuantileSlice_Equal(t *testing.T) {
+	es1 := NewSummaryDataPointValueAtQuantileSlice()
+	es2 := NewSummaryDataPointValueAtQuantileSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es1 = generateTestSummaryDataPointValueAtQuantileSlice()
+	es2 = generateTestSummaryDataPointValueAtQuantileSlice()
+	assert.True(t, es1.Equal(es2))
+
+	es2 = NewSummaryDataPointValueAtQuantileSlice()
+	assert.False(t, es1.Equal(es2))
+
+	es2.AppendEmpty()
+	assert.False(t, es1.Equal(es2))
+
+	// Test element-wise inequality - create two slices with same length but different elements
+	if es1.Len() > 0 {
+		es1 = generateTestSummaryDataPointValueAtQuantileSlice()
+		es2 = NewSummaryDataPointValueAtQuantileSlice()
+		// Make es2 same length as es1 but with empty elements
+		for i := 0; i < es1.Len(); i++ {
+			es2.AppendEmpty()
+		}
+		// This should return false since elements are different
+		assert.False(t, es1.Equal(es2))
+	}
+}
+
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {
 	es := generateTestSummaryDataPointValueAtQuantileSlice()
 	es.Sort(func(a, b SummaryDataPointValueAtQuantile) bool {

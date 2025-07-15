@@ -127,6 +127,13 @@ func TestInt32SliceEqual(t *testing.T) {
 
 	ms2.Append(1, 2, 3)
 	assert.True(t, ms.Equal(ms2))
+
+	// Test with CompareOption
+	ms = NewInt32Slice()
+	ms2 = NewInt32Slice()
+	ms.Append(1, 2, 3)
+	ms2.Append(1, 2, 3)
+	assert.True(t, ms.Equal(ms2, FloatTolerance(0.1)))
 }
 
 func BenchmarkInt32SliceEqual(b *testing.B) {

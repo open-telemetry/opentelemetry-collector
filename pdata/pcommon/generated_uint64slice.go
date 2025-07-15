@@ -134,7 +134,8 @@ func (ms UInt64Slice) CopyTo(dest UInt64Slice) {
 	*dest.getOrig() = internal.CopyOrigUInt64Slice(*dest.getOrig(), *ms.getOrig())
 }
 
-// Equal checks equality with another UInt64Slice
-func (ms UInt64Slice) Equal(val UInt64Slice) bool {
+// Equal checks equality with another UInt64Slice.
+// Optionally accepts CompareOption arguments to customize comparison behavior.
+func (ms UInt64Slice) Equal(val UInt64Slice, opts ...CompareOption) bool {
 	return slices.Equal(*ms.getOrig(), *val.getOrig())
 }

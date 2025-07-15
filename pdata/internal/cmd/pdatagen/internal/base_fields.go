@@ -4,6 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal/cmd/pdatagen/internal"
 
 import (
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -342,6 +343,8 @@ type baseField interface {
 	GenerateSetWithTestValue(ms *messageValueStruct) string
 
 	GenerateCopyOrig(ms *messageValueStruct) string
+
+	GenerateEqualComparison(ms *messageValueStruct) string
 }
 
 type sliceField struct {
@@ -375,6 +378,15 @@ func (sf *sliceField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 func (sf *sliceField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *sliceField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + sf.fieldName + `") || `
+		return fieldCheck + "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "(), opts...))"
+	}
+	// For non-pcommon packages, use simple equality without options
+	return "ms." + sf.fieldName + "().Equal(val." + sf.fieldName + "())"
 }
 
 func (sf *sliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -430,6 +442,14 @@ func (mf *messageValueField) GenerateCopyOrig(ms *messageValueStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
+func (mf *messageValueField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + mf.fieldName + `") || `
+		return fieldCheck + "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "(), opts...))"
+	}
+	return "ms." + mf.fieldName + "().Equal(val." + mf.fieldName + "())"
+}
+
 func (mf *messageValueField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
@@ -477,6 +497,18 @@ func (pf *primitiveField) GenerateSetWithTestValue(ms *messageValueStruct) strin
 func (pf *primitiveField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigPrimitiveTemplate").Parse(copyOrigPrimitiveTemplate))
 	return executeTemplate(t, pf.templateFields(ms))
+}
+
+func (pf *primitiveField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + pf.fieldName + `") || `
+		// Use configurable tolerance for float64 fields
+		if pf.returnType == "float64" {
+			return fieldCheck + "cfg.CompareFloat64(ms." + pf.fieldName + "(), val." + pf.fieldName + "()))"
+		}
+		return fieldCheck + "ms." + pf.fieldName + "() == val." + pf.fieldName + "()" + ")"
+	}
+	return "ms." + pf.fieldName + "() == val." + pf.fieldName + "()"
 }
 
 func (pf *primitiveField) templateFields(ms *messageValueStruct) map[string]any {
@@ -539,6 +571,14 @@ func (ptf *primitiveTypedField) GenerateCopyOrig(ms *messageValueStruct) string 
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *primitiveTypedField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + ptf.fieldName + `") || `
+		return fieldCheck + "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()" + ")"
+	}
+	return "ms." + ptf.fieldName + "() == val." + ptf.fieldName + "()"
+}
+
 func (ptf *primitiveTypedField) templateFields(ms *messageValueStruct) map[string]any {
 	return map[string]any{
 		"structName": ms.getName(),
@@ -595,6 +635,14 @@ func (psf *primitiveSliceField) GenerateSetWithTestValue(ms *messageValueStruct)
 func (psf *primitiveSliceField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("copyOrigSliceTemplate").Parse(copyOrigSliceTemplate))
 	return executeTemplate(t, psf.templateFields(ms))
+}
+
+func (psf *primitiveSliceField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + psf.fieldName + `") || `
+		return fieldCheck + "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "(), opts...))"
+	}
+	return "ms." + psf.fieldName + "().Equal(val." + psf.fieldName + "())"
 }
 
 func (psf *primitiveSliceField) templateFields(ms *messageValueStruct) map[string]any {
@@ -654,6 +702,67 @@ func (of *oneOfField) GenerateSetWithTestValue(ms *messageValueStruct) string {
 func (of *oneOfField) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("oneOfTypeCopyOrigTestTemplate").Parse(oneOfTypeCopyOrigTestTemplate))
 	return executeTemplate(t, of.templateFields(ms))
+}
+
+func (of *oneOfField) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + of.originFieldName + `") || `
+
+		// For OneOf fields, we need to compare both type and value
+		var valueComparisons []string
+		for _, value := range of.values {
+			switch v := value.(type) {
+			case *oneOfPrimitiveValue:
+				var comp string
+				typeName := of.typeName + v.fieldName
+				if v.returnType == "float64" {
+					comp = fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && cfg.CompareFloat64(ms.%sValue(), val.%sValue()))",
+						of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				} else {
+					comp = fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%sValue() == val.%sValue())",
+						of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				}
+				valueComparisons = append(valueComparisons, comp)
+			case *oneOfMessageValue:
+				typeName := of.typeName + v.fieldName
+				comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%s().Equal(val.%s(), opts...))",
+					of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+				valueComparisons = append(valueComparisons, comp)
+			}
+		}
+
+		// Always include comparison for when both are of the same type (including Empty)
+		if len(valueComparisons) > 0 {
+			return fieldCheck + "(ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "() && (" + strings.Join(valueComparisons, " || ") + " || ms." + of.typeFuncName() + "() == " + of.typeName + "Empty))" + ")"
+		}
+
+		// Fallback to type-only comparison
+		return fieldCheck + "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()" + ")"
+	}
+
+	var valueComparisons []string
+	for _, value := range of.values {
+		switch v := value.(type) {
+		case *oneOfPrimitiveValue:
+			typeName := of.typeName + v.fieldName
+			comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%sValue() == val.%sValue())",
+				of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+			valueComparisons = append(valueComparisons, comp)
+		case *oneOfMessageValue:
+			typeName := of.typeName + v.fieldName
+			comp := fmt.Sprintf("(ms.%s() == %s && val.%s() == %s && ms.%s().Equal(val.%s()))",
+				of.typeFuncName(), typeName, of.typeFuncName(), typeName, v.fieldName, v.fieldName)
+			valueComparisons = append(valueComparisons, comp)
+		}
+	}
+
+	// Always include comparison for when both are of the same type (including Empty)
+	if len(valueComparisons) > 0 {
+		return "(ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "() && (" + strings.Join(valueComparisons, " || ") + " || ms." + of.typeFuncName() + "() == " + of.typeName + "Empty))"
+	}
+
+	// Fallback to type-only comparison
+	return "ms." + of.typeFuncName() + "() == val." + of.typeFuncName() + "()"
 }
 
 func (of *oneOfField) templateFields(ms *messageValueStruct) map[string]any {
@@ -816,6 +925,24 @@ func (opv *optionalPrimitiveValue) GenerateSetWithTestValue(ms *messageValueStru
 func (opv *optionalPrimitiveValue) GenerateCopyOrig(ms *messageValueStruct) string {
 	t := template.Must(template.New("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *optionalPrimitiveValue) GenerateEqualComparison(ms *messageValueStruct) string {
+	if ms.packageName == "pcommon" {
+		fieldCheck := `(cfg.ShouldIgnoreField("` + opv.fieldName + `") || `
+
+		// Use configurable tolerance for float64 fields
+		var valueComparison string
+		if opv.returnType == "float64" {
+			valueComparison = "cfg.CompareFloat64(ms." + opv.fieldName + "(), val." + opv.fieldName + "())"
+		} else {
+			valueComparison = "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
+		}
+		return fieldCheck + "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + ")))"
+	}
+
+	valueComparison := "ms." + opv.fieldName + "() == val." + opv.fieldName + "()"
+	return "(ms.Has" + opv.fieldName + "() == val.Has" + opv.fieldName + "() && (!ms.Has" + opv.fieldName + "() || " + valueComparison + "))"
 }
 
 func (opv *optionalPrimitiveValue) templateFields(ms *messageValueStruct) map[string]any {

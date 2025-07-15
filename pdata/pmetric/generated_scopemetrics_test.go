@@ -41,6 +41,19 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
 }
 
+func TestScopeMetrics_Equal(t *testing.T) {
+	ms1 := NewScopeMetrics()
+	ms2 := NewScopeMetrics()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms1 = generateTestScopeMetrics()
+	ms2 = generateTestScopeMetrics()
+	assert.True(t, ms1.Equal(ms2))
+
+	ms2 = NewScopeMetrics()
+	assert.False(t, ms1.Equal(ms2))
+}
+
 func TestScopeMetrics_Scope(t *testing.T) {
 	ms := NewScopeMetrics()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

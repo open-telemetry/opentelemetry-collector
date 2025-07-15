@@ -75,3 +75,9 @@ func copyOrigHistogram(dest, src *otlpmetrics.Histogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.DataPoints = copyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+// Equal checks equality with another Histogram.
+func (ms Histogram) Equal(val Histogram) bool {
+	return ms.AggregationTemporality() == val.AggregationTemporality() &&
+		ms.DataPoints().Equal(val.DataPoints())
+}
