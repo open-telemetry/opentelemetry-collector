@@ -114,8 +114,8 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
-func NewProfilesExporter(
+// NewProfiles creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
+func NewProfiles(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -131,6 +131,9 @@ func NewProfilesExporter(
 	return NewProfilesRequest(ctx, set, requestFromProfiles(), requestConsumeFromProfiles(pusher),
 		append([]exporterhelper.Option{internal.WithQueueBatchSettings(NewProfilesQueueBatchSettings())}, options...)...)
 }
+
+// Deprecated: [v0.130.0] use NewProfiles.
+var NewProfilesExporter = NewProfiles
 
 // requestConsumeFromProfiles returns a RequestConsumeFunc that consumes pprofile.Profiles.
 func requestConsumeFromProfiles(pusher xconsumer.ConsumeProfilesFunc) exporterhelper.RequestConsumeFunc {
