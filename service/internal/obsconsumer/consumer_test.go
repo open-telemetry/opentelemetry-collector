@@ -82,13 +82,13 @@ func TestConsumeRefused(t *testing.T) {
 
 	type testCase struct {
 		name         string
-		testConsumer func(t *testing.T) error
+		testConsumer func() error
 	}
 
 	testCases := []testCase{
 		{
 			name: "metrics",
-			testConsumer: func(t *testing.T) error {
+			testConsumer: func() error {
 				consumer1 := obsconsumer.NewMetrics(mockConsumer, receivedItemsCounter, receivedSizeCounter)
 				consumer2 := obsconsumer.NewMetrics(consumer1, producedItemsCounter, producedSizeConter)
 				md := pmetric.NewMetrics()
@@ -98,7 +98,7 @@ func TestConsumeRefused(t *testing.T) {
 		},
 		{
 			name: "logs",
-			testConsumer: func(t *testing.T) error {
+			testConsumer: func() error {
 				consumer1 := obsconsumer.NewLogs(mockConsumer, receivedItemsCounter, receivedSizeCounter)
 				consumer2 := obsconsumer.NewLogs(consumer1, producedItemsCounter, producedSizeConter)
 				ld := plog.NewLogs()
@@ -108,7 +108,7 @@ func TestConsumeRefused(t *testing.T) {
 		},
 		{
 			name: "traces",
-			testConsumer: func(t *testing.T) error {
+			testConsumer: func() error {
 				consumer1 := obsconsumer.NewTraces(mockConsumer, receivedItemsCounter, receivedSizeCounter)
 				consumer2 := obsconsumer.NewTraces(consumer1, producedItemsCounter, producedSizeConter)
 				td := ptrace.NewTraces()
@@ -118,7 +118,7 @@ func TestConsumeRefused(t *testing.T) {
 		},
 		{
 			name: "profiles",
-			testConsumer: func(t *testing.T) error {
+			testConsumer: func() error {
 				consumer1 := obsconsumer.NewProfiles(mockConsumer, receivedItemsCounter, receivedSizeCounter)
 				consumer2 := obsconsumer.NewProfiles(consumer1, producedItemsCounter, producedSizeConter)
 				pd := pprofile.NewProfiles()
@@ -130,7 +130,7 @@ func TestConsumeRefused(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := tc.testConsumer(t)
+			err := tc.testConsumer()
 			assert.Equal(t, expectedErr, err)
 
 			var rm metricdata.ResourceMetrics
