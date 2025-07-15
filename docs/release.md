@@ -18,8 +18,6 @@ In order to have more people comfortable with the release process, and in order 
 
 The assigned release managers should coordinate with each other to ensure a smooth release process. The release managers may be the same person for different repositories, but it is not required.
 
-It is possible that a core approver isn't a contrib approver. In that case, the release manager should coordinate with a contrib approver for the steps requiring this role, such as branch creation or tag publishing.
-
 To ensure the rest of the community is informed about the release and can properly help the release manager, the core release manager should open a thread on the #otel-collector-dev CNCF Slack channel and provide updates there.
 The thread should be shared with all Collector leads (core, contrib and releases approvers and maintainers).
 
@@ -136,7 +134,7 @@ should share the list of issues that affected the release with the Collector lea
 2. Update the [release schedule](#release-schedule) section of this document to remove the completed
 releases and add new schedules to the bottom of the list. To update the release schedule, follow these rules:
    1. If the core release manager is also eligible as a contrib and 'releases' release manager, assign them to all roles they can perform.
-   2. Otherwise, pick a contrib/'releases' approver/maintainer that is not a core approver/maintainer, rotating through the list of eligible people.
+   2. Otherwise, pick a contrib/'releases' approver/maintainer that is not a core approver/maintainer, rotating through the list of eligible people. The contrib approvers/maintainers are all members of the [@collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers) team, and the 'releases' approvers/maintainers are all members of the [@collector-releases-approvers](https://github.com/orgs/open-telemetry/teams/collector-releases-approvers) team.
 
 
 ## Troubleshooting
