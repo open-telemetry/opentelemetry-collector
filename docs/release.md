@@ -2,7 +2,7 @@
 
 Collector build and testing is currently fully automated. However there are still certain operations that need to be performed manually in order to make a release.
 
-We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into three sections. Each section is assigned to an approver of maintainer of the corresponding repository. The sections are:
+We release both core and contrib collectors with the same versions where the contrib release uses the core release as a dependency. We’ve divided this process into three sections. Each section is assigned to an approver or maintainer of the corresponding repository. The sections are:
 
 1. The [Core](#releasing-opentelemetry-collector) collector, including the collector builder CLI tool.
 2. The [Contrib](#releasing-opentelemetry-collector-contrib) collector repository, containing Collector components.
