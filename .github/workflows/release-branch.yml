@@ -26,8 +26,8 @@ jobs:
 
       - name: Setup Git config
         run: |
-          git config --global user.name "opentelemetrybot"
-          git config --global user.email "107717825+opentelemetrybot@users.noreply.github.com"
+          git config --global user.name "otelbot"
+          git config --global user.email "197425009+otelbot@users.noreply.github.com"
 
       - name: Run release-branch.sh
         run: |
