@@ -5,6 +5,7 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
@@ -20,21 +21,37 @@ type Batcher[T any] interface {
 }
 
 type batcherSettings[T any] struct {
-	sizerType   request.SizerType
-	sizer       request.Sizer[T]
+	itemsSizer  request.Sizer[T]
+	bytesSizer  request.Sizer[T]
 	partitioner Partitioner[T]
 	next        sender.SendFunc[T]
 	maxWorkers  int
 }
 
-func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[request.Request]) Batcher[request.Request] {
+func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[request.Request]) (Batcher[request.Request], error) {
 	if !cfg.HasValue() {
-		return newDisabledBatcher[request.Request](set.next)
+		return newDisabledBatcher[request.Request](set.next), nil
+	}
+
+	sizer := activeSizer(cfg.Get().Sizer, set.itemsSizer, set.bytesSizer)
+	if sizer == nil {
+		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Get().Sizer)
 	}
 
 	if set.partitioner == nil {
-		return newPartitionBatcher(*cfg.Get(), set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.next)
+		return newPartitionBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next), nil
 	}
 
-	return newMultiBatcher(*cfg.Get(), set.sizerType, set.sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next)
+	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next), nil
+}
+
+func activeSizer[T any](sizerType request.SizerType, itemsSizer, bytesSizer request.Sizer[T]) request.Sizer[T] {
+	switch sizerType {
+	case request.SizerTypeBytes:
+		return bytesSizer
+	case request.SizerTypeItems:
+		return itemsSizer
+	default:
+		return request.RequestsSizer[T]{}
+	}
 }

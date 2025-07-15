@@ -36,6 +36,7 @@ GOFUMPT      := $(TOOLS_BIN_DIR)/gofumpt
 GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
 GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
 LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+PDATAGEN    := $(TOOLS_BIN_DIR)/pdatagen
 IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod

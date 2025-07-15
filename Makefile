@@ -246,9 +246,9 @@ genproto_sub:
 
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata:
-	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
-	$(MAKE) fmt
+genpdata: $(PDATAGEN)
+	$(PDATAGEN)
+	$(MAKE) -C pdata fmt
 
 INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
