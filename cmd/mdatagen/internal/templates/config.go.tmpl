@@ -50,6 +50,18 @@ type AttributesConfig struct {
   {{- end }}
 }
 
+// Default AttributesConfig assumes that if not configured not to exist an
+// attribute is meant to be reported
+func DefaultAttributesConfig() AttributesConfig {
+	return AttributesConfig{
+		{{- range $name, $attribute := .Attributes }}
+		{{ $name.Render }}: AttributeConfig{
+			Enabled: true,
+		},
+		{{- end }}
+	}
+}
+
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		{{- range $name, $metric := .Metrics }}
@@ -159,6 +171,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
+  Attributes AttributesConfig `mapstructure:"attributes"`
 	{{- if .ResourceAttributes }}
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 	{{- end }}
@@ -167,6 +180,7 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
+    Attributes: DefaultAttributesConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}

@@ -6,6 +6,11 @@ all_set:
     {{ $name }}:
       enabled: true
     {{- end }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: true
+  {{- end }}
   {{- end }}
   {{- if .Events }}
   events:
@@ -28,6 +33,11 @@ none_set:
     {{ $name }}:
       enabled: false
     {{- end }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false
+  {{- end }}
   {{- end }}
   {{- if .Events }}
   events:
