@@ -13,7 +13,7 @@ jobs:
         uses: streetsidesoftware/cspell-action@69543c3f9f14d4fcc6004c7bee03c4d366f11d64 # v7.0.1
         with:
           files: |
-            .chloggen/*.{yaml,yml,tmpl}
             **/*.{md,yaml,yml}
           config: '.github/workflows/utils/cspell.json'
+          check_dot_files: true
           
