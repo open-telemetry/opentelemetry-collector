@@ -68,3 +68,12 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
+
+    receiver_duration:
+      enabled: true
+      stability:
+        level: alpha
+      description: Duration of time taken to process a batch of telemetry data through the receiver. 
+      unit: "s"
+      histogram:
+        value_type: double
