@@ -415,6 +415,7 @@
       "testprovider",
       "testutil",
       "tlsconfig",
+      "tmpl",
       "tocstop",
       "tpmrm",
       "tracecontext",
