@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//nolint:testifylint // Testing properties of errors, no reason to use require
 func TestDownstream(t *testing.T) {
 	err1 := errors.New("test error")
 	err2 := errors.New("test error 2")
@@ -23,8 +24,8 @@ func TestDownstream(t *testing.T) {
 	errJoin2 := errors.Join(errDownstream1, errDownstream2)
 
 	assert.Equal(t, err1.Error(), errDownstream1.Error())
-	assert.True(t, errors.Is(errDownstream1, err1))
-	assert.False(t, errors.Is(errDownstream1, err2))
+	assert.ErrorIs(t, errDownstream1, err1)
+	assert.NotErrorIs(t, errDownstream1, err2)
 	assert.True(t, IsDownstream(errDownstream1))
 
 	assert.True(t, IsDownstream(errWrap))
