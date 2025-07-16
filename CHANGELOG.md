@@ -9,6 +9,25 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 ## v1.36.0/v0.130.0
 
+### ❗ Known Issues ❗
+
+- Due to a [bug](https://github.com/open-telemetry/opentelemetry-go/issues/7039) in the prometheus exporter, if you are configuring your own prometheus exporter, the collector's internal metrics will be emitted with the unit included in the metric name. For example, the metric `otelcol_exporter_sent_spans__spans__total` instead of `otelcol_exporter_sent_spans_total`. The workaround is to manually configure `without_units: true` in your prometheus exporter config
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+                  without_units: true
+  ```
+
+  If you are using the collector's default Prometheus exporter for exporting internal metrics you are unaffected. 
+
 ### 🛑 Breaking changes 🛑
 
 - `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
