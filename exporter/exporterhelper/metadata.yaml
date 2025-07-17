@@ -122,3 +122,12 @@ telemetry:
       gauge:
         value_type: int
         async: true
+
+    exporter_duration:
+      enabled: true
+      stability:
+        level: alpha
+      description: Duration of exporter operations.
+      unit: "s"
+      histogram:
+        value_type: double
