@@ -8,8 +8,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 type testContextKey string
