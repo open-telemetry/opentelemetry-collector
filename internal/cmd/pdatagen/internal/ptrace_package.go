@@ -47,7 +47,7 @@ var resourceSpansSlice = &sliceOfPtrs{
 	element:    resourceSpans,
 }
 
-var resourceSpans = &messageValueStruct{
+var resourceSpans = &messageStruct{
 	structName:     "ResourceSpans",
 	description:    "// ResourceSpans is a collection of spans from a Resource.",
 	originFullName: "otlptrace.ResourceSpans",
@@ -66,7 +66,7 @@ var scopeSpansSlice = &sliceOfPtrs{
 	element:    scopeSpans,
 }
 
-var scopeSpans = &messageValueStruct{
+var scopeSpans = &messageStruct{
 	structName:     "ScopeSpans",
 	description:    "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.ScopeSpans",
@@ -92,7 +92,7 @@ var flagsField = &primitiveField{
 	testVal:    `uint32(0xf)`,
 }
 
-var span = &messageValueStruct{
+var span = &messageStruct{
 	structName: "Span",
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
@@ -137,7 +137,7 @@ var span = &messageValueStruct{
 			defaultVal: "uint32(0)",
 			testVal:    "uint32(17)",
 		},
-		&messageValueField{
+		&messageField{
 			fieldName:     "Status",
 			returnMessage: spanStatus,
 		},
@@ -149,7 +149,7 @@ var spanEventSlice = &sliceOfPtrs{
 	element:    spanEvent,
 }
 
-var spanEvent = &messageValueStruct{
+var spanEvent = &messageStruct{
 	structName: "SpanEvent",
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
@@ -167,7 +167,7 @@ var spanLinkSlice = &sliceOfPtrs{
 	element:    spanLink,
 }
 
-var spanLink = &messageValueStruct{
+var spanLink = &messageStruct{
 	structName: "SpanLink",
 	description: "// SpanLink is a pointer from the current span to another span in the same trace or in a\n" +
 		"// different trace.\n" +
@@ -183,7 +183,7 @@ var spanLink = &messageValueStruct{
 	},
 }
 
-var spanStatus = &messageValueStruct{
+var spanStatus = &messageStruct{
 	structName: "Status",
 	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
@@ -207,7 +207,7 @@ var spanStatus = &messageValueStruct{
 	},
 }
 
-var traceStateField = &messageValueField{
+var traceStateField = &messageField{
 	fieldName:     "TraceState",
 	returnMessage: traceState,
 }

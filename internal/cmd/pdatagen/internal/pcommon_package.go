@@ -32,7 +32,7 @@ var pcommon = &Package{
 	},
 }
 
-var scope = &messageValueStruct{
+var scope = &messageStruct{
 	structName:     "InstrumentationScope",
 	packageName:    "pcommon",
 	description:    "// InstrumentationScope is a message representing the instrumentation scope information.",
@@ -57,12 +57,12 @@ var mapStruct = &sliceOfPtrs{
 	packageName: "pcommon",
 }
 
-var scopeField = &messageValueField{
+var scopeField = &messageField{
 	fieldName:     "Scope",
 	returnMessage: scope,
 }
 
-var traceState = &messageValueStruct{
+var traceState = &messageStruct{
 	structName:  "TraceState",
 	packageName: "pcommon",
 }
@@ -105,7 +105,7 @@ var nameField = &primitiveField{
 	testVal:    `"test_name"`,
 }
 
-var anyValue = &messageValueStruct{
+var anyValue = &messageStruct{
 	structName:     "Value",
 	packageName:    "pcommon",
 	originFullName: "otlpcommon.AnyValue",
@@ -152,7 +152,7 @@ var schemaURLField = &primitiveField{
 	testVal:    `"https://opentelemetry.io/schemas/1.5.0"`,
 }
 
-var resource = &messageValueStruct{
+var resource = &messageStruct{
 	structName:     "Resource",
 	packageName:    "pcommon",
 	description:    "// Resource is a message representing the resource information.",
@@ -170,7 +170,7 @@ var resource = &messageValueStruct{
 	},
 }
 
-var resourceField = &messageValueField{
+var resourceField = &messageField{
 	fieldName:     "Resource",
 	returnMessage: resource,
 }
