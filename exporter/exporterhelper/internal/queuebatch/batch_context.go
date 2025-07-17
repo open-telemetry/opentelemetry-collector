@@ -32,9 +32,31 @@ func parentsFromContext(ctx context.Context) []trace.Link {
 }
 
 func contextWithMergedLinks(ctx1 context.Context, ctx2 context.Context) context.Context {
-	return context.WithValue(
-		context.Background(),
-		batchSpanLinksKey,
-		append(parentsFromContext(ctx1), parentsFromContext(ctx2)...),
-	)
+	return mergedContext{
+		context.WithValue(context.Background(),
+			batchSpanLinksKey,
+			append(parentsFromContext(ctx1), parentsFromContext(ctx2)...)),
+		ctx1,
+		ctx2,
+	}
+}
+
+type mergedContext struct {
+	context.Context
+	ctx1 context.Context
+	ctx2 context.Context
+}
+
+func (c mergedContext) Value(key any) any {
+	if c.ctx1 != nil {
+		if val := c.ctx1.Value(key); val != nil {
+			return val
+		}
+	}
+	if c.ctx2 != nil {
+		if val := c.ctx2.Value(key); val != nil {
+			return val
+		}
+	}
+	return nil
 }
