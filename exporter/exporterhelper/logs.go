@@ -59,7 +59,7 @@ type logsEncoding struct{}
 var _ QueueBatchEncoding[Request] = logsEncoding{}
 
 func (logsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, logs, err := pdatareq.UnmarshalLogs(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -78,7 +78,7 @@ func (logsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
 
 func (logsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
 	logs := req.(*logsRequest).ld
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalLogs(ctx, logs)
 	}
 	return logsMarshaler.MarshalLogs(logs)

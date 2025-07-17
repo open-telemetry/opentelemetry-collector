@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -64,7 +63,7 @@ type Settings[T any] struct {
 	WaitForResult   bool
 	BlockOnOverflow bool
 	Signal          pipeline.Signal
-	StorageID       configoptional.Optional[component.ID]
+	StorageID       *component.ID
 	Encoding        Encoding[T]
 	ID              component.ID
 	Telemetry       component.TelemetrySettings
@@ -81,10 +80,24 @@ func (set *Settings[T]) activeSizer() request.Sizer[T] {
 	}
 }
 
-func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
+func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
+	q, err := newBaseQueue(set)
+	if err != nil {
+		return nil, err
+	}
+
+	oq, err := newObsQueue(set, newAsyncQueue(q, set.NumConsumers, next))
+	if err != nil {
+		return nil, err
+	}
+
+	return oq, nil
+}
+
+func newBaseQueue[T any](set Settings[T]) (readableQueue[T], error) {
 	// Configure memory queue or persistent based on the config.
-	if !set.StorageID.HasValue() {
-		return newAsyncQueue(newMemoryQueue[T](set), set.NumConsumers, next), nil
+	if set.StorageID == nil {
+		return newMemoryQueue[T](set), nil
 	}
 	if set.ItemsSizer == nil {
 		return nil, errors.New("PersistentQueue requires ItemsSizer to be set")
@@ -92,7 +105,8 @@ func NewQueue[T any](set Settings[T], next ConsumeFunc[T]) (Queue[T], error) {
 	if set.BytesSizer == nil {
 		return nil, errors.New("PersistentQueue requires BytesSizer to be set")
 	}
-	return newAsyncQueue(newPersistentQueue[T](set), set.NumConsumers, next), nil
+
+	return newPersistentQueue[T](set), nil
 }
 
 // TODO: Investigate why linter "unused" fails if add a private "read" func on the Queue.
