@@ -107,7 +107,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 			conf: confmap.NewFromStringMap(map[string]any{
 				"traces": "string",
 			}),
-			expectError: "'[traces]' expected a map, got 'string'",
+			expectError: "'[traces]' expected a map or struct, got \"string\"",
 		},
 		{
 			name: "invalid-pipeline-type",
@@ -127,7 +127,7 @@ func TestPipelineConfigUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "'[traces].receivers': source data must be an array or slice, got map",
+			expectError: "'[traces].receivers' source data must be an array or slice, got map",
 		},
 	}
 
@@ -157,7 +157,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "decoding failed due to the following error(s):\n\nerror decoding 'telemetry.logs': decoding failed due to the following error(s):\n\nerror decoding 'level': unrecognized level: \"UNKNOWN\"",
+			expectError: "decoding failed due to the following error(s):\n\n'telemetry.logs' decoding failed due to the following error(s):\n\n'level' unrecognized level: \"UNKNOWN\"",
 		},
 		{
 			name: "invalid-metrics-level",
@@ -168,7 +168,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 					},
 				},
 			}),
-			expectError: "decoding failed due to the following error(s):\n\nerror decoding 'telemetry.metrics': decoding failed due to the following error(s):\n\nerror decoding 'level': unknown metrics level \"unknown\"",
+			expectError: "decoding failed due to the following error(s):\n\n'telemetry.metrics' decoding failed due to the following error(s):\n\n'level' unknown metrics level \"unknown\"",
 		},
 		{
 			name: "invalid-service-extensions-section",
@@ -195,7 +195,7 @@ func TestServiceUnmarshalError(t *testing.T) {
 			conf: confmap.NewFromStringMap(map[string]any{
 				"pipelines": "string",
 			}),
-			expectError: "'pipelines' expected a map, got 'string'",
+			expectError: "'pipelines' expected type 'pipelines.Config', got unconvertible type 'string'",
 		},
 	}
 
