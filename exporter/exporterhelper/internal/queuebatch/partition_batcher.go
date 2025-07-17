@@ -18,6 +18,8 @@ import (
 
 var _ Batcher[request.Request] = (*partitionBatcher)(nil)
 
+type partitionCtxKey struct{}
+
 type batch struct {
 	ctx  context.Context
 	req  request.Request
@@ -26,6 +28,7 @@ type batch struct {
 
 // partitionBatcher continuously batch incoming requests and flushes asynchronously if minimum size limit is met or on timeout.
 type partitionBatcher struct {
+	key            string
 	cfg            BatchConfig
 	wp             *workerPool
 	sizer          request.Sizer[request.Request]
@@ -38,12 +41,14 @@ type partitionBatcher struct {
 }
 
 func newPartitionBatcher(
+	key string,
 	cfg BatchConfig,
 	sizer request.Sizer[request.Request],
 	wp *workerPool,
 	next sender.SendFunc[request.Request],
 ) *partitionBatcher {
 	return &partitionBatcher{
+		key:         key,
 		cfg:         cfg,
 		wp:          wp,
 		sizer:       sizer,
@@ -59,6 +64,7 @@ func (qb *partitionBatcher) resetTimer() {
 }
 
 func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	ctx = contextWithPartitionKey(ctx, qb.key)
 	qb.currentBatchMu.Lock()
 
 	if qb.currentBatch == nil {
@@ -117,7 +123,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	// Logic on how to deal with the current batch:
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
-	qb.currentBatch.ctx = contextWithMergedLinks(qb.currentBatch.ctx, ctx)
+	qb.currentBatch.ctx = contextWithPartitionKey(contextWithMergedLinks(qb.currentBatch.ctx, ctx), qb.key)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
@@ -258,4 +264,16 @@ func (rcd *refCountDone) OnDone(err error) {
 		// No more references, call done.
 		rcd.done.OnDone(rcd.err)
 	}
+}
+
+func contextWithPartitionKey(ctx context.Context, v string) context.Context {
+	return context.WithValue(ctx, partitionCtxKey{}, v)
+}
+
+func PartitionKeyFromContext(ctx context.Context) string {
+	k, ok := ctx.Value(partitionCtxKey{}).(string)
+	if !ok {
+		return ""
+	}
+	return k
 }

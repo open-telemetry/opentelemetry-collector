@@ -39,7 +39,7 @@ func NewBatcher(cfg configoptional.Optional[BatchConfig], set batcherSettings[re
 	}
 
 	if set.partitioner == nil {
-		return newPartitionBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next), nil
+		return newPartitionBatcher("test", *cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.next), nil
 	}
 
 	return newMultiBatcher(*cfg.Get(), sizer, newWorkerPool(set.maxWorkers), set.partitioner, set.next), nil
