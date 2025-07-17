@@ -41,6 +41,7 @@ func NewQueueBatch(
 		partitioner: set.Partitioner,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
+		logger:      set.Telemetry.Logger,
 	})
 	if err != nil {
 		return nil, err
