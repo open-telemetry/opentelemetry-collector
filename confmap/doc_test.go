@@ -4,8 +4,10 @@
 package confmap_test
 
 import (
+	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -124,4 +126,96 @@ func Example_manualUnmarshaling() {
 	// Output: Configuration contains the following:
 	// Disk: "Beatles"
 	// Scrape: 10s
+}
+
+// mockFileProvider simulates the standard file provider behavior.
+// In typical usage, it reads a single file as the root configuration.
+// This mock implementation always returns a fixed configuration:
+// { "my-config": "${expand:to-expand}" }
+type mockFileProvider struct{}
+
+func (d mockFileProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	if uri != "file:mock-file" {
+		panic("should not happen")
+	}
+	return confmap.NewRetrieved(map[string]any{
+		"my-config": "${expand:to-expand}",
+	})
+}
+
+func (d mockFileProvider) Scheme() string {
+	return "file"
+}
+
+func (d mockFileProvider) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+// mockExpandProvider simulates a typical inline expansion provider.
+// In configurations, you can use expressions like ${SCHEMA:VALUE},
+// where the provider associated with SCHEMA is responsible for resolving the value.
+type mockExpandProvider struct{}
+
+func (m mockExpandProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	expectedKey := "expand:to-expand"
+	if uri != expectedKey {
+		panic("should not happen, the uri is expected to be " + expectedKey + " for mockExpandProvider")
+	}
+	return confmap.NewRetrieved("expanded")
+}
+
+func (m mockExpandProvider) Scheme() string {
+	return "expand"
+}
+
+func (m mockExpandProvider) Shutdown(ctx context.Context) error {
+	return nil
+}
+
+// mockUpperCaseConverter transforms the value of the `my-config` field in the configuration to uppercase.
+type mockUpperCaseConverter struct{}
+
+func (m mockUpperCaseConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
+	currentValue := conf.Get("my-config")
+	expectedValue := "expanded"
+	if currentValue != expectedValue {
+		panic("should not happen, the value for converter should always be " + expectedValue + " for mockUpperCaseConverter")
+	}
+	upperCaseConf := confmap.NewFromStringMap(map[string]any{
+		"my-config": strings.ToUpper(currentValue.(string)),
+	})
+	if conf.Merge(upperCaseConf) != nil {
+		panic("merge failed, this should not happen in this example.")
+	}
+	return nil
+}
+
+func Example_converterAndProvider() {
+	resolver, err := confmap.NewResolver(confmap.ResolverSettings{
+		URIs: []string{"file:mock-file"},
+		ProviderFactories: []confmap.ProviderFactory{
+			confmap.NewProviderFactory(func(ps confmap.ProviderSettings) confmap.Provider {
+				return &mockFileProvider{}
+			}),
+			confmap.NewProviderFactory(func(ps confmap.ProviderSettings) confmap.Provider {
+				return &mockExpandProvider{}
+			}),
+		},
+		ConverterFactories: []confmap.ConverterFactory{
+			confmap.NewConverterFactory(func(settings confmap.ConverterSettings) confmap.Converter {
+				return &mockUpperCaseConverter{}
+			}),
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	conf, err := resolver.Resolve(context.Background())
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Configuration contains the following:\nmy-config: %s", conf.Get("my-config"))
+	// Output: Configuration contains the following:
+	// my-config: EXPANDED
 }
