@@ -87,7 +87,7 @@ func TestConfmapMarshalConfig(t *testing.T) {
 		Telemetry: defaultTelConfig,
 	}))
 	assert.Equal(t, map[string]any{
-		"pipelines": map[string]any{},
+		"pipelines": map[string]any(nil),
 		"telemetry": map[string]any{
 			"logs": map[string]any{
 				"encoding":           "console",
@@ -113,7 +113,6 @@ func TestConfmapMarshalConfig(t *testing.T) {
 									"with_resource_constant_labels": map[string]any{
 										"included": []any{},
 									},
-									"without_scope_info":  true,
 									"without_type_suffix": true,
 									"without_units":       true,
 								},

@@ -19,13 +19,6 @@ jobs:
         with:
           go-version: '1.24'
 
-      - name: Install Actionlint
-        run: |
-          mkdir -p .tools
-          cd internal/tools
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          mv $(go env GOPATH)/bin/actionlint ../../.tools/actionlint
-
       - name: Run Actionlint
         run: |
           make actionlint

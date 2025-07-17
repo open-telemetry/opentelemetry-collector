@@ -48,7 +48,6 @@ type BaseExporter struct {
 
 	queueBatchSettings QueueBatchSettings[request.Request]
 	queueCfg           queuebatch.Config
-	batcherCfg         BatcherConfig
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -83,21 +82,22 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		return nil, err
 	}
 
-	if be.batcherCfg.Enabled || be.queueCfg.Batch != nil {
+	if be.queueCfg.Batch.HasValue() {
 		// Batcher mutates the data.
 		be.ConsumerOptions = append(be.ConsumerOptions, consumer.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 	}
 
-	if be.queueCfg.Enabled || be.batcherCfg.Enabled {
+	if be.queueCfg.Enabled {
 		qSet := queuebatch.Settings[request.Request]{
 			Signal:      signal,
 			ID:          set.ID,
 			Telemetry:   set.TelemetrySettings,
 			Encoding:    be.queueBatchSettings.Encoding,
-			Sizers:      be.queueBatchSettings.Sizers,
+			ItemsSizer:  be.queueBatchSettings.ItemsSizer,
+			BytesSizer:  be.queueBatchSettings.BytesSizer,
 			Partitioner: be.queueBatchSettings.Partitioner,
 		}
-		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.batcherCfg, be.ExportFailureMessage, be.firstSender)
+		be.QueueSender, err = NewQueueSender(qSet, be.queueCfg, be.ExportFailureMessage, be.firstSender)
 		if err != nil {
 			return nil, err
 		}
@@ -228,18 +228,6 @@ func WithQueueBatch(cfg queuebatch.Config, set QueueBatchSettings[request.Reques
 func WithCapabilities(capabilities consumer.Capabilities) Option {
 	return func(o *BaseExporter) error {
 		o.ConsumerOptions = append(o.ConsumerOptions, consumer.WithCapabilities(capabilities))
-		return nil
-	}
-}
-
-// WithBatcher enables batching for an exporter based on custom request types.
-// For now, it can be used only with the New[Traces|Metrics|Logs|Profiles]Request exporter helpers and
-// WithRequestBatchFuncs provided.
-// This API is at the early stage of development and may change without backward compatibility
-// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-func WithBatcher(cfg BatcherConfig) Option {
-	return func(o *BaseExporter) error {
-		o.batcherCfg = cfg
 		return nil
 	}
 }
