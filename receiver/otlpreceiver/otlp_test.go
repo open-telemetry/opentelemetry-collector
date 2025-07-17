@@ -495,6 +495,35 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	}
 }
 
+func TestOTLPReceiverNoContentType(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
+
+	t.Run("NoContentType", func(t *testing.T) {
+		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
+
+		req, err := http.NewRequest(http.MethodPost, url, body)
+		require.NoError(t, err, "Error creating trace POST request: %v", err)
+
+		// Set invalid encoding to trigger an error
+		req.Header.Set("Content-Encoding", "invalid")
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error posting to server: %v", err)
+		// Don't care about the response body, just check the content type
+		defer resp.Body.Close()
+
+		require.Equal(t, fallbackContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	})
+}
+
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	ln, err := net.Listen("tcp", addr)
