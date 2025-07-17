@@ -135,8 +135,9 @@ func Example_manualUnmarshaling() {
 type mockFileProvider struct{}
 
 func (d mockFileProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	if uri != "file:mock-file" {
-		panic("should not happen")
+	expectedUri := "file:mock-file"
+	if uri != expectedUri {
+		panic("should not happen, the uri is expected to be " + expectedUri + " for mockFileProvider")
 	}
 	return confmap.NewRetrieved(map[string]any{
 		"my-config": "${expand:to-expand}",
@@ -157,9 +158,9 @@ func (d mockFileProvider) Shutdown(ctx context.Context) error {
 type mockExpandProvider struct{}
 
 func (m mockExpandProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	expectedKey := "expand:to-expand"
-	if uri != expectedKey {
-		panic("should not happen, the uri is expected to be " + expectedKey + " for mockExpandProvider")
+	expectedUri := "expand:to-expand"
+	if uri != expectedUri {
+		panic("should not happen, the uri is expected to be " + expectedUri + " for mockExpandProvider")
 	}
 	return confmap.NewRetrieved("expanded")
 }
