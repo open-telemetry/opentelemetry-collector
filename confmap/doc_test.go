@@ -134,10 +134,10 @@ func Example_manualUnmarshaling() {
 // { "my-config": "${expand:to-expand}" }
 type mockFileProvider struct{}
 
-func (d mockFileProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	expectedUri := "file:mock-file"
-	if uri != expectedUri {
-		panic("should not happen, the uri is expected to be " + expectedUri + " for mockFileProvider")
+func (d mockFileProvider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	expectedURI := "file:mock-file"
+	if uri != expectedURI {
+		panic("should not happen, the uri is expected to be " + expectedURI + " for mockFileProvider")
 	}
 	return confmap.NewRetrieved(map[string]any{
 		"my-config": "${expand:to-expand}",
@@ -148,7 +148,7 @@ func (d mockFileProvider) Scheme() string {
 	return "file"
 }
 
-func (d mockFileProvider) Shutdown(ctx context.Context) error {
+func (d mockFileProvider) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -157,10 +157,10 @@ func (d mockFileProvider) Shutdown(ctx context.Context) error {
 // where the provider associated with SCHEMA is responsible for resolving the value.
 type mockExpandProvider struct{}
 
-func (m mockExpandProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (*confmap.Retrieved, error) {
-	expectedUri := "expand:to-expand"
-	if uri != expectedUri {
-		panic("should not happen, the uri is expected to be " + expectedUri + " for mockExpandProvider")
+func (m mockExpandProvider) Retrieve(_ context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
+	expectedURI := "expand:to-expand"
+	if uri != expectedURI {
+		panic("should not happen, the uri is expected to be " + expectedURI + " for mockExpandProvider")
 	}
 	return confmap.NewRetrieved("expanded")
 }
@@ -169,14 +169,14 @@ func (m mockExpandProvider) Scheme() string {
 	return "expand"
 }
 
-func (m mockExpandProvider) Shutdown(ctx context.Context) error {
+func (m mockExpandProvider) Shutdown(_ context.Context) error {
 	return nil
 }
 
 // mockUpperCaseConverter transforms the value of the `my-config` field in the configuration to uppercase.
 type mockUpperCaseConverter struct{}
 
-func (m mockUpperCaseConverter) Convert(ctx context.Context, conf *confmap.Conf) error {
+func (m mockUpperCaseConverter) Convert(_ context.Context, conf *confmap.Conf) error {
 	currentValue := conf.Get("my-config")
 	expectedValue := "expanded"
 	if currentValue != expectedValue {
@@ -195,15 +195,15 @@ func Example_converterAndProvider() {
 	resolver, err := confmap.NewResolver(confmap.ResolverSettings{
 		URIs: []string{"file:mock-file"},
 		ProviderFactories: []confmap.ProviderFactory{
-			confmap.NewProviderFactory(func(ps confmap.ProviderSettings) confmap.Provider {
+			confmap.NewProviderFactory(func(_ confmap.ProviderSettings) confmap.Provider {
 				return &mockFileProvider{}
 			}),
-			confmap.NewProviderFactory(func(ps confmap.ProviderSettings) confmap.Provider {
+			confmap.NewProviderFactory(func(_ confmap.ProviderSettings) confmap.Provider {
 				return &mockExpandProvider{}
 			}),
 		},
 		ConverterFactories: []confmap.ConverterFactory{
-			confmap.NewConverterFactory(func(settings confmap.ConverterSettings) confmap.Converter {
+			confmap.NewConverterFactory(func(_ confmap.ConverterSettings) confmap.Converter {
 				return &mockUpperCaseConverter{}
 			}),
 		},
