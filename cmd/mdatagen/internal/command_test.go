@@ -749,6 +749,7 @@ func TestGenerateTelemetryMetadata(t *testing.T) {
 package metadata
 
 import (
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
@@ -781,6 +782,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 package metadata
 
 import (
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 

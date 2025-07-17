@@ -14,6 +14,7 @@ import (
     "sync"
     {{- end }}
 
+    "go.opentelemetry.io/otel/attribute"
     "go.opentelemetry.io/otel/metric"
     {{- if .Telemetry.Metrics }}
         {{- range $_, $metric := .Telemetry.Metrics }}
@@ -40,6 +41,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+    attributeSet attribute.Set
     meter metric.Meter
 	mu sync.Mutex
     registrations []metric.Registration
@@ -61,6 +63,12 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
   tbof(mb)
 }
 
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+    return func(mb *TelemetryBuilder){
+        mb.attributeSet = s
+    }
+}
+
 {{- range $name, $metric := .Telemetry.Metrics }}
     {{ if $metric.Data.Async -}}
 // Register{{ $name.Render }}Callback sets callback for observable {{ $name.Render }} metric.
@@ -76,6 +84,10 @@ func (builder *TelemetryBuilder) Register{{ $name.Render }}Callback(cb metric.{{
     defer builder.mu.Unlock()
     builder.registrations = append(builder.registrations, reg)
     return nil
+}
+    {{- else }}
+func (builder *TelemetryBuilder) Record{{ $name.Render }}DataPoint(ctx context.Context, val {{ $metric.Data.BasicType }}) {
+    builder.{{ $name.Render }}.{{ measurementFunc $metric.Data.Instrument }}(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
     {{- end }}
 

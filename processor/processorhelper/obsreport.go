@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
 
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor"
@@ -18,25 +17,23 @@ import (
 const signalKey = "otel.signal"
 
 type obsReport struct {
-	otelAttrs        metric.MeasurementOption
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newObsReport(set processor.Settings, signal pipeline.Signal) (*obsReport, error) {
-	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings, metadata.WithAttributeSet(attribute.NewSet(
+		attribute.String(internal.ProcessorKey, set.ID.String()),
+		attribute.String(signalKey, signal.String()),
+	)))
 	if err != nil {
 		return nil, err
 	}
 	return &obsReport{
-		otelAttrs: metric.WithAttributeSet(attribute.NewSet(
-			attribute.String(internal.ProcessorKey, set.ID.String()),
-			attribute.String(signalKey, signal.String()),
-		)),
 		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
 func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
-	or.telemetryBuilder.ProcessorIncomingItems.Add(ctx, int64(incoming), or.otelAttrs)
-	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), or.otelAttrs)
+	or.telemetryBuilder.RecordProcessorIncomingItemsDataPoint(ctx, int64(incoming))
+	or.telemetryBuilder.RecordProcessorOutgoingItemsDataPoint(ctx, int64(outgoing))
 }
