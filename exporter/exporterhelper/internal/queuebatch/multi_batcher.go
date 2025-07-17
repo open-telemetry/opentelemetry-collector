@@ -46,7 +46,7 @@ func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *
 	if found {
 		return s.(*partitionBatcher)
 	}
-	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.wp, mb.consumeFunc)
+	newS := newPartitionBatcher(key, mb.cfg, mb.sizer, mb.wp, mb.consumeFunc)
 	_ = newS.Start(ctx, nil)
 	s, loaded := mb.shards.LoadOrStore(key, newS)
 	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.
