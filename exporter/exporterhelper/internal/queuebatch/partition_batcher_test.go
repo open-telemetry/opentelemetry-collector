@@ -6,7 +6,6 @@ package queuebatch
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -382,33 +381,12 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 	assert.EqualValues(t, 0, done.success.Load())
 }
 
-type customPartialErrorRequest struct {
-	*requesttest.FakeRequest
-	failureCount int
-	maxSize      int
-}
-
-func (r *customPartialErrorRequest) MergeSplit(_ context.Context, _ int, _ request.SizerType, _ request.Request) ([]request.Request, error) {
-	return nil, fmt.Errorf("partial success: failed to split request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
-		r.ItemsCount(),
-		r.maxSize,
-		r.ItemsCount(),
-	)
-}
-
-func (r *customPartialErrorRequest) ItemsCount() int {
-	return r.FakeRequest.ItemsCount()
-}
-
-func (r *customPartialErrorRequest) OnError(err error) request.Request {
-	return r.FakeRequest.OnError(err)
-}
-
-func TestShardBatcher_PartialSuccessError(t *testing.T) {
+func TestPartitionBatcher_PartialSuccessError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 0,
-		MinSize:      0,
-		MaxSize:      10,
+		Sizer:        request.SizerTypeBytes,
+		MinSize:      10,
+		MaxSize:      15,
 	}
 
 	core, observed := observer.New(zap.WarnLevel)
@@ -416,19 +394,13 @@ func TestShardBatcher_PartialSuccessError(t *testing.T) {
 	sink := requesttest.NewSink()
 	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), newWorkerPool(1), sink.Export, logger)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, ba.Shutdown(context.Background()))
-	})
 
 	done := newFakeDone()
-
-	req := &customPartialErrorRequest{
-		maxSize: 10,
-		FakeRequest: &requesttest.FakeRequest{
-			Items: 100,
-			Bytes: 100,
-		},
-		failureCount: 42,
+	req := &requesttest.FakeRequest{
+		Items:          100,
+		Bytes:          100,
+		MergeErr:       errors.New("split error"),
+		MergeErrResult: []request.Request{&requesttest.FakeRequest{Items: 10, Bytes: 15}},
 	}
 	ba.Consume(context.Background(), req, done)
 
@@ -439,91 +411,60 @@ func TestShardBatcher_PartialSuccessError(t *testing.T) {
 		}
 		log := logs[0]
 		return log.Level == zap.WarnLevel &&
-			log.Message == "partial success: failed to split request: size is greater than max size. size: 100, max_size: 10. Failed: 100"
+			log.Message == "Failed to split request."
 	}, time.Second, 10*time.Millisecond)
 
-	// Verify that done callback was called with the error
-	assert.Eventually(t, func() bool {
-		return done.errors.Load() == 1
-	}, time.Second, 10*time.Millisecond)
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Verify that done callback was called with the returned batch and error for the split.
+	assert.Equal(t, int64(1), done.errors.Load())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 10, sink.ItemsCount())
+	assert.Equal(t, 15, sink.BytesCount())
 }
 
-func TestShardBatcher_PartialSuccessError_WithLogs(t *testing.T) {
+func TestSPartitionBatcher_PartialSuccessError_AfterOkRequest(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 0,
+		Sizer:        request.SizerTypeBytes,
 		MinSize:      10,
+		MaxSize:      15,
 	}
 
-	core, logs := observer.New(zap.WarnLevel)
+	core, observed := observer.New(zap.WarnLevel)
 	logger := zap.New(core)
-
 	sink := requesttest.NewSink()
 	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), newWorkerPool(1), sink.Export, logger)
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, ba.Shutdown(context.Background()))
-	})
 
 	done := newFakeDone()
-	req := &customPartialErrorRequest{
-		FakeRequest: &requesttest.FakeRequest{
-			Items:    8,
-			MergeErr: errors.New("partial success: failed to split request: size is greater than max size. size: 3, max_size: 10. Failed: 3"),
-		},
-		failureCount: 42,
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 5}, done)
+	req := &requesttest.FakeRequest{
+		Items:          100,
+		Bytes:          100,
+		MergeErr:       errors.New("split error"),
+		MergeErrResult: []request.Request{&requesttest.FakeRequest{Items: 10, Bytes: 15}},
 	}
-
 	ba.Consume(context.Background(), req, done)
 
 	assert.Eventually(t, func() bool {
-		return done.errors.Load() == 1
-	}, 1*time.Second, 10*time.Millisecond)
-
-	allLogs := logs.All()
-	require.Len(t, allLogs, 1)
-	assert.Contains(t, allLogs[0].Message, "partial success: failed to split request:")
-}
-
-func TestShardBatcher_PartialSuccessError_WithFailureCountAndReason(t *testing.T) {
-	core, observedLogs := observer.New(zap.WarnLevel)
-	logger := zap.New(core)
-
-	cfg := BatchConfig{
-		FlushTimeout: 0,
-		MinSize:      5,
-		MaxSize:      10,
-	}
-
-	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), newWorkerPool(1), sink.Export, logger)
-	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
-	t.Cleanup(func() {
-		require.NoError(t, ba.Shutdown(context.Background()))
-	})
-
-	// First add a request to create a current batch
-	done1 := newFakeDone()
-	req1 := &requesttest.FakeRequest{
-		Items: 3,
-	}
-	ba.Consume(context.Background(), req1, done1)
-
-	// Now add a request that will trigger the partial success error
-	done2 := newFakeDone()
-	req2 := &requesttest.FakeRequest{
-		Items:    3,
-		MergeErr: errors.New("partial success: failed to split request: size is greater than max size. size: 3, max_size: 10. Failed: 3"),
-	}
-	ba.Consume(context.Background(), req2, done2)
-
-	assert.Eventually(t, func() bool {
-		return observedLogs.Len() > 0
+		logs := observed.All()
+		if len(logs) == 0 {
+			return false
+		}
+		log := logs[0]
+		return log.Level == zap.WarnLevel &&
+			log.Message == "Failed to split request."
 	}, time.Second, 10*time.Millisecond)
 
-	allLogs := observedLogs.All()
-	require.Len(t, allLogs, 1)
-	assert.Contains(t, allLogs[0].Message, "failed to split request")
-	assert.EqualValues(t, 1, done2.errors.Load())
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Verify that done callback was called with the success for the returned batch and error for the split.
+	assert.Equal(t, int64(1), done.errors.Load())
+	assert.Equal(t, int64(1), done.success.Load())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 10, sink.ItemsCount())
+	assert.Equal(t, 15, sink.BytesCount())
 }
 
 type fakeDone struct {
