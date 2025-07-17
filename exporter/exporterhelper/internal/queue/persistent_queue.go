@@ -102,7 +102,7 @@ func newPersistentQueue[T any](set Settings[T]) readableQueue[T] {
 		activeSizer:     set.activeSizer(),
 		itemsSizer:      set.ItemsSizer,
 		bytesSizer:      set.BytesSizer,
-		storageID:       *set.StorageID.Get(),
+		storageID:       *set.StorageID,
 		id:              set.ID,
 		signal:          set.Signal,
 		blockOnOverflow: set.BlockOnOverflow,

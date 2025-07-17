@@ -110,7 +110,7 @@ func createProfilesExporter(
 ) (xexporter.Profiles, error) {
 	oce := newExporter(cfg, set)
 	oCfg := cfg.(*Config)
-	return xexporterhelper.NewProfilesExporter(ctx, set, cfg,
+	return xexporterhelper.NewProfiles(ctx, set, cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutConfig),
