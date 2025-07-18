@@ -18,9 +18,9 @@ type MetricConfig struct {
 }
 
 // AttributeConfig holds whether a specific attribute is enabled or disabled in
-// the config
+// the configH
 type AttributeConfig struct {
-  Enabled bool `mapstructure:"enabled"`
+  Enabled   bool   `mapstructure:"enabled"`
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -45,6 +45,7 @@ type MetricsConfig struct {
 // AttributesConfig provides attribute config for configured {{ .Type }} metric
 // attributes.
 type AttributesConfig struct {
+  ReagType string  `mapstructure:"aggregation_type"`
   {{- range $name, $attribute := .Attributes }}
   {{ $name.Render }} AttributeConfig `mapstructure:"{{ $name }}"`
   {{- end }}

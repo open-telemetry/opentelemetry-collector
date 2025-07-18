@@ -12,6 +12,131 @@
   }
 {{- end -}}
 
+{{- define "reaggAvg" -}}
+	dp := m.data.Sum().DataPoints()
+	// we use this to "blank" aggregated datapoints
+	trash := pmetric.NewNumberDataPoint()
+
+	// Create and set up destination metric we don't use CopyTo here because we
+  // don't want the datapoints from the original Sum
+	nm := pmetric.NewMetric()
+	nm.SetName(m.data.Name())
+	nm.SetDescription(m.data.Description())
+	nm.SetUnit(m.data.Unit())
+	nm.SetEmpty{{ .Data.Type }}()
+  {{- if eq .Data.Type "Sum" }}
+	nm.Sum().SetIsMonotonic(m.data.Sum().IsMonotonic())
+  {{- end }}
+	nm.Sum().DataPoints().EnsureCapacity(m.capacity)
+
+	dpnm := nm.Sum().DataPoints().AppendEmpty()
+	for j := 0; j < dp.Len()-1; j++ {
+    {{- if eq .Data.MetricValueType.String "Int" }}
+    var n int64 = 1;
+    {{- end }}
+    {{- if eq .Data.MetricValueType.String "Double" }}
+    var n float64 = 1;
+    {{- end }}
+		// gotta start somewhere
+		dpj := dp.At(j)
+		// if the datapointnumber has been blanked we continue to the next datapoint
+		if dpj.{{ .Data.MetricValueType }}Value() == 0 && len(dpj.Attributes().AsRaw()) == 0 {
+			continue
+		}
+		val := dpj.{{ .Data.MetricValueType }}Value()
+		// loop through the whole NumberDataPointSlice and aggregate values with
+		// matching attributes
+		for i := j + 1; i < dp.Len(); i++ {
+			dpi := dp.At(i)
+			// if the data points have the same dimensionality aggregate them
+			if maps.Equal(dpj.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+				val += dpi.{{ .Data.MetricValueType }}Value()
+        n++
+				// if a data point has been aggregated we zero it out here
+				dpi.MoveTo(trash)
+			}
+		}
+		// the aggregated datapoint will be identical but with an updated value
+		dpj.MoveTo(dpnm)
+    {{- if eq .Data.MetricValueType.String "Int" }}
+    var avg int64 = val / n
+    {{- end }}
+    {{- if eq .Data.MetricValueType.String "Double" }}
+    var avg float64 = val / n
+    {{- end }}
+		dpnm.Set{{ .Data.MetricValueType }}Value(avg)
+		dpnm = nm.Sum().DataPoints().AppendEmpty()
+	}
+
+	// prune empty data points
+	nm.Sum().DataPoints().RemoveIf(
+		func(dp pmetric.NumberDataPoint) bool {
+      if dp.{{ .Data.MetricValueType }}Value() == 0 && len(dp.Attributes().AsRaw()) == 0 {
+        return true
+      }
+      return false
+		},
+	)
+  return nm
+{{- end -}}
+
+{
+{{/* this works for gauge and sum types */}}
+{{- define "reaggSum" -}}
+	dp := m.data.Sum().DataPoints()
+	// we use this to "blank" aggregated datapoints
+	trash := pmetric.NewNumberDataPoint()
+
+	// Create and set up destination metric we don't use CopyTo here because we
+  // don't want the datapoints from the original Sum
+	nm := pmetric.NewMetric()
+	nm.SetName(m.data.Name())
+	nm.SetDescription(m.data.Description())
+	nm.SetUnit(m.data.Unit())
+	nm.SetEmpty{{ .Data.Type }}()
+  {{- if eq .Data.Type "Sum" }}
+	nm.Sum().SetIsMonotonic(m.data.Sum().IsMonotonic())
+  {{- end }}
+	nm.Sum().DataPoints().EnsureCapacity(m.capacity)
+
+	dpnm := nm.Sum().DataPoints().AppendEmpty()
+	for j := 0; j < dp.Len()-1; j++ {
+		// gotta start somewhere
+		dpj := dp.At(j)
+		// if the datapointnumber has been blanked we continue to the next datapoint
+		if dpj == pmetric.NewNumberDataPoint() {
+			continue
+		}
+		val := dpj.{{ .Data.MetricValueType }}Value()
+		// loop through the whole NumberDataPointSlice and aggregate values with
+		// matching attributes
+		for i := j + 1; i < dp.Len(); i++ {
+			dpi := dp.At(i)
+			// if the data points have the same dimensionality aggregate them
+			if maps.Equal(dpj.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+				val += dpi.{{ .Data.MetricValueType }}Value()
+				// if a data point has been aggregated we zero it out here
+				dpi.MoveTo(trash)
+			}
+		}
+		// the aggregated datapoint will be identical but with an updated value
+		dpj.MoveTo(dpnm)
+		dpnm.Set{{ .Data.MetricValueType }}Value(val)
+		dpnm = nm.Sum().DataPoints().AppendEmpty()
+	}
+
+	// prune empty data points
+	nm.Sum().DataPoints().RemoveIf(
+		func(dp pmetric.NumberDataPoint) bool {
+      if dp.{{ .Data.MetricValueType }}Value() == 0 && len(dp.Attributes().AsRaw()) == 0 {
+        return true
+      }
+      return false
+		},
+	)
+  return nm
+{{- end -}}
+
 {{- define "putAttribute" -}}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)

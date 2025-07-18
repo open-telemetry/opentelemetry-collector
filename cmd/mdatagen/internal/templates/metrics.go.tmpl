@@ -148,11 +148,37 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 	}
 }
 
+// functions for reaggregating metrics based on their attributes and the
+// configured aggregation strategy
+func (m *metric{{ $name.Render }}) reAggregateMetricWithAvg() pmetric.Metric {
+  {{ template "reaggAvg" $metric }}
+}
+
+func (m *metric{{ $name.Render }}) reAggregateMetricWithSum() pmetric.Metric {
+  {{ template "reaggSum" $metric }}
+}
+
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+    // reaggregate metrics based on the configured aggregation strategy
+    var nm pmetric.Metric
+    switch agType := m.attributes.ReagType; agType {
+    case "sum":
+      nm = m.reAggregateMetricWithSum()
+    case "average":
+      nm = m.reAggregateMetricWithAvg()
+    case "":
+      {{- if eq $metric.Data.Type "Gauge" -}}
+        nm = m.reAggregateMetricWithAvg()
+      {{- end }}
+      {{- if eq $metric.Data.Type "Sum" -}}
+        nm = m.reAggregateMetricWithSum()
+      {{- end }}
+    default:
+    }
 		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
+		nm.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
