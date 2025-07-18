@@ -9,7 +9,7 @@ import (
 
 // splitTraces removes spans from the input trace and returns a new trace of the specified size.
 func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
-	if src.SpanCount() <= size {
+	if !hasAtLeastNSpans(src, size+1) {
 		return src
 	}
 	totalCopiedSpans := 0
@@ -22,8 +22,8 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 		}
 
 		// If it fully fits
-		srcRsSC := resourceSC(srcRs)
-		if (totalCopiedSpans + srcRsSC) <= size {
+		wontFit, srcRsSC := resourceHasAtLeastNSpans(srcRs, size-totalCopiedSpans+1)
+		if !wontFit {
 			totalCopiedSpans += srcRsSC
 			srcRs.MoveTo(dest.ResourceSpans().AppendEmpty())
 			return true
@@ -64,10 +64,29 @@ func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
 	return dest
 }
 
-// resourceSC calculates the total number of spans in the ptrace.ResourceSpans.
-func resourceSC(rs ptrace.ResourceSpans) (count int) {
+func resourceHasAtLeastNSpans(rs ptrace.ResourceSpans, n int) (bool, int) {
+	count := 0
 	for k := 0; k < rs.ScopeSpans().Len(); k++ {
 		count += rs.ScopeSpans().At(k).Spans().Len()
+		if count >= n {
+			return true, 0
+		}
 	}
-	return
+	return false, count
+}
+
+func hasAtLeastNSpans(ms ptrace.Traces, n int) bool {
+	spanCount := 0
+	rss := ms.ResourceSpans()
+	for i := 0; i < rss.Len(); i++ {
+		rs := rss.At(i)
+		ilss := rs.ScopeSpans()
+		for j := 0; j < ilss.Len(); j++ {
+			spanCount += ilss.At(j).Spans().Len()
+			if spanCount >= n {
+				return true
+			}
+		}
+	}
+	return spanCount >= n
 }
