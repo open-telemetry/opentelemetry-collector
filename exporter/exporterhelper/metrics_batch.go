@@ -50,27 +50,13 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]Request, error) {
 	var res []Request
-	var md pmetric.Metrics
-	rmSize := -1
-
-	previousSize := req.size(sz)
-
-	for req.size(sz) > maxSize && rmSize != 0 {
-		md, rmSize = extractMetrics(req.md, maxSize, sz)
-		if md.DataPointCount() > 0 {
-			req.setCachedSize(req.size(sz) - rmSize)
-			res = append(res, newMetricsRequest(md))
+	for req.size(sz) > maxSize {
+		md, rmSize := extractMetrics(req.md, maxSize, sz)
+		if md.DataPointCount() == 0 {
+			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
 		}
-	}
-
-	if req.size(sz) == previousSize && req.size(sz) > maxSize {
-		err := fmt.Errorf(
-			"partial success: failed to split metrics request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
-			req.size(sz),
-			maxSize,
-			req.md.MetricCount(),
-		)
-		return res, err
+		req.setCachedSize(req.size(sz) - rmSize)
+		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)
 	return res, nil

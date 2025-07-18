@@ -233,16 +233,33 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 			expected:           []Request{},
 			expectPartialError: true,
 		},
+		{
+			name:    "splittable_then_unsplittable_log",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 1000,
+			lr1: newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(2)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().SetStr(string(make([]byte, 1001)))
+				return ld
+			}()),
+			lr2: nil,
+			expected: []Request{newLogsRequest(func() plog.Logs {
+				ld := testdata.GenerateLogs(1)
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr(string(make([]byte, 10)))
+				return ld
+			}())},
+			expectPartialError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.lr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.lr2)
 			if tt.expectPartialError {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "partial success: failed to split logs request: size is greater than max size")
-				return
+				require.ErrorContains(t, err, "one log record size is greater than max size, dropping")
+			} else {
+				require.NoError(t, err)
 			}
-			require.NoError(t, err)
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
