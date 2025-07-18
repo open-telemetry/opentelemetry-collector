@@ -246,6 +246,9 @@ func TestMergeSplitLogsBasedOnByteSize(t *testing.T) {
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*logsRequest).ld, res[i].(*logsRequest).ld)
+				assert.Equal(t,
+					logsMarshaler.LogsSize(tt.expected[i].(*logsRequest).ld),
+					logsMarshaler.LogsSize(res[i].(*logsRequest).ld))
 			}
 		})
 	}
