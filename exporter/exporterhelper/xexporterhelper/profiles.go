@@ -114,8 +114,8 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
-func NewProfilesExporter(
+// NewProfiles creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
+func NewProfiles(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,

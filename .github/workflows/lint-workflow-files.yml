@@ -6,6 +6,9 @@ on:
       - '.github/workflows/*.yml'
       - '.github/workflows/*.yaml'
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -18,13 +21,6 @@ jobs:
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5
         with:
           go-version: '1.24'
-
-      - name: Install Actionlint
-        run: |
-          mkdir -p .tools
-          cd internal/tools
-          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
-          mv $(go env GOPATH)/bin/actionlint ../../.tools/actionlint
 
       - name: Run Actionlint
         run: |

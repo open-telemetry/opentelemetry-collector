@@ -151,7 +151,7 @@ func TestQueueBatchDifferentSizers(t *testing.T) {
 func TestQueueBatchPersistenceEnabled(t *testing.T) {
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = configoptional.Some(storageID)
+	cfg.StorageID = &storageID
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -168,7 +168,7 @@ func TestQueueBatchPersistenceEnabledStorageError(t *testing.T) {
 	storageError := errors.New("could not get storage client")
 	cfg := newTestConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = configoptional.Some(storageID)
+	cfg.StorageID = &storageID
 	qb, err := NewQueueBatch(newFakeRequestSettings(), cfg, sendertest.NewNopSenderFunc[request.Request]())
 	require.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestQueueBatchPersistentEnabled_NoDataLossOnShutdown(t *testing.T) {
 	cfg := newTestConfig()
 	cfg.NumConsumers = 1
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	cfg.StorageID = configoptional.Some(storageID)
+	cfg.StorageID = &storageID
 
 	mockReq := &requesttest.FakeRequest{Items: 2}
 	qSet := newFakeRequestSettings()

@@ -8,6 +8,9 @@ on:
       - 'v0.[0-9]+.[0-9]+'
       - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
 
+permissions:
+  contents: read
+
 jobs:
   release-branch:
     runs-on: ubuntu-latest
@@ -26,8 +29,8 @@ jobs:
 
       - name: Setup Git config
         run: |
-          git config --global user.name "opentelemetrybot"
-          git config --global user.email "107717825+opentelemetrybot@users.noreply.github.com"
+          git config --global user.name "otelbot"
+          git config --global user.email "197425009+otelbot@users.noreply.github.com"
 
       - name: Run release-branch.sh
         run: |

@@ -2,6 +2,9 @@ name: Spell Check
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   spell-check:
     runs-on: ubuntu-latest
@@ -14,4 +17,8 @@ jobs:
         with:
           files: |
             **/*.{md,yaml,yml}
+            !.golanci.yml
+            !.github/**/*
           config: '.github/workflows/utils/cspell.json'
+          check_dot_files: true
+          
