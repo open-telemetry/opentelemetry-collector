@@ -259,6 +259,9 @@ func TestMergeSplitTracesBasedOnByteSize(t *testing.T) {
 			assert.Len(t, res, len(tt.expected))
 			for i := range res {
 				assert.Equal(t, tt.expected[i].(*tracesRequest).td, res[i].(*tracesRequest).td)
+				assert.Equal(t,
+					tracesMarshaler.TracesSize(tt.expected[i].(*tracesRequest).td),
+					tracesMarshaler.TracesSize(res[i].(*tracesRequest).td))
 			}
 		})
 	}
