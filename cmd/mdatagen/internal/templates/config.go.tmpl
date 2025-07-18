@@ -12,9 +12,15 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled          bool `mapstructure:"enabled"`
 
 	enabledSetByUser bool
+}
+
+// AttributeConfig holds whether a specific attribute is enabled or disabled in
+// the configH
+type AttributeConfig struct {
+  Enabled   bool   `mapstructure:"enabled"`
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -34,6 +40,27 @@ type MetricsConfig struct {
 	{{- range $name, $metric := .Metrics }}
 	{{ $name.Render }} MetricConfig `mapstructure:"{{ $name }}"`
 	{{- end }}
+}
+
+// AttributesConfig provides attribute config for configured {{ .Type }} metric
+// attributes.
+type AttributesConfig struct {
+  ReagType string  `mapstructure:"aggregation_type"`
+  {{- range $name, $attribute := .Attributes }}
+  {{ $name.Render }} AttributeConfig `mapstructure:"{{ $name }}"`
+  {{- end }}
+}
+
+// Default AttributesConfig assumes that if not configured not to exist an
+// attribute is meant to be reported
+func DefaultAttributesConfig() AttributesConfig {
+	return AttributesConfig{
+		{{- range $name, $attribute := .Attributes }}
+		{{ $name.Render }}: AttributeConfig{
+			Enabled: true,
+		},
+		{{- end }}
+	}
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -145,6 +172,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // MetricsBuilderConfig is a configuration for {{ .Type }} metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
+  Attributes AttributesConfig `mapstructure:"attributes"`
 	{{- if .ResourceAttributes }}
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 	{{- end }}
@@ -153,6 +181,7 @@ type MetricsBuilderConfig struct {
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig {
 		Metrics: DefaultMetricsConfig(),
+    Attributes: DefaultAttributesConfig(),
 		{{- if .ResourceAttributes }}
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 		{{- end }}

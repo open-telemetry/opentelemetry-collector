@@ -88,7 +88,7 @@ func (maof metricAttributeOptionFunc) apply(dp pmetric.NumberDataPoint) {
 {{ range getMetricOptionalAttributes .Attributes }}
 func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}) MetricAttributeOption {
 	return metricAttributeOptionFunc(func(dp pmetric.NumberDataPoint) {
-		{{- template "putAttribute" . }}
+		{{- template "putMetricAttribute" . }}
 	})
 }
 {{ end }}
@@ -96,9 +96,10 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
+	data       pmetric.Metric   // data buffer for generated metric.
+	config     MetricConfig     // metric config provided by user.
+  attributes AttributesConfig // metric attributes settings provided by user.
+	capacity   int              // max observed number of data points added to the metric.
 }
 
 // init fills {{ $name }} metric with initial data.
@@ -127,11 +128,11 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-	{{- range $metric.Attributes }}
-    {{- if not (attributeInfo .).Optional -}}
-	{{- template "putAttribute" . -}}
-	{{- end }}
-	{{- end }}
+	{{ range $metric.Attributes -}}
+  {{ if not (attributeInfo .).Optional }}
+	{{ template "putMetricAttribute" . -}}
+	{{- end -}}
+	{{- end -}}
 
 	{{- if $metric.HasOptionalAttribute $.Attributes }}
     for _, op := range options {
@@ -147,17 +148,46 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 	}
 }
 
+// functions for reaggregating metrics based on their attributes and the
+// configured aggregation strategy
+func (m *metric{{ $name.Render }}) reAggregateMetricWithAvg() pmetric.Metric {
+  {{ template "reaggAvg" $metric }}
+}
+
+func (m *metric{{ $name.Render }}) reAggregateMetricWithSum() pmetric.Metric {
+  {{ template "reaggSum" $metric }}
+}
+
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+    // reaggregate metrics based on the configured aggregation strategy
+    var nm pmetric.Metric
+    switch agType := m.attributes.ReagType; agType {
+    case "sum":
+      nm = m.reAggregateMetricWithSum()
+    case "average":
+      nm = m.reAggregateMetricWithAvg()
+    case "":
+      {{- if eq $metric.Data.Type "Gauge" -}}
+        nm = m.reAggregateMetricWithAvg()
+      {{- end }}
+      {{- if eq $metric.Data.Type "Sum" -}}
+        nm = m.reAggregateMetricWithSum()
+      {{- end }}
+    default:
+    }
 		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
+		nm.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
-	m := metric{{ $name.Render }}{config: cfg}
+func newMetric{{ $name.Render }}(cfg MetricConfig, attributes AttributesConfig) metric{{ $name.Render }} {
+	m := metric{{ $name.Render }}{
+    config: cfg,
+    attributes: attributes,
+    }
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -244,7 +274,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings {{ .Status.Class }}.Se
 		metricsBuffer: pmetric.NewMetrics(),
 		buildInfo:     settings.BuildInfo,
 		{{- range $name, $metric := .Metrics }}
-		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}),
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(mbc.Metrics.{{ $name.Render }}, mbc.Attributes),
 		{{- end }}
 		{{ if .ResourceAttributes -}}
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
