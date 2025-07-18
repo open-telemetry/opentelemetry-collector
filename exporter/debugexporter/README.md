@@ -36,15 +36,38 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
+- `output_paths`: (optional, only used if `use_internal_logger: false`) list of file paths to write logging output to. Defaults to `["stdout"]`. Special strings are "stdout" and "stderr".
 
-Example configuration:
+## Example configurations:
 
+### Using collector's internal telemetry pipeline and logger
 ```yaml
 exporters:
   debug:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
+    use_internal_logger: true # (set to true by default)
+...
+service:
+  telemetry:
+    logs:
+      output_paths:
+        - stdout
+        - /tmp/collector.log
+```
+
+### Using debug exporter's output instead of collector's internal telemetry pipeline and logger:
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+    use_internal_logger: false
+    output_paths:
+      - stdout
+      - /tmp/debugexporter.log
 ```
 
 ## Verbosity levels
@@ -135,7 +158,7 @@ This comes with the following consequences:
 
 When `use_internal_logger` is set to `false`, the exporter does not use the collector's internal logger.
 Changing the values in `service::telemetry::logs` has no effect on the exporter's output.
-The exporter's output is sent to `stdout`.
+The exporter's output is sent to the paths specified in `output_paths` (default: `stdout`).
 
 [internal_telemetry]: https://opentelemetry.io/docs/collector/internal-telemetry/
 [internal_logs_config]: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs
