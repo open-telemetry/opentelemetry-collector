@@ -6,6 +6,7 @@ package exporterhelper // import "go.opentelemetry.io/collector/exporter/exporte
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -36,7 +37,7 @@ func (req *logsRequest) MergeSplit(_ context.Context, maxSize int, szt RequestSi
 		return []Request{req}, nil
 	}
 
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz)
 }
 
 func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
@@ -47,15 +48,18 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 	req.ld.ResourceLogs().MoveAndAppendTo(dst.ld.ResourceLogs())
 }
 
-func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) []Request {
+func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]Request, error) {
 	var res []Request
 	for req.size(sz) > maxSize {
-		ld, rmSize := extractLogs(req.ld, maxSize, sz)
-		req.setCachedSize(req.size(sz) - rmSize)
+		ld, removedSize := extractLogs(req.ld, maxSize, sz)
+		if ld.LogRecordCount() == 0 {
+			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
+		}
+		req.setCachedSize(req.size(sz) - removedSize)
 		res = append(res, newLogsRequest(ld))
 	}
 	res = append(res, req)
-	return res
+	return res, nil
 }
 
 // extractLogs extracts logs from the input logs and returns a new logs with the specified number of log records.

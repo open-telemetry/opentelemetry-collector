@@ -2,6 +2,9 @@ name: Spell Check
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   spell-check:
     runs-on: ubuntu-latest
@@ -18,4 +21,3 @@ jobs:
             !.github/**/*
           config: '.github/workflows/utils/cspell.json'
           check_dot_files: true
-          
