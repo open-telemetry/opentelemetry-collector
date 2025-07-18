@@ -14,6 +14,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -31,10 +36,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 )
 
 type logsServer struct {
@@ -43,14 +44,14 @@ type logsServer struct {
 	exportError error
 }
 
-func (r *logsServer) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+func (r *logsServer) Export(_ context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	return plogotlp.NewExportResponse(), r.exportError
 }
 
 func TestGRPCToGRPC(t *testing.T) {
 	// gRPC supports 17 different status codes.
 	// Source: https://github.com/grpc/grpc/blob/41788c90bc66caf29f28ef808d066db806389792/doc/statuscodes.md
-	for i := range 16 {
+	for i := range uint32(16) {
 		s := status.New(codes.Code(i), "Testing error")
 		t.Run("Code "+s.Code().String(), func(t *testing.T) {
 			e := createGRPCExporter(t, s)
@@ -79,7 +80,7 @@ func TestHTTPToGRPC(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		s := status.New(codes.Code(tt.grpc), "Testing error")
+		s := status.New(tt.grpc, "Testing error")
 		t.Run("Code "+s.Code().String(), func(t *testing.T) {
 			e := createGRPCExporter(t, s)
 			assertOnHTTPCode(t, e, tt.http)
@@ -104,7 +105,7 @@ func TestGRPCToHTTP(t *testing.T) {
 	}
 
 	for _, tt := range testCases {
-		s := status.New(codes.Code(tt.grpc), "Testing error")
+		s := status.New(tt.grpc, "Testing error")
 		t.Run("Code "+s.Code().String(), func(t *testing.T) {
 			e := createHTTPExporter(t, tt.http)
 			assertOnGRPCCode(t, e, s)
@@ -157,8 +158,7 @@ func createGRPCExporter(t *testing.T, s *status.Status) consumer.Logs {
 
 	plogotlp.RegisterGRPCServer(srv, rcv)
 	go func() {
-		err := srv.Serve(ln)
-		require.NoError(t, err)
+		require.NoError(t, srv.Serve(ln))
 	}()
 	t.Cleanup(func() {
 		srv.Stop()
@@ -236,8 +236,7 @@ func assertOnGRPCCode(t *testing.T, l consumer.Logs, s *status.Status) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err := r.Shutdown(context.Background())
-		require.NoError(t, err)
+		require.NoError(t, r.Shutdown(context.Background()))
 	})
 
 	conn, err := grpc.NewClient(rcfg.GRPC.Get().NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
