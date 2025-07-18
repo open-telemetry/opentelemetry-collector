@@ -13,7 +13,7 @@
 {{- end -}}
 
 {{- define "reaggAvg" -}}
-	dp := m.data.Sum().DataPoints()
+	dp := m.data.{{ .Data.Type }}().DataPoints()
 	// we use this to "blank" aggregated datapoints
 	trash := pmetric.NewNumberDataPoint()
 
@@ -27,9 +27,9 @@
   {{- if eq .Data.Type "Sum" }}
 	nm.Sum().SetIsMonotonic(m.data.Sum().IsMonotonic())
   {{- end }}
-	nm.Sum().DataPoints().EnsureCapacity(m.capacity)
+	nm.{{ .Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 
-	dpnm := nm.Sum().DataPoints().AppendEmpty()
+	dpnm := nm.{{ .Data.Type }}().DataPoints().AppendEmpty()
 	for j := 0; j < dp.Len()-1; j++ {
     {{- if eq .Data.MetricValueType.String "Int" }}
     var n int64 = 1;
@@ -65,11 +65,11 @@
     var avg float64 = val / n
     {{- end }}
 		dpnm.Set{{ .Data.MetricValueType }}Value(avg)
-		dpnm = nm.Sum().DataPoints().AppendEmpty()
+		dpnm = nm.{{ .Data.Type }}().DataPoints().AppendEmpty()
 	}
 
 	// prune empty data points
-	nm.Sum().DataPoints().RemoveIf(
+	nm.{{ .Data.Type }}().DataPoints().RemoveIf(
 		func(dp pmetric.NumberDataPoint) bool {
       if dp.{{ .Data.MetricValueType }}Value() == 0 && len(dp.Attributes().AsRaw()) == 0 {
         return true
@@ -83,7 +83,7 @@
 {
 {{/* this works for gauge and sum types */}}
 {{- define "reaggSum" -}}
-	dp := m.data.Sum().DataPoints()
+	dp := m.data.{{ .Data.Type }}().DataPoints()
 	// we use this to "blank" aggregated datapoints
 	trash := pmetric.NewNumberDataPoint()
 
@@ -97,9 +97,9 @@
   {{- if eq .Data.Type "Sum" }}
 	nm.Sum().SetIsMonotonic(m.data.Sum().IsMonotonic())
   {{- end }}
-	nm.Sum().DataPoints().EnsureCapacity(m.capacity)
+	nm.{{ .Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
 
-	dpnm := nm.Sum().DataPoints().AppendEmpty()
+	dpnm := nm.{{ .Data.Type }}().DataPoints().AppendEmpty()
 	for j := 0; j < dp.Len()-1; j++ {
 		// gotta start somewhere
 		dpj := dp.At(j)
@@ -122,11 +122,11 @@
 		// the aggregated datapoint will be identical but with an updated value
 		dpj.MoveTo(dpnm)
 		dpnm.Set{{ .Data.MetricValueType }}Value(val)
-		dpnm = nm.Sum().DataPoints().AppendEmpty()
+		dpnm = nm.{{ .Data.Type }}().DataPoints().AppendEmpty()
 	}
 
 	// prune empty data points
-	nm.Sum().DataPoints().RemoveIf(
+	nm.{{ .Data.Type }}().DataPoints().RemoveIf(
 		func(dp pmetric.NumberDataPoint) bool {
       if dp.{{ .Data.MetricValueType }}Value() == 0 && len(dp.Attributes().AsRaw()) == 0 {
         return true
