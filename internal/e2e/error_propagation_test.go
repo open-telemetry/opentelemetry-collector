@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -44,7 +45,7 @@ type logsServer struct {
 	exportError error
 }
 
-func (r *logsServer) Export(_ context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+func (r *logsServer) Export(_ context.Context, _ plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
 	return plogotlp.NewExportResponse(), r.exportError
 }
 
@@ -158,7 +159,7 @@ func createGRPCExporter(t *testing.T, s *status.Status) consumer.Logs {
 
 	plogotlp.RegisterGRPCServer(srv, rcv)
 	go func() {
-		require.NoError(t, srv.Serve(ln))
+		assert.NoError(t, srv.Serve(ln))
 	}()
 	t.Cleanup(func() {
 		srv.Stop()
@@ -286,8 +287,7 @@ func assertOnHTTPCode(t *testing.T, l consumer.Logs, code int) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err := r.Shutdown(context.Background())
-		require.NoError(t, err)
+		require.NoError(t, r.Shutdown(context.Background()))
 	})
 
 	doHTTPRequest(t, rcfg.HTTP.Get().ServerConfig.Endpoint+"/v1/logs", logProto, code)
