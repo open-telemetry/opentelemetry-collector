@@ -3,6 +3,8 @@
 
 package consumererror // import "go.opentelemetry.io/collector/consumer/consumererror"
 
+import "errors"
+
 type downstreamError struct {
 	inner error
 }
@@ -21,6 +23,7 @@ func (de downstreamError) Unwrap() error {
 // error that does not come from the current component, but from one further downstream.
 // This is used by pipeline instrumentation to determine whether an operation's outcome
 // was an internal failure, or if it successfully produced data that was later refused.
+// This wrapper is not intended to be used manually inside components.
 func NewDownstream(err error) error {
 	return downstreamError{
 		inner: err,
@@ -28,25 +31,8 @@ func NewDownstream(err error) error {
 }
 
 // IsDownstream checks if an error was wrapped with the NewDownstream function,
-// or, in the case of a multi-error wrapper, that all sub-errors are tagged as
-// coming from downstream.
+// or if it contains one such error in its Unwrap() tree.
 func IsDownstream(err error) bool {
-	// We want an error to be considered downstream if all sub-errors are
-	// downstream, but errors.As checks for matches in _any_ sub-error, so we
-	// reimplement its logic.
-	if _, ok := err.(downstreamError); ok { //nolint:errorlint
-		return true
-	}
-	if wrapper, ok := err.(interface{ Unwrap() error }); ok {
-		return IsDownstream(wrapper.Unwrap())
-	}
-	if wrapper, ok := err.(interface{ Unwrap() []error }); ok {
-		for _, suberr := range wrapper.Unwrap() {
-			if !IsDownstream(suberr) {
-				return false
-			}
-		}
-		return true
-	}
-	return false
+	var de downstreamError
+	return errors.As(err, &de)
 }
