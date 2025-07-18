@@ -248,18 +248,57 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 }
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
-	col.service.Logger().Warn("Config updated, restart service")
-	col.setCollectorState(StateClosing)
+    factories, err := col.set.Factories()
+    if err != nil {
+        fmt.Println("[ERROR] Failed to initialize factories:", err)
+        return nil
+    }
 
-	if err := col.service.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
-	}
+    cfg, err := col.configProvider.Get(ctx, factories)
+    if err != nil {
+        fmt.Println("[ERROR] Failed to load new config:", err)
+        fmt.Println("[INFO] Keeping the existing configuration.")
+        return nil
+    }
 
-	if err := col.setupConfigurationComponents(ctx); err != nil {
-		return fmt.Errorf("failed to setup configuration components: %w", err)
-	}
+    tempService, err := service.New(ctx, service.Settings{
+        BuildInfo:           col.set.BuildInfo,
+        ReceiversConfigs:    cfg.Receivers,
+        ReceiversFactories:  factories.Receivers,
+        ProcessorsConfigs:   cfg.Processors,
+        ProcessorsFactories: factories.Processors,
+        ExportersConfigs:    cfg.Exporters,
+        ExportersFactories:  factories.Exporters,
+        ConnectorsConfigs:   cfg.Connectors,
+        ConnectorsFactories: factories.Connectors,
+        ExtensionsConfigs:   cfg.Extensions,
+        ExtensionsFactories: factories.Extensions,
+    }, service.Config{
+        Extensions: cfg.Service.Extensions,
+        Pipelines:  cfg.Service.Pipelines,
+        Telemetry:  cfg.Service.Telemetry,
+    })
+    if err != nil {
+        fmt.Println("[ERROR] New configuration is invalid:", err)
+        fmt.Println("[INFO] Keeping the existing configuration.")
+        return nil
+    }
 
-	return nil
+    col.setCollectorState(StateClosing)
+    if err := col.service.Shutdown(ctx); err != nil {
+        fmt.Println("[ERROR] Failed to shutdown current service:", err)
+        return err
+    }
+
+    col.service = tempService
+    if err := col.service.Start(ctx); err != nil {
+        fmt.Println("[ERROR] Failed to start new service:", err)
+        return err
+    }
+
+    col.setCollectorState(StateRunning)
+    fmt.Println("[INFO] Configuration reloaded successfully.")
+    return nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
