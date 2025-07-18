@@ -718,8 +718,9 @@ func TestHttpReception(t *testing.T) {
 			}
 
 			hcs := &ClientConfig{
-				Endpoint: prefix + ln.Addr().String(),
-				TLS:      *tt.tlsClientCreds,
+				Endpoint:          prefix + ln.Addr().String(),
+				TLS:               *tt.tlsClientCreds,
+				ForceAttemptHTTP2: true,
 			}
 
 			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
