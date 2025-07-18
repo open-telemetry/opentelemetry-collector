@@ -512,3 +512,15 @@ func runScenario(t *testing.T, path string) {
 		})
 	}
 }
+
+func TestTags(t *testing.T) {
+	if true {
+		require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
+		defer func() {
+			// Restore previous value.
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
+		}()
+	}
+	b, _ := os.ReadFile("testdata/config.yml")
+	NewRetrievedFromYAML(b)
+}

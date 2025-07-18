@@ -4,59 +4,99 @@
 package confmap // import "go.opentelemetry.io/collector/confmap"
 
 import (
+	"net/url"
 	"reflect"
+	"strings"
 
 	"github.com/gobwas/glob"
 	"github.com/knadh/koanf/maps"
+	"go.yaml.in/yaml/v3"
 )
 
-func mergeAppend(src, dest map[string]any) error {
-	// mergeAppend recursively merges the src map into the dest map (left to right),
-	// modifying and expanding the dest map in the process.
-	// This function does not overwrite component lists, and ensures that the
-	// final value is a name-aware copy of lists from src and dest.
-
-	// Compile the globs once
-	patterns := []string{
-		"service::extensions",
-		"service::**::receivers",
-		"service::**::exporters",
+func extractTags(yamlBytes []byte) map[string]url.Values {
+	var root yaml.Node
+	if err := yaml.Unmarshal([]byte(yamlBytes), &root); err != nil {
+		panic(err)
 	}
-	var globs []glob.Glob
-	for _, p := range patterns {
-		if g, err := glob.Compile(p); err == nil {
-			globs = append(globs, g)
-		}
-	}
+	m := map[string]url.Values{}
+	walkYAML(nil, &root, m)
+	return m
+}
 
-	// Flatten both source and destination maps
-	srcFlat, _ := maps.Flatten(src, []string{}, KeyDelimiter)
-	destFlat, _ := maps.Flatten(dest, []string{}, KeyDelimiter)
-
-	for sKey, sVal := range srcFlat {
-		if !isMatch(sKey, globs) {
-			continue
+func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]url.Values) {
+	switch node.Kind {
+	case yaml.DocumentNode:
+		for _, n := range node.Content {
+			walkYAML(nil, n, res)
 		}
 
-		dVal, dOk := destFlat[sKey]
-		if !dOk {
-			continue // Let maps.Merge handle missing keys
+	case yaml.MappingNode:
+		for i := 0; i < len(node.Content); i += 2 {
+			walkYAML(node.Content[i], node.Content[i+1], res)
 		}
 
-		srcVal := reflect.ValueOf(sVal)
-		destVal := reflect.ValueOf(dVal)
-
-		// Only merge if the value is a slice or array; let maps.Merge handle other types
-		if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
-			srcFlat[sKey] = mergeSlice(srcVal, destVal)
+	case yaml.SequenceNode:
+		for _, n := range node.Content {
+			s := node.Tag
+			if s != "!!seq" {
+				s = strings.TrimPrefix(s, "!")
+				q, _ := url.ParseQuery(s)
+				res[key.Value] = q
+				walkYAML(nil, n, res)
+			}
 		}
 	}
+}
 
-	// Unflatten and merge
-	mergedSrc := maps.Unflatten(srcFlat, KeyDelimiter)
-	maps.Merge(mergedSrc, dest)
+func mergeAppend(mergeOpts map[string]url.Values) func(src, dest map[string]any) error {
+	return func(src, dest map[string]any) error {
+		// mergeAppend recursively merges the src map into the dest map (left to right),
+		// modifying and expanding the dest map in the process.
+		// This function does not overwrite component lists, and ensures that the
+		// final value is a name-aware copy of lists from src and dest.
 
-	return nil
+		// Compile the globs once
+		patterns := []string{
+			"service::extensions",
+			"service::**::receivers",
+			"service::**::exporters",
+		}
+		var globs []glob.Glob
+		for _, p := range patterns {
+			if g, err := glob.Compile(p); err == nil {
+				globs = append(globs, g)
+			}
+		}
+
+		// Flatten both source and destination maps
+		srcFlat, _ := maps.Flatten(src, []string{}, KeyDelimiter)
+		destFlat, _ := maps.Flatten(dest, []string{}, KeyDelimiter)
+
+		for sKey, sVal := range srcFlat {
+			if !isMatch(sKey, globs) {
+				continue
+			}
+
+			dVal, dOk := destFlat[sKey]
+			if !dOk {
+				continue // Let maps.Merge handle missing keys
+			}
+
+			srcVal := reflect.ValueOf(sVal)
+			destVal := reflect.ValueOf(dVal)
+
+			// Only merge if the value is a slice or array; let maps.Merge handle other types
+			if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
+				srcFlat[sKey] = mergeSlice(srcVal, destVal)
+			}
+		}
+
+		// Unflatten and merge
+		mergedSrc := maps.Unflatten(srcFlat, KeyDelimiter)
+		maps.Merge(mergedSrc, dest)
+
+		return nil
+	}
 }
 
 // isMatch checks if a key matches any glob in the list
