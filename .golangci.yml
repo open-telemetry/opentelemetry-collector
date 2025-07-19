@@ -78,6 +78,29 @@ linters:
             - pkg: go.opentelemetry.io/proto
               desc: Use go.opentelemetry.io/collector/pdata instead
 
+    gocritic:
+      disabled-checks:
+        - appendCombine
+        - commentedOutCode
+        - deferInLoop
+        - emptyStringTest
+        - evalOrder
+        - filepathJoin
+        - httpNoBody
+        - hugeParam
+        - importShadow
+        - nestingReduce
+        - paramTypeCombine
+        - rangeValCopy
+        - regexpSimplify
+        - sloppyReassign
+        - sprintfQuotedString
+        - typeAssertChain
+        - typeUnparen
+        - unnamedResult
+        - whyNoLint
+      enable-all: true
+
     gosec:
       excludes:
         - G104 # FIXME
