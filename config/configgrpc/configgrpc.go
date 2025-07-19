@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 
 	"go.opentelemetry.io/collector/client"
@@ -206,6 +207,7 @@ type ServerConfig struct {
 	// Middlewares for the gRPC server.
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 
+	Reflection bool `mapstructure:"reflection,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -442,7 +444,11 @@ func (gss *ServerConfig) ToServer(
 	if err != nil {
 		return nil, err
 	}
-	return grpc.NewServer(grpcOpts...), nil
+	server := grpc.NewServer(grpcOpts...)
+	if gss.Reflection {
+		reflection.Register(server)
+	}
+	return server, nil
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(
