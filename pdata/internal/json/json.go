@@ -20,3 +20,11 @@ var marshaler = &jsonpb.Marshaler{
 func Marshal(out io.Writer, pb proto.Message) error {
 	return marshaler.Marshal(out, pb)
 }
+
+var unmarshaler = &jsonpb.Unmarshaler{
+	AllowUnknownFields: true,
+}
+
+func Unmarshal(in io.Reader, pb proto.Message) error {
+	return unmarshaler.Unmarshal(in, pb)
+}
