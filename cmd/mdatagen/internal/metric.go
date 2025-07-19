@@ -47,6 +47,10 @@ type Metric struct {
 	Prefix string `mapstructure:"prefix"`
 }
 
+type SemanticConvention struct {
+	SemanticConventionRef string `mapstructure:"semconv_ref"`
+}
+
 type Stability struct {
 	Level string `mapstructure:"level"`
 	From  string `mapstructure:"from"`
@@ -62,8 +66,37 @@ func (s Stability) String() string {
 	return fmt.Sprintf(" [%s]", s.Level)
 }
 
+//	func (s *Stability) Unmarshal(parser *confmap.Conf) error {
+//		if !parser.IsSet("stability.level") {
+//			s.Level = "development"
+//		}
+//		return nil
+//	}
+//
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+//func (s *Stability) UnmarshalText(text []byte) error {
+//	switch vtStr := string(text); vtStr {
+//	case "stable":
+//		s.Level = component.StabilityLevelStable.String()
+//	case "deprecated":
+//		s.Level = component.StabilityLevelDeprecated.String()
+//	case "development":
+//		s.Level = component.StabilityLevelDevelopment.String()
+//	default:
+//		s.Level = component.StabilityLevelDevelopment.String()
+//	}
+//	return nil
+//}
+
 func (m *Metric) validate() error {
 	var errs error
+
+	if m.Stability.Level == component.StabilityLevelStable.String() {
+		if m.SemanticConvention.SemanticConventionRef == "" {
+			errs = errors.Join(errs, errors.New(`stable metrics should have stable semantic convention ref set`))
+		}
+	}
+
 	if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 		errs = errors.Join(errs, errors.New("missing metric type key, "+
 			"one of the following has to be specified: sum, gauge, histogram"))
