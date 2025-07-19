@@ -27,7 +27,7 @@ var ptraceotlp = &Package{
 	},
 }
 
-var exportTracePartialSuccess = &messageValueStruct{
+var exportTracePartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectortrace.ExportTracePartialSuccess",

@@ -27,7 +27,7 @@ var pmetricotlp = &Package{
 	},
 }
 
-var exportMetricsPartialSuccess = &messageValueStruct{
+var exportMetricsPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectormetrics.ExportMetricsPartialSuccess",
