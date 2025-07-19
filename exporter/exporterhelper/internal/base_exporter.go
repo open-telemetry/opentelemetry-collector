@@ -122,33 +122,53 @@ func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 
 func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 	// First start the wrapped exporter.
+	be.Set.Logger.Debug("Starting exporter", zap.String("exporter", be.Set.ID.String()))
 	if err := be.StartFunc.Start(ctx, host); err != nil {
 		return err
 	}
 
 	// Last start the QueueBatch.
 	if be.QueueSender != nil {
-		return be.QueueSender.Start(ctx, host)
+		be.Set.Logger.Debug("Starting QueueSender", zap.String("exporter", be.Set.ID.String()))
+		if err := be.QueueSender.Start(ctx, host); err != nil {
+			be.Set.Logger.Error("Failed to start QueueSender", zap.Error(err), zap.String("exporter", be.Set.ID.String()))
+			return err
+		}
 	}
-
+	be.Set.Logger.Debug("Started exporter", zap.String("exporter", be.Set.ID.String()))
 	return nil
 }
 
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
 	var err error
-
+	be.Set.Logger.Debug("Begin exporter shutdown sequence.", zap.String("exporter", be.Set.ID.String()))
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
 	if be.RetrySender != nil {
-		err = multierr.Append(err, be.RetrySender.Shutdown(ctx))
+		be.Set.Logger.Debug("Shutting down exporter retry sender...", zap.String("exporter", be.Set.ID.String()))
+		retryErr := be.RetrySender.Shutdown(ctx)
+		if retryErr == nil {
+			be.Set.Logger.Debug("Shutdown exporter retry sender", zap.String("exporter", be.Set.ID.String()))
+		}
+		err = multierr.Append(err, retryErr)
 	}
 
 	// Then shutdown the queue sender.
 	if be.QueueSender != nil {
-		err = multierr.Append(err, be.QueueSender.Shutdown(ctx))
+		be.Set.Logger.Debug("Shutting down queue sender...", zap.String("exporter", be.Set.ID.String()))
+		queueErr := be.QueueSender.Shutdown(ctx)
+		if queueErr == nil {
+			be.Set.Logger.Debug("Shutdown queue sender", zap.String("exporter", be.Set.ID.String()))
+		}
+		err = multierr.Append(err, queueErr)
 	}
 
 	// Last shutdown the wrapped exporter itself.
-	return multierr.Append(err, be.ShutdownFunc.Shutdown(ctx))
+	be.Set.Logger.Debug("Shutting down exporter...", zap.String("exporter", be.Set.ID.String()))
+	shutdownErr := be.ShutdownFunc.Shutdown(ctx)
+	if err = multierr.Append(err, shutdownErr); err == nil {
+		be.Set.Logger.Debug("Shutdown exporter", zap.String("exporter", be.Set.ID.String()))
+	}
+	return err
 }
 
 // WithStart overrides the default Start function for an exporter.
