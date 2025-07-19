@@ -119,7 +119,7 @@ type ClientConfig struct {
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
-	// setting ForceAttemptHTTP2 will the HTTP transport to use HTTP/2 protocol.
+	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
 	// By default, this is set to true.
 	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
 	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
