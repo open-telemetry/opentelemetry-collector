@@ -87,7 +87,6 @@ linters:
         - importShadow
         - paramTypeCombine
         - rangeValCopy
-        - regexpSimplify
         - sloppyReassign
         - unnamedResult
         - whyNoLint
