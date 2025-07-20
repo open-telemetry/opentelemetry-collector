@@ -172,7 +172,7 @@ func fieldName(field reflect.StructField) string {
 	}
 	// Even if the mapstructure tag exists, the field name may not
 	// be available, so set it if it is still blank.
-	if len(fieldName) == 0 {
+	if fieldName == "" {
 		fieldName = strings.ToLower(field.Name)
 	}
 

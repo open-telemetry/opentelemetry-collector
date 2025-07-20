@@ -82,7 +82,6 @@ linters:
       disabled-checks:
         - commentedOutCode
         - deferInLoop
-        - emptyStringTest
         - evalOrder
         - filepathJoin
         - httpNoBody
