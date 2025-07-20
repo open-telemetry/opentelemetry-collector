@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"compress/zlib"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -179,7 +178,7 @@ func TestHTTPClientCompression(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			client, err := clientSettings.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			client, err := clientSettings.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			res, err := client.Do(req)
 			if tt.shouldError {

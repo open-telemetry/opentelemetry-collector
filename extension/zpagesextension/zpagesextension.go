@@ -46,7 +46,7 @@ type registerableTracerProvider interface {
 	UnregisterSpanProcessor(SpanProcessor trace.SpanProcessor)
 }
 
-func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) error {
+func (zpe *zpagesExtension) Start(_ context.Context, host component.Host) error {
 	zPagesMux := http.NewServeMux()
 
 	sdktracer, ok := zpe.telemetry.TracerProvider.(registerableTracerProvider)
@@ -75,13 +75,13 @@ func (zpe *zpagesExtension) Start(ctx context.Context, host component.Host) erro
 
 	// Start the listener here so we can have earlier failure if port is
 	// already in use.
-	ln, err := zpe.config.ToListener(ctx)
+	ln, err := zpe.config.ToListener()
 	if err != nil {
 		return err
 	}
 
 	zpe.telemetry.Logger.Info("Starting zPages extension", zap.Any("config", zpe.config))
-	zpe.server, err = zpe.config.ToServer(ctx, host, zpe.telemetry, zPagesMux)
+	zpe.server, err = zpe.config.ToServer(host, zpe.telemetry, zPagesMux)
 	if err != nil {
 		return err
 	}

@@ -267,17 +267,16 @@ func (grpcDialOptionWrapper) isToClientConnOption() {}
 // established, and connecting happens in the background). To make it a blocking
 // dial, use the WithGrpcDialOption(grpc.WithBlock()) option.
 func (gcs *ClientConfig) ToClientConn(
-	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := gcs.getGrpcDialOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := gcs.getGrpcDialOptions(host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
 	//nolint:staticcheck // SA1019 see https://github.com/open-telemetry/opentelemetry-collector/pull/11575
-	return grpc.DialContext(ctx, gcs.sanitizedEndpoint(), grpcOpts...)
+	return grpc.DialContext(context.Background(), gcs.sanitizedEndpoint(), grpcOpts...)
 }
 
 func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context {
@@ -293,7 +292,6 @@ func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context
 }
 
 func (gcs *ClientConfig) getGrpcDialOptions(
-	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToClientConnOption,
@@ -307,7 +305,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 		opts = append(opts, grpc.WithDefaultCallOptions(grpc.UseCompressor(cp)))
 	}
 
-	tlsCfg, err := gcs.TLS.LoadTLSConfig(ctx)
+	tlsCfg, err := gcs.TLS.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +340,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 			return nil, errors.New("no extensions configuration available")
 		}
 
-		grpcAuthenticator, cerr := gcs.Auth.Get().GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		grpcAuthenticator, cerr := gcs.Auth.Get().GetGRPCClientAuthenticator(host.GetExtensions())
 		if cerr != nil {
 			return nil, cerr
 		}
@@ -384,7 +382,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range gcs.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCClientOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCClientOptions(host.GetExtensions())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC client options from middleware: %w", err)
 		}
@@ -433,12 +431,11 @@ func (grpcServerOptionWrapper) isToServerOption() {}
 
 // ToServer returns a [grpc.Server] for the configuration.
 func (gss *ServerConfig) ToServer(
-	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts ...ToServerOption,
 ) (*grpc.Server, error) {
-	grpcOpts, err := gss.getGrpcServerOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := gss.getGrpcServerOptions(host, settings, extraOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -446,7 +443,6 @@ func (gss *ServerConfig) ToServer(
 }
 
 func (gss *ServerConfig) getGrpcServerOptions(
-	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
 	extraOpts []ToServerOption,
@@ -454,7 +450,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var opts []grpc.ServerOption
 
 	if gss.TLS.HasValue() {
-		tlsCfg, err := gss.TLS.Get().LoadTLSConfig(context.Background())
+		tlsCfg, err := gss.TLS.Get().LoadTLSConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -510,7 +506,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth.HasValue() {
-		authenticator, err := gss.Auth.Get().GetServerAuthenticator(context.Background(), host.GetExtensions())
+		authenticator, err := gss.Auth.Get().GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
@@ -538,7 +534,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 
 	// Apply middleware options. Note: OpenTelemetry could be registered as an extension.
 	for _, middleware := range gss.Middlewares {
-		middlewareOptions, err := middleware.GetGRPCServerOptions(ctx, host.GetExtensions())
+		middlewareOptions, err := middleware.GetGRPCServerOptions(host.GetExtensions())
 		if err != nil {
 			return nil, fmt.Errorf("failed to get gRPC server options from middleware: %w", err)
 		}

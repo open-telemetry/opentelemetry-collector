@@ -142,7 +142,7 @@ func NewDefaultServerConfig() ServerConfig {
 	}
 }
 
-func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+func (hss *ServerConfig) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 
 	if hss.TLSSetting.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLSSetting.Value().LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLSSetting.Value().LoadTLSConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -161,7 +161,7 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 	return listener, nil
 }
 
-func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	// ...
 
 	handler = httpContentDecompressor(
@@ -175,7 +175,7 @@ func (hss *ServerConfig) ToServer(_ context.Context, host component.Host, settin
 	// ...
 
 	if hss.Auth.HasValue() {
-		server, err := hss.Auth.Value().GetServerAuthenticator(context.Background(), host.GetExtensions())
+		server, err := hss.Auth.Value().GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

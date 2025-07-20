@@ -61,9 +61,9 @@ func newExporter(cfg component.Config, set exporter.Settings) *baseExporter {
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
 // is the only place we get hold of Extensions which are required to construct auth round tripper.
-func (e *baseExporter) start(ctx context.Context, host component.Host) (err error) {
+func (e *baseExporter) start(_ context.Context, host component.Host) (err error) {
 	agentOpt := configgrpc.WithGrpcDialOption(grpc.WithUserAgent(e.userAgent))
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings, agentOpt); err != nil {
+	if e.clientConn, err = e.config.ClientConfig.ToClientConn(host, e.settings, agentOpt); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)

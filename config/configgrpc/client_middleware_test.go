@@ -195,7 +195,7 @@ func TestClientMiddlewareToClientErrors(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Test creating the client with middleware errors
-			_, err := tc.config.ToClientConn(context.Background(), tc.host, componenttest.NewNopTelemetrySettings())
+			_, err := tc.config.ToClientConn(tc.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errText)
 		})
