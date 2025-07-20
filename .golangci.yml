@@ -95,7 +95,6 @@ linters:
         - regexpSimplify
         - sloppyReassign
         - sprintfQuotedString
-        - typeAssertChain
         - unnamedResult
         - whyNoLint
       enable-all: true
