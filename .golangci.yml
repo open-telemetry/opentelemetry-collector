@@ -85,7 +85,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - nestingReduce
         - paramTypeCombine
         - rangeValCopy
         - regexpSimplify
