@@ -470,7 +470,7 @@
       "zstd"
     ],
     "ignorePaths": [
-      ".golanci.yml",
+      ".golangci.yml",
       ".github/**/*"
     ]
   }
