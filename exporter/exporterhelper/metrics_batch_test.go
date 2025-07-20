@@ -433,12 +433,30 @@ func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
 			expected:         []Request{},
 			expectSplitError: true,
 		},
+		{
+			name:    "splittable_then_unsplittable_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 1000,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(2)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription(string(make([]byte, 1001)))
+				return md
+			}()),
+			mr2: nil,
+			expected: []Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
+				return md
+			}())},
+			expectSplitError: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
 			if tt.expectSplitError {
-				require.ErrorContains(t, err, "partial success: failed to split metrics request: size is greater than max size")
+				require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items:")
 			} else {
 				require.NoError(t, err)
 			}
