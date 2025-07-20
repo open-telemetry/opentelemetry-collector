@@ -96,7 +96,6 @@ linters:
         - sloppyReassign
         - sprintfQuotedString
         - typeAssertChain
-        - typeUnparen
         - unnamedResult
         - whyNoLint
       enable-all: true
