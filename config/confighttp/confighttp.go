@@ -4,7 +4,6 @@
 package confighttp // import "go.opentelemetry.io/collector/config/confighttp"
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -164,8 +163,8 @@ type ToClientOption interface {
 }
 
 // ToClient creates an HTTP client.
-func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
-	tlsCfg, err := hcs.TLS.LoadTLSConfig(ctx)
+func (hcs *ClientConfig) ToClient(host component.Host, settings component.TelemetrySettings, _ ...ToClientOption) (*http.Client, error) {
+	tlsCfg, err := hcs.TLS.LoadTLSConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +210,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	// forward order. The first middleware runs after authentication.
 	for i := len(hcs.Middlewares) - 1; i >= 0; i-- {
 		var wrapper func(http.RoundTripper) (http.RoundTripper, error)
-		wrapper, err = hcs.Middlewares[i].GetHTTPClientRoundTripper(ctx, host.GetExtensions())
+		wrapper, err = hcs.Middlewares[i].GetHTTPClientRoundTripper(host.GetExtensions())
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -233,7 +232,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		}
 
 		auth := hcs.Auth.Get()
-		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ctx, ext)
+		httpCustomAuthRoundTripper, aerr := auth.GetHTTPClientAuthenticator(ext)
 		if aerr != nil {
 			return nil, aerr
 		}
@@ -398,7 +397,7 @@ type AuthConfig struct {
 }
 
 // ToListener creates a net.Listener.
-func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
+func (hss *ServerConfig) ToListener() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hss.Endpoint)
 	if err != nil {
 		return nil, err
@@ -406,7 +405,7 @@ func (hss *ServerConfig) ToListener(ctx context.Context) (net.Listener, error) {
 
 	if hss.TLS.HasValue() {
 		var tlsCfg *tls.Config
-		tlsCfg, err = hss.TLS.Get().LoadTLSConfig(ctx)
+		tlsCfg, err = hss.TLS.Get().LoadTLSConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -445,7 +444,7 @@ func WithDecoder(key string, dec func(body io.ReadCloser) (io.ReadCloser, error)
 }
 
 // ToServer creates an http.Server from settings object.
-func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
+func (hss *ServerConfig) ToServer(host component.Host, settings component.TelemetrySettings, handler http.Handler, opts ...ToServerOption) (*http.Server, error) {
 	serverOpts := &toServerOptions{}
 	serverOpts.Apply(opts...)
 
@@ -461,7 +460,7 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 	// forward order.  The first middleware runs after
 	// decompression, below, preceded by Auth, CORS, etc.
 	for i := len(hss.Middlewares) - 1; i >= 0; i-- {
-		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(ctx, host.GetExtensions())
+		wrapper, err := hss.Middlewares[i].GetHTTPServerHandler(host.GetExtensions())
 		// If we failed to get the middleware
 		if err != nil {
 			return nil, err
@@ -487,7 +486,7 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 
 	if hss.Auth.HasValue() {
 		auth := hss.Auth.Get()
-		server, err := auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+		server, err := auth.GetServerAuthenticator(host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}

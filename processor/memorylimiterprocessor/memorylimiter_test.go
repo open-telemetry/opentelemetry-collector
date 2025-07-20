@@ -126,7 +126,6 @@ func TestNoDataLoss(t *testing.T) {
 // check expected side effects.
 func TestMetricsMemoryPressureResponse(t *testing.T) {
 	md := pmetric.NewMetrics()
-	ctx := context.Background()
 
 	tests := []struct {
 		name        string
@@ -177,6 +176,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
 				ms.Alloc = tt.memAlloc
@@ -185,9 +185,7 @@ func TestMetricsMemoryPressureResponse(t *testing.T) {
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			mp, err := processorhelper.NewMetrics(
-				context.Background(),
 				processortest.NewNopSettings(metadata.Type),
-				tt.mlCfg,
 				consumertest.NewNop(),
 				ml.processMetrics,
 				processorhelper.WithCapabilities(processorCapabilities),
@@ -245,7 +243,6 @@ func TestMetricsTelemetry(t *testing.T) {
 // check expected side effects.
 func TestTraceMemoryPressureResponse(t *testing.T) {
 	td := ptrace.NewTraces()
-	ctx := context.Background()
 
 	tests := []struct {
 		name        string
@@ -296,6 +293,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
 				ms.Alloc = tt.memAlloc
@@ -304,7 +302,7 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewTraces(
-				context.Background(),
+				ctx,
 				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
@@ -335,7 +333,6 @@ func TestTraceMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestLogMemoryPressureResponse(t *testing.T) {
 	ld := plog.NewLogs()
-	ctx := context.Background()
 
 	tests := []struct {
 		name        string
@@ -386,6 +383,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
 				ms.Alloc = tt.memAlloc
@@ -394,7 +392,7 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := processorhelper.NewLogs(
-				context.Background(),
+				ctx,
 				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),
@@ -425,7 +423,6 @@ func TestLogMemoryPressureResponse(t *testing.T) {
 // check expected side effects.
 func TestProfileMemoryPressureResponse(t *testing.T) {
 	pd := pprofile.NewProfiles()
-	ctx := context.Background()
 
 	tests := []struct {
 		name        string
@@ -476,6 +473,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			memorylimiter.GetMemoryFn = totalMemory
 			memorylimiter.ReadMemStatsFn = func(ms *runtime.MemStats) {
 				ms.Alloc = tt.memAlloc
@@ -484,7 +482,7 @@ func TestProfileMemoryPressureResponse(t *testing.T) {
 			ml, err := newMemoryLimiterProcessor(processortest.NewNopSettings(metadata.Type), tt.mlCfg)
 			require.NoError(t, err)
 			tp, err := xprocessorhelper.NewProfiles(
-				context.Background(),
+				ctx,
 				processortest.NewNopSettings(metadata.Type),
 				tt.mlCfg,
 				consumertest.NewNop(),

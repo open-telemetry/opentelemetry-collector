@@ -31,7 +31,6 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 	telemetry.TracerProvider = tp
 
 	srv, err := hss.ToServer(
-		context.Background(),
 		componenttest.NewNopHost(),
 		telemetry,
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}),

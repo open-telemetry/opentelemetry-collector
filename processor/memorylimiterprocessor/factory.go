@@ -78,7 +78,7 @@ func (f *factory) createMetrics(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer,
+	return processorhelper.NewMetrics(set, nextConsumer,
 		memLimiter.processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities),
 		processorhelper.WithStart(memLimiter.start),

@@ -4,7 +4,6 @@
 package confighttp
 
 import (
-	"context"
 	"net/http"
 
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -15,7 +14,6 @@ func ExampleServerConfig() {
 	settings.Endpoint = "localhost:443"
 
 	s, err := settings.ToServer(
-		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
 		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
@@ -23,7 +21,7 @@ func ExampleServerConfig() {
 		panic(err)
 	}
 
-	l, err := settings.ToListener(context.Background())
+	l, err := settings.ToListener()
 	if err != nil {
 		panic(err)
 	}

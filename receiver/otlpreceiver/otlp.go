@@ -94,7 +94,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -131,7 +131,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 	return nil
 }
 
-func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host) error {
+func (r *otlpReceiver) startHTTPServer(host component.Host) error {
 	// If HTTP is not enabled, nothing to start.
 	if !r.cfg.HTTP.HasValue() {
 		return nil
@@ -168,13 +168,13 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 	}
 
 	var err error
-	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
+	if r.serverHTTP, err = httpCfg.ServerConfig.ToServer(host, r.settings.TelemetrySettings, httpMux, confighttp.WithErrorHandler(errorHandler)); err != nil {
 		return err
 	}
 
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", httpCfg.ServerConfig.Endpoint))
 	var hln net.Listener
-	if hln, err = httpCfg.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = httpCfg.ServerConfig.ToListener(); err != nil {
 		return err
 	}
 
@@ -195,7 +195,7 @@ func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
 	if err := r.startGRPCServer(host); err != nil {
 		return err
 	}
-	if err := r.startHTTPServer(ctx, host); err != nil {
+	if err := r.startHTTPServer(host); err != nil {
 		// It's possible that a valid GRPC server configuration was specified,
 		// but an invalid HTTP configuration. If that's the case, the successfully
 		// started GRPC server must be shutdown to ensure no goroutines are leaked.

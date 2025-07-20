@@ -367,8 +367,7 @@ LOOP:
 			break LOOP
 		case <-ctx.Done():
 			col.service.Logger().Info("Context done, terminating process", zap.Error(ctx.Err()))
-			// Call shutdown with background context as the passed in context has been canceled
-			return col.shutdown(context.Background())
+			return col.shutdown(context.Background()) //nolint:contextcheck // Call shutdown with background context as the passed in context has been canceled
 		}
 	}
 	return col.shutdown(ctx)

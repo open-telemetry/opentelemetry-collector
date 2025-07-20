@@ -4,7 +4,6 @@
 package configtls
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -276,7 +275,7 @@ func TestLoadTLSClientConfigError(t *testing.T) {
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadTLSConfig(context.Background())
+	_, err := tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 }
 
@@ -284,19 +283,19 @@ func TestLoadTLSClientConfig(t *testing.T) {
 	tlsSetting := ClientConfig{
 		Insecure: true,
 	}
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.Nil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{}
-	tlsCfg, err = tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err = tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
 	tlsSetting = ClientConfig{
 		InsecureSkipVerify: true,
 	}
-	tlsCfg, err = tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err = tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 	assert.True(t, tlsCfg.InsecureSkipVerify)
@@ -309,19 +308,19 @@ func TestLoadTLSServerConfigError(t *testing.T) {
 			KeyFile:  "doesnt/exist",
 		},
 	}
-	_, err := tlsSetting.LoadTLSConfig(context.Background())
+	_, err := tlsSetting.LoadTLSConfig()
 	require.Error(t, err)
 
 	tlsSetting = ServerConfig{
 		ClientCAFile: "doesnt/exist",
 	}
-	_, err = tlsSetting.LoadTLSConfig(context.Background())
+	_, err = tlsSetting.LoadTLSConfig()
 	assert.Error(t, err)
 }
 
 func TestLoadTLSServerConfig(t *testing.T) {
 	tlsSetting := ServerConfig{}
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 }
@@ -336,7 +335,7 @@ func TestLoadTLSServerConfigReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
@@ -366,7 +365,7 @@ func TestLoadTLSServerConfigFailingReload(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
@@ -396,7 +395,7 @@ func TestLoadTLSServerConfigFailingInitialLoad(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -409,7 +408,7 @@ func TestLoadTLSServerConfigWrongPath(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.Error(t, err)
 	assert.Nil(t, tlsCfg)
 }
@@ -424,7 +423,7 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 		ReloadClientCAFile: true,
 	}
 
-	tlsCfg, err := tlsSetting.LoadTLSConfig(context.Background())
+	tlsCfg, err := tlsSetting.LoadTLSConfig()
 	require.NoError(t, err)
 	assert.NotNil(t, tlsCfg)
 
@@ -792,7 +791,7 @@ func TestSystemCertPool(t *testing.T) {
 			serverConfig := ServerConfig{
 				Config: test.tlsConfig,
 			}
-			c, err := serverConfig.LoadTLSConfig(context.Background())
+			c, err := serverConfig.LoadTLSConfig()
 			if test.wantErr != nil {
 				require.ErrorContains(t, err, test.wantErr.Error())
 			} else {
@@ -802,7 +801,7 @@ func TestSystemCertPool(t *testing.T) {
 			clientConfig := ClientConfig{
 				Config: test.tlsConfig,
 			}
-			c, err = clientConfig.LoadTLSConfig(context.Background())
+			c, err = clientConfig.LoadTLSConfig()
 			if test.wantErr != nil {
 				assert.ErrorContains(t, err, test.wantErr.Error())
 			} else {
@@ -914,7 +913,7 @@ func TestCurvePreferences(t *testing.T) {
 				CurvePreferences: test.preferences,
 			},
 		}
-		config, err := tlsSetting.LoadTLSConfig(context.Background())
+		config, err := tlsSetting.LoadTLSConfig()
 		if test.expectedErr == "" {
 			require.NoError(t, err)
 			require.ElementsMatchf(t, test.expectedCurveIDs, config.CurvePreferences, "expected %v, got %v", test.expectedCurveIDs, config.CurvePreferences)
