@@ -231,12 +231,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, cfg); err != nil {
+	err = srv.initGraph(ctx, cfg)
+	if err != nil {
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
-	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
+	err = srv.initExtensions(ctx, cfg.Extensions)
+	if err != nil {
 		return nil, err
 	}
 
