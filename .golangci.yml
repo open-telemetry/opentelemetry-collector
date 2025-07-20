@@ -83,7 +83,6 @@ linters:
         - commentedOutCode
         - deferInLoop
         - filepathJoin
-        - httpNoBody
         - hugeParam
         - importShadow
         - nestingReduce
