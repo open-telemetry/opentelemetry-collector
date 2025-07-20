@@ -80,7 +80,6 @@ linters:
 
     gocritic:
       disabled-checks:
-        - appendCombine
         - commentedOutCode
         - deferInLoop
         - emptyStringTest

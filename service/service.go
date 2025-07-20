@@ -543,14 +543,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 	// Internal graph metrics
 	graphScope := ptr("go.opentelemetry.io/collector/service")
 	if level < configtelemetry.LevelDetailed {
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      graphScope,
-			InstrumentName: ptr("otelcol.*.consumed.size"),
-		}))
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      graphScope,
-			InstrumentName: ptr("otelcol.*.produced.size"),
-		}))
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      graphScope,
+				InstrumentName: ptr("otelcol.*.consumed.size"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      graphScope,
+				InstrumentName: ptr("otelcol.*.produced.size"),
+			}))
 	}
 
 	return views
