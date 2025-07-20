@@ -88,7 +88,8 @@ func Build(ctx context.Context, set Settings) (*Graph, error) {
 		return nil, err
 	}
 	pipelines.createEdges()
-	return pipelines, pipelines.buildComponents(ctx, set)
+	err := pipelines.buildComponents(ctx, set)
+	return pipelines, err
 }
 
 // Creates a node for each instance of a component and adds it to the graph.
