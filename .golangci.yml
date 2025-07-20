@@ -94,7 +94,6 @@ linters:
         - rangeValCopy
         - regexpSimplify
         - sloppyReassign
-        - sprintfQuotedString
         - unnamedResult
         - whyNoLint
       enable-all: true

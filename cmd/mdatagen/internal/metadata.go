@@ -318,7 +318,7 @@ func (a Attribute) Name() AttributeName {
 
 func (a Attribute) TestValue() string {
 	if a.Enum != nil {
-		return fmt.Sprintf(`"%s"`, a.Enum[0])
+		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:

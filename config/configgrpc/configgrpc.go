@@ -355,7 +355,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	}
 
 	if gcs.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, gcs.BalancerName)))
 	}
 
 	if gcs.Authority != "" {
