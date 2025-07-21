@@ -9,9 +9,55 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func Test_GetStatusFromError(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    error
+		expected *status.Status
+	}{
+		{
+			name:     "Status",
+			input:    status.Error(codes.Aborted, "test"),
+			expected: status.New(codes.Unavailable, "Service Unavailable"),
+		},
+		{
+			name:     "Permanent Error",
+			input:    consumererror.NewPermanent(errors.New("test")),
+			expected: status.New(codes.Internal, "Permanent error: test"),
+		},
+		{
+			name:     "Non-Permanent Error",
+			input:    errors.New("test"),
+			expected: status.New(codes.Unavailable, "test"),
+		},
+		{
+			name:     "Client Disconnect Error (Canceled)",
+			input:    status.Error(codes.Canceled, "client canceled"),
+			expected: status.New(codes.Unavailable, "Service Unavailable"),
+		},
+		{
+			name:     "Client Disconnect Error (Unavailable)",
+			input:    status.Error(codes.Unavailable, "connection lost"),
+			expected: status.New(codes.Unavailable, "Service Unavailable"),
+		},
+		{
+			name:     "Client Disconnect Error (DeadlineExceeded)",
+			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+			expected: status.New(codes.Unavailable, "Service Unavailable"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := GetStatusFromError(tt.input)
+			assert.Equal(t, tt.expected.Err(), result)
+		})
+	}
+}
 
 func Test_GetHTTPStatusCodeFromStatus(t *testing.T) {
 	tests := []struct {
