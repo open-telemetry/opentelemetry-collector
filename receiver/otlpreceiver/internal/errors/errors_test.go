@@ -9,9 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func Test_GetStatusFromError(t *testing.T) {
