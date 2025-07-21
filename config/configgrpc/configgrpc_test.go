@@ -888,25 +888,29 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	inCtx := peer.NewContext(context.Background(), &peer.Peer{
 		Addr: &net.IPAddr{IP: net.IPv4(1, 1, 1, 1)},
 	})
-	var outContext context.Context
 
 	stream := &mockedStream{
 		ctx: inCtx,
 	}
 
-	handler := func(_ any, stream grpc.ServerStream) error {
-		outContext = stream.Context()
-		return nil
+	var clientIP string
+	var handlerCalled int
+	handler := func(handlerCalled *int, clientIP *string) grpc.StreamHandler {
+		return func(_ any, stream grpc.ServerStream) error {
+			(*handlerCalled)++
+			cl := client.FromContext(stream.Context())
+			*clientIP = cl.Addr.String()
+			return nil
+		}
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
+	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler(&handlerCalled, &clientIP))
 
 	// verify
 	require.NoError(t, err)
-
-	cl := client.FromContext(outContext)
-	assert.Equal(t, "1.1.1.1", cl.Addr.String())
+	assert.Equal(t, 1, handlerCalled, "the handler should have been called")
+	assert.Equal(t, "1.1.1.1", clientIP)
 }
 
 type mockedStream struct {
