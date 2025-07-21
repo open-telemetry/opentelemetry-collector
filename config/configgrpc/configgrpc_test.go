@@ -893,24 +893,20 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 		ctx: inCtx,
 	}
 
-	var clientIP string
-	var handlerCalled int
-	handler := func(handlerCalled *int, clientIP *string) grpc.StreamHandler {
-		return func(_ any, stream grpc.ServerStream) error {
-			(*handlerCalled)++
-			cl := client.FromContext(stream.Context())
-			*clientIP = cl.Addr.String()
-			return nil
-		}
+	var handlerCalled bool
+	handler := func(_ any, stream grpc.ServerStream) error {
+		handlerCalled = true
+		cl := client.FromContext(stream.Context())
+		assert.Equal(t, "1.1.1.1", cl.Addr.String())
+		return nil
 	}
 
 	// test
-	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler(&handlerCalled, &clientIP))
+	err := enhanceStreamWithClientInformation(false)(nil, stream, nil, handler)
 
 	// verify
 	require.NoError(t, err)
-	assert.Equal(t, 1, handlerCalled, "the handler should have been called")
-	assert.Equal(t, "1.1.1.1", clientIP)
+	assert.True(t, handlerCalled, "the handler should have been called")
 }
 
 type mockedStream struct {
