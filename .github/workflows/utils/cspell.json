@@ -96,6 +96,7 @@
       "bearertokenauthextension",
       "behaviour",
       "bogdandrutu",
+      "braydonk",
       "bucketize",
       "buildinfo",
       "bwalk",
@@ -159,6 +160,7 @@
       "datapoints",
       "debugexporter",
       "defaultcomponents",
+      "dehaansa",
       "distro",
       "distros",
       "djaglowski",
@@ -276,6 +278,7 @@
       "metricstransformprocessor",
       "middleware",
       "mostynb",
+      "mowies",
       "muehle",
       "multiclient",
       "multimod",
@@ -415,6 +418,7 @@
       "testprovider",
       "testutil",
       "tlsconfig",
+      "tmpl",
       "tocstop",
       "tpmrm",
       "tracecontext",
@@ -464,5 +468,9 @@
       "zpages",
       "zpagesextension",
       "zstd"
+    ],
+    "ignorePaths": [
+      ".golanci.yml",
+      ".github/**/*"
     ]
   }
