@@ -30,7 +30,6 @@ type metrics struct {
 func NewMetrics(
 	_ context.Context,
 	set processor.Settings,
-	_ component.Config,
 	nextConsumer consumer.Metrics,
 	metricsFunc ProcessMetricsFunc,
 	options ...Option,

@@ -62,7 +62,6 @@ func createExampleProcessor(ctx context.Context, params processor.Settings, base
 	return processorhelper.NewMetrics(
 		ctx,
 		params,
-		cfg,
 		next,
 		pcsr.consumeMetrics,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),

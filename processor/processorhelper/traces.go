@@ -30,7 +30,6 @@ type traces struct {
 func NewTraces(
 	_ context.Context,
 	set processor.Settings,
-	_ component.Config,
 	nextConsumer consumer.Traces,
 	tracesFunc ProcessTracesFunc,
 	options ...Option,

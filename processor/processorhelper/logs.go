@@ -30,7 +30,6 @@ type logs struct {
 func NewLogs(
 	_ context.Context,
 	set processor.Settings,
-	_ component.Config,
 	nextConsumer consumer.Logs,
 	logsFunc ProcessLogsFunc,
 	options ...Option,
