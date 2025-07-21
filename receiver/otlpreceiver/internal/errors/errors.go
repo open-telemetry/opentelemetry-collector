@@ -23,21 +23,6 @@ func IsClientDisconnectError(err error) bool {
 	return false
 }
 
-// GetClientDisconnectMessage returns a descriptive message for client disconnection errors
-func GetClientDisconnectMessage(err error) string {
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.Canceled:
-			return "client canceled the request"
-		case codes.Unavailable:
-			return "client connection lost"
-		case codes.DeadlineExceeded:
-			return "client request timed out"
-		}
-	}
-	return "client disconnected"
-}
-
 func GetStatusFromError(err error) error {
 	var s *status.Status
 	_, ok := status.FromError(err)
@@ -54,7 +39,9 @@ func GetStatusFromError(err error) error {
 
 	case IsClientDisconnectError(err):
 		// For client disconnection errors, mark as retryable
-		s = status.New(codes.Unavailable, GetClientDisconnectMessage(err))
+		code := codes.Unavailable
+		httpCode := GetHTTPStatusCodeFromStatus(status.New(code, ""))
+		s = status.New(code, http.StatusText(httpCode))
 
 	case consumererror.IsPermanent(err):
 		// For permanent errors, treat as client error
@@ -62,7 +49,9 @@ func GetStatusFromError(err error) error {
 
 	default:
 		// For non-permanent errors, treat as retryable server error
-		s = status.New(codes.Unavailable, err.Error())
+		code := codes.Unavailable
+		httpCode := GetHTTPStatusCodeFromStatus(status.New(code, ""))
+		s = status.New(code, http.StatusText(httpCode))
 	}
 	return s.Err()
 }

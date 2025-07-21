@@ -34,7 +34,22 @@ func Test_GetStatusFromError(t *testing.T) {
 		{
 			name:     "Non-Permanent Error",
 			input:    errors.New("test"),
-			expected: status.New(codes.Unavailable, "test"),
+			expected: status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)),
+		},
+		{
+			name:     "Client Disconnect Error (Canceled)",
+			input:    status.Error(codes.Canceled, "client canceled"),
+			expected: status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)),
+		},
+		{
+			name:     "Client Disconnect Error (Unavailable)",
+			input:    status.Error(codes.Unavailable, "connection lost"),
+			expected: status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)),
+		},
+		{
+			name:     "Client Disconnect Error (DeadlineExceeded)",
+			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
+			expected: status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)),
 		},
 	}
 	for _, tt := range tests {
@@ -130,46 +145,6 @@ func Test_IsClientDisconnectError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := IsClientDisconnectError(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
-func Test_GetClientDisconnectMessage(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    error
-		expected string
-	}{
-		{
-			name:     "Canceled",
-			input:    status.Error(codes.Canceled, "client canceled"),
-			expected: "client canceled the request",
-		},
-		{
-			name:     "Unavailable",
-			input:    status.Error(codes.Unavailable, "connection lost"),
-			expected: "client connection lost",
-		},
-		{
-			name:     "DeadlineExceeded",
-			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
-			expected: "client request timed out",
-		},
-		{
-			name:     "OtherError",
-			input:    status.Error(codes.Internal, "internal error"),
-			expected: "client disconnected",
-		},
-		{
-			name:     "NonStatusError",
-			input:    errors.New("some error"),
-			expected: "client disconnected",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := GetClientDisconnectMessage(tt.input)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
