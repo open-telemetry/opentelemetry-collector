@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -169,27 +169,77 @@ func TestLogsRequest_Default_ExportError(t *testing.T) {
 }
 
 func TestLogs_WithPersistentQueue(t *testing.T) {
+	fgOrigReadState := queue.PersistRequestContextOnRead
+	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	rCfg := configretry.NewDefaultBackOffConfig()
-	ts := consumertest.LogsSink{}
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
-	te, err := NewLogs(context.Background(), set, &fakeLogsConfig, ts.ConsumeLogs, WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-
 	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	})
-	require.NoError(t, te.Start(context.Background(), host))
-	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+	spanCtx := oteltest.FakeSpanContext(t)
 
-	traces := testdata.GenerateLogs(2)
-	require.NoError(t, te.ConsumeLogs(context.Background(), traces))
-	require.Eventually(t, func() bool {
-		return len(ts.AllLogs()) == 1 && ts.LogRecordCount() == 2
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	tests := []struct {
+		name             string
+		fgEnabledOnWrite bool
+		fgEnabledOnRead  bool
+		wantData         bool
+		wantSpanCtx      bool
+	}{
+		{
+			name:     "feature_gate_disabled_on_write_and_read",
+			wantData: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_and_read",
+			fgEnabledOnWrite: true,
+			fgEnabledOnRead:  true,
+			wantData:         true,
+			wantSpanCtx:      true,
+		},
+		{
+			name:            "feature_gate_disabled_on_write_enabled_on_read",
+			wantData:        true,
+			fgEnabledOnRead: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_disabled_on_read",
+			fgEnabledOnWrite: true,
+			wantData:         false, // going back from enabled to disabled feature gate isn't supported
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
+			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
+			t.Cleanup(func() {
+				queue.PersistRequestContextOnRead = fgOrigReadState
+				queue.PersistRequestContextOnWrite = fgOrigWriteState
+			})
+
+			ls := consumertest.LogsSink{}
+			te, err := NewLogs(context.Background(), set, &fakeLogsConfig, ls.ConsumeLogs, WithQueue(qCfg))
+			require.NoError(t, err)
+			require.NoError(t, te.Start(context.Background(), host))
+			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+			logs := testdata.GenerateLogs(2)
+			require.NoError(t, te.ConsumeLogs(trace.ContextWithSpanContext(context.Background(), spanCtx), logs))
+			if tt.wantData {
+				require.Eventually(t, func() bool {
+					return len(ls.AllLogs()) == 1 && ls.LogRecordCount() == 2
+				}, 500*time.Millisecond, 10*time.Millisecond)
+			}
+
+			// check that the span context is persisted if the feature gate is enabled
+			if tt.wantSpanCtx {
+				assert.Len(t, ls.Contexts(), 1)
+				assert.Equal(t, spanCtx, trace.SpanContextFromContext(ls.Contexts()[0]))
+			}
+		})
+	}
 }
 
 func TestLogs_WithRecordMetrics(t *testing.T) {

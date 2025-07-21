@@ -152,18 +152,16 @@ endif
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
-	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
-		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
+	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) -tags "grpcnotrace" ./... && popd
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
-	cd internal/tools && $(GOCMD) install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
 
 .PHONY: actionlint
-actionlint:
-	./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:
@@ -176,7 +174,7 @@ ocb:
 OPENTELEMETRY_PROTO_SRC_DIR=pdata/internal/opentelemetry-proto
 
 # The branch matching the current version of the proto to use
-OPENTELEMETRY_PROTO_VERSION=v1.5.0
+OPENTELEMETRY_PROTO_VERSION=v1.7.0
 
 # Find all .proto files.
 OPENTELEMETRY_PROTO_FILES := $(subst $(OPENTELEMETRY_PROTO_SRC_DIR)/,,$(wildcard $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/*/v1development/*.proto $(OPENTELEMETRY_PROTO_SRC_DIR)/opentelemetry/proto/collector/*/v1development/*.proto))
@@ -205,6 +203,7 @@ genproto: genproto-cleanup
 	curl -sSL https://api.github.com/repos/open-telemetry/opentelemetry-proto/tarball/${OPENTELEMETRY_PROTO_VERSION} | tar xz --strip 1 -C ${OPENTELEMETRY_PROTO_SRC_DIR}
 	# Call a sub-make to ensure OPENTELEMETRY_PROTO_FILES is populated
 	$(MAKE) genproto_sub
+	$(MAKE) genproto_internal
 	$(MAKE) fmt
 	$(MAKE) genproto-cleanup
 
@@ -245,20 +244,19 @@ genproto_sub:
 
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata:
-	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
-	$(MAKE) fmt
+genpdata: $(PDATAGEN)
+	$(PDATAGEN)
+	$(MAKE) -C pdata fmt
 
-# Generate semantic convention constants. Requires a clone of the opentelemetry-specification repo
-gensemconv: $(SEMCONVGEN) $(SEMCONVKIT)
-	@[ "${SPECPATH}" ] || ( echo ">> env var SPECPATH is not set"; exit 1 )
-	@[ "${SPECTAG}" ] || ( echo ">> env var SPECTAG is not set"; exit 1 )
-	@echo "Generating semantic convention constants from specification version ${SPECTAG} at ${SPECPATH}"
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=resource -p conventionType=resource -f generated_resource.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=event -p conventionType=event -f generated_event.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=span -p conventionType=trace -f generated_trace.go
-	$(SEMCONVGEN) -o semconv/${SPECTAG} -t semconv/template.j2 -s ${SPECTAG} -i ${SPECPATH}/model/. --only=attribute_group -p conventionType=attribute_group -f generated_attribute_group.go
-	$(SEMCONVKIT) -output "semconv/$(SPECTAG)" -tag "$(SPECTAG)"
+INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
+INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))
+INTERNAL_PROTOC := $(DOCKERCMD) run --rm -u ${shell id -u} -v${PWD}:${PWD} -w${PWD} ${DOCKER_PROTOBUF} --proto_path=${PWD} -I/usr/include/github.com/gogo/protobuf -I${PWD}/$(PROTO_INTERMEDIATE_DIR) --gogofaster_out=plugins=grpc,paths=source_relative:.
+
+.PHONY: genproto_internal
+genproto_internal:
+	@echo "Generating Go code for internal proto files"
+	@echo "Found proto files: $(INTERNAL_PROTO_FILES)"
+	$(foreach file,$(INTERNAL_PROTO_FILES),$(call exec-command,$(INTERNAL_PROTOC) $(file)))
 
 ALL_MOD_PATHS := "" $(ALL_MODULES:.%=%)
 

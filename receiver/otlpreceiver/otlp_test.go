@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -419,7 +420,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 		content     string
 		encoding    string
 		reqBodyFunc func() (*bytes.Buffer, error)
-		resBodyFunc func() ([]byte, error)
+		checkBody   func(tb testing.TB, got []byte)
 		status      int
 	}{
 		{
@@ -429,8 +430,8 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return json.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				assert.JSONEq(tb, `{"code":3,"message": "gzip: invalid header"}`, string(got))
 			},
 			status: 400,
 		},
@@ -441,8 +442,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -453,8 +456,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -472,27 +477,53 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			body, err := test.reqBodyFunc()
-			require.NoError(t, err, "Error creating request body: %v", err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest(http.MethodPost, url, body)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			require.NoError(t, err)
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
 
 			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			require.NoError(t, err)
+			assert.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
+			assert.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 			respBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
-			exRespBytes, err := test.resBodyFunc()
-			require.NoError(t, err, "Error creating expecting response body")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
-
-			require.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
-			require.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-			require.Equal(t, exRespBytes, respBytes, "Unexpected response content")
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			test.checkBody(t, respBytes)
 		})
 	}
+}
+
+func TestOTLPReceiverNoContentType(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
+
+	t.Run("NoContentType", func(t *testing.T) {
+		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
+
+		req, err := http.NewRequest(http.MethodPost, url, body)
+		require.NoError(t, err, "Error creating trace POST request: %v", err)
+
+		// Set invalid encoding to trigger an error
+		req.Header.Set("Content-Encoding", "invalid")
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error posting to server: %v", err)
+		// Don't care about the response body, just check the content type
+		defer resp.Body.Close()
+
+		require.Equal(t, fallbackContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	})
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
@@ -746,17 +777,17 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 func TestGRPCInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.ServerConfig{
+			GRPC: configoptional.Some(configgrpc.ServerConfig{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLSSetting: &configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
-				},
-			},
+				}),
+			}),
 		},
 	}
 
@@ -778,8 +809,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	sink := newErrOrSinkConsumer()
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = addr
-	cfg.HTTP = nil
+	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = addr
 	recv := newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -792,7 +822,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	assert.NoError(t, cc.Close())
 	require.NoError(t, recv.Shutdown(context.Background()))
 
-	cfg.GRPC.MaxRecvMsgSizeMiB = 100
+	cfg.GRPC.Get().MaxRecvMsgSizeMiB = 100
 	recv = newReceiver(t, componenttest.NewNopTelemetrySettings(), cfg, otlpReceiverID, sink)
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
@@ -812,19 +842,19 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 func TestHTTPInvalidTLSCredentials(t *testing.T) {
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &HTTPConfig{
+			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLSSetting: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
 						},
-					},
+					}),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,
-			},
+			}),
 		},
 	}
 
@@ -845,7 +875,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 	url := "http://" + addr + path
 	cfg := &Config{
 		Protocols: Protocols{
-			HTTP: &HTTPConfig{
+			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint:           addr,
 					MaxRequestBodySize: int64(size),
@@ -853,7 +883,7 @@ func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, p
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
 				LogsURLPath:    defaultLogsURLPath,
-			},
+			}),
 		},
 	}
 
@@ -884,15 +914,13 @@ func TestHTTPMaxRequestBodySize(t *testing.T) {
 
 func newGRPCReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpoint
-	cfg.HTTP = nil
+	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
 func newHTTPReceiver(t *testing.T, settings component.TelemetrySettings, endpoint string, c consumertest.Consumer) component.Component {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTP.ServerConfig.Endpoint = endpoint
-	cfg.GRPC = nil
+	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpoint
 	return newReceiver(t, settings, cfg, otlpReceiverID, c)
 }
 
@@ -1072,8 +1100,8 @@ func TestShutdown(t *testing.T) {
 	// Create OTLP receiver with gRPC and HTTP protocols.
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	cfg.HTTP.ServerConfig.Endpoint = endpointHTTP
+	GetOrInsertDefault(t, &cfg.GRPC).NetAddr.Endpoint = endpointGrpc
+	GetOrInsertDefault(t, &cfg.HTTP).ServerConfig.Endpoint = endpointHTTP
 	set := receivertest.NewNopSettings(metadata.Type)
 	set.ID = otlpReceiverID
 	r, err := NewFactory().CreateTraces(

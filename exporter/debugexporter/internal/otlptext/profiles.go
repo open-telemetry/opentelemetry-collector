@@ -19,7 +19,24 @@ type textProfilesMarshaler struct{}
 // MarshalProfiles pprofile.Profiles to OTLP text.
 func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, error) {
 	buf := dataBuffer{}
+	dic := pd.ProfilesDictionary()
 	rps := pd.ResourceProfiles()
+
+	buf.logProfileMappings(dic.MappingTable())
+	buf.logProfileLocations(dic.LocationTable())
+	buf.logProfileFunctions(dic.FunctionTable())
+	buf.logAttributesWithIndentation(
+		"Attribute units",
+		attributeUnitsToMap(dic.AttributeUnits()),
+		0)
+
+	buf.logAttributesWithIndentation(
+		"Link table",
+		linkTableToMap(dic.LinkTable()),
+		0)
+
+	buf.logStringTable(dic.StringTable())
+
 	for i := 0; i < rps.Len(); i++ {
 		buf.logEntry("ResourceProfiles #%d", i)
 		rp := rps.At(i)
@@ -41,22 +58,7 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 				buf.logAttr("Dropped attributes count", strconv.FormatUint(uint64(profile.DroppedAttributesCount()), 10))
 				buf.logEntry("    Location indices: %d", profile.LocationIndices().AsRaw())
 
-				buf.logProfileSamples(profile.Sample(), profile.AttributeTable())
-				buf.logProfileMappings(profile.MappingTable())
-				buf.logProfileLocations(profile.LocationTable())
-				buf.logProfileFunctions(profile.FunctionTable())
-
-				buf.logAttributesWithIndentation(
-					"Attribute units",
-					attributeUnitsToMap(profile.AttributeUnits()),
-					4)
-
-				buf.logAttributesWithIndentation(
-					"Link table",
-					linkTableToMap(profile.LinkTable()),
-					4)
-
-				buf.logStringTable(profile.StringTable())
+				buf.logProfileSamples(profile.Sample(), dic.AttributeTable())
 				buf.logComment(profile.CommentStrindices())
 			}
 		}

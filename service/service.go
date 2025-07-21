@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
@@ -21,6 +22,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -29,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -41,15 +44,6 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
 )
-
-// useOtelWithSDKConfigurationForInternalTelemetryFeatureGate is the feature gate that controls whether the collector
-// supports configuring the OpenTelemetry SDK via configuration
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"telemetry.useOtelWithSDKConfigurationForInternalTelemetry",
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.110.0"),
-	featuregate.WithRegisterDescription("controls whether the collector supports extended OpenTelemetry"+
-		"configuration for internal telemetry"))
 
 // disableHighCardinalityMetricsFeatureGate is the feature gate that controls whether the collector should enable
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
@@ -160,10 +154,8 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 				LoggerProvider: &config.LoggerProvider{
 					Processors: cfg.Telemetry.Logs.Processors,
 				},
-				MeterProvider: mpConfig,
-				TracerProvider: &config.TracerProvider{
-					Processors: cfg.Telemetry.Traces.Processors,
-				},
+				MeterProvider:  mpConfig,
+				TracerProvider: &cfg.Telemetry.Traces.TracerProvider,
 				Resource: &config.Resource{
 					SchemaUrl:  &sch,
 					Attributes: attributes(res, cfg.Telemetry),
@@ -181,18 +173,41 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		BuildInfo:         set.BuildInfo,
 		ZapOptions:        set.LoggingOptions,
 		SDK:               &sdk,
+		Resource:          res,
 	}
 
-	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	srv.loggerProvider = lp
+	srv.loggerProvider = loggerProvider
+
+	// Use initialized logger to handle any subsequent errors
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
+	defer func() {
+		if err != nil {
+			logger.Error("error found during service initialization", zap.Error(err))
+			_ = sdk.Shutdown(ctx)
+		}
+	}()
+
+	// Wrap the zap.Logger with componentattribute so scope attributes
+	// can be added and removed dynamically, and tee logs to the
+	// LoggerProvider.
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = componentattribute.NewOTelTeeCoreWithAttributes(
+			core,
+			loggerProvider,
+			"go.opentelemetry.io/collector/service",
+			attribute.NewSet(),
+		)
+		return core
+	}))
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create tracer provider: %w", err)
 	}
 
@@ -200,7 +215,6 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 
 	mp, err := telFactory.CreateMeterProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create meter provider: %w", err)
 	}
 	srv.telemetrySettings = component.TelemetrySettings{
@@ -218,17 +232,15 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	})
 
 	if err = srv.initGraph(ctx, cfg); err != nil {
-		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
 	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
-		err = multierr.Append(err, srv.shutdownTelemetry(ctx))
 		return nil, err
 	}
 
-	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && (len(mpConfig.Readers) != 0 || cfg.Telemetry.Metrics.Address != "") {
+	if cfg.Telemetry.Metrics.Level != configtelemetry.LevelNone && len(mpConfig.Readers) != 0 {
 		if err = proctelemetry.RegisterProcessMetrics(srv.telemetrySettings); err != nil {
 			return nil, fmt.Errorf("failed to register process metrics: %w", err)
 		}
@@ -243,10 +255,6 @@ func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp 
 	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
 		logger.Info("Skipped telemetry setup.")
 		return
-	}
-
-	if len(cfg.Address) != 0 {
-		logger.Warn("service::telemetry::metrics::address is being deprecated in favor of service::telemetry::metrics::readers")
 	}
 
 	if lmp, ok := mp.(interface {

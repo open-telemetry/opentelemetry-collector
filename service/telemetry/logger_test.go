@@ -9,24 +9,29 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/log"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
-type shutdownable interface {
-	Shutdown(context.Context) error
-}
+const (
+	version       = "1.2.3"
+	service       = "test-service"
+	testAttribute = "test-attribute"
+	testValue     = "test-value"
+)
 
 func TestNewLogger(t *testing.T) {
 	tests := []struct {
@@ -36,10 +41,9 @@ func TestNewLogger(t *testing.T) {
 		cfg          Config
 	}{
 		{
-			name:         "no log config",
-			cfg:          Config{},
-			wantErr:      errors.New("no encoder name specified"),
-			wantCoreType: nil,
+			name:    "no log config",
+			cfg:     Config{},
+			wantErr: errors.New("no encoder name specified"),
 		},
 		{
 			name: "log config with no processors",
@@ -53,7 +57,6 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any{"fieldKey": "filed-value"},
 				},
 			},
-			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 		{
 			name: "log config with processors",
@@ -76,7 +79,6 @@ func TestNewLogger(t *testing.T) {
 					},
 				},
 			},
-			wantCoreType: "*componentattribute.otelTeeCoreWithAttributes",
 		},
 		{
 			name: "log config with sampling",
@@ -98,78 +100,155 @@ func TestNewLogger(t *testing.T) {
 					InitialFields:     map[string]any(nil),
 				},
 			},
-			wantCoreType: "*componentattribute.consoleCoreWithAttributes",
 		},
 	}
 	for _, tt := range tests {
-		testCoreType := func(t *testing.T, wantCoreType any) {
+		t.Run(tt.name, func(t *testing.T) {
 			sdk, _ := config.NewSDK(config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{LoggerProvider: &config.LoggerProvider{
 				Processors: tt.cfg.Logs.Processors,
 			}}))
 
-			l, lp, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
+			_, _, err := newLogger(Settings{SDK: &sdk}, tt.cfg)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
-				require.Nil(t, wantCoreType)
 			} else {
 				require.NoError(t, err)
-				gotType := reflect.TypeOf(l.Core()).String()
-				require.Equal(t, wantCoreType, gotType)
-				if prov, ok := lp.(shutdownable); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
+				assert.NoError(t, sdk.Shutdown(context.Background()))
 			}
-		}
-
-		testCoreType(t, tt.wantCoreType)
+		})
 	}
 }
 
 func TestNewLoggerWithResource(t *testing.T) {
-	observerCore, observedLogs := observer.New(zap.InfoLevel)
-
-	set := Settings{
-		ZapOptions: []zap.Option{
-			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-				// Combine original core and observer core to capture everything
-				return zapcore.NewTee(core, observerCore)
-			}),
+	tests := []struct {
+		name           string
+		buildInfo      component.BuildInfo
+		resourceConfig map[string]*string
+		wantFields     map[string]string
+	}{
+		{
+			name: "auto-populated fields only",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "override service.name",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				string(semconv.ServiceNameKey): ptr("custom-service"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "custom-service",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "override service.version",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				string(semconv.ServiceVersionKey): ptr("2.0.0"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "2.0.0",
+				string(semconv.ServiceInstanceIDKey): "",
+			},
+		},
+		{
+			name: "custom field with auto-populated",
+			buildInfo: component.BuildInfo{
+				Command: "mycommand",
+				Version: "1.0.0",
+			},
+			resourceConfig: map[string]*string{
+				"custom.field": ptr("custom-value"),
+			},
+			wantFields: map[string]string{
+				string(semconv.ServiceNameKey):       "mycommand",
+				string(semconv.ServiceVersionKey):    "1.0.0",
+				string(semconv.ServiceInstanceIDKey): "", // Just check presence
+				"custom.field":                       "custom-value",
+			},
+		},
+		{
+			name:           "resource with no attributes",
+			buildInfo:      component.BuildInfo{},
+			resourceConfig: nil,
+			wantFields:     nil,
 		},
 	}
 
-	cfg := Config{
-		Logs: LogsConfig{
-			Level:    zapcore.InfoLevel,
-			Encoding: "json",
-		},
-		Resource: map[string]*string{
-			"myfield": ptr("myvalue"),
-		},
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			observerCore, observedLogs := observer.New(zap.InfoLevel)
+
+			set := Settings{
+				ZapOptions: []zap.Option{
+					zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+						return zapcore.NewTee(core, observerCore)
+					}),
+				},
+			}
+			if tt.wantFields != nil {
+				set.Resource = resource.New(tt.buildInfo, tt.resourceConfig)
+			}
+
+			cfg := Config{
+				Logs: LogsConfig{
+					Level:    zapcore.InfoLevel,
+					Encoding: "json",
+				},
+			}
+
+			mylogger, _, _ := newLogger(set, cfg)
+			mylogger.Info("Test log message")
+			require.Len(t, observedLogs.All(), 1)
+
+			entry := observedLogs.All()[0]
+			if tt.wantFields == nil {
+				assert.Empty(t, entry.Context)
+				return
+			}
+
+			assert.Equal(t, "resource", entry.Context[0].Key)
+			dict := entry.Context[0].Interface.(zapcore.ObjectMarshaler)
+			enc := zapcore.NewMapObjectEncoder()
+			require.NoError(t, dict.MarshalLogObject(enc))
+
+			// Verify all expected fields
+			for k, v := range tt.wantFields {
+				if k == string(semconv.ServiceInstanceIDKey) {
+					// For service.instance.id just verify it exists since it's auto-generated
+					assert.Contains(t, enc.Fields, k)
+				} else {
+					assert.Equal(t, v, enc.Fields[k])
+				}
+			}
+		})
 	}
-
-	mylogger, _, _ := newLogger(set, cfg)
-
-	mylogger.Info("Test log message")
-	require.Len(t, observedLogs.All(), 1)
-
-	entry := observedLogs.All()[0]
-	assert.Equal(t, "resource", entry.Context[0].Key)
-	dict := entry.Context[0].Interface.(zapcore.ObjectMarshaler)
-	enc := zapcore.NewMapObjectEncoder()
-	require.NoError(t, dict.MarshalLogObject(enc))
-	require.Equal(t, "myvalue", enc.Fields["myfield"])
 }
 
-func TestOTLPLogExport(t *testing.T) {
-	version := "1.2.3"
-	service := "test-service"
-	testAttribute := "test-attribute"
-	testValue := "test-value"
+func TestLoggerProvider(t *testing.T) {
 	receivedLogs := 0
 	totalLogs := 10
 
 	// Create a backend to receive the logs and assert the content
-	srv := createBackend("/v1/logs", func(writer http.ResponseWriter, request *http.Request) {
+	lp := newOTLPLoggerProvider(t, zapcore.InfoLevel, func(_ http.ResponseWriter, request *http.Request) {
 		body, err := io.ReadAll(request.Body)
 		assert.NoError(t, err)
 		defer request.Body.Close()
@@ -183,9 +262,9 @@ func TestOTLPLogExport(t *testing.T) {
 		rl := logs.ResourceLogs().At(0)
 
 		resourceAttrs := rl.Resource().Attributes().AsRaw()
-		assert.Equal(t, resourceAttrs[string(semconv.ServiceNameKey)], service)
-		assert.Equal(t, resourceAttrs[string(semconv.ServiceVersionKey)], version)
-		assert.Equal(t, resourceAttrs[testAttribute], testValue)
+		assert.Equal(t, service, resourceAttrs[string(semconv.ServiceNameKey)])
+		assert.Equal(t, version, resourceAttrs[string(semconv.ServiceVersionKey)])
+		assert.Equal(t, testValue, resourceAttrs[testAttribute])
 
 		// Check that the resource attributes are not duplicated in the log records
 		sl := rl.ScopeLogs().At(0)
@@ -196,35 +275,45 @@ func TestOTLPLogExport(t *testing.T) {
 		assert.NotContains(t, attrs, testAttribute)
 
 		receivedLogs++
-
-		writer.WriteHeader(http.StatusOK)
 	})
-	defer srv.Close()
 
-	processors := []config.LogRecordProcessor{
-		{
-			Simple: &config.SimpleLogRecordProcessor{
-				Exporter: config.LogRecordExporter{
-					OTLP: &config.OTLP{
-						Endpoint: ptr(srv.URL),
-						Protocol: ptr("http/protobuf"),
-						Insecure: ptr(true),
-					},
+	// Generate some logs to send to the backend
+	logger := lp.Logger("name")
+	for i := 0; i < totalLogs; i++ {
+		var record log.Record
+		record.SetBody(log.StringValue("Test log message"))
+		logger.Emit(context.Background(), record)
+	}
+
+	// Ensure the correct number of logs were received
+	require.Equal(t, totalLogs, receivedLogs)
+}
+
+func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.HandlerFunc) log.LoggerProvider {
+	srv := createBackend("/v1/logs", handler)
+	t.Cleanup(srv.Close)
+
+	processors := []config.LogRecordProcessor{{
+		Simple: &config.SimpleLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Endpoint: ptr(srv.URL),
+					Protocol: ptr("http/protobuf"),
+					Insecure: ptr(true),
 				},
 			},
 		},
-	}
+	}}
 
 	cfg := Config{
 		Logs: LogsConfig{
-			Level:       zapcore.DebugLevel,
-			Development: true,
-			Encoding:    "json",
-			Processors:  processors,
+			Level:      level,
+			Encoding:   "json",
+			Processors: processors,
 		},
 	}
 
-	sdk, _ := config.NewSDK(
+	sdk, err := config.NewSDK(
 		config.WithOpenTelemetryConfiguration(
 			config.OpenTelemetryConfiguration{
 				LoggerProvider: &config.LoggerProvider{
@@ -241,31 +330,18 @@ func TestOTLPLogExport(t *testing.T) {
 			},
 		),
 	)
-
-	l, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
 	require.NoError(t, err)
-	require.NotNil(t, l)
+	t.Cleanup(func() {
+		assert.NoError(t, sdk.Shutdown(context.Background()))
+	})
+
+	_, lp, err := newLogger(Settings{SDK: &sdk}, cfg)
+	require.NoError(t, err)
 	require.NotNil(t, lp)
-
-	defer func() {
-		if prov, ok := lp.(shutdownable); ok {
-			require.NoError(t, prov.Shutdown(context.Background()))
-		}
-	}()
-
-	// Reset counter for each test case
-	receivedLogs = 0
-
-	// Generate some logs to send to the backend
-	for i := 0; i < totalLogs; i++ {
-		l.Info("Test log message")
-	}
-
-	// Ensure the correct number of logs were received
-	require.Equal(t, totalLogs, receivedLogs)
+	return lp
 }
 
-func createBackend(endpoint string, handler func(writer http.ResponseWriter, request *http.Request)) *httptest.Server {
+func createBackend(endpoint string, handler func(http.ResponseWriter, *http.Request)) *httptest.Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc(endpoint, handler)
 	return httptest.NewServer(mux)

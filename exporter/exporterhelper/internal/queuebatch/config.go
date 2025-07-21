@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
@@ -32,9 +33,6 @@ type Config struct {
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
 	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
 
-	// Deprecated: [v0.123.0] use `block_on_overflow`.
-	Blocking bool `mapstructure:"blocking"`
-
 	// StorageID if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
 	// TODO: This will be changed to Optional when available.
@@ -47,11 +45,7 @@ type Config struct {
 	NumConsumers int `mapstructure:"num_consumers"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
-	// TODO: This will be changed to Optional when available.
-	Batch *BatchConfig `mapstructure:"batch"`
-
-	// TODO: Remove when deprecated "blocking" is removed.
-	hasBlocking bool
+	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
@@ -59,12 +53,10 @@ func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
 		return err
 	}
 
-	// If user still uses the old blocking, override and will log error during initialization.
-	if conf.IsSet("blocking") {
-		cfg.hasBlocking = true
-		cfg.BlockOnOverflow = cfg.Blocking
+	// If the batch sizer is not set, use the same value as the queue sizer.
+	if !conf.IsSet("batch::sizer") && cfg.Batch.HasValue() {
+		cfg.Batch.Get().Sizer = cfg.Sizer
 	}
-
 	return nil
 }
 
@@ -87,19 +79,9 @@ func (cfg *Config) Validate() error {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	// Only support request sizer for persistent queue at this moment.
-	if cfg.StorageID != nil && cfg.Sizer != request.SizerTypeRequests {
-		return errors.New("persistent queue configured with `storage` only supports `requests` sizer")
-	}
-
-	if cfg.Batch != nil {
-		// Only support items or bytes sizer for batch at this moment.
-		if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
-			return errors.New("`batch` supports only `items` or `bytes` sizer")
-		}
-
+	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
 		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.MinSize > cfg.QueueSize {
+		if cfg.Batch.Get().MinSize > cfg.QueueSize {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
 		}
 	}
@@ -112,6 +94,11 @@ type BatchConfig struct {
 	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
 	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
 
+	// Sizer determines the type of size measurement used by the batch.
+	// If not configured, use the same configuration as the queue.
+	// It accepts "requests", "items", or "bytes".
+	Sizer request.SizerType `mapstructure:"sizer"`
+
 	// MinSize defines the configuration for the minimum size of a batch.
 	MinSize int64 `mapstructure:"min_size"`
 
@@ -122,6 +109,11 @@ type BatchConfig struct {
 func (cfg *BatchConfig) Validate() error {
 	if cfg == nil {
 		return nil
+	}
+
+	// Only support items or bytes sizer for batch at this moment.
+	if cfg.Sizer != request.SizerTypeItems && cfg.Sizer != request.SizerTypeBytes {
+		return errors.New("`batch` supports only `items` or `bytes` sizer")
 	}
 
 	if cfg.FlushTimeout <= 0 {

@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
-	sigs.k8s.io/yaml v1.4.0
+	go.yaml.in/yaml/v3 v3.0.4
 )
 
 require (
