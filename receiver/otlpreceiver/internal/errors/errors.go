@@ -45,7 +45,9 @@ func GetStatusFromError(err error) error {
 
 	case consumererror.IsPermanent(err):
 		// For permanent errors, treat as client error
-		s = status.New(codes.InvalidArgument, err.Error())
+		code := codes.InvalidArgument
+		httpCode := GetHTTPStatusCodeFromStatus(status.New(code, ""))
+		s = status.New(codes.InvalidArgument, http.StatusText(httpCode))
 
 	default:
 		// For non-permanent errors, treat as retryable server error
