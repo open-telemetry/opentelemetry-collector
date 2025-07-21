@@ -30,7 +30,7 @@ Number of spans successfully pushed into the pipeline. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
-### otelcol_receiver_internal_errors_log_records
+### otelcol_receiver_failed_log_records
 
 The number of log records that failed to be processed by the receiver due to internal errors.
 
@@ -38,15 +38,15 @@ The number of log records that failed to be processed by the receiver due to int
 | ---- | ----------- | ---------- | --------- |
 | {records} | Sum | Int | true |
 
-### otelcol_receiver_internal_errors_metric_points
+### otelcol_receiver_failed_metric_points
 
 The number of metric points that failed to be processed by the receiver due to internal errors.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {points} | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
-### otelcol_receiver_internal_errors_spans
+### otelcol_receiver_failed_spans
 
 The number of spans that failed to be processed by the receiver due to internal errors.
 
@@ -64,7 +64,7 @@ Number of log records that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline. [alpha]
+Number of metric points that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -72,8 +72,24 @@ Number of metric points that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline. [alpha]
+Number of spans that could not be pushed into the pipeline.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
+
+### otelcol_receiver_requests
+
+The number of requests peformed.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {records} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| success | Succesful receiver requests | Any Int |
+| refused | Refused receiver requests | Any Int |
+| failure | Failed receiver requests | Any Int |

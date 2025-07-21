@@ -160,19 +160,30 @@ func (rec *ObsReport) endOp(
 ) {
 	numAccepted := numReceivedItems
 	numRefused := 0
-	numInternalErrors := 0
+	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
 		if internal.IsDownstreamError(err) {
 			numRefused = numReceivedItems
 		} else {
-			numInternalErrors = numReceivedItems
+			numFailedErrors = numReceivedItems
 		}
 	}
 
 	span := trace.SpanFromContext(receiverCtx)
 
-	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numInternalErrors)
+	rec.recordMetrics(receiverCtx, signal, numAccepted, numRefused, numFailedErrors)
+
+	// Emit otelcol_receiver_requests metric with outcome attribute
+	var outcome string
+	if err == nil {
+		outcome = "success"
+	} else if internal.IsDownstreamError(err) {
+		outcome = "refused"
+	} else {
+		outcome = "other"
+	}
+	rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
 
 	// end span according to errors
 	if span.IsRecording() {
@@ -196,7 +207,7 @@ func (rec *ObsReport) endOp(
 			attribute.String(internal.FormatKey, format),
 			attribute.Int64(acceptedItemsKey, int64(numAccepted)),
 			attribute.Int64(refusedItemsKey, int64(numRefused)),
-			attribute.Int64(internalErrorsKey, int64(numInternalErrors)),
+			attribute.Int64(internalErrorsKey, int64(numFailedErrors)),
 		)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
@@ -205,24 +216,24 @@ func (rec *ObsReport) endOp(
 	span.End()
 }
 
-func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused, numInternalErrors int) {
+func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline.Signal, numAccepted, numRefused, numFailedErrors int) {
 	var acceptedMeasure, refusedMeasure, internalErrorsMeasure metric.Int64Counter
 	switch signal {
 	case pipeline.SignalTraces:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedSpans
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedSpans
-		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsSpans
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverFailedSpans
 	case pipeline.SignalMetrics:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedMetricPoints
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedMetricPoints
-		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsMetricPoints
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverFailedMetricPoints
 	case pipeline.SignalLogs:
 		acceptedMeasure = rec.telemetryBuilder.ReceiverAcceptedLogRecords
 		refusedMeasure = rec.telemetryBuilder.ReceiverRefusedLogRecords
-		internalErrorsMeasure = rec.telemetryBuilder.ReceiverInternalErrorsLogRecords
+		internalErrorsMeasure = rec.telemetryBuilder.ReceiverFailedLogRecords
 	}
 
 	acceptedMeasure.Add(receiverCtx, int64(numAccepted), rec.otelAttrs)
 	refusedMeasure.Add(receiverCtx, int64(numRefused), rec.otelAttrs)
-	internalErrorsMeasure.Add(receiverCtx, int64(numInternalErrors), rec.otelAttrs)
+	internalErrorsMeasure.Add(receiverCtx, int64(numFailedErrors), rec.otelAttrs)
 }

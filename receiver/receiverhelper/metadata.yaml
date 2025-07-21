@@ -23,7 +23,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    receiver_internal_errors_spans:
+    receiver_failed_spans:
       enabled: true
       description: The number of spans that failed to be processed by the receiver due to internal errors.
       unit: "{spans}"
@@ -46,7 +46,7 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    receiver_internal_errors_metric_points:
+    receiver_failed_metric_points:
       enabled: true
       description: The number of metric points that failed to be processed by the receiver due to internal errors.
       unit: "{datapoints}"
@@ -71,10 +71,31 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-    receiver_internal_errors_log_records:
+    receiver_failed_log_records:
       enabled: true
       description: The number of log records that failed to be processed by the receiver due to internal errors.
       unit: "{records}"
       sum:
         value_type: int
         monotonic: true
+    receiver_requests:
+      enabled: true
+      description: The number of requests peformed.
+      unit: "{records}"
+      sum:
+        value_type: int
+        monotonic: true
+      attributes:
+        - success
+        - refused
+        - failure
+attributes:
+  success:
+    description: Succesful receiver requests
+    type: int
+  refused:
+    description: Refused receiver requests
+    type: int
+  failure:
+    description: Failed receiver requests
+    type: int
