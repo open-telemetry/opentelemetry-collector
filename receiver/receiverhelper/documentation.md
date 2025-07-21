@@ -64,7 +64,7 @@ Number of log records that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_refused_metric_points
 
-Number of metric points that could not be pushed into the pipeline.
+Number of metric points that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -72,7 +72,7 @@ Number of metric points that could not be pushed into the pipeline.
 
 ### otelcol_receiver_refused_spans
 
-Number of spans that could not be pushed into the pipeline.
+Number of spans that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

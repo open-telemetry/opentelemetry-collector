@@ -18,6 +18,8 @@ telemetry:
         monotonic: true
     receiver_refused_spans:
       enabled: true
+      stability:
+        level: alpha
       description: Number of spans that could not be pushed into the pipeline.
       unit: "{spans}"
       sum:
@@ -41,6 +43,8 @@ telemetry:
         monotonic: true
     receiver_refused_metric_points:
       enabled: true
+      stability:
+        level: alpha
       description: Number of metric points that could not be pushed into the pipeline.
       unit: "{datapoints}"
       sum:

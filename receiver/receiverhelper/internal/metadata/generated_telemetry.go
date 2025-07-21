@@ -111,13 +111,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedMetricPoints, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_metric_points",
-		metric.WithDescription("Number of metric points that could not be pushed into the pipeline."),
+		metric.WithDescription("Number of metric points that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{datapoints}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ReceiverRefusedSpans, err = builder.meter.Int64Counter(
 		"otelcol_receiver_refused_spans",
-		metric.WithDescription("Number of spans that could not be pushed into the pipeline."),
+		metric.WithDescription("Number of spans that could not be pushed into the pipeline. [alpha]"),
 		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
