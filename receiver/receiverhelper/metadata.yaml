@@ -4,25 +4,25 @@ status:
   disable_codecov_badge: true
   class: pkg
   stability:
-    stable: [metrics, traces, logs]
+    beta: [metrics, traces, logs]
 telemetry:
   metrics:
     receiver_accepted_spans:
       enabled: true
-      description: Number of spans successfully pushed into the pipeline. [alpha]
+      stability:
+        level: alpha
+      description: Number of spans successfully pushed into the pipeline.
       unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_refused_spans:
       enabled: true
-      description: Number of spans that could not be pushed into the pipeline. [alpha]
+      description: Number of spans that could not be pushed into the pipeline.
       unit: "{spans}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_internal_errors_spans:
       enabled: true
       description: The number of spans that failed to be processed by the receiver due to internal errors.
@@ -30,47 +30,47 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_accepted_metric_points:
+      stability:
+        level: alpha
       enabled: true
-      description: The number of metric points successfully accepted by the receiver.
-      unit: "{points}"
+      description: Number of metric points successfully pushed into the pipeline.
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_refused_metric_points:
       enabled: true
-      description: The number of metric points refused by the receiver.
-      unit: "{points}"
+      description: Number of metric points that could not be pushed into the pipeline.
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_internal_errors_metric_points:
       enabled: true
       description: The number of metric points that failed to be processed by the receiver due to internal errors.
-      unit: "{points}"
+      unit: "{datapoints}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_accepted_log_records:
       enabled: true
-      description: The number of log records successfully accepted by the receiver.
+      stability:
+        level: alpha
+      description: Number of log records successfully pushed into the pipeline.
       unit: "{records}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_refused_log_records:
       enabled: true
-      description: The number of log records refused by the receiver.
+      stability:
+        level: alpha
+      description: Number of log records that could not be pushed into the pipeline.
       unit: "{records}"
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative
     receiver_internal_errors_log_records:
       enabled: true
       description: The number of log records that failed to be processed by the receiver due to internal errors.
@@ -78,4 +78,3 @@ telemetry:
       sum:
         value_type: int
         monotonic: true
-        aggregation_temporality: cumulative

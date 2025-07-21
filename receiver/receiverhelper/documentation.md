@@ -8,7 +8,7 @@ The following telemetry is emitted by this component.
 
 ### otelcol_receiver_accepted_log_records
 
-The number of log records successfully accepted by the receiver.
+Number of log records successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -16,11 +16,11 @@ The number of log records successfully accepted by the receiver.
 
 ### otelcol_receiver_accepted_metric_points
 
-The number of metric points successfully accepted by the receiver.
+Number of metric points successfully pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {points} | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
 ### otelcol_receiver_accepted_spans
 
@@ -56,7 +56,7 @@ The number of spans that failed to be processed by the receiver due to internal 
 
 ### otelcol_receiver_refused_log_records
 
-The number of log records refused by the receiver.
+Number of log records that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -64,11 +64,11 @@ The number of log records refused by the receiver.
 
 ### otelcol_receiver_refused_metric_points
 
-The number of metric points refused by the receiver.
+Number of metric points that could not be pushed into the pipeline. [alpha]
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {points} | Sum | Int | true |
+| {datapoints} | Sum | Int | true |
 
 ### otelcol_receiver_refused_spans
 
