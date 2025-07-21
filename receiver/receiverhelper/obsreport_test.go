@@ -110,7 +110,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			} else if errors.Is(param.err, internal.ErrDownstreamError) {
 				outcome = "refused"
 			} else {
-				outcome = "other"
+				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 				Attributes: attribute.NewSet(
@@ -196,7 +196,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			} else if errors.Is(param.err, internal.ErrDownstreamError) {
 				outcome = "refused"
 			} else {
-				outcome = "other"
+				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 				Attributes: attribute.NewSet(
@@ -282,7 +282,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			} else if errors.Is(param.err, internal.ErrDownstreamError) {
 				outcome = "refused"
 			} else {
-				outcome = "other"
+				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 				Attributes: attribute.NewSet(

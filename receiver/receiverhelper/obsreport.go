@@ -181,7 +181,7 @@ func (rec *ObsReport) endOp(
 	} else if internal.IsDownstreamError(err) {
 		outcome = "refused"
 	} else {
-		outcome = "other"
+		outcome = "failure"
 	}
 	rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))
 
