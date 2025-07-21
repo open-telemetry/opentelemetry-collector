@@ -3,7 +3,6 @@ module go.opentelemetry.io/collector/receiver/otlpreceiver
 go 1.23.0
 
 require (
-	github.com/gogo/protobuf v1.3.2
 	github.com/klauspost/compress v1.18.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector v0.130.0
@@ -50,6 +49,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
