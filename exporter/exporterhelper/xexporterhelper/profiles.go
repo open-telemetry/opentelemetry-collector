@@ -62,7 +62,7 @@ type profilesEncoding struct{}
 var _ exporterhelper.QueueBatchEncoding[request.Request] = profilesEncoding{}
 
 func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, profiles, err := pdatareq.UnmarshalProfiles(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -80,7 +80,7 @@ func (profilesEncoding) Unmarshal(bytes []byte) (context.Context, request.Reques
 
 func (profilesEncoding) Marshal(ctx context.Context, req request.Request) ([]byte, error) {
 	profiles := req.(*profilesRequest).pd
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalProfiles(ctx, profiles)
 	}
 	return profilesMarshaler.MarshalProfiles(profiles)
@@ -114,8 +114,8 @@ type profileExporter struct {
 	xconsumer.Profiles
 }
 
-// NewProfilesExporter creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
-func NewProfilesExporter(
+// NewProfiles creates an xexporter.Profiles that records observability metrics and wraps every request with a Span.
+func NewProfiles(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,

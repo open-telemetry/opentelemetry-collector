@@ -195,7 +195,11 @@ func writeError(w http.ResponseWriter, encoder encoder, err error, statusCode in
 // by the OTLP protocol.
 func errorHandler(w http.ResponseWriter, r *http.Request, errMsg string, statusCode int) {
 	s := statusutil.NewStatusFromMsgAndHTTPCode(errMsg, statusCode)
-	switch getMimeTypeFromContentType(r.Header.Get("Content-Type")) {
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = fallbackContentType
+	}
+	switch getMimeTypeFromContentType(contentType) {
 	case pbContentType:
 		writeStatusResponse(w, pbEncoder, statusCode, s)
 		return
