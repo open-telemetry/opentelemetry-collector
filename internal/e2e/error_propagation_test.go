@@ -39,6 +39,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 )
 
+var _ plogotlp.GRPCServer = &logsServer{}
+
 type logsServer struct {
 	plogotlp.UnimplementedGRPCServer
 
