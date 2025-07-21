@@ -80,7 +80,7 @@ Number of spans that could not be pushed into the pipeline. [alpha]
 
 ### otelcol_receiver_requests
 
-The number of requests peformed.
+The number of requests performed.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -90,6 +90,6 @@ The number of requests peformed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| success | Succesful receiver requests | Any Int |
+| success | Successful receiver requests | Any Int |
 | refused | Refused receiver requests | Any Int |
 | failure | Failed receiver requests | Any Int |

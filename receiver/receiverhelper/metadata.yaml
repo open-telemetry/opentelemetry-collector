@@ -84,7 +84,7 @@ telemetry:
         monotonic: true
     receiver_requests:
       enabled: true
-      description: The number of requests peformed.
+      description: The number of requests performed.
       unit: "{records}"
       sum:
         value_type: int
@@ -95,7 +95,7 @@ telemetry:
         - failure
 attributes:
   success:
-    description: Succesful receiver requests
+    description: Successful receiver requests
     type: int
   refused:
     description: Refused receiver requests
