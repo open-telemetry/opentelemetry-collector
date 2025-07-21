@@ -60,7 +60,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, params, len(spans))
+		require.Len(t, spans, len(params))
 
 		var acceptedSpans, refusedSpans int
 		for i, span := range spans {
@@ -146,19 +146,19 @@ func TestReceiveLogsOp(t *testing.T) {
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, params, len(spans))
+		require.Len(t, spans, len(params))
 
-		var acceptedLogs, refusedLogs int
+		var acceptedLogRecords, refusedLogRecords int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/LogsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
-				acceptedLogs += params[i].items
+				acceptedLogRecords += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
-				refusedLogs += params[i].items
+				refusedLogRecords += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedLogRecordsKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedLogRecordsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -167,14 +167,13 @@ func TestReceiveLogsOp(t *testing.T) {
 				t.Fatalf("unexpected param: %v", params[i])
 			}
 		}
-
 		metadatatest.AssertEqualReceiverAcceptedLogRecords(t, tt,
 			[]metricdata.DataPoint[int64]{
 				{
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(acceptedLogs),
+					Value: int64(acceptedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		metadatatest.AssertEqualReceiverRefusedLogRecords(t, tt,
@@ -183,7 +182,7 @@ func TestReceiveLogsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(refusedLogs),
+					Value: int64(refusedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -226,25 +225,26 @@ func TestReceiveMetricsOp(t *testing.T) {
 				ReceiverCreateSettings: receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()},
 			})
 			require.NoError(t, err)
+
 			ctx := rec.StartMetricsOp(parentCtx)
 			assert.NotNil(t, ctx)
 			rec.EndMetricsOp(ctx, format, params[i].items, param.err)
 		}
 
 		spans := tt.SpanRecorder.Ended()
-		require.Len(t, params, len(spans))
+		require.Len(t, spans, len(params))
 
-		var acceptedMetrics, refusedMetrics int
+		var acceptedMetricsPoints, refusedMetricsPoints int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/MetricsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
-				acceptedMetrics += params[i].items
+				acceptedMetricsPoints += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
-				refusedMetrics += params[i].items
+				refusedMetricsPoints += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -260,7 +260,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(acceptedMetrics),
+					Value: int64(acceptedMetricsPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
@@ -269,7 +269,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(refusedMetrics),
+					Value: int64(refusedMetricsPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -323,7 +323,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 	}
 
 	spans := tt.SpanRecorder.Ended()
-	require.Len(t, params, len(spans))
+	require.Len(t, spans, len(params))
 
 	for i, span := range spans {
 		assert.False(t, span.Parent().IsValid())
