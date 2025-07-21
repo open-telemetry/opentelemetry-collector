@@ -597,12 +597,12 @@ func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
 	t.Logf("ResourceMetrics: %+v", rm)
 
 	// Check internal errors metric
-	got, err := tt.GetMetric("otelcol_receiver_internal_errors_metric_points")
+	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
 	require.NoError(t, err)
 	require.NotNil(t, got)
 	sum, ok := got.Data.(metricdata.Sum[int64])
 	require.True(t, ok)
-	t.Logf("otelcol_receiver_internal_errors_metric_points: %+v", sum)
+	t.Logf("otelcol_receiver_failed_metric_points: %+v", sum)
 	require.Len(t, sum.DataPoints, 1)
 	require.Equal(t, int64(2), sum.DataPoints[0].Value) // It is 2, we increment it once when the error occurs in ConsumeMetrics and again when the error is propagated back to the receiver
 	require.Equal(t, attribute.NewSet(
