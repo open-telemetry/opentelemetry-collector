@@ -5,28 +5,28 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ go install go.opentelemetry.io/collector/cmd/builder@v0.130.0
+$ go install go.opentelemetry.io/collector/cmd/builder@v0.129.0
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.130.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.130.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.129.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.129.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.130.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.129.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.130.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.129.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.36.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.36.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.36.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.36.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.36.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.35.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -66,7 +66,7 @@ There are three supported ways to install the builder:
 
 You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder).
 
-Pull the image via tagged version number (e.g. `0.130.0`) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
+Pull the image via tagged version number (e.g. `0.129.0`) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
 
 ```console
 docker pull otel/opentelemetry-collector-builder:latest
@@ -164,13 +164,13 @@ dist:
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
     debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
 exporters:
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.130.0" # the Go module for the component. Required.
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.129.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
     name: "alibabacloudlogserviceexporter" # package name to use in the generated sources. Optional.
     path: "./alibabacloudlogserviceexporter" # in case a local version should be used for the module, the path relative to the current dir, or a full path can be specified. Optional.
 replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.129.0
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
 ```
 
 The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:
