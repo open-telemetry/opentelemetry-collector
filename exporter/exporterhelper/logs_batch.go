@@ -50,29 +50,14 @@ func (req *logsRequest) mergeTo(dst *logsRequest, sz sizer.LogsSizer) {
 
 func (req *logsRequest) split(maxSize int, sz sizer.LogsSizer) ([]Request, error) {
 	var res []Request
-	var ld plog.Logs
-	rmSize := -1
-
-	previousSize := req.size(sz)
-
-	for req.size(sz) > maxSize && rmSize != 0 {
-		ld, rmSize = extractLogs(req.ld, maxSize, sz)
-		if ld.LogRecordCount() > 0 {
-			req.setCachedSize(req.size(sz) - rmSize)
-			res = append(res, newLogsRequest(ld))
+	for req.size(sz) > maxSize {
+		ld, removedSize := extractLogs(req.ld, maxSize, sz)
+		if ld.LogRecordCount() == 0 {
+			return res, fmt.Errorf("one log record size is greater than max size, dropping items: %d", req.ld.LogRecordCount())
 		}
+		req.setCachedSize(req.size(sz) - removedSize)
+		res = append(res, newLogsRequest(ld))
 	}
-
-	if req.size(sz) == previousSize && req.size(sz) > maxSize {
-		err := fmt.Errorf(
-			"partial success: failed to split logs request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
-			req.size(sz),
-			maxSize,
-			req.ld.LogRecordCount(),
-		)
-		return res, err
-	}
-
 	res = append(res, req)
 	return res, nil
 }

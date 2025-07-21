@@ -468,5 +468,9 @@
       "zpages",
       "zpagesextension",
       "zstd"
+    ],
+    "ignorePaths": [
+      ".golanci.yml",
+      ".github/**/*"
     ]
   }
