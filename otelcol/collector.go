@@ -8,7 +8,6 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -111,6 +110,8 @@ type Collector struct {
 	asyncErrorChannel          chan error
 	bc                         *bufferedCore
 	updateConfigProviderLogger func(core zapcore.Core)
+	config     *Config
+        factories  Factories
 }
 
 // NewCollector creates and returns a new instance of Collector.
@@ -170,14 +171,15 @@ func buildModuleInfo(m map[component.Type]string) map[component.Type]service.Mod
 
 // setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
-func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+func (col *Collector) setupConfigurationComponents(ctx context.Context, cfg *Config, factories Factories) error {    
+
 	col.setCollectorState(StateStarting)
 
 	factories, err := col.set.Factories()
 	if err != nil {
 		return fmt.Errorf("failed to initialize factories: %w", err)
 	}
-	cfg, err := col.configProvider.Get(ctx, factories)
+	cfg, err = col.configProvider.Get(ctx, factories)
 	if err != nil {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
@@ -247,58 +249,50 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	return nil
 }
 
-func (col *Collector) reloadConfiguration(ctx context.Context) error {
+func (col *Collector) loadConfiguration(ctx context.Context) (*Config, Factories, error) {
     factories, err := col.set.Factories()
     if err != nil {
-        fmt.Println("[ERROR] Failed to initialize factories:", err)
-        return nil
+        return nil, Factories{}, fmt.Errorf("failed to initialize factories: %w", err)
     }
 
     cfg, err := col.configProvider.Get(ctx, factories)
     if err != nil {
-        fmt.Println("[ERROR] Failed to load new config:", err)
-        fmt.Println("[INFO] Keeping the existing configuration.")
-        return nil
+        return nil, Factories{}, fmt.Errorf("failed to get config: %w", err)
     }
 
-    tempService, err := service.New(ctx, service.Settings{
-        BuildInfo:           col.set.BuildInfo,
-        ReceiversConfigs:    cfg.Receivers,
-        ReceiversFactories:  factories.Receivers,
-        ProcessorsConfigs:   cfg.Processors,
-        ProcessorsFactories: factories.Processors,
-        ExportersConfigs:    cfg.Exporters,
-        ExportersFactories:  factories.Exporters,
-        ConnectorsConfigs:   cfg.Connectors,
-        ConnectorsFactories: factories.Connectors,
-        ExtensionsConfigs:   cfg.Extensions,
-        ExtensionsFactories: factories.Extensions,
-    }, service.Config{
-        Extensions: cfg.Service.Extensions,
-        Pipelines:  cfg.Service.Pipelines,
-        Telemetry:  cfg.Service.Telemetry,
-    })
-    if err != nil {
-        fmt.Println("[ERROR] New configuration is invalid:", err)
-        fmt.Println("[INFO] Keeping the existing configuration.")
-        return nil
+    if err := xconfmap.Validate(cfg); err != nil {
+        return nil, Factories{}, fmt.Errorf("invalid configuration: %w", err)
     }
 
-    col.setCollectorState(StateClosing)
-    if err := col.service.Shutdown(ctx); err != nil {
-        fmt.Println("[ERROR] Failed to shutdown current service:", err)
-        return err
-    }
+    return cfg, factories, nil
+}
 
-    col.service = tempService
-    if err := col.service.Start(ctx); err != nil {
-        fmt.Println("[ERROR] Failed to start new service:", err)
-        return err
-    }
 
-    col.setCollectorState(StateRunning)
-    fmt.Println("[INFO] Configuration reloaded successfully.")
-    return nil
+func (col *Collector) reloadConfiguration(ctx context.Context) error {
+	logger := col.service.Logger()
+	logger.Info("Reloading collector configuration...")
+
+	cfg, factories, err := col.loadConfiguration(ctx)
+	if err != nil {
+		logger.Warn("Configuration reload failed, keeping existing config", zap.Error(err))
+		return nil
+	}
+
+	if err := col.service.Shutdown(ctx); err != nil {
+		logger.Warn("Error shutting down existing service", zap.Error(err))
+		return err
+	}
+
+	col.config = cfg
+	col.factories = factories
+
+	if err := col.setupConfigurationComponents(ctx, cfg, factories); err != nil {
+		logger.Warn("Failed to start service after config reload", zap.Error(err))
+		return err
+	}
+
+	logger.Info("Collector configuration reloaded successfully.")
+	return nil
 }
 
 func (col *Collector) DryRun(ctx context.Context) error {
@@ -347,26 +341,22 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
-	// setupConfigurationComponents is the "main" function responsible for startup
-	if err := col.setupConfigurationComponents(ctx); err != nil {
+        col.setCollectorState(StateStarting)
+
+	cfg, factories, err := col.loadConfiguration(ctx)
+	if err != nil {
 		col.setCollectorState(StateClosed)
-		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
-		if loggerErr != nil {
-			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
-		}
-
-		if col.bc != nil {
-			x := col.bc.TakeLogs()
-			for _, log := range x {
-				ce := logger.Core().Check(log.Entry, nil)
-				if ce != nil {
-					ce.Write(log.Context...)
-				}
-			}
-		}
-
-		return err
+		return fmt.Errorf("failed to load config: %w", err)
 	}
+
+	col.config = cfg
+	col.factories = factories
+        if err := col.setupConfigurationComponents(ctx, col.config, col.factories); err != nil {
+		col.setCollectorState(StateClosed)
+		return fmt.Errorf("failed to set up configuration components: %w", err)
+	}
+
+	col.setCollectorState(StateRunning)
 
 	// Always notify with SIGHUP for configuration reloading.
 	signal.Notify(col.signalsChannel, syscall.SIGHUP)
