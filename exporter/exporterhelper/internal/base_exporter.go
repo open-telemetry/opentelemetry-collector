@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // Option apply changes to BaseExporter.
@@ -48,6 +50,7 @@ type BaseExporter struct {
 
 	queueBatchSettings QueueBatchSettings[request.Request]
 	queueCfg           queuebatch.Config
+	tracer             trace.Tracer
 }
 
 func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sender.SendFunc[request.Request], options ...Option) (*BaseExporter, error) {
@@ -104,6 +107,8 @@ func NewBaseExporter(set exporter.Settings, signal pipeline.Signal, pusher sende
 		be.firstSender = be.QueueSender
 	}
 
+	be.tracer = be.Set.TracerProvider.Tracer("go.opentelemetry.io/collector/exporter/exporterhelper/internal/base_exporter")
+
 	return be, nil
 }
 
@@ -121,9 +126,15 @@ func (be *BaseExporter) Send(ctx context.Context, req request.Request) error {
 }
 
 func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
+	ctx, span := be.tracer.Start(ctx, "BaseExporter.Start")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("exporter.id", be.Set.ID.String()))
+
 	// First start the wrapped exporter.
 	be.Set.Logger.Debug("Starting exporter", zap.String("exporter", be.Set.ID.String()))
 	if err := be.StartFunc.Start(ctx, host); err != nil {
+		span.RecordError(err)
 		return err
 	}
 
@@ -132,6 +143,7 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 		be.Set.Logger.Debug("Starting QueueSender", zap.String("exporter", be.Set.ID.String()))
 		if err := be.QueueSender.Start(ctx, host); err != nil {
 			be.Set.Logger.Error("Failed to start QueueSender", zap.Error(err), zap.String("exporter", be.Set.ID.String()))
+			span.RecordError(err)
 			return err
 		}
 	}
@@ -142,6 +154,11 @@ func (be *BaseExporter) Start(ctx context.Context, host component.Host) error {
 func (be *BaseExporter) Shutdown(ctx context.Context) error {
 	var err error
 	be.Set.Logger.Debug("Begin exporter shutdown sequence.", zap.String("exporter", be.Set.ID.String()))
+	ctx, span := be.tracer.Start(ctx, "BaseExporter.Shutdown")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("exporter.id", be.Set.ID.String()))
+
 	// First shutdown the retry sender, so the queue sender can flush the queue without retries.
 	if be.RetrySender != nil {
 		be.Set.Logger.Debug("Shutting down exporter retry sender...", zap.String("exporter", be.Set.ID.String()))
