@@ -96,16 +96,16 @@ func With{{ .Render }}MetricAttribute({{ .RenderUnexported }}AttributeValue {{ (
 
 {{ range $name, $metric := .Metrics -}}
 type metric{{ $name.Render }} struct {
-	data       pmetric.Metric   // data buffer for generated metric.
-	config     MetricConfig     // metric config provided by user.
-  attributes AttributesConfig // attributes configured by the user.
-	capacity   int              // max observed number of data points added to the metric.
-  size       {{ $metric.Data.MetricValueType.BasicType }}              // number of entries being reagregated over (used for avg reagg)
+	data          pmetric.Metric   // data buffer for generated metric.
+	config        MetricConfig     // metric config provided by user.
+  attributes    AttributesConfig // attributes configured by the user.
+	capacity      int              // max observed number of data points added to the metric.
+  aggDataPoints []{{ $metric.Data.MetricValueType.BasicType }} // slice containing number of aggregated datapoints at each index             
 }
 
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
-  m.size = 0
+  m.aggDataPoints = make([]{{ $metric.Data.MetricValueType.BasicType }}, 0)
 	m.data.SetName("{{ $name }}")
 	m.data.SetDescription("{{ $metric.Description }}")
 	m.data.SetUnit("{{ $metric.Unit }}")
@@ -122,31 +122,6 @@ func (m *metric{{ $name.Render }}) init() {
 }
 
 func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasOptionalAttribute $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-	{{- range $metric.Attributes }}
-    {{- if not (attributeInfo .).Optional -}}
-	{{- template "putAttribute" . -}}
-	{{- end }}
-	{{- end }}
-
-	{{- if $metric.HasOptionalAttribute $.Attributes }}
-    for _, op := range options {
-        op.apply(dp)
-    }
-    {{- end }}
-}
-
-// very similar to a normal data point record but if we detect that the original
-// set of attributes has been configured by the user we use this function to
-// raggregate results before emitting
-func (m *metric{{ $name.Render }}) reAggAndRecordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
 {{- range $metric.Attributes -}}{{- if not (attributeInfo .).Optional -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}{{ end }}{{- if $metric.HasOptionalAttribute $.Attributes -}}, options ...MetricAttributeOption{{- end -}}) {
   if !m.config.Enabled {
     return
@@ -168,7 +143,6 @@ func (m *metric{{ $name.Render }}) reAggAndRecordDataPoint(start pcommon.Timesta
 	dp := nm.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
 	{{ range $metric.Attributes -}}
     {{ if not (attributeInfo .).Optional }}
 	{{ template "putMetricAttribute" . -}}
@@ -179,33 +153,14 @@ func (m *metric{{ $name.Render }}) reAggAndRecordDataPoint(start pcommon.Timesta
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
-			switch as := m.config.AggStrat; as {
-			case "sum":
-				dpi.Set{{ $metric.Data.MetricValueType }}Value(val + dpi.{{ $metric.Data.MetricValueType }}Value())
-			case "avg":
-        if m.size == 0 {
-          dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-        }
-				dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + (val - dpi.{{ $metric.Data.MetricValueType }}Value())/(m.size))
-        m.size++
-			default:
-        {{- if eq $metric.Data.Type "Sum" -}}
-				dpi.Set{{ $metric.Data.MetricValueType }}Value(val + dpi.{{ $metric.Data.MetricValueType }}Value())
-        {{- end }}
-        {{- if eq $metric.Data.Type "Gauge" -}}
-        if m.size == 0 {
-          dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-        }
-				dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + (val - dpi.{{ $metric.Data.MetricValueType }}Value())/(m.size))
-        m.size++
-        {{- end }}
-			}
+      dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
+      m.aggDataPoints[i] += 1
 			return
 		}
-    if i == dps.Len() {
-      dp.Set{{ $metric.Data.MetricValueType }}Value(val)
-    }
 	}
+
+	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+  m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
 }
 
@@ -219,6 +174,11 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+    if m.config.AggStrat == "avg" {
+      for i, aggCount := range m.aggDataPoints {
+        m.data.{{ $metric.Data.Type }}().DataPoints().At(i).Set{{ $metric.Data.MetricValueType }}Value(m.data.{{ $metric.Data.Type }}().DataPoints().At(i).{{ $metric.Data.MetricValueType }}Value() / aggCount)
+      }
+    }
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -465,22 +425,7 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
-  if !mb.config.enabledSetByUser {
 	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
-		{{- range $metric.Attributes -}}
-		{{- if not (attributeInfo .).Optional -}}
-		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
-		{{- end -}}
-		{{- end -}}
-		{{- if $metric.HasOptionalAttribute $.Attributes -}}
-        , options...
-        {{- end -}}
-        )
-	{{- if $metric.Data.HasMetricInputType }}
-	return nil
-	{{- end }}
-  }
-	mb.metric{{ $name.Render }}.reAggAndRecordDataPoint(mb.startTime, ts, val
 		{{- range $metric.Attributes -}}
 		{{- if not (attributeInfo .).Optional -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
