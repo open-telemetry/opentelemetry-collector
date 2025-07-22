@@ -1035,7 +1035,7 @@ func TestServerConfigValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := xconfmap.Validate(test.serverConfig) // or test.clientConfig
+			err := xconfmap.Validate(test.serverConfig)
 
 			if test.errorTxt == "" {
 				assert.NoError(t, err)
