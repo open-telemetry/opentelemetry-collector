@@ -44,7 +44,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 13, err: internal.WrapDownstreamError(errFake)},
+			{items: 13, err: WrapDownstreamError(errFake)},
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
@@ -107,7 +107,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 			var outcome string
 			if param.err == nil {
 				outcome = "success"
-			} else if errors.Is(param.err, internal.ErrDownstreamError) {
+			} else if errors.Is(param.err, ErrDownstreamError) {
 				outcome = "refused"
 			} else {
 				outcome = "failure"
@@ -130,7 +130,7 @@ func TestReceiveLogsOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 13, err: internal.WrapDownstreamError(errFake)},
+			{items: 13, err: WrapDownstreamError(errFake)},
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
@@ -192,7 +192,7 @@ func TestReceiveLogsOp(t *testing.T) {
 			var outcome string
 			if param.err == nil {
 				outcome = "success"
-			} else if errors.Is(param.err, internal.ErrDownstreamError) {
+			} else if errors.Is(param.err, ErrDownstreamError) {
 				outcome = "refused"
 			} else {
 				outcome = "failure"
@@ -215,7 +215,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 		defer parentSpan.End()
 
 		params := []testParams{
-			{items: 13, err: internal.WrapDownstreamError(errFake)},
+			{items: 13, err: WrapDownstreamError(errFake)},
 			{items: 42, err: nil},
 		}
 		for i, param := range params {
@@ -279,7 +279,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 			var outcome string
 			if param.err == nil {
 				outcome = "success"
-			} else if errors.Is(param.err, internal.ErrDownstreamError) {
+			} else if errors.Is(param.err, ErrDownstreamError) {
 				outcome = "refused"
 			} else {
 				outcome = "failure"
@@ -305,7 +305,7 @@ func TestReceiveWithLongLivedCtx(t *testing.T) {
 
 	params := []testParams{
 		{items: 17, err: nil},
-		{items: 23, err: internal.WrapDownstreamError(errFake)},
+		{items: 23, err: WrapDownstreamError(errFake)},
 	}
 	for i := range params {
 		// Use a new context on each operation to simulate distinct operations

@@ -50,6 +50,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -653,9 +654,9 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 			sink.SetConsumeError(nil)
 		} else {
 			if ingestionState.permanent {
-				sink.SetConsumeError(consumererror.NewPermanent(errors.New("consumer error")))
+				sink.SetConsumeError(receiverhelper.WrapDownstreamError(consumererror.NewPermanent(errors.New("consumer error"))))
 			} else {
-				sink.SetConsumeError(errors.New("consumer error"))
+				sink.SetConsumeError(receiverhelper.WrapDownstreamError(errors.New("consumer error")))
 			}
 		}
 
@@ -693,13 +694,13 @@ func TestOTLPReceiverHTTPTracesIngestTest(t *testing.T) {
 		},
 		{
 			okToIngest:         false,
-			err:                consumererror.NewPermanent(errors.New("consumer error")),
+			err:                receiverhelper.WrapDownstreamError(consumererror.NewPermanent(errors.New("consumer error"))),
 			expectedCode:       codes.Internal,
 			expectedStatusCode: http.StatusInternalServerError,
 		},
 		{
 			okToIngest:         false,
-			err:                errors.New("consumer error"),
+			err:                receiverhelper.WrapDownstreamError(errors.New("consumer error")),
 			expectedCode:       codes.Unavailable,
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
@@ -1319,7 +1320,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: refused,
+						Value: 0, // No internal receiver failures in these tests
 					},
 				},
 			},
@@ -1361,7 +1362,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: 0,
+						Value: refused, // Consumer errors are categorized as refused
 					},
 				},
 			},
@@ -1370,7 +1371,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 	// Assert receiver_requests metric
 	got, err = tt.GetMetric("otelcol_receiver_requests")
 	require.NoError(t, err)
-	
+
 	// Calculate expected requests based on accepted and refused counts
 	var expectedRequests []metricdata.DataPoint[int64]
 	if accepted > 0 {
@@ -1387,8 +1388,8 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			Attributes: attribute.NewSet(
 				attribute.String("receiver", id.String()),
 				attribute.String("transport", transport),
-				attribute.String("outcome", "failure")),
-			Value: refused, // Number of failed requests matches refused spans in traces tests
+				attribute.String("outcome", "refused")),
+			Value: refused, // Number of refused requests (downstream errors)
 		})
 	}
 

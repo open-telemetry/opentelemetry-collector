@@ -163,7 +163,7 @@ func (rec *ObsReport) endOp(
 	numFailedErrors := 0
 	if err != nil {
 		numAccepted = 0
-		if internal.IsDownstreamError(err) {
+		if IsDownstreamError(err) {
 			numRefused = numReceivedItems
 		} else {
 			numFailedErrors = numReceivedItems
@@ -178,7 +178,7 @@ func (rec *ObsReport) endOp(
 	var outcome string
 	if err == nil {
 		outcome = "success"
-	} else if internal.IsDownstreamError(err) {
+	} else if IsDownstreamError(err) {
 		outcome = "refused"
 	} else {
 		outcome = "failure"
