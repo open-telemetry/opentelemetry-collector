@@ -26,7 +26,7 @@ var pprofileotlp = &Package{
 	},
 }
 
-var exportProfilesPartialSuccess = &messageValueStruct{
+var exportProfilesPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectorprofile.ExportProfilesPartialSuccess",
