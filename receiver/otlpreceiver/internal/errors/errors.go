@@ -12,22 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
-// IsClientDisconnectError returns true if the error indicates a client disconnection
-func IsClientDisconnectError(err error) bool {
-	if s, ok := status.FromError(err); ok {
-		switch s.Code() {
-		case codes.Canceled, codes.Unavailable, codes.DeadlineExceeded:
-			return true
-		}
-	}
-	return false
-}
-
 func GetStatusFromError(err error) error {
-	if err == nil {
-		return nil
-	}
-
 	s, ok := status.FromError(err)
 
 	if !ok {
@@ -41,11 +26,6 @@ func GetStatusFromError(err error) error {
 		s = status.New(code, err.Error())
 	}
 
-	// Handle client disconnection errors first. These are typically transient
-	// and should lead to a retryable `codes.Unavailable`.
-	if IsClientDisconnectError(err) {
-		return status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)).Err()
-	}
 	return s.Err()
 }
 
