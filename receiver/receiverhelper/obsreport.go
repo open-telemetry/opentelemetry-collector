@@ -176,11 +176,12 @@ func (rec *ObsReport) endOp(
 
 	// Emit otelcol_receiver_requests metric with outcome attribute
 	var outcome string
-	if err == nil {
+	switch {
+	case err == nil:
 		outcome = "success"
-	} else if IsDownstreamError(err) {
+	case IsDownstreamError(err):
 		outcome = "refused"
-	} else {
+	default:
 		outcome = "failure"
 	}
 	rec.telemetryBuilder.ReceiverRequests.Add(receiverCtx, 1, rec.otelAttrs, metric.WithAttributeSet(attribute.NewSet(attribute.String("outcome", outcome))))

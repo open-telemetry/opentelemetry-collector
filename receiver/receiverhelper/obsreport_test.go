@@ -105,11 +105,12 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		var expectedRequests []metricdata.DataPoint[int64]
 		for _, param := range params {
 			var outcome string
-			if param.err == nil {
+			switch {
+			case param.err == nil:
 				outcome = "success"
-			} else if errors.Is(param.err, ErrDownstreamError) {
+			case errors.Is(param.err, ErrDownstreamError):
 				outcome = "refused"
-			} else {
+			default:
 				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
@@ -190,11 +191,12 @@ func TestReceiveLogsOp(t *testing.T) {
 		var expectedRequests []metricdata.DataPoint[int64]
 		for _, param := range params {
 			var outcome string
-			if param.err == nil {
+			switch {
+			case param.err == nil:
 				outcome = "success"
-			} else if errors.Is(param.err, ErrDownstreamError) {
+			case errors.Is(param.err, ErrDownstreamError):
 				outcome = "refused"
-			} else {
+			default:
 				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
@@ -277,11 +279,12 @@ func TestReceiveMetricsOp(t *testing.T) {
 		var expectedRequests []metricdata.DataPoint[int64]
 		for _, param := range params {
 			var outcome string
-			if param.err == nil {
+			switch {
+			case param.err == nil:
 				outcome = "success"
-			} else if errors.Is(param.err, ErrDownstreamError) {
+			case errors.Is(param.err, ErrDownstreamError):
 				outcome = "refused"
-			} else {
+			default:
 				outcome = "failure"
 			}
 			expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
