@@ -66,6 +66,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{- range $name, $metric := .Metrics }}
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
+    {{ if eq $metric.Data.Type "Sum" -}}
+      AggStrat: "sum",
+    {{- end }}
+    {{- if eq $metric.Data.Type "Gauge" -}}
+      AggStrat: "avg",
+    {{- end }}
 		},
 		{{- end }}
 	}
