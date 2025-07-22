@@ -234,17 +234,17 @@ func TestReceiveMetricsOp(t *testing.T) {
 		spans := tt.SpanRecorder.Ended()
 		require.Len(t, spans, len(params))
 
-		var acceptedMetricsPoints, refusedMetricsPoints int
+		var acceptedMetricPoints, refusedMetricPoints int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/MetricsReceived", span.Name())
 			switch {
 			case params[i].err == nil:
-				acceptedMetricsPoints += params[i].items
+				acceptedMetricPoints += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
-				refusedMetricsPoints += params[i].items
+				refusedMetricPoints += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedMetricPointsKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedMetricPointsKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
@@ -260,7 +260,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(acceptedMetricsPoints),
+					Value: int64(acceptedMetricPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 		metadatatest.AssertEqualReceiverRefusedMetricPoints(t, tt,
@@ -269,7 +269,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Attributes: attribute.NewSet(
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
-					Value: int64(refusedMetricsPoints),
+					Value: int64(refusedMetricPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
