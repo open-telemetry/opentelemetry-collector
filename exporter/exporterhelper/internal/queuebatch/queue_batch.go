@@ -6,7 +6,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
@@ -36,44 +35,18 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	return newQueueBatch(set, cfg, next, false)
-}
-
-func NewQueueBatchLegacyBatcher(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-) (*QueueBatch, error) {
-	set.Telemetry.Logger.Warn("Configuring the exporter batcher capability separately is now deprecated. " +
-		"Use sending_queue::batch instead.")
-	return newQueueBatch(set, cfg, next, true)
-}
-
-func newQueueBatch(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-	oldBatcher bool,
-) (*QueueBatch, error) {
-	sizer := activeSizer(cfg.Sizer, set.ItemsSizer, set.BytesSizer)
-	if sizer == nil {
-		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
-	}
-
-	bSet := batcherSettings[request.Request]{
-		sizerType:   cfg.Sizer,
-		sizer:       sizer,
+	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
+		itemsSizer:  set.ItemsSizer,
+		bytesSizer:  set.BytesSizer,
 		partitioner: set.Partitioner,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
+		logger:      set.Telemetry.Logger,
+	})
+	if err != nil {
+		return nil, err
 	}
-	if oldBatcher {
-		// If a user configures the old batcher, we only can support "items" sizer.
-		bSet.sizerType = request.SizerTypeItems
-		bSet.sizer = request.NewItemsSizer()
-	}
-	b := NewBatcher(cfg.Batch, bSet)
-	if cfg.Batch != nil {
+	if cfg.Batch.HasValue() {
 		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
 		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
@@ -97,12 +70,7 @@ func newQueueBatch(
 		return nil, err
 	}
 
-	oq, err := newObsQueue(set, q)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueueBatch{queue: oq, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.
@@ -126,15 +94,4 @@ func (qs *QueueBatch) Shutdown(ctx context.Context) error {
 // Send implements the requestSender interface. It puts the request in the queue.
 func (qs *QueueBatch) Send(ctx context.Context, req request.Request) error {
 	return qs.queue.Offer(ctx, req)
-}
-
-func activeSizer[T any](sizerType request.SizerType, itemsSizer, bytesSizer request.Sizer[T]) request.Sizer[T] {
-	switch sizerType {
-	case request.SizerTypeBytes:
-		return bytesSizer
-	case request.SizerTypeItems:
-		return itemsSizer
-	default:
-		return request.RequestsSizer[T]{}
-	}
 }

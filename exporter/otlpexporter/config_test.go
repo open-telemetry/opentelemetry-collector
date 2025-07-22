@@ -56,11 +56,12 @@ func TestUnmarshalConfig(t *testing.T) {
 				Sizer:        exporterhelper.RequestSizerTypeItems,
 				NumConsumers: 2,
 				QueueSize:    100000,
-				Batch: &exporterhelper.BatchConfig{
+				Batch: configoptional.Some(exporterhelper.BatchConfig{
 					FlushTimeout: 200 * time.Millisecond,
+					Sizer:        exporterhelper.RequestSizerTypeItems,
 					MinSize:      1000,
 					MaxSize:      10000,
-				},
+				}),
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
