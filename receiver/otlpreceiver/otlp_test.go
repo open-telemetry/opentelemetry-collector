@@ -1304,7 +1304,7 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 	}
 }
 
-func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, failed int64) {
 	got, err := tt.GetMetric("otelcol_receiver_failed_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -1362,7 +1362,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: refused, // Consumer errors are categorized as refused
+						Value: failed, // Consumer errors are categorized as refused
 					},
 				},
 			},
@@ -1383,13 +1383,13 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 			Value: accepted,
 		})
 	}
-	if refused > 0 {
+	if failed > 0 {
 		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 			Attributes: attribute.NewSet(
 				attribute.String("receiver", id.String()),
 				attribute.String("transport", transport),
 				attribute.String("outcome", "refused")),
-			Value: refused, // Number of refused requests (downstream errors)
+			Value: failed, // Number of refused requests (downstream errors)
 		})
 	}
 
@@ -1406,7 +1406,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
-func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
+func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, failed int64) {
 	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
@@ -1422,7 +1422,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: refused, // Consumer errors are now categorized as failed
+						Value: failed, // Consumer errors are now categorized as failed
 					},
 				},
 			},
@@ -1485,7 +1485,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 			Value: accepted,
 		})
 	}
-	if refused > 0 {
+	if failed > 0 {
 		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
 			Attributes: attribute.NewSet(
 				attribute.String("receiver", id.String()),

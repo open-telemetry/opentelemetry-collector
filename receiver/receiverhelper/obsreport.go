@@ -196,7 +196,7 @@ func (rec *ObsReport) endOp(
 		case pipeline.SignalMetrics:
 			acceptedItemsKey = internal.AcceptedMetricPointsKey
 			refusedItemsKey = internal.RefusedMetricPointsKey
-			internalErrorsKey = internal.FailedMetricPointKey
+			internalErrorsKey = internal.FailedMetricPointsKey
 		case pipeline.SignalLogs:
 			acceptedItemsKey = internal.AcceptedLogRecordsKey
 			refusedItemsKey = internal.RefusedLogRecordsKey
