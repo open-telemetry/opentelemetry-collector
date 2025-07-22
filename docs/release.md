@@ -234,7 +234,7 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 |------------|----------|-----------------------|-------------------------|----------------------------|
 | 2025-07-28 | v0.131.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
 | 2025-08-11 | v0.132.0 | [@evan-bradley][2]    | [@evan-bradley][2]      | [@evan-bradley][2]         |
-| 2025-08-25 | v0.133.0 | [@TylerHelmuth][4]    | [@TylerHelmuth][4]      | [@TylerHelmuth][4]         |
+| 2025-08-25 | v0.133.0 | [@TylerHelmuth][3]    | [@TylerHelmuth][3]      | [@TylerHelmuth][3]         |
 | 2025-09-08 | v0.134.0 | [@atoulme][5]         | [@atoulme][5]           | [@atoulme][5]              |
 | 2025-09-22 | v0.135.0 | [@songy23][6]         | [@songy23][6]           | [@songy23][6]              |
 | 2025-10-06 | v0.136.0 | [@dmitryax][7]        | [@dmitryax][7]          | [@dmitryax][7]             |
