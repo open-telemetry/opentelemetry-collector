@@ -27,7 +27,7 @@ const (
 	// Collector.
 	RefusedMetricPointsKey = "refused_metric_points"
 	// FailedMetricPointKey used to identify metric points failed to be processed by the Collector.
-	FailedMetricPointKey = "failed_metric_points"
+	FailedMetricPointsKey = "failed_metric_points"
 
 	// AcceptedLogRecordsKey used to identify log records accepted by the Collector.
 	AcceptedLogRecordsKey = "accepted_log_records"
