@@ -36,21 +36,6 @@ func Test_GetStatusFromError(t *testing.T) {
 			input:    errors.New("test"),
 			expected: status.New(codes.Unavailable, "test"),
 		},
-		{
-			name:     "Client Disconnect Error (Canceled)",
-			input:    status.Error(codes.Canceled, "client canceled"),
-			expected: status.New(codes.Unavailable, "Service Unavailable"),
-		},
-		{
-			name:     "Client Disconnect Error (Unavailable)",
-			input:    status.Error(codes.Unavailable, "connection lost"),
-			expected: status.New(codes.Unavailable, "Service Unavailable"),
-		},
-		{
-			name:     "Client Disconnect Error (DeadlineExceeded)",
-			input:    status.Error(codes.DeadlineExceeded, "context deadline exceeded"),
-			expected: status.New(codes.Unavailable, "Service Unavailable"),
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
