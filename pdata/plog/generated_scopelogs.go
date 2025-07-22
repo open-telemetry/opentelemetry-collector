@@ -9,6 +9,7 @@ package plog
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -75,6 +76,22 @@ func (ms ScopeLogs) LogRecords() LogRecordSlice {
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	dest.state.AssertMutable()
 	copyOrigScopeLogs(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ScopeLogs) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("scope")
+	internal.MarshalJSONStreamInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), dest)
+	if ms.orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(ms.orig.SchemaUrl)
+	}
+	if len(ms.orig.LogRecords) > 0 {
+		dest.WriteObjectField("logRecords")
+		ms.LogRecords().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
 }
 
 func copyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {

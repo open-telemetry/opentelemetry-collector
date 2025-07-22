@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -40,6 +41,20 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
+}
+
+func TestLogRecord_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestLogRecord()
+	src.marshalJSONStream(stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewLogRecord()
+	dest.unmarshalJsoniter(iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {

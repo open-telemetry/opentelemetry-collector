@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
@@ -44,6 +45,20 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	assert.Panics(t, func() {
 		ms.CopyTo(newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState))
 	})
+}
+
+func TestExponentialHistogramDataPointBuckets_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExponentialHistogramDataPointBuckets()
+	src.marshalJSONStream(stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewExponentialHistogramDataPointBuckets()
+	dest.unmarshalJsoniter(iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {

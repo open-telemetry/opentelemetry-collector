@@ -7,6 +7,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Map struct {
@@ -60,6 +61,30 @@ func FillTestMap(dest Map) {
 			KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue{{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}}}},
 		}}},
 	}
+}
+
+// MarshalJSONStreamMap marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamMap(ms Map, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		writeAttribute(&(*ms.orig)[0], ms.state, dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		writeAttribute(&(*ms.orig)[i], ms.state, dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+func writeAttribute(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if attr.Key != "" {
+		dest.WriteObjectField("key")
+		dest.WriteString(attr.Key)
+	}
+	dest.WriteObjectField("value")
+	MarshalJSONStreamValue(NewValue(&attr.Value, state), dest)
+	dest.WriteObjectEnd()
 }
 
 func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {

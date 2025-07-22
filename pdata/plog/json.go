@@ -4,8 +4,8 @@
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import (
-	"bytes"
 	"fmt"
+	"slices"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -20,10 +20,10 @@ type JSONMarshaler struct{}
 
 // MarshalLogs to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
-	buf := bytes.Buffer{}
-	pb := internal.LogsToProto(internal.Logs(ld))
-	err := json.Marshal(&buf, &pb)
-	return buf.Bytes(), err
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	ld.marshalJSONStream(dest)
+	return slices.Clone(dest.Buffer()), dest.Error
 }
 
 var _ Unmarshaler = (*JSONUnmarshaler)(nil)
@@ -42,21 +42,6 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	}
 	otlp.MigrateLogs(ld.getOrig().ResourceLogs)
 	return ld, nil
-}
-
-func (ms Logs) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "resource_logs", "resourceLogs":
-			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
-				ms.ResourceLogs().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }
 
 func (ms ResourceLogs) unmarshalJsoniter(iter *jsoniter.Iterator) {

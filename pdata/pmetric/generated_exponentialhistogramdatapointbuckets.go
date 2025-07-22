@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -70,6 +71,18 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
 	copyOrigExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.Offset != int32(0) {
+		dest.WriteObjectField("offset")
+		dest.WriteInt32(ms.orig.Offset)
+	}
+	dest.WriteObjectField("bucketCounts")
+	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	dest.WriteObjectEnd()
 }
 
 func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {

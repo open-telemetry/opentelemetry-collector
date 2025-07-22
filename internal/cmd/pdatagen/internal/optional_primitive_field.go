@@ -67,6 +67,11 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 	dest.{{ .fieldName }}_ = nil
 }`
 
+const optionalPrimitiveMarshalJSONTemplate = `if ms.Has{{ .fieldName }}() {
+		dest.WriteObjectField("{{ lowerFirst .fieldName }}")
+		dest.Write{{ upperFirst .returnType }}(ms.{{ .fieldName }}())
+	}`
+
 type OptionalPrimitiveField struct {
 	fieldName  string
 	defaultVal string
@@ -91,6 +96,11 @@ func (opv *OptionalPrimitiveField) GenerateSetWithTestValue(ms *messageStruct) s
 
 func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveMarshalJSONTemplate").Parse(optionalPrimitiveMarshalJSONTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
 }
 

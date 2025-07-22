@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .testImports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .testImports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 func Test{{ .structName }}_MoveTo(t *testing.T) {
@@ -35,6 +35,28 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
+}
+
+func Test{{ .structName }}_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTest{{ .structName }}()
+	{{- if .isCommon }}
+	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
+	{{- else }}
+	src.marshalJSONStream(stream)
+	{{- end }}
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := New{{ .structName }}()
+	{{- if .isCommon }}
+	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
+	{{- else }}
+	dest.unmarshalJsoniter(iter)
+	{{- end }}
+
+	assert.Equal(t, src, dest)
 }
 
 {{ range .fields }}

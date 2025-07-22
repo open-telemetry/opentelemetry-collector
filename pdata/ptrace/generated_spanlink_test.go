@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -40,6 +41,20 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
+}
+
+func TestSpanLink_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSpanLink()
+	src.marshalJSONStream(stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSpanLink()
+	dest.unmarshalJsoniter(iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSpanLink_TraceID(t *testing.T) {

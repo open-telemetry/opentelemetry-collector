@@ -998,3 +998,17 @@ func BenchmarkMetricsUsage(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkMetricsMarshalJSON(b *testing.B) {
+	md := NewMetrics()
+	fillTestResourceMetricsSlice(md.ResourceMetrics())
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalMetrics(md)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
+	}
+}

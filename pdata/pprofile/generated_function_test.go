@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestFunction_MoveTo(t *testing.T) {
@@ -38,6 +39,20 @@ func TestFunction_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newFunction(&otlpprofiles.Function{}, &sharedState)) })
+}
+
+func TestFunction_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestFunction()
+	src.marshalJSONStream(stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewFunction()
+	dest.unmarshalJsoniter(iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestFunction_NameStrindex(t *testing.T) {

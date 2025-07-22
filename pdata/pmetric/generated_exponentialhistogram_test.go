@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExponentialHistogram_MoveTo(t *testing.T) {
@@ -38,6 +39,20 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
+}
+
+func TestExponentialHistogram_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExponentialHistogram()
+	src.marshalJSONStream(stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewExponentialHistogram()
+	dest.unmarshalJsoniter(iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {

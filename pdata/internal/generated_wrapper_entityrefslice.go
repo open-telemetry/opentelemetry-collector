@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type EntityRefSlice struct {
@@ -56,4 +57,17 @@ func FillTestEntityRefSlice(es EntityRefSlice) {
 		(*es.orig)[i] = &otlpcommon.EntityRef{}
 		FillTestEntityRef(NewEntityRef((*es.orig)[i], es.state))
 	}
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamEntityRefSlice(ms EntityRefSlice, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		MarshalJSONStreamEntityRef(NewEntityRef((*ms.orig)[0], ms.state), dest)
+	}
+	for i := 1; i < len((*ms.orig)); i++ {
+		dest.WriteMore()
+		MarshalJSONStreamEntityRef(NewEntityRef((*ms.orig)[i], ms.state), dest)
+	}
+	dest.WriteArrayEnd()
 }

@@ -4,9 +4,12 @@
 package data // import "go.opentelemetry.io/collector/pdata/internal/data"
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
+
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 const profileIDSize = 16
@@ -69,6 +72,15 @@ func (tid ProfileID) MarshalJSON() ([]byte, error) {
 		return []byte(`""`), nil
 	}
 	return marshalJSON(tid[:])
+}
+
+// MarshalJSONStream converts trace id into a hex string enclosed in quotes.
+func (tid ProfileID) MarshalJSONStream(dest *json.Stream) {
+	if tid.IsEmpty() {
+		dest.WriteString("")
+		return
+	}
+	dest.WriteString(hex.EncodeToString(tid[:]))
 }
 
 // UnmarshalJSON inflates profile id from hex string, possibly enclosed in quotes.

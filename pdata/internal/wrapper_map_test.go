@@ -11,12 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestReadAttributeUnknownField(t *testing.T) {
 	jsonStr := `[{"extra":""}]`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	var got []otlpcommon.KeyValue
 	UnmarshalJSONIterMap(NewMap(&got, nil), iter)
 	//  unknown fields should not be an error

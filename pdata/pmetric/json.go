@@ -4,8 +4,8 @@
 package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
-	"bytes"
 	"fmt"
+	"slices"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -22,10 +22,10 @@ type JSONMarshaler struct{}
 
 // MarshalMetrics to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
-	buf := bytes.Buffer{}
-	pb := internal.MetricsToProto(internal.Metrics(md))
-	err := json.Marshal(&buf, &pb)
-	return buf.Bytes(), err
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	md.marshalJSONStream(dest)
+	return slices.Clone(dest.Buffer()), dest.Error
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pdata.Metrics.
@@ -42,21 +42,6 @@ func (*JSONUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	}
 	otlp.MigrateMetrics(md.getOrig().ResourceMetrics)
 	return md, nil
-}
-
-func (ms Metrics) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "resource_metrics", "resourceMetrics":
-			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
-				ms.ResourceMetrics().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }
 
 func (ms ResourceMetrics) unmarshalJsoniter(iter *jsoniter.Iterator) {
@@ -322,6 +307,8 @@ func (ms ExponentialHistogramDataPoint) unmarshalJsoniter(iter *jsoniter.Iterato
 			ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{
 				Min: json.ReadFloat64(iter),
 			}
+		case "zeroThreshold", "zero_threshold":
+			ms.orig.ZeroThreshold = json.ReadFloat64(iter)
 		default:
 			iter.Skip()
 		}

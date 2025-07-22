@@ -9,6 +9,7 @@ package ptrace
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -75,6 +76,22 @@ func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	dest.state.AssertMutable()
 	copyOrigResourceSpans(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ResourceSpans) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resource")
+	internal.MarshalJSONStreamResource(internal.NewResource(&ms.orig.Resource, ms.state), dest)
+	if ms.orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(ms.orig.SchemaUrl)
+	}
+	if len(ms.orig.ScopeSpans) > 0 {
+		dest.WriteObjectField("scopeSpans")
+		ms.ScopeSpans().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
 }
 
 func copyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {

@@ -68,6 +68,10 @@ const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 const oneOfMessageTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
 	return {{ .typeName }}`
 
+const oneOfMessageMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+	new{{ .returnType }}(ov.{{ .fieldName }}, ms.state).marshalJSONStream(dest)`
+
 type OneOfMessageValue struct {
 	fieldName              string
 	originFieldPackageName string
@@ -96,6 +100,11 @@ func (omv *OneOfMessageValue) GenerateCopyOrig(ms *messageStruct, of *OneOfField
 
 func (omv *OneOfMessageValue) GenerateType(ms *messageStruct, of *OneOfField) string {
 	t := template.Must(templateNew("oneOfMessageTypeTemplate").Parse(oneOfMessageTypeTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
+}
+
+func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfMessageMarshalJSONTemplate").Parse(oneOfMessageMarshalJSONTemplate))
 	return executeTemplate(t, omv.templateFields(ms, of))
 }
 

@@ -6,6 +6,12 @@
 
 package internal
 
+import (
+	"encoding/base64"
+
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
+
 type ByteSlice struct {
 	orig  *[]byte
 	state *State
@@ -38,4 +44,9 @@ func GenerateTestByteSlice() ByteSlice {
 	ms := NewByteSlice(&orig, &state)
 	FillTestByteSlice(ms)
 	return ms
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamByteSlice(ms ByteSlice, dest *json.Stream) {
+	dest.WriteString(base64.StdEncoding.EncodeToString(*ms.orig))
 }
