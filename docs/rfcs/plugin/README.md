@@ -2,16 +2,15 @@
 
 ## Towards Plugins for the OpenTelemetry Collector
 
-This document outlines a number of steps to develop the ability to
+This document outlines a sequence of steps to support:
 
-- Mix Golang and Rust components in the OpenTelemetry Collector
-- Build Collector components as static libraries, shared libraries, or subprocess-based
-- Support dynamic loading of separately compiled "plugin" components.
+- Mixing Golang and Rust components in the OpenTelemetry Collector
+- Building mixed-language Collectors as static libraries, shared libraries, or standalone subprocesses
+- Support dynamic loading of separately-compiled "plugin" components.
 
 ### 1. Builder Integration ([plugin-phase1.md](plugin-phase1.md))
 
-Enable the Collector `builder` to support both Go and Rust
-components in a unified configuration.
+Enable the Collector `builder` to support both Go and Rust components:
 
 - Extends the builder YAML and `Module` struct to allow Rust (`cargo`)
   and Go (`gomod`) modules side-by-side.
@@ -19,16 +18,17 @@ components in a unified configuration.
 
 ### 2. Config Integration ([plugin-phase2.md](plugin-phase2.md))
 
-Provide a seamless configuration experience for Rust
-components, matching Go's `mapstructure` with Rust's `serde`.
+Provide an idiomatic experience for Rust developer. In Rust, `serde`
+provides procedural macros similar to Go `mapstructure` annotations
+found throughout this code base.
 
-- Rust components define config structs using idiomatic serde patterns.
-- Go and Rust config validation and defaults are bridged via FFI and JSON.
+- FFI bridge for this repository's `confmap` package to create and validate Rust config structs
+- Rust config struct validation and factory default are bridged via FFI and JSON.
 
 ### 3. Rust Async Lifecycle ([plugin-phase3.md](plugin-phase3.md))
 
-Implement the Go-side lifecycle for Rust extension
-components using FFI (rust2go).
+Implement the Go-side lifecycle for Rust extension components using
+FFI. We adopt the [rust2go]().
 
 - Separates component creation (validation) from activation (runtime start).
 - Demonstrates the full `extension.Factory` pattern for Rust components.
