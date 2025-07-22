@@ -204,6 +204,11 @@ func (c Config) Validate() error {
 		return errors.New("provide either key file or PEM, but not both")
 	}
 
+	// Fail if only one of cert/key is provided (mismatch case)
+	if c.hasCert() != c.hasKey() {
+		return errors.New("TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)")
+	}
+
 	minTLS, err := convertVersion(c.MinVersion, defaultMinTLSVersion)
 	if err != nil {
 		return fmt.Errorf("invalid TLS min_version: %w", err)
@@ -222,12 +227,12 @@ func (c Config) Validate() error {
 }
 
 func (c ServerConfig) Validate() error {
-	// For servers, both certificate and key are always required
+	// For servers, both certificate and key are required:
+	// - If both are missing, error.
+	// - If only one is provided (mismatch), error.
 	if !c.hasCert() && !c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
 	}
-
-	// Also check if only one is provided (mismatch case)
 	if c.hasCert() != c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
 	}

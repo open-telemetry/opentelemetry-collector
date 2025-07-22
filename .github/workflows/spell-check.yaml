@@ -17,7 +17,5 @@ jobs:
         with:
           files: |
             **/*.{md,yaml,yml}
-            !.golangci.yml
-            !.github/**/*
           config: '.github/workflows/utils/cspell.json'
           check_dot_files: true
