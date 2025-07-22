@@ -7,7 +7,7 @@ change_type: enhancement
 component: receiverhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Update receiverhelper StartXOp and EndXOp methods with otelcol_receiver_refused_x with otelcol_receiver_failed_x in order to be able to distinguish internal vs downstream errors
+note: Update receiverhelper StartXOp and EndXOp methods to emit otelcol_receiver_refused_x and otelcol_receiver_failed_x in order to be able to distinguish internal vs downstream errors
 
 # One or more tracking issues or pull requests related to the change
 issues: [12207]
