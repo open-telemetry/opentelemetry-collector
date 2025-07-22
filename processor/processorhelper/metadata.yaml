@@ -30,7 +30,7 @@ telemetry:
         monotonic: true
 
     processor_duration:
-      enabled: true
+      enabled: false
       stability:
         level: alpha
       description: Duration of time taken to process a batch of telemetry data through the processor.
