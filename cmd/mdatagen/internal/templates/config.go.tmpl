@@ -171,22 +171,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
   Attributes AttributesConfig `mapstructure:"attributes"`
-  enabledSetByUser bool
 	{{- if .ResourceAttributes }}
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 	{{- end }}
-}
-
-func (mbc *MetricsBuilderConfig) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(mbc)
-	if err != nil {
-		return err
-	}
-	mbc.enabledSetByUser = parser.IsSet("attributes")
-	return nil
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
