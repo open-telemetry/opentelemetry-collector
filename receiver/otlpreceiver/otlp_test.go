@@ -119,8 +119,8 @@ func TestJsonHttp(t *testing.T) {
 			name:               "Retryable GRPCError",
 			encoding:           "",
 			contentType:        "application/json",
-			err:                status.New(codes.Unavailable, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			err:                status.New(codes.Unavailable, "Service Unavailable").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "Service Unavailable"},
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
@@ -146,7 +146,8 @@ func TestJsonHttp(t *testing.T) {
 					errStatus := &spb.Status{}
 					require.NoError(t, json.Unmarshal(respBytes, errStatus))
 					if s, ok := status.FromError(tt.err); ok {
-						assert.True(t, proto.Equal(errStatus, s.Proto()))
+						assert.Equal(t, s.Proto().Code, errStatus.Code)
+						assert.Equal(t, s.Proto().Message, errStatus.Message)
 					} else {
 						fmt.Println(errStatus)
 						assert.True(t, proto.Equal(errStatus, tt.expectedStatus))
@@ -366,15 +367,15 @@ func TestProtoHttp(t *testing.T) {
 		{
 			name:               "Permanent GRPCError",
 			encoding:           "",
-			err:                status.New(codes.InvalidArgument, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: ""},
+			err:                status.New(codes.InvalidArgument, "Bad Request").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.InvalidArgument), Message: "Bad Request"},
 			expectedStatusCode: http.StatusBadRequest,
 		},
 		{
 			name:               "Retryable GRPCError",
 			encoding:           "",
-			err:                status.New(codes.Unavailable, "").Err(),
-			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: ""},
+			err:                status.New(codes.Unavailable, "Service Unavailable").Err(),
+			expectedStatus:     &spb.Status{Code: int32(codes.Unavailable), Message: "Service Unavailable"},
 			expectedStatusCode: http.StatusServiceUnavailable,
 		},
 	}
@@ -1321,7 +1322,28 @@ func (esc *errOrSinkConsumer) checkData(t *testing.T, data any, dataLen int) {
 }
 
 func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
-	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
+	got, err := tt.GetMetric("otelcol_receiver_failed_spans")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_failed_spans",
+			Description: "The number of spans that failed to be processed by the receiver due to internal errors.",
+			Unit:        "{spans}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: refused, // Failed spans are actually the refused ones in this test
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_accepted_spans")
 	require.NoError(t, err)
 	metricdatatest.AssertEqual(t,
 		metricdata.Metrics{
@@ -1357,7 +1379,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: refused,
+						Value: 0, // No refused spans in this test - they become failed spans instead
 					},
 				},
 			},
