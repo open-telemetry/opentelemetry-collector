@@ -9,10 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
 func Test_GetStatusFromError(t *testing.T) {
@@ -24,7 +23,7 @@ func Test_GetStatusFromError(t *testing.T) {
 		{
 			name:     "Status",
 			input:    status.Error(codes.Aborted, "test"),
-			expected: status.New(codes.Unavailable, "Service Unavailable"),
+			expected: status.New(codes.Aborted, "test"),
 		},
 		{
 			name:     "Permanent Error",

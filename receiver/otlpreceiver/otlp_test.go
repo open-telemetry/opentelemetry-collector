@@ -590,26 +590,8 @@ func TestOTLPReceiverGRPCMetricsIngestTest(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, codes.Unavailable, errStatus.Code())
 
-	// Force collection of metrics
-	var rm metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &rm))
-
-	// Debug output
-	t.Logf("ResourceMetrics: %+v", rm)
-
-	// Check internal errors metric
-	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
-	require.NoError(t, err)
-	require.NotNil(t, got)
-	sum, ok := got.Data.(metricdata.Sum[int64])
-	require.True(t, ok)
-	t.Logf("otelcol_receiver_failed_metric_points: %+v", sum)
-	require.Len(t, sum.DataPoints, 1)
-	require.Equal(t, int64(2), sum.DataPoints[0].Value) // It is 2, we increment it once when the error occurs in ConsumeMetrics and again when the error is propagated back to the receiver
-	require.Equal(t, attribute.NewSet(
-		attribute.String("receiver", otlpReceiverID.String()),
-		attribute.String("transport", "grpc"),
-	), sum.DataPoints[0].Attributes)
+	// Assert receiver metrics including receiver_requests
+	assertReceiverMetrics(t, tt, otlpReceiverID, "grpc", 0, 2)
 }
 
 // TestOTLPReceiverGRPCTracesIngestTest checks that the gRPC trace receiver
@@ -1337,7 +1319,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: refused, // Failed spans are actually the refused ones in this test
+						Value: refused,
 					},
 				},
 			},
@@ -1379,9 +1361,148 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: 0, // No refused spans in this test - they become failed spans instead
+						Value: 0,
 					},
 				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// Assert receiver_requests metric
+	got, err = tt.GetMetric("otelcol_receiver_requests")
+	require.NoError(t, err)
+	
+	// Calculate expected requests based on accepted and refused counts
+	var expectedRequests []metricdata.DataPoint[int64]
+	if accepted > 0 {
+		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+			Attributes: attribute.NewSet(
+				attribute.String("receiver", id.String()),
+				attribute.String("transport", transport),
+				attribute.String("outcome", "success")),
+			Value: accepted,
+		})
+	}
+	if refused > 0 {
+		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+			Attributes: attribute.NewSet(
+				attribute.String("receiver", id.String()),
+				attribute.String("transport", transport),
+				attribute.String("outcome", "failure")),
+			Value: refused, // Number of failed requests matches refused spans in traces tests
+		})
+	}
+
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_requests",
+			Description: "The number of requests performed.",
+			Unit:        "{records}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints:  expectedRequests,
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+}
+
+func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id component.ID, transport string, accepted, refused int64) {
+	got, err := tt.GetMetric("otelcol_receiver_failed_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_failed_metric_points",
+			Description: "The number of metric points that failed to be processed by the receiver due to internal errors.",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: refused, // Consumer errors are now categorized as failed
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_accepted_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_accepted_metric_points",
+			Description: "Number of metric points successfully pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: accepted,
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	got, err = tt.GetMetric("otelcol_receiver_refused_metric_points")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_refused_metric_points",
+			Description: "Number of metric points that could not be pushed into the pipeline. [alpha]",
+			Unit:        "{datapoints}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints: []metricdata.DataPoint[int64]{
+					{
+						Attributes: attribute.NewSet(
+							attribute.String("receiver", id.String()),
+							attribute.String("transport", transport)),
+						Value: 0, // No refused metric points in current implementation
+					},
+				},
+			},
+		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+	// Assert receiver_requests metric
+	got, err = tt.GetMetric("otelcol_receiver_requests")
+	require.NoError(t, err)
+
+	// Calculate expected requests based on accepted and refused counts
+	var expectedRequests []metricdata.DataPoint[int64]
+	if accepted > 0 {
+		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+			Attributes: attribute.NewSet(
+				attribute.String("receiver", id.String()),
+				attribute.String("transport", transport),
+				attribute.String("outcome", "success")),
+			Value: accepted,
+		})
+	}
+	if refused > 0 {
+		expectedRequests = append(expectedRequests, metricdata.DataPoint[int64]{
+			Attributes: attribute.NewSet(
+				attribute.String("receiver", id.String()),
+				attribute.String("transport", transport),
+				attribute.String("outcome", "failure")),
+			Value: 1, // One request failed
+		})
+	}
+
+	metricdatatest.AssertEqual(t,
+		metricdata.Metrics{
+			Name:        "otelcol_receiver_requests",
+			Description: "The number of requests performed.",
+			Unit:        "{records}",
+			Data: metricdata.Sum[int64]{
+				Temporality: metricdata.CumulativeTemporality,
+				IsMonotonic: true,
+				DataPoints:  expectedRequests,
 			},
 		}, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }

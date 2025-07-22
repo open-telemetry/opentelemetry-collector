@@ -28,23 +28,25 @@ func GetStatusFromError(err error) error {
 		return nil
 	}
 
+	s, ok := status.FromError(err)
+
+	if !ok {
+		// Default to a retryable error
+		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/docs/specification.md#failures
+		code := codes.Unavailable
+		if consumererror.IsPermanent(err) {
+			// If an error is permanent but doesn't have an attached gRPC status, assume it is server-side.
+			code = codes.Internal
+		}
+		s = status.New(code, err.Error())
+	}
+
 	// Handle client disconnection errors first. These are typically transient
 	// and should lead to a retryable `codes.Unavailable`.
 	if IsClientDisconnectError(err) {
 		return status.New(codes.Unavailable, http.StatusText(http.StatusServiceUnavailable)).Err()
 	}
-
-	// Handle permanent errors. These indicate a server-side issue that won't resolve
-	if consumererror.IsPermanent(err) {
-		return status.New(codes.Internal, err.Error()).Err()
-	}
-
-	s, ok := status.FromError(err)
-	if ok {
-		return s.Err()
-	}
-
-	return status.New(codes.Unavailable, err.Error()).Err()
+	return s.Err()
 }
 
 func GetHTTPStatusCodeFromStatus(s *status.Status) int {
