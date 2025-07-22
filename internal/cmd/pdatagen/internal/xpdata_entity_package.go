@@ -36,7 +36,7 @@ var entityRefSlice = &sliceOfPtrs{
 	element:     entityRef,
 }
 
-var entityRef = &messageValueStruct{
+var entityRef = &messageStruct{
 	structName:     "EntityRef",
 	packageName:    "entity",
 	originFullName: "otlpcommon.EntityRef",
