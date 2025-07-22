@@ -7,12 +7,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata"
 )
 

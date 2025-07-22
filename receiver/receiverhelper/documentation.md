@@ -84,12 +84,10 @@ The number of requests performed.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| {records} | Sum | Int | true |
+| {requests} | Sum | Int | true |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| success | Successful receiver requests | Any Int |
-| refused | Refused receiver requests | Any Int |
-| failure | Failed receiver requests | Any Int |
+| outcome | Successful receiver requests | Int: ``success``, ``refused``, ``failure`` |

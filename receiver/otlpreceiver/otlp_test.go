@@ -1397,7 +1397,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_requests",
 			Description: "The number of requests performed.",
-			Unit:        "{records}",
+			Unit:        "{requests}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,
@@ -1499,7 +1499,7 @@ func assertReceiverMetrics(t *testing.T, tt *componenttest.Telemetry, id compone
 		metricdata.Metrics{
 			Name:        "otelcol_receiver_requests",
 			Description: "The number of requests performed.",
-			Unit:        "{records}",
+			Unit:        "{requests}",
 			Data: metricdata.Sum[int64]{
 				Temporality: metricdata.CumulativeTemporality,
 				IsMonotonic: true,

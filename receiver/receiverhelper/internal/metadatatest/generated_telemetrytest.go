@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func AssertEqualReceiverAcceptedLogRecords(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
@@ -159,7 +160,7 @@ func AssertEqualReceiverRequests(t *testing.T, tt *componenttest.Telemetry, dps 
 	want := metricdata.Metrics{
 		Name:        "otelcol_receiver_requests",
 		Description: "The number of requests performed.",
-		Unit:        "{records}",
+		Unit:        "{requests}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,
