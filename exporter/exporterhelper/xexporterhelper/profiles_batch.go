@@ -6,6 +6,7 @@ package xexporterhelper // import "go.opentelemetry.io/collector/exporter/export
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sizer"
@@ -40,14 +41,17 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 			return []exporterhelper.Request{req, req2}, nil
 		}
 
-		return append(req.split(maxSize, sz), req2.split(maxSize, sz)...), nil
+		sp1, err1 := req.split(maxSize, sz)
+		sp2, err2 := req2.split(maxSize, sz)
+
+		return append(sp1, sp2...), errors.Join(err1, err2)
 	}
 
 	// If no limit we can simply merge the new request into the current and return.
 	if maxSize == 0 {
 		return []exporterhelper.Request{req}, nil
 	}
-	return req.split(maxSize, sz), nil
+	return req.split(maxSize, sz)
 }
 
 // TODO(13106): handle merging of profiles (and change the indice tables with their new indices)
@@ -59,15 +63,19 @@ func (req *profilesRequest) MergeSplit(_ context.Context, maxSize int, szt expor
 	req.pd.ResourceProfiles().MoveAndAppendTo(dst.pd.ResourceProfiles())
 }*/
 
-func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) []exporterhelper.Request {
+func (req *profilesRequest) split(maxSize int, sz sizer.ProfilesSizer) ([]exporterhelper.Request, error) {
 	var res []exporterhelper.Request
 	for req.size(sz) > maxSize {
 		pd, rmSize := extractProfiles(req.pd, maxSize, sz)
+		if pd.SampleCount() == 0 {
+			return res, fmt.Errorf("one sample size is greater than max size, dropping items: %d", req.pd.SampleCount())
+		}
 		req.setCachedSize(req.size(sz) - rmSize)
 		res = append(res, newProfilesRequest(pd))
 	}
+
 	res = append(res, req)
-	return res
+	return res, nil
 }
 
 // extractProfiles extracts a new profiles with a maximum number of samples.

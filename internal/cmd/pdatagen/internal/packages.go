@@ -32,7 +32,7 @@ var AllPackages = []*Package{
 // Package is a struct used to generate files.
 type Package struct {
 	info *PackageInfo
-	// Can be any of sliceOfPtrs, sliceOfValues, messageValueStruct.
+	// Can be any of sliceOfPtrs, sliceOfValues, messageStruct.
 	structs []baseStruct
 }
 

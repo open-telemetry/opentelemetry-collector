@@ -58,7 +58,7 @@ var resourceProfilesSlice = &sliceOfPtrs{
 	element:    resourceProfiles,
 }
 
-var resourceProfiles = &messageValueStruct{
+var resourceProfiles = &messageStruct{
 	structName:     "ResourceProfiles",
 	description:    "// ResourceProfiles is a collection of profiles from a Resource.",
 	originFullName: "otlpprofiles.ResourceProfiles",
@@ -72,7 +72,7 @@ var resourceProfiles = &messageValueStruct{
 	},
 }
 
-var profilesDictionary = &messageValueStruct{
+var profilesDictionary = &messageStruct{
 	structName:     "ProfilesDictionary",
 	description:    "// ProfilesDictionary is the reference table containing all data shared by profiles across the message being sent.",
 	originFullName: "otlpprofiles.ProfilesDictionary",
@@ -113,7 +113,7 @@ var scopeProfilesSlice = &sliceOfPtrs{
 	element:    scopeProfiles,
 }
 
-var scopeProfiles = &messageValueStruct{
+var scopeProfiles = &messageStruct{
 	structName:     "ScopeProfiles",
 	description:    "// ScopeProfiles is a collection of profiles from a LibraryInstrumentation.",
 	originFullName: "otlpprofiles.ScopeProfiles",
@@ -132,7 +132,7 @@ var profilesSlice = &sliceOfPtrs{
 	element:    profile,
 }
 
-var profile = &messageValueStruct{
+var profile = &messageStruct{
 	structName:     "Profile",
 	description:    "// Profile are an implementation of the pprofextended data model.\n",
 	originFullName: "otlpprofiles.Profile",
@@ -171,7 +171,7 @@ var profile = &messageValueStruct{
 				testVal:     "1234567890",
 			},
 		},
-		&messageValueField{
+		&messageField{
 			fieldName:     "PeriodType",
 			returnMessage: valueType,
 		},
@@ -224,7 +224,7 @@ var attributeUnitSlice = &sliceOfPtrs{
 	element:    attributeUnit,
 }
 
-var attributeUnit = &messageValueStruct{
+var attributeUnit = &messageStruct{
 	structName:     "AttributeUnit",
 	description:    "// AttributeUnit Represents a mapping between Attribute Keys and Units.",
 	originFullName: "otlpprofiles.AttributeUnit",
@@ -249,7 +249,7 @@ var linkSlice = &sliceOfPtrs{
 	element:    link,
 }
 
-var link = &messageValueStruct{
+var link = &messageStruct{
 	structName:     "Link",
 	description:    "// Link represents a pointer from a profile Sample to a trace Span.",
 	originFullName: "otlpprofiles.Link",
@@ -264,7 +264,7 @@ var valueTypeSlice = &sliceOfPtrs{
 	element:    valueType,
 }
 
-var valueType = &messageValueStruct{
+var valueType = &messageStruct{
 	structName:     "ValueType",
 	description:    "// ValueType describes the type and units of a value, with an optional aggregation temporality.",
 	originFullName: "otlpprofiles.ValueType",
@@ -298,7 +298,7 @@ var sampleSlice = &sliceOfPtrs{
 	element:    sample,
 }
 
-var sample = &messageValueStruct{
+var sample = &messageStruct{
 	structName:     "Sample",
 	description:    "// Sample represents each record value encountered within a profiled program.",
 	originFullName: "otlpprofiles.Sample",
@@ -341,7 +341,7 @@ var mappingSlice = &sliceOfPtrs{
 	element:    mapping,
 }
 
-var mapping = &messageValueStruct{
+var mapping = &messageStruct{
 	structName:     "Mapping",
 	description:    "// Mapping describes the mapping of a binary in memory, including its address range, file offset, and metadata like build ID",
 	originFullName: "otlpprofiles.Mapping",
@@ -406,7 +406,7 @@ var locationSlice = &sliceOfPtrs{
 	element:    location,
 }
 
-var location = &messageValueStruct{
+var location = &messageStruct{
 	structName:     "Location",
 	description:    "// Location describes function and line table debug information.",
 	originFullName: "otlpprofiles.Location",
@@ -445,7 +445,7 @@ var lineSlice = &sliceOfPtrs{
 	element:    line,
 }
 
-var line = &messageValueStruct{
+var line = &messageStruct{
 	structName:     "Line",
 	description:    "// Line details a specific line in a source code, linked to a function.",
 	originFullName: "otlpprofiles.Line",
@@ -476,7 +476,7 @@ var functionSlice = &sliceOfPtrs{
 	element:    function,
 }
 
-var function = &messageValueStruct{
+var function = &messageStruct{
 	structName:     "Function",
 	description:    "// Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.",
 	originFullName: "otlpprofiles.Function",
@@ -513,7 +513,7 @@ var attributeTableSlice = &sliceOfValues{
 	element:    attribute,
 }
 
-var attribute = &messageValueStruct{
+var attribute = &messageStruct{
 	structName:     "Attribute",
 	description:    "// Attribute describes an attribute stored in a profile's attribute table.",
 	originFullName: "v1.KeyValue",
@@ -524,7 +524,7 @@ var attribute = &messageValueStruct{
 			defaultVal: `""`,
 			testVal:    `"key"`,
 		},
-		&messageValueField{
+		&messageField{
 			fieldName:     "Value",
 			returnMessage: anyValue,
 		},
