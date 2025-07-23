@@ -27,6 +27,7 @@ var pprofile = &Package{
 	structs: []baseStruct{
 		resourceProfilesSlice,
 		resourceProfiles,
+		profilesDictionary,
 		scopeProfilesSlice,
 		scopeProfiles,
 		profilesSlice,
@@ -71,6 +72,42 @@ var resourceProfiles = &messageValueStruct{
 	},
 }
 
+var profilesDictionary = &messageValueStruct{
+	structName:     "ProfilesDictionary",
+	description:    "// ProfilesDictionary is the reference table containing all data shared by profiles across the message being sent.",
+	originFullName: "otlpprofiles.ProfilesDictionary",
+	fields: []baseField{
+		&sliceField{
+			fieldName:   "MappingTable",
+			returnSlice: mappingSlice,
+		},
+		&sliceField{
+			fieldName:   "LocationTable",
+			returnSlice: locationSlice,
+		},
+		&sliceField{
+			fieldName:   "FunctionTable",
+			returnSlice: functionSlice,
+		},
+		&sliceField{
+			fieldName:   "LinkTable",
+			returnSlice: linkSlice,
+		},
+		&sliceField{
+			fieldName:   "StringTable",
+			returnSlice: stringSlice,
+		},
+		&sliceField{
+			fieldName:   "AttributeTable",
+			returnSlice: attributeTableSlice,
+		},
+		&sliceField{
+			fieldName:   "AttributeUnits",
+			returnSlice: attributeUnitSlice,
+		},
+	},
+}
+
 var scopeProfilesSlice = &sliceOfPtrs{
 	structName: "ScopeProfilesSlice",
 	element:    scopeProfiles,
@@ -109,36 +146,8 @@ var profile = &messageValueStruct{
 			returnSlice: sampleSlice,
 		},
 		&sliceField{
-			fieldName:   "MappingTable",
-			returnSlice: mappingSlice,
-		},
-		&sliceField{
-			fieldName:   "LocationTable",
-			returnSlice: locationSlice,
-		},
-		&sliceField{
 			fieldName:   "LocationIndices",
 			returnSlice: int32Slice,
-		},
-		&sliceField{
-			fieldName:   "FunctionTable",
-			returnSlice: functionSlice,
-		},
-		&sliceField{
-			fieldName:   "AttributeTable",
-			returnSlice: attributeTableSlice,
-		},
-		&sliceField{
-			fieldName:   "AttributeUnits",
-			returnSlice: attributeUnitSlice,
-		},
-		&sliceField{
-			fieldName:   "LinkTable",
-			returnSlice: linkSlice,
-		},
-		&sliceField{
-			fieldName:   "StringTable",
-			returnSlice: stringSlice,
 		},
 		&primitiveTypedField{
 			fieldName:       "Time",
@@ -162,17 +171,6 @@ var profile = &messageValueStruct{
 				testVal:     "1234567890",
 			},
 		},
-		&primitiveTypedField{
-			fieldName:       "StartTime",
-			originFieldName: "TimeNanos",
-			returnType: &primitiveType{
-				structName:  "Timestamp",
-				packageName: "pcommon",
-				rawType:     "int64",
-				defaultVal:  "0",
-				testVal:     "1234567890",
-			},
-		},
 		&messageValueField{
 			fieldName:     "PeriodType",
 			returnMessage: valueType,
@@ -188,7 +186,7 @@ var profile = &messageValueStruct{
 			returnSlice: int32Slice,
 		},
 		&primitiveField{
-			fieldName:  "DefaultSampleTypeStrindex",
+			fieldName:  "DefaultSampleTypeIndex",
 			returnType: "int32",
 			defaultVal: "int32(0)",
 			testVal:    "int32(1)",
@@ -203,10 +201,6 @@ var profile = &messageValueStruct{
 				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 			},
 		},
-		&sliceField{
-			fieldName:   "AttributeIndices",
-			returnSlice: int32Slice,
-		},
 		droppedAttributesCount,
 		&primitiveField{
 			fieldName:  "OriginalPayloadFormat",
@@ -217,6 +211,10 @@ var profile = &messageValueStruct{
 		&sliceField{
 			fieldName:   "OriginalPayload",
 			returnSlice: byteSlice,
+		},
+		&sliceField{
+			fieldName:   "AttributeIndices",
+			returnSlice: int32Slice,
 		},
 	},
 }

@@ -26,6 +26,54 @@ var profilesOTLP = func() Profiles {
 	spanID := pcommon.SpanID([8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18})
 
 	pd := NewProfiles()
+
+	// Add dictionary
+	dic := pd.ProfilesDictionary()
+	// Add mappings
+	m := dic.MappingTable().AppendEmpty()
+	m.SetMemoryStart(2)
+	m.SetMemoryLimit(3)
+	m.SetFileOffset(4)
+	m.SetFilenameStrindex(5)
+	m.AttributeIndices().Append(7)
+	m.AttributeIndices().Append(8)
+	m.SetHasFunctions(true)
+	m.SetHasFilenames(true)
+	m.SetHasLineNumbers(true)
+	m.SetHasInlineFrames(true)
+	// Add location
+	l := dic.LocationTable().AppendEmpty()
+	l.SetMappingIndex(3)
+	l.SetAddress(4)
+	l.SetIsFolded(true)
+	l.AttributeIndices().Append(6)
+	l.AttributeIndices().Append(7)
+	li := l.Line().AppendEmpty()
+	li.SetFunctionIndex(1)
+	li.SetLine(2)
+	li.SetColumn(3)
+	// Add function
+	f := dic.FunctionTable().AppendEmpty()
+	f.SetNameStrindex(2)
+	f.SetSystemNameStrindex(3)
+	f.SetFilenameStrindex(4)
+	f.SetStartLine(5)
+	// Add attribute table
+	at := dic.AttributeTable()
+	a := at.AppendEmpty()
+	a.SetKey("answer")
+	a.Value().SetInt(42)
+	// Add attribute units
+	au := dic.AttributeUnits().AppendEmpty()
+	au.SetAttributeKeyStrindex(1)
+	au.SetUnitStrindex(5)
+	// Add link table
+	lt := dic.LinkTable().AppendEmpty()
+	lt.SetTraceID(traceID)
+	lt.SetSpanID(spanID)
+	// Add string table
+	dic.StringTable().Append("foobar")
+
 	// Add ResourceProfiles.
 	rp := pd.ResourceProfiles().AppendEmpty()
 	rp.SetSchemaUrl("schemaURL")
@@ -45,6 +93,7 @@ var profilesOTLP = func() Profiles {
 	pro.SetDuration(durationTimestamp)
 	pro.AttributeIndices().Append(1)
 	pro.SetDroppedAttributesCount(1)
+	pro.LocationIndices().Append(1)
 
 	// Add sample type
 	st := pro.SampleType().AppendEmpty()
@@ -58,57 +107,6 @@ var profilesOTLP = func() Profiles {
 	s.AttributeIndices().Append(1)
 	s.TimestampsUnixNano().Append(12345)
 
-	// Add mappings
-	m := pro.MappingTable().AppendEmpty()
-	m.SetMemoryStart(2)
-	m.SetMemoryLimit(3)
-	m.SetFileOffset(4)
-	m.SetFilenameStrindex(5)
-	m.AttributeIndices().Append(7)
-	m.AttributeIndices().Append(8)
-	m.SetHasFunctions(true)
-	m.SetHasFilenames(true)
-	m.SetHasLineNumbers(true)
-	m.SetHasInlineFrames(true)
-
-	// Add location
-	l := pro.LocationTable().AppendEmpty()
-	l.SetMappingIndex(3)
-	l.SetAddress(4)
-	l.SetIsFolded(true)
-	l.AttributeIndices().Append(6)
-	l.AttributeIndices().Append(7)
-	li := l.Line().AppendEmpty()
-	li.SetFunctionIndex(1)
-	li.SetLine(2)
-	li.SetColumn(3)
-	pro.LocationIndices().Append(1)
-
-	// Add function
-	f := pro.FunctionTable().AppendEmpty()
-	f.SetNameStrindex(2)
-	f.SetSystemNameStrindex(3)
-	f.SetFilenameStrindex(4)
-	f.SetStartLine(5)
-
-	// Add attribute table
-	at := pro.AttributeTable()
-	a := at.AppendEmpty()
-	a.SetKey("answer")
-	a.Value().SetInt(42)
-
-	// Add attribute units
-	au := pro.AttributeUnits().AppendEmpty()
-	au.SetAttributeKeyStrindex(1)
-	au.SetUnitStrindex(5)
-
-	// Add link table
-	lt := pro.LinkTable().AppendEmpty()
-	lt.SetTraceID(traceID)
-	lt.SetSpanID(spanID)
-
-	// Add string table
-	pro.StringTable().Append("foobar")
 	pro.SetTime(1234)
 	pro.SetDuration(5678)
 	pro.PeriodType().SetTypeStrindex(1)
@@ -116,12 +114,12 @@ var profilesOTLP = func() Profiles {
 	pro.SetPeriod(3)
 	pro.CommentStrindices().Append(1)
 	pro.CommentStrindices().Append(2)
-	pro.SetDefaultSampleTypeStrindex(4)
+	pro.SetDefaultSampleTypeIndex(4)
 
 	return pd
 }()
 
-var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"sampleType":[{"typeStrindex":1,"unitStrindex":2}],"sample":[{"locationsStartIndex":1,"locationsLength":10,"value":["3"],"attributeIndices":[1],"timestampsUnixNano":["12345"]}],"mappingTable":[{"memoryStart":"2","memoryLimit":"3","fileOffset":"4","filenameStrindex":5,"attributeIndices":[7,8],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"locationTable":[{"mappingIndex":3,"address":"4","line":[{"functionIndex":1,"line":"2","column":"3"}],"isFolded":true,"attributeIndices":[6,7]}],"locationIndices":[1],"functionTable":[{"nameStrindex":2,"systemNameStrindex":3,"filenameStrindex":4,"startLine":"5"}],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"attributeKeyStrindex":1,"unitStrindex":5}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"timeNanos":"1234","durationNanos":"5678","periodType":{"typeStrindex":1,"unitStrindex":2},"period":"3","commentStrindices":[1,2],"defaultSampleTypeStrindex":4,"profileId":"0102030405060708090a0b0c0d0e0f10","attributeIndices":[1],"droppedAttributesCount":1}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var profilesJSON = `{"resourceProfiles":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeProfiles":[{"scope":{"name":"scope name","version":"scope version"},"profiles":[{"sampleType":[{"typeStrindex":1,"unitStrindex":2}],"sample":[{"locationsStartIndex":1,"locationsLength":10,"value":["3"],"attributeIndices":[1],"timestampsUnixNano":["12345"]}],"locationIndices":[1],"timeNanos":"1234","durationNanos":"5678","periodType":{"typeStrindex":1,"unitStrindex":2},"period":"3","commentStrindices":[1,2],"defaultSampleTypeIndex":4,"profileId":"0102030405060708090a0b0c0d0e0f10","droppedAttributesCount":1,"attributeIndices":[1]}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}],"dictionary":{"mappingTable":[{"memoryStart":"2","memoryLimit":"3","fileOffset":"4","filenameStrindex":5,"attributeIndices":[7,8],"hasFunctions":true,"hasFilenames":true,"hasLineNumbers":true,"hasInlineFrames":true}],"locationTable":[{"mappingIndex":3,"address":"4","line":[{"functionIndex":1,"line":"2","column":"3"}],"isFolded":true,"attributeIndices":[6,7]}],"functionTable":[{"nameStrindex":2,"systemNameStrindex":3,"filenameStrindex":4,"startLine":"5"}],"linkTable":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718"}],"stringTable":["foobar"],"attributeTable":[{"key":"answer","value":{"intValue":"42"}}],"attributeUnits":[{"attributeKeyStrindex":1,"unitStrindex":5}]}}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}

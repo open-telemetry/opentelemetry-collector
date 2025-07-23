@@ -6,9 +6,9 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 	"go.opentelemetry.io/collector/pipeline"
@@ -16,15 +16,17 @@ import (
 
 // Settings defines settings for creating a QueueBatch.
 type Settings[T any] struct {
-	Signal    pipeline.Signal
-	ID        component.ID
-	Telemetry component.TelemetrySettings
-	Encoding  Encoding[T]
-	Sizers    map[request.SizerType]request.Sizer[T]
+	Signal      pipeline.Signal
+	ID          component.ID
+	Telemetry   component.TelemetrySettings
+	Encoding    queue.Encoding[T]
+	ItemsSizer  request.Sizer[T]
+	BytesSizer  request.Sizer[T]
+	Partitioner Partitioner[T]
 }
 
 type QueueBatch struct {
-	queue   Queue[request.Request]
+	queue   queue.Queue[request.Request]
 	batcher Batcher[request.Request]
 }
 
@@ -33,87 +35,41 @@ func NewQueueBatch(
 	cfg Config,
 	next sender.SendFunc[request.Request],
 ) (*QueueBatch, error) {
-	return newQueueBatch(set, cfg, next, false)
-}
-
-func NewQueueBatchLegacyBatcher(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-) (*QueueBatch, error) {
-	set.Telemetry.Logger.Warn("Configuring the exporter batcher capability separately is now deprecated. " +
-		"Use sending_queue::batch instead.")
-	return newQueueBatch(set, cfg, next, true)
-}
-
-func newQueueBatch(
-	set Settings[request.Request],
-	cfg Config,
-	next sender.SendFunc[request.Request],
-	oldBatcher bool,
-) (*QueueBatch, error) {
-	if cfg.hasBlocking {
-		set.Telemetry.Logger.Error("using deprecated field `blocking`")
+	b, err := NewBatcher(cfg.Batch, batcherSettings[request.Request]{
+		itemsSizer:  set.ItemsSizer,
+		bytesSizer:  set.BytesSizer,
+		partitioner: set.Partitioner,
+		next:        next,
+		maxWorkers:  cfg.NumConsumers,
+	})
+	if err != nil {
+		return nil, err
 	}
-
-	sizer, ok := set.Sizers[cfg.Sizer]
-	if !ok {
-		return nil, fmt.Errorf("queue_batch: unsupported sizer %q", cfg.Sizer)
-	}
-
-	var b Batcher[request.Request]
-	if cfg.Batch != nil {
-		if oldBatcher {
-			// If user configures the old batcher we only can support "items" sizer.
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  request.SizerTypeItems,
-				sizer:      request.NewItemsSizer(),
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
-			})
-		} else {
-			b = newDefaultBatcher(*cfg.Batch, batcherSettings[request.Request]{
-				sizerType:  cfg.Sizer,
-				sizer:      sizer,
-				next:       next,
-				maxWorkers: cfg.NumConsumers,
-			})
-		}
-		// Keep the number of queue consumers to 1 if batching is enabled until we support sharding as described in
-		// https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+	if cfg.Batch.HasValue() {
+		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
+		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
-	} else {
-		b = newDisabledBatcher[request.Request](next)
 	}
 
-	var q Queue[request.Request]
-	// Configure memory queue or persistent based on the config.
-	if cfg.StorageID == nil {
-		q = newAsyncQueue(newMemoryQueue[request.Request](memoryQueueSettings[request.Request]{
-			sizer:           sizer,
-			capacity:        cfg.QueueSize,
-			waitForResult:   cfg.WaitForResult,
-			blockOnOverflow: cfg.BlockOnOverflow,
-		}), cfg.NumConsumers, b.Consume)
-	} else {
-		q = newAsyncQueue(newPersistentQueue[request.Request](persistentQueueSettings[request.Request]{
-			sizer:           sizer,
-			capacity:        cfg.QueueSize,
-			blockOnOverflow: cfg.BlockOnOverflow,
-			signal:          set.Signal,
-			storageID:       *cfg.StorageID,
-			encoding:        set.Encoding,
-			id:              set.ID,
-			telemetry:       set.Telemetry,
-		}), cfg.NumConsumers, b.Consume)
-	}
-
-	oq, err := newObsQueue(set, q)
+	q, err := queue.NewQueue[request.Request](queue.Settings[request.Request]{
+		SizerType:       cfg.Sizer,
+		ItemsSizer:      set.ItemsSizer,
+		BytesSizer:      set.BytesSizer,
+		Capacity:        cfg.QueueSize,
+		NumConsumers:    cfg.NumConsumers,
+		WaitForResult:   cfg.WaitForResult,
+		BlockOnOverflow: cfg.BlockOnOverflow,
+		Signal:          set.Signal,
+		StorageID:       cfg.StorageID,
+		Encoding:        set.Encoding,
+		ID:              set.ID,
+		Telemetry:       set.Telemetry,
+	}, b.Consume)
 	if err != nil {
 		return nil, err
 	}
 
-	return &QueueBatch{queue: oq, batcher: b}, nil
+	return &QueueBatch{queue: q, batcher: b}, nil
 }
 
 // Start is invoked during service startup.

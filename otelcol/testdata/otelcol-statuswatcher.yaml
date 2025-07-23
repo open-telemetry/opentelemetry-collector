@@ -19,7 +19,7 @@ service:
             exporter:
               prometheus:
                 host: "localhost"
-                port: 8888
+                port: 9999
   extensions: [statuswatcher]
   pipelines:
     traces:

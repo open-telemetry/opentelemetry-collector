@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package opentelemetry.collector.exporter.exporterhelper.internal.queue;
+
+option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue";
+
+// PersistentMetadata holds all persistent metadata for the queue.
+// The items and bytes sizes are recorded explicitly,
+// the requests size can be calculated as (write_index - read_index + len(currently_dispatched_items)).
+message PersistentMetadata{
+  // Current total items size of the queue.
+  sfixed64 items_size = 1;
+
+  // Current total bytes size of the queue.
+  sfixed64 bytes_size = 2;
+
+  // Index of the next item to be read from the queue.
+  fixed64 read_index = 3;
+
+  // Index where the next item will be written to the queue.
+  fixed64 write_index = 4;
+
+  // List of item indices currently being processed by consumers.
+  repeated fixed64 currently_dispatched_items = 5;
+}

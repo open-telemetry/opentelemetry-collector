@@ -15,7 +15,7 @@ service:
             exporter:
               prometheus:
                 host: "localhost"
-                port: 8888
+                port: 9999
   pipelines:
     traces:
       receivers: [nop]

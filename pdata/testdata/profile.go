@@ -20,6 +20,15 @@ func GenerateProfiles(profilesCount int) pprofile.Profiles {
 	td := pprofile.NewProfiles()
 	initResource(td.ResourceProfiles().AppendEmpty().Resource())
 	ss := td.ResourceProfiles().At(0).ScopeProfiles().AppendEmpty().Profiles()
+
+	dic := td.ProfilesDictionary()
+	attr := dic.AttributeTable().AppendEmpty()
+	attr.SetKey("key")
+	attr.Value().SetStr("value")
+	attr2 := dic.AttributeTable().AppendEmpty()
+	attr2.SetKey("key")
+	attr2.Value().SetStr("value")
+
 	ss.EnsureCapacity(profilesCount)
 	for i := 0; i < profilesCount; i++ {
 		switch i % 2 {
@@ -38,10 +47,6 @@ func fillProfileOne(profile pprofile.Profile) {
 	profile.SetDuration(profileEndTimestamp)
 	profile.SetDroppedAttributesCount(1)
 
-	attr := profile.AttributeTable().AppendEmpty()
-	attr.SetKey("key")
-	attr.Value().SetStr("value")
-
 	sample := profile.Sample().AppendEmpty()
 	sample.SetLocationsStartIndex(2)
 	sample.SetLocationsLength(10)
@@ -53,10 +58,6 @@ func fillProfileTwo(profile pprofile.Profile) {
 	profile.SetProfileID([16]byte{0x02, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10})
 	profile.SetTime(profileStartTimestamp)
 	profile.SetDuration(profileEndTimestamp)
-
-	attr := profile.AttributeTable().AppendEmpty()
-	attr.SetKey("key")
-	attr.Value().SetStr("value")
 
 	sample := profile.Sample().AppendEmpty()
 	sample.SetLocationsStartIndex(7)
