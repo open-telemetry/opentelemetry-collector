@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -70,7 +70,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -95,7 +95,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -148,7 +148,7 @@ jobs:
     strategy:
       matrix:
         runner: [ubuntu-latest]
-        go-version: ["1.24.5", "1.23.11"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["stable", "oldstable"] # 1.20 needs quotes otherwise it's interpreted as 1.2
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
@@ -206,7 +206,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
@@ -270,7 +270,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.11
+          go-version: oldstable
           cache: false
       - name: Cache Go
         id: go-cache
