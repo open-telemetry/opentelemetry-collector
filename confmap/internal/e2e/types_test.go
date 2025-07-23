@@ -437,7 +437,7 @@ func TestIssue10787(t *testing.T) {
 			},
 		},
 		"processors": map[string]any{
-			"batch": nil,
+			"memory_limiter": nil,
 		},
 		"receivers": map[string]any{
 			"otlp": map[string]any{
@@ -455,7 +455,7 @@ func TestIssue10787(t *testing.T) {
 			"pipelines": map[string]any{
 				"traces": map[string]any{
 					"exporters":  []any{"debug"},
-					"processors": []any{"batch"},
+					"processors": []any{"memory_limiter"},
 					"receivers":  []any{"otlp"},
 				},
 			},
