@@ -4,6 +4,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	jsoniter "github.com/json-iterator/go"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
@@ -47,4 +49,22 @@ func GenerateTestMap() Map {
 func FillTestMap(dest Map) {
 	*dest.orig = nil
 	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+}
+
+func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {
+	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+		*ms.orig = append(*ms.orig, otlpcommon.KeyValue{})
+		iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+			switch f {
+			case "key":
+				(*ms.orig)[len(*ms.orig)-1].Key = iter.ReadString()
+			case "value":
+				UnmarshalJSONIterValue(NewValue(&(*ms.orig)[len(*ms.orig)-1].Value, nil), iter)
+			default:
+				iter.Skip()
+			}
+			return true
+		})
+		return true
+	})
 }
