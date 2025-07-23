@@ -37,7 +37,7 @@ require (
 	go.opentelemetry.io/collector/service v0.130.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.73.0
+	google.golang.org/grpc v1.74.2
 )
 
 require (
