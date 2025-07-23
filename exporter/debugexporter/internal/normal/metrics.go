@@ -126,7 +126,7 @@ func writeExponentialHistogramDataPoints(metric pmetric.Metric) (lines []string)
 
 		for i := 0; i < dataPoint.Negative().BucketCounts().Len(); i++ {
 			index := int(dataPoint.Negative().Offset()) + i
-			lowerBound := math.Pow(base, float64(index))
+			lowerBound := math.Pow(base, float64(index)) * -1
 			value += fmt.Sprintf(" le%v=%d", lowerBound, dataPoint.Negative().BucketCounts().At(i))
 		}
 
