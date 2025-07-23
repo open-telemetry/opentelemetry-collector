@@ -126,21 +126,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
   if !m.config.Enabled {
     return
   }
-  nm := pmetric.NewMetric()
-	nm.SetName("{{ $name }}")
-	nm.SetDescription("{{ $metric.Description }}")
-	nm.SetUnit("{{ $metric.Unit }}")
-	nm.SetEmpty{{ $metric.Data.Type }}()
-	{{- if $metric.Data.HasMonotonic }}
-	nm.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
-	{{- end }}
-	{{- if $metric.Data.HasAggregated }}
-	nm.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }})
-	{{- end }}
-	{{- if $metric.Attributes }}
-	nm.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
-	{{- end }}
-	dp := nm.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
+	dp := pmetric.NewNumberDataPoint()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	{{ range $metric.Attributes -}}
