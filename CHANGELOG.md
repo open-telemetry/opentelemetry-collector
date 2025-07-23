@@ -7,6 +7,73 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.36.1/v0.130.1
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fixes bug where internal metrics are emitted with an unexpected suffix in their names when users configure `service::telemetry::metrics::readers` with Prometheus. (#13449)
+  See more details on https://github.com/open-telemetry/opentelemetry-go/issues/7039
+
+<!-- previous-version -->
+
+## v1.36.0/v0.130.0
+
+### ❗ Known Issues ❗
+
+- Due to a [bug](https://github.com/open-telemetry/opentelemetry-go/issues/7039) in the prometheus exporter, if you are configuring a prometheus exporter, the collector's internal metrics will be emitted with an unexpected suffix in its name. For example, the metric `otelcol_exporter_sent_spans__spans__total` instead of `otelcol_exporter_sent_spans_total`. The workaround is to manually configure `without_units: true` in your prometheus exporter config
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+                  without_units: true
+  ```
+
+  If you are using the collector's default Prometheus exporter for exporting internal metrics you are unaffected. 
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Enable items and bytes sizers for persistent queue (#12881)
+- `exporterhelper`: Refactor persistent storage size backup to always record it. (#12890)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `yaml`: Replaced `sigs.k8s.io/yaml` with `go.yaml.in/yaml` for improved support and long-term maintainability. (#13308)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix exporter.PersistRequestContext feature gate (#13342)
+- `exporterhelper`: Preserve all metrics metadata when batch splitting. (#13236)
+  Previously, when large batches of metrics were processed, the splitting logic in `metric_batch.go` could
+  cause the `name` field of some metrics to disappear. This fix ensures that all metric fields are
+  properly preserved when `metricRequest` objects are split.
+  
+- `service`: Default internal metrics config now enables `otel_scope_` labels (#12939, #13344)
+  By default, the Collector exports its internal metrics using a Prometheus
+  exporter from the opentelemetry-go repository. With this change, the Collector
+  no longer sets "without_scope_info" to true in its configuration.
+  
+  This means that all exported metrics will have `otel_scope_name`,
+  `otel_scope_schema_url`, and `otel_scope_version` labels corresponding to the
+  instrumentation scope metadata for that metric.
+  
+  This notably prevents an error when multiple metrics are only distinguished
+  by their instrumentation scopes and end up aliased during export.
+  
+  If this is not desired behavior, a Prometheus exporter can be explicitly
+  configured with this option enabled.
+  
+
+<!-- previous-version -->
+
 ## v1.35.0/v0.129.0
 
 ### 🛑 Breaking changes 🛑
