@@ -27,11 +27,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: true},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: true},
-					MetricInputType:          MetricConfig{Enabled: true},
-					OptionalMetric:           MetricConfig{Enabled: true},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: true},
+					DefaultMetric: MetricConfig{
+						Enabled:  true,
+						AggStrat: "sum"},
+					DefaultMetricToBeRemoved: MetricConfig{
+						Enabled:  true,
+						AggStrat: "sum"},
+					MetricInputType: MetricConfig{
+						Enabled:  true,
+						AggStrat: "sum"},
+					OptionalMetric: MetricConfig{
+						Enabled: true, AggStrat: "avg"},
+					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled: true, AggStrat: "avg"},
+				},
+				Attributes: AttributesConfig{
+					BooleanAttr: AttributeConfig{
+						Enabled: true,
+					},
+					BooleanAttr2: AttributeConfig{
+						Enabled: true,
+					},
+					EnumAttr: AttributeConfig{
+						Enabled: true,
+					},
+					MapAttr: AttributeConfig{
+						Enabled: true,
+					},
+					OverriddenIntAttr: AttributeConfig{
+						Enabled: true,
+					},
+					SliceAttr: AttributeConfig{
+						Enabled: true,
+					},
+					StringAttr: AttributeConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: true},
@@ -49,11 +80,42 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					DefaultMetric:            MetricConfig{Enabled: false},
-					DefaultMetricToBeRemoved: MetricConfig{Enabled: false},
-					MetricInputType:          MetricConfig{Enabled: false},
-					OptionalMetric:           MetricConfig{Enabled: false},
-					OptionalMetricEmptyUnit:  MetricConfig{Enabled: false},
+					DefaultMetric: MetricConfig{
+						Enabled:  false,
+						AggStrat: "sum"},
+					DefaultMetricToBeRemoved: MetricConfig{
+						Enabled:  false,
+						AggStrat: "sum"},
+					MetricInputType: MetricConfig{
+						Enabled:  false,
+						AggStrat: "sum"},
+					OptionalMetric: MetricConfig{
+						Enabled: false, AggStrat: "avg"},
+					OptionalMetricEmptyUnit: MetricConfig{
+						Enabled: false, AggStrat: "avg"},
+				},
+				Attributes: AttributesConfig{
+					BooleanAttr: AttributeConfig{
+						Enabled: true,
+					},
+					BooleanAttr2: AttributeConfig{
+						Enabled: true,
+					},
+					EnumAttr: AttributeConfig{
+						Enabled: true,
+					},
+					MapAttr: AttributeConfig{
+						Enabled: true,
+					},
+					OverriddenIntAttr: AttributeConfig{
+						Enabled: true,
+					},
+					SliceAttr: AttributeConfig{
+						Enabled: true,
+					},
+					StringAttr: AttributeConfig{
+						Enabled: true,
+					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					MapResourceAttr:                  ResourceAttributeConfig{Enabled: false},
