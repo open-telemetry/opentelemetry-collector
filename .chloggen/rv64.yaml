@@ -10,7 +10,7 @@ component: architecture
 note: New Tier 3 platform riscv64 allowing the collector to be built and distributed for this platform.
 
 # One or more tracking issues or pull requests related to the change
-issues: [ 'open-telemetry/opentelemetry-collector-releases#968' ]
+issues: [ 13462 ]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
