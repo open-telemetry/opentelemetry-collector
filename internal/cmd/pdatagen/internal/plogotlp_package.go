@@ -26,7 +26,7 @@ var plogotlp = &Package{
 	},
 }
 
-var exportLogsPartialSuccess = &messageValueStruct{
+var exportLogsPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectorlog.ExportLogsPartialSuccess",

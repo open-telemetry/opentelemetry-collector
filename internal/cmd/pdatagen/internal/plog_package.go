@@ -42,7 +42,7 @@ var resourceLogsSlice = &sliceOfPtrs{
 	element:    resourceLogs,
 }
 
-var resourceLogs = &messageValueStruct{
+var resourceLogs = &messageStruct{
 	structName:     "ResourceLogs",
 	description:    "// ResourceLogs is a collection of logs from a Resource.",
 	originFullName: "otlplogs.ResourceLogs",
@@ -61,7 +61,7 @@ var scopeLogsSlice = &sliceOfPtrs{
 	element:    scopeLogs,
 }
 
-var scopeLogs = &messageValueStruct{
+var scopeLogs = &messageStruct{
 	structName:     "ScopeLogs",
 	description:    "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
 	originFullName: "otlplogs.ScopeLogs",
@@ -80,7 +80,7 @@ var logSlice = &sliceOfPtrs{
 	element:    logRecord,
 }
 
-var logRecord = &messageValueStruct{
+var logRecord = &messageStruct{
 	structName:     "LogRecord",
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
 	originFullName: "otlplogs.LogRecord",
@@ -133,7 +133,7 @@ var logRecord = &messageValueStruct{
 	},
 }
 
-var bodyField = &messageValueField{
+var bodyField = &messageField{
 	fieldName:     "Body",
 	returnMessage: anyValue,
 }

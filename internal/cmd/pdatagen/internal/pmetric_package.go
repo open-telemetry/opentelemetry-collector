@@ -60,7 +60,7 @@ var resourceMetricsSlice = &sliceOfPtrs{
 	element:    resourceMetrics,
 }
 
-var resourceMetrics = &messageValueStruct{
+var resourceMetrics = &messageStruct{
 	structName:     "ResourceMetrics",
 	description:    "// ResourceMetrics is a collection of metrics from a Resource.",
 	originFullName: "otlpmetrics.ResourceMetrics",
@@ -79,7 +79,7 @@ var scopeMetricsSlice = &sliceOfPtrs{
 	element:    scopeMetrics,
 }
 
-var scopeMetrics = &messageValueStruct{
+var scopeMetrics = &messageStruct{
 	structName:     "ScopeMetrics",
 	description:    "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.ScopeMetrics",
@@ -98,7 +98,7 @@ var metricSlice = &sliceOfPtrs{
 	element:    metric,
 }
 
-var metric = &messageValueStruct{
+var metric = &messageStruct{
 	structName: "Metric",
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto",
@@ -157,7 +157,7 @@ var metric = &messageValueStruct{
 	},
 }
 
-var gauge = &messageValueStruct{
+var gauge = &messageStruct{
 	structName:     "Gauge",
 	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
@@ -169,7 +169,7 @@ var gauge = &messageValueStruct{
 	},
 }
 
-var sum = &messageValueStruct{
+var sum = &messageStruct{
 	structName:     "Sum",
 	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
@@ -183,7 +183,7 @@ var sum = &messageValueStruct{
 	},
 }
 
-var histogram = &messageValueStruct{
+var histogram = &messageStruct{
 	structName:     "Histogram",
 	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Histogram",
@@ -196,7 +196,7 @@ var histogram = &messageValueStruct{
 	},
 }
 
-var exponentialHistogram = &messageValueStruct{
+var exponentialHistogram = &messageStruct{
 	structName: "ExponentialHistogram",
 	description: `// ExponentialHistogram represents the type of a metric that is calculated by aggregating
 	// as a ExponentialHistogram of all reported double measurements over a time interval.`,
@@ -210,7 +210,7 @@ var exponentialHistogram = &messageValueStruct{
 	},
 }
 
-var summary = &messageValueStruct{
+var summary = &messageStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.Summary",
@@ -227,7 +227,7 @@ var numberDataPointSlice = &sliceOfPtrs{
 	element:    numberDataPoint,
 }
 
-var numberDataPoint = &messageValueStruct{
+var numberDataPoint = &messageStruct{
 	structName:     "NumberDataPoint",
 	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
@@ -266,7 +266,7 @@ var histogramDataPointSlice = &sliceOfPtrs{
 	element:    histogramDataPoint,
 }
 
-var histogramDataPoint = &messageValueStruct{
+var histogramDataPoint = &messageStruct{
 	structName:     "HistogramDataPoint",
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
@@ -290,7 +290,7 @@ var exponentialHistogramDataPointSlice = &sliceOfPtrs{
 	element:    exponentialHistogramDataPoint,
 }
 
-var exponentialHistogramDataPoint = &messageValueStruct{
+var exponentialHistogramDataPoint = &messageStruct{
 	structName: "ExponentialHistogramDataPoint",
 	description: `// ExponentialHistogramDataPoint is a single data point in a timeseries that describes the
 	// time-varying values of a ExponentialHistogram of double values. A ExponentialHistogram contains
@@ -314,11 +314,11 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 			defaultVal: "uint64(0)",
 			testVal:    "uint64(201)",
 		},
-		&messageValueField{
+		&messageField{
 			fieldName:     "Positive",
 			returnMessage: bucketsValues,
 		},
-		&messageValueField{
+		&messageField{
 			fieldName:     "Negative",
 			returnMessage: bucketsValues,
 		},
@@ -336,7 +336,7 @@ var exponentialHistogramDataPoint = &messageValueStruct{
 	},
 }
 
-var bucketsValues = &messageValueStruct{
+var bucketsValues = &messageStruct{
 	structName:     "ExponentialHistogramDataPointBuckets",
 	description:    "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
@@ -356,7 +356,7 @@ var summaryDataPointSlice = &sliceOfPtrs{
 	element:    summaryDataPoint,
 }
 
-var summaryDataPoint = &messageValueStruct{
+var summaryDataPoint = &messageStruct{
 	structName:     "SummaryDataPoint",
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
@@ -379,7 +379,7 @@ var quantileValuesSlice = &sliceOfPtrs{
 	element:    quantileValues,
 }
 
-var quantileValues = &messageValueStruct{
+var quantileValues = &messageStruct{
 	structName:     "SummaryDataPointValueAtQuantile",
 	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
@@ -394,7 +394,7 @@ var exemplarSlice = &sliceOfValues{
 	element:    exemplar,
 }
 
-var exemplar = &messageValueStruct{
+var exemplar = &messageStruct{
 	structName: "Exemplar",
 	description: "// Exemplar is a sample input double measurement.\n//\n" +
 		"// Exemplars also hold information about the environment when the measurement was recorded,\n" +

@@ -7,7 +7,35 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.36.1/v0.130.1
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fixes bug where internal metrics are emitted with an unexpected suffix in their names when users configure `service::telemetry::metrics::readers` with Prometheus. (#13449)
+  See more details on https://github.com/open-telemetry/opentelemetry-go/issues/7039
+
+<!-- previous-version -->
+
 ## v1.36.0/v0.130.0
+
+### ❗ Known Issues ❗
+
+- Due to a [bug](https://github.com/open-telemetry/opentelemetry-go/issues/7039) in the prometheus exporter, if you are configuring a prometheus exporter, the collector's internal metrics will be emitted with an unexpected suffix in its name. For example, the metric `otelcol_exporter_sent_spans__spans__total` instead of `otelcol_exporter_sent_spans_total`. The workaround is to manually configure `without_units: true` in your prometheus exporter config
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+                  without_units: true
+  ```
+
+  If you are using the collector's default Prometheus exporter for exporting internal metrics you are unaffected. 
 
 ### 🛑 Breaking changes 🛑
 
