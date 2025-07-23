@@ -1,0 +1,7 @@
+name: {{.GeneratedPackageName}}
+description: Semantic Conventions
+semconv_version: 0.1.0
+schema_base_url: https://opentelemetry.io/collector/semconv/{{.GeneratedPackageName}}
+dependencies:
+  - name: otel
+    registry_path: https://github.com/open-telemetry/semantic-conventions/archive/refs/tags/v{{.SemConvVersion}}.zip[model]

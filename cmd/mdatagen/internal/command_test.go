@@ -43,6 +43,7 @@ func TestRunContents(t *testing.T) {
 		wantReadmeGenerated             bool
 		wantStatusGenerated             bool
 		wantComponentTestGenerated      bool
+		wantSemconvGenerated            bool
 		wantGoleakIgnore                bool
 		wantGoleakSkip                  bool
 		wantGoleakSetup                 bool
@@ -82,6 +83,14 @@ func TestRunContents(t *testing.T) {
 			wantStatusGenerated:        true,
 			wantReadmeGenerated:        true,
 			wantComponentTestGenerated: true,
+		},
+		{
+			yml:                        "semconv.yaml",
+			wantConfigGenerated:        true,
+			wantStatusGenerated:        true,
+			wantReadmeGenerated:        true,
+			wantComponentTestGenerated: true,
+			wantSemconvGenerated:       true,
 		},
 		{
 			yml:                             "resource_attributes_only.yaml",
@@ -258,6 +267,12 @@ foo
 			} else {
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics.go"))
 				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_metrics_test.go"))
+			}
+
+			if tt.wantSemconvGenerated {
+				require.FileExists(t, filepath.Join(tmpdir, "documentation.md"))
+			} else {
+				require.NoFileExists(t, filepath.Join(tmpdir, generatedPackageDir, "generated_semconv.go"))
 			}
 
 			if tt.wantLogsGenerated {

@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime/debug"
@@ -21,6 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -177,6 +180,13 @@ func run(ymlPath string) error {
 	if len(md.ResourceAttributes) > 0 { // only generate resource files if resource attributes are configured
 		toGenerate[filepath.Join(tmplDir, "resource.go.tmpl")] = filepath.Join(codeDir, "generated_resource.go")
 		toGenerate[filepath.Join(tmplDir, "resource_test.go.tmpl")] = filepath.Join(codeDir, "generated_resource_test.go")
+	}
+
+	if len(md.Semconv.Groups) > 0 || md.Semconv.Imports != nil {
+		err = generateSemconv(md)
+		if err != nil {
+			return fmt.Errorf("failed generating semconv: %w", err)
+		}
 	}
 
 	if len(md.Metrics) > 0 { // only generate metrics if metrics are present
@@ -400,4 +410,49 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 	}
 
 	return formatErr
+}
+
+func generateSemconv(md Metadata) error {
+	dir, err := ioutil.TempDir("", "semconv")
+	if err != nil {
+		return fmt.Errorf("failed creating temp directory: %w", err)
+	}
+	cfg, err := yaml.Marshal(md.Semconv)
+	if err != nil {
+		return fmt.Errorf("failed marshaling semconv config: %w", err)
+	}
+	outputFile := filepath.Join(dir, "config.yaml")
+	err = os.WriteFile(outputFile, cfg, 0o600)
+	if err != nil {
+		return fmt.Errorf("failed writing %q: %w", outputFile, err)
+	}
+
+	outputFile = filepath.Join(dir, "registry_manifest.yaml")
+	err = generateFile(filepath.Join("templates", "registry_manifest.yaml.tmpl"), outputFile, md, md.GeneratedPackageName)
+	if err != nil {
+		return fmt.Errorf("failed generating registry manifest: %w", err)
+	}
+
+	err = os.MkdirAll(filepath.Join(dir, "templates", "registry", "go"), 0o700)
+	if err != nil {
+		return fmt.Errorf("unable to create registry directory: %w", err)
+	}
+	outputFile = filepath.Join(dir, "templates", "registry", "go", "weaver.yaml")
+	err = generateFile(filepath.Join("templates", "weaver.yaml.tmpl"), outputFile, md, md.GeneratedPackageName)
+	if err != nil {
+		return fmt.Errorf("failed generating weaver config: %w", err)
+	}
+
+	//nolint:gosec // #nosec G204 -- dir is trusted to be a safe path
+	cmd := exec.Command("weaver", "registry", "generate", "-r", dir, "go")
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("weaver failed: %w, error message: %s", err, stderr.String())
+	}
+
+	return nil
 }
