@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"go/format"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -413,7 +412,7 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 }
 
 func generateSemconv(md Metadata) error {
-	dir, err := ioutil.TempDir("", "semconv")
+	dir, err := io.TempDir("", "semconv")
 	if err != nil {
 		return fmt.Errorf("failed creating temp directory: %w", err)
 	}

@@ -2,9 +2,11 @@
 
 package semconv
 
-import "encoding/json"
-import "fmt"
-import "reflect"
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+)
 
 type AnyValueSemanticConvention struct {
 	// a brief description of the value.
@@ -257,11 +259,13 @@ type SemanticConventionBaseDeprecated interface{}
 
 type SemanticConventionBaseType string
 
-const SemanticConventionBaseTypeAttributeGroup SemanticConventionBaseType = "attribute_group"
-const SemanticConventionBaseTypeEntity SemanticConventionBaseType = "entity"
-const SemanticConventionBaseTypeEvent SemanticConventionBaseType = "event"
-const SemanticConventionBaseTypeMetric SemanticConventionBaseType = "metric"
-const SemanticConventionBaseTypeSpan SemanticConventionBaseType = "span"
+const (
+	SemanticConventionBaseTypeAttributeGroup SemanticConventionBaseType = "attribute_group"
+	SemanticConventionBaseTypeEntity         SemanticConventionBaseType = "entity"
+	SemanticConventionBaseTypeEvent          SemanticConventionBaseType = "event"
+	SemanticConventionBaseTypeMetric         SemanticConventionBaseType = "metric"
+	SemanticConventionBaseTypeSpan           SemanticConventionBaseType = "span"
+)
 
 var enumValues_SemanticConventionBaseType = []interface{}{
 	"span",
@@ -295,11 +299,13 @@ type SpanSemanticConvention interface{}
 
 type StabilityLevel string
 
-const StabilityLevelAlpha StabilityLevel = "alpha"
-const StabilityLevelBeta StabilityLevel = "beta"
-const StabilityLevelDevelopment StabilityLevel = "development"
-const StabilityLevelReleaseCandidate StabilityLevel = "release_candidate"
-const StabilityLevelStable StabilityLevel = "stable"
+const (
+	StabilityLevelAlpha            StabilityLevel = "alpha"
+	StabilityLevelBeta             StabilityLevel = "beta"
+	StabilityLevelDevelopment      StabilityLevel = "development"
+	StabilityLevelReleaseCandidate StabilityLevel = "release_candidate"
+	StabilityLevelStable           StabilityLevel = "stable"
+)
 
 var enumValues_StabilityLevel = []interface{}{
 	"stable",
