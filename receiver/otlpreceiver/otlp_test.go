@@ -1362,7 +1362,7 @@ func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id componen
 						Attributes: attribute.NewSet(
 							attribute.String("receiver", id.String()),
 							attribute.String("transport", transport)),
-						Value: failed, // Consumer errors are categorized as refused
+						Value: failed,
 					},
 				},
 			},

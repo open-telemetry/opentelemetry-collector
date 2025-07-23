@@ -93,8 +93,8 @@ telemetry:
         - outcome
 attributes:
   outcome:
-    description: Successful receiver requests
-    type: int
+    description: The outcome of receiver requests
+    type: string
     enum:
       - success
       - refused

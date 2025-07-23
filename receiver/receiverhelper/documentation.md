@@ -90,4 +90,4 @@ The number of requests performed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| outcome | Successful receiver requests | Int: ``success``, ``refused``, ``failure`` |
+| outcome | The outcome of receiver requests | Str: ``success``, ``refused``, ``failure`` |
