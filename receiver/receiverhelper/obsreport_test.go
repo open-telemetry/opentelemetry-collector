@@ -46,6 +46,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		params := []testParams{
 			{items: 13, err: WrapDownstreamError(errFake)},
 			{items: 42, err: nil},
+			{items: 7, err: errors.New("non-downstream error")}, // Regular error to test numFailedErrors path
 		}
 		for i, param := range params {
 			rec, err := newReceiver(ObsReportSettings{
@@ -62,7 +63,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 		spans := tt.SpanRecorder.Ended()
 		require.Len(t, spans, len(params))
 
-		var acceptedSpans, refusedSpans int
+		var acceptedSpans, refusedSpans, failedSpans int
 		for i, span := range spans {
 			assert.Equal(t, "receiver/"+receiverID.String()+"/TraceDataReceived", span.Name())
 			switch {
@@ -70,11 +71,21 @@ func TestReceiveTraceDataOp(t *testing.T) {
 				acceptedSpans += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
 				assert.Equal(t, codes.Unset, span.Status().Code)
 			case errors.Is(params[i].err, errFake):
 				refusedSpans += params[i].items
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
 				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(0)})
+				assert.Equal(t, codes.Error, span.Status().Code)
+				assert.Equal(t, params[i].err.Error(), span.Status().Description)
+			case params[i].err != nil && !errors.Is(params[i].err, ErrDownstreamError):
+				// Non-downstream error case - this covers the uncovered numFailedErrors path
+				failedSpans += params[i].items
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.AcceptedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.RefusedSpansKey, Value: attribute.Int64Value(0)})
+				require.Contains(t, span.Attributes(), attribute.KeyValue{Key: internal.FailedSpansKey, Value: attribute.Int64Value(int64(params[i].items))})
 				assert.Equal(t, codes.Error, span.Status().Code)
 				assert.Equal(t, params[i].err.Error(), span.Status().Description)
 			default:
@@ -98,6 +109,15 @@ func TestReceiveTraceDataOp(t *testing.T) {
 						attribute.String(internal.ReceiverKey, receiverID.String()),
 						attribute.String(internal.TransportKey, transport)),
 					Value: int64(refusedSpans),
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+		metadatatest.AssertEqualReceiverFailedSpans(t, tt,
+			[]metricdata.DataPoint[int64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Value: int64(failedSpans),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
