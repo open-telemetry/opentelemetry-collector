@@ -34,6 +34,8 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				UseInternalLogger:  false,
+				OutputPaths:        []string{"stdout", "/tmp/debugexporter_test.log"},
 			},
 		},
 		{
