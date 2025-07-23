@@ -233,9 +233,6 @@ func (c ServerConfig) Validate() error {
 	if !c.hasCert() && !c.hasKey() {
 		return errors.New("TLS configuration must include both certificate and key for server connections")
 	}
-	if c.hasCert() != c.hasKey() {
-		return errors.New("TLS configuration must include both certificate and key for server connections")
-	}
 	return nil
 }
 

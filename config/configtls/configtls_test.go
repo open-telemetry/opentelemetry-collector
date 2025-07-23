@@ -953,7 +953,7 @@ func TestServerConfigValidate(t *testing.T) {
 					CertFile: "cert.pem",
 				},
 			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
 		},
 		{
 			name: "server config with key file but no cert",
@@ -962,7 +962,7 @@ func TestServerConfigValidate(t *testing.T) {
 					KeyFile: "key.pem",
 				},
 			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
 		},
 		{
 			name: "server config with cert PEM but no key",
@@ -971,7 +971,7 @@ func TestServerConfigValidate(t *testing.T) {
 					CertPem: "cert-pem",
 				},
 			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
 		},
 		{
 			name: "server config with key PEM but no cert",
@@ -980,7 +980,7 @@ func TestServerConfigValidate(t *testing.T) {
 					KeyPem: "key-pem",
 				},
 			},
-			errorTxt: "TLS configuration must include both certificate and key for server connections",
+			errorTxt: "config: TLS configuration must include both certificate and key (CertFile/CertPem and KeyFile/KeyPem)",
 		},
 		{
 			name: "server config with both cert file and cert PEM",
