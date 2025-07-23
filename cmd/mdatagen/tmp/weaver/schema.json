@@ -1,0 +1,849 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"description": "YAML schema for semantic convention generator, use for example with VS Code.",
+	"additionalProperties": false,
+	"properties": {
+		"groups": {
+			"type": "array",
+			"items": {
+				"anyOf": [
+					{
+						"allOf": [
+							{
+								"$ref": "#/$defs/SemanticConvention"
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/$defs/EntitySemanticConvention"
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/$defs/SpanSemanticConvention"
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/$defs/EventSemanticConvention"
+							}
+						]
+					},
+					{
+						"allOf": [
+							{
+								"$ref": "#/$defs/MetricSemanticConvention"
+							}
+						]
+					}
+				]
+			}
+		},
+		"imports": {
+			"type": "object",
+			"properties": {
+				"metrics": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"events": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				},
+				"entities": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			},
+			"additionalProperties": false
+		}
+	},
+	"$defs": {
+		"annotations": {
+			"type": "object",
+			"additionalProperties": true
+		},
+		"Deprecated": {
+			"description": "Specifies if an attribute or a signal is deprecated.",
+			"oneOf": [
+				{
+					"type": "object",
+					"description": "The telemetry object containing the deprecated field has been renamed to an existing or a new telemetry object.",
+					"properties": {
+						"reason": {
+							"const": "renamed"
+						},
+						"renamed_to": {
+							"type": "string",
+							"description": "The new name of the telemetry object."
+						},
+						"note:": {
+							"type": "string",
+							"description": "A note explaining the reason for the deprecation."
+						}
+					},
+					"required": [
+						"reason",
+						"renamed_to"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"description": "The telemetry object containing the deprecated field has been obsoleted because it no longer exists and has no valid replacement.",
+					"properties": {
+						"reason": {
+							"const": "obsoleted"
+						},
+						"note:": {
+							"type": "string",
+							"description": "A note explaining the reason for the deprecation."
+						}
+					},
+					"required": [
+						"reason"
+					],
+					"additionalProperties": false
+				},
+				{
+					"type": "object",
+					"description": "The telemetry object containing the deprecated field has been deprecated for complex reasons (split, merge, ...) which are currently not precisely defined in the supported deprecation reasons.",
+					"properties": {
+						"reason": {
+							"const": "uncategorized"
+						},
+						"note:": {
+							"type": "string",
+							"description": "A note explaining the reason for the deprecation."
+						}
+					},
+					"required": [
+						"reason"
+					],
+					"additionalProperties": false
+				}
+			]
+		},
+		"EntitySemanticConvention": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/SemanticConventionBase"
+				}
+			],
+			"required": [
+				"name"
+			],
+			"properties": {
+				"type": {
+					"type": "string",
+					"const": "entity"
+				}
+			}
+		},
+		"SemanticConventionBase": {
+			"type": "object",
+			"required": [
+				"id",
+				"brief",
+				"type"
+			],
+			"allOf": [
+				{
+					"if": {
+						"properties": {
+							"type": {
+								"not": {
+									"anyOf": [
+										{
+											"const": "metric"
+										},
+										{
+											"const": "event"
+										}
+									]
+								}
+							}
+						}
+					},
+					"then": {
+						"anyOf": [
+							{
+								"required": [
+									"attributes"
+								]
+							},
+							{
+								"required": [
+									"extends"
+								]
+							}
+						]
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"type": {
+								"not": {
+									"const": "attribute_group"
+								}
+							}
+						}
+					},
+					"then": {
+						"required": [
+							"stability"
+						]
+					}
+				}
+			],
+			"properties": {
+				"id": {
+					"type": "string",
+					"description": "unique string"
+				},
+				"type": {
+					"type": "string",
+					"enum": [
+						"span",
+						"entity",
+						"metric",
+						"event",
+						"attribute_group"
+					],
+					"description": "The (signal) type of the semantic convention"
+				},
+				"brief": {
+					"type": "string",
+					"description": "a brief description of the semantic convention"
+				},
+				"note": {
+					"type": "string",
+					"description": "a more elaborate description of the semantic convention. It defaults to an empty string"
+				},
+				"extends": {
+					"type": "string",
+					"description": "reference another semantic convention ID. It inherits all attributes from the specified semantic convention."
+				},
+				"attributes": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/Attribute"
+					},
+					"description": "list of attributes that belong to the semantic convention"
+				},
+				"display_name": {
+					"type": "string",
+					"description": "the display name / title of the semantic convention."
+				},
+				"deprecated": {
+					"$ref": "#/$defs/Deprecated"
+				},
+				"stability": {
+					"allOf": [
+						{
+							"$ref": "#/$defs/StabilityLevel"
+						}
+					]
+				},
+				"annotations": {
+					"$ref": "#/$defs/annotations"
+				}
+			}
+		},
+		"SpanSemanticConvention": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/SemanticConventionBase"
+				}
+			],
+			"required": [
+				"type",
+				"span_kind"
+			],
+			"properties": {
+				"type": {
+					"type": "string",
+					"const": "span"
+				},
+				"span_kind": {
+					"type": "string",
+					"enum": [
+						"client",
+						"server",
+						"producer",
+						"consumer",
+						"internal"
+					],
+					"description": "specifies the kind of the span."
+				},
+				"entity_associations": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/EntityAssociation"
+					}
+				}
+			}
+		},
+		"EventSemanticConvention": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/SemanticConventionBase"
+				}
+			],
+			"properties": {
+				"type": {
+					"type": "string",
+					"const": "event"
+				},
+				"name": {
+					"type": "string",
+					"description": "The name of the event."
+				},
+				"body": {
+					"$ref": "#/$defs/AnyValueSemanticConvention"
+				},
+				"entity_associations": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/EntityAssociation"
+					}
+				}
+			},
+			"anyOf": [
+				{
+					"required": [
+						"name"
+					]
+				}
+			]
+		},
+		"AnyValueSemanticConvention": {
+			"type": "object",
+			"required": [
+				"type",
+				"id",
+				"requirement_level",
+				"stability"
+			],
+			"properties": {
+				"id": {
+					"type": "string",
+					"description": "unique string"
+				},
+				"type": {
+					"$ref": "#/$defs/AnyValueType"
+				},
+				"brief": {
+					"type": "string",
+					"description": "a brief description of the value."
+				},
+				"note": {
+					"type": "string",
+					"description": "a more elaborate description of the value. It defaults to an empty string."
+				},
+				"stability": {
+					"allOf": [
+						{
+							"$ref": "#/$defs/StabilityLevel"
+						}
+					]
+				},
+				"requirement_level": {
+					"description": "specifies the any value requirement level. Can be 'required', 'conditionally_required', 'recommended', or 'opt_in'. When omitted, the value is 'recommended'. When set to 'conditionally_required', the string provided MUST specify the conditions under which the value is required.",
+					"oneOf": [
+						{
+							"const": "required"
+						},
+						{
+							"type": "object",
+							"additionalProperties": false,
+							"required": [
+								"conditionally_required"
+							],
+							"properties": {
+								"conditionally_required": {
+									"type": "string"
+								}
+							}
+						},
+						{
+							"oneOf": [
+								{
+									"const": "recommended"
+								},
+								{
+									"type": "object",
+									"additionalProperties": false,
+									"required": [
+										"recommended"
+									],
+									"properties": {
+										"recommended": {
+											"type": "string"
+										}
+									}
+								}
+							]
+						},
+						{
+							"oneOf": [
+								{
+									"const": "opt_in"
+								},
+								{
+									"type": "object",
+									"additionalProperties": false,
+									"required": [
+										"opt_in"
+									],
+									"properties": {
+										"opt_in": {
+											"type": "string"
+										}
+									}
+								}
+							]
+						}
+					]
+				},
+				"examples": {
+					"anyOf": [
+						{
+							"$ref": "#/$defs/ValueType"
+						},
+						{
+							"type": "array",
+							"items": {
+								"$ref": "#/$defs/ValueType"
+							}
+						}
+					],
+					"description": "sequence/dictionary of example values. They are optional for boolean, int, double, and enum attributes. Example values must be of the same type as the value. If only a single example is provided, it can directly be reported without encapsulating it into a sequence/dictionary."
+				},
+				"deprecated": {
+					"$ref": "#/$defs/Deprecated"
+				},
+				"fields": {
+					"type": "array",
+					"description": "when the type is map, this identifies the child (nested) any values associated with the map.",
+					"items": {
+						"$ref": "#/$defs/AnyValueSemanticConvention"
+					}
+				},
+				"members": {
+					"type": "array",
+					"description": "when the type is enum, this identifies the enum members.",
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": [
+							"id",
+							"value",
+							"stability"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "string unique"
+							},
+							"value": {
+								"type": [
+									"string",
+									"number"
+								],
+								"description": "string or number, value of the enum entry."
+							},
+							"brief": {
+								"type": "string",
+								"description": "brief description of the enum entry value. It defaults to the value of ID."
+							},
+							"note": {
+								"type": "string",
+								"description": "longer description. It defaults to an empty string."
+							},
+							"deprecated": {
+								"$ref": "#/$defs/Deprecated"
+							},
+							"stability": {
+								"allOf": [
+									{
+										"$ref": "#/$defs/StabilityLevel"
+									}
+								]
+							}
+						}
+					}
+				}
+			}
+		},
+		"MetricSemanticConvention": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/SemanticConventionBase"
+				}
+			],
+			"required": [
+				"type",
+				"metric_name",
+				"instrument",
+				"unit"
+			],
+			"properties": {
+				"instrument": {
+					"type": "string",
+					"description": "The instrument used to record the metric.",
+					"enum": [
+						"counter",
+						"gauge",
+						"histogram",
+						"updowncounter"
+					]
+				},
+				"metric_name": {
+					"type": "string",
+					"description": "The name of the metric."
+				},
+				"type": {
+					"type": "string",
+					"const": "metric"
+				},
+				"unit": {
+					"type": "string",
+					"description": "The unit in which the metric is measured in."
+				},
+				"entity_associations": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/EntityAssociation"
+					}
+				}
+			}
+		},
+		"SemanticConvention": {
+			"allOf": [
+				{
+					"$ref": "#/$defs/SemanticConventionBase"
+				}
+			],
+			"required": [
+				"type"
+			],
+			"properties": {
+				"type": {
+					"type": "string",
+					"not": {
+						"enum": [
+							"span",
+							"event"
+						]
+					}
+				}
+			}
+		},
+		"AttributeEnumType": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"members": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": [
+							"id",
+							"value",
+							"stability"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "string unique"
+							},
+							"value": {
+								"type": [
+									"string",
+									"number"
+								],
+								"description": "string or number, value of the enum entry."
+							},
+							"brief": {
+								"type": "string",
+								"description": "brief description of the enum entry value. It defaults to the value of ID."
+							},
+							"note": {
+								"type": "string",
+								"description": "longer description. It defaults to an empty string."
+							},
+							"deprecated": {
+								"$ref": "#/$defs/Deprecated"
+							},
+							"stability": {
+								"allOf": [
+									{
+										"$ref": "#/$defs/StabilityLevel"
+									}
+								]
+							},
+							"annotations": {
+								"$ref": "#/$defs/annotations"
+							}							
+						}
+					}
+				}
+			}
+		},
+		"AttributeFullSpec": {
+			"required": [
+				"id",
+				"type",
+				"stability"
+			],
+			"properties": {
+				"id": {
+					"type": "string",
+					"description": "unique string"
+				},
+				"type": {
+					"$ref": "#/$defs/AttributeType"
+				},
+				"stability": {
+					"allOf": [
+						{
+							"$ref": "#/$defs/StabilityLevel"
+						}
+					]
+				}
+			}
+		},
+		"AttributeReference": {
+			"type": "object",
+			"required": [
+				"ref"
+			],
+			"properties": {
+				"ref": {
+					"type": "string",
+					"description": "reference an existing attribute"
+				},
+				"tag": {
+					"type": "string",
+					"description": "associates a tag to the attribute"
+				}
+			}
+		},
+		"ValueType": {
+			"oneOf": [
+				{
+					"type": [
+						"string",
+						"boolean",
+						"number"
+					]
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": [
+							"boolean",
+							"number",
+							"string"
+						]
+					}
+				}
+			]
+		},
+		"StabilityLevel": {
+			"description": "specifies the stability level",
+			"type": "string",
+			"enum": [
+				"stable",
+				"development",
+				"alpha",
+				"beta",
+				"release_candidate"
+			]
+		},
+		"Attribute": {
+			"type": "object",
+			"allOf": [
+				{
+					"properties": {
+						"requirement_level": {
+							"description": "specifies the attribute requirement level. Can be 'required', 'conditionally_required', 'recommended', or 'opt_in'. When omitted, the attribute is 'recommended'. When set to 'conditionally_required', the string provided MUST specify the conditions under which the attribute is required.",
+							"oneOf": [
+								{
+									"const": "required"
+								},
+								{
+									"type": "object",
+									"additionalProperties": false,
+									"required": [
+										"conditionally_required"
+									],
+									"properties": {
+										"conditionally_required": {
+											"type": "string"
+										}
+									}
+								},
+								{
+									"oneOf": [
+										{
+											"const": "recommended"
+										},
+										{
+											"type": "object",
+											"additionalProperties": false,
+											"required": [
+												"recommended"
+											],
+											"properties": {
+												"recommended": {
+													"type": "string"
+												}
+											}
+										}
+									]
+								},
+								{
+									"const": "opt_in"
+								}
+							]
+						},
+						"sampling_relevant": {
+							"type": "boolean",
+							"description": "specifies if it is relevant for sampling. It defaults to false.",
+							"default": false
+						},
+						"brief": {
+							"type": "string",
+							"description": "brief description of the attribute."
+						},
+						"note": {
+							"type": "string",
+							"description": "additional notes to the attribute. It defaults to an empty string."
+						},
+						"examples": {
+							"anyOf": [
+								{
+									"$ref": "#/$defs/ValueType"
+								},
+								{
+									"type": "array",
+									"items": {
+										"$ref": "#/$defs/ValueType"
+									}
+								}
+							],
+							"description": "sequence/dictionary of example values for the attribute. They are optional for boolean, int, double, and enum attributes. Example values must be of the same type of the attribute. If only a single example is provided, it can directly be reported without encapsulating it into a sequence/dictionary."
+						},
+						"annotations": {
+							"$ref": "#/$defs/annotations"
+						},
+						"role": {
+							"#ref": "#/$defs/AttributeRole"
+						}
+					}
+				},
+				{
+					"oneOf": [
+						{
+							"$ref": "#/$defs/AttributeFullSpec"
+						},
+						{
+							"$ref": "#/$defs/AttributeReference"
+						}
+					]
+				}
+			]
+		},
+		"AttributeRole": {
+			"description": "specified the role of an attribute (e.g. descriptive or identifying).",
+			"oneOf": [
+				{
+					"type": "string",
+					"enum": [
+						"identifying",
+						"descriptive"
+					]
+				}
+			]
+		},
+		"AttributeType": {
+			"description": "specifies the supported attribute types.",
+			"oneOf": [
+				{
+					"type": "string",
+					"enum": [
+						"string",
+						"int",
+						"double",
+						"boolean",
+						"any",
+						"string[]",
+						"int[]",
+						"double[]",
+						"boolean[]",
+						"template[string]",
+						"template[int]",
+						"template[double]",
+						"template[boolean]",
+						"template[any]",
+						"template[string[]]",
+						"template[int[]]",
+						"template[double[]]",
+						"template[boolean[]]"
+					],
+					"description": "literal denoting the type"
+				},
+				{
+					"$ref": "#/$defs/AttributeEnumType"
+				}
+			]
+		},
+		"AnyValueType": {
+			"description": "specifies the supported any value types.",
+			"oneOf": [
+				{
+					"type": "string",
+					"enum": [
+						"string",
+						"int",
+						"double",
+						"boolean",
+						"string[]",
+						"int[]",
+						"double[]",
+						"boolean[]",
+						"map",
+						"byte[]",
+						"enum",
+						"undefined"
+					],
+					"description": "literal denoting the type"
+				}
+			]
+		},
+		"EntityAssociation": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"description": "list of entity associations."
+		}
+	}
+}
