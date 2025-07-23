@@ -28,10 +28,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: true},
+					{{- range $name, $metric := .Metrics }}
+					{{ $name.Render }}: MetricConfig{
+            Enabled: true,
+            {{- if eq $metric.Data.Type "Sum" }}
+            AggStrat: "sum"},
+            {{- else -}}
+            AggStrat: "avg"},
+            {{- end }}
 					{{- end }}
 				},
+        Attributes: AttributesConfig{
+          {{- range $name, $_ := .Attributes }}
+          {{ $name.Render }}: AttributeConfig{
+            Enabled: true,
+          },
+          {{- end }}
+        },
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
@@ -45,10 +58,23 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					{{- range $name, $_ := .Metrics }}
-					{{ $name.Render }}: MetricConfig{Enabled: false},
+					{{- range $name, $metric := .Metrics }}
+					{{ $name.Render }}: MetricConfig{
+            Enabled: false,
+            {{- if eq $metric.Data.Type "Sum" }}
+            AggStrat: "sum"},
+            {{- else -}}
+            AggStrat: "avg"},
+            {{- end }}
 					{{- end }}
 				},
+        Attributes: AttributesConfig{
+          {{- range $name, $_ := .Attributes }}
+          {{ $name.Render }}: AttributeConfig{
+            Enabled: true,
+          },
+          {{- end }}
+        },
 				{{- if .ResourceAttributes }}
 				ResourceAttributes: ResourceAttributesConfig{
 					{{- range $name, $_ := .ResourceAttributes }}
