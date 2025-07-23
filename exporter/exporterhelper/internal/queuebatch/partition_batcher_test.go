@@ -21,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
 
+type testContextKey string
+
+const timestampKey testContextKey = "timestamp"
+
 func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -512,4 +516,47 @@ func TestShardBatcher_EmptyRequestList(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 	assert.Equal(t, int64(0), done.success.Load())
 	assert.Equal(t, 0, sink.RequestsCount())
+}
+
+func TestPartitionBatcher_ContextMerging(t *testing.T) {
+	tests := []struct {
+		name         string
+		mergeCtxFunc func(ctx1 context.Context, ctx2 context.Context) context.Context
+	}{
+		{
+			name: "merge_context_with_timestamp",
+			mergeCtxFunc: func(ctx1 context.Context, ctx2 context.Context) context.Context {
+				return context.WithValue(ctx1, timestampKey, 1234)
+			},
+		},
+		{
+			name: "merge_context_returns_background",
+			mergeCtxFunc: func(ctx1 context.Context, ctx2 context.Context) context.Context {
+				return context.Background()
+			},
+		},
+		{
+			name:         "nil_merge_context",
+			mergeCtxFunc: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := BatchConfig{
+				FlushTimeout: 0,
+				Sizer:        request.SizerTypeItems,
+				MinSize:      10,
+			}
+			sink := requesttest.NewSink()
+			ba := newPartitionBatcher(cfg, request.NewItemsSizer(), tt.mergeCtxFunc, newWorkerPool(1), sink.Export, zap.NewNop())
+			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+			done := newFakeDone()
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			<-time.After(10 * time.Millisecond)
+			assert.Equal(t, 1, sink.RequestsCount())
+			assert.EqualValues(t, 2, done.success.Load())
+		})
+	}
 }
