@@ -135,6 +135,12 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 	{{- end }}
 
+  {{- if $metric.HasOptionalAttribute $.Attributes }}
+    for _, op := range options {
+        op.apply(dp)
+    }
+  {{- end }}
+
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
