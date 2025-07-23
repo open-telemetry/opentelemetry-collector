@@ -412,7 +412,7 @@ func generateFile(tmplFile string, outputFile string, md Metadata, goPackage str
 }
 
 func generateSemconv(md Metadata) error {
-	dir, err := io.TempDir("", "semconv")
+	dir, err := os.MkdirTemp("", "semconv")
 	if err != nil {
 		return fmt.Errorf("failed creating temp directory: %w", err)
 	}
