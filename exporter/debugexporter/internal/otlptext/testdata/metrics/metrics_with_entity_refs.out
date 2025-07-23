@@ -1,0 +1,33 @@
+ResourceMetrics #0
+Resource SchemaURL: 
+Resource attributes:
+     -> service.name: Str(my-service)
+     -> service.version: Str(1.0.0)
+     -> host.name: Str(server-01)
+Resource entity refs:
+     -> Entity ref #0:
+          -> Type: service
+          -> Schema URL: https://opentelemetry.io/schemas/1.21.0
+          -> ID keys:
+               -> service.name
+          -> Description keys:
+               -> service.version
+     -> Entity ref #1:
+          -> Type: host
+          -> ID keys:
+               -> host.name
+ScopeMetrics #0
+ScopeMetrics SchemaURL: 
+InstrumentationScope test-scope 
+Metric #0
+Descriptor:
+     -> Name: test-metric
+     -> Description: A test metric
+     -> Unit: 1
+     -> DataType: Gauge
+NumberDataPoints #0
+Data point attributes:
+     -> test.attribute: Str(test-value)
+StartTimestamp: 1970-01-01 00:00:00 +0000 UTC
+Timestamp: 1970-01-01 00:00:00 +0000 UTC
+Value: 123.450000

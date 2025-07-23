@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.36.1
 	go.opentelemetry.io/collector/pdata/pprofile v0.130.1
 	go.opentelemetry.io/collector/pdata/testdata v0.130.1
+	go.opentelemetry.io/collector/pdata/xpdata v0.130.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sys v0.34.0
@@ -52,7 +53,6 @@ require (
 	go.opentelemetry.io/collector/extension/xextension v0.130.1 // indirect
 	go.opentelemetry.io/collector/featuregate v1.36.1 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.130.1 // indirect
-	go.opentelemetry.io/collector/pdata/xpdata v0.130.1 // indirect
 	go.opentelemetry.io/collector/pipeline v0.130.1 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.130.1 // indirect
 	go.opentelemetry.io/collector/receiver v1.36.1 // indirect
