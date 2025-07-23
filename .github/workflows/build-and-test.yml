@@ -148,7 +148,7 @@ jobs:
     strategy:
       matrix:
         runner: [ubuntu-latest]
-        go-version: ["stable", "oldstable"] # 1.20 needs quotes otherwise it's interpreted as 1.2
+        go-version: ["stable", "oldstable"]
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
