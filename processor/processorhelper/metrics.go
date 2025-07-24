@@ -52,12 +52,12 @@ func NewMetrics(
 		span.AddEvent("Start processing.", eventOptions)
 
 		startTime := time.Now()
-		defer obs.recordDuration(ctx, startTime)
 
 		pointsIn := md.DataPointCount()
 
 		var errFunc error
 		md, errFunc = metricsFunc(ctx, md)
+		obs.recordDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, pointsIn, 0)

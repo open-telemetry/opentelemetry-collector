@@ -52,12 +52,12 @@ func NewTraces(
 		span.AddEvent("Start processing.", eventOptions)
 
 		startTime := time.Now()
-		defer obs.recordDuration(ctx, startTime)
 
 		spansIn := td.SpanCount()
 
 		var errFunc error
 		td, errFunc = tracesFunc(ctx, td)
+		obs.recordDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, spansIn, 0)
