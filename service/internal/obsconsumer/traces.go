@@ -18,7 +18,7 @@ var (
 	tracesMarshaler                 = &ptrace.ProtoMarshaler{}
 )
 
-func NewTraces(cons consumer.Traces, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Traces {
+func NewTraces(cons consumer.Traces, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Traces {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}

@@ -928,7 +928,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)

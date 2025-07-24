@@ -357,7 +357,7 @@ func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, er
 	return buf.Bytes(), nil
 }
 
-func inlineReplace(tmplFile string, outputFile string, md Metadata, start string, end string, goPackage string) error {
+func inlineReplace(tmplFile, outputFile string, md Metadata, start, end, goPackage string) error {
 	var readmeContents []byte
 	var err error
 	if readmeContents, err = os.ReadFile(outputFile); err != nil { //nolint:gosec
@@ -386,7 +386,7 @@ func inlineReplace(tmplFile string, outputFile string, md Metadata, start string
 	return nil
 }
 
-func generateFile(tmplFile string, outputFile string, md Metadata, goPackage string) error {
+func generateFile(tmplFile, outputFile string, md Metadata, goPackage string) error {
 	if err := os.Remove(outputFile); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("unable to remove generated file %q: %w", outputFile, err)
 	}

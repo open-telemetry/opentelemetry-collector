@@ -110,7 +110,7 @@ func TestCheckScraperMetrics(t *testing.T) {
 	checkScraperMetrics(t, tel, receiverID, scraperID, 7, 0)
 }
 
-func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver component.ID, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) {
+func checkScraperMetrics(t *testing.T, tt *componenttest.Telemetry, receiver, scraper component.ID, scrapedMetricPoints, erroredMetricPoints int64) {
 	metadatatest.AssertEqualScraperScrapedMetricPoints(t, tt,
 		[]metricdata.DataPoint[int64]{
 			{
