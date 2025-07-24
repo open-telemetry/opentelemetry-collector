@@ -185,7 +185,7 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 		Timeout: 10 * time.Second,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
+	req, err := http.NewRequest(http.MethodGet, endpoint, http.NoBody)
 	require.NoError(t, err)
 
 	var rr *http.Response
