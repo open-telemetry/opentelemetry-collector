@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Adding support for user defined metric attributes to mdatagen"
+note: "Add support for metric re-aggregation by disabling attributes in metadata.yaml and user config"
 
 # One or more tracking issues or pull requests related to the change
 issues: [10726]

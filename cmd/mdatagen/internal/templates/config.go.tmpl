@@ -3,6 +3,8 @@
 package {{ .Package }}
 
 import (
+    "errors"
+
     "go.opentelemetry.io/collector/confmap"
     {{ if and .Metrics .ResourceAttributes -}}
     "go.opentelemetry.io/collector/filter"
@@ -12,15 +14,10 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled  bool   `mapstructure:"enabled"`
-  AggStrat string `mapstructure:"aggregation_strategy"`
+	Enabled             bool   `mapstructure:"enabled"`
+  AggregationStrategy string `mapstructure:"aggregation_strategy"`
 
 	enabledSetByUser bool
-}
-
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-  Enabled bool `mapstructure:"enabled"`
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -34,6 +31,12 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
 }
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+  Enabled bool `mapstructure:"enabled"`
+}
+
 
 // MetricsConfig provides config for {{ .Type }} metrics.
 type MetricsConfig struct {
@@ -67,10 +70,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
     {{ if eq $metric.Data.Type "Sum" -}}
-      AggStrat: "sum",
+      AggregationStrategy: "sum",
     {{- end }}
     {{- if eq $metric.Data.Type "Gauge" -}}
-      AggStrat: "avg",
+      AggregationStrategy: "avg",
     {{- end }}
 		},
 		{{- end }}

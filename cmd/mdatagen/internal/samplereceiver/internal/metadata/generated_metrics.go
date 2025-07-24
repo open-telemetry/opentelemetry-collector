@@ -149,7 +149,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetIntValue(dpi.IntValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -221,7 +221,7 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -310,7 +310,7 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetIntValue(dpi.IntValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -394,7 +394,7 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -472,7 +472,7 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return

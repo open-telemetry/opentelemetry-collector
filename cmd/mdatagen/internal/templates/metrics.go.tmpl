@@ -135,16 +135,10 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 	{{- end }}
 
-  {{- if $metric.HasOptionalAttribute $.Attributes }}
-    for _, op := range options {
-        op.apply(dp)
-    }
-  {{- end }}
-
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) {
+		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
       dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
       m.aggDataPoints[i] += 1
 			return
@@ -166,7 +160,7 @@ func (m *metric{{ $name.Render }}) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
-    if m.config.AggStrat == "avg" {
+    if m.config.AggregationStrategy == "avg" {
       for i, aggCount := range m.aggDataPoints {
         m.data.{{ $metric.Data.Type }}().DataPoints().At(i).Set{{ $metric.Data.MetricValueType }}Value(m.data.{{ $metric.Data.Type }}().DataPoints().At(i).{{ $metric.Data.MetricValueType }}Value() / aggCount)
       }
