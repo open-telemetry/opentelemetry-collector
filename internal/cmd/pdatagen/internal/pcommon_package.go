@@ -189,10 +189,10 @@ var float64Slice = &primitiveSliceStruct{
 	structName:           "Float64Slice",
 	packageName:          "pcommon",
 	itemType:             "float64",
-	testOrigVal:          "1, 2, 3",
-	testInterfaceOrigVal: []any{1, 2, 3},
-	testSetVal:           "5",
-	testNewVal:           "1, 5, 3",
+	testOrigVal:          "1.1, 2.2, 3.3",
+	testInterfaceOrigVal: []any{1.1, 2.2, 3.3},
+	testSetVal:           "5.5",
+	testNewVal:           "1.1, 5.5, 3.3",
 }
 
 var uInt64Slice = &primitiveSliceStruct{
