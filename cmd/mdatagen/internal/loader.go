@@ -40,7 +40,8 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	}
 
 	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "componenttest.NewNopHost()"}}
-	if err = conf.Unmarshal(&md); err != nil {
+	err = conf.Unmarshal(&md)
+	if err != nil {
 		return md, err
 	}
 	packageName, err := packageName(filepath.Dir(filePath))
@@ -56,7 +57,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		md.GeneratedPackageName = "metadata"
 	}
 
-	if err = md.Validate(); err != nil {
+	if err := md.Validate(); err != nil {
 		return md, err
 	}
 

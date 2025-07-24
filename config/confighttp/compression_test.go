@@ -396,7 +396,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.URL, http.NoBody)
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := srv.Client()
