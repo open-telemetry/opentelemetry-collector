@@ -74,6 +74,20 @@ func TestJSONMarshal(t *testing.T) {
 	assert.JSONEq(t, logsJSON, string(jsonBuf))
 }
 
+func TestJSONMarshalAndUnmarshal(t *testing.T) {
+	want := NewLogs()
+	fillTestResourceLogsSlice(want.ResourceLogs())
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalLogs(want)
+	require.NoError(t, err)
+
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalLogs(jsonBuf)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestJSONUnmarshalInvalid(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceLogs": "extra"}`
 	decoder := &JSONUnmarshaler{}
