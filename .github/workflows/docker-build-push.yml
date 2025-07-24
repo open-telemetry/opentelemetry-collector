@@ -32,6 +32,9 @@ permissions:
   contents: read
   packages: write
   id-token: write
+  security-events: write
+  actions: read
+  attestations: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref_name }}
