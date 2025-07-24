@@ -26,6 +26,7 @@ linters:
     - depguard
     - errcheck
     - errorlint
+    - fatcontext
     - gocritic
     - gosec
     - govet
