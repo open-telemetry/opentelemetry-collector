@@ -16,6 +16,8 @@ func UnmarshalJSONIterResource(ms Resource, iter *jsoniter.Iterator) {
 			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
 			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
+		case "entityRefs", "entity_refs":
+			UnmarshalJSONIterEntityRefSlice(NewEntityRefSlice(&ms.orig.EntityRefs, ms.state), iter)
 		default:
 			iter.Skip()
 		}
