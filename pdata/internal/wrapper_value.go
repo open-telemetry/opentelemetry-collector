@@ -4,9 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	"encoding/base64"
-	"fmt"
-
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -101,14 +98,8 @@ func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
 				DoubleValue: json.ReadFloat64(iter),
 			}
 		case "bytesValue", "bytes_value":
-			v, err := base64.StdEncoding.DecodeString(iter.ReadString())
-			if err != nil {
-				iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
-				break
-			}
-			val.orig.Value = &otlpcommon.AnyValue_BytesValue{
-				BytesValue: v,
-			}
+			val.orig.Value = &otlpcommon.AnyValue_BytesValue{}
+			UnmarshalJSONIterByteSlice(NewByteSlice(&val.orig.Value.(*otlpcommon.AnyValue_BytesValue).BytesValue, val.state), iter)
 		case "arrayValue", "array_value":
 			val.orig.Value = &otlpcommon.AnyValue_ArrayValue{
 				ArrayValue: readArray(iter),
