@@ -4,7 +4,13 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	"encoding/base64"
+	"fmt"
+
+	jsoniter "github.com/json-iterator/go"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Value struct {
@@ -72,4 +78,76 @@ func GenerateTestValue() Value {
 	ms := NewValue(&orig, &state)
 	FillTestValue(ms)
 	return ms
+}
+
+// UnmarshalJSONIterValue Unmarshal JSON data and return otlpcommon.AnyValue
+func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "stringValue", "string_value":
+			val.orig.Value = &otlpcommon.AnyValue_StringValue{
+				StringValue: iter.ReadString(),
+			}
+		case "boolValue", "bool_value":
+			val.orig.Value = &otlpcommon.AnyValue_BoolValue{
+				BoolValue: iter.ReadBool(),
+			}
+		case "intValue", "int_value":
+			val.orig.Value = &otlpcommon.AnyValue_IntValue{
+				IntValue: json.ReadInt64(iter),
+			}
+		case "doubleValue", "double_value":
+			val.orig.Value = &otlpcommon.AnyValue_DoubleValue{
+				DoubleValue: json.ReadFloat64(iter),
+			}
+		case "bytesValue", "bytes_value":
+			v, err := base64.StdEncoding.DecodeString(iter.ReadString())
+			if err != nil {
+				iter.ReportError("bytesValue", fmt.Sprintf("base64 decode:%v", err))
+				break
+			}
+			val.orig.Value = &otlpcommon.AnyValue_BytesValue{
+				BytesValue: v,
+			}
+		case "arrayValue", "array_value":
+			val.orig.Value = &otlpcommon.AnyValue_ArrayValue{
+				ArrayValue: readArray(iter),
+			}
+		case "kvlistValue", "kvlist_value":
+			val.orig.Value = &otlpcommon.AnyValue_KvlistValue{
+				KvlistValue: readKvlistValue(iter),
+			}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
+	v := &otlpcommon.ArrayValue{}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "values":
+			UnmarshalJSONIterSlice(NewSlice(&v.Values, nil), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return v
+}
+
+func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
+	v := &otlpcommon.KeyValueList{}
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "values":
+			UnmarshalJSONIterMap(NewMap(&v.Values, nil), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+	return v
 }
