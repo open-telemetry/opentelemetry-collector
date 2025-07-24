@@ -63,7 +63,7 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 	if err != nil {
 		attrs = &c.withFailureAttrs
 		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
-			c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err))
+			c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
 		}
 	}
 	return err
