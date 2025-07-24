@@ -45,7 +45,7 @@ func TestTracesNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewTraces(cons, itemCounter, sizeCounter))
+	require.Equal(t, cons, obsconsumer.NewTraces(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter}))
 }
 
 func TestTracesItemsOnly(t *testing.T) {
@@ -64,7 +64,7 @@ func TestTracesItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -109,7 +109,7 @@ func TestTracesConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -175,7 +175,7 @@ func TestTracesConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	td := ptrace.NewTraces()
 	r := td.ResourceSpans().AppendEmpty()
@@ -240,7 +240,7 @@ func TestTracesWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter,
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	td := ptrace.NewTraces()
@@ -313,7 +313,7 @@ func TestTracesMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	// First batch: 2 successful items
 	td1 := ptrace.NewTraces()
@@ -420,10 +420,10 @@ func TestTracesCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewTraces(mockConsumer, itemCounter, sizeCounter)
+	consumer = obsconsumer.NewTraces(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }

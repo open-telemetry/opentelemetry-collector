@@ -6,8 +6,6 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/metric"
-
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/internal/telemetry"
@@ -19,7 +17,7 @@ var (
 	tracesMarshaler                 = &ptrace.ProtoMarshaler{}
 )
 
-func NewTraces(cons consumer.Traces, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Traces {
+func NewTraces(cons consumer.Traces, set Settings, opts ...Option) consumer.Traces {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}
@@ -31,16 +29,14 @@ func NewTraces(cons consumer.Traces, itemCounter, sizeCounter metric.Int64Counte
 
 	return obsTraces{
 		consumer:        cons,
-		itemCounter:     itemCounter,
-		sizeCounter:     sizeCounter,
+		set:             set,
 		compiledOptions: o.compile(),
 	}
 }
 
 type obsTraces struct {
-	consumer    consumer.Traces
-	itemCounter metric.Int64Counter
-	sizeCounter metric.Int64Counter
+	consumer consumer.Traces
+	set      Settings
 	compiledOptions
 }
 
@@ -51,13 +47,13 @@ func (c obsTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 
 	itemCount := td.SpanCount()
 	defer func() {
-		c.itemCounter.Add(ctx, int64(itemCount), *attrs)
+		c.set.ItemCounter.Add(ctx, int64(itemCount), *attrs)
 	}()
 
-	if isEnabled(ctx, c.sizeCounter) {
+	if isEnabled(ctx, c.set.SizeCounter) {
 		byteCount := int64(tracesMarshaler.TracesSize(td))
 		defer func() {
-			c.sizeCounter.Add(ctx, byteCount, *attrs)
+			c.set.SizeCounter.Add(ctx, byteCount, *attrs)
 		}()
 	}
 

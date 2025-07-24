@@ -45,7 +45,7 @@ func TestProfilesNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewProfiles(cons, itemCounter, sizeCounter))
+	require.Equal(t, cons, obsconsumer.NewProfiles(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter}))
 }
 
 func TestProfilesItemsOnly(t *testing.T) {
@@ -64,7 +64,7 @@ func TestProfilesItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -109,7 +109,7 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -175,7 +175,7 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -240,7 +240,7 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter,
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	pd := pprofile.NewProfiles()
@@ -313,7 +313,7 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	// First batch: 2 successful items
 	pd1 := pprofile.NewProfiles()
@@ -419,10 +419,10 @@ func TestProfilesCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewProfiles(mockConsumer, itemCounter, sizeCounter)
+	consumer = obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }
