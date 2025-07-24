@@ -6,12 +6,13 @@ package obsconsumer // import "go.opentelemetry.io/collector/service/internal/ob
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pprofile"
-	"go.uber.org/zap"
 )
 
 var (
@@ -67,7 +68,9 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 			attrs = &c.withFailureAttrs
 			err = consumererror.NewDownstream(err)
 		}
-		c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err))
+		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
+			c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err))
+		}
 	}
 	return err
 }
