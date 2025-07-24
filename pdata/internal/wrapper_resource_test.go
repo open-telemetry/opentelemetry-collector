@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package json // import "go.opentelemetry.io/collector/pdata/internal/json"
+package internal // import "go.opentelemetry.io/collector/pdata/internal/json"
 
 import (
 	"testing"
@@ -60,7 +60,7 @@ func TestReadResource(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			got := &otlpresource.Resource{}
-			ReadResource(iter, got)
+			UnmarshalJSONIterResource(NewResource(got, nil), iter)
 			require.NoError(t, iter.Error)
 			assert.Equal(t, tt.want, got)
 		})
