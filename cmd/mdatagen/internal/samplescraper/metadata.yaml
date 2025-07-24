@@ -70,34 +70,41 @@ attributes:
   string_attr:
     description: Attribute with any string value.
     type: string
+    enabled: true
 
   overridden_int_attr:
     name_override: state
     description: Integer attribute with overridden name.
     type: int
+    enabled: true
 
   enum_attr:
     description: Attribute with a known set of string values.
     type: string
     enum: [red, green, blue]
+    enabled: true
 
   boolean_attr:
     description: Attribute with a boolean value.
     type: bool
+    enabled: true
 
   # This 2nd boolean attribute allows us to test both values for boolean attributes,
   # as test values are based on the parity of the attribute name length.
   boolean_attr2:
     description: Another attribute with a boolean value.
     type: bool
+    enabled: true
 
   slice_attr:
     description: Attribute with a slice value.
     type: slice
+    enabled: true
 
   map_attr:
     description: Attribute with a map value.
     type: map
+    enabled: true
 
 metrics:
   default.metric:

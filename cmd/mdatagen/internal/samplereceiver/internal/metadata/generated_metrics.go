@@ -142,9 +142,6 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	if m.attributes.MapAttr.Enabled {
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
-	for _, op := range options {
-		op.apply(dp)
-	}
 
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
@@ -171,7 +168,7 @@ func (m *metricDefaultMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggStrat == "avg" {
+		if m.config.AggregationStrategy == "avg" {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
@@ -243,7 +240,7 @@ func (m *metricDefaultMetricToBeRemoved) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggStrat == "avg" {
+		if m.config.AggregationStrategy == "avg" {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
 			}
@@ -332,7 +329,7 @@ func (m *metricMetricInputType) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggStrat == "avg" {
+		if m.config.AggregationStrategy == "avg" {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
@@ -387,9 +384,6 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	if m.attributes.BooleanAttr2.Enabled {
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
-	for _, op := range options {
-		op.apply(dp)
-	}
 
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
@@ -416,7 +410,7 @@ func (m *metricOptionalMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggStrat == "avg" {
+		if m.config.AggregationStrategy == "avg" {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
 			}
@@ -494,7 +488,7 @@ func (m *metricOptionalMetricEmptyUnit) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggStrat == "avg" {
+		if m.config.AggregationStrategy == "avg" {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
 			}
