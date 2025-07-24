@@ -64,6 +64,7 @@ func (n *exporterNode) buildComponent(
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ExporterConsumedItems,
 		SizeCounter: tb.ExporterConsumedSize,
+		Logger:      set.TelemetrySettings.Logger,
 	}
 
 	switch n.pipelineType {
