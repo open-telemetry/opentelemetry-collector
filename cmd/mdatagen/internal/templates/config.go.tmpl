@@ -20,22 +20,6 @@ type MetricConfig struct {
 	enabledSetByUser bool
 }
 
-func (ms *MetricConfig) isValidStrategy() bool {
-  if ms.AggregationStrategy != "sum" || ms.AggregationStrategy != "avg" {
-    return false
-  }
-  return true 
-}
-
-func (mbc *MetricsBuilderConfig) Validate() error {
-  {{- range $name, $_ := .Metrics }}
-  if !mbc.Metrics.{{ $name.Render }}.isValidStrategy() {
-    return errors.New("invalid aggregation strategy configured for {{ $name }}")
-  }
-  {{- end }}
-  return nil
-}
-
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
