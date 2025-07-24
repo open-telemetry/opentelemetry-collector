@@ -812,7 +812,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 }
 
-func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, payload []byte, size int, expectedStatusCode int) {
+func testHTTPMaxRequestBodySize(t *testing.T, path, contentType string, payload []byte, size, expectedStatusCode int) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	url := "http://" + addr + path
 	cfg := &Config{
