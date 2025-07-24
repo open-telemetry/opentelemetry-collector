@@ -9,15 +9,10 @@ import (
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled  bool   `mapstructure:"enabled"`
-	AggStrat string `mapstructure:"aggregation_strategy"`
+	Enabled             bool   `mapstructure:"enabled"`
+	AggregationStrategy string `mapstructure:"aggregation_strategy"`
 
 	enabledSetByUser bool
-}
-
-// AttributeConfig holds configuration information for a particular metric.
-type AttributeConfig struct {
-	Enabled bool `mapstructure:"enabled"`
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -30,6 +25,11 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	}
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for sample metrics.
