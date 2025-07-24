@@ -68,7 +68,7 @@ func (c obsMetrics) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 			err = consumererror.NewDownstream(err)
 		}
 		if c.set.Logger.Core().Enabled(zap.DebugLevel) {
-			c.set.Logger.Debug("Metrics pipeline component had an error", zap.Error(err))
+			c.set.Logger.Debug("Metrics pipeline component had an error", zap.Error(err), zap.Int("item count", itemCount))
 		}
 	}
 	return err
