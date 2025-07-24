@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
@@ -13,6 +15,32 @@ type MetricConfig struct {
 	AggregationStrategy string `mapstructure:"aggregation_strategy"`
 
 	enabledSetByUser bool
+}
+
+func (ms *MetricConfig) isValidStrategy() bool {
+	if ms.AggregationStrategy != "sum" || ms.AggregationStrategy != "avg" {
+		return false
+	}
+	return true
+}
+
+func (mbc *MetricsBuilderConfig) Validate() error {
+	if !mbc.Metrics.DefaultMetric.isValidStrategy() {
+		return errors.New("invalid aggregation strategy configured for default.metric")
+	}
+	if !mbc.Metrics.DefaultMetricToBeRemoved.isValidStrategy() {
+		return errors.New("invalid aggregation strategy configured for default.metric.to_be_removed")
+	}
+	if !mbc.Metrics.MetricInputType.isValidStrategy() {
+		return errors.New("invalid aggregation strategy configured for metric.input_type")
+	}
+	if !mbc.Metrics.OptionalMetric.isValidStrategy() {
+		return errors.New("invalid aggregation strategy configured for optional.metric")
+	}
+	if !mbc.Metrics.OptionalMetricEmptyUnit.isValidStrategy() {
+		return errors.New("invalid aggregation strategy configured for optional.metric.empty_unit")
+	}
+	return nil
 }
 
 func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
@@ -82,24 +110,24 @@ func DefaultAttributesConfig() AttributesConfig {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled:  true,
-			AggStrat: "sum",
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled:  true,
-			AggStrat: "sum",
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		MetricInputType: MetricConfig{
-			Enabled:  true,
-			AggStrat: "sum",
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		OptionalMetric: MetricConfig{
-			Enabled:  false,
-			AggStrat: "avg",
+			Enabled:             false,
+			AggregationStrategy: "avg",
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled:  false,
-			AggStrat: "avg",
+			Enabled:             false,
+			AggregationStrategy: "avg",
 		},
 	}
 }
