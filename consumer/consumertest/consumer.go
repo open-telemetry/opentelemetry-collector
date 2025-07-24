@@ -38,10 +38,10 @@ type Consumer interface {
 }
 
 var (
-	_ consumer.Logs      = (Consumer)(nil)
-	_ consumer.Metrics   = (Consumer)(nil)
-	_ consumer.Traces    = (Consumer)(nil)
-	_ xconsumer.Profiles = (Consumer)(nil)
+	_ consumer.Logs      = Consumer(nil)
+	_ consumer.Metrics   = Consumer(nil)
+	_ consumer.Traces    = Consumer(nil)
+	_ xconsumer.Profiles = Consumer(nil)
 )
 
 type nonMutatingConsumer struct{}
