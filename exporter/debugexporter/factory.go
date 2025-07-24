@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/metadata"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -47,13 +48,14 @@ func createDefaultConfig() component.Config {
 		SamplingInitial:    defaultSamplingInitial,
 		SamplingThereafter: defaultSamplingThereafter,
 		UseInternalLogger:  true,
+		Output:             internal.NewDefaultOutputConfig(),
 	}
 }
 
 func createTraces(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
-	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity, cfg.Output)
 	return exporterhelper.NewTraces(ctx, set, config,
 		debug.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -65,7 +67,7 @@ func createTraces(ctx context.Context, set exporter.Settings, config component.C
 func createMetrics(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
-	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity, cfg.Output)
 	return exporterhelper.NewMetrics(ctx, set, config,
 		debug.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -77,7 +79,7 @@ func createMetrics(ctx context.Context, set exporter.Settings, config component.
 func createLogs(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
-	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity, cfg.Output)
 	return exporterhelper.NewLogs(ctx, set, config,
 		debug.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -89,7 +91,7 @@ func createLogs(ctx context.Context, set exporter.Settings, config component.Con
 func createProfiles(ctx context.Context, set exporter.Settings, config component.Config) (xexporter.Profiles, error) {
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
-	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity, cfg.Output)
 	return xexporterhelper.NewProfiles(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
