@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap"
 )
 
 var (
@@ -59,6 +60,7 @@ func (c obsLogs) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	err := c.consumer.ConsumeLogs(ctx, ld)
 	if err != nil {
 		attrs = &c.withFailureAttrs
+		c.set.Logger.Debug("Logs pipeline component had an error", zap.Error(err))
 	}
 	return err
 }

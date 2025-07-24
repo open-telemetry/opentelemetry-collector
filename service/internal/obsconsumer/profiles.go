@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/pdata/pprofile"
+	"go.uber.org/zap"
 )
 
 var (
@@ -60,6 +61,7 @@ func (c obsProfiles) ConsumeProfiles(ctx context.Context, pd pprofile.Profiles) 
 	err := c.consumer.ConsumeProfiles(ctx, pd)
 	if err != nil {
 		attrs = &c.withFailureAttrs
+		c.set.Logger.Debug("Profiles pipeline component had an error", zap.Error(err))
 	}
 	return err
 }
