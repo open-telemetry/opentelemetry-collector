@@ -155,7 +155,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	if qb.mergeCtx != nil {
 		mergedCtx = qb.mergeCtx(qb.currentBatch.ctx, ctx)
 	}
-	qb.currentBatch.ctx = contextWithMergedLinks(context.Background(), qb.currentBatch.ctx, ctx)
+	qb.currentBatch.ctx = contextWithMergedLinks(mergedCtx, qb.currentBatch.ctx, ctx)
 
 	// Save the "currentBatch" if we need to flush it, because we want to execute flush without holding the lock, and
 	// cannot unlock and re-lock because we are not done processing all the responses.
