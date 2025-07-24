@@ -50,27 +50,13 @@ func (req *metricsRequest) mergeTo(dst *metricsRequest, sz sizer.MetricsSizer) {
 
 func (req *metricsRequest) split(maxSize int, sz sizer.MetricsSizer) ([]Request, error) {
 	var res []Request
-	var md pmetric.Metrics
-	rmSize := -1
-
-	previousSize := req.size(sz)
-
-	for req.size(sz) > maxSize && rmSize != 0 {
-		md, rmSize = extractMetrics(req.md, maxSize, sz)
-		if md.DataPointCount() > 0 {
-			req.setCachedSize(req.size(sz) - rmSize)
-			res = append(res, newMetricsRequest(md))
+	for req.size(sz) > maxSize {
+		md, rmSize := extractMetrics(req.md, maxSize, sz)
+		if md.DataPointCount() == 0 {
+			return res, fmt.Errorf("one datapoint size is greater than max size, dropping items: %d", req.md.DataPointCount())
 		}
-	}
-
-	if req.size(sz) == previousSize && req.size(sz) > maxSize {
-		err := fmt.Errorf(
-			"partial success: failed to split metrics request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
-			req.size(sz),
-			maxSize,
-			req.md.MetricCount(),
-		)
-		return res, err
+		req.setCachedSize(req.size(sz) - rmSize)
+		res = append(res, newMetricsRequest(md))
 	}
 	res = append(res, req)
 	return res, nil
@@ -165,7 +151,7 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 		rawRmSize := sz.MetricSize(srcSM)
 		rmSize := sz.DeltaSize(rawRmSize)
 		if rmSize > capacityLeft {
-			extSrcSM, extRmSize := extractMetricDataPoints(srcSM, capacityLeft, sz)
+			extSrcDP, extRmSize := extractMetricDataPoints(srcSM, capacityLeft, sz)
 			// This cannot make it to exactly 0 for the bytes,
 			// force it to be 0 since that is the stopping condition.
 			capacityLeft = 0
@@ -174,10 +160,10 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 			removedSize += rmSize - rawRmSize - (sz.DeltaSize(rawRmSize-extRmSize) - (rawRmSize - extRmSize))
 			// It is possible that for the bytes scenario, the extracted field contains no datapoints.
 			// Do not add it to the destination if that is the case.
-			if sz.MetricSize(extSrcSM) > 0 {
-				extSrcSM.MoveTo(destSM.Metrics().AppendEmpty())
+			if dataPointsLen(extSrcDP) > 0 {
+				extSrcDP.MoveTo(destSM.Metrics().AppendEmpty())
 			}
-			return sz.MetricSize(extSrcSM) != 0
+			return dataPointsLen(extSrcDP) != 0
 		}
 		capacityLeft -= rmSize
 		removedSize += rmSize
@@ -188,37 +174,53 @@ func extractScopeMetrics(srcSM pmetric.ScopeMetrics, capacity int, sz sizer.Metr
 }
 
 func extractMetricDataPoints(srcMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	var destMetric pmetric.Metric
-	var removedSize int
-	switch srcMetric.Type() {
-	case pmetric.MetricTypeGauge:
-		destMetric, removedSize = extractGaugeDataPoints(srcMetric.Gauge(), capacity, sz)
-	case pmetric.MetricTypeSum:
-		destMetric, removedSize = extractSumDataPoints(srcMetric.Sum(), capacity, sz)
-		destMetric.Sum().SetIsMonotonic(srcMetric.Sum().IsMonotonic())
-		destMetric.Sum().SetAggregationTemporality(srcMetric.Sum().AggregationTemporality())
-	case pmetric.MetricTypeHistogram:
-		destMetric, removedSize = extractHistogramDataPoints(srcMetric.Histogram(), capacity, sz)
-		destMetric.Histogram().SetAggregationTemporality(srcMetric.Histogram().AggregationTemporality())
-	case pmetric.MetricTypeExponentialHistogram:
-		destMetric, removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), capacity, sz)
-		destMetric.ExponentialHistogram().SetAggregationTemporality(srcMetric.ExponentialHistogram().AggregationTemporality())
-	case pmetric.MetricTypeSummary:
-		destMetric, removedSize = extractSummaryDataPoints(srcMetric.Summary(), capacity, sz)
-	}
+	destMetric := pmetric.NewMetric()
 	destMetric.SetName(srcMetric.Name())
 	destMetric.SetDescription(srcMetric.Description())
 	destMetric.SetUnit(srcMetric.Unit())
 	srcMetric.Metadata().CopyTo(destMetric.Metadata())
+
+	var removedSize int
+	switch srcMetric.Type() {
+	case pmetric.MetricTypeGauge:
+		removedSize = extractGaugeDataPoints(srcMetric.Gauge(), destMetric, capacity, sz)
+	case pmetric.MetricTypeSum:
+		removedSize = extractSumDataPoints(srcMetric.Sum(), destMetric, capacity, sz)
+		destMetric.Sum().SetIsMonotonic(srcMetric.Sum().IsMonotonic())
+		destMetric.Sum().SetAggregationTemporality(srcMetric.Sum().AggregationTemporality())
+	case pmetric.MetricTypeHistogram:
+		removedSize = extractHistogramDataPoints(srcMetric.Histogram(), destMetric, capacity, sz)
+		destMetric.Histogram().SetAggregationTemporality(srcMetric.Histogram().AggregationTemporality())
+	case pmetric.MetricTypeExponentialHistogram:
+		removedSize = extractExponentialHistogramDataPoints(srcMetric.ExponentialHistogram(), destMetric, capacity, sz)
+		destMetric.ExponentialHistogram().SetAggregationTemporality(srcMetric.ExponentialHistogram().AggregationTemporality())
+	case pmetric.MetricTypeSummary:
+		removedSize = extractSummaryDataPoints(srcMetric.Summary(), destMetric, capacity, sz)
+	}
 	return destMetric, removedSize
 }
 
-func extractGaugeDataPoints(srcGauge pmetric.Gauge, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	m := pmetric.NewMetric()
-	destGauge := m.SetEmptyGauge()
+func dataPointsLen(m pmetric.Metric) int {
+	switch m.Type() {
+	case pmetric.MetricTypeGauge:
+		return m.Gauge().DataPoints().Len()
+	case pmetric.MetricTypeSum:
+		return m.Sum().DataPoints().Len()
+	case pmetric.MetricTypeHistogram:
+		return m.Histogram().DataPoints().Len()
+	case pmetric.MetricTypeExponentialHistogram:
+		return m.ExponentialHistogram().DataPoints().Len()
+	case pmetric.MetricTypeSummary:
+		return m.Summary().DataPoints().Len()
+	}
+	return 0
+}
+
+func extractGaugeDataPoints(srcGauge pmetric.Gauge, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+	destGauge := destMetric.SetEmptyGauge()
 
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(m)
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
 	removedSize := 0
 
 	srcGauge.DataPoints().RemoveIf(func(srcDP pmetric.NumberDataPoint) bool {
@@ -239,14 +241,13 @@ func extractGaugeDataPoints(srcGauge pmetric.Gauge, capacity int, sz sizer.Metri
 		srcDP.MoveTo(destGauge.DataPoints().AppendEmpty())
 		return true
 	})
-	return m, removedSize
+	return removedSize
 }
 
-func extractSumDataPoints(srcSum pmetric.Sum, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	m := pmetric.NewMetric()
-	destSum := m.SetEmptySum()
+func extractSumDataPoints(srcSum pmetric.Sum, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+	destSum := destMetric.SetEmptySum()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(m)
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
 	removedSize := 0
 	srcSum.DataPoints().RemoveIf(func(srcDP pmetric.NumberDataPoint) bool {
 		// If the no more capacity left just return.
@@ -266,14 +267,13 @@ func extractSumDataPoints(srcSum pmetric.Sum, capacity int, sz sizer.MetricsSize
 		srcDP.MoveTo(destSum.DataPoints().AppendEmpty())
 		return true
 	})
-	return m, removedSize
+	return removedSize
 }
 
-func extractHistogramDataPoints(srcHistogram pmetric.Histogram, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	m := pmetric.NewMetric()
-	destHistogram := m.SetEmptyHistogram()
+func extractHistogramDataPoints(srcHistogram pmetric.Histogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+	destHistogram := destMetric.SetEmptyHistogram()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(m)
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
 	removedSize := 0
 	srcHistogram.DataPoints().RemoveIf(func(srcDP pmetric.HistogramDataPoint) bool {
 		// If the no more capacity left just return.
@@ -293,14 +293,13 @@ func extractHistogramDataPoints(srcHistogram pmetric.Histogram, capacity int, sz
 		srcDP.MoveTo(destHistogram.DataPoints().AppendEmpty())
 		return true
 	})
-	return m, removedSize
+	return removedSize
 }
 
-func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	m := pmetric.NewMetric()
-	destExponentialHistogram := m.SetEmptyExponentialHistogram()
+func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.ExponentialHistogram, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+	destExponentialHistogram := destMetric.SetEmptyExponentialHistogram()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(m)
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
 	removedSize := 0
 	srcExponentialHistogram.DataPoints().RemoveIf(func(srcDP pmetric.ExponentialHistogramDataPoint) bool {
 		// If the no more capacity left just return.
@@ -320,14 +319,13 @@ func extractExponentialHistogramDataPoints(srcExponentialHistogram pmetric.Expon
 		srcDP.MoveTo(destExponentialHistogram.DataPoints().AppendEmpty())
 		return true
 	})
-	return m, removedSize
+	return removedSize
 }
 
-func extractSummaryDataPoints(srcSummary pmetric.Summary, capacity int, sz sizer.MetricsSizer) (pmetric.Metric, int) {
-	m := pmetric.NewMetric()
-	destSummary := m.SetEmptySummary()
+func extractSummaryDataPoints(srcSummary pmetric.Summary, destMetric pmetric.Metric, capacity int, sz sizer.MetricsSizer) int {
+	destSummary := destMetric.SetEmptySummary()
 	// Take into account that this can have max "capacity", so when added to the parent will need space for the extra delta size.
-	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(m)
+	capacityLeft := capacity - (sz.DeltaSize(capacity) - capacity) - sz.MetricSize(destMetric)
 	removedSize := 0
 	srcSummary.DataPoints().RemoveIf(func(srcDP pmetric.SummaryDataPoint) bool {
 		// If the no more capacity left just return.
@@ -347,5 +345,5 @@ func extractSummaryDataPoints(srcSummary pmetric.Summary, capacity int, sz sizer
 		srcDP.MoveTo(destSummary.DataPoints().AppendEmpty())
 		return true
 	})
-	return m, removedSize
+	return removedSize
 }
