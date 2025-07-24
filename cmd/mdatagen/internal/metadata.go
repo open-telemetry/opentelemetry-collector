@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -308,6 +309,13 @@ type Attribute struct {
 	Warnings Warnings `mapstructure:"warnings"`
 	// Optional defines whether the attribute is required.
 	Optional bool `mapstructure:"optional"`
+}
+
+func (a *Attribute) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("enabled") {
+		return errors.New("missing required field for attribute: `enabled`")
+	}
+	return parser.Unmarshal(a)
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
