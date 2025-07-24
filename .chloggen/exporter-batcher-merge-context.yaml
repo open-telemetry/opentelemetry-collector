@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Provide an interface `batchSettings.mergeCtx` so users can control how context values are preserved or combined
+note: Provide an interface `queue_batch.Setting.MergeCtx` so users can control how context values are preserved or combined
 
 # One or more tracking issues or pull requests related to the change
 issues: [13320]
