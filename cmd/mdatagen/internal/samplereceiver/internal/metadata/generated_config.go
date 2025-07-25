@@ -3,13 +3,16 @@
 package metadata
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/filter"
 )
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled             bool   `mapstructure:"enabled"`
+	AggregationStrategy string `mapstructure:"aggregation_strategy"`
 
 	enabledSetByUser bool
 }
@@ -22,8 +25,18 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if err != nil {
 		return err
 	}
+
+	if ms.AggregationStrategy != "sum" && ms.AggregationStrategy != "avg" {
+		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
+	}
+
 	ms.enabledSetByUser = parser.IsSet("enabled")
 	return nil
+}
+
+// AttributeConfig holds configuration information for a particular metric.
+type AttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // MetricsConfig provides config for sample metrics.
@@ -35,22 +48,73 @@ type MetricsConfig struct {
 	OptionalMetricEmptyUnit  MetricConfig `mapstructure:"optional.metric.empty_unit"`
 }
 
+// AttributesConfig is the collected configuration for all attributes in the
+// component
+type AttributesConfig struct {
+	BooleanAttr        AttributeConfig `mapstructure:"boolean_attr"`
+	BooleanAttr2       AttributeConfig `mapstructure:"boolean_attr2"`
+	EnumAttr           AttributeConfig `mapstructure:"enum_attr"`
+	MapAttr            AttributeConfig `mapstructure:"map_attr"`
+	OptionalIntAttr    AttributeConfig `mapstructure:"optional_int_attr"`
+	OptionalStringAttr AttributeConfig `mapstructure:"optional_string_attr"`
+	OverriddenIntAttr  AttributeConfig `mapstructure:"overridden_int_attr"`
+	SliceAttr          AttributeConfig `mapstructure:"slice_attr"`
+	StringAttr         AttributeConfig `mapstructure:"string_attr"`
+}
+
+func DefaultAttributesConfig() AttributesConfig {
+	return AttributesConfig{
+		BooleanAttr: AttributeConfig{
+			Enabled: true,
+		},
+		BooleanAttr2: AttributeConfig{
+			Enabled: true,
+		},
+		EnumAttr: AttributeConfig{
+			Enabled: true,
+		},
+		MapAttr: AttributeConfig{
+			Enabled: true,
+		},
+		OptionalIntAttr: AttributeConfig{
+			Enabled: true,
+		},
+		OptionalStringAttr: AttributeConfig{
+			Enabled: true,
+		},
+		OverriddenIntAttr: AttributeConfig{
+			Enabled: true,
+		},
+		SliceAttr: AttributeConfig{
+			Enabled: true,
+		},
+		StringAttr: AttributeConfig{
+			Enabled: true,
+		},
+	}
+}
+
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		MetricInputType: MetricConfig{
-			Enabled: true,
+			Enabled:             true,
+			AggregationStrategy: "sum",
 		},
 		OptionalMetric: MetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: "avg",
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
-			Enabled: false,
+			Enabled:             false,
+			AggregationStrategy: "avg",
 		},
 	}
 }
@@ -172,12 +236,14 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 // MetricsBuilderConfig is a configuration for sample metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
+	Attributes         AttributesConfig         `mapstructure:"attributes"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 func DefaultMetricsBuilderConfig() MetricsBuilderConfig {
 	return MetricsBuilderConfig{
 		Metrics:            DefaultMetricsConfig(),
+		Attributes:         DefaultAttributesConfig(),
 		ResourceAttributes: DefaultResourceAttributesConfig(),
 	}
 }
