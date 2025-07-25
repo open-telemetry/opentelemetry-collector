@@ -30,7 +30,7 @@ var metricsOTLP = func() Metrics {
 
 var metricsJSON = `{"resourceMetrics":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}}]},"scopeMetrics":[{"scope":{"name":"name","version":"version"},"metrics":[{"name":"testMetric","metadata":[{"key":"metadatakey","value":{"stringValue":"metadatavalue"}}]}]}]}]}`
 
-func TestMetricsJSON(t *testing.T) {
+func TestJSONUnmarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalMetrics(metricsOTLP)
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestMetricsJSON(t *testing.T) {
 	assert.Equal(t, metricsOTLP, got)
 }
 
-func TestMetricsJSON_Marshal(t *testing.T) {
+func TestJSONMarshal(t *testing.T) {
 	encoder := &JSONMarshaler{}
 	jsonBuf, err := encoder.MarshalMetrics(metricsOTLP)
 	require.NoError(t, err)

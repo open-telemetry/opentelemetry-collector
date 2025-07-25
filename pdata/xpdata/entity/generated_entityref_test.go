@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -39,6 +40,20 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newEntityRef(&otlpcommon.EntityRef{}, &sharedState)) })
+}
+
+func TestEntityRef_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestEntityRef()
+	internal.MarshalJSONStreamEntityRef(internal.EntityRef(src), stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewEntityRef()
+	internal.UnmarshalJSONIterEntityRef(internal.EntityRef(dest), iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestEntityRef_SchemaUrl(t *testing.T) {

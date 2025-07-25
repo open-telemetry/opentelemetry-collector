@@ -4,8 +4,8 @@
 package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
 import (
-	"bytes"
 	"fmt"
+	"slices"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -20,10 +20,10 @@ type JSONMarshaler struct{}
 
 // MarshalTraces to the OTLP/JSON format.
 func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
-	buf := bytes.Buffer{}
-	pb := internal.TracesToProto(internal.Traces(td))
-	err := json.Marshal(&buf, &pb)
-	return buf.Bytes(), err
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	td.marshalJSONStream(dest)
+	return slices.Clone(dest.Buffer()), dest.Error
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pdata.Traces.
@@ -40,21 +40,6 @@ func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	}
 	otlp.MigrateTraces(td.getOrig().ResourceSpans)
 	return td, nil
-}
-
-func (ms Traces) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "resourceSpans", "resource_spans":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ResourceSpans().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }
 
 func (ms ResourceSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {

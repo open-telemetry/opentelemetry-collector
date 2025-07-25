@@ -39,6 +39,15 @@ const messageSetTestTemplate = `{{ if .isCommon -}}
 const messageCopyOrigTemplate = `{{ if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
 {{- .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})`
 
+const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.orig.{{ .originFieldName }} != "" { {{ end -}}
+	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}MarshalJSONStream{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
+	{{- else }}
+	ms.{{ .fieldName }}().marshalJSONStream(dest)
+	{{- end }}{{ if eq .returnType "TraceState" -}} } {{- end }}`
+
 type MessageField struct {
 	fieldName     string
 	returnMessage *messageStruct
@@ -61,6 +70,11 @@ func (mf *MessageField) GenerateSetWithTestValue(ms *messageStruct) string {
 
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("messageCopyOrigTemplate").Parse(messageCopyOrigTemplate))
+	return executeTemplate(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("messageMarshalJSONTemplate").Parse(messageMarshalJSONTemplate))
 	return executeTemplate(t, mf.templateFields(ms))
 }
 

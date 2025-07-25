@@ -4,8 +4,11 @@
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import (
+	jsoniter "github.com/json-iterator/go"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Logs is the top-level struct that is propagated through the logs pipeline.
@@ -63,4 +66,26 @@ func (ms Logs) ResourceLogs() ResourceLogsSlice {
 // MarkReadOnly marks the Logs as shared so that no further modifications can be done on it.
 func (ms Logs) MarkReadOnly() {
 	internal.SetLogsState(internal.Logs(ms), internal.StateReadOnly)
+}
+
+func (ms Logs) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resourceLogs")
+	ms.ResourceLogs().marshalJSONStream(dest)
+	dest.WriteObjectEnd()
+}
+
+func (ms Logs) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "resource_logs", "resourceLogs":
+			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
+				ms.ResourceLogs().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

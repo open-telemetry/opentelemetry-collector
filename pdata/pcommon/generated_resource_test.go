@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResource_MoveTo(t *testing.T) {
@@ -38,6 +39,20 @@ func TestResource_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newResource(&otlpresource.Resource{}, &sharedState)) })
+}
+
+func TestResource_MarshalAndUnmarshal(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestResource()
+	internal.MarshalJSONStreamResource(internal.Resource(src), stream)
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewResource()
+	internal.UnmarshalJSONIterResource(internal.Resource(dest), iter)
+
+	assert.Equal(t, src, dest)
 }
 
 func TestResource_Attributes(t *testing.T) {

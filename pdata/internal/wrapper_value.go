@@ -4,6 +4,9 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	"errors"
+	"fmt"
+
 	jsoniter "github.com/json-iterator/go"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -75,6 +78,45 @@ func GenerateTestValue() Value {
 	ms := NewValue(&orig, &state)
 	FillTestValue(ms)
 	return ms
+}
+
+// MarshalJSONStreamValue marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamValue(ms Value, dest *json.Stream) {
+	dest.WriteObjectStart()
+	switch v := ms.orig.Value.(type) {
+	case nil:
+		// Do nothing, return an empty object.
+	case *otlpcommon.AnyValue_StringValue:
+		dest.WriteObjectField("stringValue")
+		dest.WriteString(v.StringValue)
+	case *otlpcommon.AnyValue_BoolValue:
+		dest.WriteObjectField("boolValue")
+		dest.WriteBool(v.BoolValue)
+	case *otlpcommon.AnyValue_IntValue:
+		dest.WriteObjectField("intValue")
+		dest.WriteInt64(v.IntValue)
+	case *otlpcommon.AnyValue_DoubleValue:
+		dest.WriteObjectField("doubleValue")
+		dest.WriteFloat64(v.DoubleValue)
+	case *otlpcommon.AnyValue_BytesValue:
+		dest.WriteObjectField("bytesValue")
+		MarshalJSONStreamByteSlice(NewByteSlice(&v.BytesValue, ms.state), dest)
+	case *otlpcommon.AnyValue_ArrayValue:
+		dest.WriteObjectField("arrayValue")
+		dest.WriteObjectStart()
+		dest.WriteObjectField("values")
+		MarshalJSONStreamSlice(NewSlice(&v.ArrayValue.Values, ms.state), dest)
+		dest.WriteObjectEnd()
+	case *otlpcommon.AnyValue_KvlistValue:
+		dest.WriteObjectField("kvlistValue")
+		dest.WriteObjectStart()
+		dest.WriteObjectField("values")
+		MarshalJSONStreamMap(NewMap(&v.KvlistValue.Values, ms.state), dest)
+		dest.WriteObjectEnd()
+	default:
+		dest.Error = errors.Join(dest.Error, fmt.Errorf("invalid value type in the passed attribute value: %T", ms.orig.Value))
+	}
+	dest.WriteObjectEnd()
 }
 
 // UnmarshalJSONIterValue Unmarshal JSON data and return otlpcommon.AnyValue

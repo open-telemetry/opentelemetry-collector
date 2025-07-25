@@ -4,8 +4,8 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
-	"bytes"
 	"fmt"
+	"slices"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -19,11 +19,11 @@ import (
 type JSONMarshaler struct{}
 
 // MarshalProfiles to the OTLP/JSON format.
-func (*JSONMarshaler) MarshalProfiles(td Profiles) ([]byte, error) {
-	buf := bytes.Buffer{}
-	pb := internal.ProfilesToProto(internal.Profiles(td))
-	err := json.Marshal(&buf, &pb)
-	return buf.Bytes(), err
+func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	pd.marshalJSONStream(dest)
+	return slices.Clone(dest.Buffer()), dest.Error
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pprofile.Profiles.
@@ -40,24 +40,6 @@ func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
 	}
 	otlp.MigrateProfiles(td.getOrig().ResourceProfiles)
 	return td, nil
-}
-
-func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "resourceProfiles", "resource_profiles":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "dictionary", "profilesDictionary", "profiles_dictionary":
-			ms.ProfilesDictionary().unmarshalJsoniter(iter)
-			return true
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }
 
 func (ms ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
@@ -114,6 +96,21 @@ func (ms ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
 				ms.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+// unmarshalJsoniter is not yet used, only here for tests.
+func (ms Attribute) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "key":
+			ms.orig.Key = iter.ReadString()
+		case "value":
+			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
 		default:
 			iter.Skip()
 		}

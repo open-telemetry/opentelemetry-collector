@@ -4,8 +4,11 @@
 package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
+	jsoniter "github.com/json-iterator/go"
+
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Metrics is the top-level struct that is propagated through the metrics pipeline.
@@ -92,4 +95,26 @@ func (ms Metrics) DataPointCount() (dataPointCount int) {
 // MarkReadOnly marks the Metrics as shared so that no further modifications can be done on it.
 func (ms Metrics) MarkReadOnly() {
 	internal.SetMetricsState(internal.Metrics(ms), internal.StateReadOnly)
+}
+
+func (ms Metrics) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resourceMetrics")
+	ms.ResourceMetrics().marshalJSONStream(dest)
+	dest.WriteObjectEnd()
+}
+
+func (ms Metrics) unmarshalJsoniter(iter *jsoniter.Iterator) {
+	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		switch f {
+		case "resource_metrics", "resourceMetrics":
+			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
+				ms.ResourceMetrics().AppendEmpty().unmarshalJsoniter(iter)
+				return true
+			})
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

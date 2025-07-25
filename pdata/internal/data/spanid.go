@@ -4,9 +4,12 @@
 package data // import "go.opentelemetry.io/collector/pdata/internal/data"
 
 import (
+	"encoding/hex"
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
+
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 const spanIDSize = 8
@@ -69,6 +72,15 @@ func (sid SpanID) MarshalJSON() ([]byte, error) {
 		return []byte(`""`), nil
 	}
 	return marshalJSON(sid[:])
+}
+
+// MarshalJSONStream converts trace id into a hex string enclosed in quotes.
+func (sid SpanID) MarshalJSONStream(dest *json.Stream) {
+	if sid.IsEmpty() {
+		dest.WriteString("")
+		return
+	}
+	dest.WriteString(hex.EncodeToString(sid[:]))
 }
 
 // UnmarshalJSON decodes SpanID from hex string, possibly enclosed in quotes.

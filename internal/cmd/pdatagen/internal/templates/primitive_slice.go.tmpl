@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .imports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .imports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 // {{ .structName }} represents a []{{ .itemType }} slice.

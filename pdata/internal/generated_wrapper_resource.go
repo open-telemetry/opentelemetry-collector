@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Resource struct {
@@ -45,4 +46,22 @@ func FillTestResource(tv Resource) {
 	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
 	FillTestEntityRefSlice(NewEntityRefSlice(&tv.orig.EntityRefs, tv.state))
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamResource(ms Resource, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(ms.orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONStreamMap(NewMap(&ms.orig.Attributes, ms.state), dest)
+	}
+	if ms.orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(ms.orig.DroppedAttributesCount)
+	}
+	if len(ms.orig.EntityRefs) > 0 {
+		dest.WriteObjectField("entityRefs")
+		MarshalJSONStreamEntityRefSlice(NewEntityRefSlice(&ms.orig.EntityRefs, ms.state), dest)
+	}
+	dest.WriteObjectEnd()
 }
