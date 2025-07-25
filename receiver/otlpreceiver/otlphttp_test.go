@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	"go.opentelemetry.io/collector/receiver/otlpreceiver/internal/errors"
 )
 
 func TestHttpRetryAfter(t *testing.T) {
@@ -126,7 +127,10 @@ func TestHttpRetryAfter(t *testing.T) {
 				} else {
 					errStatus := &spb.Status{}
 					require.NoError(t, proto.Unmarshal(respBytes, errStatus))
-					s, ok := status.FromError(tt.err)
+					// The HTTP receiver transforms errors through GetStatusFromError
+					// We need to get the expected transformed error, not the original
+					expectedErr := errors.GetStatusFromError(tt.err)
+					s, ok := status.FromError(expectedErr)
 					require.True(t, ok)
 					assert.True(t, proto.Equal(errStatus, s.Proto()))
 				}
