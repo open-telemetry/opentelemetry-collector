@@ -89,33 +89,38 @@ func run(ymlPath string) error {
 	if md.Status != nil {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
-			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
+			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+			if err != nil {
 				return err
 			}
 		} else {
 			if _, err = os.Stat(filepath.Join(codeDir, "generated_status.go")); err == nil {
-				if err = os.Remove(filepath.Join(codeDir, "generated_status.go")); err != nil {
+				err = os.Remove(filepath.Join(codeDir, "generated_status.go"))
+				if err != nil {
 					return err
 				}
 			}
 			if _, err = os.Stat(filepath.Join(ymlDir, "generated_component_test.go")); err == nil {
-				if err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go")); err != nil {
+				err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go"))
+				if err != nil {
 					return err
 				}
 			}
 		}
 
-		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
+		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+		if err != nil {
 			return err
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
-			if err = inlineReplace(
+			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName); err != nil {
+				md, statusStart, statusEnd, md.GeneratedPackageName)
+			if err != nil {
 				return err
 			}
 		}
@@ -138,22 +143,26 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go"))
+			if err != nil {
 				return err
 			}
 		}
@@ -198,7 +207,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
 	}

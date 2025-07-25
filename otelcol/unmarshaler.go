@@ -42,6 +42,6 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 			Telemetry: defaultTelConfig,
 		},
 	}
-
-	return cfg, v.Unmarshal(&cfg)
+	err := v.Unmarshal(&cfg)
+	return cfg, err
 }

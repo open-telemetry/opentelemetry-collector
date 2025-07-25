@@ -36,12 +36,14 @@ func CopyOrig{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
 	return append(dst, src...)
 }
 
-func FillTest{{ .structName }}(tv {{ .structName}}) {
+func FillTest{{ .structName }}(ms {{ .structName}}) {
+	*ms.orig = []{{ .itemType }}{ {{ .testOrigVal }} }
 }
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
+	orig := []{{ .itemType }}(nil)
 	state := StateMutable
-	var orig []{{ .itemType }} = nil
-
-	return {{ .structName }}{&orig, &state}
+	ms := New{{ .structName }}(&orig, &state)
+	FillTest{{ .structName }}(ms)
+	return ms
 }

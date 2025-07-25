@@ -10,37 +10,37 @@ type baseStruct interface {
 	generateInternal(packageInfo *PackageInfo) []byte
 }
 
-// messageValueStruct generates a struct for a proto message. The struct can be generated both as a common struct
+// messageStruct generates a struct for a proto message. The struct can be generated both as a common struct
 // that can be used as a field in struct from other packages and as an isolated struct with depending on a package name.
-type messageValueStruct struct {
+type messageStruct struct {
 	structName     string
 	packageName    string
 	description    string
 	originFullName string
-	fields         []baseField
+	fields         []Field
 }
 
-func (ms *messageValueStruct) getName() string {
+func (ms *messageStruct) getName() string {
 	return ms.structName
 }
 
-func (ms *messageValueStruct) generate(packageInfo *PackageInfo) []byte {
+func (ms *messageStruct) generate(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(messageTemplate, ms.templateFields(packageInfo)))
 }
 
-func (ms *messageValueStruct) generateTests(packageInfo *PackageInfo) []byte {
+func (ms *messageStruct) generateTests(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(messageTestTemplate, ms.templateFields(packageInfo)))
 }
 
-func (ms *messageValueStruct) generateInternal(packageInfo *PackageInfo) []byte {
+func (ms *messageStruct) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(packageInfo)))
 }
 
-func (ms *messageValueStruct) templateFields(packageInfo *PackageInfo) map[string]any {
+func (ms *messageStruct) templateFields(packageInfo *PackageInfo) map[string]any {
 	return map[string]any{
 		"messageStruct": ms,
 		"fields":        ms.fields,
-		"structName":    ms.structName,
+		"structName":    ms.getName(),
 		"originName":    ms.originFullName,
 		"description":   ms.description,
 		"isCommon":      usedByOtherDataTypes(ms.packageName),
@@ -52,4 +52,4 @@ func (ms *messageValueStruct) templateFields(packageInfo *PackageInfo) map[strin
 	}
 }
 
-var _ baseStruct = (*messageValueStruct)(nil)
+var _ baseStruct = (*messageStruct)(nil)

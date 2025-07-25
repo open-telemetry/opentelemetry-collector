@@ -53,10 +53,10 @@ type Stability struct {
 }
 
 func (s Stability) String() string {
-	if len(s.Level) == 0 || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+	if s.Level == "" || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
 		return ""
 	}
-	if len(s.From) > 0 {
+	if s.From != "" {
 		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
 	}
 	return fmt.Sprintf(" [%s]", s.Level)

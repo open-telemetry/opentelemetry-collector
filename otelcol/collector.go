@@ -305,7 +305,7 @@ func (col *Collector) DryRun(ctx context.Context) error {
 		return fmt.Errorf("failed to get config: %w", err)
 	}
 
-	if err = xconfmap.Validate(cfg); err != nil {
+	if err := xconfmap.Validate(cfg); err != nil {
 		return err
 	}
 
@@ -377,7 +377,7 @@ LOOP:
 				col.service.Logger().Error("Config watch failed", zap.Error(err))
 				break LOOP
 			}
-			if err = col.reloadConfiguration(ctx); err != nil {
+			if err := col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
 		case err := <-col.asyncErrorChannel:

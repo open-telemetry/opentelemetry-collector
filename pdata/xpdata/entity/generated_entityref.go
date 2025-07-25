@@ -45,14 +45,6 @@ func (ms EntityRef) MoveTo(dest EntityRef) {
 	*ms.getOrig() = otlpcommon.EntityRef{}
 }
 
-func (ms EntityRef) getOrig() *otlpcommon.EntityRef {
-	return internal.GetOrigEntityRef(internal.EntityRef(ms))
-}
-
-func (ms EntityRef) getState() *internal.State {
-	return internal.GetEntityRefState(internal.EntityRef(ms))
-}
-
 // SchemaUrl returns the schemaurl associated with this EntityRef.
 func (ms EntityRef) SchemaUrl() string {
 	return ms.getOrig().SchemaUrl
@@ -89,4 +81,12 @@ func (ms EntityRef) DescriptionKeys() pcommon.StringSlice {
 func (ms EntityRef) CopyTo(dest EntityRef) {
 	dest.getState().AssertMutable()
 	internal.CopyOrigEntityRef(dest.getOrig(), ms.getOrig())
+}
+
+func (ms EntityRef) getOrig() *otlpcommon.EntityRef {
+	return internal.GetOrigEntityRef(internal.EntityRef(ms))
+}
+
+func (ms EntityRef) getState() *internal.State {
+	return internal.GetEntityRefState(internal.EntityRef(ms))
 }

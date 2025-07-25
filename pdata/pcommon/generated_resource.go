@@ -46,14 +46,6 @@ func (ms Resource) MoveTo(dest Resource) {
 	*ms.getOrig() = otlpresource.Resource{}
 }
 
-func (ms Resource) getOrig() *otlpresource.Resource {
-	return internal.GetOrigResource(internal.Resource(ms))
-}
-
-func (ms Resource) getState() *internal.State {
-	return internal.GetResourceState(internal.Resource(ms))
-}
-
 // Attributes returns the Attributes associated with this Resource.
 func (ms Resource) Attributes() Map {
 	return Map(internal.NewMap(&ms.getOrig().Attributes, internal.GetResourceState(internal.Resource(ms))))
@@ -74,4 +66,12 @@ func (ms Resource) SetDroppedAttributesCount(v uint32) {
 func (ms Resource) CopyTo(dest Resource) {
 	dest.getState().AssertMutable()
 	internal.CopyOrigResource(dest.getOrig(), ms.getOrig())
+}
+
+func (ms Resource) getOrig() *otlpresource.Resource {
+	return internal.GetOrigResource(internal.Resource(ms))
+}
+
+func (ms Resource) getState() *internal.State {
+	return internal.GetResourceState(internal.Resource(ms))
 }

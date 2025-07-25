@@ -123,7 +123,7 @@ func TestClientMiddlewares(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create a request to the test server
-			req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+			req, err := http.NewRequest(http.MethodGet, server.URL, http.NoBody)
 			require.NoError(t, err)
 
 			// Send the request

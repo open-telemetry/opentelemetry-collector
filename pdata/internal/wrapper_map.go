@@ -4,6 +4,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
+	jsoniter "github.com/json-iterator/go"
+
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 )
 
@@ -45,6 +47,35 @@ func GenerateTestMap() Map {
 }
 
 func FillTestMap(dest Map) {
-	*dest.orig = nil
-	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+	*dest.orig = []otlpcommon.KeyValue{
+		{Key: "str", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
+		{Key: "bool", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: true}}},
+		{Key: "double", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: 3.14}}},
+		{Key: "int", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 123}}},
+		{Key: "bytes", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}}},
+		{Key: "array", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{
+			ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue{{Value: &otlpcommon.AnyValue_IntValue{IntValue: 321}}}},
+		}}},
+		{Key: "map", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{
+			KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue{{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}}}},
+		}}},
+	}
+}
+
+func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {
+	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+		*ms.orig = append(*ms.orig, otlpcommon.KeyValue{})
+		iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+			switch f {
+			case "key":
+				(*ms.orig)[len(*ms.orig)-1].Key = iter.ReadString()
+			case "value":
+				UnmarshalJSONIterValue(NewValue(&(*ms.orig)[len(*ms.orig)-1].Value, nil), iter)
+			default:
+				iter.Skip()
+			}
+			return true
+		})
+		return true
+	})
 }

@@ -205,7 +205,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 		transport2.PingTimeout = hcs.HTTP2PingTimeout
 	}
 
-	clientTransport := (http.RoundTripper)(transport)
+	clientTransport := http.RoundTripper(transport)
 
 	// Apply middlewares in reverse order so they execute in
 	// forward order. The first middleware runs after authentication.

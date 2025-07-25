@@ -135,6 +135,20 @@ func TestJSONMarshal(t *testing.T) {
 	assert.JSONEq(t, profilesJSON, string(jsonBuf))
 }
 
+func TestJSONMarshalAndUnmarshal(t *testing.T) {
+	want := NewProfiles()
+	fillTestResourceProfilesSlice(want.ResourceProfiles())
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalProfiles(want)
+	require.NoError(t, err)
+
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalProfiles(jsonBuf)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestJSONUnmarshalInvalid(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceProfiles": "extra"}`
 	decoder := &JSONUnmarshaler{}

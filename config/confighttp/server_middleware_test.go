@@ -112,7 +112,7 @@ func TestServerMiddleware(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create a test request
-			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 
 			// Create a response recorder
 			rec := httptest.NewRecorder()

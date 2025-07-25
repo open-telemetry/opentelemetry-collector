@@ -104,6 +104,7 @@ func createDefaultConfig() component.Config {
 				Readers: []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  newPtr(true),
 							WithoutUnits:      newPtr(true),
 							WithoutTypeSuffix: newPtr(true),
 							Host:              &metricsHost,

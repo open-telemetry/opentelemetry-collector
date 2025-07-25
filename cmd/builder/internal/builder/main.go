@@ -128,8 +128,7 @@ func Compile(cfg *Config) error {
 		}
 	}
 
-	args = append(args, "-ldflags="+ldflags)
-	args = append(args, "-gcflags="+gcflags)
+	args = append(args, "-ldflags="+ldflags, "-gcflags="+gcflags)
 
 	if cfg.Distribution.BuildTags != "" {
 		args = append(args, "-tags", cfg.Distribution.BuildTags)

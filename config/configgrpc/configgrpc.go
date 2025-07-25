@@ -285,8 +285,7 @@ func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
 	for k, v := range gcs.Headers {
 		if len(existingMd.Get(k)) == 0 {
-			kv = append(kv, k)
-			kv = append(kv, string(v))
+			kv = append(kv, k, string(v))
 		}
 	}
 	return metadata.AppendToOutgoingContext(ctx, kv...)
@@ -355,7 +354,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	}
 
 	if gcs.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, gcs.BalancerName)))
 	}
 
 	if gcs.Authority != "" {

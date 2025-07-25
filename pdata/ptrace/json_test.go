@@ -116,6 +116,20 @@ func TestJSONUnmarshalInvalid(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestJSONMarshalAndUnmarshal(t *testing.T) {
+	want := NewTraces()
+	fillTestResourceSpansSlice(want.ResourceSpans())
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalTraces(want)
+	require.NoError(t, err)
+
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalTraces(jsonBuf)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestUnmarshalJsoniterTraceData(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceSpans": [{"extra":""}]}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))

@@ -864,7 +864,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 	require.NotNil(t, srv)
 
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/", http.NoBody)
 	req.Header.Set("Origin", "http://localhost")
 	req.Header.Set("Access-Control-Request-Method", http.MethodPost)
 	srv.Handler.ServeHTTP(rec, req)
@@ -929,7 +929,7 @@ func TestHttpServerHeaders(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, nil)
+	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	if extraHeader {
@@ -964,7 +964,7 @@ func verifyCorsResp(t *testing.T, url string, origin string, set configoptional.
 }
 
 func verifyHeadersResp(t *testing.T, url string, expected map[string]configopaque.String) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, http.NoBody)
 	require.NoError(t, err, "Error creating request")
 
 	resp, err := http.DefaultClient.Do(req)
@@ -1010,7 +1010,7 @@ func TestHttpClientHeaders(t *testing.T) {
 				Headers:         tt.headers,
 			}
 			client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
+			req, err := http.NewRequest(http.MethodGet, setting.Endpoint, http.NoBody)
 			require.NoError(t, err)
 			_, err = client.Do(req)
 			assert.NoError(t, err)
@@ -1046,7 +1046,7 @@ func TestHttpClientHostHeader(t *testing.T) {
 			Headers:         tt.headers,
 		}
 		client, _ := setting.ToClient(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, nil)
+		req, err := http.NewRequest(http.MethodGet, setting.Endpoint, http.NoBody)
 		require.NoError(t, err)
 		_, err = client.Do(req)
 		assert.NoError(t, err)
@@ -1179,7 +1179,7 @@ func TestServerAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
 
 	// verify
 	assert.True(t, handlerCalled)
@@ -1223,7 +1223,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 	// tt
 	response := &httptest.ResponseRecorder{}
-	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
 
 	// verify
 	assert.Equal(t, http.StatusUnauthorized, response.Result().StatusCode)
@@ -1261,7 +1261,7 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 
 	// tt
 	response := &httptest.ResponseRecorder{}
-	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+	srv.Handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", http.NoBody))
 
 	// verify
 	assert.Equal(t, http.StatusInternalServerError, response.Result().StatusCode)
@@ -1290,7 +1290,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 	// tt
 	response := &httptest.ResponseRecorder{}
 
-	req, err := http.NewRequest(http.MethodGet, srv.Addr, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.Addr, http.NoBody)
 	require.NoError(t, err, "Error creating request: %v", err)
 	req.Header.Set("Content-Encoding", "something-invalid")
 
@@ -1447,7 +1447,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 	require.NoError(t, err)
 
 	// tt
-	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/?auth=1", nil))
+	srv.Handler.ServeHTTP(&httptest.ResponseRecorder{}, httptest.NewRequest(http.MethodGet, "/?auth=1", http.NoBody))
 
 	// verify
 	assert.True(t, handlerCalled)

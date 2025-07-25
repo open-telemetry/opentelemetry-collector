@@ -44,6 +44,7 @@ func TestLoadMetadata(t *testing.T) {
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
 				SemConvVersion:       "1.9.0",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -409,6 +410,7 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 			},
@@ -419,6 +421,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
@@ -437,6 +440,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
