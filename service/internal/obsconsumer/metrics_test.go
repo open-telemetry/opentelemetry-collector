@@ -43,7 +43,7 @@ func TestMetricsNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewMetrics(cons, itemCounter, sizeCounter))
+	require.Equal(t, cons, obsconsumer.NewMetrics(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter}))
 }
 
 func TestMetricsItemsOnly(t *testing.T) {
@@ -61,7 +61,7 @@ func TestMetricsItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 
 	md := pmetric.NewMetrics()
 	rm := md.ResourceMetrics().AppendEmpty()
@@ -107,7 +107,7 @@ func TestMetricsConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	md := pmetric.NewMetrics()
 	r := md.ResourceMetrics().AppendEmpty()
@@ -173,7 +173,7 @@ func TestMetricsConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	md := pmetric.NewMetrics()
 	r := md.ResourceMetrics().AppendEmpty()
@@ -240,7 +240,7 @@ func TestMetricsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter,
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	md := pmetric.NewMetrics()
@@ -314,7 +314,7 @@ func TestMetricsMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 
 	// First batch: 2 successful items
 	md1 := pmetric.NewMetrics()
@@ -423,10 +423,10 @@ func TestMetricsCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounterDisabled)
+	consumer := obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewMetrics(mockConsumer, itemCounter, sizeCounter)
+	consumer = obsconsumer.NewMetrics(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }
