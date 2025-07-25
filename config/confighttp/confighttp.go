@@ -487,7 +487,7 @@ func (hss *ServerConfig) ToServer(ctx context.Context, host component.Host, sett
 
 	if hss.Auth.HasValue() {
 		auth := hss.Auth.Get()
-		server, err := auth.GetServerAuthenticator(context.Background(), host.GetExtensions())
+		server, err := auth.GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
