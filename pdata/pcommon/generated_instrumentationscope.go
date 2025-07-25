@@ -46,14 +46,6 @@ func (ms InstrumentationScope) MoveTo(dest InstrumentationScope) {
 	*ms.getOrig() = otlpcommon.InstrumentationScope{}
 }
 
-func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
-	return internal.GetOrigInstrumentationScope(internal.InstrumentationScope(ms))
-}
-
-func (ms InstrumentationScope) getState() *internal.State {
-	return internal.GetInstrumentationScopeState(internal.InstrumentationScope(ms))
-}
-
 // Name returns the name associated with this InstrumentationScope.
 func (ms InstrumentationScope) Name() string {
 	return ms.getOrig().Name
@@ -96,4 +88,12 @@ func (ms InstrumentationScope) SetDroppedAttributesCount(v uint32) {
 func (ms InstrumentationScope) CopyTo(dest InstrumentationScope) {
 	dest.getState().AssertMutable()
 	internal.CopyOrigInstrumentationScope(dest.getOrig(), ms.getOrig())
+}
+
+func (ms InstrumentationScope) getOrig() *otlpcommon.InstrumentationScope {
+	return internal.GetOrigInstrumentationScope(internal.InstrumentationScope(ms))
+}
+
+func (ms InstrumentationScope) getState() *internal.State {
+	return internal.GetInstrumentationScopeState(internal.InstrumentationScope(ms))
 }

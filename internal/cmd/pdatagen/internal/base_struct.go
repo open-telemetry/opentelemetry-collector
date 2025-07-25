@@ -17,7 +17,7 @@ type messageStruct struct {
 	packageName    string
 	description    string
 	originFullName string
-	fields         []baseField
+	fields         []Field
 }
 
 func (ms *messageStruct) getName() string {
