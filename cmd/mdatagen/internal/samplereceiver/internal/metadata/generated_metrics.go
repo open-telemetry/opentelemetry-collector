@@ -4,7 +4,6 @@ package metadata
 
 import (
 	"fmt"
-	"maps"
 	"strconv"
 	"time"
 
@@ -109,7 +108,7 @@ type metricDefaultMetric struct {
 
 // init fills default.metric metric with initial data.
 func (m *metricDefaultMetric) init() {
-	m.aggDataPoints = make([]int64, 0)
+	m.aggDataPoints = nil
 	m.data.SetName("default.metric")
 	m.data.SetDescription("Monotonic cumulative sum int metric enabled by default.")
 	m.data.SetUnit("s")
@@ -146,7 +145,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetIntValue(dpi.IntValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -198,7 +197,7 @@ type metricDefaultMetricToBeRemoved struct {
 
 // init fills default.metric.to_be_removed metric with initial data.
 func (m *metricDefaultMetricToBeRemoved) init() {
-	m.aggDataPoints = make([]float64, 0)
+	m.aggDataPoints = nil
 	m.data.SetName("default.metric.to_be_removed")
 	m.data.SetDescription("[DEPRECATED] Non-monotonic delta sum double metric enabled by default.")
 	m.data.SetUnit("s")
@@ -218,7 +217,7 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -270,7 +269,7 @@ type metricMetricInputType struct {
 
 // init fills metric.input_type metric with initial data.
 func (m *metricMetricInputType) init() {
-	m.aggDataPoints = make([]int64, 0)
+	m.aggDataPoints = nil
 	m.data.SetName("metric.input_type")
 	m.data.SetDescription("Monotonic cumulative sum int metric with string input_type enabled by default.")
 	m.data.SetUnit("s")
@@ -307,7 +306,7 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetIntValue(dpi.IntValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -359,7 +358,7 @@ type metricOptionalMetric struct {
 
 // init fills optional.metric metric with initial data.
 func (m *metricOptionalMetric) init() {
-	m.aggDataPoints = make([]float64, 0)
+	m.aggDataPoints = nil
 	m.data.SetName("optional.metric")
 	m.data.SetDescription("[DEPRECATED] Gauge double metric disabled by default.")
 	m.data.SetUnit("1")
@@ -388,7 +387,7 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
@@ -440,7 +439,7 @@ type metricOptionalMetricEmptyUnit struct {
 
 // init fills optional.metric.empty_unit metric with initial data.
 func (m *metricOptionalMetricEmptyUnit) init() {
-	m.aggDataPoints = make([]float64, 0)
+	m.aggDataPoints = nil
 	m.data.SetName("optional.metric.empty_unit")
 	m.data.SetDescription("[DEPRECATED] Gauge double metric disabled by default.")
 	m.data.SetUnit("")
@@ -466,7 +465,7 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
 			dpi.SetDoubleValue(dpi.DoubleValue() + val)
 			m.aggDataPoints[i] += 1
 			return
