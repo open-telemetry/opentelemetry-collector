@@ -6,6 +6,16 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
   
+  # Prometheus receiver for scraping metrics
+  # Note: Configure scrape_configs as needed for your environment
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'self-monitoring'
+        scrape_interval: 30s
+        static_configs:
+        - targets: ['localhost:8888']
+        
 processors:
   batch:
     timeout: 1s
@@ -23,6 +33,12 @@ exporters:
     endpoint: http://localhost:4317
     tls:
       insecure: true
+  # Prometheus remote write exporter
+  # Note: Configure endpoint and external_labels for your environment
+  # prometheusremotewrite:
+  #   endpoint: https://your-prometheus-remote-write-endpoint
+  #   external_labels:
+  #     cluster: your-cluster-name
 
 extensions:
   zpages:
@@ -36,7 +52,7 @@ service:
       processors: [memory_limiter, batch]
       exporters: [debug, otlp]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, prometheus]
       processors: [memory_limiter, batch]
       exporters: [debug, otlp]
     logs:
@@ -46,6 +62,4 @@ service:
   
   telemetry:
     logs:
-      level: info
-    metrics:
-      address: 0.0.0.0:8888 
+      level: info 
