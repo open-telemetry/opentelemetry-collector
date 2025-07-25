@@ -22,6 +22,7 @@ issues:
 
 linters:
   enable:
+    - asasalint
     - copyloopvar
     - depguard
     - errcheck
