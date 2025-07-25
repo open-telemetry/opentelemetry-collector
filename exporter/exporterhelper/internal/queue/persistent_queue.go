@@ -485,7 +485,7 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(reqCtx, req) != nil {
+		if pq.putInternal(reqCtx, req) != nil { //nolint:contextcheck
 			errCount++
 		}
 	}
