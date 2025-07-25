@@ -187,7 +187,7 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 		case "originalPayloadFormat", "original_payload_format":
 			p.orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			p.orig.OriginalPayload = iter.ReadStringAsSlice()
+			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&p.orig.OriginalPayload, p.state), iter)
 		default:
 			iter.Skip()
 		}

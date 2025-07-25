@@ -31,14 +31,14 @@ var exportMetricsPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectormetrics.ExportMetricsPartialSuccess",
-	fields: []baseField{
-		&primitiveField{
+	fields: []Field{
+		&PrimitiveField{
 			fieldName:  "RejectedDataPoints",
 			returnType: "int64",
 			defaultVal: `int64(0)`,
 			testVal:    `int64(13)`,
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "ErrorMessage",
 			returnType: "string",
 			defaultVal: `""`,
