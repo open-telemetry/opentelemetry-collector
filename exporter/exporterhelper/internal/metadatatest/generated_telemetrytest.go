@@ -60,10 +60,25 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterQueueBatchSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_queue_batch_size",
+		Description: "Size of the batches added to the retry queue (in bytes). [alpha]",
+		Unit:        "{By}",
+		Data: metricdata.Histogram[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_queue_batch_size")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_capacity",
-		Description: "Fixed capacity of the retry queue (in batches) [alpha]",
+		Description: "Fixed capacity of the retry queue (in batches). [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
@@ -77,7 +92,7 @@ func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry,
 func AssertEqualExporterQueueSize(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_size",
-		Description: "Current size of the retry queue (in batches) [alpha]",
+		Description: "Current size of the retry queue (in batches). [alpha]",
 		Unit:        "{batches}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
