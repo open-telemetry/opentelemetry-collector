@@ -22,6 +22,7 @@ issues:
 
 linters:
   enable:
+    - contextcheck
     - copyloopvar
     - depguard
     - errcheck
