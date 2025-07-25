@@ -1,0 +1,18 @@
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+    stable: [metrics]
+  distributions: [contrib]
+  warnings:
+    - Any additional information that should be brought to the consumer's attention
+
+sem_conv_version: 1.36.0
+semconv:
+  groups: []
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

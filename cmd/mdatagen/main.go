@@ -3,6 +3,7 @@
 
 package main
 
+//go:generate make gen-semconv
 //go:generate mdatagen metadata.yaml
 
 import (

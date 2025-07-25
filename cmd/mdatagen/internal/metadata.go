@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/cmd/mdatagen/internal/semconv"
 	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -43,6 +44,9 @@ type Metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
+
+	// Semconv is the semantic conventions configuration used by the component.
+	Semconv semconv.SchemaJson `mapstructure:"semconv"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
