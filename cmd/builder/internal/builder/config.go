@@ -66,6 +66,7 @@ type ConfResolver struct {
 // Distribution holds the parameters for the final binary
 type Distribution struct {
 	Module           string `mapstructure:"module"`
+	Package          string `mapstructure:"package"`
 	Name             string `mapstructure:"name"`
 	Go               string `mapstructure:"go"`
 	Description      string `mapstructure:"description"`
@@ -104,6 +105,7 @@ func NewDefaultConfig() (*Config, error) {
 		OtelColVersion: defaultBetaOtelColVersion,
 		Logger:         log,
 		Distribution: Distribution{
+			Package:    "main",
 			OutputPath: outputDir,
 			Module:     "go.opentelemetry.io/collector/cmd/builder",
 		},

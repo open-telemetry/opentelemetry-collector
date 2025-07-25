@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -106,13 +107,21 @@ func Compile(cfg *Config) error {
 		cfg.Logger.Info("Generating source codes only, the distribution will not be compiled.")
 		return nil
 	}
-
+	if cfg.Distribution.Package != "main" {
+		// The build will produce a binary file, but without a 'main' function, it cannot be executed.
+		cfg.Logger.Info("Package is not 'main'; compiling will produce a non-executable binary (no main function). Output is for use as a Go library.")
+		return nil
+	}
 	cfg.Logger.Info("Compiling")
 
 	ldflags := "-s -w" // we strip the symbols by default for smaller binaries
 	gcflags := ""
 
-	args := []string{"build", "-trimpath", "-o", cfg.Distribution.Name}
+	binName := cfg.Distribution.Name
+	if runtime.GOOS == "windows" {
+		binName += ".exe"
+	}
+	args := []string{"build", "-trimpath", "-o", binName}
 	if cfg.Distribution.DebugCompilation {
 		cfg.Logger.Info("Debug compilation is enabled, the debug symbols will be left on the resulting binary")
 		ldflags = cfg.LDFlags
