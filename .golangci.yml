@@ -23,6 +23,7 @@ issues:
 linters:
   enable:
     - copyloopvar
+    - decorder
     - depguard
     - errcheck
     - errorlint
