@@ -271,7 +271,7 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
+func decodeConfig(m *Conf, result any, errorUnused, skipTopLevelUnmarshaler bool) error {
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      errorUnused,
 		Result:           result,
@@ -360,7 +360,7 @@ func isStringyStructure(t reflect.Type) bool {
 func safeWrapDecodeHookFunc(
 	f mapstructure.DecodeHookFuncValue,
 ) mapstructure.DecodeHookFuncValue {
-	return func(fromVal reflect.Value, toVal reflect.Value) (any, error) {
+	return func(fromVal, toVal reflect.Value) (any, error) {
 		if !fromVal.IsValid() {
 			return nil, nil
 		}
@@ -417,7 +417,7 @@ func useExpandValue() mapstructure.DecodeHookFuncType {
 // we want an unmarshaled Config to be equivalent to
 // Config{Thing: &SomeStruct{}} instead of Config{Thing: nil}
 func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		// ensure we are dealing with map to map comparison
 		if from.Kind() == reflect.Map && to.Kind() == reflect.Map {
 			toElem := to.Type().Elem()
@@ -447,7 +447,7 @@ func expandNilStructPointersHookFunc() mapstructure.DecodeHookFuncValue {
 // This is needed in combination with ComponentID, which may produce equal IDs for different strings,
 // and an error needs to be returned in that case, otherwise the last equivalent ID overwrites the previous one.
 func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncType {
-	return func(from reflect.Type, to reflect.Type, data any) (any, error) {
+	return func(from, to reflect.Type, data any) (any, error) {
 		if from.Kind() != reflect.Map || from.Key().Kind() != reflect.String {
 			return data, nil
 		}
@@ -484,7 +484,7 @@ func mapKeyStringToMapKeyTextUnmarshalerHookFunc() mapstructure.DecodeHookFuncTy
 // unmarshalerEmbeddedStructsHookFunc provides a mechanism for embedded structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface.
 func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if to.Type().Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}
@@ -527,7 +527,7 @@ func unmarshalerEmbeddedStructsHookFunc() mapstructure.DecodeHookFuncValue {
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
 func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if !to.CanAddr() {
 			return from.Interface(), nil
 		}
@@ -567,7 +567,7 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 // the original to see if they implement the Marshaler interface.
 func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
 	origType := reflect.TypeOf(orig)
-	return safeWrapDecodeHookFunc(func(from reflect.Value, _ reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, _ reflect.Value) (any, error) {
 		if from.Kind() != reflect.Struct {
 			return from.Interface(), nil
 		}
@@ -644,7 +644,7 @@ type Marshaler interface {
 // The nil value is not well understood when layered on top of a default map non-nil value.
 // The fix is to avoid the assignment and return the previous value.
 func zeroSliceAndMapHookFunc() mapstructure.DecodeHookFuncValue {
-	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+	return safeWrapDecodeHookFunc(func(from, to reflect.Value) (any, error) {
 		if to.CanSet() && to.Kind() == reflect.Slice && from.Kind() == reflect.Slice {
 			if !from.IsNil() {
 				// input slice is not nil, set the output slice to a new slice of the same type.
@@ -675,7 +675,7 @@ func (c confmapModuleFactory[T, S]) Create(s S) T {
 	return c.f(s)
 }
 
-func newConfmapModuleFactory[T any, S any](f createConfmapFunc[T, S]) moduleFactory[T, S] {
+func newConfmapModuleFactory[T, S any](f createConfmapFunc[T, S]) moduleFactory[T, S] {
 	return confmapModuleFactory[T, S]{
 		f: f,
 	}

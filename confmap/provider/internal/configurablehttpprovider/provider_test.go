@@ -50,7 +50,7 @@ func answerGet(w http.ResponseWriter, _ *http.Request) {
 
 // Generate a self signed certificate specific for the tests. Based on
 // https://go.dev/src/crypto/tls/generate_cert.go
-func generateCertificate(t *testing.T, hostname string) (cert string, key string, err error) {
+func generateCertificate(t *testing.T, hostname string) (cert, key string, err error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return "", "", fmt.Errorf("Failed to generate private key: %w", err)

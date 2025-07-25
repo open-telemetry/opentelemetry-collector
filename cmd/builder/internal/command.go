@@ -117,7 +117,7 @@ func initConfig(flags *flag.FlagSet) (*builder.Config, error) {
 
 	// handle env variables
 	if err = k.Load(env.Provider(".", env.Opt{
-		TransformFunc: func(key string, value string) (string, any) {
+		TransformFunc: func(key, value string) (string, any) {
 			// Only values from the `dist.` group can be set,
 			// and the subfields in `dist.` contain `_` in their names.
 			// All other fields are arrays and the koanf env provider doesn't provide a straightforward way to set arrays.

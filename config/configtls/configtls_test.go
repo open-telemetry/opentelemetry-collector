@@ -440,7 +440,7 @@ func TestLoadTLSServerConfigFailing(t *testing.T) {
 	assert.NotNil(t, firstClient)
 }
 
-func overwriteClientCA(t *testing.T, targetFilePath string, testdataFileName string) {
+func overwriteClientCA(t *testing.T, targetFilePath, testdataFileName string) {
 	targetFile, err := os.OpenFile(filepath.Clean(targetFilePath), os.O_RDWR, 0o600)
 	require.NoError(t, err)
 
