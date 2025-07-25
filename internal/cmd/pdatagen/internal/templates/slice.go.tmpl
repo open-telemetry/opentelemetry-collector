@@ -176,7 +176,6 @@ func (ms {{ .structName }}) getState() *internal.State {
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
 }
 {{- else }}
-
 func copyOrig{{ .structName }}(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
 	if cap(dest) < len(src) {
 		dest = make([]{{ .originElementType }}, len(src))
