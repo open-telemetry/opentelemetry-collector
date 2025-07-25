@@ -1,6 +1,7 @@
 name: Mirror and Retag OpenTelemetry Collector
 
 on:
+  push:
   workflow_dispatch:
     inputs:
       source_version:
