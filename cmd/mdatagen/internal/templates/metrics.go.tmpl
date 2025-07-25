@@ -8,7 +8,6 @@ import (
 	"fmt"
 	{{- end }}
 	"time"
-  "maps"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -106,7 +105,7 @@ type metric{{ $name.Render }} struct {
 
 // init fills {{ $name }} metric with initial data.
 func (m *metric{{ $name.Render }}) init() {
-  m.aggDataPoints = make([]{{ $metric.Data.MetricValueType.BasicType }}, 0)
+  m.aggDataPoints = nil
 	m.data.SetName("{{ $name }}")
 	m.data.SetDescription("{{ $metric.Description }}")
 	m.data.SetUnit("{{ $metric.Unit }}")
@@ -139,7 +138,7 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
-		if maps.Equal(dp.Attributes().AsRaw(), dpi.Attributes().AsRaw()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
+		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
       dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
       m.aggDataPoints[i] += 1
 			return
