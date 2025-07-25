@@ -38,6 +38,105 @@ func renderTmplFile(t *testing.T, filePath string, outPath string, data map[stri
 	require.NoError(t, err, "write %s", outPath)
 }
 
+var modulePrefix = "go.opentelemetry.io/collector"
+
+func getWorkspaceDir() string {
+	// This is dependent on the current file structure.
+	// The goal is find the root of the repo so we can replace the root module.
+	_, thisFile, _, _ := runtime.Caller(0)
+	return filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))
+}
+
+var replaceModules = []string{
+	"",
+	"/component",
+	"/component/componentstatus",
+	"/component/componenttest",
+	"/client",
+	"/config/configauth",
+	"/config/configcompression",
+	"/config/configgrpc",
+	"/config/confighttp",
+	"/config/configmiddleware",
+	"/config/confignet",
+	"/config/configopaque",
+	"/config/configoptional",
+	"/config/configretry",
+	"/config/configtelemetry",
+	"/config/configtls",
+	"/confmap",
+	"/confmap/xconfmap",
+	"/confmap/provider/envprovider",
+	"/confmap/provider/fileprovider",
+	"/confmap/provider/httpprovider",
+	"/confmap/provider/httpsprovider",
+	"/confmap/provider/yamlprovider",
+	"/consumer",
+	"/consumer/consumererror",
+	"/consumer/consumererror/xconsumererror",
+	"/consumer/xconsumer",
+	"/consumer/consumertest",
+	"/connector",
+	"/connector/connectortest",
+	"/connector/xconnector",
+	"/exporter",
+	"/exporter/debugexporter",
+	"/exporter/xexporter",
+	"/exporter/exportertest",
+	"/exporter/exporterhelper/xexporterhelper",
+	"/exporter/nopexporter",
+	"/exporter/otlpexporter",
+	"/exporter/otlphttpexporter",
+	"/extension",
+	"/extension/extensionauth",
+	"/extension/extensionauth/extensionauthtest",
+	"/extension/extensioncapabilities",
+	"/extension/extensionmiddleware",
+	"/extension/extensionmiddleware/extensionmiddlewaretest",
+	"/extension/extensiontest",
+	"/extension/zpagesextension",
+	"/extension/xextension",
+	"/featuregate",
+	"/internal/memorylimiter",
+	"/internal/fanoutconsumer",
+	"/internal/sharedcomponent",
+	"/internal/telemetry",
+	"/otelcol",
+	"/pdata",
+	"/pdata/testdata",
+	"/pdata/pprofile",
+	"/pdata/xpdata",
+	"/pipeline",
+	"/pipeline/xpipeline",
+	"/processor",
+	"/processor/processortest",
+	"/processor/batchprocessor",
+	"/processor/memorylimiterprocessor",
+	"/processor/processorhelper",
+	"/processor/processorhelper/xprocessorhelper",
+	"/processor/xprocessor",
+	"/receiver",
+	"/receiver/nopreceiver",
+	"/receiver/otlpreceiver",
+	"/receiver/receivertest",
+	"/receiver/receiverhelper",
+	"/receiver/xreceiver",
+	"/service",
+	"/service/hostcapabilities",
+}
+
+func generateReplaces() []string {
+	workspaceDir := getWorkspaceDir()
+	modules := replaceModules
+	replaces := make([]string, len(modules))
+
+	for i, mod := range modules {
+		replaces[i] = fmt.Sprintf("%s%s => %s%s", modulePrefix, mod, workspaceDir, mod)
+	}
+
+	return replaces
+}
+
 func TestCollectorBuildAndRun(t *testing.T) {
 	tests := []struct {
 		builderYAML   string
@@ -100,10 +199,11 @@ func TestCollectorBuildAndRun(t *testing.T) {
 func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 	renderedYAML := filepath.Join(tmpdir, "builder.rendered.yaml")
 
+	replaces := generateReplaces()
 	renderTmplFile(t,
 		yamlPath,
 		renderedYAML,
-		map[string]any{"OutputPath": tmpdir},
+		map[string]any{"OutputPath": tmpdir, "Replaces": replaces},
 	)
 
 	cfg := unmarshalConf(t, renderedYAML)
@@ -139,6 +239,9 @@ func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 		filepath.Join(wrapperDir, "main.go"),
 		map[string]any{"Package": packageName, "ImportPath": packageName},
 	)
+
+	replaces = append(replaces, fmt.Sprintf("%s => %s", packageName, builderPkgDir))
+
 	renderTmplFile(t,
 		"go.mod.tql",
 		filepath.Join(wrapperDir, "go.mod"),
@@ -146,6 +249,7 @@ func getCollectorBin(t *testing.T, tmpdir string, yamlPath string) string {
 			"Package":    packageName,
 			"ImportPath": packageName,
 			"PkgDir":     builderPkgDir,
+			"Replaces":   replaces,
 		},
 	)
 

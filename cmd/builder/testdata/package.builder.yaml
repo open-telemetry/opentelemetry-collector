@@ -12,3 +12,8 @@ receivers:
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.129.0
+
+replaces:
+  {{- range .Replaces }}
+  - {{ . }}
+  {{- end }}

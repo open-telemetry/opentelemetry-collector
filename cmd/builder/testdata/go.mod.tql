@@ -8,4 +8,6 @@ require (
 	{{ .Package }} v0.0.0
 )
 
-replace {{ .ImportPath }} => {{ .PkgDir }}
+{{- range .Replaces }}
+replace {{ . }}
+{{- end }}
