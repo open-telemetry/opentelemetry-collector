@@ -60,18 +60,18 @@ func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (rp ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
-			json.ReadResource(iter, internal.GetOrigResource(internal.Resource(rp.Resource())))
+			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeProfiles", "scope_profiles":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				rp.ScopeProfiles().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ScopeProfiles().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "schemaUrl", "schema_url":
-			rp.orig.SchemaUrl = iter.ReadString()
+			ms.orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
@@ -79,42 +79,39 @@ func (rp ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (pd ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "mappingTable", "mapping_table":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.MappingTable().AppendEmpty().unmarshalJsoniter(iter)
+				ms.MappingTable().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "locationTable", "location_table":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.LocationTable().AppendEmpty().unmarshalJsoniter(iter)
+				ms.LocationTable().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "functionTable", "function_table":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.FunctionTable().AppendEmpty().unmarshalJsoniter(iter)
+				ms.FunctionTable().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "linkTable", "link_table":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.LinkTable().AppendEmpty().unmarshalJsoniter(iter)
+				ms.LinkTable().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "stringTable", "string_table":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.StringTable().Append(iter.ReadString())
+				ms.StringTable().Append(iter.ReadString())
 				return true
 			})
 		case "attributeTable", "attribute_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.orig.AttributeTable = append(pd.orig.AttributeTable, json.ReadAttribute(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.AttributeTable, ms.state), iter)
 		case "attributeUnits", "attribute_units":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
+				ms.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		default:
@@ -128,7 +125,7 @@ func (sp ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
-			json.ReadScope(iter, &sp.orig.Scope)
+			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&sp.orig.Scope, sp.state), iter)
 		case "profiles":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				sp.Profiles().AppendEmpty().unmarshalJsoniter(iter)
@@ -190,7 +187,7 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 		case "originalPayloadFormat", "original_payload_format":
 			p.orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			p.orig.OriginalPayload = iter.ReadStringAsSlice()
+			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&p.orig.OriginalPayload, p.state), iter)
 		default:
 			iter.Skip()
 		}

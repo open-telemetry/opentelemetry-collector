@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -48,8 +48,8 @@ func TestConfigProviderYaml(t *testing.T) {
 
 	yamlProvider := newFakeProvider("yaml", func(_ context.Context, _ string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 		var rawConf any
-		if err = yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
-			return nil, err
+		if yamlErr := yaml.Unmarshal(yamlBytes, &rawConf); yamlErr != nil {
+			return nil, yamlErr
 		}
 		return confmap.NewRetrieved(rawConf)
 	})

@@ -27,6 +27,9 @@ The following configuration options can be modified:
     - `flush_timeout`: time after which a batch will be sent regardless of its size. Must be a non-zero value
     - `min_size`: the minimum size of a batch.
     - `max_size`: the maximum size of a batch, enables batch splitting. The maximum size of a batch should be greater than or equal to the minimum size of a batch.
+    - `sizer`: Overrides the sizer set at the `sending_queue` level for batching. Available options:
+      - `items`: number of the smallest parts of each signal (spans, metric data points, log records);
+      - `bytes`: the size of serialized data in bytes (the least performant option).
 - `timeout` (default = 5s): Time to wait per individual attempt to send data to a backend
 
 The `initial_interval`, `max_interval`, `max_elapsed_time`, and `timeout` options accept 
@@ -45,6 +48,8 @@ The maximum number of batches stored to disk can be controlled using `sending_qu
 similarly as for in-memory buffering, defaults to 1000 batches).
 
 When persistent queue is enabled, the batches are being buffered using the provided storage extension - [filestorage] is a popular and safe choice. If the collector instance is killed while having some items in the persistent queue, on restart the items will be picked and the exporting is continued.
+
+**Context Propagation**: Request context (including client metadata and span context) is preserved when using persistent queues. However, context set by Auth extensions is **not** propagated through the persistent queue. Auth extension context is ignored when data is persisted to disk, which means authentication/authorization information will not be available when the persisted data is processed.
 
 ```
                                                               ┌─Consumer #1─┐

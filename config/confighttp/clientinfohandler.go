@@ -38,7 +38,7 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 	if includeMetadata {
 		md := req.Header.Clone()
-		if len(md.Get(client.MetadataHostName)) == 0 && req.Host != "" {
+		if md.Get(client.MetadataHostName) == "" && req.Host != "" {
 			md.Add(client.MetadataHostName, req.Host)
 		}
 

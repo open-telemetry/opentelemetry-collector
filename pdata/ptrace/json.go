@@ -61,7 +61,7 @@ func (ms ResourceSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
-			json.ReadResource(iter, internal.GetOrigResource(internal.Resource(ms.Resource())))
+			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeSpans", "scope_spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				ms.ScopeSpans().AppendEmpty().unmarshalJsoniter(iter)
@@ -80,7 +80,7 @@ func (ms ScopeSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
-			json.ReadScope(iter, &ms.orig.Scope)
+			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
 				ms.Spans().AppendEmpty().unmarshalJsoniter(iter)
@@ -95,56 +95,53 @@ func (ms ScopeSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (dest Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := dest.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpan.traceId", fmt.Sprintf("parse trace_id:%v", err))
 			}
 		case "spanId", "span_id":
-			if err := dest.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpan.spanId", fmt.Sprintf("parse span_id:%v", err))
 			}
 		case "traceState", "trace_state":
-			dest.TraceState().FromRaw(iter.ReadString())
+			ms.TraceState().FromRaw(iter.ReadString())
 		case "parentSpanId", "parent_span_id":
-			if err := dest.orig.ParentSpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+			if err := ms.orig.ParentSpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpan.parentSpanId", fmt.Sprintf("parse parent_span_id:%v", err))
 			}
 		case "flags":
-			dest.orig.Flags = json.ReadUint32(iter)
+			ms.orig.Flags = json.ReadUint32(iter)
 		case "name":
-			dest.orig.Name = iter.ReadString()
+			ms.orig.Name = iter.ReadString()
 		case "kind":
-			dest.orig.Kind = otlptrace.Span_SpanKind(json.ReadEnumValue(iter, otlptrace.Span_SpanKind_value))
+			ms.orig.Kind = otlptrace.Span_SpanKind(json.ReadEnumValue(iter, otlptrace.Span_SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
-			dest.orig.StartTimeUnixNano = json.ReadUint64(iter)
+			ms.orig.StartTimeUnixNano = json.ReadUint64(iter)
 		case "endTimeUnixNano", "end_time_unix_nano":
-			dest.orig.EndTimeUnixNano = json.ReadUint64(iter)
+			ms.orig.EndTimeUnixNano = json.ReadUint64(iter)
 		case "attributes":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				dest.orig.Attributes = append(dest.orig.Attributes, json.ReadAttribute(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			dest.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
 		case "events":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				dest.Events().AppendEmpty().unmarshalJsoniter(iter)
+				ms.Events().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "droppedEventsCount", "dropped_events_count":
-			dest.orig.DroppedEventsCount = json.ReadUint32(iter)
+			ms.orig.DroppedEventsCount = json.ReadUint32(iter)
 		case "links":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				dest.Links().AppendEmpty().unmarshalJsoniter(iter)
+				ms.Links().AppendEmpty().unmarshalJsoniter(iter)
 				return true
 			})
 		case "droppedLinksCount", "dropped_links_count":
-			dest.orig.DroppedLinksCount = json.ReadUint32(iter)
+			ms.orig.DroppedLinksCount = json.ReadUint32(iter)
 		case "status":
-			dest.Status().unmarshalJsoniter(iter)
+			ms.Status().unmarshalJsoniter(iter)
 		default:
 			iter.Skip()
 		}
@@ -152,13 +149,13 @@ func (dest Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (dest Status) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Status) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "message":
-			dest.orig.Message = iter.ReadString()
+			ms.orig.Message = iter.ReadString()
 		case "code":
-			dest.orig.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
+			ms.orig.Code = otlptrace.Status_StatusCode(json.ReadEnumValue(iter, otlptrace.Status_StatusCode_value))
 		default:
 			iter.Skip()
 		}
@@ -166,28 +163,25 @@ func (dest Status) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (dest SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := dest.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpanLink", fmt.Sprintf("parse trace_id:%v", err))
 			}
 		case "spanId", "span_id":
-			if err := dest.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
+			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
 				iter.ReportError("readSpanLink", fmt.Sprintf("parse span_id:%v", err))
 			}
 		case "traceState", "trace_state":
-			dest.orig.TraceState = iter.ReadString()
+			ms.orig.TraceState = iter.ReadString()
 		case "attributes":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				dest.orig.Attributes = append(dest.orig.Attributes, json.ReadAttribute(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			dest.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
 		case "flags":
-			dest.orig.Flags = json.ReadUint32(iter)
+			ms.orig.Flags = json.ReadUint32(iter)
 		default:
 			iter.Skip()
 		}
@@ -195,20 +189,17 @@ func (dest SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (dest SpanEvent) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms SpanEvent) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			dest.orig.TimeUnixNano = json.ReadUint64(iter)
+			ms.orig.TimeUnixNano = json.ReadUint64(iter)
 		case "name":
-			dest.orig.Name = iter.ReadString()
+			ms.orig.Name = iter.ReadString()
 		case "attributes":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				dest.orig.Attributes = append(dest.orig.Attributes, json.ReadAttribute(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			dest.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
 		default:
 			iter.Skip()
 		}

@@ -44,6 +44,7 @@ func TestLoadMetadata(t *testing.T) {
 				GeneratedPackageName: "metadata",
 				Type:                 "sample",
 				SemConvVersion:       "1.9.0",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/samplereceiver",
 				Status: &Status{
 					DisableCodeCov: true,
 					Class:          "receiver",
@@ -216,11 +217,14 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
-						Enabled:               true,
-						Description:           "Monotonic cumulative sum int metric enabled by default.",
-						ExtendedDocumentation: "The metric will be become optional soon.",
-						Warnings: Warnings{
-							IfEnabledNotSet: "This metric will be disabled by default soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "Monotonic cumulative sum int metric enabled by default.",
+							ExtendedDocumentation: "The metric will be become optional soon.",
+							Warnings: Warnings{
+								IfEnabledNotSet: "This metric will be disabled by default soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -228,39 +232,44 @@ func TestLoadMetadata(t *testing.T) {
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"optional.metric": {
-						Enabled:     false,
-						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: Warnings{
-							IfConfigured: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:     false,
+							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Warnings: Warnings{
+								IfConfigured: "This metric is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 						},
 						Unit: strPtr("1"),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"optional.metric.empty_unit": {
-						Enabled:     false,
-						Description: "[DEPRECATED] Gauge double metric disabled by default.",
-						Warnings: Warnings{
-							IfConfigured: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:     false,
+							Description: "[DEPRECATED] Gauge double metric disabled by default.",
+							Warnings: Warnings{
+								IfConfigured: "This metric is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr"},
 						},
 						Unit: strPtr(""),
 						Gauge: &Gauge{
 							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr"},
 					},
 
 					"default.metric.to_be_removed": {
-						Enabled:               true,
-						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
-						ExtendedDocumentation: "The metric will be removed soon.",
-						Warnings: Warnings{
-							IfEnabled: "This metric is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
+							ExtendedDocumentation: "The metric will be removed soon.",
+							Warnings: Warnings{
+								IfEnabled: "This metric is deprecated and will be removed soon.",
+							},
 						},
 						Unit: strPtr("s"),
 						Sum: &Sum{
@@ -270,73 +279,87 @@ func TestLoadMetadata(t *testing.T) {
 						},
 					},
 					"metric.input_type": {
-						Enabled:     true,
-						Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
-						Unit:        strPtr("s"),
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Monotonic cumulative sum int metric with string input_type enabled by default.",
+							Attributes:  []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
+						},
+						Unit: strPtr("s"),
 						Sum: &Sum{
 							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
 							MetricInputType:        MetricInputType{InputType: "string"},
 							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
 							Mono:                   Mono{Monotonic: true},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Events: map[EventName]Event{
 					"default.event": {
-						Enabled:     true,
-						Description: "Example event enabled by default.",
-						Warnings: Warnings{
-							IfEnabledNotSet: "This event will be disabled by default soon.",
+						Signal: Signal{
+							Enabled:     true,
+							Description: "Example event enabled by default.",
+							Warnings: Warnings{
+								IfEnabledNotSet: "This event will be disabled by default soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr", "optional_int_attr", "optional_string_attr"},
 					},
 					"default.event.to_be_renamed": {
-						Enabled:               false,
-						Description:           "[DEPRECATED] Example event disabled by default.",
-						ExtendedDocumentation: "The event will be renamed soon.",
-						Warnings: Warnings{
-							IfConfigured: "This event is deprecated and will be renamed soon.",
+						Signal: Signal{
+							Enabled:               false,
+							Description:           "[DEPRECATED] Example event disabled by default.",
+							ExtendedDocumentation: "The event will be renamed soon.",
+							Warnings: Warnings{
+								IfConfigured: "This event is deprecated and will be renamed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "boolean_attr", "boolean_attr2", "optional_string_attr"},
 					},
 					"default.event.to_be_removed": {
-						Enabled:               true,
-						Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
-						ExtendedDocumentation: "The event will be removed soon.",
-						Warnings: Warnings{
-							IfEnabled: "This event is deprecated and will be removed soon.",
+						Signal: Signal{
+							Enabled:               true,
+							Description:           "[DEPRECATED] Example to-be-removed event enabled by default.",
+							ExtendedDocumentation: "The event will be removed soon.",
+							Warnings: Warnings{
+								IfEnabled: "This event is deprecated and will be removed soon.",
+							},
+							Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 						},
-						Attributes: []AttributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
 				},
 				Telemetry: Telemetry{
 					Metrics: map[MetricName]Metric{
 						"batch_size_trigger_send": {
-							Enabled:     true,
-							Stability:   Stability{Level: "deprecated", From: "v0.110.0"},
-							Description: "Number of times the batch was sent due to a size trigger",
-							Unit:        strPtr("{times}"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: "deprecated", From: "v0.110.0"},
+								Description: "Number of times the batch was sent due to a size trigger",
+							},
+							Unit: strPtr("{times}"),
 							Sum: &Sum{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
 								Mono:            Mono{Monotonic: true},
 							},
 						},
 						"request_duration": {
-							Enabled:     true,
-							Stability:   Stability{Level: "alpha"},
-							Description: "Duration of request",
-							Unit:        strPtr("s"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: "alpha"},
+								Description: "Duration of request",
+							},
+							Unit: strPtr("s"),
 							Histogram: &Histogram{
 								MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 								Boundaries:      []float64{1, 10, 100},
 							},
 						},
 						"process_runtime_total_alloc_bytes": {
-							Enabled:     true,
-							Stability:   Stability{Level: "stable"},
-							Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
-							Unit:        strPtr("By"),
+							Signal: Signal{
+								Enabled:     true,
+								Stability:   Stability{Level: "stable"},
+								Description: "Cumulative bytes allocated for heap objects (see 'go doc runtime.MemStats.TotalAlloc')",
+							},
+							Unit: strPtr("By"),
 							Sum: &Sum{
 								Mono: Mono{true},
 								MetricValueType: MetricValueType{
@@ -346,12 +369,14 @@ func TestLoadMetadata(t *testing.T) {
 							},
 						},
 						"queue_length": {
-							Enabled:               true,
-							Stability:             Stability{Level: "alpha"},
-							Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
-							ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
-							Unit:                  strPtr("{items}"),
-							Optional:              true,
+							Signal: Signal{
+								Enabled:               true,
+								Stability:             Stability{Level: "alpha"},
+								Description:           "This metric is optional and therefore not initialized in NewTelemetryBuilder.",
+								ExtendedDocumentation: "For example this metric only exists if feature A is enabled.",
+							},
+							Unit:     strPtr("{items}"),
+							Optional: true,
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -360,9 +385,11 @@ func TestLoadMetadata(t *testing.T) {
 							},
 						},
 						"queue_capacity": {
-							Enabled:     true,
-							Description: "Queue capacity - sync gauge example.",
-							Unit:        strPtr("{items}"),
+							Signal: Signal{
+								Enabled:     true,
+								Description: "Queue capacity - sync gauge example.",
+							},
+							Unit: strPtr("{items}"),
 							Gauge: &Gauge{
 								MetricValueType: MetricValueType{
 									ValueType: pmetric.NumberDataPointValueTypeInt,
@@ -383,6 +410,7 @@ func TestLoadMetadata(t *testing.T) {
 				Parent:               "parentComponent",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 			},
@@ -393,6 +421,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "custom",
 				GeneratedPackageName: "customname",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
@@ -411,6 +440,7 @@ func TestLoadMetadata(t *testing.T) {
 				Type:                 "test",
 				GeneratedPackageName: "metadata",
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
+				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
 				Tests:                Tests{Host: "componenttest.NewNopHost()"},
 				Status: &Status{
