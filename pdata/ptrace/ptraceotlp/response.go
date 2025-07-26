@@ -4,7 +4,7 @@
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 
 import (
-	"bytes"
+	"slices"
 
 	jsoniter "github.com/json-iterator/go"
 
@@ -40,17 +40,19 @@ func (ms ExportResponse) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportResponse into JSON bytes.
 func (ms ExportResponse) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := json.Marshal(&buf, ms.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	dest.WriteObjectStart()
+	dest.WriteObjectField("partialSuccess")
+	ms.PartialSuccess().marshalJSONStream(dest)
+	dest.WriteObjectEnd()
+	return slices.Clone(dest.Buffer()), dest.Error
 }
 
 // UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
-	iter := jsoniter.ConfigFastest.BorrowIterator(data)
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator(data)
+	defer json.ReturnIterator(iter)
 	ms.unmarshalJsoniter(iter)
 	return iter.Error
 }
