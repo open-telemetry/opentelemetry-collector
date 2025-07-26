@@ -85,16 +85,16 @@ func (ms Profiles) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Profiles) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ResourceProfiles().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "dictionary":
-			ms.ProfilesDictionary().unmarshalJsoniter(iter)
+			ms.ProfilesDictionary().unmarshalJSONIter(iter)
 			return true
 		default:
 			iter.Skip()

@@ -53,15 +53,15 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
-	ms.unmarshalJsoniter(iter)
+	ms.unmarshalJSONIter(iter)
 	return iter.Error
 }
 
-func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ExportResponse) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "partial_success", "partialSuccess":
-			ms.PartialSuccess().unmarshalJsoniter(iter)
+			ms.PartialSuccess().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -74,7 +74,7 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 	return newExportPartialSuccess(&ms.orig.PartialSuccess, ms.state)
 }
 
-func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ExportPartialSuccess) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(_ *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "rejected_profiles", "rejectedProfiles":

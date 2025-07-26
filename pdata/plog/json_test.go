@@ -100,7 +100,7 @@ func TestUnmarshalJsoniterLogsData(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLogs()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLogs(), val)
 }
@@ -110,7 +110,7 @@ func TestUnmarshalJsoniterResourceLogs(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceLogs()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewResourceLogs(), val)
 }
@@ -120,7 +120,7 @@ func TestUnmarshalJsoniterScopeLogs(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeLogs()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewScopeLogs(), val)
 }
@@ -130,7 +130,7 @@ func TestUnmarshalJsoniterLogRecord(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLogRecord()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLogRecord(), val)
 }
@@ -139,7 +139,7 @@ func TestUnmarshalJsoniterLogWrongTraceID(t *testing.T) {
 	jsonStr := `{"body":{}, "traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLogRecord().unmarshalJsoniter(iter)
+	NewLogRecord().unmarshalJSONIter(iter)
 	require.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
@@ -147,7 +147,7 @@ func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
 	jsonStr := `{"body":{}, "spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLogRecord().unmarshalJsoniter(iter)
+	NewLogRecord().unmarshalJSONIter(iter)
 	require.ErrorContains(t, iter.Error, "parse span_id")
 }
 

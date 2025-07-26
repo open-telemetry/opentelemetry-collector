@@ -104,12 +104,12 @@ func (ms Metrics) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Metrics) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Metrics) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_metrics", "resourceMetrics":
 			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
-				ms.ResourceMetrics().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ResourceMetrics().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		default:

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -41,16 +42,18 @@ func TestHistogram_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
 }
 
-func TestHistogram_MarshalAndUnmarshal(t *testing.T) {
+func TestHistogram_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestHistogram()
 	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewHistogram()
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

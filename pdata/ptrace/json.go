@@ -34,7 +34,7 @@ func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	td := NewTraces()
-	td.unmarshalJsoniter(iter)
+	td.unmarshalJSONIter(iter)
 	if iter.Error != nil {
 		return Traces{}, iter.Error
 	}
@@ -42,14 +42,14 @@ func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	return td, nil
 }
 
-func (ms ResourceSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ResourceSpans) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeSpans", "scope_spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ScopeSpans().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ScopeSpans().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -61,14 +61,14 @@ func (ms ResourceSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms ScopeSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ScopeSpans) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.Spans().AppendEmpty().unmarshalJsoniter(iter)
+				ms.Spans().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -80,7 +80,7 @@ func (ms ScopeSpans) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Span) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
@@ -113,20 +113,20 @@ func (ms Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
 		case "events":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.Events().AppendEmpty().unmarshalJsoniter(iter)
+				ms.Events().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "droppedEventsCount", "dropped_events_count":
 			ms.orig.DroppedEventsCount = json.ReadUint32(iter)
 		case "links":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.Links().AppendEmpty().unmarshalJsoniter(iter)
+				ms.Links().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "droppedLinksCount", "dropped_links_count":
 			ms.orig.DroppedLinksCount = json.ReadUint32(iter)
 		case "status":
-			ms.Status().unmarshalJsoniter(iter)
+			ms.Status().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -134,7 +134,7 @@ func (ms Span) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms Status) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Status) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "message":
@@ -148,7 +148,7 @@ func (ms Status) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms SpanLink) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
@@ -174,7 +174,7 @@ func (ms SpanLink) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms SpanEvent) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms SpanEvent) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":

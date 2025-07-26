@@ -36,7 +36,7 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	ld := NewLogs()
-	ld.unmarshalJsoniter(iter)
+	ld.unmarshalJSONIter(iter)
 	if iter.Error != nil {
 		return Logs{}, iter.Error
 	}
@@ -44,14 +44,14 @@ func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
 	return ld, nil
 }
 
-func (ms ResourceLogs) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ResourceLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scope_logs", "scopeLogs":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ScopeLogs().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ScopeLogs().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -63,14 +63,14 @@ func (ms ResourceLogs) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms ScopeLogs) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms ScopeLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "log_records", "logRecords":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.LogRecords().AppendEmpty().unmarshalJsoniter(iter)
+				ms.LogRecords().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "schemaUrl", "schema_url":
@@ -82,7 +82,7 @@ func (ms ScopeLogs) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms LogRecord) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms LogRecord) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":

@@ -331,7 +331,7 @@ func TestUnmarshalJsoniterMetricsData(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewMetrics()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewMetrics(), val)
 }
@@ -341,7 +341,7 @@ func TestUnmarshalJsoniterResourceMetrics(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceMetrics()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.ResourceMetrics{SchemaUrl: "schema"}, val.orig)
 }
@@ -351,7 +351,7 @@ func TestUnmarshalJsoniterScopeMetrics(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeMetrics()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.ScopeMetrics{SchemaUrl: "schema"}, val.orig)
 }
@@ -432,7 +432,7 @@ func TestUnmarshalJsoniterMetric(t *testing.T) {
 		iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.args.jsonStr))
 		jsoniter.ConfigFastest.ReturnIterator(iter)
 		val := NewMetric()
-		val.unmarshalJsoniter(iter)
+		val.unmarshalJSONIter(iter)
 		require.NoError(t, iter.Error)
 		assert.Equal(t, tt.args.want, val.orig)
 	}
@@ -443,7 +443,7 @@ func TestUnmarshalJsoniterNumberDataPoint(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewNumberDataPoint()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewNumberDataPoint(), val)
 }
@@ -453,7 +453,7 @@ func TestUnmarshalJsoniterHistogramDataPoint(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewHistogramDataPoint()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.HistogramDataPoint{Count: 3}, val.orig)
 }
@@ -463,7 +463,7 @@ func TestUnmarshalJsoniterExponentialHistogramDataPoint(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewExponentialHistogramDataPoint()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.ExponentialHistogramDataPoint{Count: 3}, val.orig)
 }
@@ -473,7 +473,7 @@ func TestUnmarshalJsoniterExponentialHistogramDataPointBuckets(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewExponentialHistogramDataPointBuckets()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.ExponentialHistogramDataPoint_Buckets{Offset: 3, BucketCounts: []uint64{1, 2}}, val.orig)
 }
@@ -483,7 +483,7 @@ func TestUnmarshalJsoniterSummaryDataPoint(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSummaryDataPoint()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.SummaryDataPoint{
 		Count: 3,
@@ -496,7 +496,7 @@ func TestUnmarshalJsoniterQuantileValue(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSummaryDataPointValueAtQuantile()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{
 		Quantile: 0.314,
@@ -534,7 +534,7 @@ func TestExemplarVal(t *testing.T) {
 			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
 			defer jsoniter.ConfigFastest.ReturnIterator(iter)
 			val := NewExemplar()
-			val.unmarshalJsoniter(iter)
+			val.unmarshalJSONIter(iter)
 			assert.Equal(t, tt.want, val.orig)
 		})
 	}
@@ -544,7 +544,7 @@ func TestExemplarInvalidTraceID(t *testing.T) {
 	jsonStr := `{"traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewExemplar().unmarshalJsoniter(iter)
+	NewExemplar().unmarshalJSONIter(iter)
 	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
@@ -552,7 +552,7 @@ func TestExemplarInvalidSpanID(t *testing.T) {
 	jsonStr := `{"spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewExemplar().unmarshalJsoniter(iter)
+	NewExemplar().unmarshalJSONIter(iter)
 	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 
@@ -561,7 +561,7 @@ func TestExemplar(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewExemplar()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewExemplar(), val)
 }

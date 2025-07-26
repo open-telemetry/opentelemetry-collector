@@ -161,7 +161,7 @@ func TestUnmarshalJsoniterProfileData(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewProfiles()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, 1, val.ResourceProfiles().Len())
 }
@@ -170,7 +170,7 @@ func TestUnmarshalJsoniterProfileInvalidProfileIDField(t *testing.T) {
 	jsonStr := `{"profile_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewProfile().unmarshalJsoniter(iter)
+	NewProfile().unmarshalJSONIter(iter)
 	assert.ErrorContains(t, iter.Error, "parse profile_id")
 }
 
@@ -179,7 +179,7 @@ func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewResourceProfiles()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewResourceProfiles(), val)
 }
@@ -189,7 +189,7 @@ func TestUnmarshalJsoniterScopeProfiles(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewScopeProfiles()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewScopeProfiles(), val)
 }
@@ -199,7 +199,7 @@ func TestUnmarshalJsoniterProfile(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewProfile()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewProfile(), val)
 }
@@ -209,7 +209,7 @@ func TestUnmarshalJsoniterValueType(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewValueType()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewValueType(), val)
 }
@@ -219,7 +219,7 @@ func TestUnmarshalJsoniterSample(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewSample()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewSample(), val)
 }
@@ -229,7 +229,7 @@ func TestUnmarshalJsoniterMapping(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewMapping()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewMapping(), val)
 }
@@ -239,7 +239,7 @@ func TestUnmarshalJsoniterLocation(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLocation()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLocation(), val)
 }
@@ -249,7 +249,7 @@ func TestUnmarshalJsoniterLine(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLine()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLine(), val)
 }
@@ -259,7 +259,7 @@ func TestUnmarshalJsoniterFunction(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewFunction()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewFunction(), val)
 }
@@ -269,7 +269,7 @@ func TestUnmarshalJsoniterAttributeUnit(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewAttributeUnit()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewAttributeUnit(), val)
 }
@@ -279,7 +279,7 @@ func TestUnmarshalJsoniterLink(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	val := NewLink()
-	val.unmarshalJsoniter(iter)
+	val.unmarshalJSONIter(iter)
 	require.NoError(t, iter.Error)
 	assert.Equal(t, NewLink(), val)
 }
@@ -288,7 +288,7 @@ func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
 	jsonStr := `{"trace_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLink().unmarshalJsoniter(iter)
+	NewLink().unmarshalJSONIter(iter)
 	assert.ErrorContains(t, iter.Error, "parse trace_id")
 }
 
@@ -296,7 +296,7 @@ func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
 	jsonStr := `{"span_id":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLink().unmarshalJsoniter(iter)
+	NewLink().unmarshalJSONIter(iter)
 	assert.ErrorContains(t, iter.Error, "parse span_id")
 }
 

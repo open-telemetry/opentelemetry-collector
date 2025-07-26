@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
@@ -42,16 +43,18 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
 }
 
-func TestSpanEvent_MarshalAndUnmarshal(t *testing.T) {
+func TestSpanEvent_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestSpanEvent()
 	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewSpanEvent()
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }
