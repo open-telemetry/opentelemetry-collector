@@ -105,6 +105,54 @@ func TestNewDefaultServerConfig(t *testing.T) {
 	result := NewDefaultServerConfig()
 
 	assert.Equal(t, expected, result)
+	// Verify that reflection is disabled by default (zero value is false)
+	assert.False(t, result.Reflection)
+}
+
+func TestServerConfigReflection(t *testing.T) {
+	tests := []struct {
+		name       string
+		reflection bool
+		expectFunc func(*testing.T, *grpc.Server)
+	}{
+		{
+			name:       "reflection enabled",
+			reflection: true,
+			expectFunc: func(t *testing.T, server *grpc.Server) {
+				// When reflection is enabled, the service should be registered
+				// We can verify this by checking if the reflection service info is available
+				serviceInfo := server.GetServiceInfo()
+				assert.Contains(t, serviceInfo, "grpc.reflection.v1.ServerReflection")
+			},
+		},
+		{
+			name:       "reflection disabled",
+			reflection: false,
+			expectFunc: func(t *testing.T, server *grpc.Server) {
+				// When reflection is disabled, the service should not be registered
+				serviceInfo := server.GetServiceInfo()
+				assert.NotContains(t, serviceInfo, "grpc.reflection.v1.ServerReflection")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gss := &ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  "localhost:0",
+					Transport: confignet.TransportTypeTCP,
+				},
+				Reflection: tt.reflection,
+			}
+
+			server, err := gss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+			require.NotNil(t, server)
+
+			tt.expectFunc(t, server)
+		})
+	}
 }
 
 var (
