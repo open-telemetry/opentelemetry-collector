@@ -2051,6 +2051,7 @@ func (m *ScopeSpans) Unmarshal(dAtA []byte) error {
 func (m *Span) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
+	attribute_indices := make([]int, 0, 200)
 	for iNdEx < l {
 		preIndex := iNdEx
 		var wire uint64
@@ -2308,10 +2309,7 @@ func (m *Span) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Attributes = append(m.Attributes, v11.KeyValue{})
-			if err := m.Attributes[len(m.Attributes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			attribute_indices = append(attribute_indices, iNdEx, postIndex)
 			iNdEx = postIndex
 		case 10:
 			if wireType != 0 {
@@ -2500,6 +2498,20 @@ func (m *Span) Unmarshal(dAtA []byte) error {
 	if iNdEx > l {
 		return io.ErrUnexpectedEOF
 	}
+
+	if len(attribute_indices) > 0 {
+		byte_buffer_containing_all_attributes := string(dAtA[attribute_indices[0]:attribute_indices[len(attribute_indices)-1]])
+		m.Attributes = make([]v11.KeyValue, 0, len(attribute_indices) / 2)
+		for i := 0; i < len(attribute_indices); i+=2 {
+
+			m.Attributes = append(m.Attributes, v11.KeyValue{})
+
+			if err := m.Attributes[len(m.Attributes)-1].Unmarshal_Without_Allocations(dAtA[attribute_indices[i]:attribute_indices[i+1]], byte_buffer_containing_all_attributes[attribute_indices[i]-attribute_indices[0]:attribute_indices[i+1]-attribute_indices[0]]); err != nil {
+			    return err
+			}
+		}
+	}
+
 	return nil
 }
 func (m *Span_Event) Unmarshal(dAtA []byte) error {
