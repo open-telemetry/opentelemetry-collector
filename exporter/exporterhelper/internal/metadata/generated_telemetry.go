@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
@@ -25,6 +26,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	attributeSet                      attribute.Set
 	meter                             metric.Meter
 	mu                                sync.Mutex
 	registrations                     []metric.Registration
@@ -50,6 +52,24 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+	return func(mb *TelemetryBuilder) {
+		mb.attributeSet = s
+	}
+}
+
+func (builder *TelemetryBuilder) RecordExporterEnqueueFailedLogRecordsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterEnqueueFailedLogRecords.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterEnqueueFailedMetricPointsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterEnqueueFailedMetricPoints.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterEnqueueFailedSpansDataPoint(ctx context.Context, val int64) {
+	builder.ExporterEnqueueFailedSpans.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 // RegisterExporterQueueCapacityCallback sets callback for observable ExporterQueueCapacity metric.
@@ -80,6 +100,30 @@ func (builder *TelemetryBuilder) RegisterExporterQueueSizeCallback(cb metric.Int
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
+}
+
+func (builder *TelemetryBuilder) RecordExporterSendFailedLogRecordsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSendFailedLogRecords.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterSendFailedMetricPointsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSendFailedMetricPoints.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterSendFailedSpansDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSendFailedSpans.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterSentLogRecordsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSentLogRecords.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterSentMetricPointsDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSentMetricPoints.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordExporterSentSpansDataPoint(ctx context.Context, val int64) {
+	builder.ExporterSentSpans.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 type observerInt64 struct {
