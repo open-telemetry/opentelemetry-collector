@@ -522,7 +522,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// t.Parallel() // TODO: Re-enable parallel tests once feature gate is removed. We can't parallelize since registry is shared.
+			t.Parallel()
 			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tc.framedSnappyEnabled))
 
 			h := httpContentDecompressor(
