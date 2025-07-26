@@ -167,11 +167,11 @@ func TestUnmarshalJsoniterProfileData(t *testing.T) {
 }
 
 func TestUnmarshalJsoniterProfileInvalidProfileIDField(t *testing.T) {
-	jsonStr := `{"profile_id":"--"}`
+	jsonStr := `{"profileId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewProfile().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse profile_id")
+	assert.ErrorContains(t, iter.Error, "profileId")
 }
 
 func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
@@ -285,19 +285,19 @@ func TestUnmarshalJsoniterLink(t *testing.T) {
 }
 
 func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
+	jsonStr := `{"traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLink().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	assert.ErrorContains(t, iter.Error, "traceId")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
+	jsonStr := `{"spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLink().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	assert.ErrorContains(t, iter.Error, "spanId")
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {

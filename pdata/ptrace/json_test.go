@@ -171,27 +171,27 @@ func TestUnmarshalJsoniterSpan(t *testing.T) {
 }
 
 func TestUnmarshalJsoniterSpanInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
+	jsonStr := `{"traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	assert.ErrorContains(t, iter.Error, "traceId")
 }
 
 func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
+	jsonStr := `{"spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	assert.ErrorContains(t, iter.Error, "spanId")
 }
 
 func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
-	jsonStr := `{"parent_span_id":"--"}`
+	jsonStr := `{"parentSpanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpan().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse parent_span_id")
+	assert.ErrorContains(t, iter.Error, "parentSpanId")
 }
 
 func TestUnmarshalJsoniterSpanStatus(t *testing.T) {
@@ -215,19 +215,19 @@ func TestUnmarshalJsoniterSpanLink(t *testing.T) {
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
+	jsonStr := `{"traceId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	assert.ErrorContains(t, iter.Error, "traceId")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
+	jsonStr := `{"spanId":"--"}`
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewSpanLink().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	assert.ErrorContains(t, iter.Error, "spanId")
 }
 
 func TestUnmarshalJsoniterSpanEvent(t *testing.T) {

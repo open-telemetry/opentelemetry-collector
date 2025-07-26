@@ -4,7 +4,6 @@
 package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
 import (
-	"fmt"
 	"slices"
 
 	jsoniter "github.com/json-iterator/go"
@@ -84,19 +83,13 @@ func (ms Span) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readSpan.traceId", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readSpan.spanId", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		case "traceState", "trace_state":
 			ms.TraceState().FromRaw(iter.ReadString())
 		case "parentSpanId", "parent_span_id":
-			if err := ms.orig.ParentSpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readSpan.parentSpanId", fmt.Sprintf("parse parent_span_id:%v", err))
-			}
+			ms.orig.ParentSpanId.UnmarshalJSONIter(iter)
 		case "flags":
 			ms.orig.Flags = json.ReadUint32(iter)
 		case "name":
@@ -152,13 +145,9 @@ func (ms SpanLink) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readSpanLink", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readSpanLink", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		case "traceState", "trace_state":
 			ms.orig.TraceState = iter.ReadString()
 		case "attributes":

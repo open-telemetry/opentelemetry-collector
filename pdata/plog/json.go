@@ -4,7 +4,6 @@
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import (
-	"fmt"
 	"slices"
 
 	jsoniter "github.com/json-iterator/go"
@@ -104,13 +103,9 @@ func (ms LogRecord) unmarshalJSONIter(iter *jsoniter.Iterator) {
 		case "flags":
 			ms.orig.Flags = json.ReadUint32(iter)
 		case "traceId", "trace_id":
-			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readLog.traceId", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("readLog.spanId", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
