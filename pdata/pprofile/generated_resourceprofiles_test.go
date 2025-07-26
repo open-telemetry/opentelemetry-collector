@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
@@ -42,16 +43,18 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
 }
 
-func TestResourceProfiles_MarshalAndUnmarshal(t *testing.T) {
+func TestResourceProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestResourceProfiles()
 	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewResourceProfiles()
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

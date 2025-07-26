@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
@@ -42,16 +43,18 @@ func TestScopeSpans_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState)) })
 }
 
-func TestScopeSpans_MarshalAndUnmarshal(t *testing.T) {
+func TestScopeSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestScopeSpans()
 	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewScopeSpans()
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

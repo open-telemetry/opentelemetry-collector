@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -42,16 +43,18 @@ func TestNumberDataPoint_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState)) })
 }
 
-func TestNumberDataPoint_MarshalAndUnmarshal(t *testing.T) {
+func TestNumberDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestNumberDataPoint()
 	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewNumberDataPoint()
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

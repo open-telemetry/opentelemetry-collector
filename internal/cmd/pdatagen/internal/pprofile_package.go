@@ -21,6 +21,7 @@ var pprofile = &Package{
 			`"unsafe"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,

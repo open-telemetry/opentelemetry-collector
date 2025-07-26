@@ -75,12 +75,12 @@ func (ms Logs) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Logs) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Logs) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
 			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
-				ms.ResourceLogs().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ResourceLogs().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		default:

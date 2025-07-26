@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
@@ -42,16 +43,18 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newEntityRef(&otlpcommon.EntityRef{}, &sharedState)) })
 }
 
-func TestEntityRef_MarshalAndUnmarshal(t *testing.T) {
+func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTestEntityRef()
 	internal.MarshalJSONStreamEntityRef(internal.EntityRef(src), stream)
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewEntityRef()
 	internal.UnmarshalJSONIterEntityRef(internal.EntityRef(dest), iter)
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

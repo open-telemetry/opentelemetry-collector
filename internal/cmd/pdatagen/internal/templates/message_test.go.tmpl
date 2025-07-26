@@ -37,7 +37,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
 }
 
-func Test{{ .structName }}_MarshalAndUnmarshal(t *testing.T) {
+func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := generateTest{{ .structName }}()
@@ -46,6 +46,7 @@ func Test{{ .structName }}_MarshalAndUnmarshal(t *testing.T) {
 	{{- else }}
 	src.marshalJSONStream(stream)
 	{{- end }}
+	require.NoError(t, stream.Error)
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
@@ -53,8 +54,9 @@ func Test{{ .structName }}_MarshalAndUnmarshal(t *testing.T) {
 	{{- if .isCommon }}
 	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
 	{{- else }}
-	dest.unmarshalJsoniter(iter)
+	dest.unmarshalJSONIter(iter)
 	{{- end }}
+	require.NoError(t, iter.Error)
 
 	assert.Equal(t, src, dest)
 }

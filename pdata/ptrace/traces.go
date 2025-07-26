@@ -74,12 +74,12 @@ func (ms Traces) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Traces) unmarshalJsoniter(iter *jsoniter.Iterator) {
+func (ms Traces) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "resourceSpans", "resource_spans":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ResourceSpans().AppendEmpty().unmarshalJsoniter(iter)
+				ms.ResourceSpans().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		default:
