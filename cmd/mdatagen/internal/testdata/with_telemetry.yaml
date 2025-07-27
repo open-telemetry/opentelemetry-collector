@@ -4,10 +4,13 @@ status:
   class: receiver
   stability:
     beta: [traces, logs, metrics]
+
 attributes:
   name:
     description: Name of sampling decision
     type: string
+    enabled: true
+
 telemetry:
   metrics:
     sampling_decision_latency:

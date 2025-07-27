@@ -153,6 +153,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeStr,
 						},
 						FullName: "enum_attr",
+						Enabled:  true,
 					},
 					"string_attr": {
 						Description:  "Attribute with any string value.",
@@ -161,6 +162,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeStr,
 						},
 						FullName: "string_attr",
+						Enabled:  true,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -169,6 +171,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeInt,
 						},
 						FullName: "overridden_int_attr",
+						Enabled:  true,
 					},
 					"boolean_attr": {
 						Description: "Attribute with a boolean value.",
@@ -176,6 +179,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeBool,
 						},
 						FullName: "boolean_attr",
+						Enabled:  true,
 					},
 					"boolean_attr2": {
 						Description: "Another attribute with a boolean value.",
@@ -183,6 +187,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeBool,
 						},
 						FullName: "boolean_attr2",
+						Enabled:  true,
 					},
 					"slice_attr": {
 						Description: "Attribute with a slice value.",
@@ -190,6 +195,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeSlice,
 						},
 						FullName: "slice_attr",
+						Enabled:  true,
 					},
 					"map_attr": {
 						Description: "Attribute with a map value.",
@@ -197,6 +203,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeMap,
 						},
 						FullName: "map_attr",
+						Enabled:  true,
 					},
 					"optional_int_attr": {
 						Description: "An optional attribute with an integer value",
@@ -205,6 +212,7 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "optional_int_attr",
 						Optional: true,
+						Enabled:  true,
 					},
 					"optional_string_attr": {
 						Description: "An optional attribute with any string value",
@@ -213,8 +221,10 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "optional_string_attr",
 						Optional: true,
+						Enabled:  true,
 					},
 				},
+
 				Metrics: map[MetricName]Metric{
 					"default.metric": {
 						Signal: Signal{
