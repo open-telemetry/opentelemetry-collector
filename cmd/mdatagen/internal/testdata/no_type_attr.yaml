@@ -12,6 +12,7 @@ status:
 attributes:
   used_attr:
     description: Used attribute.
+    enabled: true
 
 metrics:
   metric:

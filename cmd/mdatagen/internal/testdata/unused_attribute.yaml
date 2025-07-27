@@ -12,12 +12,15 @@ status:
 attributes:
   used_attr_in_metrics_section:
     description: Used attribute.
+    enabled: true
     type: string
   used_attr_in_telemetry_section:
+    enabled: true
     description: Used attribute.
     type: string
 
   unused_attr:
+    enabled: true
     name_override: state
     description: Unused attribute.
     type: string
