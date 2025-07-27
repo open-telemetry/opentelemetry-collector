@@ -12,6 +12,7 @@ attributes:
     description: Optional int attr.
     type: string
     optional: true
+    enabled: true
 
 metrics:
   metric:
