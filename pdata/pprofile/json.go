@@ -4,7 +4,6 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
-	"fmt"
 	"slices"
 
 	jsoniter "github.com/json-iterator/go"
@@ -137,54 +136,52 @@ func (sp ScopeProfiles) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (p Profile) unmarshalJSONIter(iter *jsoniter.Iterator) {
+func (ms Profile) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "profileId", "profile_id":
-			if err := p.orig.ProfileId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("profileContainer.profileId", fmt.Sprintf("parse profile_id:%v", err))
-			}
+			ms.orig.ProfileId.UnmarshalJSONIter(iter)
 		case "sampleType", "sample_type":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.SampleType().AppendEmpty().unmarshalJSONIter(iter)
+				ms.SampleType().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "sample":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.Sample().AppendEmpty().unmarshalJSONIter(iter)
+				ms.Sample().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
 		case "locationIndices", "location_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.LocationIndices().Append(json.ReadInt32(iter))
+				ms.LocationIndices().Append(json.ReadInt32(iter))
 				return true
 			})
 		case "timeNanos", "time_nanos":
-			p.orig.TimeNanos = json.ReadInt64(iter)
+			ms.orig.TimeNanos = json.ReadInt64(iter)
 		case "durationNanos", "duration_nanos":
-			p.orig.DurationNanos = json.ReadInt64(iter)
+			ms.orig.DurationNanos = json.ReadInt64(iter)
 		case "periodType", "period_type":
-			p.PeriodType().unmarshalJSONIter(iter)
+			ms.PeriodType().unmarshalJSONIter(iter)
 		case "period":
-			p.orig.Period = json.ReadInt64(iter)
+			ms.orig.Period = json.ReadInt64(iter)
 		case "commentStrindices", "comment_strindices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.CommentStrindices().Append(json.ReadInt32(iter))
+				ms.CommentStrindices().Append(json.ReadInt32(iter))
 				return true
 			})
 		case "defaultSampleTypeIndex", "default_sample_type_index":
-			p.orig.DefaultSampleTypeIndex = json.ReadInt32(iter)
+			ms.orig.DefaultSampleTypeIndex = json.ReadInt32(iter)
 		case "attributeIndices", "attribute_indices":
 			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.AttributeIndices().Append(json.ReadInt32(iter))
+				ms.AttributeIndices().Append(json.ReadInt32(iter))
 				return true
 			})
 		case "droppedAttributesCount", "dropped_attributes_count":
-			p.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
 		case "originalPayloadFormat", "original_payload_format":
-			p.orig.OriginalPayloadFormat = iter.ReadString()
+			ms.orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&p.orig.OriginalPayload, p.state), iter)
+			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state), iter)
 		default:
 			iter.Skip()
 		}
@@ -344,17 +341,13 @@ func (at AttributeUnit) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (l Link) unmarshalJSONIter(iter *jsoniter.Iterator) {
+func (ms Link) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := l.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("link.traceId", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := l.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("link.spanId", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}

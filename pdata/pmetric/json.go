@@ -4,7 +4,6 @@
 package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
-	"fmt"
 	"slices"
 
 	jsoniter "github.com/json-iterator/go"
@@ -390,13 +389,9 @@ func (ms Exemplar) unmarshalJSONIter(iter *jsoniter.Iterator) {
 				AsDouble: json.ReadFloat64(iter),
 			}
 		case "traceId", "trace_id":
-			if err := ms.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("exemplar.traceId", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := ms.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("exemplar.spanId", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}

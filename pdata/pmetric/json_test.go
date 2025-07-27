@@ -545,7 +545,7 @@ func TestExemplarInvalidTraceID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewExemplar().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	assert.ErrorContains(t, iter.Error, "traceId")
 }
 
 func TestExemplarInvalidSpanID(t *testing.T) {
@@ -553,7 +553,7 @@ func TestExemplarInvalidSpanID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewExemplar().unmarshalJSONIter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	assert.ErrorContains(t, iter.Error, "spanId")
 }
 
 func TestExemplar(t *testing.T) {

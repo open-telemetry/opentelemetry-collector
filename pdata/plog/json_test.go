@@ -140,7 +140,7 @@ func TestUnmarshalJsoniterLogWrongTraceID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLogRecord().unmarshalJSONIter(iter)
-	require.ErrorContains(t, iter.Error, "parse trace_id")
+	require.ErrorContains(t, iter.Error, "traceId")
 }
 
 func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
@@ -148,7 +148,7 @@ func TestUnmarshalJsoniterLogWrongSpanID(t *testing.T) {
 	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
 	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 	NewLogRecord().unmarshalJSONIter(iter)
-	require.ErrorContains(t, iter.Error, "parse span_id")
+	require.ErrorContains(t, iter.Error, "spanId")
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {
