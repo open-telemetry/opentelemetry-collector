@@ -6,7 +6,6 @@ package json
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -51,14 +50,14 @@ func TestReadInt32(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			val := ReadInt32(iter)
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadInt32()
 			if tt.wantErr {
-				assert.Error(t, iter.Error)
+				require.Error(t, iter.Error())
 				return
 			}
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -104,14 +103,14 @@ func TestReadUint32(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			val := ReadUint32(iter)
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadUint32()
 			if tt.wantErr {
-				assert.Error(t, iter.Error)
+				require.Error(t, iter.Error())
 				return
 			}
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -157,14 +156,14 @@ func TestReadInt64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			val := ReadInt64(iter)
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadInt64()
 			if tt.wantErr {
-				assert.Error(t, iter.Error)
+				require.Error(t, iter.Error())
 				return
 			}
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -210,14 +209,14 @@ func TestReadUint64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			val := ReadUint64(iter)
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadUint64()
 			if tt.wantErr {
-				assert.Error(t, iter.Error)
+				require.Error(t, iter.Error())
 				return
 			}
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, val)
 		})
 	}
@@ -263,15 +262,78 @@ func TestReadFloat64(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
-			val := ReadFloat64(iter)
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadFloat64()
 			if tt.wantErr {
-				assert.Error(t, iter.Error)
+				require.Error(t, iter.Error())
 				return
 			}
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.InDelta(t, tt.want, val, 0.01)
+		})
+	}
+}
+
+func TestReadEnumValue(t *testing.T) {
+	valueMap := map[string]int32{
+		"undefined": 0,
+		"foo":       1,
+		"bar":       2,
+	}
+	tests := []struct {
+		name    string
+		jsonStr string
+		want    int32
+		wantErr bool
+	}{
+		{
+			name:    "foo string",
+			jsonStr: "\"foo\"\n",
+			want:    1,
+		},
+		{
+			name:    "foo number",
+			jsonStr: "1\n",
+			want:    1,
+		},
+		{
+			name:    "unknown number",
+			jsonStr: "5\n",
+			want:    5,
+		},
+		{
+			name:    "bar string",
+			jsonStr: "\"bar\"\n",
+			want:    2,
+		},
+		{
+			name:    "bar number",
+			jsonStr: "2\n",
+			want:    2,
+		},
+		{
+			name:    "unknown string",
+			jsonStr: "\"baz\"\n",
+			wantErr: true,
+		},
+		{
+			name:    "wrong type",
+			jsonStr: "true",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			iter := BorrowIterator([]byte(tt.jsonStr))
+			defer ReturnIterator(iter)
+			val := iter.ReadEnumValue(valueMap)
+			if tt.wantErr {
+				assert.Error(t, iter.Error())
+				return
+			}
+			require.NoError(t, iter.Error())
+			assert.Equal(t, tt.want, val)
 		})
 	}
 }

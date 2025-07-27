@@ -4,8 +4,6 @@
 package plog // import "go.opentelemetry.io/collector/pdata/plog"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -75,11 +73,11 @@ func (ms Logs) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Logs) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Logs) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
-			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(*json.Iterator) bool {
 				ms.ResourceLogs().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})

@@ -53,13 +53,13 @@ func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestSummaryDataPointValueAtQuantile()
 	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewSummaryDataPointValueAtQuantile()
 	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }

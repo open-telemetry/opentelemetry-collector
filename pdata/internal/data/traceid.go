@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	jsoniter "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -73,7 +72,7 @@ func (tid TraceID) MarshalJSONStream(dest *json.Stream) {
 }
 
 // UnmarshalJSONIter decodes TraceID from hex string.
-func (tid *TraceID) UnmarshalJSONIter(iter *jsoniter.Iterator) {
+func (tid *TraceID) UnmarshalJSONIter(iter *json.Iterator) {
 	*tid = [profileIDSize]byte{}
 	unmarshalJSON(tid[:], iter)
 }

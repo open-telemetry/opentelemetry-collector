@@ -4,11 +4,11 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func UnmarshalJSONStreamStringSlice(ms StringSlice, iter *jsoniter.Iterator) {
-	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+func UnmarshalJSONStreamStringSlice(ms StringSlice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, iter.ReadString())
 		return true
 	})

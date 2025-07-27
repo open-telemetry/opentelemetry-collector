@@ -4,13 +4,11 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "name":
 			ms.orig.Name = iter.ReadString()
@@ -19,7 +17,7 @@ func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *jsonit
 		case "attributes":
 			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
 		default:
 			iter.Skip()
 		}

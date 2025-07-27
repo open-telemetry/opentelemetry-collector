@@ -4,8 +4,6 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -85,11 +83,11 @@ func (ms Profiles) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Profiles) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Profiles) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(iter *json.Iterator) bool {
 				ms.ResourceProfiles().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})

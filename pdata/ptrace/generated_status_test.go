@@ -47,13 +47,13 @@ func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestStatus()
 	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewStatus()
 	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }

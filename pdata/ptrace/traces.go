@@ -4,8 +4,6 @@
 package ptrace // import "go.opentelemetry.io/collector/pdata/ptrace"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -74,11 +72,11 @@ func (ms Traces) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Traces) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Traces) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(iter *json.Iterator) bool {
 				ms.ResourceSpans().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})

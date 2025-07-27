@@ -4,8 +4,6 @@
 package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -104,11 +102,11 @@ func (ms Metrics) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func (ms Metrics) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Metrics) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource_metrics", "resourceMetrics":
-			iter.ReadArrayCB(func(*jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(iter *json.Iterator) bool {
 				ms.ResourceMetrics().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})

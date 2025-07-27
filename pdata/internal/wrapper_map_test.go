@@ -6,7 +6,6 @@ package internal
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -21,18 +20,18 @@ func TestReadAttributeUnknownField(t *testing.T) {
 	var got []otlpcommon.KeyValue
 	UnmarshalJSONIterMap(NewMap(&got, nil), iter)
 	//  unknown fields should not be an error
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, []otlpcommon.KeyValue{{}}, got)
 }
 
 func TestReadAttributeValueUnknownField(t *testing.T) {
 	// Key after value, to check that we correctly continue to process.
 	jsonStr := `[{"value": {"unknown": {"extra":""}}, "key":"test"}]`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	var got []otlpcommon.KeyValue
 	UnmarshalJSONIterMap(NewMap(&got, nil), iter)
 	//  unknown fields should not be an error
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, []otlpcommon.KeyValue{{Key: "test"}}, got)
 }

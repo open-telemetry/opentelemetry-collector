@@ -6,12 +6,12 @@ package data // import "go.opentelemetry.io/collector/pdata/internal/data"
 import (
 	"encoding/hex"
 
-	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // unmarshalJSON inflates trace id from hex string, possibly enclosed in quotes.
 // Called by Protobuf JSON deserialization.
-func unmarshalJSON(dst []byte, iter *jsoniter.Iterator) {
+func unmarshalJSON(dst []byte, iter *json.Iterator) {
 	src := iter.ReadStringAsSlice()
 	if len(src) == 0 {
 		return

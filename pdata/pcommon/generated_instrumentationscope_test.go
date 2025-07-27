@@ -47,13 +47,13 @@ func TestInstrumentationScope_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestInstrumentationScope()
 	internal.MarshalJSONStreamInstrumentationScope(internal.InstrumentationScope(src), stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewInstrumentationScope()
 	internal.UnmarshalJSONIterInstrumentationScope(internal.InstrumentationScope(dest), iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }
