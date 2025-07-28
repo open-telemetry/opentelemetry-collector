@@ -4,6 +4,7 @@
 package json
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -259,6 +260,21 @@ func TestReadFloat64(t *testing.T) {
 			jsonStr: `true`,
 			wantErr: true,
 		},
+		{
+			name:    "positive infinity",
+			jsonStr: `"Infinity"`,
+			want:    math.Inf(1),
+		},
+		{
+			name:    "negative infinity",
+			jsonStr: `"-Infinity"`,
+			want:    math.Inf(-1),
+		},
+		{
+			name:    "not-a-number",
+			jsonStr: `"NaN"`,
+			want:    math.NaN(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -273,6 +289,17 @@ func TestReadFloat64(t *testing.T) {
 			assert.InDelta(t, tt.want, val, 0.01)
 		})
 	}
+}
+
+func TestReadFloat64MaxValue(t *testing.T) {
+	iter := BorrowIterator([]byte(`{"value": 1.7976931348623157e+308}`))
+	defer ReturnIterator(iter)
+	iter.ReadObjectCB(func(iter *Iterator, f string) bool {
+		assert.Equal(t, "value", f)
+		assert.InDelta(t, math.MaxFloat64, iter.ReadFloat64(), 0.01)
+		return true
+	})
+	require.NoError(t, iter.Error())
 }
 
 func TestReadEnumValue(t *testing.T) {

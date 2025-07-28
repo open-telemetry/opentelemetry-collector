@@ -5,7 +5,6 @@ package json // import "go.opentelemetry.io/collector/pdata/internal/json"
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -64,10 +63,21 @@ func (ots *Stream) WriteUint64(val uint64) {
 	ots.WriteString(strconv.FormatUint(val, 10))
 }
 
-// WriteFloat64 gracefully handles infinity & NaN values
+// WriteFloat64 writes the JSON value that will be a number or one of the special string
+// values "NaN", "Infinity", and "-Infinity". Either numbers or strings are accepted.
+// Empty strings are invalid. Exponent notation is also accepted.
+// See https://protobuf.dev/programming-guides/json/.
 func (ots *Stream) WriteFloat64(val float64) {
-	if math.IsNaN(val) || math.IsInf(val, 0) {
-		ots.WriteString(fmt.Sprintf("%f", val))
+	if math.IsNaN(val) {
+		ots.WriteString("NaN")
+		return
+	}
+	if math.IsInf(val, 1) {
+		ots.WriteString("Infinity")
+		return
+	}
+	if math.IsInf(val, -1) {
+		ots.WriteString("-Infinity")
 		return
 	}
 
