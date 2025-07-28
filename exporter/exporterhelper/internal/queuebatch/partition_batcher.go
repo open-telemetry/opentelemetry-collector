@@ -5,7 +5,6 @@ package queuebatch // import "go.opentelemetry.io/collector/exporter/exporterhel
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
@@ -133,15 +132,9 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	if mergeSplitErr != nil {
 		numRefs++
 	}
-	fmt.Printf("[DEBUG] Partition batcher flush analysis: reqList_len=%d, numRefs=%d, has_mergeSplitErr=%t, done_type=%T\n",
-		len(reqList), numRefs, mergeSplitErr != nil, done)
 	if numRefs > 1 {
-		fmt.Printf("[DEBUG] Creating refCountDone: ref_count=%d, original_done_type=%T\n",
-			len(reqList), done)
 		done = newRefCountDone(done, int64(len(reqList)))
-		fmt.Printf("[DEBUG] Created refCountDone: new_done_type=%T\n", done)
 		if mergeSplitErr != nil {
-			fmt.Printf("[DEBUG] Calling OnDone for mergeSplitErr: err=%v\n", mergeSplitErr)
 			done.OnDone(mergeSplitErr)
 		}
 	}
@@ -239,16 +232,10 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 
 // flush starts a goroutine that calls consumeFunc. It blocks until a worker is available if necessary.
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
-	fmt.Printf("[DEBUG] Worker starting flush: done_type=%T, done_ptr=%p\n", done, done)
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
 		defer qb.stopWG.Done()
-		fmt.Printf("[DEBUG] Worker executing consumeFunc: done_type=%T, done_ptr=%p\n", done, done)
-		consumeErr := qb.consumeFunc(ctx, req)
-		fmt.Printf("[DEBUG] Worker consumeFunc completed, calling OnDone: err=%v, done_type=%T, done_ptr=%p\n",
-			consumeErr, done, done)
-		done.OnDone(consumeErr)
-		fmt.Printf("[DEBUG] Worker OnDone completed: done_type=%T, done_ptr=%p\n", done, done)
+		done.OnDone(qb.consumeFunc(ctx, req))
 	})
 }
 
@@ -294,9 +281,6 @@ func newRefCountDone(done queue.Done, refCount int64) queue.Done {
 		done:     done,
 		refCount: refCount,
 	}
-	// Temporary debug logging
-	fmt.Printf("[DEBUG] Created refCountDone: refCount=%d, rcd_ptr=%p, done_type=%T, done_ptr=%p\n",
-		refCount, rcd, done, done)
 	return rcd
 }
 
@@ -304,21 +288,11 @@ func (rcd *refCountDone) OnDone(err error) {
 	rcd.mu.Lock()
 	defer rcd.mu.Unlock()
 
-	// Temporary debug logging
-	fmt.Printf("[DEBUG] refCountDone.OnDone called: err=%v, current_refCount=%d, rcd_ptr=%p, done_type=%T, done_ptr=%p\n",
-		err, rcd.refCount, rcd, rcd.done, rcd.done)
-
 	rcd.err = multierr.Append(rcd.err, err)
 	rcd.refCount--
 
-	fmt.Printf("[DEBUG] refCountDone decremented: new_refCount=%d, rcd_ptr=%p\n",
-		rcd.refCount, rcd)
-
 	if rcd.refCount == 0 {
 		// No more references, call done.
-		fmt.Printf("[DEBUG] refCountDone calling wrapped done.OnDone: err=%v, done_type=%T, done_ptr=%p\n",
-			rcd.err, rcd.done, rcd.done)
 		rcd.done.OnDone(rcd.err)
-		fmt.Printf("[DEBUG] refCountDone completed wrapped done.OnDone\n")
 	}
 }
