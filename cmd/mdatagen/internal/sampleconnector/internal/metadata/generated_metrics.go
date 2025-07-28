@@ -133,6 +133,7 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
+
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -205,6 +206,7 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
+
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -294,6 +296,7 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
+
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -375,6 +378,7 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
+
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -453,6 +457,7 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
+
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
