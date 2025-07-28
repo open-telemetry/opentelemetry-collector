@@ -42,6 +42,7 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 		rp := rps.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rp.SchemaUrl())
 		buf.logAttributes("Resource attributes", rp.Resource().Attributes())
+		buf.logEntityRefs(rp.Resource())
 		ilps := rp.ScopeProfiles()
 		for j := 0; j < ilps.Len(); j++ {
 			buf.logEntry("ScopeProfiles #%d", j)
