@@ -27,21 +27,7 @@ func (mn MetricName) RenderUnexported() (string, error) {
 }
 
 type Metric struct {
-	// Enabled defines whether the metric is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
-
-	// Warnings that will be shown to user under specified conditions.
-	Warnings Warnings `mapstructure:"warnings"`
-
-	// Description of the metric.
-	Description string `mapstructure:"description"`
-
-	// The stability level of the metric.
-	Stability Stability `mapstructure:"stability"`
-
-	// ExtendedDocumentation of the metric. If specified, this will
-	// be appended to the description used in generated documentation.
-	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+	Signal `mapstructure:",squash"`
 
 	// Optional can be used to specify metrics that may
 	// or may not be present in all cases, depending on configuration.
@@ -57,9 +43,6 @@ type Metric struct {
 	// Histogram stores metadata for histogram metric type
 	Histogram *Histogram `mapstructure:"histogram,omitempty"`
 
-	// Attributes is the list of attributes that the metric emits.
-	Attributes []AttributeName `mapstructure:"attributes"`
-
 	// Override the default prefix for the metric name.
 	Prefix string `mapstructure:"prefix"`
 }
@@ -70,10 +53,10 @@ type Stability struct {
 }
 
 func (s Stability) String() string {
-	if len(s.Level) == 0 || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
+	if s.Level == "" || strings.EqualFold(s.Level, component.StabilityLevelStable.String()) {
 		return ""
 	}
-	if len(s.From) > 0 {
+	if s.From != "" {
 		return fmt.Sprintf(" [%s since %s]", s.Level, s.From)
 	}
 	return fmt.Sprintf(" [%s]", s.Level)

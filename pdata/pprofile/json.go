@@ -4,10 +4,7 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
-	"bytes"
-	"fmt"
-
-	jsoniter "github.com/json-iterator/go"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
@@ -19,11 +16,11 @@ import (
 type JSONMarshaler struct{}
 
 // MarshalProfiles to the OTLP/JSON format.
-func (*JSONMarshaler) MarshalProfiles(td Profiles) ([]byte, error) {
-	buf := bytes.Buffer{}
-	pb := internal.ProfilesToProto(internal.Profiles(td))
-	err := json.Marshal(&buf, &pb)
-	return buf.Bytes(), err
+func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	pd.marshalJSONStream(dest)
+	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pprofile.Profiles.
@@ -31,47 +28,26 @@ type JSONUnmarshaler struct{}
 
 // UnmarshalProfiles from OTLP/JSON format into pprofile.Profiles.
 func (*JSONUnmarshaler) UnmarshalProfiles(buf []byte) (Profiles, error) {
-	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator(buf)
+	defer json.ReturnIterator(iter)
 	td := NewProfiles()
-	td.unmarshalJsoniter(iter)
-	if iter.Error != nil {
-		return Profiles{}, iter.Error
+	td.unmarshalJSONIter(iter)
+	if iter.Error() != nil {
+		return Profiles{}, iter.Error()
 	}
 	otlp.MigrateProfiles(td.getOrig().ResourceProfiles)
 	return td, nil
 }
 
-func (ms Profiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "resourceProfiles", "resource_profiles":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				ms.ResourceProfiles().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
-		case "dictionary", "profilesDictionary", "profiles_dictionary":
-			ms.ProfilesDictionary().unmarshalJsoniter(iter)
-			return true
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func (rp ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ResourceProfiles) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource":
-			json.ReadResource(iter, internal.GetOrigResource(internal.Resource(rp.Resource())))
+			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeProfiles", "scope_profiles":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				rp.ScopeProfiles().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.ScopeProfiles().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
-			rp.orig.SchemaUrl = iter.ReadString()
+			ms.orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
@@ -79,44 +55,23 @@ func (rp ResourceProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (pd ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ProfilesDictionary) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "mappingTable", "mapping_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.MappingTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.MappingTable().unmarshalJSONIter(iter)
 		case "locationTable", "location_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.LocationTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.LocationTable().unmarshalJSONIter(iter)
 		case "functionTable", "function_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.FunctionTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.FunctionTable().unmarshalJSONIter(iter)
 		case "linkTable", "link_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.LinkTable().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.LinkTable().unmarshalJSONIter(iter)
 		case "stringTable", "string_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.StringTable().Append(iter.ReadString())
-				return true
-			})
+			internal.UnmarshalJSONIterStringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state), iter)
 		case "attributeTable", "attribute_table":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.orig.AttributeTable = append(pd.orig.AttributeTable, json.ReadAttribute(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.AttributeTable, ms.state), iter)
 		case "attributeUnits", "attribute_units":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				pd.AttributeUnits().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.AttributeUnits().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -124,16 +79,28 @@ func (pd ProfilesDictionary) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (sp ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+// unmarshalJSONIter is not yet used, only here for tests.
+func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "key":
+			ms.orig.Key = iter.ReadString()
+		case "value":
+			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func (sp ScopeProfiles) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "scope":
-			json.ReadScope(iter, &sp.orig.Scope)
+			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&sp.orig.Scope, sp.state), iter)
 		case "profiles":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				sp.Profiles().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			sp.Profiles().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			sp.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -143,54 +110,37 @@ func (sp ScopeProfiles) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Profile) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "profileId", "profile_id":
-			if err := p.orig.ProfileId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("profileContainer.profileId", fmt.Sprintf("parse profile_id:%v", err))
-			}
+			ms.orig.ProfileId.UnmarshalJSONIter(iter)
 		case "sampleType", "sample_type":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.SampleType().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.SampleType().unmarshalJSONIter(iter)
 		case "sample":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.Sample().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.Sample().unmarshalJSONIter(iter)
 		case "locationIndices", "location_indices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.LocationIndices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state), iter)
 		case "timeNanos", "time_nanos":
-			p.orig.TimeNanos = json.ReadInt64(iter)
+			ms.orig.TimeNanos = iter.ReadInt64()
 		case "durationNanos", "duration_nanos":
-			p.orig.DurationNanos = json.ReadInt64(iter)
+			ms.orig.DurationNanos = iter.ReadInt64()
 		case "periodType", "period_type":
-			p.PeriodType().unmarshalJsoniter(iter)
+			ms.PeriodType().unmarshalJSONIter(iter)
 		case "period":
-			p.orig.Period = json.ReadInt64(iter)
+			ms.orig.Period = iter.ReadInt64()
 		case "commentStrindices", "comment_strindices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.CommentStrindices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state), iter)
 		case "defaultSampleTypeIndex", "default_sample_type_index":
-			p.orig.DefaultSampleTypeIndex = json.ReadInt32(iter)
+			ms.orig.DefaultSampleTypeIndex = iter.ReadInt32()
 		case "attributeIndices", "attribute_indices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				p.AttributeIndices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			p.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
 		case "originalPayloadFormat", "original_payload_format":
-			p.orig.OriginalPayloadFormat = iter.ReadString()
+			ms.orig.OriginalPayloadFormat = iter.ReadString()
 		case "originalPayload", "original_payload":
-			p.orig.OriginalPayload = iter.ReadStringAsSlice()
+			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state), iter)
 		default:
 			iter.Skip()
 		}
@@ -198,15 +148,15 @@ func (p Profile) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (vt ValueType) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (vt ValueType) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "typeStrindex", "type_strindex":
-			vt.orig.TypeStrindex = json.ReadInt32(iter)
+			vt.orig.TypeStrindex = iter.ReadInt32()
 		case "unitStrindex", "unit_strindex":
-			vt.orig.UnitStrindex = json.ReadInt32(iter)
+			vt.orig.UnitStrindex = iter.ReadInt32()
 		case "aggregationTemporality", "aggregation_temporality":
-			vt.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(json.ReadInt32(iter))
+			vt.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(iter.ReadInt32())
 		default:
 			iter.Skip()
 		}
@@ -214,30 +164,21 @@ func (vt ValueType) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (st Sample) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Sample) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "locationsStartIndex", "locations_start_index":
-			st.orig.LocationsStartIndex = json.ReadInt32(iter)
+			ms.orig.LocationsStartIndex = iter.ReadInt32()
 		case "locationsLength", "locations_length":
-			st.orig.LocationsLength = json.ReadInt32(iter)
+			ms.orig.LocationsLength = iter.ReadInt32()
 		case "value":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				st.Value().Append(json.ReadInt64(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), iter)
 		case "attributeIndices", "attribute_indices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				st.AttributeIndices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
 		case "linkIndex", "link_index":
-			st.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: json.ReadInt32(iter)}
+			ms.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: iter.ReadInt32()}
 		case "timestampsUnixNano", "timestamps_unix_nano":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				st.TimestampsUnixNano().Append(json.ReadUint64(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), iter)
 		default:
 			iter.Skip()
 		}
@@ -245,30 +186,27 @@ func (st Sample) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (m Mapping) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Mapping) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "memoryStart", "memory_start":
-			m.orig.MemoryStart = json.ReadUint64(iter)
+			ms.orig.MemoryStart = iter.ReadUint64()
 		case "memoryLimit", "memory_limit":
-			m.orig.MemoryLimit = json.ReadUint64(iter)
+			ms.orig.MemoryLimit = iter.ReadUint64()
 		case "fileOffset", "file_offset":
-			m.orig.FileOffset = json.ReadUint64(iter)
+			ms.orig.FileOffset = iter.ReadUint64()
 		case "filenameStrindex", "filename_strindex":
-			m.orig.FilenameStrindex = json.ReadInt32(iter)
+			ms.orig.FilenameStrindex = iter.ReadInt32()
 		case "attributeIndices", "attribute_indices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				m.AttributeIndices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
 		case "hasFunctions", "has_functions":
-			m.orig.HasFunctions = iter.ReadBool()
+			ms.orig.HasFunctions = iter.ReadBool()
 		case "hasFilenames", "has_filenames":
-			m.orig.HasFilenames = iter.ReadBool()
+			ms.orig.HasFilenames = iter.ReadBool()
 		case "hasLineNumbers", "has_line_numbers":
-			m.orig.HasLineNumbers = iter.ReadBool()
+			ms.orig.HasLineNumbers = iter.ReadBool()
 		case "hasInlineFrames", "has_inline_frames":
-			m.orig.HasInlineFrames = iter.ReadBool()
+			ms.orig.HasInlineFrames = iter.ReadBool()
 		default:
 			iter.Skip()
 		}
@@ -276,25 +214,19 @@ func (m Mapping) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (l Location) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Location) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "mappingIndex", "mapping_index":
-			l.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: json.ReadInt32(iter)}
+			ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
 		case "address":
-			l.orig.Address = json.ReadUint64(iter)
+			ms.orig.Address = iter.ReadUint64()
 		case "line":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				l.Line().AppendEmpty().unmarshalJsoniter(iter)
-				return true
-			})
+			ms.Line().unmarshalJSONIter(iter)
 		case "isFolded", "is_folded":
-			l.orig.IsFolded = iter.ReadBool()
+			ms.orig.IsFolded = iter.ReadBool()
 		case "attributeIndices", "attribute_indices":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
-				l.AttributeIndices().Append(json.ReadInt32(iter))
-				return true
-			})
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
 		default:
 			iter.Skip()
 		}
@@ -302,15 +234,15 @@ func (l Location) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (l Line) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (l Line) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "functionIndex", "function_index":
-			l.orig.FunctionIndex = json.ReadInt32(iter)
+			l.orig.FunctionIndex = iter.ReadInt32()
 		case "line":
-			l.orig.Line = json.ReadInt64(iter)
+			l.orig.Line = iter.ReadInt64()
 		case "column":
-			l.orig.Column = json.ReadInt64(iter)
+			l.orig.Column = iter.ReadInt64()
 		default:
 			iter.Skip()
 		}
@@ -318,17 +250,17 @@ func (l Line) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (fn Function) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (fn Function) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "nameStrindex", "name_strindex":
-			fn.orig.NameStrindex = json.ReadInt32(iter)
+			fn.orig.NameStrindex = iter.ReadInt32()
 		case "systemNameStrindex", "system_name_strindex":
-			fn.orig.SystemNameStrindex = json.ReadInt32(iter)
+			fn.orig.SystemNameStrindex = iter.ReadInt32()
 		case "filenameStrindex", "filename_strindex":
-			fn.orig.FilenameStrindex = json.ReadInt32(iter)
+			fn.orig.FilenameStrindex = iter.ReadInt32()
 		case "startLine", "start_line":
-			fn.orig.StartLine = json.ReadInt64(iter)
+			fn.orig.StartLine = iter.ReadInt64()
 		default:
 			iter.Skip()
 		}
@@ -336,13 +268,13 @@ func (fn Function) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (at AttributeUnit) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (at AttributeUnit) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "attributeKeyStrindex", "attribute_key_strindex":
-			at.orig.AttributeKeyStrindex = json.ReadInt32(iter)
+			at.orig.AttributeKeyStrindex = iter.ReadInt32()
 		case "unitStrindex", "unit_strindex":
-			at.orig.UnitStrindex = json.ReadInt32(iter)
+			at.orig.UnitStrindex = iter.ReadInt32()
 		default:
 			iter.Skip()
 		}
@@ -350,17 +282,13 @@ func (at AttributeUnit) unmarshalJsoniter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (l Link) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms Link) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "traceId", "trace_id":
-			if err := l.orig.TraceId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("link.traceId", fmt.Sprintf("parse trace_id:%v", err))
-			}
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":
-			if err := l.orig.SpanId.UnmarshalJSON([]byte(iter.ReadString())); err != nil {
-				iter.ReportError("link.spanId", fmt.Sprintf("parse span_id:%v", err))
-			}
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}

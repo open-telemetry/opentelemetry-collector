@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -88,33 +89,38 @@ func run(ymlPath string) error {
 	if md.Status != nil {
 		if !slices.Contains(nonComponents, md.Status.Class) {
 			toGenerate[filepath.Join(tmplDir, "status.go.tmpl")] = filepath.Join(codeDir, "generated_status.go")
-			if err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
-				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName); err != nil {
+			err = generateFile(filepath.Join(tmplDir, "component_test.go.tmpl"),
+				filepath.Join(ymlDir, "generated_component_test.go"), md, packageName)
+			if err != nil {
 				return err
 			}
 		} else {
 			if _, err = os.Stat(filepath.Join(codeDir, "generated_status.go")); err == nil {
-				if err = os.Remove(filepath.Join(codeDir, "generated_status.go")); err != nil {
+				err = os.Remove(filepath.Join(codeDir, "generated_status.go"))
+				if err != nil {
 					return err
 				}
 			}
 			if _, err = os.Stat(filepath.Join(ymlDir, "generated_component_test.go")); err == nil {
-				if err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go")); err != nil {
+				err = os.Remove(filepath.Join(ymlDir, "generated_component_test.go"))
+				if err != nil {
 					return err
 				}
 			}
 		}
 
-		if err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
-			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName); err != nil {
+		err = generateFile(filepath.Join(tmplDir, "package_test.go.tmpl"),
+			filepath.Join(ymlDir, "generated_package_test.go"), md, packageName)
+		if err != nil {
 			return err
 		}
 
 		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
-			if err = inlineReplace(
+			err = inlineReplace(
 				filepath.Join(tmplDir, "readme.md.tmpl"),
 				filepath.Join(ymlDir, "README.md"),
-				md, statusStart, statusEnd, md.GeneratedPackageName); err != nil {
+				md, statusStart, statusEnd, md.GeneratedPackageName)
+			if err != nil {
 				return err
 			}
 		}
@@ -137,22 +143,26 @@ func run(ymlPath string) error {
 		toGenerate[filepath.Join(tmplDir, "telemetrytest_test.go.tmpl")] = filepath.Join(testDir, "generated_telemetrytest_test.go")
 	} else {
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetry_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetry_test.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest.go"))
+			if err != nil {
 				return err
 			}
 		}
 		if _, err = os.Stat(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err == nil {
-			if err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go")); err != nil {
+			err = os.Remove(filepath.Join(ymlDir, "generated_telemetrytest_test.go"))
+			if err != nil {
 				return err
 			}
 		}
@@ -197,7 +207,7 @@ func run(ymlPath string) error {
 	}
 
 	for tmpl, dst := range toGenerate {
-		if err = generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
+		if err := generateFile(tmpl, dst, md, md.GeneratedPackageName); err != nil {
 			return err
 		}
 	}
@@ -216,6 +226,40 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				},
 				"attributeInfo": func(an AttributeName) Attribute {
 					return md.Attributes[an]
+				},
+				"getEventOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Events {
+						for _, attribute := range event.Attributes {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+					return used
+				},
+				"getMetricOptionalAttributes": func(attrs map[AttributeName]Attribute) []AttributeName {
+					seen := make(map[AttributeName]bool)
+					used := make([]AttributeName, 0)
+
+					for _, event := range md.Metrics {
+						for _, attribute := range event.Attributes {
+							v, exists := attrs[attribute]
+							if exists && v.Optional && !seen[attribute] {
+								used = append(used, attribute)
+								seen[attribute] = true
+							}
+						}
+					}
+					sort.Slice(used, func(i, j int) bool { return string(used[i]) < string(used[j]) })
+
+					return used
 				},
 				"metricInfo": func(mn MetricName) Metric {
 					return md.Metrics[mn]
@@ -300,7 +344,7 @@ func templatize(tmplFile string, md Metadata) *template.Template {
 				// which uses the `\` as a special character.
 				// Meaning on windows based machines, the `\` needs to be replaced
 				// with a `/` for it to find the file.
-			}).ParseFS(TemplateFS, strings.ReplaceAll(tmplFile, "\\", "/")))
+			}).ParseFS(TemplateFS, "templates/helper.tmpl", strings.ReplaceAll(tmplFile, "\\", "/")))
 }
 
 func executeTemplate(tmplFile string, md Metadata, goPackage string) ([]byte, error) {

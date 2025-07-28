@@ -22,7 +22,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -31,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/metadatatest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/oteltest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sendertest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
@@ -169,27 +169,77 @@ func TestMetricsRequest_Default_ExportError(t *testing.T) {
 }
 
 func TestMetrics_WithPersistentQueue(t *testing.T) {
+	fgOrigReadState := queue.PersistRequestContextOnRead
+	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
-	rCfg := configretry.NewDefaultBackOffConfig()
-	ms := consumertest.MetricsSink{}
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_metrics", "with_persistent_queue")
-	te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithRetry(rCfg), WithQueue(qCfg))
-	require.NoError(t, err)
-
 	host := hosttest.NewHost(map[component.ID]component.Component{
 		storageID: storagetest.NewMockStorageExtension(nil),
 	})
-	require.NoError(t, te.Start(context.Background(), host))
-	t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+	spanCtx := oteltest.FakeSpanContext(t)
 
-	metrics := testdata.GenerateMetrics(2)
-	require.NoError(t, te.ConsumeMetrics(context.Background(), metrics))
-	require.Eventually(t, func() bool {
-		return len(ms.AllMetrics()) == 1 && ms.DataPointCount() == 4
-	}, 500*time.Millisecond, 10*time.Millisecond)
+	tests := []struct {
+		name             string
+		fgEnabledOnWrite bool
+		fgEnabledOnRead  bool
+		wantData         bool
+		wantSpanCtx      bool
+	}{
+		{
+			name:     "feature_gate_disabled_on_write_and_read",
+			wantData: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_and_read",
+			fgEnabledOnWrite: true,
+			fgEnabledOnRead:  true,
+			wantData:         true,
+			wantSpanCtx:      true,
+		},
+		{
+			name:            "feature_gate_disabled_on_write_enabled_on_read",
+			wantData:        true,
+			fgEnabledOnRead: true,
+		},
+		{
+			name:             "feature_gate_enabled_on_write_disabled_on_read",
+			fgEnabledOnWrite: true,
+			wantData:         false, // going back from enabled to disabled feature gate isn't supported
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
+			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
+			t.Cleanup(func() {
+				queue.PersistRequestContextOnRead = fgOrigReadState
+				queue.PersistRequestContextOnWrite = fgOrigWriteState
+			})
+
+			ms := consumertest.MetricsSink{}
+			te, err := NewMetrics(context.Background(), set, &fakeMetricsConfig, ms.ConsumeMetrics, WithQueue(qCfg))
+			require.NoError(t, err)
+			require.NoError(t, te.Start(context.Background(), host))
+			t.Cleanup(func() { require.NoError(t, te.Shutdown(context.Background())) })
+
+			traces := testdata.GenerateMetrics(2)
+			require.NoError(t, te.ConsumeMetrics(trace.ContextWithSpanContext(context.Background(), spanCtx), traces))
+			if tt.wantData {
+				require.Eventually(t, func() bool {
+					return len(ms.AllMetrics()) == 1 && ms.DataPointCount() == 4
+				}, 500*time.Millisecond, 10*time.Millisecond)
+			}
+
+			// check that the span context is persisted if the feature gate is enabled
+			if tt.wantSpanCtx {
+				assert.Len(t, ms.Contexts(), 1)
+				assert.Equal(t, spanCtx, trace.SpanContextFromContext(ms.Contexts()[0]))
+			}
+		})
+	}
 }
 
 func TestMetrics_WithRecordMetrics(t *testing.T) {

@@ -152,7 +152,7 @@ func TestHTTPClientCompression(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled)
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
 
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
@@ -352,7 +352,7 @@ func TestHTTPContentDecompressionHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled)
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tt.framedSnappyEnabled))
 
 			srv := httptest.NewServer(httpContentDecompressor(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				body, err := io.ReadAll(r.Body)
@@ -396,7 +396,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.URL, http.NoBody)
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := srv.Client()
@@ -505,10 +505,15 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressZlib,
 		},
 		{
-			name:                "x-snappy-framed",
+			name:     "x-snappy-framed",
+			encoding: "x-snappy-framed",
+			compress: compressSnappyFramed,
+		},
+		{
+			name:                "x-snappy-not-framed",
 			encoding:            "x-snappy-framed",
 			compress:            compressSnappyFramed,
-			framedSnappyEnabled: true,
+			framedSnappyEnabled: false,
 		},
 		{
 			name:     "snappy",
@@ -523,7 +528,7 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// t.Parallel() // TODO: Re-enable parallel tests once feature gate is removed. We can't parallelize since registry is shared.
-			_ = featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tc.framedSnappyEnabled)
+			require.NoError(t, featuregate.GlobalRegistry().Set(enableFramedSnappy.ID(), tc.framedSnappyEnabled))
 
 			h := httpContentDecompressor(
 				http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -6,106 +6,77 @@ import (
 	"context"
 	"sync"
 
-	"github.com/puzpuzpuz/xsync/v3"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/sender"
 )
 
+var _ Batcher[request.Request] = (*multiBatcher)(nil)
+
 type multiBatcher struct {
 	cfg         BatchConfig
-	workerPool  chan struct{}
-	sizerType   request.SizerType
+	wp          *workerPool
 	sizer       request.Sizer[request.Request]
 	partitioner Partitioner[request.Request]
 	consumeFunc sender.SendFunc[request.Request]
-
-	singleShard *shardBatcher
-	shards      *xsync.MapOf[string, *shardBatcher]
+	shards      sync.Map
+	logger      *zap.Logger
 }
 
-var _ Batcher[request.Request] = (*multiBatcher)(nil)
-
-func newMultiBatcher(bCfg BatchConfig, bSet batcherSettings[request.Request]) *multiBatcher {
-	var workerPool chan struct{}
-	if bSet.maxWorkers != 0 {
-		workerPool = make(chan struct{}, bSet.maxWorkers)
-		for i := 0; i < bSet.maxWorkers; i++ {
-			workerPool <- struct{}{}
-		}
-	}
-	mb := &multiBatcher{
+func newMultiBatcher(
+	bCfg BatchConfig,
+	sizer request.Sizer[request.Request],
+	wp *workerPool,
+	partitioner Partitioner[request.Request],
+	next sender.SendFunc[request.Request],
+	logger *zap.Logger,
+) *multiBatcher {
+	return &multiBatcher{
 		cfg:         bCfg,
-		workerPool:  workerPool,
-		sizerType:   bSet.sizerType,
-		sizer:       bSet.sizer,
-		partitioner: bSet.partitioner,
-		consumeFunc: bSet.next,
+		wp:          wp,
+		sizer:       sizer,
+		partitioner: partitioner,
+		consumeFunc: next,
+		logger:      logger,
 	}
-
-	if bSet.partitioner == nil {
-		mb.singleShard = &shardBatcher{
-			cfg:         bCfg,
-			workerPool:  mb.workerPool,
-			sizerType:   bSet.sizerType,
-			sizer:       bSet.sizer,
-			consumeFunc: bSet.next,
-			stopWG:      sync.WaitGroup{},
-			shutdownCh:  make(chan struct{}, 1),
-		}
-	} else {
-		mb.shards = xsync.NewMapOf[string, *shardBatcher]()
-	}
-	return mb
 }
 
-func (mb *multiBatcher) getShard(ctx context.Context, req request.Request) *shardBatcher {
-	if mb.singleShard != nil {
-		return mb.singleShard
-	}
-
+func (mb *multiBatcher) getPartition(ctx context.Context, req request.Request) *partitionBatcher {
 	key := mb.partitioner.GetKey(ctx, req)
-	result, _ := mb.shards.LoadOrCompute(key, func() *shardBatcher {
-		s := &shardBatcher{
-			cfg:         mb.cfg,
-			workerPool:  mb.workerPool,
-			sizerType:   mb.sizerType,
-			sizer:       mb.sizer,
-			consumeFunc: mb.consumeFunc,
-			stopWG:      sync.WaitGroup{},
-			shutdownCh:  make(chan struct{}, 1),
-		}
-		s.start(ctx, nil)
-		return s
-	})
-	return result
+	s, found := mb.shards.Load(key)
+	// Fast path, shard already created.
+	if found {
+		return s.(*partitionBatcher)
+	}
+	newS := newPartitionBatcher(mb.cfg, mb.sizer, mb.wp, mb.consumeFunc, mb.logger)
+	_ = newS.Start(ctx, nil)
+	s, loaded := mb.shards.LoadOrStore(key, newS)
+	// If not loaded, there was a race condition in adding the new shard. Shutdown the newly created shard.
+	if loaded {
+		_ = newS.Shutdown(ctx)
+	}
+	return s.(*partitionBatcher)
 }
 
-func (mb *multiBatcher) Start(ctx context.Context, host component.Host) error {
-	if mb.singleShard != nil {
-		mb.singleShard.start(ctx, host)
-	}
+func (mb *multiBatcher) Start(context.Context, component.Host) error {
 	return nil
 }
 
-func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done Done) {
-	shard := mb.getShard(ctx, req)
+func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done queue.Done) {
+	shard := mb.getPartition(ctx, req)
 	shard.Consume(ctx, req, done)
 }
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
-	if mb.singleShard != nil {
-		mb.singleShard.shutdown(ctx)
-		return nil
-	}
-
 	var wg sync.WaitGroup
-	wg.Add(mb.shards.Size())
-	mb.shards.Range(func(_ string, shard *shardBatcher) bool {
+	mb.shards.Range(func(_ any, shard any) bool {
+		wg.Add(1)
 		go func() {
-			shard.shutdown(ctx)
-			wg.Done()
+			defer wg.Done()
+			_ = shard.(*partitionBatcher).Shutdown(ctx)
 		}()
 		return true
 	})

@@ -7,6 +7,99 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.36.1/v0.130.1
+
+<!-- previous-version -->
+
+No API-only changes in this release.
+
+## v1.36.0/v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Use configoptional for sending_queue::batch field (#13345)
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13250, #13252)
+  Components using `configgrpc` package may need to update config values.
+- `confighttp`: Use configoptional.Optional in confighttp (#9478)
+- `exporterhelper`: Remove sizer map in favor of items/bytes sizers. Request based is automatically supported. (#13262)
+- `pdata/pprofile`: Remove field Profile.StartTime from pdata/pprofile (#13315)
+  Remove Profile.StartTime from OTel Profiling signal.
+- `exporterhelper`: Remove deprecated old batcher config (#13003)
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate NewRequestsSizer always supported. (#13262)
+- `xexporterhelper`: Introduce NewProfiles method and deprecate NewProfilesExporter (#13372)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add `Error` type (#7047)
+  This type can contain information about errors that allow components (e.g. exporters)
+  to communicate error information back up the pipeline.
+  
+- `pdata`: Document that changing pcommon.Map (Remove/removeIf/Put*) invalidates Value references obtained via Get. (#13073)
+- `cmd/mdatagen`: Add support for optional attribute (#12571)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `pdata`: Add support for the new resource-entity reference API as part of the experimental xpdata package. (#13264)
+
+<!-- previous-version -->
+
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `semconv`: Removing deprecated semconv package (#13071)
+- `configgrpc,confighttp`: Unify return type of `NewDefault*Config` functions to return a struct instead of a pointer. (#13169)
+- `exporterhelper`: QueueBatchEncoding interface is changed to support marshaling and unmarshaling of request context. (#13188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `Equal` method on the `Mapping` type (#13197)
+- `configoptional`: Make unmarshaling into `None[T]` work the same as unmarshaling into `(*T)(nil)`. (#13168)
+- `configoptional`: Add a confmap.Marshaler implementation for configoptional.Optional (#13196)
+- `pdata/pprofile`: Introduce `Equal` methods on the `Line` and `Location` types (#13150)
+- `pdata/pprofile`: Add new helper method `SetMapping` to set a new mapping on a location. (#13197)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Distinguish between empty and nil values when marshaling `confmap.Conf` structs. (#13196)
+
+<!-- previous-version -->
+
+## v1.34.0/v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated NewProfilesRequestExporter function from xexporterhelper package (#13157)
+- `confighttp`: Remove pointer to field `cookies` in confighttp.ClientConfig (#13116)
+- `otlpreceiver`: Use `configoptional.Optional` to define optional configuration sections in the OTLP receiver. Remove `Unmarshal` method. (#13119)
+- `confighttp,configgrpc`: Rename `ClientConfig.TLSSetting` and `ServerConfig.TLSSetting` to `ClientConfig.TLS` and `ServerConfig.TLS`. (#13115)
+- `pdata/pprofile`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+  Note that the batcher is temporarily a noop.
+- `pipeline`: Remove deprecated MustNewID[WithName] (#13139)
+
+### 🚀 New components 🚀
+
+- `configoptional`: Add a new configoptional module to support optional configuration fields. (#12981)
+
+### 💡 Enhancements 💡
+
+- `pdata`: Introduce `MoveAndAppendTo` methods to the generated primitive slices (#13074)
+- `pdata`: Upgrade the OTLP protobuf definitions to version 1.7.0 (#13075)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Correctly distinguish between `nil` and empty map values on the `ToStringMap` method (#13161)
+  This means that `ToStringMap()` method can now return a nil map if the original value was `nil`.
+  If you were not doing so already, make sure to check for `nil` before writing to the map to avoid panics.
+  
+- `confighttp`: Make the `NewDefaultServerConfig` function return a nil TLS config by default. (#13129)
+  - The previous default was a TLS config with no certificates, which would fail at runtime.
+  
+
+<!-- previous-version -->
+
 ## v1.33.0/v0.127.0
 
 ### 🛑 Breaking changes 🛑

@@ -2,6 +2,9 @@ name: Spell Check
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
 jobs:
   spell-check:
     runs-on: ubuntu-latest
@@ -10,8 +13,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Run cSpell
-        uses: streetsidesoftware/cspell-action@eb29b6a67d122d2e6af385ff16bdb200d93b2e54 # v7.0.0
+        uses: streetsidesoftware/cspell-action@6f05386161564ebe24dcfa1513cde203230d1edc # v7.1.2
         with:
           files: |
             **/*.{md,yaml,yml}
           config: '.github/workflows/utils/cspell.json'
+          check_dot_files: true

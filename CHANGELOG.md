@@ -7,6 +7,134 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.36.1/v0.130.1
+
+### 🧰 Bug fixes 🧰
+
+- `service`: Fixes bug where internal metrics are emitted with an unexpected suffix in their names when users configure `service::telemetry::metrics::readers` with Prometheus. (#13449)
+  See more details on https://github.com/open-telemetry/opentelemetry-go/issues/7039
+
+<!-- previous-version -->
+
+## v1.36.0/v0.130.0
+
+### ❗ Known Issues ❗
+
+- Due to a [bug](https://github.com/open-telemetry/opentelemetry-go/issues/7039) in the prometheus exporter, if you are configuring a prometheus exporter, the collector's internal metrics will be emitted with an unexpected suffix in its name. For example, the metric `otelcol_exporter_sent_spans__spans__total` instead of `otelcol_exporter_sent_spans_total`. The workaround is to manually configure `without_units: true` in your prometheus exporter config
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        readers:
+          - pull:
+              exporter:
+                prometheus:
+                  host: 0.0.0.0
+                  port: 8888
+                  without_units: true
+  ```
+
+  If you are using the collector's default Prometheus exporter for exporting internal metrics you are unaffected. 
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 💡 Enhancements 💡
+
+- `exporterhelper`: Enable items and bytes sizers for persistent queue (#12881)
+- `exporterhelper`: Refactor persistent storage size backup to always record it. (#12890)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `yaml`: Replaced `sigs.k8s.io/yaml` with `go.yaml.in/yaml` for improved support and long-term maintainability. (#13308)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Fix exporter.PersistRequestContext feature gate (#13342)
+- `exporterhelper`: Preserve all metrics metadata when batch splitting. (#13236)
+  Previously, when large batches of metrics were processed, the splitting logic in `metric_batch.go` could
+  cause the `name` field of some metrics to disappear. This fix ensures that all metric fields are
+  properly preserved when `metricRequest` objects are split.
+  
+- `service`: Default internal metrics config now enables `otel_scope_` labels (#12939, #13344)
+  By default, the Collector exports its internal metrics using a Prometheus
+  exporter from the opentelemetry-go repository. With this change, the Collector
+  no longer sets "without_scope_info" to true in its configuration.
+  
+  This means that all exported metrics will have `otel_scope_name`,
+  `otel_scope_schema_url`, and `otel_scope_version` labels corresponding to the
+  instrumentation scope metadata for that metric.
+  
+  This notably prevents an error when multiple metrics are only distinguished
+  by their instrumentation scopes and end up aliased during export.
+  
+  If this is not desired behavior, a Prometheus exporter can be explicitly
+  configured with this option enabled.
+  
+
+<!-- previous-version -->
+
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Remove deprecated sending_queue::blocking options, use sending_queue::block_on_overflow. (#13211)
+
+### 💡 Enhancements 💡
+
+- `mdatagen`: Taught mdatagen to print the `go list` stderr output on failures, and to run `go list` where the metadata file is. (#13205)
+- `service`: Support setting `sampler` and `limits` under `service::telemetry::traces` (#13201)
+  This allows users to enable sampling and set span limits on internal Collector traces using the
+  OpenTelemetry SDK declarative configuration.
+  
+- `pdata/pprofile`: Add new helper methods `FromLocationIndices` and `PutLocation` to read and modify the content of locations. (#13150)
+- `exporterhelper`: Preserve request span context and client information in the persistent queue. (#11740, #13220, #13232)
+  It allows internal collector spans and client information to propagate through the persistent queue used by 
+  the exporters. The same way as it's done for the in-memory queue.
+  Currently, it is behind the exporter.PersistRequestContext feature gate, which can be enabled by adding 
+  `--feature-gates=exporter.PersistRequestContext` to the collector command line. An exporter buffer stored by
+  a previous version of the collector (or by a collector with the feature gate disabled) can be read by a newer
+  collector with the feature enabled. However, the reverse is not supported: a buffer stored by a newer collector with
+  the feature enabled cannot be read by an older collector (or by a collector with the feature gate disabled).
+  
+
+### 🧰 Bug fixes 🧰
+
+- `pdata`: Fix copying of optional fields when the source is unset. (#13268)
+- `service`: Only allocate one set of internal log sampling counters (#13014)
+  The case where logs are only exported to stdout was fixed in v0.126.0;
+  this new fix also covers the case where logs are exported through OTLP.
+  
+
+<!-- previous-version -->
+
+## v1.34.0/v0.128.0
+
+### 🛑 Breaking changes 🛑
+
+- `service/telemetry`: Mark "telemetry.disableAddressFieldForInternalTelemetry" as stable (#13152)
+
+### 💡 Enhancements 💡
+
+- `confighttp`: Update the HTTP server span naming to use the HTTP method and route pattern instead of the path. (#12468)
+  The HTTP server span name will now be formatted as `<http.request.method> <http.route>`.
+  If a route pattern is not available, it will fall back to `<http.request.method>`.
+  
+- `service`: Use configured loggers to log errors as soon as it is available (#13081)
+- `service`: Remove stabilized featuregate useOtelWithSDKConfigurationForInternalTelemetry (#13152)
+
+### 🧰 Bug fixes 🧰
+
+- `telemetry`: Add generated resource attributes to the printed log messages. (#13110)
+  If service.name, service.version, or service.instance.id are not specified in the config, they will be generated automatically.
+  This change ensures that these attributes are also included in the printed log messages.
+  
+- `mdatagen`: Fix generation when there are no events in the metadata. (#13123)
+- `confmap`: Do not panic on assigning nil maps to non-nil maps (#13117)
+- `pdata`: Fix event_name skipped when unmarshalling LogRecord from JSON (#13127)
+
+<!-- previous-version -->
+
 ## v1.33.0/v0.127.0
 
 ### 🚩 Deprecations 🚩

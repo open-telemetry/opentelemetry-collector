@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
@@ -19,21 +20,22 @@ import (
 func TestMultiBatcher_NoTimeout(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 0,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
 	}
 	sink := requesttest.NewSink()
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType: request.SizerTypeItems,
-		sizer:     request.NewItemsSizer(),
-		partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
+	ba := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
-		next:       sink.Export,
-		maxWorkers: 1,
-	})
+		sink.Export,
+		zap.NewNop(),
+	)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
@@ -70,21 +72,22 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 func TestMultiBatcher_Timeout(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Millisecond,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      100,
 	}
 	sink := requesttest.NewSink()
 
 	type partitionKey struct{}
 
-	ba := newMultiBatcher(cfg, batcherSettings[request.Request]{
-		sizerType: request.SizerTypeItems,
-		sizer:     request.NewItemsSizer(),
-		partitioner: NewPartitioner(func(ctx context.Context, _ request.Request) string {
+	ba := newMultiBatcher(cfg,
+		request.NewItemsSizer(),
+		newWorkerPool(1),
+		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
-		next:       sink.Export,
-		maxWorkers: 1,
-	})
+		sink.Export,
+		zap.NewNop(),
+	)
 
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
