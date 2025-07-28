@@ -24,6 +24,7 @@ linters:
   enable:
     - asasalint
     - copyloopvar
+    - decorder
     - depguard
     - errcheck
     - errorlint
