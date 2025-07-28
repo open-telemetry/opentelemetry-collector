@@ -6,6 +6,7 @@ package queue // import "go.opentelemetry.io/collector/exporter/exporterhelper/i
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -80,14 +81,17 @@ func (mq *memoryQueue[T]) Offer(ctx context.Context, el T) error {
 	}
 
 	if mq.waitForResult {
+		fmt.Printf("[DEBUG] memoryQueue.Offer: waitForResult=true, waiting for result from consumer, done_ptr=%p\n", done)
 		// Only re-add the blockingDone instance back to the pool if successfully received the
 		// message from the consumer which guarantees consumer will not use that anymore,
 		// otherwise no guarantee about when the consumer will add the message to the channel so cannot reuse or close.
 		select {
 		case doneErr := <-done.ch:
+			fmt.Printf("[DEBUG] memoryQueue.Offer: received result from consumer, done_ptr=%p, err=%v\n", done, doneErr)
 			blockingDonePool.Put(done)
 			return doneErr
 		case <-ctx.Done():
+			fmt.Printf("[DEBUG] memoryQueue.Offer: context cancelled, done_ptr=%p\n", done)
 			return ctx.Err()
 		}
 	}
@@ -110,6 +114,7 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 
 	mq.size += elSize
 	done := blockingDonePool.Get().(*blockingDone)
+	fmt.Printf("[DEBUG] memoryQueue.add: Got blockingDone instance %p from pool\n", done)
 	done.reset(elSize, mq)
 
 	if !mq.waitForResult {
@@ -149,15 +154,19 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 }
 
 func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
+	fmt.Printf("[DEBUG] memoryQueue.onDone: called with done_ptr=%p, err=%v\n", bd, err)
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
 	if mq.waitForResult {
+		fmt.Printf("[DEBUG] memoryQueue.onDone: waitForResult=true, sending result to channel, done_ptr=%p\n", bd)
 		// In this case the done will be added back to the queue by the waiter.
 		bd.ch <- err
+		fmt.Printf("[DEBUG] memoryQueue.onDone: result sent to channel, done_ptr=%p\n", bd)
 		return
 	}
+	fmt.Printf("[DEBUG] memoryQueue.onDone: waitForResult=false, returning to pool, done_ptr=%p\n", bd)
 	blockingDonePool.Put(bd)
 }
 
@@ -233,5 +242,7 @@ func (bd *blockingDone) reset(elSize int64, queue interface{ onDone(*blockingDon
 }
 
 func (bd *blockingDone) OnDone(err error) {
+	fmt.Printf("[DEBUG] blockingDone.OnDone: instance %p calling queue.onDone with err=%v\n", bd, err)
 	bd.queue.onDone(bd, err)
+	fmt.Printf("[DEBUG] blockingDone.OnDone: instance %p queue.onDone completed\n", bd)
 }

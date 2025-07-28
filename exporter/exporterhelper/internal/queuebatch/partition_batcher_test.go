@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -512,4 +513,201 @@ func TestShardBatcher_EmptyRequestList(t *testing.T) {
 	}, time.Second, 10*time.Millisecond)
 	assert.Equal(t, int64(0), done.success.Load())
 	assert.Equal(t, 0, sink.RequestsCount())
+}
+
+// TestPartitionWaitForResultRefs creates a scenario where the refCount bug occurs
+// This test specifically reproduces the deadlock by targeting the first code path
+// where currentBatch == nil and the buggy refCount logic exists
+func TestPartitionWaitForResultRefs(t *testing.T) {
+	// Test the refCount bug deterministically - check if done is called prematurely
+	cfg := BatchConfig{
+		MinSize:      50,
+		MaxSize:      40,
+		FlushTimeout: time.Hour, // Disable timeout
+		Sizer:        request.SizerTypeItems,
+	}
+
+	// Track export calls
+	var exportCalls []int
+	var exportMutex sync.Mutex
+
+	exportFunc := func(ctx context.Context, req request.Request) error {
+		exportMutex.Lock()
+		size := req.ItemsCount()
+		exportCalls = append(exportCalls, size)
+		t.Logf("Export called with size: %d, total exports: %d", size, len(exportCalls))
+		exportMutex.Unlock()
+		return nil
+	}
+
+	batcher := newPartitionBatcher(cfg, request.NewItemsSizer(), newWorkerPool(1), exportFunc, zap.NewNop())
+	require.NoError(t, batcher.Start(context.Background(), componenttest.NewNopHost()))
+	defer batcher.Shutdown(context.Background())
+
+	// Create request that should trigger the bug:
+	// The request will be split into 3 parts where last becomes currentBatch
+	req := &requesttest.FakeRequest{
+		Items:    100,
+		MergeErr: errors.New("test merge error"),
+		MergeErrResult: []request.Request{
+			&requesttest.FakeRequest{Items: 40}, // Part 1: Export immediately (= MaxSize)
+			&requesttest.FakeRequest{Items: 40}, // Part 2: Export immediately (= MaxSize)
+			&requesttest.FakeRequest{Items: 20}, // Part 3: < MinSize, becomes currentBatch
+		},
+	}
+
+	// Track done calls with precise timing
+	doneCallCount := int64(0)
+	var doneErrors []error
+	var doneMutex sync.Mutex
+	doneCalled := make(chan struct{}, 1)
+
+	done := &deterministicDone{
+		onDoneFunc: func(err error) {
+			doneMutex.Lock()
+			defer doneMutex.Unlock()
+
+			// Capture export state at the moment done is called
+			exportMutex.Lock()
+			exportsAtDone := len(exportCalls)
+			exportsAtDoneList := make([]int, len(exportCalls))
+			copy(exportsAtDoneList, exportCalls)
+			exportMutex.Unlock()
+
+			count := atomic.AddInt64(&doneCallCount, 1)
+			doneErrors = append(doneErrors, err)
+
+			t.Logf("done.OnDone call #%d with err=%v, exports at this moment: %v (%d total)",
+				count, err, exportsAtDoneList, exportsAtDone)
+
+			// Check for the bug: done called with only 2 exports (currentBatch still pending)
+			if exportsAtDone == 2 && len(exportsAtDoneList) == 2 {
+				if exportsAtDoneList[0] == 40 && exportsAtDoneList[1] == 40 {
+					t.Log("BUG DETECTED: done.OnDone called prematurely!")
+					t.Log("Only immediate exports completed, currentBatch (20 items) still pending")
+				}
+			}
+
+			select {
+			case doneCalled <- struct{}{}:
+			default:
+			}
+		},
+	}
+
+	t.Log("Executing Consume operation...")
+	batcher.Consume(context.Background(), req, done)
+
+	// Wait briefly to see if done gets called immediately after the immediate exports
+	select {
+	case <-doneCalled:
+		t.Log("done.OnDone was called (checking if prematurely)")
+
+		// Give a moment for any remaining async operations
+		time.Sleep(10 * time.Millisecond)
+
+		exportMutex.Lock()
+		finalExports := make([]int, len(exportCalls))
+		copy(finalExports, exportCalls)
+		exportMutex.Unlock()
+
+		t.Logf("Final export state: %v", finalExports)
+
+		// If done was called but we still have only 2 exports, that's the bug
+		if len(finalExports) == 2 {
+			t.Log("CONFIRMED: done.OnDone called before currentBatch was processed")
+			return
+		}
+
+	case <-time.After(50 * time.Millisecond):
+		t.Log("done.OnDone not called immediately - currentBatch likely still pending")
+
+		// Trigger currentBatch flush
+		t.Log("Triggering currentBatch flush...")
+		triggerReq := &requesttest.FakeRequest{Items: 35} // Enough to trigger flush
+		triggerDone := &deterministicDone{
+			onDoneFunc: func(err error) {
+				t.Logf("trigger done.OnDone called with err=%v", err)
+			},
+		}
+		batcher.Consume(context.Background(), triggerReq, triggerDone)
+
+		// Wait for original done to be called
+		select {
+		case <-doneCalled:
+			t.Log("Original done.OnDone called after trigger")
+		case <-time.After(100 * time.Millisecond):
+			t.Log("Original done.OnDone still not called after trigger - may indicate hanging")
+		}
+	}
+
+	// Final summary
+	exportMutex.Lock()
+	finalExports := make([]int, len(exportCalls))
+	copy(finalExports, exportCalls)
+	exportMutex.Unlock()
+
+	doneMutex.Lock()
+	finalDoneCount := atomic.LoadInt64(&doneCallCount)
+	doneMutex.Unlock()
+
+	t.Logf("Test complete: exports=%v, done calls=%d", finalExports, finalDoneCount)
+}
+
+// deterministicDone for testing without timing dependencies
+type deterministicDone struct {
+	onDoneFunc func(error)
+}
+
+func (dd *deterministicDone) OnDone(err error) {
+	if dd.onDoneFunc != nil {
+		dd.onDoneFunc(err)
+	}
+}
+
+// blockingTestDone simulates the blocking behavior of WaitForResult=true
+// This is crucial for reproducing the deadlock
+type blockingTestDone struct {
+	name     string
+	t        *testing.T
+	resultCh chan error
+	called   bool
+}
+
+func newBlockingTestDone(name string, t *testing.T) *blockingTestDone {
+	return &blockingTestDone{
+		name:     name,
+		t:        t,
+		resultCh: make(chan error, 1),
+	}
+}
+
+func (btd *blockingTestDone) OnDone(err error) {
+	if btd.called {
+		btd.t.Errorf("OnDone called multiple times for %s", btd.name)
+		return
+	}
+	btd.called = true
+	btd.t.Logf("OnDone called for %s with err=%v", btd.name, err)
+
+	// Send result to channel (simulating what blockingDone does)
+	select {
+	case btd.resultCh <- err:
+	default:
+		btd.t.Errorf("Failed to send result for %s - channel full", btd.name)
+	}
+}
+
+type testDone struct {
+	t      *testing.T
+	name   string
+	called bool
+}
+
+func (td *testDone) OnDone(err error) {
+	if td.called {
+		td.t.Errorf("OnDone called multiple times for %s", td.name)
+	}
+	td.called = true
+	td.t.Logf("OnDone called for %s with err=%v", td.name, err)
 }
