@@ -12,6 +12,7 @@ import (
 	"runtime"
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
@@ -21,6 +22,7 @@ import (
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -29,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/receiver"
@@ -173,12 +176,12 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		Resource:          res,
 	}
 
-	logger, lp, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
+	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
 		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	srv.loggerProvider = lp
+	srv.loggerProvider = loggerProvider
 
 	// Use initialized logger to handle any subsequent errors
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
@@ -188,6 +191,20 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 			_ = sdk.Shutdown(ctx)
 		}
 	}()
+
+	// Wrap the zap.Logger with componentattribute so scope attributes
+	// can be added and removed dynamically, and tee logs to the
+	// LoggerProvider.
+	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
+		core = componentattribute.NewOTelTeeCoreWithAttributes(
+			core,
+			loggerProvider,
+			"go.opentelemetry.io/collector/service",
+			attribute.NewSet(),
+		)
+		return core
+	}))
 
 	tracerProvider, err := telFactory.CreateTracerProvider(ctx, telset, &cfg.Telemetry)
 	if err != nil {
@@ -214,12 +231,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		// ignore other errors as they represent invalid state transitions and are considered benign.
 	})
 
-	if err = srv.initGraph(ctx, cfg); err != nil {
+	err = srv.initGraph(ctx, cfg)
+	if err != nil {
 		return nil, err
 	}
 
 	// process the configuration and initialize the pipeline
-	if err = srv.initExtensions(ctx, cfg.Extensions); err != nil {
+	err = srv.initExtensions(ctx, cfg.Extensions)
+	if err != nil {
 		return nil, err
 	}
 
@@ -526,14 +545,15 @@ func configureViews(level configtelemetry.Level) []config.View {
 	// Internal graph metrics
 	graphScope := ptr("go.opentelemetry.io/collector/service")
 	if level < configtelemetry.LevelDetailed {
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      graphScope,
-			InstrumentName: ptr("otelcol.*.consumed.size"),
-		}))
-		views = append(views, dropViewOption(&config.ViewSelector{
-			MeterName:      graphScope,
-			InstrumentName: ptr("otelcol.*.produced.size"),
-		}))
+		views = append(views,
+			dropViewOption(&config.ViewSelector{
+				MeterName:      graphScope,
+				InstrumentName: ptr("otelcol.*.consumed.size"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      graphScope,
+				InstrumentName: ptr("otelcol.*.produced.size"),
+			}))
 	}
 
 	return views

@@ -4,9 +4,7 @@
 package ptraceotlp // import "go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 
 import (
-	"bytes"
-
-	jsoniter "github.com/json-iterator/go"
+	"slices"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
@@ -40,26 +38,28 @@ func (ms ExportResponse) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportResponse into JSON bytes.
 func (ms ExportResponse) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := json.Marshal(&buf, ms.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	dest := json.BorrowStream(nil)
+	defer json.ReturnStream(dest)
+	dest.WriteObjectStart()
+	dest.WriteObjectField("partialSuccess")
+	ms.PartialSuccess().marshalJSONStream(dest)
+	dest.WriteObjectEnd()
+	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
 // UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
 func (ms ExportResponse) UnmarshalJSON(data []byte) error {
-	iter := jsoniter.ConfigFastest.BorrowIterator(data)
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	ms.unmarshalJsoniter(iter)
-	return iter.Error
+	iter := json.BorrowIterator(data)
+	defer json.ReturnIterator(iter)
+	ms.unmarshalJSONIter(iter)
+	return iter.Error()
 }
 
-func (ms ExportResponse) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ExportResponse) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "partial_success", "partialSuccess":
-			ms.PartialSuccess().unmarshalJsoniter(iter)
+			ms.PartialSuccess().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -72,11 +72,11 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 	return newExportPartialSuccess(&ms.orig.PartialSuccess, ms.state)
 }
 
-func (ms ExportPartialSuccess) unmarshalJsoniter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(_ *jsoniter.Iterator, f string) bool {
+func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(_ *json.Iterator, f string) bool {
 		switch f {
 		case "rejected_spans", "rejectedSpans":
-			ms.orig.RejectedSpans = json.ReadInt64(iter)
+			ms.orig.RejectedSpans = iter.ReadInt64()
 		case "error_message", "errorMessage":
 			ms.orig.ErrorMessage = iter.ReadString()
 		default:

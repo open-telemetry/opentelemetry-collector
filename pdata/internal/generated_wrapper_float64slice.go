@@ -6,6 +6,10 @@
 
 package internal
 
+import (
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
+
 type Float64Slice struct {
 	orig  *[]float64
 	state *State
@@ -28,12 +32,27 @@ func CopyOrigFloat64Slice(dst, src []float64) []float64 {
 	return append(dst, src...)
 }
 
-func FillTestFloat64Slice(tv Float64Slice) {
+func FillTestFloat64Slice(ms Float64Slice) {
+	*ms.orig = []float64{1.1, 2.2, 3.3}
 }
 
 func GenerateTestFloat64Slice() Float64Slice {
+	orig := []float64(nil)
 	state := StateMutable
-	var orig []float64 = nil
+	ms := NewFloat64Slice(&orig, &state)
+	FillTestFloat64Slice(ms)
+	return ms
+}
 
-	return Float64Slice{&orig, &state}
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamFloat64Slice(ms Float64Slice, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		dest.WriteFloat64((*ms.orig)[0])
+	}
+	for i := 1; i < len((*ms.orig)); i++ {
+		dest.WriteMore()
+		dest.WriteFloat64((*ms.orig)[i])
+	}
+	dest.WriteArrayEnd()
 }

@@ -5,6 +5,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AggregationTemporality specifies the method of aggregating metric values,
@@ -32,4 +33,9 @@ func (at AggregationTemporality) String() string {
 		return "Cumulative"
 	}
 	return ""
+}
+
+// MarshalJSONStream converts trace id into a hex string enclosed in quotes.
+func (at AggregationTemporality) marshalJSONStream(dest *json.Stream) {
+	dest.WriteInt32(int32(at))
 }

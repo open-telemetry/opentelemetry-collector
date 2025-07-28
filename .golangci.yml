@@ -26,6 +26,7 @@ linters:
     - depguard
     - errcheck
     - errorlint
+    - fatcontext
     - gocritic
     - gosec
     - govet
@@ -77,6 +78,19 @@ linters:
           deny:
             - pkg: go.opentelemetry.io/proto
               desc: Use go.opentelemetry.io/collector/pdata instead
+
+    gocritic:
+      disabled-checks:
+        - commentedOutCode
+        - deferInLoop
+        - filepathJoin
+        - hugeParam
+        - importShadow
+        - paramTypeCombine
+        - rangeValCopy
+        - unnamedResult
+        - whyNoLint
+      enable-all: true
 
     gosec:
       excludes:
