@@ -31,6 +31,19 @@ const typedSetTestTemplate = `tv.orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
+const typedMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .defaultVal }} {
+		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+		{{- if .isType }}
+		{{- if .isCommon }}
+		ms.orig.{{ .originFieldName }}.MarshalJSONStream(dest)
+		{{- else }}
+		ms.{{ .fieldName }}().marshalJSONStream(dest)
+		{{- end }}
+		{{- else }}
+		dest.Write{{ upperFirst .rawType }}(ms.orig.{{ .originFieldName }})
+		{{- end }}
+	}`
+
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")
 type TypedField struct {
 	fieldName       string
@@ -64,6 +77,11 @@ func (ptf *TypedField) GenerateSetWithTestValue(ms *messageStruct) string {
 
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("typedCopyOrigTemplate").Parse(typedCopyOrigTemplate))
+	return executeTemplate(t, ptf.templateFields(ms))
+}
+
+func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("typedMarshalJSONTemplate").Parse(typedMarshalJSONTemplate))
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 

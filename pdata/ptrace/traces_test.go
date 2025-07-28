@@ -179,3 +179,17 @@ func BenchmarkTracesUsage(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkTracesMarshalJSON(b *testing.B) {
+	md := NewTraces()
+	fillTestResourceSpansSlice(md.ResourceSpans())
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalTraces(md)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
+	}
+}

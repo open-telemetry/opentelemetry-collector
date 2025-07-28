@@ -9,6 +9,7 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -75,6 +76,22 @@ func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	dest.state.AssertMutable()
 	copyOrigResourceMetrics(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ResourceMetrics) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resource")
+	internal.MarshalJSONStreamResource(internal.NewResource(&ms.orig.Resource, ms.state), dest)
+	if ms.orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(ms.orig.SchemaUrl)
+	}
+	if len(ms.orig.ScopeMetrics) > 0 {
+		dest.WriteObjectField("scopeMetrics")
+		ms.ScopeMetrics().marshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
 }
 
 func copyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {

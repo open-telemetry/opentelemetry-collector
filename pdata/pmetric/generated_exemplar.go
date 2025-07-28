@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -134,6 +135,36 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
 	copyOrigExemplar(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Exemplar) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(ms.orig.TimeUnixNano)
+	}
+	switch ov := ms.orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		dest.WriteObjectField("asDouble")
+		dest.WriteFloat64(ov.AsDouble)
+	case *otlpmetrics.Exemplar_AsInt:
+		dest.WriteObjectField("asInt")
+		dest.WriteInt64(ov.AsInt)
+	}
+	if len(ms.orig.FilteredAttributes) > 0 {
+		dest.WriteObjectField("filteredAttributes")
+		internal.MarshalJSONStreamMap(internal.NewMap(&ms.orig.FilteredAttributes, ms.state), dest)
+	}
+	if ms.orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		ms.orig.TraceId.MarshalJSONStream(dest)
+	}
+	if ms.orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		ms.orig.SpanId.MarshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
 }
 
 func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {

@@ -6,6 +6,10 @@
 
 package internal
 
+import (
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
+
 type StringSlice struct {
 	orig  *[]string
 	state *State
@@ -38,4 +42,17 @@ func GenerateTestStringSlice() StringSlice {
 	ms := NewStringSlice(&orig, &state)
 	FillTestStringSlice(ms)
 	return ms
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamStringSlice(ms StringSlice, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		dest.WriteString((*ms.orig)[0])
+	}
+	for i := 1; i < len((*ms.orig)); i++ {
+		dest.WriteMore()
+		dest.WriteString((*ms.orig)[i])
+	}
+	dest.WriteArrayEnd()
 }
