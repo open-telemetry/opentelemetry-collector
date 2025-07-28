@@ -44,6 +44,6 @@ func TestUnmarshalJsoniterExportPartialSuccess(t *testing.T) {
 	defer json.ReturnIterator(iter)
 	val := NewExportPartialSuccess()
 	val.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewExportPartialSuccess(), val)
 }

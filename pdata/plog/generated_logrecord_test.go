@@ -49,13 +49,13 @@ func TestLogRecord_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestLogRecord()
 	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewLogRecord()
 	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }

@@ -4,8 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -87,10 +85,10 @@ func writeAttribute(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) 
 	dest.WriteObjectEnd()
 }
 
-func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {
-	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+func UnmarshalJSONIterMap(ms Map, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, otlpcommon.KeyValue{})
-		iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 			switch f {
 			case "key":
 				(*ms.orig)[len(*ms.orig)-1].Key = iter.ReadString()

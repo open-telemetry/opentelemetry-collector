@@ -9,10 +9,10 @@ package internal
 import (
 	"encoding/base64"
 
-	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func UnmarshalJSONIterByteSlice(ms ByteSlice, iter *jsoniter.Iterator) {
+func UnmarshalJSONIterByteSlice(ms ByteSlice, iter *json.Iterator) {
 	buf := iter.ReadStringAsSlice()
 	*ms.orig = make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
 	n, err := base64.StdEncoding.Decode(*ms.orig, buf)

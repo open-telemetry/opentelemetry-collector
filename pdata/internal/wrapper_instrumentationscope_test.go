@@ -6,11 +6,11 @@ package internal
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestUnmarshalJSONIterInstrumentationScope(t *testing.T) {
@@ -108,11 +108,11 @@ func TestUnmarshalJSONIterInstrumentationScope(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := &otlpcommon.InstrumentationScope{}
 			UnmarshalJSONIterInstrumentationScope(NewInstrumentationScope(got, nil), iter)
-			require.NoError(t, iter.Error)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, got)
 		})
 	}

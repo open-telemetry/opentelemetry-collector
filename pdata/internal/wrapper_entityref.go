@@ -4,11 +4,11 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func UnmarshalJSONIterEntityRef(ms EntityRef, iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()

@@ -49,13 +49,13 @@ func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestExportPartialSuccess()
 	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewExportPartialSuccess()
 	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }

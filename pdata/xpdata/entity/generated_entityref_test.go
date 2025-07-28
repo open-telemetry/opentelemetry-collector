@@ -48,13 +48,13 @@ func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 	defer json.ReturnStream(stream)
 	src := generateTestEntityRef()
 	internal.MarshalJSONStreamEntityRef(internal.EntityRef(src), stream)
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
 	dest := NewEntityRef()
 	internal.UnmarshalJSONIterEntityRef(internal.EntityRef(dest), iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }

@@ -6,8 +6,6 @@ package plog // import "go.opentelemetry.io/collector/pdata/plog"
 import (
 	"slices"
 
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -22,7 +20,7 @@ func (*JSONMarshaler) MarshalLogs(ld Logs) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
 	ld.marshalJSONStream(dest)
-	return slices.Clone(dest.Buffer()), dest.Error
+	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
 var _ Unmarshaler = (*JSONUnmarshaler)(nil)
@@ -32,24 +30,24 @@ type JSONUnmarshaler struct{}
 
 // UnmarshalLogs from OTLP/JSON format into pdata.Logs.
 func (*JSONUnmarshaler) UnmarshalLogs(buf []byte) (Logs, error) {
-	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator(buf)
+	defer json.ReturnIterator(iter)
 	ld := NewLogs()
 	ld.unmarshalJSONIter(iter)
-	if iter.Error != nil {
-		return Logs{}, iter.Error
+	if iter.Error() != nil {
+		return Logs{}, iter.Error()
 	}
 	otlp.MigrateLogs(ld.getOrig().ResourceLogs)
 	return ld, nil
 }
 
-func (ms ResourceLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ResourceLogs) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scope_logs", "scopeLogs":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(iter *json.Iterator) bool {
 				ms.ScopeLogs().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
@@ -62,13 +60,13 @@ func (ms ResourceLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms ScopeLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ScopeLogs) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "log_records", "logRecords":
-			iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+			iter.ReadArrayCB(func(iter *json.Iterator) bool {
 				ms.LogRecords().AppendEmpty().unmarshalJSONIter(iter)
 				return true
 			})
@@ -81,15 +79,15 @@ func (ms ScopeLogs) unmarshalJSONIter(iter *jsoniter.Iterator) {
 	})
 }
 
-func (ms LogRecord) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms LogRecord) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "timeUnixNano", "time_unix_nano":
-			ms.orig.TimeUnixNano = json.ReadUint64(iter)
+			ms.orig.TimeUnixNano = iter.ReadUint64()
 		case "observed_time_unix_nano", "observedTimeUnixNano":
-			ms.orig.ObservedTimeUnixNano = json.ReadUint64(iter)
+			ms.orig.ObservedTimeUnixNano = iter.ReadUint64()
 		case "severity_number", "severityNumber":
-			ms.orig.SeverityNumber = otlplogs.SeverityNumber(json.ReadEnumValue(iter, otlplogs.SeverityNumber_value))
+			ms.orig.SeverityNumber = otlplogs.SeverityNumber(iter.ReadEnumValue(otlplogs.SeverityNumber_value))
 		case "severity_text", "severityText":
 			ms.orig.SeverityText = iter.ReadString()
 		case "event_name", "eventName":
@@ -99,9 +97,9 @@ func (ms LogRecord) unmarshalJSONIter(iter *jsoniter.Iterator) {
 		case "attributes":
 			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "droppedAttributesCount", "dropped_attributes_count":
-			ms.orig.DroppedAttributesCount = json.ReadUint32(iter)
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
 		case "flags":
-			ms.orig.Flags = json.ReadUint32(iter)
+			ms.orig.Flags = iter.ReadUint32()
 		case "traceId", "trace_id":
 			ms.orig.TraceId.UnmarshalJSONIter(iter)
 		case "spanId", "span_id":

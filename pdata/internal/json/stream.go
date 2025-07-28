@@ -4,6 +4,7 @@
 package json // import "go.opentelemetry.io/collector/pdata/internal/json"
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -11,17 +12,6 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 )
-
-// Stream avoids the need to explicitly call the `Stream.WriteMore` method while marshaling objects by
-// checking if a field was previously written inside the current object and automatically appending a ","
-// if so before writing the next field.
-type Stream struct {
-	*jsoniter.Stream
-	// wmTracker acts like a stack which pushes a new value when an object is started and removes the
-	// top when it is ended. The value added for every object tracks if there is any written field
-	// already for that object, and if it is then automatically add a "," before any new field.
-	wmTracker []bool
-}
 
 func BorrowStream(writer io.Writer) *Stream {
 	return &Stream{
@@ -32,6 +22,17 @@ func BorrowStream(writer io.Writer) *Stream {
 
 func ReturnStream(s *Stream) {
 	jsoniter.ConfigFastest.ReturnStream(s.Stream)
+}
+
+// Stream avoids the need to explicitly call the `Stream.WriteMore` method while marshaling objects by
+// checking if a field was previously written inside the current object and automatically appending a ","
+// if so before writing the next field.
+type Stream struct {
+	*jsoniter.Stream
+	// wmTracker acts like a stack which pushes a new value when an object is started and removes the
+	// top when it is ended. The value added for every object tracks if there is any written field
+	// already for that object, and if it is then automatically add a "," before any new field.
+	wmTracker []bool
 }
 
 func (ots *Stream) WriteObjectStart() {
@@ -71,4 +72,12 @@ func (ots *Stream) WriteFloat64(val float64) {
 	}
 
 	ots.Stream.WriteFloat64(val)
+}
+
+func (ots *Stream) ReportError(err error) {
+	ots.Stream.Error = errors.Join(ots.Stream.Error, err)
+}
+
+func (ots *Stream) Error() error {
+	return ots.Stream.Error
 }

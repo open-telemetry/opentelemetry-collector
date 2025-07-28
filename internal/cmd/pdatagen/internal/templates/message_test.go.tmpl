@@ -46,7 +46,7 @@ func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 	{{- else }}
 	src.marshalJSONStream(stream)
 	{{- end }}
-	require.NoError(t, stream.Error)
+	require.NoError(t, stream.Error())
 
 	iter := json.BorrowIterator(stream.Buffer())
 	defer json.ReturnIterator(iter)
@@ -56,7 +56,7 @@ func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 	{{- else }}
 	dest.unmarshalJSONIter(iter)
 	{{- end }}
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 
 	assert.Equal(t, src, dest)
 }
