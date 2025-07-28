@@ -161,7 +161,7 @@ func createProfiles(
 	}
 	oCfg := cfg.(*Config)
 
-	oce.profilesURL, err = composeSignalURL(oCfg, "", "profiles", "v1development")
+	oce.profilesURL, err = composeSignalURL(oCfg, oCfg.ProfilesEndpoint, "profiles", "v1development")
 	if err != nil {
 		return nil, err
 	}
