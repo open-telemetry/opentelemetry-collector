@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="9" failures="0" errors="0" time="0.000532">
+	<testsuite tests="9" failures="0" time="0.001000" name="go.opentelemetry.io/collector/config/confignet" timestamp="2025-07-27T21:21:04-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestNewDefaultDialerConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestNewDefaultAddrConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestNewDefaultTCPAddrConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestAddrConfigTimeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestTCPAddrConfigTimeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestAddrConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="Test_NetAddr_Validate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="TestTCPAddrConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/confignet" name="Test_TransportType_UnmarshalText" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
