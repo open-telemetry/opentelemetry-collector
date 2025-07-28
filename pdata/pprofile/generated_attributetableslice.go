@@ -161,6 +161,15 @@ func (ms AttributeTableSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, v1.KeyValue{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
 	if cap(dest) < len(src) {
 		dest = make([]v1.KeyValue, len(src))

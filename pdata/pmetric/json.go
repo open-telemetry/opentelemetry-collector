@@ -47,10 +47,7 @@ func (ms ResourceMetrics) unmarshalJSONIter(iter *json.Iterator) {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeMetrics", "scope_metrics":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ScopeMetrics().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ScopeMetrics().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -66,10 +63,7 @@ func (ms ScopeMetrics) unmarshalJSONIter(iter *json.Iterator) {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "metrics":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Metrics().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Metrics().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -115,10 +109,7 @@ func (ms Sum) unmarshalJSONIter(iter *json.Iterator) {
 		case "is_monotonic", "isMonotonic":
 			ms.orig.IsMonotonic = iter.ReadBool()
 		case "data_points", "dataPoints":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.DataPoints().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.DataPoints().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -130,10 +121,7 @@ func (ms Gauge) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "data_points", "dataPoints":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.DataPoints().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.DataPoints().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -145,10 +133,7 @@ func (ms Histogram) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "data_points", "dataPoints":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.DataPoints().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.DataPoints().unmarshalJSONIter(iter)
 		case "aggregation_temporality", "aggregationTemporality":
 			ms.orig.AggregationTemporality = readAggregationTemporality(iter)
 		default:
@@ -162,10 +147,7 @@ func (ms ExponentialHistogram) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "data_points", "dataPoints":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.DataPoints().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.DataPoints().unmarshalJSONIter(iter)
 		case "aggregation_temporality", "aggregationTemporality":
 			ms.orig.AggregationTemporality = readAggregationTemporality(iter)
 		default:
@@ -179,10 +161,7 @@ func (ms Summary) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "data_points", "dataPoints":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.DataPoints().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.DataPoints().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
@@ -208,10 +187,7 @@ func (ms NumberDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		case "attributes":
 			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
 		case "exemplars":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Exemplars().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Exemplars().unmarshalJSONIter(iter)
 		case "flags":
 			ms.orig.Flags = iter.ReadUint32()
 		default:
@@ -235,20 +211,11 @@ func (ms HistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		case "sum":
 			ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "bucket_counts", "bucketCounts":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.orig.BucketCounts = append(ms.orig.BucketCounts, iter.ReadUint64())
-				return true
-			})
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
 		case "explicit_bounds", "explicitBounds":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.orig.ExplicitBounds = append(ms.orig.ExplicitBounds, iter.ReadFloat64())
-				return true
-			})
+			internal.UnmarshalJSONIterFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), iter)
 		case "exemplars":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Exemplars().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Exemplars().unmarshalJSONIter(iter)
 		case "flags":
 			ms.orig.Flags = iter.ReadUint32()
 		case "max":
@@ -290,10 +257,7 @@ func (ms ExponentialHistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		case "negative":
 			ms.Negative().unmarshalJSONIter(iter)
 		case "exemplars":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Exemplars().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Exemplars().unmarshalJSONIter(iter)
 		case "flags":
 			ms.orig.Flags = iter.ReadUint32()
 		case "max":
@@ -327,10 +291,7 @@ func (ms SummaryDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		case "sum":
 			ms.orig.Sum = iter.ReadFloat64()
 		case "quantile_values", "quantileValues":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.QuantileValues().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.QuantileValues().unmarshalJSONIter(iter)
 		case "flags":
 			ms.orig.Flags = iter.ReadUint32()
 		default:
@@ -344,10 +305,7 @@ func (ms ExponentialHistogramDataPointBuckets) unmarshalJSONIter(iter *json.Iter
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "bucket_counts", "bucketCounts":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.orig.BucketCounts = append(ms.orig.BucketCounts, iter.ReadUint64())
-				return true
-			})
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
 		case "offset":
 			ms.orig.Offset = iter.ReadInt32()
 		default:

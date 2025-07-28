@@ -87,10 +87,7 @@ func (ms Profiles) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ResourceProfiles().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ResourceProfiles().unmarshalJSONIter(iter)
 		case "dictionary":
 			ms.ProfilesDictionary().unmarshalJSONIter(iter)
 			return true
