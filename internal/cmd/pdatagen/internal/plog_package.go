@@ -126,7 +126,7 @@ var logRecord = &messageStruct{
 			returnType: &TypedType{
 				structName: "SeverityNumber",
 				rawType:    "otlplogs.SeverityNumber",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: `otlplogs.SeverityNumber(0)`,
 				testVal:    `otlplogs.SeverityNumber(5)`,
 			},

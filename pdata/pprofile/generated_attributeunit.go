@@ -92,6 +92,21 @@ func (ms AttributeUnit) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms AttributeUnit) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributeKeyStrindex", "attribute_key_strindex":
+			ms.orig.AttributeKeyStrindex = iter.ReadInt32()
+		case "unitStrindex", "unit_strindex":
+			ms.orig.UnitStrindex = iter.ReadInt32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex

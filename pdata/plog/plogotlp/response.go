@@ -71,17 +71,3 @@ func (ms ExportResponse) unmarshalJSONIter(iter *json.Iterator) {
 		return true
 	})
 }
-
-func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(_ *json.Iterator, f string) bool {
-		switch f {
-		case "rejected_log_records", "rejectedLogRecords":
-			ms.orig.RejectedLogRecords = iter.ReadInt64()
-		case "error_message", "errorMessage":
-			ms.orig.ErrorMessage = iter.ReadString()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}

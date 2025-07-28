@@ -71,3 +71,22 @@ func MarshalJSONStreamInstrumentationScope(ms InstrumentationScope, dest *json.S
 	}
 	dest.WriteObjectEnd()
 }
+
+// UnmarshalJSONIterInstrumentationScope unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "version":
+			ms.orig.Version = iter.ReadString()
+		case "attributes":
+			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}

@@ -71,6 +71,19 @@ func (ms Summary) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Summary) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "dataPoints", "data_points":
+			ms.DataPoints().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = copyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }

@@ -77,7 +77,7 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 	dest.WriteArrayEnd()
 }
 
-// UnmarshalJSONStream{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, {{ .emptyOriginElement }})
