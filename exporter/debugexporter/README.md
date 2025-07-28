@@ -36,9 +36,9 @@ The following settings are optional:
   Refer to [Zap docs](https://godoc.org/go.uber.org/zap/zapcore#NewSampler) for more details
   on how sampling parameters impact number of messages.
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
-- `output_paths`: (optional, only used if `use_internal_logger: false`) list of file paths to write logging output to. Defaults to `["stdout"]`. Special strings are "stdout" and "stderr".
+- `output_paths`: (optional, only used if `use_internal_logger: false`) list of file paths to write output to. Defaults to `["stdout"]`. Special strings are "stdout" and "stderr".
 
-## Example configurations:
+## Example configurations
 
 ### Using collector's internal telemetry pipeline and logger
 ```yaml
