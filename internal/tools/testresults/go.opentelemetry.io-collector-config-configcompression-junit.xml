@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="26" failures="0" errors="0" time="0.000355">
+	<testsuite tests="26" failures="0" time="0.000000" name="go.opentelemetry.io/collector/config/configcompression" timestamp="2025-07-27T21:21:03-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidGzip" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidZlib" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidDeflate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidSnappy" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidSnappyFramed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidZstd" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidEmpty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidNone" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/ValidLz4" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText/Invalid" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestUnmarshalText" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidGzip" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/InvalidGzip" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidZlib" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidDeflate" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidSnappy" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/InvalidSnappy" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidSnappyFramed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/InvalidSnappyFramed" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidZstd" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidEmpty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidNone" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/ValidLz4" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/InvalidLz4" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams/Invalid" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configcompression" name="TestValidateParams" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
