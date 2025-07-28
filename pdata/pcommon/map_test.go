@@ -23,7 +23,7 @@ func TestMap(t *testing.T) {
 
 	putString := NewMap()
 	putString.PutStr("k", "v")
-	assert.Equal(t, Map(internal.GenerateTestMap()), putString)
+	assert.Equal(t, generateTestStringMap(t), putString)
 
 	putInt := NewMap()
 	putInt.PutInt("k", 123)
@@ -541,6 +541,12 @@ func generateTestEmptyMap(t *testing.T) Map {
 func generateTestEmptySlice(t *testing.T) Map {
 	m := NewMap()
 	assert.NoError(t, m.FromRaw(map[string]any{"k": []any(nil)}))
+	return m
+}
+
+func generateTestStringMap(t *testing.T) Map {
+	m := NewMap()
+	assert.NoError(t, m.FromRaw(map[string]any{"k": "v"}))
 	return m
 }
 

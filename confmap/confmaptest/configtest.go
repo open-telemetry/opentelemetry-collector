@@ -23,7 +23,7 @@ func LoadConf(fileName string) (*confmap.Conf, error) {
 	}
 
 	var rawConf map[string]any
-	if err = yaml.Unmarshal(content, &rawConf); err != nil {
+	if err := yaml.Unmarshal(content, &rawConf); err != nil {
 		return nil, err
 	}
 

@@ -6,10 +6,10 @@ package pprofile
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -135,6 +135,20 @@ func TestJSONMarshal(t *testing.T) {
 	assert.JSONEq(t, profilesJSON, string(jsonBuf))
 }
 
+func TestJSONMarshalAndUnmarshal(t *testing.T) {
+	want := NewProfiles()
+	fillTestResourceProfilesSlice(want.ResourceProfiles())
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalProfiles(want)
+	require.NoError(t, err)
+
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalProfiles(jsonBuf)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestJSONUnmarshalInvalid(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceProfiles": "extra"}`
 	decoder := &JSONUnmarshaler{}
@@ -144,146 +158,146 @@ func TestJSONUnmarshalInvalid(t *testing.T) {
 
 func TestUnmarshalJsoniterProfileData(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceProfiles": [{"extra":""}]}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewProfiles()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, 1, val.ResourceProfiles().Len())
 }
 
 func TestUnmarshalJsoniterProfileInvalidProfileIDField(t *testing.T) {
-	jsonStr := `{"profile_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewProfile().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse profile_id")
+	jsonStr := `{"profileId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewProfile().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "profileId")
 }
 
 func TestUnmarshalJsoniterResourceProfiles(t *testing.T) {
 	jsonStr := `{"extra":"", "resource": {}, "scopeProfiles": []}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewResourceProfiles()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewResourceProfiles(), val)
 }
 
 func TestUnmarshalJsoniterScopeProfiles(t *testing.T) {
 	jsonStr := `{"extra":"", "scope": {}, "profiles": []}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewScopeProfiles()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewScopeProfiles(), val)
 }
 
 func TestUnmarshalJsoniterProfile(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewProfile()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewProfile(), val)
 }
 
 func TestUnmarshalJsoniterValueType(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewValueType()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewValueType(), val)
 }
 
 func TestUnmarshalJsoniterSample(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewSample()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewSample(), val)
 }
 
 func TestUnmarshalJsoniterMapping(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewMapping()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewMapping(), val)
 }
 
 func TestUnmarshalJsoniterLocation(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewLocation()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewLocation(), val)
 }
 
 func TestUnmarshalJsoniterLine(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewLine()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewLine(), val)
 }
 
 func TestUnmarshalJsoniterFunction(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewFunction()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewFunction(), val)
 }
 
 func TestUnmarshalJsoniterAttributeUnit(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewAttributeUnit()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewAttributeUnit(), val)
 }
 
 func TestUnmarshalJsoniterLink(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewLink()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewLink(), val)
 }
 
 func TestUnmarshalJsoniterLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLink().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	jsonStr := `{"traceId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewLink().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "traceId")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewLink().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	jsonStr := `{"spanId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewLink().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "spanId")
 }
 
 func BenchmarkJSONUnmarshal(b *testing.B) {

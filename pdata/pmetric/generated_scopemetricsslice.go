@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ScopeMetricsSlice logically represents a slice of ScopeMetrics.
@@ -154,6 +155,19 @@ func (es ScopeMetricsSlice) CopyTo(dest ScopeMetricsSlice) {
 func (es ScopeMetricsSlice) Sort(less func(a, b ScopeMetrics) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ScopeMetricsSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
 }
 
 func copyOrigScopeMetricsSlice(dest, src []*otlpmetrics.ScopeMetrics) []*otlpmetrics.ScopeMetrics {

@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -40,6 +42,22 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
+}
+
+func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExportPartialSuccess()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewExportPartialSuccess()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {

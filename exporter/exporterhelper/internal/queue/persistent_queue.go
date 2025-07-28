@@ -180,7 +180,7 @@ func (pq *persistentQueue[T]) loadQueueMetadata(ctx context.Context) error {
 	}
 
 	metadata := &pq.metadata
-	if err = metadata.Unmarshal(buf); err != nil {
+	if err := metadata.Unmarshal(buf); err != nil {
 		return err
 	}
 
@@ -308,7 +308,7 @@ func (pq *persistentQueue[T]) putInternal(ctx context.Context, req T) error {
 		storage.SetOperation(metadataKey, metadataBuf),
 		storage.SetOperation(getItemKey(pq.metadata.WriteIndex-1), reqBuf),
 	}
-	if err = pq.client.Batch(ctx, ops...); err != nil {
+	if err := pq.client.Batch(ctx, ops...); err != nil {
 		// At this moment, metadata may be updated in the storage, so we cannot just revert changes to the
 		// metadata, rely on the sizes being fixed on complete draining.
 		return err

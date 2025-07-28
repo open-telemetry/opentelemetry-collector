@@ -9,6 +9,7 @@ var pcommon = &Package{
 		path: "pcommon",
 		imports: []string{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		},
@@ -18,6 +19,7 @@ var pcommon = &Package{
 			`"github.com/stretchr/testify/assert"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 		},
 	},
 	structs: []baseStruct{
@@ -37,9 +39,9 @@ var scope = &messageStruct{
 	packageName:    "pcommon",
 	description:    "// InstrumentationScope is a message representing the instrumentation scope information.",
 	originFullName: "otlpcommon.InstrumentationScope",
-	fields: []baseField{
+	fields: []Field{
 		nameField,
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "Version",
 			returnType: "string",
 			defaultVal: `""`,
@@ -57,7 +59,7 @@ var mapStruct = &sliceOfPtrs{
 	packageName: "pcommon",
 }
 
-var scopeField = &messageField{
+var scopeField = &MessageField{
 	fieldName:     "Scope",
 	returnMessage: scope,
 }
@@ -67,7 +69,7 @@ var traceState = &messageStruct{
 	packageName: "pcommon",
 }
 
-var timestampType = &primitiveType{
+var timestampType = &TypedType{
 	structName:  "Timestamp",
 	packageName: "pcommon",
 	rawType:     "uint64",
@@ -75,30 +77,30 @@ var timestampType = &primitiveType{
 	testVal:     "1234567890",
 }
 
-var startTimeField = &primitiveTypedField{
+var startTimeField = &TypedField{
 	fieldName:       "StartTimestamp",
 	originFieldName: "StartTimeUnixNano",
 	returnType:      timestampType,
 }
 
-var timeField = &primitiveTypedField{
+var timeField = &TypedField{
 	fieldName:       "Timestamp",
 	originFieldName: "TimeUnixNano",
 	returnType:      timestampType,
 }
 
-var endTimeField = &primitiveTypedField{
+var endTimeField = &TypedField{
 	fieldName:       "EndTimestamp",
 	originFieldName: "EndTimeUnixNano",
 	returnType:      timestampType,
 }
 
-var attributes = &sliceField{
+var attributes = &SliceField{
 	fieldName:   "Attributes",
 	returnSlice: mapStruct,
 }
 
-var nameField = &primitiveField{
+var nameField = &PrimitiveField{
 	fieldName:  "Name",
 	returnType: "string",
 	defaultVal: `""`,
@@ -111,41 +113,41 @@ var anyValue = &messageStruct{
 	originFullName: "otlpcommon.AnyValue",
 }
 
-var traceIDField = &primitiveTypedField{
+var traceIDField = &TypedField{
 	fieldName:       "TraceID",
 	originFieldName: "TraceId",
-	returnType:      traceIDType,
+	returnType: &TypedType{
+		structName:  "TraceID",
+		packageName: "pcommon",
+		rawType:     "data.TraceID",
+		isType:      true,
+		defaultVal:  "data.TraceID([16]byte{})",
+		testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
+	},
 }
 
-var traceIDType = &primitiveType{
-	structName:  "TraceID",
-	packageName: "pcommon",
-	rawType:     "data.TraceID",
-	defaultVal:  "data.TraceID([16]byte{})",
-	testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
-}
-
-var spanIDField = &primitiveTypedField{
+var spanIDField = &TypedField{
 	fieldName:       "SpanID",
 	originFieldName: "SpanId",
 	returnType:      spanIDType,
 }
 
-var parentSpanIDField = &primitiveTypedField{
+var parentSpanIDField = &TypedField{
 	fieldName:       "ParentSpanID",
 	originFieldName: "ParentSpanId",
 	returnType:      spanIDType,
 }
 
-var spanIDType = &primitiveType{
+var spanIDType = &TypedType{
 	structName:  "SpanID",
 	packageName: "pcommon",
 	rawType:     "data.SpanID",
+	isType:      true,
 	defaultVal:  "data.SpanID([8]byte{})",
 	testVal:     "data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
-var schemaURLField = &primitiveField{
+var schemaURLField = &PrimitiveField{
 	fieldName:  "SchemaUrl",
 	returnType: "string",
 	defaultVal: `""`,
@@ -157,10 +159,10 @@ var resource = &messageStruct{
 	packageName:    "pcommon",
 	description:    "// Resource is a message representing the resource information.",
 	originFullName: "otlpresource.Resource",
-	fields: []baseField{
+	fields: []Field{
 		attributes,
 		droppedAttributesCount,
-		&sliceField{
+		&SliceField{
 			// Hide accessors for this field from 1.x public API since the proto field is experimental.
 			// It's available via the xpdata/entity.ResourceEntityRefs.
 			hideAccessors:   true,
@@ -170,7 +172,7 @@ var resource = &messageStruct{
 	},
 }
 
-var resourceField = &messageField{
+var resourceField = &MessageField{
 	fieldName:     "Resource",
 	returnMessage: resource,
 }
@@ -189,10 +191,10 @@ var float64Slice = &primitiveSliceStruct{
 	structName:           "Float64Slice",
 	packageName:          "pcommon",
 	itemType:             "float64",
-	testOrigVal:          "1, 2, 3",
-	testInterfaceOrigVal: []any{1, 2, 3},
-	testSetVal:           "5",
-	testNewVal:           "1, 5, 3",
+	testOrigVal:          "1.1, 2.2, 3.3",
+	testInterfaceOrigVal: []any{1.1, 2.2, 3.3},
+	testSetVal:           "5.5",
+	testNewVal:           "1.1, 5.5, 3.3",
 }
 
 var uInt64Slice = &primitiveSliceStruct{
