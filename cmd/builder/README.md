@@ -36,9 +36,6 @@ receivers:
       grpc:
         endpoint: localhost:4317
 
-processors:
-  batch:
-
 exporters:
   debug:
 
@@ -47,8 +44,6 @@ service:
     traces:
       receivers:
       - otlp
-      processors:
-      - batch
       exporters:
       - debug
 EOF
