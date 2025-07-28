@@ -77,10 +77,7 @@ func (ms Logs) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
-			iter.ReadArrayCB(func(*json.Iterator) bool {
-				ms.ResourceLogs().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ResourceLogs().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}

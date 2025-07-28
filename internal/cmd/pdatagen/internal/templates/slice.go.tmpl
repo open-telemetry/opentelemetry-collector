@@ -189,6 +189,15 @@ func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms {{ .structName }}) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.{{ .origAccessor }} = append(*ms.{{ .origAccessor }}, {{ .emptyOriginElement }})
+		ms.At(ms.Len()-1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrig{{ .structName }}(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
 	if cap(dest) < len(src) {
 		dest = make([]{{ .originElementType }}, len(src))

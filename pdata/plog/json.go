@@ -47,10 +47,7 @@ func (ms ResourceLogs) unmarshalJSONIter(iter *json.Iterator) {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scope_logs", "scopeLogs":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ScopeLogs().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ScopeLogs().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -66,10 +63,7 @@ func (ms ScopeLogs) unmarshalJSONIter(iter *json.Iterator) {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "log_records", "logRecords":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.LogRecords().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.LogRecords().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:

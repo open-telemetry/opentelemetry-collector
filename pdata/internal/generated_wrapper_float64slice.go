@@ -44,7 +44,7 @@ func GenerateTestFloat64Slice() Float64Slice {
 	return ms
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStreamFloat64Slice marshals all properties from the current struct to the destination stream.
 func MarshalJSONStreamFloat64Slice(ms Float64Slice, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
@@ -55,4 +55,12 @@ func MarshalJSONStreamFloat64Slice(ms Float64Slice, dest *json.Stream) {
 		dest.WriteFloat64((*ms.orig)[i])
 	}
 	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONIterFloat64Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterFloat64Slice(ms Float64Slice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.ReadFloat64())
+		return true
+	})
 }

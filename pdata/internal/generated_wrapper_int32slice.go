@@ -44,7 +44,7 @@ func GenerateTestInt32Slice() Int32Slice {
 	return ms
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStreamInt32Slice marshals all properties from the current struct to the destination stream.
 func MarshalJSONStreamInt32Slice(ms Int32Slice, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
@@ -55,4 +55,12 @@ func MarshalJSONStreamInt32Slice(ms Int32Slice, dest *json.Stream) {
 		dest.WriteInt32((*ms.orig)[i])
 	}
 	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONIterInt32Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterInt32Slice(ms Int32Slice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.ReadInt32())
+		return true
+	})
 }

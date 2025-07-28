@@ -76,10 +76,7 @@ func (ms Traces) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ResourceSpans().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ResourceSpans().unmarshalJSONIter(iter)
 		default:
 			iter.Skip()
 		}
