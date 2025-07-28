@@ -9,6 +9,7 @@ package ptraceotlp
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -75,6 +76,20 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
 	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.RejectedSpans != int64(0) {
+		dest.WriteObjectField("rejectedSpans")
+		dest.WriteInt64(ms.orig.RejectedSpans)
+	}
+	if ms.orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(ms.orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
 }
 
 func copyOrigExportPartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {

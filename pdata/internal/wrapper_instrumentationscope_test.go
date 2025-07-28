@@ -1,19 +1,19 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package json
+package internal
 
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
-func TestReadScope(t *testing.T) {
+func TestUnmarshalJSONIterInstrumentationScope(t *testing.T) {
 	tests := []struct {
 		name    string
 		jsonStr string
@@ -108,11 +108,11 @@ func TestReadScope(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := &otlpcommon.InstrumentationScope{}
-			ReadScope(iter, got)
-			require.NoError(t, iter.Error)
+			UnmarshalJSONIterInstrumentationScope(NewInstrumentationScope(got, nil), iter)
+			require.NoError(t, iter.Error())
 			assert.Equal(t, tt.want, got)
 		})
 	}

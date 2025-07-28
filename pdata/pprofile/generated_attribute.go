@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -70,6 +71,18 @@ func (ms Attribute) Value() pcommon.Value {
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
 	copyOrigAttribute(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms Attribute) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.Key != "" {
+		dest.WriteObjectField("key")
+		dest.WriteString(ms.orig.Key)
+	}
+	dest.WriteObjectField("value")
+	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Value, ms.state), dest)
+	dest.WriteObjectEnd()
 }
 
 func copyOrigAttribute(dest, src *v1.KeyValue) {

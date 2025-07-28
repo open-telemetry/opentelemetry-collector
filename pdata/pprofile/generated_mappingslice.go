@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // MappingSlice logically represents a slice of Mapping.
@@ -154,6 +155,19 @@ func (es MappingSlice) CopyTo(dest MappingSlice) {
 func (es MappingSlice) Sort(less func(a, b Mapping) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms MappingSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
 }
 
 func copyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Mapping {

@@ -1,16 +1,16 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package json
+package internal
 
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestReadArray(t *testing.T) {
@@ -37,8 +37,8 @@ func TestReadArray(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := readArray(iter)
 			assert.Equal(t, tt.want, got)
 		})
@@ -138,96 +138,76 @@ func TestReadKvlistValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := readKvlistValue(iter)
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
-func TestReadAttributeUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := ReadAttribute(iter)
-	//  unknown fields should not be an error
-	require.NoError(t, iter.Error)
-	assert.Equal(t, otlpcommon.KeyValue{}, value)
-}
-
-func TestReadAttributeValueUnknownField(t *testing.T) {
-	// Key after value, to check that we correctly continue to process.
-	jsonStr := `{"value": {"unknown": {"extra":""}}, "key":"test"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := ReadAttribute(iter)
-	//  unknown fields should not be an error
-	require.NoError(t, iter.Error)
-	assert.Equal(t, otlpcommon.KeyValue{Key: "test"}, value)
-}
-
 func TestReadValueUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := &otlpcommon.AnyValue{}
-	ReadValue(iter, value)
-	require.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcommon.AnyValue{}, value)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	value := otlpcommon.AnyValue{}
+	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, otlpcommon.AnyValue{}, value)
 }
 
 func TestReadValueInvliadBytesValue(t *testing.T) {
 	jsonStr := `{"bytesValue": "--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
-	ReadValue(iter, &otlpcommon.AnyValue{})
-	assert.ErrorContains(t, iter.Error, "base64")
+	value := otlpcommon.AnyValue{}
+	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
+	assert.ErrorContains(t, iter.Error(), "base64")
 }
 
 func TestReadArrayUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	value := readArray(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, &otlpcommon.ArrayValue{}, value)
-}
-
-func TestReadKvlistValueUnknownField(t *testing.T) {
-	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	value := readKvlistValue(iter)
-	require.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcommon.KeyValueList{}, value)
 }
 
 func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 	jsonStr := `{"arrayValue": {"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
-	value := &otlpcommon.AnyValue{}
-	ReadValue(iter, value)
-	require.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcommon.AnyValue{
+	value := otlpcommon.AnyValue{}
+	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
 		},
 	}, value)
 }
 
+func TestReadKvlistValueUnknownField(t *testing.T) {
+	jsonStr := `{"extra":""}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	value := readKvlistValue(iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpcommon.KeyValueList{}, value)
+}
+
 func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 	jsonStr := `{"kvlistValue": {"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
-	value := &otlpcommon.AnyValue{}
-	ReadValue(iter, value)
-	require.NoError(t, iter.Error)
-	assert.Equal(t, &otlpcommon.AnyValue{
+	value := otlpcommon.AnyValue{}
+	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
+	require.NoError(t, iter.Error())
+	assert.Equal(t, otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},
 		},

@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SpanEventSlice logically represents a slice of SpanEvent.
@@ -154,6 +155,19 @@ func (es SpanEventSlice) CopyTo(dest SpanEventSlice) {
 func (es SpanEventSlice) Sort(less func(a, b SpanEvent) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms SpanEventSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
 }
 
 func copyOrigSpanEventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Span_Event {
