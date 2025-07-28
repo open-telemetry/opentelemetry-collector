@@ -6,16 +6,19 @@ package debugexporter
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -61,34 +64,43 @@ func TestCreateFactoryProfiles(t *testing.T) {
 	require.NotNil(t, te)
 }
 
-func TestCreateCustomLoggerOutputPaths(t *testing.T) {
+func TestDebugExporter_CustomLoggerOutputPaths(t *testing.T) {
 	tmpDir := t.TempDir()
 	logFile := tmpDir + "/test_output.log"
-	errFile := tmpDir + "/test_error.log"
 
-	ws, closeLog, err := zap.Open(logFile)
-	require.NoError(t, err)
-	errWs, closeErr, err := zap.Open(errFile)
-	require.NoError(t, err)
+	cfg := &Config{
+		Verbosity:          configtelemetry.LevelDetailed,
+		SamplingInitial:    2,
+		SamplingThereafter: 1,
+		UseInternalLogger:  false,
+		OutputPaths:        []string{logFile},
+	}
 
-	encoderCfg := zap.NewDevelopmentEncoderConfig()
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderCfg),
-		ws,
-		zapcore.InfoLevel,
-	)
-	logger := zap.New(core, zap.ErrorOutput(errWs))
+	// Use a nop logger for the base logger, as it will not be used.
+	baseLogger := zap.NewNop()
+	exporterLogger := createLogger(cfg, baseLogger)
+	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
 
-	logMsg := "test log output path"
-	logger.Info(logMsg)
-	require.NoError(t, logger.Sync())
+	// Actually emit a log line via the debug exporter.
+	testMsg := "test debug exporter output path"
+	// Use the debug exporter's pushLogs to trigger output.
+	ld := generateTestLogsWithMessage(testMsg)
+	_ = debug.pushLogs(context.Background(), ld)
 
-	// Close the file handles explicitly
-	closeLog()
-	closeErr()
+	// Ensure the log file contains the test message.
+	require.Eventually(t, func() bool {
+		//nolint:gosec // G304: Potential file inclusion via variable
+		data, err := os.ReadFile(logFile)
+		return err == nil && strings.Contains(string(data), testMsg)
+	}, 2*time.Second, 100*time.Millisecond, "expected log message not found in log file")
+}
 
-	//nolint:gosec
-	data, err := os.ReadFile(logFile)
-	require.NoError(t, err)
-	require.Contains(t, string(data), logMsg)
+// generateTestLogsWithMessage creates a logs.Logs with a log record containing the given message.
+func generateTestLogsWithMessage(msg string) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+	lr.Body().SetStr(msg)
+	return ld
 }

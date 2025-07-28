@@ -40,36 +40,14 @@ The following settings are optional:
 - `use_internal_logger` (default = `true`): uses the collector's internal logger for output. See [below](#using-the-collectors-internal-logger) for description.
 - `output_paths`: (optional, only used if `use_internal_logger: false`) list of file paths to write output to. Defaults to `["stdout"]`. Special strings are "stdout" and "stderr".
 
-## Example configurations
+Example configuration:
 
-### Using collector's internal telemetry pipeline and logger
 ```yaml
 exporters:
   debug:
     verbosity: detailed
     sampling_initial: 5
     sampling_thereafter: 200
-    use_internal_logger: true # (set to true by default)
-...
-service:
-  telemetry:
-    logs:
-      output_paths:
-        - stdout
-        - /tmp/collector.log
-```
-
-### Using debug exporter's output instead of collector's internal telemetry pipeline and logger:
-```yaml
-exporters:
-  debug:
-    verbosity: detailed
-    sampling_initial: 5
-    sampling_thereafter: 200
-    use_internal_logger: false
-    output_paths:
-      - stdout
-      - /tmp/debugexporter.log
 ```
 
 ## Verbosity levels
@@ -164,6 +142,26 @@ The exporter's output is sent to the paths specified in `output_paths` (default:
 
 [internal_telemetry]: https://opentelemetry.io/docs/collector/internal-telemetry/
 [internal_logs_config]: https://opentelemetry.io/docs/collector/internal-telemetry/#configure-internal-logs
+
+## Using the debugexporter's built-in output
+
+If a user does not want to use the collector's internal logger (described above in "Using the collector's internal logger), they may instead opt to route output to a file descriptor using the debug exporter's built-in output.
+
+The following configuration provides a sample setup to route the debug exporter to `stdout` and `/tmp/debugexporter.log`:
+
+### Using debug exporter's output instead of collector's internal telemetry pipeline and logger:
+```yaml
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+    use_internal_logger: false
+    output_paths:
+      - stdout
+      - /tmp/debugexporter.log
+```
+
 
 ## Warnings
 
