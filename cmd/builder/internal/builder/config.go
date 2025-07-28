@@ -19,7 +19,7 @@ import (
 
 const (
 	defaultBetaOtelColVersion   = "v0.130.1"
-	defaultStableOtelColVersion = "v1.36.1"
+	defaultStableOtelColVersion = "v1.37.0"
 )
 
 // errMissingGoMod indicates an empty gomod field
