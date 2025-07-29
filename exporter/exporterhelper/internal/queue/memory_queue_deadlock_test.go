@@ -2,7 +2,6 @@ package queue
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -69,60 +68,20 @@ func TestMemoryQueueDeadlockReproduction(t *testing.T) {
 	// Start consumer (emulates the async queue consumer)
 	consumerDone := make(chan struct{})
 	go func() {
-		defer func() {
-			if r := recover(); r != nil {
-				fmt.Printf("DEBUG: Consumer goroutine PANICKED: %v\n", r)
-			}
-			fmt.Printf("DEBUG: Consumer goroutine exiting\n")
-			close(consumerDone)
-		}()
-		
-		readCount := 0
+		defer close(consumerDone)
+
 		for {
-			readCount++
-			fmt.Printf("DEBUG: Consumer attempting read #%d\n", readCount)
-			
-			// Add a check to see if we're stuck here
-			fmt.Printf("DEBUG: Consumer about to enter select statement\n")
-			
-			// Check context state before select
-			select {
-			case <-ctx.Done():
-				fmt.Printf("DEBUG: Context is already canceled before select: %v\n", ctx.Err())
-				return
-			default:
-				fmt.Printf("DEBUG: Context is NOT canceled, proceeding with select\n")
+			// Simplified: call Read() directly without timers
+			_, _, done, ok := mq.Read(ctx)
+			if !ok {
+				return // Queue shutdown
 			}
-			
-			fmt.Printf("DEBUG: Consumer entering select with timer\n")
-			timer := time.After(100 * time.Millisecond)
-			fmt.Printf("DEBUG: Timer created, entering select\n")
-			
-			select {
-			case <-timer:
-				fmt.Printf("DEBUG: Consumer timeout received, trying to read from queue\n")
-				// Try to read from queue
-				_, item, done, ok := mq.Read(ctx)
-				if !ok {
-					fmt.Printf("DEBUG: Consumer read returned ok=false, queue shutdown\n")
-					return // Queue shutdown
-				}
 
-				fmt.Printf("DEBUG: Consumer read item=%d, calling OnDone\n", item)
-				if done != nil {
-					done.OnDone(nil)
-					fmt.Printf("DEBUG: Consumer OnDone completed for item=%d\n", item)
-				}
-
-				itemsConsumed++
-				fmt.Printf("DEBUG: Consumer processed item %d (total consumed: %d)\n", item, itemsConsumed)
-
-			case <-ctx.Done():
-				fmt.Printf("DEBUG: Consumer context canceled: %v\n", ctx.Err())
-				return
+			if done != nil {
+				done.OnDone(nil)
 			}
-			
-			fmt.Printf("DEBUG: Consumer completed select iteration %d\n", readCount)
+
+			itemsConsumed++
 		}
 	}()
 
@@ -138,33 +97,25 @@ func TestMemoryQueueDeadlockReproduction(t *testing.T) {
 	// Start multiple producers (emulates concurrent ConsumeTraces calls)
 	for producerID := 0; producerID < numProducers; producerID++ {
 		go func(id int) {
-			defer func() {
-				fmt.Printf("DEBUG: Producer %d exiting\n", id)
-				wg.Done()
-			}()
+			defer wg.Done()
 
 			itemsPerProducer := totalItems / numProducers
-			fmt.Printf("DEBUG: Producer %d starting, will produce %d items\n", id, itemsPerProducer)
-			
+
 			for i := 0; i < itemsPerProducer; i++ {
 				item := id*itemsPerProducer + i
-				fmt.Printf("DEBUG: Producer %d offering item %d\n", id, item)
 
 				// This is where the deadlock happens in batch processor:
 				// WaitForResult=true means Offer() waits for consumer to process
 				err := mq.Offer(ctx, item)
 				if err != nil {
-					fmt.Printf("DEBUG: Producer %d failed to offer item %d: %v\n", id, item, err)
 					t.Errorf("Producer %d failed to offer item %d: %v", id, item, err)
 					return
 				}
 
-				fmt.Printf("DEBUG: Producer %d successfully offered item %d\n", id, item)
 				itemsProduced++
 			}
 
 			producersFinished++
-			fmt.Printf("DEBUG: Producer %d finished successfully\n", id)
 		}(producerID)
 	}
 
@@ -190,8 +141,6 @@ func TestMemoryQueueDeadlockReproduction(t *testing.T) {
 		// The test passes if we reach here without deadlock
 
 	case <-time.After(timeout):
-		fmt.Printf("DEBUG: Test timeout reached, gathering final state\n")
-		fmt.Printf("DEBUG: Final queue state - Size: %d, Capacity: %d\n", mq.Size(), mq.Capacity())
 		t.Fatalf("DEADLOCK DETECTED: Test timed out after %v. "+
 			"Producers finished: %d/%d, Items produced: %d/%d, Items consumed: %d",
 			timeout, producersFinished, numProducers, itemsProduced, totalItems, itemsConsumed)
