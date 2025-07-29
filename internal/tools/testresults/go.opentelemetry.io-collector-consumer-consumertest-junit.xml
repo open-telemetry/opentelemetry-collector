@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="17" failures="0" errors="0" time="0.000150">
+	<testsuite tests="17" failures="0" time="0.000000" name="go.opentelemetry.io/collector/consumer/consumertest" timestamp="2025-07-28T22:03:13-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestErr" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestNop" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestTracesSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestMetricsSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestLogsSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestProfilesSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestTracesSinkWithContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestMetricsSinkWithContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestLogsSinkWithContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestProfilesSinkWithContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestSinkContextTransformation/TracesSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestSinkContextTransformation/MetricsSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestSinkContextTransformation/LogsSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestSinkContextTransformation/ProfilesSink" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestSinkContextTransformation" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestContextTransformationChain" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/consumer/consumertest" name="TestConcurrentContextTransformations" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

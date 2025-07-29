@@ -71,7 +71,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
         Attributes: AttributesConfig{
           {{- range $name, $_ := .Attributes }}
           {{ $name.Render }}: AttributeConfig{
-            Enabled: true,
+            Enabled: false,
           },
           {{- end }}
         },
@@ -114,6 +114,55 @@ func loadLogsBuilderConfig(t *testing.T, name string) LogsBuilderConfig {
 	require.NoError(t, err)
 	cfg := DefaultLogsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+{{- end }}
+
+{{ if .Attributes }}
+func TestAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want AttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: AttributesConfig{
+      {{- range $name, $attribute := .Attributes }}
+      {{ $name.Render }}: AttributeConfig{Enabled: true},
+      {{- end }}
+			},
+		},
+		{
+			name: "none_set",
+			want: AttributesConfig{
+      {{- range $name, $attribute := .Attributes }}
+      {{ $name.Render }}: AttributeConfig{Enabled: false},
+      {{- end }}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadAttributesConfig(t, tt.name)
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(AttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+		})
+	}
+}
+
+func loadAttributesConfig(t *testing.T, name string) AttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("attributes")
+	require.NoError(t, err)
+	cfg := DefaultAttributesConfig()
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 {{- end }}

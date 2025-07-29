@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="16" failures="0" errors="0" time="0.000161">
+	<testsuite tests="16" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/provider/envprovider" timestamp="2025-07-28T22:03:12-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestValidateProviderScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEmptyName" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestUnsupportedScheme" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestInvalidYAML" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnv" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithLogger" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestUnsetEnvWithLoggerWarn" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvVarNameRestriction" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEmptyEnvWithLoggerWarn" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/unset" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/unset2" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/not_empty" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/syntax1" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue/syntax2" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/confmap/provider/envprovider" name="TestEnvWithDefaultValue" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

@@ -162,7 +162,7 @@ func TestLoadMetadata(t *testing.T) {
 							ValueType: pcommon.ValueTypeStr,
 						},
 						FullName: "string_attr",
-						Enabled:  true,
+						Enabled:  false,
 					},
 					"overridden_int_attr": {
 						Description:  "Integer attribute with overridden name.",
@@ -464,7 +464,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",
@@ -494,7 +494,7 @@ func TestLoadMetadata(t *testing.T) {
 		{
 			name:    "testdata/invalid_type_attr.yaml",
 			want:    Metadata{},
-			wantErr: "decoding failed due to the following error(s):\n\n'attributes[used_attr].type' invalid type: \"invalidtype\"",
+			wantErr: "decoding failed due to the following error(s):\n\n'type' invalid type: \"invalidtype\"",
 		},
 		{
 			name:    "testdata/~~this file doesn't exist~~.yaml",
