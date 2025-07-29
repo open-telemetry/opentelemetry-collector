@@ -56,6 +56,14 @@ const sliceMarshalJSONTemplate = `if len(ms.orig.{{ .originFieldName }}) > 0 {
 		{{- end }}
 	}`
 
+const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	{{- else }}
+	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
+	{{- end }}`
+
 type SliceField struct {
 	fieldName       string
 	originFieldName string
@@ -91,6 +99,11 @@ func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 
 func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("sliceMarshalJSONTemplate").Parse(sliceMarshalJSONTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("sliceUnmarshalJSONTemplate").Parse(sliceUnmarshalJSONTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
 

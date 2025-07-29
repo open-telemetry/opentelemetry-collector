@@ -236,6 +236,39 @@ func (ms HistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms HistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "bucketCounts", "bucket_counts":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
+		case "explicitBounds", "explicit_bounds":
+			internal.UnmarshalJSONIterFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), iter)
+		case "exemplars":
+			ms.Exemplars().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "sum":
+			ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "min":
+			ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano

@@ -138,6 +138,27 @@ func (ms Location) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Location) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "mappingIndex", "mapping_index":
+			ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
+		case "address":
+			ms.orig.Address = iter.ReadUint64()
+		case "line":
+			ms.Line().unmarshalJSONIter(iter)
+		case "isFolded", "is_folded":
+			ms.orig.IsFolded = iter.ReadBool()
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigLocation(dest, src *otlpprofiles.Location) {
 	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
 		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)

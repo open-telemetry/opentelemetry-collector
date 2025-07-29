@@ -284,6 +284,45 @@ func (ms ExponentialHistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExponentialHistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "scale":
+			ms.orig.Scale = iter.ReadInt32()
+		case "zeroCount", "zero_count":
+			ms.orig.ZeroCount = iter.ReadUint64()
+		case "positive":
+			ms.Positive().unmarshalJSONIter(iter)
+		case "negative":
+			ms.Negative().unmarshalJSONIter(iter)
+		case "exemplars":
+			ms.Exemplars().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "sum":
+			ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "min":
+			ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			ms.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		case "zeroThreshold", "zero_threshold":
+			ms.orig.ZeroThreshold = iter.ReadFloat64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
 	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano

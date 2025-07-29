@@ -72,7 +72,7 @@ func MarshalJSONStreamEntityRefSlice(ms EntityRefSlice, dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
-// UnmarshalJSONStreamEntityRefSlice unmarshals all properties from the current struct from the source iterator.
+// UnmarshalJSONIterEntityRefSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONIterEntityRefSlice(ms EntityRefSlice, iter *json.Iterator) {
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, &otlpcommon.EntityRef{})

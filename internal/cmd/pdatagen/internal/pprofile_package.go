@@ -292,7 +292,7 @@ var valueType = &messageStruct{
 			returnType: &TypedType{
 				structName: "AggregationTemporality",
 				rawType:    "otlpprofiles.AggregationTemporality",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: "otlpprofiles.AggregationTemporality(0)",
 				testVal:    "otlpprofiles.AggregationTemporality(1)",
 			},

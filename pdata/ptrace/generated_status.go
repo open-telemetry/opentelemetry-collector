@@ -84,13 +84,28 @@ func (ms Status) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
 	if ms.orig.Code != 0 {
 		dest.WriteObjectField("code")
-		ms.Code().marshalJSONStream(dest)
+		dest.WriteInt32(int32(ms.orig.Code))
 	}
 	if ms.orig.Message != "" {
 		dest.WriteObjectField("message")
 		dest.WriteString(ms.orig.Message)
 	}
 	dest.WriteObjectEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Status) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "code":
+			ms.orig.Code = otlptrace.Status_StatusCode(iter.ReadEnumValue(otlptrace.Status_StatusCode_value))
+		case "message":
+			ms.orig.Message = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
 
 func copyOrigStatus(dest, src *otlptrace.Status) {
