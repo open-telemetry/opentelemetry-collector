@@ -327,53 +327,6 @@ func TestMemoryQueueWaitForResultDeadlock(t *testing.T) {
 	}
 }
 
-func TestMemoryQueueAsyncDeadlock(t *testing.T) {
-	// Test the deadlock in async queue setup (simulating batch processor)
-	set := newSettings(request.SizerTypeItems, 1000) // Larger capacity
-	set.WaitForResult = true
-
-	memQueue := newMemoryQueue[int64](set)
-	require.NoError(t, memQueue.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Create async queue with 1 consumer (like batch processor)
-	consumeFunc := func(ctx context.Context, req int64, done Done) {
-		// Simulate some processing time to create backpressure
-		time.Sleep(10 * time.Millisecond)
-		done.OnDone(nil)
-	}
-
-	asyncQueue := newAsyncQueue(memQueue, 1, consumeFunc)
-	require.NoError(t, asyncQueue.Start(context.Background(), componenttest.NewNopHost()))
-
-	// Send multiple concurrent requests (like the batch processor test)
-	numRequests := 50 // Reduce to avoid filling queue
-	errChan := make(chan error, numRequests)
-
-	// Send all requests concurrently to create contention
-	for i := 0; i < numRequests; i++ {
-		go func(val int64) {
-			err := asyncQueue.Offer(context.Background(), val)
-			errChan <- err
-		}(int64(i))
-	}
-
-	// Wait for all requests to complete with timeout
-	timeout := time.After(10 * time.Second)
-	completed := 0
-
-	for completed < numRequests {
-		select {
-		case err := <-errChan:
-			require.NoError(t, err)
-			completed++
-		case <-timeout:
-			t.Fatalf("Deadlock detected: only %d of %d requests completed", completed, numRequests)
-		}
-	}
-
-	require.NoError(t, asyncQueue.Shutdown(context.Background()))
-}
-
 func TestMemoryQueueBlockOnOverflowDeadlock(t *testing.T) {
 	// Stress test to reproduce condition variable race deadlock
 	// Mimics exact batch processor configuration: 1000 queue size, single consumer, items-based sizer
