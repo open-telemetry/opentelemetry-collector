@@ -51,16 +51,25 @@ func TestSpanSliceReadOnly(t *testing.T) {
 
 func TestSpanSlice_CopyTo(t *testing.T) {
 	dest := NewSpanSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSpanSlice().CopyTo(dest)
 	assert.Equal(t, NewSpanSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestSpanSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestSpanSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSpanSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSpanSlice(), dest)
+}
+
+func TestSpanSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewSpanSlice()
+	src := generateTestSpanSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanSlice(), dest)
 }
 

@@ -51,16 +51,25 @@ func TestHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewHistogramDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewHistogramDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewHistogramDataPointSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestHistogramDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
+}
+
+func TestHistogramDataPointSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewHistogramDataPointSlice()
+	src := generateTestHistogramDataPointSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
 

@@ -51,16 +51,25 @@ func TestLocationSliceReadOnly(t *testing.T) {
 
 func TestLocationSlice_CopyTo(t *testing.T) {
 	dest := NewLocationSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewLocationSlice().CopyTo(dest)
 	assert.Equal(t, NewLocationSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestLocationSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestLocationSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLocationSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestLocationSlice(), dest)
+}
+
+func TestLocationSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewLocationSlice()
+	src := generateTestLocationSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 }
 

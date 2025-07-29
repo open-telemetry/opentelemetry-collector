@@ -51,16 +51,25 @@ func TestLinkSliceReadOnly(t *testing.T) {
 
 func TestLinkSlice_CopyTo(t *testing.T) {
 	dest := NewLinkSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewLinkSlice().CopyTo(dest)
 	assert.Equal(t, NewLinkSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestLinkSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestLinkSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLinkSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestLinkSlice(), dest)
+}
+
+func TestLinkSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewLinkSlice()
+	src := generateTestLinkSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLinkSlice(), dest)
 }
 

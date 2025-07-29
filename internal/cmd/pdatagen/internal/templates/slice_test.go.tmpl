@@ -53,16 +53,25 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
 	dest := New{{ .structName }}()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	New{{ .structName }}().CopyTo(dest)
 	assert.Equal(t, New{{ .structName }}(), dest)
 
-	// Test CopyTo larger slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTest{{ .structName }}()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 
 	// Test CopyTo same size slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTest{{ .structName }}(), dest)
+}
+
+func Test{{ .structName }}_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := New{{ .structName }}()
+	src := generateTest{{ .structName }}()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
 

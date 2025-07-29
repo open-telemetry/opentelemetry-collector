@@ -50,16 +50,25 @@ func TestAttributeTableSliceReadOnly(t *testing.T) {
 
 func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewAttributeTableSlice().CopyTo(dest)
 	assert.Equal(t, NewAttributeTableSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestAttributeTableSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestAttributeTableSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestAttributeTableSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestAttributeTableSlice(), dest)
+}
+
+func TestAttributeTableSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewAttributeTableSlice()
+	src := generateTestAttributeTableSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
 
