@@ -12,10 +12,6 @@ import (
 )
 {{ if .Metrics -}}
 
-const (
-  AggregationStrategySum = "sum"
-  AggregationStrategyAvg = "avg"
-)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -34,7 +30,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 
-  if ms.AggregationStrategy != AggregationStrategySum && ms.AggregationStrategy != AggregationStrategyAvg {
+  if ms.AggregationStrategy != AggregationStrategySum && ms.AggregationStrategy != AggregationStrategyAvg && ms.AggregationStrategy != AggregationStrategyMin && ms.AggregationStrategy != AggregationStrategyMax {
     return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
   }
 
@@ -80,10 +76,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		{{ $name.Render }}: MetricConfig{
 			Enabled: {{ $metric.Enabled }},
     {{ if eq $metric.Data.Type "Sum" -}}
-      AggregationStrategy: "sum",
+      AggregationStrategy: AggregationStrategySum,
     {{- end }}
     {{- if eq $metric.Data.Type "Gauge" -}}
-      AggregationStrategy: "avg",
+      AggregationStrategy: AggregationStrategyAvg,
     {{- end }}
 		},
 		{{- end }}
