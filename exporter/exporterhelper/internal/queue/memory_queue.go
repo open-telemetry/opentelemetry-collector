@@ -119,10 +119,12 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	}
 
 	mq.items.push(ctx, el, done)
-	// Signal one consumer if any. Use Broadcast to be more defensive against race conditions.
-	mq.hasMoreElements.Broadcast()
+	// Signal one consumer if any.
+	mq.hasMoreElements.Signal()
 	return done, nil
-} // Read removes the element from the queue and returns it.
+}
+
+// Read removes the element from the queue and returns it.
 // The call blocks until there is an item available or the queue is stopped.
 // The function returns true when an item is consumed or false if the queue is stopped and emptied.
 func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool) {
@@ -142,10 +144,7 @@ func (mq *memoryQueue[T]) Read(context.Context) (context.Context, T, Done, bool)
 
 		// TODO: Need to change the Queue interface to return an error to allow distinguish between shutdown and context canceled.
 		//  Until then use the sync.Cond.
-		// Double-check condition after acquiring lock to prevent lost wakeup
-		if !mq.items.hasElements() && !mq.stopped {
-			mq.hasMoreElements.Wait()
-		}
+		mq.hasMoreElements.Wait()
 	}
 }
 
@@ -160,16 +159,14 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 		return
 	}
 	blockingDonePool.Put(bd)
-} // Shutdown closes the queue channel to initiate draining of the queue.
+}
+
+// Shutdown closes the queue channel to initiate draining of the queue.
 func (mq *memoryQueue[T]) Shutdown(context.Context) error {
 	mq.mu.Lock()
 	defer mq.mu.Unlock()
-
 	mq.stopped = true
 	mq.hasMoreElements.Broadcast()
-	// When shutting down, also signal any waiters that they should stop waiting
-	// This handles the case where WaitForResult=true and producers are waiting for done.ch
-	mq.hasMoreSpace.Broadcast()
 	return nil
 }
 
