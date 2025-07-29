@@ -51,16 +51,25 @@ func TestValueTypeSliceReadOnly(t *testing.T) {
 
 func TestValueTypeSlice_CopyTo(t *testing.T) {
 	dest := NewValueTypeSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewValueTypeSlice().CopyTo(dest)
 	assert.Equal(t, NewValueTypeSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestValueTypeSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestValueTypeSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestValueTypeSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestValueTypeSlice(), dest)
+}
+
+func TestValueTypeSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewValueTypeSlice()
+	src := generateTestValueTypeSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
 }
 

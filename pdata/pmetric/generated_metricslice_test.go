@@ -51,16 +51,25 @@ func TestMetricSliceReadOnly(t *testing.T) {
 
 func TestMetricSlice_CopyTo(t *testing.T) {
 	dest := NewMetricSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewMetricSlice().CopyTo(dest)
 	assert.Equal(t, NewMetricSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestMetricSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestMetricSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestMetricSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestMetricSlice(), dest)
+}
+
+func TestMetricSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewMetricSlice()
+	src := generateTestMetricSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 }
 

@@ -51,16 +51,25 @@ func TestResourceSpansSliceReadOnly(t *testing.T) {
 
 func TestResourceSpansSlice_CopyTo(t *testing.T) {
 	dest := NewResourceSpansSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewResourceSpansSlice().CopyTo(dest)
 	assert.Equal(t, NewResourceSpansSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestResourceSpansSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestResourceSpansSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestResourceSpansSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestResourceSpansSlice(), dest)
+}
+
+func TestResourceSpansSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewResourceSpansSlice()
+	src := generateTestResourceSpansSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceSpansSlice(), dest)
 }
 

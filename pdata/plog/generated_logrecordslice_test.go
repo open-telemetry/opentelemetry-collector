@@ -51,16 +51,25 @@ func TestLogRecordSliceReadOnly(t *testing.T) {
 
 func TestLogRecordSlice_CopyTo(t *testing.T) {
 	dest := NewLogRecordSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewLogRecordSlice().CopyTo(dest)
 	assert.Equal(t, NewLogRecordSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestLogRecordSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestLogRecordSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLogRecordSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestLogRecordSlice(), dest)
+}
+
+func TestLogRecordSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewLogRecordSlice()
+	src := generateTestLogRecordSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
 

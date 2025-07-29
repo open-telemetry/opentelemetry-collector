@@ -51,16 +51,25 @@ func TestEntityRefSliceReadOnly(t *testing.T) {
 
 func TestEntityRefSlice_CopyTo(t *testing.T) {
 	dest := NewEntityRefSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewEntityRefSlice().CopyTo(dest)
 	assert.Equal(t, NewEntityRefSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestEntityRefSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestEntityRefSlice(), dest)
+}
+
+func TestEntityRefSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewEntityRefSlice()
+	src := generateTestEntityRefSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
 

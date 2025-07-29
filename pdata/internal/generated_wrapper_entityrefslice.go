@@ -29,18 +29,32 @@ func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSli
 }
 
 func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.EntityRef {
+	var newDest []*otlpcommon.EntityRef
 	if cap(dest) < len(src) {
-		dest = make([]*otlpcommon.EntityRef, len(src))
-		data := make([]otlpcommon.EntityRef, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpcommon.EntityRef, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpcommon.EntityRef{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpcommon.EntityRef{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		CopyOrigEntityRef(dest[i], src[i])
+		CopyOrigEntityRef(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }
 
 func GenerateTestEntityRefSlice() EntityRefSlice {

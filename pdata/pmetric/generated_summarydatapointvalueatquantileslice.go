@@ -180,16 +180,30 @@ func (ms SummaryDataPointValueAtQuantileSlice) unmarshalJSONIter(iter *json.Iter
 }
 
 func copyOrigSummaryDataPointValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	var newDest []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
 	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))
-		data := make([]otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigSummaryDataPointValueAtQuantile(dest[i], src[i])
+		copyOrigSummaryDataPointValueAtQuantile(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

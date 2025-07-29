@@ -51,16 +51,25 @@ func TestScopeProfilesSliceReadOnly(t *testing.T) {
 
 func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewScopeProfilesSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeProfilesSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestScopeProfilesSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestScopeProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeProfilesSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
+}
+
+func TestScopeProfilesSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewScopeProfilesSlice()
+	src := generateTestScopeProfilesSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 }
 
