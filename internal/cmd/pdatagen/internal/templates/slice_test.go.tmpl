@@ -143,6 +143,14 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func Test{{ .structName }}_RemoveIfAll(t *testing.T) {
+	got := generateTest{{ .structName }}()
+	got.RemoveIf(func(el {{ .elementName }}) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func Test{{ .structName }}All(t *testing.T) {
 	ms := generateTest{{ .structName }}()
 	assert.NotEmpty(t, ms.Len())

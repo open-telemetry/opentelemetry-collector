@@ -141,6 +141,14 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanSlice()
+	got.RemoveIf(func(el Span) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSpanSliceAll(t *testing.T) {
 	ms := generateTestSpanSlice()
 	assert.NotEmpty(t, ms.Len())

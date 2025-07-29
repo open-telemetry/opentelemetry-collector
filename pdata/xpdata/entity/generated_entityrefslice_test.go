@@ -141,6 +141,14 @@ func TestEntityRefSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestEntityRefSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestEntityRefSlice()
+	got.RemoveIf(func(el EntityRef) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestEntityRefSliceAll(t *testing.T) {
 	ms := generateTestEntityRefSlice()
 	assert.NotEmpty(t, ms.Len())

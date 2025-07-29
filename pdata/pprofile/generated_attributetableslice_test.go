@@ -140,6 +140,14 @@ func TestAttributeTableSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestAttributeTableSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestAttributeTableSlice()
+	got.RemoveIf(func(el Attribute) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestAttributeTableSliceAll(t *testing.T) {
 	ms := generateTestAttributeTableSlice()
 	assert.NotEmpty(t, ms.Len())
