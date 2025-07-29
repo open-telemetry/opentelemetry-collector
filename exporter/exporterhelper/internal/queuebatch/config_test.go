@@ -4,6 +4,7 @@
 package queuebatch
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -12,6 +13,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
@@ -36,7 +40,7 @@ func TestConfig_Validate(t *testing.T) {
 	require.EqualError(t, cfg.Validate(), "`wait_for_result` is not supported with a persistent queue configured with `storage`")
 
 	cfg = newTestConfig()
-	cfg.QueueSize = cfg.Batch.Get().MinSize - 1
+	cfg.QueueSize = int(cfg.Batch.Get().MinSize - 1)
 	require.EqualError(t, cfg.Validate(), "`min_size` must be less than or equal to `queue_size`")
 
 	cfg = newTestConfig()
@@ -72,6 +76,42 @@ func TestBatchConfig_Validate(t *testing.T) {
 	cfg.MinSize = 2048
 	cfg.MaxSize = 1024
 	require.EqualError(t, cfg.Validate(), "`max_size` must be greater or equal to `min_size`")
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	disk := component.MustNewIDWithName("disk", "")
+
+	wantCfg := &Config{
+		QueueSize:    1000,
+		Enabled:      true,
+		NumConsumers: 10,
+		StorageID:    configoptional.Some(disk),
+	}
+	defaultConfig := &Config{}
+
+	require.NoError(t, cm.Unmarshal(defaultConfig, xconfmap.WithScalarUnmarshaler()))
+	assert.Equal(t, wantCfg, defaultConfig)
+}
+
+func TestMarshalConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	disk := component.MustNewIDWithName("disk", "")
+
+	conf := confmap.New()
+	cfg := &Config{
+		QueueSize:    1000,
+		Enabled:      true,
+		NumConsumers: 10,
+		StorageID:    configoptional.Some(disk),
+	}
+
+	require.NoError(t, conf.Marshal(cfg, xconfmap.WithScalarMarshaler()))
+	assert.Equal(t, cm.ToStringMap(), conf.ToStringMap())
 }
 
 func newTestBatchConfig() BatchConfig {

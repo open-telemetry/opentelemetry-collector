@@ -10,45 +10,46 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 // Config defines configuration for queueing and batching incoming requests.
 type Config struct {
 	// Enabled indicates whether to not enqueue and batch before exporting.
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool `mapstructure:"enabled,omitempty"`
 
 	// WaitForResult determines if incoming requests are blocked until the request is processed or not.
 	// Currently, this option is not available when persistent queue is configured using the storage configuration.
-	WaitForResult bool `mapstructure:"wait_for_result"`
+	WaitForResult bool `mapstructure:"wait_for_result,omitempty"`
 
 	// Sizer determines the type of size measurement used by this component.
 	// It accepts "requests", "items", or "bytes".
-	Sizer request.SizerType `mapstructure:"sizer"`
+	Sizer request.SizerType `mapstructure:"sizer,omitempty"`
 
 	// QueueSize represents the maximum data size allowed for concurrent storage and processing.
-	QueueSize int64 `mapstructure:"queue_size"`
+	QueueSize int `mapstructure:"queue_size,omitempty"`
 
 	// BlockOnOverflow determines the behavior when the component's TotalSize limit is reached.
 	// If true, the component will wait for space; otherwise, operations will immediately return a retryable error.
-	BlockOnOverflow bool `mapstructure:"block_on_overflow"`
+	BlockOnOverflow bool `mapstructure:"block_on_overflow,omitempty"`
 
 	// StorageID, if not empty, enables the persistent storage and uses the component specified
 	// as a storage extension for the persistent queue.
-	StorageID configoptional.Optional[component.ID] `mapstructure:"storage"`
+	StorageID configoptional.Optional[component.ID] `mapstructure:"storage,omitempty"`
 
 	// NumConsumers is the maximum number of concurrent consumers from the queue.
 	// This applies across all different optional configurations from above (e.g. wait_for_result, blockOnOverflow, persistent, etc.).
 	// TODO: This will also control the maximum number of shards, when supported:
 	//  https://github.com/open-telemetry/opentelemetry-collector/issues/12473.
-	NumConsumers int `mapstructure:"num_consumers"`
+	NumConsumers int `mapstructure:"num_consumers,omitempty"`
 
 	// BatchConfig it configures how the requests are consumed from the queue and batch together during consumption.
-	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch"`
+	Batch configoptional.Optional[BatchConfig] `mapstructure:"batch,omitempty"`
 }
 
 func (cfg *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(cfg); err != nil {
+	if err := conf.Unmarshal(cfg, xconfmap.WithScalarUnmarshaler()); err != nil {
 		return err
 	}
 
@@ -80,7 +81,7 @@ func (cfg *Config) Validate() error {
 
 	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
 		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.Get().MinSize > cfg.QueueSize {
+		if cfg.Batch.Get().MinSize > int64(cfg.QueueSize) {
 			return errors.New("`min_size` must be less than or equal to `queue_size`")
 		}
 	}
