@@ -5,28 +5,28 @@ This program generates a custom OpenTelemetry Collector binary based on a given 
 ## TL;DR
 
 ```console
-$ go install go.opentelemetry.io/collector/cmd/builder@v0.109.0
+$ go install go.opentelemetry.io/collector/cmd/builder@v0.129.0
 $ cat > otelcol-builder.yaml <<EOF
 dist:
   name: otelcol-custom
   description: Local OpenTelemetry Collector binary
   output_path: /tmp/dist
 exporters:
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.109.0
-  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.109.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.129.0
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.129.0
 
 receivers:
-  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.109.0
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.129.0
 
 processors:
-  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.109.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.129.0
 
 providers:
-  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.15.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.15.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v0.109.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.109.0
-  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.109.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/httpsprovider v1.35.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.35.0
 EOF
 $ builder --config=otelcol-builder.yaml
 $ cat > /tmp/otelcol.yaml <<EOF
@@ -36,9 +36,6 @@ receivers:
       grpc:
         endpoint: localhost:4317
 
-processors:
-  batch:
-
 exporters:
   debug:
 
@@ -47,8 +44,6 @@ service:
     traces:
       receivers:
       - otlp
-      processors:
-      - batch
       exporters:
       - debug
 EOF
@@ -64,11 +59,11 @@ There are three supported ways to install the builder:
 
 ### Official release Docker image
 
-You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder). 
+You will find the official docker images at [DockerHub](https://hub.docker.com/r/otel/opentelemetry-collector-builder).
 
-Pull the image via tagged version number (e.g. v0.110.0) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
+Pull the image via tagged version number (e.g. `0.129.0`) or 'latest'. You may also specify platform, although Docker will handle this automatically as it is a multi-platform build.
 
-```
+```console
 docker pull otel/opentelemetry-collector-builder:latest
 ```
 
@@ -76,15 +71,15 @@ The included builder configuration file/manifest should be replaced by mounting 
 
 Assuming you are running this image in your working directory, have a `builder-config.yaml` file located in this folder, the `dist.output_path` item inside your `builder-config.yaml` is set to `./otelcol-dev`, and you wish to output the binary/go module files to a folder named `output`, the command would look as follows:
 
-```
+```console
 docker run -v "$(pwd)/builder-config.yaml:/build/builder-config.yaml" -v "$(pwd)/output:/build/otelcol-dev" otel/opentelemetry-collector-builder:latest --config=/build/builder-config.yaml
 ```
 
 Please note that a `--config` flag must be passed to specify your custom manifest.yaml/builder-config.yaml file regardless of where you mount it inside the container, otherwise a default config is used that cannot be changed.
 
-Additional arguments may be passed to ocb on the command line as specified below, but if you wish to do this, you must make sure to pass the `--config` argument, as this is specified as an additional `CMD`, not an entrypoint. 
+Additional arguments may be passed to ocb on the command line as specified below, but if you wish to do this, you must make sure to pass the `--config` argument, as this is specified as an additional `CMD`, not an entrypoint.
 
-### Official release binaries 
+### Official release binaries
 
 This is the recommended installation method for the binary. Download the binary for your respective platform from the ["Releases"](https://github.com/open-telemetry/opentelemetry-collector-releases/releases?q=cmd/builder) page.
 
@@ -118,7 +113,7 @@ Use `ocb --help` to learn about which flags are available.
 
 By default, the LDflags are set to `-s -w`, which strips debugging symbols to produce a smaller OpenTelemetry Collector binary. To retain debugging symbols and DWARF debugging data in the binary, override the LDflags as shown:
 
-```console 
+```console
 ocb --ldflags="" --config=builder-config.yaml.
 ```
 
@@ -164,13 +159,13 @@ dist:
     go: "/usr/bin/go" # which Go binary to use to compile the generated sources. Optional.
     debug_compilation: false # enabling this causes the builder to keep the debug symbols in the resulting binary. Optional.
 exporters:
-  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.40.0" # the Go module for the component. Required.
+  - gomod: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.129.0" # the Go module for the component. Required.
     import: "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter" # the import path for the component. Optional.
     name: "alibabacloudlogserviceexporter" # package name to use in the generated sources. Optional.
     path: "./alibabacloudlogserviceexporter" # in case a local version should be used for the module, the path relative to the current dir, or a full path can be specified. Optional.
 replaces:
   # a list of "replaces" directives that will be part of the resulting go.mod
-  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.40.0
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.128.0
 ```
 
 The builder also allows setting the scheme to use as the default URI scheme via `conf_resolver.default_uri_scheme`:

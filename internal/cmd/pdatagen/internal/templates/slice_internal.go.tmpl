@@ -8,12 +8,11 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element `"go.opentelemetry.io/collector/pdata/internal"` }}
+	{{ if ne $element "go.opentelemetry.io/collector/pdata/internal" }}
 	{{ $element }}
-	{{ end }}
-	{{ end }}
+	{{- end }}
+	{{- end }}
 )
-
 
 type {{ .structName }} struct {
 	orig *[]{{ .originElementType }}
@@ -63,4 +62,26 @@ func FillTest{{ .structName }}(es {{ .structName }}) {
 		(*es.orig)[i] = {{ .emptyOriginElement }}
 		FillTest{{ .elementName }}(New{{ .elementName }}((*es.orig)[i], es.state))
 	}
+}
+
+// MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
+func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		MarshalJSONStream{{ .elementName }}(New{{ .elementName }}((*ms.orig)[0], ms.state), dest)
+	}
+	for i := 1; i < len((*ms.orig)); i++ {
+		dest.WriteMore()
+		MarshalJSONStream{{ .elementName }}(New{{ .elementName }}((*ms.orig)[i], ms.state), dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONStream{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, {{ .emptyOriginElement }})
+		UnmarshalJSONIter{{ .elementName }}(New{{ .elementName }}((*ms.orig)[len(*ms.orig)-1], ms.state), iter)
+		return true
+	})
 }

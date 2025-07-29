@@ -6,10 +6,10 @@ package ptrace
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -93,7 +93,7 @@ var tracesOTLP = func() Traces {
 	return td
 }()
 
-var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeSpans":[{"scope":{"name":"scope name","version":"scope version"},"spans":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","parentSpanId":"1112131415161718","flags":1,"name":"testSpan","kind":3,"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}},{"key":"array","value":{"arrayValue":{"values":[{"intValue":"1"},{"stringValue":"str"}]}}},{"key":"kvList","value":{"kvlistValue":{"values":[{"key":"int","value":{"intValue":"1"}},{"key":"string","value":{"stringValue":"string"}}]}}}],"droppedAttributesCount":1,"events":[{"timeUnixNano":"1684620382541971000","name":"eventName","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1}],"droppedEventsCount":1,"links":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1,"flags":1}],"droppedLinksCount":1,"status":{"message":"message","code":1}},{"traceId":"","spanId":"","parentSpanId":"","name":"testSpan2","status":{}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
+var tracesJSON = `{"resourceSpans":[{"resource":{"attributes":[{"key":"host.name","value":{"stringValue":"testHost"}},{"key":"service.name","value":{"stringValue":"testService"}}],"droppedAttributesCount":1},"scopeSpans":[{"scope":{"name":"scope name","version":"scope version"},"spans":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","parentSpanId":"1112131415161718","flags":1,"name":"testSpan","kind":3,"startTimeUnixNano":"1684617382541971000","endTimeUnixNano":"1684623646539558000","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}},{"key":"array","value":{"arrayValue":{"values":[{"intValue":"1"},{"stringValue":"str"}]}}},{"key":"kvList","value":{"kvlistValue":{"values":[{"key":"int","value":{"intValue":"1"}},{"key":"string","value":{"stringValue":"string"}}]}}}],"droppedAttributesCount":1,"events":[{"timeUnixNano":"1684620382541971000","name":"eventName","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1}],"droppedEventsCount":1,"links":[{"traceId":"0102030405060708090a0b0c0d0e0f10","spanId":"1112131415161718","traceState":"state","attributes":[{"key":"string","value":{"stringValue":"value"}},{"key":"bool","value":{"boolValue":true}},{"key":"int","value":{"intValue":"1"}},{"key":"double","value":{"doubleValue":1.1}},{"key":"bytes","value":{"bytesValue":"Zm9v"}}],"droppedAttributesCount":1,"flags":1}],"droppedLinksCount":1,"status":{"message":"message","code":1}},{"name":"testSpan2","status":{}}],"schemaUrl":"schemaURL"}],"schemaUrl":"schemaURL"}]}`
 
 func TestJSONUnmarshal(t *testing.T) {
 	decoder := &JSONUnmarshaler{}
@@ -116,113 +116,127 @@ func TestJSONUnmarshalInvalid(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestJSONMarshalAndUnmarshal(t *testing.T) {
+	want := NewTraces()
+	fillTestResourceSpansSlice(want.ResourceSpans())
+
+	encoder := &JSONMarshaler{}
+	jsonBuf, err := encoder.MarshalTraces(want)
+	require.NoError(t, err)
+
+	decoder := &JSONUnmarshaler{}
+	got, err := decoder.UnmarshalTraces(jsonBuf)
+	require.NoError(t, err)
+	assert.Equal(t, want, got)
+}
+
 func TestUnmarshalJsoniterTraceData(t *testing.T) {
 	jsonStr := `{"extra":"", "resourceSpans": [{"extra":""}]}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewTraces()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, 1, val.ResourceSpans().Len())
 }
 
 func TestUnmarshalJsoniterResourceSpans(t *testing.T) {
 	jsonStr := `{"extra":"", "resource": {}, "scopeSpans": []}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewResourceSpans()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewResourceSpans(), val)
 }
 
 func TestUnmarshalJsoniterScopeSpans(t *testing.T) {
 	jsonStr := `{"extra":"", "scope": {}, "logRecords": []}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewScopeSpans()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewScopeSpans(), val)
 }
 
 func TestUnmarshalJsoniterSpan(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewSpan()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewSpan(), val)
 }
 
 func TestUnmarshalJsoniterSpanInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewSpan().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	jsonStr := `{"traceId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewSpan().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "traceId")
 }
 
 func TestUnmarshalJsoniterSpanInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewSpan().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	jsonStr := `{"spanId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewSpan().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "spanId")
 }
 
 func TestUnmarshalJsoniterSpanInvalidParentSpanIDField(t *testing.T) {
-	jsonStr := `{"parent_span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewSpan().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse parent_span_id")
+	jsonStr := `{"parentSpanId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewSpan().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "parentSpanId")
 }
 
 func TestUnmarshalJsoniterSpanStatus(t *testing.T) {
 	jsonStr := `{"status":{"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewStatus()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewStatus(), val)
 }
 
 func TestUnmarshalJsoniterSpanLink(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewSpanLink()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewSpanLink(), val)
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidTraceIDField(t *testing.T) {
-	jsonStr := `{"trace_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewSpanLink().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse trace_id")
+	jsonStr := `{"traceId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewSpanLink().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "traceId")
 }
 
 func TestUnmarshalJsoniterSpanLinkInvalidSpanIDField(t *testing.T) {
-	jsonStr := `{"span_id":"--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
-	NewSpanLink().unmarshalJsoniter(iter)
-	assert.ErrorContains(t, iter.Error, "parse span_id")
+	jsonStr := `{"spanId":"--"}`
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
+	NewSpanLink().unmarshalJSONIter(iter)
+	assert.ErrorContains(t, iter.Error(), "spanId")
 }
 
 func TestUnmarshalJsoniterSpanEvent(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewSpanEvent()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewSpanEvent(), val)
 }
 

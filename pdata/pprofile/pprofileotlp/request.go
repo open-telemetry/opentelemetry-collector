@@ -4,16 +4,16 @@
 package pprofileotlp // import "go.opentelemetry.io/collector/pdata/pprofile/pprofileotlp"
 
 import (
-	"bytes"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
 
-var jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
+var (
+	jsonMarshaler   = &pprofile.JSONMarshaler{}
+	jsonUnmarshaler = &pprofile.JSONUnmarshaler{}
+)
 
 // ExportRequest represents the request for gRPC/HTTP client/server.
 // It's a wrapper for pprofile.Profiles data.
@@ -57,11 +57,7 @@ func (ms ExportRequest) UnmarshalProto(data []byte) error {
 
 // MarshalJSON marshals ExportRequest into JSON bytes.
 func (ms ExportRequest) MarshalJSON() ([]byte, error) {
-	var buf bytes.Buffer
-	if err := json.Marshal(&buf, ms.orig); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
+	return jsonMarshaler.MarshalProfiles(pprofile.Profiles(internal.NewProfiles(ms.orig, nil)))
 }
 
 // UnmarshalJSON unmarshalls ExportRequest from JSON bytes.
