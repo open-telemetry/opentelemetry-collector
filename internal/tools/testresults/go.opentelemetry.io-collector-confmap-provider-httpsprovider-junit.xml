@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="1" failures="0" errors="0" time="0.000082">
-	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/confmap/provider/httpsprovider" timestamp="2025-07-28T22:03:12-05:00">
-		<properties>
-			<property name="go.version" value="go1.24.5 linux/amd64"></property>
-		</properties>
-		<testcase classname="go.opentelemetry.io/collector/confmap/provider/httpsprovider" name="TestSupportedScheme" time="0.000000"></testcase>
-	</testsuite>
-</testsuites>
