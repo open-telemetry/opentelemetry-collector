@@ -26,14 +26,21 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 }
 
 func CopyOrigSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
+	var newDest []otlpcommon.AnyValue
 	if cap(dest) < len(src) {
-		dest = make([]otlpcommon.AnyValue, len(src))
+		newDest = make([]otlpcommon.AnyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpcommon.AnyValue{}
+		}
 	}
-	dest = dest[:len(src)]
-	for i := 0; i < len(src); i++ {
-		CopyOrigValue(&dest[i], &src[i])
+	for i := range src {
+		CopyOrigValue(&newDest[i], &src[i])
 	}
-	return dest
+	return newDest
 }
 
 func GenerateTestSlice() Slice {
