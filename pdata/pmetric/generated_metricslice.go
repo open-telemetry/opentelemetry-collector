@@ -180,16 +180,30 @@ func (ms MetricSlice) unmarshalJSONIter(iter *json.Iterator) {
 }
 
 func copyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
+	var newDest []*otlpmetrics.Metric
 	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.Metric, len(src))
-		data := make([]otlpmetrics.Metric, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpmetrics.Metric, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.Metric{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.Metric{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigMetric(dest[i], src[i])
+		copyOrigMetric(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

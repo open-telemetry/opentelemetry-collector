@@ -180,16 +180,30 @@ func (ms AttributeUnitSlice) unmarshalJSONIter(iter *json.Iterator) {
 }
 
 func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
+	var newDest []*otlpprofiles.AttributeUnit
 	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.AttributeUnit, len(src))
-		data := make([]otlpprofiles.AttributeUnit, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpprofiles.AttributeUnit, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpprofiles.AttributeUnit{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpprofiles.AttributeUnit{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigAttributeUnit(dest[i], src[i])
+		copyOrigAttributeUnit(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

@@ -171,12 +171,19 @@ func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
 }
 
 func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
+	var newDest []otlpmetrics.Exemplar
 	if cap(dest) < len(src) {
-		dest = make([]otlpmetrics.Exemplar, len(src))
+		newDest = make([]otlpmetrics.Exemplar, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpmetrics.Exemplar{}
+		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigExemplar(&dest[i], &src[i])
+		copyOrigExemplar(&newDest[i], &src[i])
 	}
-	return dest
+	return newDest
 }
