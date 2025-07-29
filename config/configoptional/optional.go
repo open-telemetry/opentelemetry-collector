@@ -135,6 +135,7 @@ func (o *Optional[T]) Get() *T {
 }
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
+var _ confmap.ScalarUnmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -163,6 +164,25 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 
 	o.flavor = someFlavor
 	return nil
+}
+
+func (o *Optional[T]) UnmarshalScalar(val any) (any, error) {
+	if o.flavor == noneFlavor && val == nil {
+		// If the Optional is None and the configuration is nil, we do nothing.
+		// This replicates the behavior of unmarshaling into a field with a nil pointer.
+		return nil, nil
+	}
+
+	if val != nil {
+		v, ok := val.(T)
+		if !ok {
+			return nil, fmt.Errorf("val is not type %T", v)
+		}
+		o.value = v
+		o.flavor = someFlavor
+	}
+
+	return o.value, nil
 }
 
 var _ confmap.Marshaler = (*Optional[any])(nil)

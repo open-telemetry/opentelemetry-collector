@@ -287,6 +287,7 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+			scalarunmarshalerHookFunc(result),
 			// after the main unmarshaler hook is called,
 			// we unmarshal the embedded structs if present to merge with the result:
 			unmarshalerEmbeddedStructsHookFunc(),
@@ -563,6 +564,26 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 	})
 }
 
+// Provides a mechanism for individual structs to define their own unmarshal logic,
+// by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
+// true and the struct matches the top level object being unmarshaled.
+func scalarunmarshalerHookFunc(result any) mapstructure.DecodeHookFuncValue {
+	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+		if !to.CanAddr() {
+			return from.Interface(), nil
+		}
+
+		toPtr := to.Addr().Interface()
+
+		unmarshaler, ok := toPtr.(ScalarUnmarshaler)
+		if !ok {
+			return from.Interface(), nil
+		}
+
+		return unmarshaler.UnmarshalScalar(from)
+	})
+}
+
 // marshalerHookFunc returns a DecodeHookFuncValue that checks structs that aren't
 // the original to see if they implement the Marshaler interface.
 func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
@@ -606,6 +627,15 @@ type Unmarshaler interface {
 	// The Conf for this specific component may be nil or empty if no config available.
 	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
 	Unmarshal(component *Conf) error
+}
+
+// ScalarUnmarshaler is an interface which may be implemented by wrapper types
+// to customize their behavior when the type under the wrapper is a scalar value.
+type ScalarUnmarshaler interface {
+	// Unmarshal a Conf into the struct in a custom way.
+	// The Conf for this specific component may be nil or empty if no config available.
+	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
+	UnmarshalScalar(val any) (any, error)
 }
 
 // Marshaler defines an optional interface for custom configuration marshaling.
