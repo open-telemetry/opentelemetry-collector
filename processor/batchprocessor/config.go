@@ -66,14 +66,5 @@ func (cfg *Config) Validate() error {
 	if cfg.Timeout < 0 {
 		return errors.New("timeout must be greater or equal to 0")
 	}
-
-	if useExporterHelper.IsEnabled() {
-		if cfg.Timeout == 0 {
-			return errors.New("zero timeout is not supported while this feature flag is alpha")
-		}
-		if len(cfg.MetadataKeys) != 0 {
-			return errors.New("zero timeout is not supported while this feature flag is alpha")
-		}
-	}
 	return nil
 }

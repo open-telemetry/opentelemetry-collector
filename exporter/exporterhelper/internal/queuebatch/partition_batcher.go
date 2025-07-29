@@ -253,12 +253,8 @@ func newWorkerPool(maxWorkers int) *workerPool {
 
 func (wp *workerPool) execute(f func()) {
 	<-wp.workers
-	go func() {
-		defer func() {
-			wp.workers <- struct{}{}
-		}()
-		f()
-	}()
+	go f()
+	wp.workers <- struct{}{}
 }
 
 type multiDone []queue.Done
@@ -277,20 +273,17 @@ type refCountDone struct {
 }
 
 func newRefCountDone(done queue.Done, refCount int64) queue.Done {
-	rcd := &refCountDone{
+	return &refCountDone{
 		done:     done,
 		refCount: refCount,
 	}
-	return rcd
 }
 
 func (rcd *refCountDone) OnDone(err error) {
 	rcd.mu.Lock()
 	defer rcd.mu.Unlock()
-
 	rcd.err = multierr.Append(rcd.err, err)
 	rcd.refCount--
-
 	if rcd.refCount == 0 {
 		// No more references, call done.
 		rcd.done.OnDone(rcd.err)
