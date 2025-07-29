@@ -20,7 +20,11 @@ import (
 type AttributeEnumAttr int
 
 const (
-	_ AttributeEnumAttr = iota
+	AggregationStrategySum                   = "sum"
+	AggregationStrategyAvg                   = "avg"
+	AggregationStrategyMin                   = "min"
+	AggregationStrategyMax                   = "max"
+	_                      AttributeEnumAttr = iota
 	AttributeEnumAttrRed
 	AttributeEnumAttrGreen
 	AttributeEnumAttrBlue
@@ -124,16 +128,27 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			dpi.SetIntValue(dpi.IntValue() + val)
-			m.aggDataPoints[i] += 1
-			return
+			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
-
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -146,7 +161,7 @@ func (m *metricDefaultMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == "avg" {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
@@ -197,16 +212,27 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			dpi.SetDoubleValue(dpi.DoubleValue() + val)
-			m.aggDataPoints[i] += 1
-			return
+			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
-
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -219,7 +245,7 @@ func (m *metricDefaultMetricToBeRemoved) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricDefaultMetricToBeRemoved) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == "avg" {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetDoubleValue(m.data.Sum().DataPoints().At(i).DoubleValue() / aggCount)
 			}
@@ -287,16 +313,27 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			dpi.SetIntValue(dpi.IntValue() + val)
-			m.aggDataPoints[i] += 1
-			return
+			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+				dpi.SetIntValue(dpi.IntValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+				if dpi.IntValue() > val {
+					dpi.SetIntValue(val)
+				}
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+				if dpi.IntValue() < val {
+					dpi.SetIntValue(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.SetIntValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
-
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -309,7 +346,7 @@ func (m *metricMetricInputType) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricMetricInputType) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == "avg" {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Sum().DataPoints().At(i).SetIntValue(m.data.Sum().DataPoints().At(i).IntValue() / aggCount)
 			}
@@ -369,16 +406,27 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			dpi.SetDoubleValue(dpi.DoubleValue() + val)
-			m.aggDataPoints[i] += 1
-			return
+			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
-
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -391,7 +439,7 @@ func (m *metricOptionalMetric) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetric) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == "avg" {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
 			}
@@ -448,16 +496,27 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			dpi.SetDoubleValue(dpi.DoubleValue() + val)
-			m.aggDataPoints[i] += 1
-			return
+			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+				dpi.SetDoubleValue(dpi.DoubleValue() + val)
+				m.aggDataPoints[i] += 1
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+				if dpi.DoubleValue() > val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+				if dpi.DoubleValue() < val {
+					dpi.SetDoubleValue(val)
+				}
+				return
+			}
 		}
 	}
 
 	dp.SetDoubleValue(val)
 	m.aggDataPoints = append(m.aggDataPoints, 1)
 	dp.MoveTo(dps.AppendEmpty())
-
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -470,7 +529,7 @@ func (m *metricOptionalMetricEmptyUnit) updateCapacity() {
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricOptionalMetricEmptyUnit) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		if m.config.AggregationStrategy == "avg" {
+		if m.config.AggregationStrategy == AggregationStrategyAvg {
 			for i, aggCount := range m.aggDataPoints {
 				m.data.Gauge().DataPoints().At(i).SetDoubleValue(m.data.Gauge().DataPoints().At(i).DoubleValue() / aggCount)
 			}
