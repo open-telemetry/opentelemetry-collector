@@ -1,5 +1,24 @@
 default:
 all_set:
+  attributes:
+    boolean_attr:
+      enabled: true
+    boolean_attr2:
+      enabled: true
+    enum_attr:
+      enabled: true
+    map_attr:
+      enabled: true
+    optional_int_attr:
+      enabled: true
+    optional_string_attr:
+      enabled: true
+    overridden_int_attr:
+      enabled: true
+    slice_attr:
+      enabled: true
+    string_attr:
+      enabled: true
   metrics:
     default.metric:
       enabled: true
@@ -36,6 +55,25 @@ all_set:
     string.resource.attr_to_be_removed:
       enabled: true
 none_set:
+  attributes:
+    boolean_attr:
+      enabled: false
+    boolean_attr2:
+      enabled: false
+    enum_attr:
+      enabled: false
+    map_attr:
+      enabled: false
+    optional_int_attr:
+      enabled: false
+    optional_string_attr:
+      enabled: false
+    overridden_int_attr:
+      enabled: false
+    slice_attr:
+      enabled: false
+    string_attr:
+      enabled: false
   metrics:
     default.metric:
       enabled: false

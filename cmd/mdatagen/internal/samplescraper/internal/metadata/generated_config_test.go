@@ -96,25 +96,25 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				},
 				Attributes: AttributesConfig{
 					BooleanAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					BooleanAttr2: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					EnumAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					MapAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					OverriddenIntAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					SliceAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 					StringAttr: AttributeConfig{
-						Enabled: true,
+						Enabled: false,
 					},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -146,6 +146,61 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
 	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
+	return cfg
+}
+
+func TestAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want AttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: AttributesConfig{
+				BooleanAttr:       AttributeConfig{Enabled: true},
+				BooleanAttr2:      AttributeConfig{Enabled: true},
+				EnumAttr:          AttributeConfig{Enabled: true},
+				MapAttr:           AttributeConfig{Enabled: true},
+				OverriddenIntAttr: AttributeConfig{Enabled: true},
+				SliceAttr:         AttributeConfig{Enabled: true},
+				StringAttr:        AttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: AttributesConfig{
+				BooleanAttr:       AttributeConfig{Enabled: false},
+				BooleanAttr2:      AttributeConfig{Enabled: false},
+				EnumAttr:          AttributeConfig{Enabled: false},
+				MapAttr:           AttributeConfig{Enabled: false},
+				OverriddenIntAttr: AttributeConfig{Enabled: false},
+				SliceAttr:         AttributeConfig{Enabled: false},
+				StringAttr:        AttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadAttributesConfig(t, tt.name)
+			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(AttributeConfig{}))
+			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+		})
+	}
+}
+
+func loadAttributesConfig(t *testing.T, name string) AttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("attributes")
+	require.NoError(t, err)
+	cfg := DefaultAttributesConfig()
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
