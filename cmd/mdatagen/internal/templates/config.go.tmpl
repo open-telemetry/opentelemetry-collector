@@ -30,7 +30,10 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 
-  if ms.AggregationStrategy != AggregationStrategySum && ms.AggregationStrategy != AggregationStrategyAvg && ms.AggregationStrategy != AggregationStrategyMin && ms.AggregationStrategy != AggregationStrategyMax {
+  if ms.AggregationStrategy != AggregationStrategySum && 
+     ms.AggregationStrategy != AggregationStrategyAvg && 
+     ms.AggregationStrategy != AggregationStrategyMin && 
+     ms.AggregationStrategy != AggregationStrategyMax {
     return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
   }
 
