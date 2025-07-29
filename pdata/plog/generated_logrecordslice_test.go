@@ -141,6 +141,14 @@ func TestLogRecordSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLogRecordSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLogRecordSlice()
+	got.RemoveIf(func(el LogRecord) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestLogRecordSliceAll(t *testing.T) {
 	ms := generateTestLogRecordSlice()
 	assert.NotEmpty(t, ms.Len())

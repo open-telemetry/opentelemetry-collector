@@ -141,6 +141,14 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExponentialHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExponentialHistogramDataPointSlice()
+	got.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 	ms := generateTestExponentialHistogramDataPointSlice()
 	assert.NotEmpty(t, ms.Len())

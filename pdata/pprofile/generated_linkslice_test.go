@@ -141,6 +141,14 @@ func TestLinkSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLinkSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLinkSlice()
+	got.RemoveIf(func(el Link) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestLinkSliceAll(t *testing.T) {
 	ms := generateTestLinkSlice()
 	assert.NotEmpty(t, ms.Len())

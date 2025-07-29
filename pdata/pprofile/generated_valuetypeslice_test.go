@@ -141,6 +141,14 @@ func TestValueTypeSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestValueTypeSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestValueTypeSlice()
+	got.RemoveIf(func(el ValueType) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestValueTypeSliceAll(t *testing.T) {
 	ms := generateTestValueTypeSlice()
 	assert.NotEmpty(t, ms.Len())

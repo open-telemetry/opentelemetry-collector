@@ -141,6 +141,14 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestNumberDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestNumberDataPointSlice()
+	got.RemoveIf(func(el NumberDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestNumberDataPointSliceAll(t *testing.T) {
 	ms := generateTestNumberDataPointSlice()
 	assert.NotEmpty(t, ms.Len())

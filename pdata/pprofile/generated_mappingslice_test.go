@@ -141,6 +141,14 @@ func TestMappingSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestMappingSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestMappingSlice()
+	got.RemoveIf(func(el Mapping) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestMappingSliceAll(t *testing.T) {
 	ms := generateTestMappingSlice()
 	assert.NotEmpty(t, ms.Len())

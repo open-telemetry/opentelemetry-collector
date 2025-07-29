@@ -133,6 +133,11 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.{{ .origAccessor }}); i++ {
 		if f(es.At(i)) {
+			{{- if eq .type "sliceOfPtrs" }}
+			(*es.{{ .origAccessor }})[i] = nil
+			{{- else }}
+			(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+			{{- end }}
 			continue
 		}
 		if newLen == i {
@@ -141,6 +146,11 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 			continue
 		}
 		(*es.{{ .origAccessor }})[newLen] = (*es.{{ .origAccessor }})[i]
+		{{- if eq .type "sliceOfPtrs" }}
+		(*es.{{ .origAccessor }})[i] = nil
+		{{- else }}
+		(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+		{{- end }}
 		newLen++
 	}
 	*es.{{ .origAccessor }} = (*es.{{ .origAccessor }})[:newLen]

@@ -141,6 +141,14 @@ func TestResourceProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestResourceProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestResourceProfilesSlice()
+	got.RemoveIf(func(el ResourceProfiles) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestResourceProfilesSliceAll(t *testing.T) {
 	ms := generateTestResourceProfilesSlice()
 	assert.NotEmpty(t, ms.Len())

@@ -141,6 +141,14 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSummaryDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointSlice()
+	got.RemoveIf(func(el SummaryDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSummaryDataPointSliceAll(t *testing.T) {
 	ms := generateTestSummaryDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
