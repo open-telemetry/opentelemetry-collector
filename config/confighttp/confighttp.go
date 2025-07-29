@@ -122,7 +122,7 @@ type ClientConfig struct {
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -372,7 +372,7 @@ type ServerConfig struct {
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.
