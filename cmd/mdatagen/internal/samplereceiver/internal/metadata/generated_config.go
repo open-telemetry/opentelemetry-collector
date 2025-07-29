@@ -9,11 +9,6 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
-const (
-	AggregationStrategySum = "sum"
-	AggregationStrategyAvg = "avg"
-)
-
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled             bool   `mapstructure:"enabled"`
@@ -31,7 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 
-	if ms.AggregationStrategy != AggregationStrategySum && ms.AggregationStrategy != AggregationStrategyAvg {
+	if ms.AggregationStrategy != AggregationStrategySum && ms.AggregationStrategy != AggregationStrategyAvg && ms.AggregationStrategy != AggregationStrategyMin && ms.AggregationStrategy != AggregationStrategyMax {
 		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
 	}
 
@@ -103,23 +98,23 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		DefaultMetric: MetricConfig{
 			Enabled:             true,
-			AggregationStrategy: "sum",
+			AggregationStrategy: AggregationStrategySum,
 		},
 		DefaultMetricToBeRemoved: MetricConfig{
 			Enabled:             true,
-			AggregationStrategy: "sum",
+			AggregationStrategy: AggregationStrategySum,
 		},
 		MetricInputType: MetricConfig{
 			Enabled:             true,
-			AggregationStrategy: "sum",
+			AggregationStrategy: AggregationStrategySum,
 		},
 		OptionalMetric: MetricConfig{
 			Enabled:             false,
-			AggregationStrategy: "avg",
+			AggregationStrategy: AggregationStrategyAvg,
 		},
 		OptionalMetricEmptyUnit: MetricConfig{
 			Enabled:             false,
-			AggregationStrategy: "avg",
+			AggregationStrategy: AggregationStrategyAvg,
 		},
 	}
 }
