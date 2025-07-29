@@ -44,7 +44,7 @@ func GenerateTestStringSlice() StringSlice {
 	return ms
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStreamStringSlice marshals all properties from the current struct to the destination stream.
 func MarshalJSONStreamStringSlice(ms StringSlice, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
@@ -55,4 +55,12 @@ func MarshalJSONStreamStringSlice(ms StringSlice, dest *json.Stream) {
 		dest.WriteString((*ms.orig)[i])
 	}
 	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONIterStringSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterStringSlice(ms StringSlice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.ReadString())
+		return true
+	})
 }

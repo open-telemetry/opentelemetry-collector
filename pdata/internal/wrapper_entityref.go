@@ -15,9 +15,9 @@ func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
 		case "type":
 			ms.orig.Type = iter.ReadString()
 		case "idKeys", "id_keys":
-			UnmarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
 		case "descriptionKeys", "description_keys":
-			UnmarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
 		default:
 			iter.Skip()
 		}

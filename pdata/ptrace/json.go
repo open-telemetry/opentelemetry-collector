@@ -45,10 +45,7 @@ func (ms ResourceSpans) unmarshalJSONIter(iter *json.Iterator) {
 		case "resource":
 			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
 		case "scopeSpans", "scope_spans":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ScopeSpans().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.ScopeSpans().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -64,10 +61,7 @@ func (ms ScopeSpans) unmarshalJSONIter(iter *json.Iterator) {
 		case "scope":
 			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
 		case "spans":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Spans().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Spans().unmarshalJSONIter(iter)
 		case "schemaUrl", "schema_url":
 			ms.orig.SchemaUrl = iter.ReadString()
 		default:
@@ -103,17 +97,11 @@ func (ms Span) unmarshalJSONIter(iter *json.Iterator) {
 		case "droppedAttributesCount", "dropped_attributes_count":
 			ms.orig.DroppedAttributesCount = iter.ReadUint32()
 		case "events":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Events().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Events().unmarshalJSONIter(iter)
 		case "droppedEventsCount", "dropped_events_count":
 			ms.orig.DroppedEventsCount = iter.ReadUint32()
 		case "links":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.Links().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.Links().unmarshalJSONIter(iter)
 		case "droppedLinksCount", "dropped_links_count":
 			ms.orig.DroppedLinksCount = iter.ReadUint32()
 		case "status":

@@ -48,7 +48,7 @@ func GenerateTest{{ .structName }}() {{ .structName }} {
 	return ms
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
 func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
 	{{- if eq .itemType "byte" }}
 	dest.WriteString(base64.StdEncoding.EncodeToString(*ms.orig))
@@ -62,5 +62,23 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 		dest.Write{{ upperFirst .itemType }}((*ms.orig)[i])
 	}
 	dest.WriteArrayEnd()
+	{{- end }}
+}
+
+// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+	{{- if eq .itemType "byte" }}
+	buf := iter.ReadStringAsSlice()
+	*ms.orig = make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
+	n, err := base64.StdEncoding.Decode(*ms.orig, buf)
+	if err != nil {
+		iter.ReportError("base64.Decode", err.Error())
+	}
+	*ms.orig = (*ms.orig)[:n]
+	{{- else }}
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.Read{{ upperFirst .itemType }}())
+		return true
+	})
 	{{- end }}
 }

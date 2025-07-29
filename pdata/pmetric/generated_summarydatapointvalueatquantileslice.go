@@ -170,6 +170,15 @@ func (ms SummaryDataPointValueAtQuantileSlice) marshalJSONStream(dest *json.Stre
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SummaryDataPointValueAtQuantileSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigSummaryDataPointValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	if cap(dest) < len(src) {
 		dest = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))

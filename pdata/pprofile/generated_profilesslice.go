@@ -170,6 +170,15 @@ func (ms ProfilesSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ProfilesSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpprofiles.Profile{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigProfilesSlice(dest, src []*otlpprofiles.Profile) []*otlpprofiles.Profile {
 	if cap(dest) < len(src) {
 		dest = make([]*otlpprofiles.Profile, len(src))

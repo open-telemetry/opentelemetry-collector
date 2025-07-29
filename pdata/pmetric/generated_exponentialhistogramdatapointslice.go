@@ -170,6 +170,15 @@ func (ms ExponentialHistogramDataPointSlice) marshalJSONStream(dest *json.Stream
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExponentialHistogramDataPointSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpmetrics.ExponentialHistogramDataPoint{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.ExponentialHistogramDataPoint) []*otlpmetrics.ExponentialHistogramDataPoint {
 	if cap(dest) < len(src) {
 		dest = make([]*otlpmetrics.ExponentialHistogramDataPoint, len(src))

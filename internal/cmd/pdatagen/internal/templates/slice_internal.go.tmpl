@@ -64,7 +64,7 @@ func FillTest{{ .structName }}(es {{ .structName }}) {
 	}
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
 func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
@@ -75,4 +75,13 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 		MarshalJSONStream{{ .elementName }}(New{{ .elementName }}((*ms.orig)[i], ms.state), dest)
 	}
 	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONStream{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, {{ .emptyOriginElement }})
+		UnmarshalJSONIter{{ .elementName }}(New{{ .elementName }}((*ms.orig)[len(*ms.orig)-1], ms.state), iter)
+		return true
+	})
 }

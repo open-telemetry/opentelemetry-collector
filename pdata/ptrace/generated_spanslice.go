@@ -170,6 +170,15 @@ func (ms SpanSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SpanSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlptrace.Span{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 	if cap(dest) < len(src) {
 		dest = make([]*otlptrace.Span, len(src))
