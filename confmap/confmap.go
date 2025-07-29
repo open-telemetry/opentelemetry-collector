@@ -310,7 +310,12 @@ func encoderConfig(rawVal any, set internal.MarshalOptions) *encoder.EncoderConf
 		encoder.YamlMarshalerHookFunc(),
 		encoder.TextMarshalerHookFunc(),
 	}
-	hooks = append(hooks, set.AdditionalEncodeHookFuncs...)
+
+	if set.ScalarMarshalingEncodeHookFunc != nil {
+		hooks = append(hooks, set.ScalarMarshalingEncodeHookFunc)
+	}
+
+	// This hook must come after the scalar marshaling hook, if present.
 	hooks = append(hooks, marshalerHookFunc(rawVal))
 
 	return &encoder.EncoderConfig{

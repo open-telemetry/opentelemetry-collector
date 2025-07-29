@@ -12,7 +12,7 @@ type MarshalOption interface {
 // MarshalOptions is used by (*Conf).Marshal to toggle unmarshaling settings.
 // It is in the `internal` package so experimental options can be added in xconfmap.
 type MarshalOptions struct {
-	AdditionalEncodeHookFuncs []mapstructure.DecodeHookFunc
+	ScalarMarshalingEncodeHookFunc mapstructure.DecodeHookFunc
 }
 
 type MarshalOptionFunc func(*MarshalOptions)

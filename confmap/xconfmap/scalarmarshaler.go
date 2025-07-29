@@ -14,7 +14,7 @@ import (
 
 func WithScalarMarshaler() confmap.MarshalOption {
 	return internal.MarshalOptionFunc(func(mo *internal.MarshalOptions) {
-		mo.AdditionalEncodeHookFuncs = append(mo.AdditionalEncodeHookFuncs, scalarmarshalerHookFunc())
+		mo.ScalarMarshalingEncodeHookFunc = scalarmarshalerHookFunc()
 	})
 }
 
