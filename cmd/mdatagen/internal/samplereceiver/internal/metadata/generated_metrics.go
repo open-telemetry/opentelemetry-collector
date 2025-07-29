@@ -146,20 +146,22 @@ func (m *metricDefaultMetric) recordDataPoint(start pcommon.Timestamp, ts pcommo
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
 
+	var s string
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
 				dpi.SetIntValue(dpi.IntValue() + val)
 				m.aggDataPoints[i] += 1
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+			case AggregationStrategyMin:
 				if dpi.IntValue() > val {
 					dpi.SetIntValue(val)
 				}
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+			case AggregationStrategyMax:
 				if dpi.IntValue() < val {
 					dpi.SetIntValue(val)
 				}
@@ -233,20 +235,22 @@ func (m *metricDefaultMetricToBeRemoved) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 
+	var s string
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
 				dpi.SetDoubleValue(dpi.DoubleValue() + val)
 				m.aggDataPoints[i] += 1
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+			case AggregationStrategyMin:
 				if dpi.DoubleValue() > val {
 					dpi.SetDoubleValue(val)
 				}
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+			case AggregationStrategyMax:
 				if dpi.DoubleValue() < val {
 					dpi.SetDoubleValue(val)
 				}
@@ -334,20 +338,22 @@ func (m *metricMetricInputType) recordDataPoint(start pcommon.Timestamp, ts pcom
 		dp.Attributes().PutEmptyMap("map_attr").FromRaw(mapAttrAttributeValue)
 	}
 
+	var s string
 	dps := m.data.Sum().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
 				dpi.SetIntValue(dpi.IntValue() + val)
 				m.aggDataPoints[i] += 1
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+			case AggregationStrategyMin:
 				if dpi.IntValue() > val {
 					dpi.SetIntValue(val)
 				}
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+			case AggregationStrategyMax:
 				if dpi.IntValue() < val {
 					dpi.SetIntValue(val)
 				}
@@ -427,20 +433,22 @@ func (m *metricOptionalMetric) recordDataPoint(start pcommon.Timestamp, ts pcomm
 		dp.Attributes().PutBool("boolean_attr2", booleanAttr2AttributeValue)
 	}
 
+	var s string
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
 				dpi.SetDoubleValue(dpi.DoubleValue() + val)
 				m.aggDataPoints[i] += 1
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+			case AggregationStrategyMin:
 				if dpi.DoubleValue() > val {
 					dpi.SetDoubleValue(val)
 				}
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+			case AggregationStrategyMax:
 				if dpi.DoubleValue() < val {
 					dpi.SetDoubleValue(val)
 				}
@@ -520,20 +528,22 @@ func (m *metricOptionalMetricEmptyUnit) recordDataPoint(start pcommon.Timestamp,
 		dp.Attributes().PutBool("boolean_attr", booleanAttrAttributeValue)
 	}
 
+	var s string
 	dps := m.data.Gauge().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-			if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+			switch s = m.config.AggregationStrategy; s {
+			case AggregationStrategySum, AggregationStrategyAvg:
 				dpi.SetDoubleValue(dpi.DoubleValue() + val)
 				m.aggDataPoints[i] += 1
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMin {
+			case AggregationStrategyMin:
 				if dpi.DoubleValue() > val {
 					dpi.SetDoubleValue(val)
 				}
 				return
-			} else if m.config.AggregationStrategy == AggregationStrategyMax {
+			case AggregationStrategyMax:
 				if dpi.DoubleValue() < val {
 					dpi.SetDoubleValue(val)
 				}
