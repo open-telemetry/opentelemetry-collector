@@ -213,7 +213,7 @@ func WithQueueBatch(cfg queuebatch.Config, set QueueBatchSettings[request.Reques
 			o.ExportFailureMessage += " Try enabling sending_queue to survive temporary failures."
 			return nil
 		}
-		if cfg.StorageID != nil && set.Encoding == nil {
+		if cfg.StorageID.HasValue() && set.Encoding == nil {
 			return errors.New("`QueueBatchSettings.Encoding` must not be nil when persistent queue is enabled")
 		}
 		o.queueBatchSettings = set
