@@ -19,7 +19,11 @@ func Test{{ .structName }}(t *testing.T) {
 	es = new{{ .structName }}(&[]{{ .originElementType }}{}, &state)
 	assert.Equal(t, 0, es.Len())
 
+	{{ if eq .elementName "Value" -}}
+	emptyVal := New{{ .elementName }}Empty()
+	{{- else }}
 	emptyVal := New{{ .elementName }}()
+	{{- end }}
 	{{- if .isCommon }}
 	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
 	{{- else }}
