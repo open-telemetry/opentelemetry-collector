@@ -103,7 +103,7 @@ func TestLogs_WithPersistentQueue(t *testing.T) {
 	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := configoptional.Some(NewDefaultQueueConfig())
 	storageID := component.MustNewIDWithName("file_storage", "storage")
-	qCfg.Get().StorageID = &storageID
+	qCfg.Get().StorageID = configoptional.Some(storageID)
 	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.ID = component.MustNewIDWithName("test_logs", "with_persistent_queue")
 	host := hosttest.NewHost(map[component.ID]component.Component{

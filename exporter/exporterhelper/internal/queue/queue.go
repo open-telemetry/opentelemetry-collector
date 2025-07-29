@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/pipeline"
 )
@@ -71,7 +72,7 @@ type Settings[T request.Request] struct {
 	WaitForResult    bool
 	BlockOnOverflow  bool
 	Signal           pipeline.Signal
-	StorageID        *component.ID
+	StorageID        configoptional.Optional[component.ID]
 	ReferenceCounter ReferenceCounter[T]
 	Encoding         Encoding[T]
 	ID               component.ID
@@ -90,7 +91,7 @@ func NewQueue[T request.Request](set Settings[T], next ConsumeFunc[T]) (Queue[T]
 
 func newBaseQueue[T request.Request](set Settings[T]) readableQueue[T] {
 	// Configure memory queue or persistent based on the config.
-	if set.StorageID == nil {
+	if !set.StorageID.HasValue() {
 		return newMemoryQueue[T](set)
 	}
 
