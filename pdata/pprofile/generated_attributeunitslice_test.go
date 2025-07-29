@@ -55,7 +55,7 @@ func TestAttributeUnitSlice_CopyTo(t *testing.T) {
 	NewAttributeUnitSlice().CopyTo(dest)
 	assert.Equal(t, NewAttributeUnitSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestAttributeUnitSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
@@ -63,12 +63,12 @@ func TestAttributeUnitSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
-}
 
-func TestAttributeUnitSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewAttributeUnitSlice()
-	src := generateTestAttributeUnitSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewAttributeUnitSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
 }

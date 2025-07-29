@@ -55,7 +55,7 @@ func TestScopeMetricsSlice_CopyTo(t *testing.T) {
 	NewScopeMetricsSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeMetricsSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestScopeMetricsSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
@@ -63,12 +63,12 @@ func TestScopeMetricsSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
-}
 
-func TestScopeMetricsSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewScopeMetricsSlice()
-	src := generateTestScopeMetricsSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewScopeMetricsSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
 }

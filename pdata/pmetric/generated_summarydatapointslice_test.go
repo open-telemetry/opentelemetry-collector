@@ -55,7 +55,7 @@ func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	NewSummaryDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewSummaryDataPointSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestSummaryDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
@@ -63,12 +63,12 @@ func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
-}
 
-func TestSummaryDataPointSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewSummaryDataPointSlice()
-	src := generateTestSummaryDataPointSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewSummaryDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 }

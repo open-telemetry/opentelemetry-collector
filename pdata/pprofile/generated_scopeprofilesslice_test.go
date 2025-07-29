@@ -55,7 +55,7 @@ func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	NewScopeProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeProfilesSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestScopeProfilesSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
@@ -63,12 +63,12 @@ func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
-}
 
-func TestScopeProfilesSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewScopeProfilesSlice()
-	src := generateTestScopeProfilesSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewScopeProfilesSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 }

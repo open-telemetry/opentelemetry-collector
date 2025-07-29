@@ -55,7 +55,7 @@ func TestLogRecordSlice_CopyTo(t *testing.T) {
 	NewLogRecordSlice().CopyTo(dest)
 	assert.Equal(t, NewLogRecordSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestLogRecordSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
@@ -63,12 +63,12 @@ func TestLogRecordSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
-}
 
-func TestLogRecordSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewLogRecordSlice()
-	src := generateTestLogRecordSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewLogRecordSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
