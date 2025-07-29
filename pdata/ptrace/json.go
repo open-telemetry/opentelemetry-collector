@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
 
-// JSONMarshaler marshals pdata.Traces to JSON bytes using the OTLP/JSON format.
+// JSONMarshaler marshals Traces to JSON bytes using the OTLP/JSON format.
 type JSONMarshaler struct{}
 
 // MarshalTraces to the OTLP/JSON format.
@@ -23,10 +23,10 @@ func (*JSONMarshaler) MarshalTraces(td Traces) ([]byte, error) {
 	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
-// JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pdata.Traces.
+// JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to Traces.
 type JSONUnmarshaler struct{}
 
-// UnmarshalTraces from OTLP/JSON format into pdata.Traces.
+// UnmarshalTraces from OTLP/JSON format into Traces.
 func (*JSONUnmarshaler) UnmarshalTraces(buf []byte) (Traces, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
