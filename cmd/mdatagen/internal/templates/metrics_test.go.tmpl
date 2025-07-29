@@ -122,7 +122,7 @@ func TestMetricsBuilder(t *testing.T) {
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
 				{{- if not (attributeInfo .).Optional -}}
-					, {{- template "getAttributeValue" . -}}
+					 , {{- template "getAttributeValue" . -}}
 				{{- end -}}
 				{{- end -}}
 				{{- range $metric.Attributes -}}
@@ -197,15 +197,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 					{{- range $i, $attr := $metric.Attributes }}
 					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
-					assert.True(t, ok)
-					{{- if eq (attributeInfo $attr).Type.String "Bool"}}
-					assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else if eq (attributeInfo $attr).Type.String "Int"}}
-					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- else }}
-					assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
-					{{- end }}
-					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+          if !mb.config.Attributes.{{ (attributeInfo $attr).FullName.Render }}.Enabled {
+					  assert.False(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.False(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, "", attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, "", attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+          } else {
+					  assert.True(t, ok)
+            {{- if eq (attributeInfo $attr).Type.String "Bool"}}
+            assert.{{- if eq (attributeInfo $attr).TestValue "true" }}True{{ else }}False{{- end }}(t, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else if eq (attributeInfo $attr).Type.String "Int"}}
+            assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- else }}
+            assert.Equal(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+            {{- end }}
+            {{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+          }
 					{{- end }}
 				{{- end }}
 				}

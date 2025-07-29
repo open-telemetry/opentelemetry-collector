@@ -1,5 +1,12 @@
 default:
 all_set:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: true
+    {{- end }}
+  {{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}
@@ -22,6 +29,13 @@ all_set:
     {{- end }}
   {{- end }}
 none_set:
+  {{- if .Attributes }}
+  attributes:
+    {{- range $name, $_ := .Attributes }}
+    {{ $name }}:
+      enabled: false 
+    {{- end }}
+  {{- end }}
   {{- if .Metrics }}
   metrics:
     {{- range $name, $_ := .Metrics }}

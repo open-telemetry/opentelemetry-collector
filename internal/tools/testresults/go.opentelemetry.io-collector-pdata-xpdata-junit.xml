@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="27" failures="0" errors="0" time="1.518890">
+	<testsuite tests="16" failures="0" time="1.010000" name="go.opentelemetry.io/collector/pdata/xpdata/entity" timestamp="2025-07-28T22:03:30-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_MoveTo" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_CopyTo" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_MarshalAndUnmarshalJSON" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_SchemaUrl" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_Type" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_IdKeys" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRef_DescriptionKeys" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSliceReadOnly" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice_CopyTo" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice_EnsureCapacity" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice_MoveAndAppendTo" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice_RemoveIf" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSliceAll" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestEntityRefSlice_Sort" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/entity" name="TestResourceEntityRefs" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="11" failures="0" time="1.012000" name="go.opentelemetry.io/collector/pdata/xpdata/request" timestamp="2025-07-28T22:03:30-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext/without_client_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext/with_client_IP_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext/with_client_TCP_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext/with_client_UDP_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext/with_client_unix_address" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestEncodeDecodeContext" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestMarshalUnmarshalLogsRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestMarshalUnmarshalMetricsRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestMarshalUnmarshalProfilesRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestMarshalUnmarshalTracesRequest" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/pdata/xpdata/request" name="TestIsRequestPayloadV1" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/pdata/xpdata/request/internal" timestamp="2025-07-28T22:03:30-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+</testsuites>

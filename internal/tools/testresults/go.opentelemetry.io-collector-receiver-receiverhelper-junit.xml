@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="10" failures="0" errors="0" time="1.015816">
+	<testsuite tests="7" failures="0" time="1.016000" name="go.opentelemetry.io/collector/receiver/receiverhelper" timestamp="2025-07-28T22:03:47-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestReceiveTraceDataOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestReceiveLogsOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestReceiveMetricsOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestReceiveWithLongLivedCtx" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestCheckReceiverTracesViews" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestCheckReceiverMetricsViews" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper" name="TestCheckReceiverLogsViews" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/receiver/receiverhelper/internal" timestamp="2025-07-28T22:03:47-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="1.010000" name="go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata" timestamp="2025-07-28T22:03:47-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata" name="TestProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadata" name="TestNewTelemetryBuilder" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="1.016000" name="go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadatatest" timestamp="2025-07-28T22:03:47-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/receiverhelper/internal/metadatatest" name="TestSetupTelemetry" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
