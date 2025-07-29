@@ -139,20 +139,22 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	{{- end }}
 	{{- end }}
 
+  var s string
 	dps := m.data.{{ $metric.Data.Type }}().DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		dpi := dps.At(i)
 		if dp.Attributes().Equal(dpi.Attributes()) && dp.StartTimestamp() == dpi.StartTimestamp() && dp.Timestamp() == dpi.Timestamp() {
-      if m.config.AggregationStrategy == AggregationStrategySum || m.config.AggregationStrategy == AggregationStrategyAvg {
+      switch s = m.config.AggregationStrategy; s {
+      case AggregationStrategySum, AggregationStrategyAvg:
         dpi.Set{{ $metric.Data.MetricValueType }}Value(dpi.{{ $metric.Data.MetricValueType }}Value() + val)
         m.aggDataPoints[i] += 1
         return
-      } else if m.config.AggregationStrategy == AggregationStrategyMin {
+      case AggregationStrategyMin:
         if dpi.{{ $metric.Data.MetricValueType }}Value() > val {
           dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
         }
         return
-      } else if m.config.AggregationStrategy == AggregationStrategyMax {
+      case AggregationStrategyMax:
         if dpi.{{ $metric.Data.MetricValueType }}Value() < val {
           dpi.Set{{ $metric.Data.MetricValueType }}Value(val)
         }
