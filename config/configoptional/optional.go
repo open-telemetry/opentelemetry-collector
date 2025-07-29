@@ -4,12 +4,14 @@
 package configoptional // import "go.opentelemetry.io/collector/config/configoptional"
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type flavor int
@@ -135,7 +137,7 @@ func (o *Optional[T]) Get() *T {
 }
 
 var _ confmap.Unmarshaler = (*Optional[any])(nil)
-var _ confmap.ScalarUnmarshaler = (*Optional[any])(nil)
+var _ xconfmap.ScalarUnmarshaler = (*Optional[any])(nil)
 
 // Unmarshal the configuration into the Optional value.
 //
@@ -158,7 +160,7 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 		return nil
 	}
 
-	if err := conf.Unmarshal(&o.value); err != nil {
+	if err := conf.Unmarshal(&o.value, xconfmap.WithScalarUnmarshaler()); err != nil {
 		return err
 	}
 
@@ -176,7 +178,7 @@ func (o *Optional[T]) UnmarshalScalar(val any) (any, error) {
 	if val != nil {
 		v, ok := val.(T)
 		if !ok {
-			return nil, fmt.Errorf("val is not type %T", v)
+			return nil, fmt.Errorf("val is %T, not %T", val, v)
 		}
 		o.value = v
 		o.flavor = someFlavor
@@ -185,7 +187,12 @@ func (o *Optional[T]) UnmarshalScalar(val any) (any, error) {
 	return o.value, nil
 }
 
+func (o *Optional[T]) ScalarType() any {
+	return o.value
+}
+
 var _ confmap.Marshaler = (*Optional[any])(nil)
+var _ xconfmap.ScalarMarshaler = (*Optional[any])(nil)
 
 // Marshal the Optional value into the configuration.
 // If the Optional is None or Default, it does not marshal anything.
@@ -203,9 +210,24 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 		return conf.Marshal(map[string]any(nil))
 	}
 
-	if err := conf.Marshal(o.value); err != nil {
+	if err := conf.Marshal(o.value, xconfmap.WithScalarMarshaler()); err != nil {
 		return fmt.Errorf("configoptional: failed to marshal Optional value: %w", err)
 	}
 
 	return nil
+}
+
+// MarshalScalar implements xconfmap.ScalarMarshaler.
+func (o Optional[T]) MarshalScalar() (string, error) {
+	if tm, ok := any(o.value).(encoding.TextMarshaler); ok {
+		str, err := tm.MarshalText()
+
+		if err != nil {
+			return "", err
+		}
+
+		return string(str), nil
+	}
+
+	return "", nil
 }
