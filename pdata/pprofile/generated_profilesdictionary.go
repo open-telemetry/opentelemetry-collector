@@ -126,6 +126,31 @@ func (ms ProfilesDictionary) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ProfilesDictionary) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "mappingTable", "mapping_table":
+			ms.MappingTable().unmarshalJSONIter(iter)
+		case "locationTable", "location_table":
+			ms.LocationTable().unmarshalJSONIter(iter)
+		case "functionTable", "function_table":
+			ms.FunctionTable().unmarshalJSONIter(iter)
+		case "linkTable", "link_table":
+			ms.LinkTable().unmarshalJSONIter(iter)
+		case "stringTable", "string_table":
+			internal.UnmarshalJSONIterStringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state), iter)
+		case "attributeTable", "attribute_table":
+			ms.AttributeTable().unmarshalJSONIter(iter)
+		case "attributeUnits", "attribute_units":
+			ms.AttributeUnits().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.MappingTable = copyOrigMappingSlice(dest.MappingTable, src.MappingTable)
 	dest.LocationTable = copyOrigLocationSlice(dest.LocationTable, src.LocationTable)

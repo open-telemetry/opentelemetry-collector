@@ -107,6 +107,23 @@ func (ms Line) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Line) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "functionIndex", "function_index":
+			ms.orig.FunctionIndex = iter.ReadInt32()
+		case "line":
+			ms.orig.Line = iter.ReadInt64()
+		case "column":
+			ms.orig.Column = iter.ReadInt64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line

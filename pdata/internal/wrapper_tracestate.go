@@ -44,3 +44,8 @@ func FillTestTraceState(dest TraceState) {
 func MarshalJSONStreamTraceState(ms TraceState, dest *json.Stream) {
 	dest.WriteString(*ms.orig)
 }
+
+// UnmarshalJSONIterTraceState marshals all properties from the current struct to the destination stream.
+func UnmarshalJSONIterTraceState(ms TraceState, iter *json.Iterator) {
+	*ms.orig = iter.ReadString()
+}

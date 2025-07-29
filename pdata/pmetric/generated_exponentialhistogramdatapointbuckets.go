@@ -85,6 +85,21 @@ func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stre
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExponentialHistogramDataPointBuckets) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "offset":
+			ms.orig.Offset = iter.ReadInt32()
+		case "bucketCounts", "bucket_counts":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
 	dest.Offset = src.Offset
 	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)

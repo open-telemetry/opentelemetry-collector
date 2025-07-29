@@ -509,7 +509,7 @@ var aggregationTemporalityField = &TypedField{
 	returnType: &TypedType{
 		structName: "AggregationTemporality",
 		rawType:    "otlpmetrics.AggregationTemporality",
-		isType:     true,
+		isEnum:     true,
 		defaultVal: "otlpmetrics.AggregationTemporality(0)",
 		testVal:    "otlpmetrics.AggregationTemporality(1)",
 	},

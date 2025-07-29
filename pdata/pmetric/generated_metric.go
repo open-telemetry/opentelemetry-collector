@@ -283,6 +283,46 @@ func (ms Metric) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Metric) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "description":
+			ms.orig.Description = iter.ReadString()
+		case "unit":
+			ms.orig.Unit = iter.ReadString()
+		case "metadata":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Metadata, ms.state), iter)
+
+		case "gauge":
+			val := &otlpmetrics.Gauge{}
+			ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
+			newGauge(val, ms.state).unmarshalJSONIter(iter)
+		case "sum":
+			val := &otlpmetrics.Sum{}
+			ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
+			newSum(val, ms.state).unmarshalJSONIter(iter)
+		case "histogram":
+			val := &otlpmetrics.Histogram{}
+			ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
+			newHistogram(val, ms.state).unmarshalJSONIter(iter)
+		case "exponentialHistogram", "exponential_histogram":
+			val := &otlpmetrics.ExponentialHistogram{}
+			ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+			newExponentialHistogram(val, ms.state).unmarshalJSONIter(iter)
+		case "summary":
+			val := &otlpmetrics.Summary{}
+			ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
+			newSummary(val, ms.state).unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Name = src.Name
 	dest.Description = src.Description

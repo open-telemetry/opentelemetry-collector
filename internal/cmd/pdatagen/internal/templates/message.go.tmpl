@@ -90,6 +90,20 @@ func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms {{ .structName }}) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		{{ range .fields -}}
+		{{ .GenerateUnmarshalJSON $.messageStruct }}
+		{{ end -}}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrig{{ .structName }}(dest, src *{{ .originName }}) {
 	{{- range .fields }}
 	{{ .GenerateCopyOrig $.messageStruct }}

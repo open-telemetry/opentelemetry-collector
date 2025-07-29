@@ -118,6 +118,25 @@ func (ms SpanEvent) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SpanEvent) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigSpanEvent(dest, src *otlptrace.Span_Event) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Name = src.Name

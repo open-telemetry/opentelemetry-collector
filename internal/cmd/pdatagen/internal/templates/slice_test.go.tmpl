@@ -146,6 +146,30 @@ func Test{{ .structName }}All(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
+func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTest{{ .structName }}()
+	{{- if .isCommon }}
+	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
+	{{- else }}
+	src.marshalJSONStream(stream)
+	{{- end }}
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := New{{ .structName }}()
+	{{- if .isCommon }}
+	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
+	{{- else }}
+	dest.unmarshalJSONIter(iter)
+	{{- end }}
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
+}
+
 {{ if eq .type "sliceOfPtrs" -}}
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()

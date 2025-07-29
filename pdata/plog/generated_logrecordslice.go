@@ -170,6 +170,15 @@ func (ms LogRecordSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms LogRecordSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlplogs.LogRecord{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
 	if cap(dest) < len(src) {
 		dest = make([]*otlplogs.LogRecord, len(src))

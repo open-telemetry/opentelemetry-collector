@@ -156,6 +156,31 @@ func (ms SummaryDataPoint) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SummaryDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "sum":
+			ms.orig.Sum = iter.ReadFloat64()
+		case "quantileValues", "quantile_values":
+			ms.QuantileValues().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
 	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
 	dest.StartTimeUnixNano = src.StartTimeUnixNano

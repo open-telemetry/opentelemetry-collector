@@ -44,7 +44,7 @@ func GenerateTestUInt64Slice() UInt64Slice {
 	return ms
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+// MarshalJSONStreamUInt64Slice marshals all properties from the current struct to the destination stream.
 func MarshalJSONStreamUInt64Slice(ms UInt64Slice, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
@@ -55,4 +55,12 @@ func MarshalJSONStreamUInt64Slice(ms UInt64Slice, dest *json.Stream) {
 		dest.WriteUint64((*ms.orig)[i])
 	}
 	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONIterUInt64Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterUInt64Slice(ms UInt64Slice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.ReadUint64())
+		return true
+	})
 }
