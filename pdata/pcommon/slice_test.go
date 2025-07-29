@@ -69,6 +69,14 @@ func TestSlice_CopyTo(t *testing.T) {
 	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
 }
 
+func TestSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewSlice()
+	src := Slice(internal.GenerateTestSlice())
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
+	assert.Equal(t, Slice(internal.GenerateTestSlice()), dest)
+}
+
 func TestSlice_EnsureCapacity(t *testing.T) {
 	es := Slice(internal.GenerateTestSlice())
 	// Test ensure smaller capacity.

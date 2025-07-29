@@ -134,6 +134,7 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.getOrig()); i++ {
 		if f(es.At(i)) {
+			(*es.getOrig())[i] = otlpcommon.AnyValue{}
 			continue
 		}
 		if newLen == i {
@@ -142,6 +143,7 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 			continue
 		}
 		(*es.getOrig())[newLen] = (*es.getOrig())[i]
+		(*es.getOrig())[i] = otlpcommon.AnyValue{}
 		newLen++
 	}
 	*es.getOrig() = (*es.getOrig())[:newLen]
