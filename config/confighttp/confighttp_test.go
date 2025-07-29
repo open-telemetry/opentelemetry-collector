@@ -33,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
@@ -1648,6 +1649,9 @@ func TestUnmarshalYAMLWithMiddlewares(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, clientSub.Unmarshal(&clientConfig))
 
+	// Validate the client configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
+
 	assert.Equal(t, "http://localhost:4318/v1/traces", clientConfig.Endpoint)
 	require.Len(t, clientConfig.Middlewares, 2)
 	assert.Equal(t, component.MustNewID("fancy_middleware"), clientConfig.Middlewares[0].ID)
@@ -1658,6 +1662,9 @@ func TestUnmarshalYAMLWithMiddlewares(t *testing.T) {
 	serverSub, err := cm.Sub("server")
 	require.NoError(t, err)
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
+
+	// Validate the server configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
 	require.Len(t, serverConfig.Middlewares, 2)
@@ -1676,6 +1683,9 @@ func TestUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	clientSub, err := cm.Sub("client")
 	require.NoError(t, err)
 	require.NoError(t, clientSub.Unmarshal(&clientConfig))
+
+	// Validate the client configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
 
 	// Verify basic fields
 	assert.Equal(t, "http://example.com:4318/v1/traces", clientConfig.Endpoint)
@@ -1709,6 +1719,9 @@ func TestUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 	serverSub, err := cm.Sub("server")
 	require.NoError(t, err)
 	require.NoError(t, serverSub.Unmarshal(&serverConfig))
+
+	// Validate the server configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
 
 	// Verify basic fields
 	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
