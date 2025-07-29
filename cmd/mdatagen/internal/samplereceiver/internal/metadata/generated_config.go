@@ -9,6 +9,11 @@ import (
 	"go.opentelemetry.io/collector/filter"
 )
 
+const (
+	AggregationStrategySum = "sum"
+	AggregationStrategyAvg = "avg"
+)
+
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
 	Enabled             bool   `mapstructure:"enabled"`
@@ -26,7 +31,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 		return err
 	}
 
-	if ms.AggregationStrategy != "sum" && ms.AggregationStrategy != "avg" {
+	if ms.AggregationStrategy != AggregatiuonStrategySum && ms.AggregationStrategy != AggregationStrategyAvg {
 		return fmt.Errorf("invalid aggregation strategy set: '%v'", ms.AggregationStrategy)
 	}
 
