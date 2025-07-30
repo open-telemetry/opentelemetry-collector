@@ -54,6 +54,15 @@ const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructName }}_{{ .origin
 const oneOfPrimitiveTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
 	return {{ .typeName }}`
 
+const oneOfPrimitiveMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+	dest.Write{{ upperFirst .returnType }}(ov.{{ .originFieldName }})`
+
+const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
+		{{ .originFieldName }}: iter.Read{{ upperFirst .returnType }}(),
+	}`
+
 type OneOfPrimitiveValue struct {
 	fieldName       string
 	defaultVal      string
@@ -84,6 +93,16 @@ func (opv *OneOfPrimitiveValue) GenerateCopyOrig(ms *messageStruct, of *OneOfFie
 
 func (opv *OneOfPrimitiveValue) GenerateType(ms *messageStruct, of *OneOfField) string {
 	t := template.Must(templateNew("oneOfPrimitiveCopyOrigTemplate").Parse(oneOfPrimitiveTypeTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
+}
+
+func (opv *OneOfPrimitiveValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfPrimitiveMarshalJSONTemplate").Parse(oneOfPrimitiveMarshalJSONTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
+}
+
+func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfPrimitiveUnmarshalJSONTemplate").Parse(oneOfPrimitiveUnmarshalJSONTemplate))
 	return executeTemplate(t, opv.templateFields(ms, of))
 }
 

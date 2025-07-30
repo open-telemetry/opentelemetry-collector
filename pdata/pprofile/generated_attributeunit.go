@@ -9,6 +9,7 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AttributeUnit Represents a mapping between Attribute Keys and Units.
@@ -75,6 +76,35 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
 	copyOrigAttributeUnit(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms AttributeUnit) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.AttributeKeyStrindex != int32(0) {
+		dest.WriteObjectField("attributeKeyStrindex")
+		dest.WriteInt32(ms.orig.AttributeKeyStrindex)
+	}
+	if ms.orig.UnitStrindex != int32(0) {
+		dest.WriteObjectField("unitStrindex")
+		dest.WriteInt32(ms.orig.UnitStrindex)
+	}
+	dest.WriteObjectEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms AttributeUnit) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributeKeyStrindex", "attribute_key_strindex":
+			ms.orig.AttributeKeyStrindex = iter.ReadInt32()
+		case "unitStrindex", "unit_strindex":
+			ms.orig.UnitStrindex = iter.ReadInt32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
 
 func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {

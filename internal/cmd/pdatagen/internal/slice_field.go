@@ -46,6 +46,24 @@ const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} =
 {{- if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
 {{- .returnType }}(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
+const sliceMarshalJSONTemplate = `if len(ms.orig.{{ .originFieldName }}) > 0 {
+		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+		{{- if .isCommon }}
+		{{ if not .isBaseStructCommon }}internal.{{ end }}MarshalJSONStream{{ .returnType }}(
+		{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
+		{{- else }}
+		ms.{{ .fieldName }}().marshalJSONStream(dest)
+		{{- end }}
+	}`
+
+const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	{{- else }}
+	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
+	{{- end }}`
+
 type SliceField struct {
 	fieldName       string
 	originFieldName string
@@ -76,6 +94,16 @@ func (sf *SliceField) GenerateSetWithTestValue(ms *messageStruct) string {
 
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("sliceCopyOrigTemplate").Parse(sliceCopyOrigTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("sliceMarshalJSONTemplate").Parse(sliceMarshalJSONTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("sliceUnmarshalJSONTemplate").Parse(sliceUnmarshalJSONTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
 }
 

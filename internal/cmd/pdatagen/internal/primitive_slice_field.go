@@ -26,6 +26,22 @@ const primitiveSliceCopyOrigTemplate = `dest.{{ .originFieldName }} =
 {{- if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
 {{- .returnType }}(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
+const primitiveSliceMarshalJSONTemplate = `dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}MarshalJSONStream{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
+	{{- else }}
+	ms.{{ .fieldName }}().marshalJSONStream(dest)
+	{{- end }}`
+
+const primitiveSliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	{{- else }}
+	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
+	{{- end }}`
+
 // PrimitiveSliceField is used to generate fields for slice of primitive types
 type PrimitiveSliceField struct {
 	fieldName         string
@@ -53,6 +69,16 @@ func (psf *PrimitiveSliceField) GenerateSetWithTestValue(ms *messageStruct) stri
 
 func (psf *PrimitiveSliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("primitiveSliceCopyOrigTemplate").Parse(primitiveSliceCopyOrigTemplate))
+	return executeTemplate(t, psf.templateFields(ms))
+}
+
+func (psf *PrimitiveSliceField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("primitiveSliceMarshalJSONTemplate").Parse(primitiveSliceMarshalJSONTemplate))
+	return executeTemplate(t, psf.templateFields(ms))
+}
+
+func (psf *PrimitiveSliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("primitiveSliceUnmarshalJSONTemplate").Parse(primitiveSliceUnmarshalJSONTemplate))
 	return executeTemplate(t, psf.templateFields(ms))
 }
 

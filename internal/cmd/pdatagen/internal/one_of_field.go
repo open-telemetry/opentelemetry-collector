@@ -39,6 +39,17 @@ const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- end }}
 }`
 
+const oneOfMarshalJSONTemplate = `switch ov := ms.{{ .origAccessor }}.{{ .originFieldName }}.(type) {
+		{{- range .values }}
+		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
+		{{- end }}
+	}`
+
+const oneOfUnmarshalJSONTemplate = `
+	{{- range .values }}
+	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
+	{{- end }}`
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -74,6 +85,16 @@ func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, of.templateFields(ms))
 }
 
+func (of *OneOfField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfMarshalJSONTemplate").Parse(oneOfMarshalJSONTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
+func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfUnmarshalJSONTemplate").Parse(oneOfUnmarshalJSONTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"baseStruct":           ms,
@@ -99,4 +120,6 @@ type oneOfValue interface {
 	GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
+	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
+	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
 }

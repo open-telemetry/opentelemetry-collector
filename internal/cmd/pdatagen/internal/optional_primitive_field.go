@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
-
 import (
 	"strings"
 	"text/template"
@@ -67,6 +66,14 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 	dest.{{ .fieldName }}_ = nil
 }`
 
+const optionalPrimitiveMarshalJSONTemplate = `if ms.Has{{ .fieldName }}() {
+		dest.WriteObjectField("{{ lowerFirst .fieldName }}")
+		dest.Write{{ upperFirst .returnType }}(ms.{{ .fieldName }}())
+	}`
+
+const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
+		ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
+
 type OptionalPrimitiveField struct {
 	fieldName  string
 	defaultVal string
@@ -91,6 +98,16 @@ func (opv *OptionalPrimitiveField) GenerateSetWithTestValue(ms *messageStruct) s
 
 func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveMarshalJSONTemplate").Parse(optionalPrimitiveMarshalJSONTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveUnmarshalJSONTemplate").Parse(optionalPrimitiveUnmarshalJSONTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
