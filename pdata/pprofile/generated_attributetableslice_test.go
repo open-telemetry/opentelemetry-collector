@@ -54,7 +54,7 @@ func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	NewAttributeTableSlice().CopyTo(dest)
 	assert.Equal(t, NewAttributeTableSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestAttributeTableSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
@@ -62,12 +62,12 @@ func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
-}
 
-func TestAttributeTableSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewAttributeTableSlice()
-	src := generateTestAttributeTableSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewAttributeTableSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
@@ -138,6 +138,14 @@ func TestAttributeTableSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestAttributeTableSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestAttributeTableSlice()
+	got.RemoveIf(func(el Attribute) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestAttributeTableSliceAll(t *testing.T) {

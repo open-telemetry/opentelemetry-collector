@@ -55,7 +55,7 @@ func TestScopeSpansSlice_CopyTo(t *testing.T) {
 	NewScopeSpansSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeSpansSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestScopeSpansSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
@@ -63,12 +63,12 @@ func TestScopeSpansSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
-}
 
-func TestScopeSpansSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewScopeSpansSlice()
-	src := generateTestScopeSpansSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewScopeSpansSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestScopeSpansSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeSpansSlice()
+	got.RemoveIf(func(el ScopeSpans) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestScopeSpansSliceAll(t *testing.T) {

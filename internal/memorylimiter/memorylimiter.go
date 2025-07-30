@@ -240,6 +240,6 @@ func newFixedMemUsageChecker(memAllocLimit, memSpikeLimit uint64) *memUsageCheck
 	}
 }
 
-func newPercentageMemUsageChecker(totalMemory uint64, percentageLimit, percentageSpike uint64) *memUsageChecker {
+func newPercentageMemUsageChecker(totalMemory, percentageLimit, percentageSpike uint64) *memUsageChecker {
 	return newFixedMemUsageChecker(percentageLimit*totalMemory/100, percentageSpike*totalMemory/100)
 }

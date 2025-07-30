@@ -55,7 +55,7 @@ func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	NewResourceProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewResourceProfilesSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestResourceProfilesSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
@@ -63,12 +63,12 @@ func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
-}
 
-func TestResourceProfilesSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewResourceProfilesSlice()
-	src := generateTestResourceProfilesSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewResourceProfilesSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestResourceProfilesSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestResourceProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestResourceProfilesSlice()
+	got.RemoveIf(func(el ResourceProfiles) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestResourceProfilesSliceAll(t *testing.T) {

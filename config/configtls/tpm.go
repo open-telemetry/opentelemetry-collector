@@ -25,7 +25,7 @@ type TPMConfig struct {
 	_ struct{}
 }
 
-func (c TPMConfig) tpmCertificate(keyPem []byte, certPem []byte, openTPM func() (transport.TPMCloser, error)) (tls.Certificate, error) {
+func (c TPMConfig) tpmCertificate(keyPem, certPem []byte, openTPM func() (transport.TPMCloser, error)) (tls.Certificate, error) {
 	tpm, err := openTPM()
 	if err != nil {
 		return tls.Certificate{}, err

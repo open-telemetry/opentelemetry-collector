@@ -32,6 +32,9 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   
 - `pdata`: Remove usage of text/template from pdata, improves DCE. (#12747)
 - `architecture`: New Tier 3 platform riscv64 allowing the collector to be built and distributed for this platform. (#13462)
+- `otelcol`: Prevent collector crash on invalid config reload via `SIGHUP` (#13432).
+  The collector now validates configuration before applying it.
+  If the new config is invalid, the collector logs the failure and continues using the last known valid configuration.
 
 ### 🧰 Bug fixes 🧰
 

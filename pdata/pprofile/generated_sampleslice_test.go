@@ -55,7 +55,7 @@ func TestSampleSlice_CopyTo(t *testing.T) {
 	NewSampleSlice().CopyTo(dest)
 	assert.Equal(t, NewSampleSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestSampleSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
@@ -63,12 +63,12 @@ func TestSampleSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
-}
 
-func TestSampleSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewSampleSlice()
-	src := generateTestSampleSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewSampleSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestSampleSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestSampleSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSampleSlice()
+	got.RemoveIf(func(el Sample) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSampleSliceAll(t *testing.T) {

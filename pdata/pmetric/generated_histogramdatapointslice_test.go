@@ -55,7 +55,7 @@ func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	NewHistogramDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewHistogramDataPointSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestHistogramDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
@@ -63,12 +63,12 @@ func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
-}
 
-func TestHistogramDataPointSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewHistogramDataPointSlice()
-	src := generateTestHistogramDataPointSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewHistogramDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestHistogramDataPointSlice()
+	got.RemoveIf(func(el HistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestHistogramDataPointSliceAll(t *testing.T) {

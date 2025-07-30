@@ -55,7 +55,7 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	NewExponentialHistogramDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPointSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestExponentialHistogramDataPointSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
@@ -63,12 +63,12 @@ func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-}
 
-func TestExponentialHistogramDataPointSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewExponentialHistogramDataPointSlice()
-	src := generateTestExponentialHistogramDataPointSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewExponentialHistogramDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestExponentialHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExponentialHistogramDataPointSlice()
+	got.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestExponentialHistogramDataPointSliceAll(t *testing.T) {

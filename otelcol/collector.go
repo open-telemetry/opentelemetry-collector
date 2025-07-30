@@ -8,6 +8,7 @@ package otelcol // import "go.opentelemetry.io/collector/otelcol"
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -331,14 +332,27 @@ func (col *Collector) Run(ctx context.Context) error {
 
 	cfg, factories, err := col.loadConfiguration(ctx)
 	if err == nil {
-		// Use loaded config and factories to set up components.
 		err = col.setupConfigurationComponents(ctx, cfg, factories)
 	}
 	if err != nil {
 		col.setCollectorState(StateClosed)
-		// Could use a fallback logger here if desired:
-		// logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
-		return fmt.Errorf("failed to set up configuration components: %w", err)
+
+		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
+		if loggerErr != nil {
+			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
+		}
+
+		if col.bc != nil {
+			logs := col.bc.TakeLogs()
+			for _, log := range logs {
+				ce := logger.Core().Check(log.Entry, nil)
+				if ce != nil {
+					ce.Write(log.Context...)
+				}
+			}
+		}
+
+		return err
 	}
 
 	// Always notify with SIGHUP for configuration reloading.

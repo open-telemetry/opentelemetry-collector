@@ -55,7 +55,7 @@ func TestEntityRefSlice_CopyTo(t *testing.T) {
 	NewEntityRefSlice().CopyTo(dest)
 	assert.Equal(t, NewEntityRefSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestEntityRefSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
@@ -63,12 +63,12 @@ func TestEntityRefSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
-}
 
-func TestEntityRefSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewEntityRefSlice()
-	src := generateTestEntityRefSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewEntityRefSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestEntityRefSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestEntityRefSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestEntityRefSlice()
+	got.RemoveIf(func(el EntityRef) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestEntityRefSliceAll(t *testing.T) {

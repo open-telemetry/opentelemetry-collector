@@ -19,7 +19,7 @@ var (
 	logsMarshaler               = &plog.ProtoMarshaler{}
 )
 
-func NewLogs(cons consumer.Logs, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Logs {
+func NewLogs(cons consumer.Logs, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Logs {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}

@@ -55,7 +55,7 @@ func TestSpanEventSlice_CopyTo(t *testing.T) {
 	NewSpanEventSlice().CopyTo(dest)
 	assert.Equal(t, NewSpanEventSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestSpanEventSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
@@ -63,12 +63,12 @@ func TestSpanEventSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
-}
 
-func TestSpanEventSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewSpanEventSlice()
-	src := generateTestSpanEventSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewSpanEventSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestSpanEventSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanEventSlice()
+	got.RemoveIf(func(el SpanEvent) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSpanEventSliceAll(t *testing.T) {

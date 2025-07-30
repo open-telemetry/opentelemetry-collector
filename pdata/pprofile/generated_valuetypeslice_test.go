@@ -55,7 +55,7 @@ func TestValueTypeSlice_CopyTo(t *testing.T) {
 	NewValueTypeSlice().CopyTo(dest)
 	assert.Equal(t, NewValueTypeSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestValueTypeSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
@@ -63,12 +63,12 @@ func TestValueTypeSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
-}
 
-func TestValueTypeSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewValueTypeSlice()
-	src := generateTestValueTypeSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewValueTypeSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestValueTypeSlice(), dest)
 }
@@ -139,6 +139,14 @@ func TestValueTypeSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestValueTypeSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestValueTypeSlice()
+	got.RemoveIf(func(el ValueType) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestValueTypeSliceAll(t *testing.T) {
