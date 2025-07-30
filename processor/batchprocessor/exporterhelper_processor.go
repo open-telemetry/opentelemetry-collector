@@ -6,11 +6,6 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/sdk/instrumentation"
-	"go.opentelemetry.io/otel/sdk/metric"
-	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -54,126 +49,18 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 	return queueBatchConfig
 }
 
-// createProcessorTelemetrySettings creates a TelemetrySettings that applies metric views
-// to suppress all ExporterHelper metrics since we'll use the original batch processor telemetry.
-func createProcessorTelemetrySettings(original component.TelemetrySettings) component.TelemetrySettings {
-	// Define the exact scope used by ExporterHelper
-	exporterHelperScope := instrumentation.Scope{
-		Name: "go.opentelemetry.io/collector/exporter/exporterhelper",
-	}
-
-	// Create metric views to suppress all ExporterHelper metrics
-	// We'll use the original batch processor telemetry instead for consistency
-	views := []metric.View{
-		// Suppress all ExporterHelper metrics by dropping them
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_enqueue_failed_log_records",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_enqueue_failed_metric_points",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_enqueue_failed_spans",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_send_failed_log_records",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_send_failed_metric_points",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_send_failed_spans",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_sent_log_records",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_sent_metric_points",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_sent_spans",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_queue_capacity",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-		metric.NewView(
-			metric.Instrument{
-				Name:  "otelcol_exporter_queue_size",
-				Scope: exporterHelperScope,
-			},
-			metric.Stream{Aggregation: metric.AggregationDrop{}},
-		),
-	}
-
-	// Create a new MeterProvider with the views applied
-	meterProvider := metric.NewMeterProvider(metric.WithView(views...))
-
-	// Return modified telemetry settings
-	return component.TelemetrySettings{
-		Logger:         original.Logger,
-		TracerProvider: original.TracerProvider,
-		MeterProvider:  meterProvider,
-		Resource:       original.Resource,
-	}
-}
-
 // newTracesProcessorWithExporterHelper creates a new traces processor using exporterhelper components.
 func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Traces, cfg *Config) (processor.Traces, error) {
 	set.Logger.Info("Creating traces processor with ExporterHelper")
 
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
-	set.Logger.Info("Translated config to ExporterHelper config")
-
-	// Use modified telemetry settings that rename exporter metrics to processor metrics
-	modifiedTelemetrySettings := createProcessorTelemetrySettings(set.TelemetrySettings)
 
 	exporterSet := exporter.Settings{
 		ID:                set.ID,
-		TelemetrySettings: modifiedTelemetrySettings,
+		TelemetrySettings: set.TelemetrySettings,
 		BuildInfo:         set.BuildInfo,
 	}
 
-	set.Logger.Info("About to call exporterhelper.NewTraces")
 	result, err := exporterhelper.NewTraces(
 		context.Background(),
 		exporterSet,
@@ -181,12 +68,6 @@ func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer c
 		nextConsumer.ConsumeTraces,
 		exporterhelper.WithQueue(queueBatchConfig),
 	)
-	if err != nil {
-		set.Logger.Error("exporterhelper.NewTraces failed", zap.Error(err))
-	} else {
-		set.Logger.Info("exporterhelper.NewTraces completed successfully")
-	}
-
 	return result, err
 }
 
@@ -194,12 +75,9 @@ func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer c
 func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Metrics, cfg *Config) (processor.Metrics, error) {
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
 
-	// Use modified telemetry settings that rename exporter metrics to processor metrics
-	modifiedTelemetrySettings := createProcessorTelemetrySettings(set.TelemetrySettings)
-
 	exporterSet := exporter.Settings{
 		ID:                set.ID,
-		TelemetrySettings: modifiedTelemetrySettings,
+		TelemetrySettings: set.TelemetrySettings,
 		BuildInfo:         set.BuildInfo,
 	}
 
@@ -216,12 +94,9 @@ func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer 
 func newLogsProcessorWithExporterHelper(set processor.Settings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 	queueBatchConfig := translateToExporterHelperConfig(cfg)
 
-	// Use modified telemetry settings that rename exporter metrics to processor metrics
-	modifiedTelemetrySettings := createProcessorTelemetrySettings(set.TelemetrySettings)
-
 	exporterSet := exporter.Settings{
 		ID:                set.ID,
-		TelemetrySettings: modifiedTelemetrySettings,
+		TelemetrySettings: set.TelemetrySettings,
 		BuildInfo:         set.BuildInfo,
 	}
 
