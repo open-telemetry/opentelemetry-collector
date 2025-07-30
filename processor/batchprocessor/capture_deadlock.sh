@@ -9,7 +9,10 @@ cd /home/jmacd/src/otel/collector/processor/batchprocessor
 echo "Starting test in background..."
 go test -race -c .
 
-./batchprocessor.test -test.v -test.run TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelperWithPropagateErrors 2> deadlock_err 1> deadlock_out &
+#TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelperWithPropagateErrors
+#
+
+./batchprocessor.test -test.v -test.run TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelper  2> deadlock_err 1> deadlock_out &
 TEST_PID=$!
 
 echo "Test started with PID: $TEST_PID"

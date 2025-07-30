@@ -119,8 +119,8 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	}
 
 	mq.items.push(ctx, el, done)
-	// Signal one consumer if any.
-	mq.hasMoreElements.Signal()
+	// Broadcast to wake up all consumers if any, to handle potential race conditions.
+	mq.hasMoreElements.Broadcast()
 	return done, nil
 }
 
@@ -153,6 +153,8 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 	defer mq.mu.Unlock()
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
+	// Wake up any waiting consumers in case there are more items to process
+	mq.hasMoreElements.Broadcast()
 	if mq.waitForResult {
 		// In this case the done will be added back to the queue by the waiter.
 		bd.ch <- err

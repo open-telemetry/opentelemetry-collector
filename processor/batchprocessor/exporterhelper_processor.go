@@ -21,7 +21,7 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 		WaitForResult:   propagateErrors.IsEnabled(),
 		BlockOnOverflow: true,
 		Sizer:           exporterhelper.RequestSizerTypeItems,
-		QueueSize:       int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 1000)),
+		QueueSize:       int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 1000) * 10), // Increase queue size for better throughput
 		NumConsumers:    1,
 	}
 
