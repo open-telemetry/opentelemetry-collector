@@ -102,6 +102,28 @@ func TestAllHTTPClientSettings(t *testing.T) {
 			shouldError: false,
 		},
 		{
+			name: "all_valid_settings_http2_enabled",
+			settings: ClientConfig{
+				Endpoint: "localhost:1234",
+				TLS: configtls.ClientConfig{
+					Insecure: false,
+				},
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				ForceAttemptHTTP2:    true,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "",
+				DisableKeepAlives:    true,
+				Cookies:              CookiesConfig{Enabled: true},
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
+			},
+			shouldError: false,
+		},
+		{
 			name: "all_valid_settings_with_none_compression",
 			settings: ClientConfig{
 				Endpoint: "localhost:1234",
@@ -699,8 +721,9 @@ func TestHttpReception(t *testing.T) {
 			}
 
 			hcs := &ClientConfig{
-				Endpoint: prefix + ln.Addr().String(),
-				TLS:      *tt.tlsClientCreds,
+				Endpoint:          prefix + ln.Addr().String(),
+				TLS:               *tt.tlsClientCreds,
+				ForceAttemptHTTP2: true,
 			}
 
 			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
