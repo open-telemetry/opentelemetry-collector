@@ -16,7 +16,7 @@ type baseSlice interface {
 type sliceOfPtrs struct {
 	structName  string
 	packageName string
-	element     *messageValueStruct
+	element     *messageStruct
 }
 
 func (ss *sliceOfPtrs) getName() string {
@@ -50,12 +50,12 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 		"type":               "sliceOfPtrs",
 		"isCommon":           usedByOtherDataTypes(ss.packageName),
 		"structName":         ss.structName,
-		"elementName":        ss.element.structName,
+		"elementName":        ss.element.getName(),
 		"originName":         ss.element.originFullName,
 		"originElementType":  "*" + ss.element.originFullName,
 		"originElementPtr":   "",
 		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "((*es." + orig + ")[i], es." + state + ")",
+		"newElement":         "new" + ss.element.getName() + "((*es." + orig + ")[i], es." + state + ")",
 		"origAccessor":       orig,
 		"stateAccessor":      state,
 		"packageName":        packageInfo.name,
@@ -74,7 +74,7 @@ var _ baseStruct = (*sliceOfPtrs)(nil)
 type sliceOfValues struct {
 	structName  string
 	packageName string
-	element     *messageValueStruct
+	element     *messageStruct
 }
 
 func (ss *sliceOfValues) getName() string {
@@ -98,13 +98,14 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 	state := stateAccessor(ss.packageName)
 	return map[string]any{
 		"type":               "sliceOfValues",
-		"structName":         ss.structName,
-		"elementName":        ss.element.structName,
+		"isCommon":           usedByOtherDataTypes(ss.packageName),
+		"structName":         ss.getName(),
+		"elementName":        ss.element.getName(),
 		"originName":         ss.element.originFullName,
 		"originElementType":  ss.element.originFullName,
 		"originElementPtr":   "&",
 		"emptyOriginElement": ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.structName + "(&(*es." + orig + ")[i], es." + state + ")",
+		"newElement":         "new" + ss.element.getName() + "(&(*es." + orig + ")[i], es." + state + ")",
 		"origAccessor":       orig,
 		"stateAccessor":      state,
 		"packageName":        packageInfo.name,

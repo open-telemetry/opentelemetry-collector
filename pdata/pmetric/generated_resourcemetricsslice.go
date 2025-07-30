@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ResourceMetricsSlice logically represents a slice of ResourceMetrics.
@@ -129,6 +130,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es ResourceMetricsSlice) RemoveIf(f func(ResourceMetrics) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -156,17 +159,53 @@ func (es ResourceMetricsSlice) Sort(less func(a, b ResourceMetrics) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ResourceMetricsSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ResourceMetricsSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpmetrics.ResourceMetrics{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigResourceMetricsSlice(dest, src []*otlpmetrics.ResourceMetrics) []*otlpmetrics.ResourceMetrics {
+	var newDest []*otlpmetrics.ResourceMetrics
 	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.ResourceMetrics, len(src))
-		data := make([]otlpmetrics.ResourceMetrics, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpmetrics.ResourceMetrics, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.ResourceMetrics{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.ResourceMetrics{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigResourceMetrics(dest[i], src[i])
+		copyOrigResourceMetrics(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

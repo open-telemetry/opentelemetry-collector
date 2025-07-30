@@ -50,29 +50,14 @@ func (req *tracesRequest) mergeTo(dst *tracesRequest, sz sizer.TracesSizer) {
 
 func (req *tracesRequest) split(maxSize int, sz sizer.TracesSizer) ([]Request, error) {
 	var res []Request
-	var td ptrace.Traces
-	rmSize := -1
-
-	previousSize := req.size(sz)
-
-	for req.size(sz) > maxSize && rmSize != 0 {
-		td, rmSize = extractTraces(req.td, maxSize, sz)
-		if td.SpanCount() > 0 {
-			req.setCachedSize(req.size(sz) - rmSize)
-			res = append(res, newTracesRequest(td))
+	for req.size(sz) > maxSize {
+		td, rmSize := extractTraces(req.td, maxSize, sz)
+		if td.SpanCount() == 0 {
+			return res, fmt.Errorf("one span size is greater than max size, dropping items: %d", req.td.SpanCount())
 		}
+		req.setCachedSize(req.size(sz) - rmSize)
+		res = append(res, newTracesRequest(td))
 	}
-
-	if req.size(sz) == previousSize && req.size(sz) > maxSize {
-		err := fmt.Errorf(
-			"partial success: failed to split traces request: size is greater than max size. size: %d, max_size: %d. Failed: %d",
-			req.size(sz),
-			maxSize,
-			req.td.SpanCount(),
-		)
-		return res, err
-	}
-
 	res = append(res, req)
 	return res, nil
 }

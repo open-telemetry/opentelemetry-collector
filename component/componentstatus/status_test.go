@@ -117,8 +117,8 @@ func Test_ReportStatus(t *testing.T) {
 }
 
 var (
-	_ = (component.Host)(nil)
-	_ = (Reporter)(nil)
+	_ = component.Host(nil)
+	_ = Reporter(nil)
 )
 
 type reporter struct {
@@ -133,7 +133,7 @@ func (r *reporter) Report(_ *Event) {
 	r.reportStatusCalled = true
 }
 
-var _ = (component.Host)(nil)
+var _ = component.Host(nil)
 
 type host struct {
 	reportStatusCalled bool

@@ -6,6 +6,10 @@
 
 package internal
 
+import (
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
+
 type StringSlice struct {
 	orig  *[]string
 	state *State
@@ -28,12 +32,35 @@ func CopyOrigStringSlice(dst, src []string) []string {
 	return append(dst, src...)
 }
 
-func FillTestStringSlice(tv StringSlice) {
+func FillTestStringSlice(ms StringSlice) {
+	*ms.orig = []string{"a", "b", "c"}
 }
 
 func GenerateTestStringSlice() StringSlice {
+	orig := []string(nil)
 	state := StateMutable
-	var orig []string = nil
+	ms := NewStringSlice(&orig, &state)
+	FillTestStringSlice(ms)
+	return ms
+}
 
-	return StringSlice{&orig, &state}
+// MarshalJSONStreamStringSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamStringSlice(ms StringSlice, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		dest.WriteString((*ms.orig)[0])
+	}
+	for i := 1; i < len((*ms.orig)); i++ {
+		dest.WriteMore()
+		dest.WriteString((*ms.orig)[i])
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONIterStringSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterStringSlice(ms StringSlice, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, iter.ReadString())
+		return true
+	})
 }
