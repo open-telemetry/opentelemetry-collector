@@ -15,8 +15,8 @@ TEST_PID=$!
 echo "Test started with PID: $TEST_PID"
 
 # Wait for the test to reach deadlock state
-echo "Waiting 5 seconds for deadlock to occur..."
-sleep 5
+echo "Waiting 10 seconds for deadlock to occur..."
+sleep 10
 
 # Send SIGABRT to get stack trace
 echo "Sending SIGABRT to capture stack trace..."
