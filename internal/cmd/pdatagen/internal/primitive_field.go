@@ -56,6 +56,8 @@ const primitiveMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defa
 const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
 
+const primitiveSizeProtoTemplate = ``
+
 type PrimitiveField struct {
 	fieldName string
 	protoType ProtoType
@@ -88,6 +90,11 @@ func (pf *PrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
 
 func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("primitiveUnmarshalJSONTemplate").Parse(primitiveUnmarshalJSONTemplate))
+	return executeTemplate(t, pf.templateFields(ms))
+}
+
+func (pf *PrimitiveField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("primitiveSizeProtoTemplate").Parse(primitiveSizeProtoTemplate))
 	return executeTemplate(t, pf.templateFields(ms))
 }
 

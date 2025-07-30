@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigAttributeUnit(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigAttributeUnit(t *testing.T) {
+	src := &otlpprofiles.AttributeUnit{}
+	FillOrigTestAttributeUnit(src)
+	buf := make([]byte, SizeProtoOrigAttributeUnit(src))
+	n, err := MarshalProtoOrigAttributeUnit(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpprofiles.AttributeUnit{}
+	require.NoError(t, UnmarshalProtoOrigAttributeUnit(dest, buf))
+	assert.Equal(t, src, dest)
+}

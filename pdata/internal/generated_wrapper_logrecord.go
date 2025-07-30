@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
@@ -119,4 +120,32 @@ func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
+	var n int
+	var l int
+	_ = l
+	"ObservedTimeUnixNano"
+	"TimeUnixNano"
+	"TraceId"
+	"SpanId"
+	"Flags"
+
+	"SeverityNumber"
+
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	return n
+}
+
+func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

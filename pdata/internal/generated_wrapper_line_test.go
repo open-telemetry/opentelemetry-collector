@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
+	src := &otlpprofiles.Line{}
+	FillOrigTestLine(src)
+	buf := make([]byte, SizeProtoOrigLine(src))
+	n, err := MarshalProtoOrigLine(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpprofiles.Line{}
+	require.NoError(t, UnmarshalProtoOrigLine(dest, buf))
+	assert.Equal(t, src, dest)
+}

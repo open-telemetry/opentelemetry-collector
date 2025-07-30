@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
+	src := &otlpmetrics.NumberDataPoint{}
+	FillOrigTestNumberDataPoint(src)
+	buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
+	n, err := MarshalProtoOrigNumberDataPoint(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpmetrics.NumberDataPoint{}
+	require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+	assert.Equal(t, src, dest)
+}

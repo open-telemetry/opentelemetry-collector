@@ -9,6 +9,7 @@ package internal
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
@@ -54,4 +55,24 @@ func UnmarshalJSONOrigScopeSpans(orig *otlptrace.ScopeSpans, iter *json.Iterator
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.Spans); i++ {
+		l = SizeProtoOrigSpan(&orig.Spans[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

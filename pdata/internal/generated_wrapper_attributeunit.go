@@ -49,3 +49,19 @@ func UnmarshalJSONOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, iter *json
 		return true
 	})
 }
+
+func SizeProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigAttributeUnit(orig *otlpprofiles.AttributeUnit, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

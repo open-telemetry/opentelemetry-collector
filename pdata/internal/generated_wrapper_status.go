@@ -49,3 +49,20 @@ func UnmarshalJSONOrigStatus(orig *otlptrace.Status, iter *json.Iterator) {
 		return true
 	})
 }
+
+func SizeProtoOrigStatus(orig *otlptrace.Status) int {
+	var n int
+	var l int
+	_ = l
+	"Code"
+
+	return n
+}
+
+func MarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

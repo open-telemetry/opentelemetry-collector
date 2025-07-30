@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigResourceMetrics(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigResourceMetrics(t *testing.T) {
+	src := &otlpmetrics.ResourceMetrics{}
+	FillOrigTestResourceMetrics(src)
+	buf := make([]byte, SizeProtoOrigResourceMetrics(src))
+	n, err := MarshalProtoOrigResourceMetrics(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpmetrics.ResourceMetrics{}
+	require.NoError(t, UnmarshalProtoOrigResourceMetrics(dest, buf))
+	assert.Equal(t, src, dest)
+}

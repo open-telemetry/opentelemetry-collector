@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
+	src := &otlpresource.Resource{}
+	FillOrigTestResource(src)
+	buf := make([]byte, SizeProtoOrigResource(src))
+	n, err := MarshalProtoOrigResource(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpresource.Resource{}
+	require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
+	assert.Equal(t, src, dest)
+}

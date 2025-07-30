@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
@@ -54,4 +55,24 @@ func UnmarshalJSONOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, iter *j
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.ScopeMetrics); i++ {
+		l = SizeProtoOrigScopeMetrics(&orig.ScopeMetrics[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

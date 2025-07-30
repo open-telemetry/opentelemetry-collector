@@ -50,6 +50,8 @@ const oneOfUnmarshalJSONTemplate = `
 	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
 	{{- end }}`
 
+const oneOfSizeProtoTemplate = ``
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -92,6 +94,11 @@ func (of *OneOfField) GenerateMarshalJSON(ms *messageStruct) string {
 
 func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("oneOfUnmarshalJSONTemplate").Parse(oneOfUnmarshalJSONTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
+func (of *OneOfField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfSizeProtoTemplate").Parse(oneOfSizeProtoTemplate))
 	return executeTemplate(t, of.templateFields(ms))
 }
 

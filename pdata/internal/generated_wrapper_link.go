@@ -50,3 +50,20 @@ func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
 		return true
 	})
 }
+
+func SizeProtoOrigLink(orig *otlpprofiles.Link) int {
+	var n int
+	var l int
+	_ = l
+	"TraceId"
+	"SpanId"
+	return n
+}
+
+func MarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
@@ -147,4 +148,40 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"StartTimeUnixNano"
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.BucketCounts); i++ {
+		l = SizeProtoOrigUint64(&orig.BucketCounts[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.ExplicitBounds); i++ {
+		l = SizeProtoOrigFloat64(&orig.ExplicitBounds[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.Exemplars); i++ {
+		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"Flags"
+
+	return n
+}
+
+func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

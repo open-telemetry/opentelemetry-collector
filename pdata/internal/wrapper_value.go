@@ -181,3 +181,7 @@ func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
 func FillOrigTestAnyValue(orig *otlpcommon.AnyValue) {
 	orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }
+
+func SizeProtoValue(orig *otlpcommon.AnyValue) int {
+	return orig.Size()
+}

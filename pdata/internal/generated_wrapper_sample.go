@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
@@ -89,4 +90,33 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.Value); i++ {
+		l = SizeProtoOrigInt64(&orig.Value[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.AttributeIndices); i++ {
+		l = SizeProtoOrigInt32(&orig.AttributeIndices[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	for i := 0; i < len(orig.TimestampsUnixNano); i++ {
+		l = SizeProtoOrigUint64(&orig.TimestampsUnixNano[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

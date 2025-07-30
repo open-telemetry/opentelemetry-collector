@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
@@ -96,4 +97,31 @@ func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *j
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"StartTimeUnixNano"
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.Exemplars); i++ {
+		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"Flags"
+	return n
+}
+
+func MarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }
