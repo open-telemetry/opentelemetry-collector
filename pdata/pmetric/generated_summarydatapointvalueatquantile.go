@@ -107,6 +107,23 @@ func (ms SummaryDataPointValueAtQuantile) unmarshalJSONIter(iter *json.Iterator)
 	})
 }
 
+func sizeProtoSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms SummaryDataPointValueAtQuantile) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms SummaryDataPointValueAtQuantile) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value

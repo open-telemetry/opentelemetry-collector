@@ -64,6 +64,19 @@ func TestLogRecord_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestLogRecord_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestLogRecord()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewLogRecord()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.Timestamp(0), ms.ObservedTimestamp())

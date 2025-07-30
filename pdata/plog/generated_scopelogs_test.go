@@ -63,6 +63,19 @@ func TestScopeLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestScopeLogs_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestScopeLogs()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewScopeLogs()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

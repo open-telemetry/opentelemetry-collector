@@ -109,6 +109,24 @@ func (ms Link) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoLink(orig *otlpprofiles.Link) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	"TraceId"
+	"SpanId"
+	return n
+}
+
+func (ms Link) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Link) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId

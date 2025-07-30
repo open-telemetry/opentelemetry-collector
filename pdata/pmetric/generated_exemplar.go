@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -193,6 +194,30 @@ func (ms Exemplar) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoExemplar(orig *otlpmetrics.Exemplar) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.FilteredAttributes); i++ {
+		l = internal.SizeProtoKeyValue(&orig.FilteredAttributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"TraceId"
+	"SpanId"
+	return n
+}
+
+func (ms Exemplar) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Exemplar) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {

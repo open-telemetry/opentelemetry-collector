@@ -14,6 +14,7 @@ var pmetric = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},

@@ -10,6 +10,7 @@ import (
 type baseSlice interface {
 	getName() string
 	getPackageName() string
+	getElementName() string
 }
 
 // sliceOfPtrs generates code for a slice of pointer fields. The generated structs cannot be used from other packages.
@@ -21,6 +22,10 @@ type sliceOfPtrs struct {
 
 func (ss *sliceOfPtrs) getName() string {
 	return ss.structName
+}
+
+func (ss *sliceOfPtrs) getElementName() string {
+	return ss.element.getName()
 }
 
 func (ss *sliceOfPtrs) getPackageName() string {
@@ -83,6 +88,10 @@ func (ss *sliceOfValues) getName() string {
 
 func (ss *sliceOfValues) getPackageName() string {
 	return ss.packageName
+}
+
+func (ss *sliceOfValues) getElementName() string {
+	return ss.element.getName()
 }
 
 func (ss *sliceOfValues) generate(packageInfo *PackageInfo) []byte {

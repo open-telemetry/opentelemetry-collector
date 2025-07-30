@@ -64,6 +64,19 @@ func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestExportPartialSuccess_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestExportPartialSuccess()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewExportPartialSuccess()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())

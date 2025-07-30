@@ -63,6 +63,19 @@ func TestScopeSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestScopeSpans_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestScopeSpans()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewScopeSpans()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

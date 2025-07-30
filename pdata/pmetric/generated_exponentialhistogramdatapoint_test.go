@@ -69,6 +69,19 @@ func TestExponentialHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestExponentialHistogramDataPoint_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestExponentialHistogramDataPoint()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewExponentialHistogramDataPoint()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())

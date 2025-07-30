@@ -62,6 +62,19 @@ func TestLine_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestLine_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestLine()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewLine()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestLine_FunctionIndex(t *testing.T) {
 	ms := NewLine()
 	assert.Equal(t, int32(0), ms.FunctionIndex())

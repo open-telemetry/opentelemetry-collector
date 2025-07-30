@@ -68,6 +68,19 @@ func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSummaryDataPointValueAtQuantile()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSummaryDataPointValueAtQuantile()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
 	assert.InDelta(t, float64(0), ms.Quantile(), 0.01)

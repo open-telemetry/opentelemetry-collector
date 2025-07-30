@@ -63,6 +63,19 @@ func TestMapping_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestMapping_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestMapping()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewMapping()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestMapping_MemoryStart(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, uint64(0), ms.MemoryStart())

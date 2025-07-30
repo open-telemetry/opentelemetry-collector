@@ -63,6 +63,19 @@ func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestAttribute_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestAttribute()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewAttribute()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())

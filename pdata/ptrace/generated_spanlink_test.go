@@ -64,6 +64,19 @@ func TestSpanLink_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSpanLink_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSpanLink()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSpanLink()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())

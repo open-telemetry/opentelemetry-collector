@@ -64,6 +64,19 @@ func TestProfile_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestProfile_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestProfile()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewProfile()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueTypeSlice(), ms.SampleType())

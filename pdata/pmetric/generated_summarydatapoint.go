@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -179,6 +180,34 @@ func (ms SummaryDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = internal.SizeProtoKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"StartTimeUnixNano"
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.QuantileValues); i++ {
+		l = sizeProto(&orig.QuantileValues[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"Flags"
+	return n
+}
+
+func (ms SummaryDataPoint) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms SummaryDataPoint) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {

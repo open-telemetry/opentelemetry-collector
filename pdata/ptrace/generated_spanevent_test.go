@@ -63,6 +63,19 @@ func TestSpanEvent_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSpanEvent_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSpanEvent()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSpanEvent()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSpanEvent_Timestamp(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())

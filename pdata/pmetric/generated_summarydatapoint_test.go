@@ -63,6 +63,19 @@ func TestSummaryDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSummaryDataPoint_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSummaryDataPoint()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSummaryDataPoint()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())

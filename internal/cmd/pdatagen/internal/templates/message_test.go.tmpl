@@ -65,6 +65,29 @@ func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func Test{{ .structName }}_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTest{{ .structName }}()
+	{{- if .isCommon }}
+	buf := make([]byte, internal.SizeProto{{ .structName }}(src.{{ .origAccessor }}))
+	n, err := internal.MarshalProto{{ .structName }}(src.{{ .origAccessor }}, buf)
+	{{- else }}
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	{{- end }}
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := New{{ .structName }}()
+	{{- if .isCommon }}
+	require.NoError(t, internal.UnmarshalProto{{ .structName }}(dest.{{ .origAccessor }}, buf))
+	{{- else }}
+	require.NoError(t, dest.unmarshalProto(buf))
+	{{- end }}
+
+	assert.Equal(t, src, dest)
+}
+
+
 {{ range .fields }}
 {{ .GenerateAccessorsTest $.messageStruct }}
 {{ end }}

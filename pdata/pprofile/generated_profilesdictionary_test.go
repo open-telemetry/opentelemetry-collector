@@ -63,6 +63,19 @@ func TestProfilesDictionary_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestProfilesDictionary_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestProfilesDictionary()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewProfilesDictionary()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestProfilesDictionary_MappingTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewMappingSlice(), ms.MappingTable())

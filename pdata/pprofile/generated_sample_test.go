@@ -63,6 +63,19 @@ func TestSample_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSample_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSample()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSample()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSample_LocationsStartIndex(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LocationsStartIndex())

@@ -63,6 +63,19 @@ func TestScopeProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestScopeProfiles_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestScopeProfiles()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewScopeProfiles()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))

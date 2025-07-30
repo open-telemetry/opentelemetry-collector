@@ -14,6 +14,7 @@ var pprofile = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},

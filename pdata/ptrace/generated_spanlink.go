@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -165,6 +166,30 @@ func (ms SpanLink) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoSpanLink(orig *otlptrace.Span_Link) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	"TraceId"
+	"SpanId"
+
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = internal.SizeProtoKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	return n
+}
+
+func (ms SpanLink) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms SpanLink) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigSpanLink(dest, src *otlptrace.Span_Link) {

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -321,6 +322,35 @@ func (ms ExponentialHistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = internal.SizeProtoKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"StartTimeUnixNano"
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.Exemplars); i++ {
+		l = sizeProto(&orig.Exemplars[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"Flags"
+
+	return n
+}
+
+func (ms ExponentialHistogramDataPoint) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms ExponentialHistogramDataPoint) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {

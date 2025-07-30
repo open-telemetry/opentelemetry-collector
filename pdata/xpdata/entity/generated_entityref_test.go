@@ -63,6 +63,19 @@ func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestEntityRef_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestEntityRef()
+	buf := make([]byte, internal.SizeProtoEntityRef(src.getOrig()))
+	n, err := internal.MarshalProtoEntityRef(src.getOrig(), buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewEntityRef()
+	require.NoError(t, internal.UnmarshalProtoEntityRef(dest.getOrig(), buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestEntityRef_SchemaUrl(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.SchemaUrl())

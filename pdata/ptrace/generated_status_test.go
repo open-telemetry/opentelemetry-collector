@@ -62,6 +62,19 @@ func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestStatus_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestStatus()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewStatus()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestStatus_Code(t *testing.T) {
 	ms := NewStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())

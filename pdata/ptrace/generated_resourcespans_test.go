@@ -63,6 +63,19 @@ func TestResourceSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestResourceSpans_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestResourceSpans()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewResourceSpans()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
 	internal.FillTestResource(internal.Resource(ms.Resource()))

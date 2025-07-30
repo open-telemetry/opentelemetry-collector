@@ -64,6 +64,19 @@ func TestExemplar_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestExemplar_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestExemplar()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewExemplar()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExemplar_Timestamp(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())

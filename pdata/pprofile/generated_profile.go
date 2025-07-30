@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -267,6 +268,52 @@ func (ms Profile) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoProfile(orig *otlpprofiles.Profile) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	for i := 0; i < len(orig.SampleType); i++ {
+		l = sizeProto(&orig.SampleType[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.Sample); i++ {
+		l = sizeProto(&orig.Sample[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.LocationIndices); i++ {
+		l = internal.SizeProtoint32(&orig.LocationIndices[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"TimeNanos"
+	"DurationNanos"
+
+	for i := 0; i < len(orig.CommentStrindices); i++ {
+		l = internal.SizeProtoint32(&orig.CommentStrindices[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	"ProfileId"
+
+	for i := 0; i < len(orig.OriginalPayload); i++ {
+		l = internal.SizeProtobyte(&orig.OriginalPayload[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.AttributeIndices); i++ {
+		l = internal.SizeProtoint32(&orig.AttributeIndices[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func (ms Profile) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Profile) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigProfile(dest, src *otlpprofiles.Profile) {

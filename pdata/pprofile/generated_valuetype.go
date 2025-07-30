@@ -124,6 +124,24 @@ func (ms ValueType) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoValueType(orig *otlpprofiles.ValueType) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	"AggregationTemporality"
+	return n
+}
+
+func (ms ValueType) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms ValueType) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.TypeStrindex = src.TypeStrindex
 	dest.UnitStrindex = src.UnitStrindex

@@ -62,6 +62,19 @@ func TestValueType_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestValueType_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestValueType()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewValueType()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.TypeStrindex())

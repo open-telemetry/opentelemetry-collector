@@ -62,6 +62,19 @@ func TestHistogram_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestHistogram_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestHistogram()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewHistogram()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())

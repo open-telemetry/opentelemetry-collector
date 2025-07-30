@@ -73,3 +73,19 @@ func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterato
 		return true
 	})
 }
+
+func SizeProto{{ .structName }}(orig *{{ .originName }}) int {
+	n := 0
+	{{ range .fields -}}
+	{{ .GenerateSizeProto $.messageStruct }}
+	{{ end -}}
+	return n
+}
+
+func MarshalProto{{ .structName }}(orig *{{ .originName }}, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProto{{ .structName }}(orig *{{ .originName }}, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

@@ -62,6 +62,19 @@ func TestInstrumentationScope_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestInstrumentationScope_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestInstrumentationScope()
+	buf := make([]byte, internal.SizeProtoInstrumentationScope(src.getOrig()))
+	n, err := internal.MarshalProtoInstrumentationScope(src.getOrig(), buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewInstrumentationScope()
+	require.NoError(t, internal.UnmarshalProtoInstrumentationScope(dest.getOrig(), buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Empty(t, ms.Name())

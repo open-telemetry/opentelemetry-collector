@@ -63,6 +63,19 @@ func TestMetric_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestMetric_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestMetric()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewMetric()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Name())

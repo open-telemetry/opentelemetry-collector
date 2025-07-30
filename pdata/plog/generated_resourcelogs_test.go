@@ -63,6 +63,19 @@ func TestResourceLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestResourceLogs_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestResourceLogs()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewResourceLogs()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
 	internal.FillTestResource(internal.Resource(ms.Resource()))
