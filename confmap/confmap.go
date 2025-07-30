@@ -18,6 +18,7 @@ import (
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/v2"
 
+	"go.opentelemetry.io/collector/confmap/internal"
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 	"go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 )
@@ -71,47 +72,39 @@ func (l *Conf) AllKeys() []string {
 }
 
 type UnmarshalOption interface {
-	apply(*unmarshalOption)
-}
-
-type unmarshalOption struct {
-	ignoreUnused bool
+	internal.UnmarshalOption
 }
 
 // WithIgnoreUnused sets an option to ignore errors if existing
 // keys in the original Conf were unused in the decoding process
 // (extra keys).
 func WithIgnoreUnused() UnmarshalOption {
-	return unmarshalOptionFunc(func(uo *unmarshalOption) {
-		uo.ignoreUnused = true
+	return internal.UnmarshalOptionFunc(func(uo *internal.UnmarshalOptions) {
+		uo.IgnoreUnused = true
 	})
-}
-
-type unmarshalOptionFunc func(*unmarshalOption)
-
-func (fn unmarshalOptionFunc) apply(set *unmarshalOption) {
-	fn(set)
 }
 
 // Unmarshal unmarshalls the config into a struct using the given options.
 // Tags on the fields of the structure must be properly set.
 func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
-	set := unmarshalOption{}
+	set := internal.UnmarshalOptions{}
 	for _, opt := range opts {
-		opt.apply(&set)
+		internal.ApplyUnmarshalOption(opt, &set)
 	}
-	return decodeConfig(l, result, !set.ignoreUnused, l.skipTopLevelUnmarshaler)
+	return decodeConfig(l, result, set, l.skipTopLevelUnmarshaler)
 }
 
-type marshalOption struct{}
-
 type MarshalOption interface {
-	apply(*marshalOption)
+	internal.MarshalOption
 }
 
 // Marshal encodes the config and merges it into the Conf.
-func (l *Conf) Marshal(rawVal any, _ ...MarshalOption) error {
-	enc := encoder.New(encoderConfig(rawVal))
+func (l *Conf) Marshal(rawVal any, opts ...MarshalOption) error {
+	set := internal.MarshalOptions{}
+	for _, opt := range opts {
+		internal.ApplyMarshalOption(opt, &set)
+	}
+	enc := encoder.New(encoderConfig(rawVal, set))
 	data, err := enc.Encode(rawVal)
 	if err != nil {
 		return err
@@ -271,27 +264,30 @@ func (l *Conf) ToStringMap() map[string]any {
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler bool) error {
+func decodeConfig(m *Conf, result any, settings internal.UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
+	hooks := []mapstructure.DecodeHookFunc{
+		useExpandValue(),
+		expandNilStructPointersHookFunc(),
+		mapstructure.StringToSliceHookFunc(","),
+		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+		mapstructure.StringToTimeDurationHookFunc(),
+		mapstructure.TextUnmarshallerHookFunc(),
+		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+		// after the main unmarshaler hook is called,
+		// we unmarshal the embedded structs if present to merge with the result:
+		unmarshalerEmbeddedStructsHookFunc(),
+		zeroSliceAndMapHookFunc(),
+	}
+	hooks = append(hooks, settings.AdditionalDecodeHookFuncs...)
+
 	dc := &mapstructure.DecoderConfig{
-		ErrorUnused:      errorUnused,
+		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,
 		TagName:          MapstructureTag,
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeNil:        true,
-		DecodeHook: composehook.ComposeDecodeHookFunc(
-			useExpandValue(),
-			expandNilStructPointersHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
-			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.TextUnmarshallerHookFunc(),
-			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
-			// after the main unmarshaler hook is called,
-			// we unmarshal the embedded structs if present to merge with the result:
-			unmarshalerEmbeddedStructsHookFunc(),
-			zeroSliceAndMapHookFunc(),
-		),
+		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks...),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
@@ -309,13 +305,21 @@ func decodeConfig(m *Conf, result any, errorUnused bool, skipTopLevelUnmarshaler
 // encoderConfig returns a default encoder.EncoderConfig that includes
 // an EncodeHook that handles both TextMarshaller and Marshaler
 // interfaces.
-func encoderConfig(rawVal any) *encoder.EncoderConfig {
+func encoderConfig(rawVal any, set internal.MarshalOptions) *encoder.EncoderConfig {
+	hooks := []mapstructure.DecodeHookFunc{
+		encoder.YamlMarshalerHookFunc(),
+		encoder.TextMarshalerHookFunc(),
+	}
+
+	if set.ScalarMarshalingEncodeHookFunc != nil {
+		hooks = append(hooks, set.ScalarMarshalingEncodeHookFunc)
+	}
+
+	// This hook must come after the scalar marshaling hook, if present.
+	hooks = append(hooks, marshalerHookFunc(rawVal))
+
 	return &encoder.EncoderConfig{
-		EncodeHook: mapstructure.ComposeDecodeHookFunc(
-			encoder.YamlMarshalerHookFunc(),
-			encoder.TextMarshalerHookFunc(),
-			marshalerHookFunc(rawVal),
-		),
+		EncodeHook: mapstructure.ComposeDecodeHookFunc(hooks...),
 	}
 }
 

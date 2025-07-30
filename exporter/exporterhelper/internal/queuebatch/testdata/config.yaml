@@ -1,0 +1,4 @@
+queue_size: 1000
+enabled: true
+num_consumers: 10
+storage: disk
