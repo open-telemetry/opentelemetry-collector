@@ -23,6 +23,7 @@ type Settings[T any] struct {
 	ItemsSizer  request.Sizer[T]
 	BytesSizer  request.Sizer[T]
 	Partitioner Partitioner[T]
+	MergeCtx    func(context.Context, context.Context) context.Context
 }
 
 type QueueBatch struct {
@@ -39,6 +40,7 @@ func NewQueueBatch(
 		itemsSizer:  set.ItemsSizer,
 		bytesSizer:  set.BytesSizer,
 		partitioner: set.Partitioner,
+		mergeCtx:    set.MergeCtx,
 		next:        next,
 		maxWorkers:  cfg.NumConsumers,
 		logger:      set.Telemetry.Logger,
