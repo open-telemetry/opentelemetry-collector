@@ -46,14 +46,17 @@ func (c *cond) Wait(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		c.L.Lock()
+		// Always decrement waiting count when context is cancelled
+		c.waiting--
+		// Only consume the signal if no one else is waiting for it
+		// Check both waiting count and channel buffer to avoid consuming signals meant for others
 		if c.waiting == 0 {
-			// If waiting is 0, it means that there was a signal sent and nobody else waits for it.
-			// Consume it, so that we don't unblock other consumer unnecessary,
-			// or we don't block the producer because the channel buffer is full.
-			<-c.ch
-		} else {
-			// Decrease the number of waiting routines.
-			c.waiting--
+			select {
+			case <-c.ch:
+				// Successfully consumed a stale signal
+			default:
+				// No signal to consume, which is fine
+			}
 		}
 		return ctx.Err()
 	case <-c.ch:
