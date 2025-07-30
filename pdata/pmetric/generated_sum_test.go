@@ -95,5 +95,5 @@ func generateTestSum() Sum {
 func fillTestSum(tv Sum) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestNumberDataPointSlice(tv.DataPoints())
 }

@@ -208,9 +208,9 @@ func fillTestSpan(tv Span) {
 	tv.orig.EndTimeUnixNano = 1234567890
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
-	fillTestSpanEventSlice(newSpanEventSlice(&tv.orig.Events, tv.state))
+	fillTestSpanEventSlice(tv.Events())
 	tv.orig.DroppedEventsCount = uint32(17)
-	fillTestSpanLinkSlice(newSpanLinkSlice(&tv.orig.Links, tv.state))
+	fillTestSpanLinkSlice(tv.Links())
 	tv.orig.DroppedLinksCount = uint32(17)
-	fillTestStatus(newStatus(&tv.orig.Status, tv.state))
+	fillTestStatus(tv.Status())
 }

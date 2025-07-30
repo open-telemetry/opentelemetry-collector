@@ -96,5 +96,5 @@ func generateTestScopeMetrics() ScopeMetrics {
 func fillTestScopeMetrics(tv ScopeMetrics) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestMetricSlice(newMetricSlice(&tv.orig.Metrics, tv.state))
+	fillTestMetricSlice(tv.Metrics())
 }

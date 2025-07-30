@@ -85,5 +85,5 @@ func generateTestExponentialHistogram() ExponentialHistogram {
 
 func fillTestExponentialHistogram(tv ExponentialHistogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestExponentialHistogramDataPointSlice(tv.DataPoints())
 }

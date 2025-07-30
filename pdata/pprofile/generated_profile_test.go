@@ -179,12 +179,12 @@ func generateTestProfile() Profile {
 }
 
 func fillTestProfile(tv Profile) {
-	fillTestValueTypeSlice(newValueTypeSlice(&tv.orig.SampleType, tv.state))
-	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
+	fillTestValueTypeSlice(tv.SampleType())
+	fillTestSampleSlice(tv.Sample())
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.LocationIndices, tv.state))
 	tv.orig.TimeNanos = 1234567890
 	tv.orig.DurationNanos = 1234567890
-	fillTestValueType(newValueType(&tv.orig.PeriodType, tv.state))
+	fillTestValueType(tv.PeriodType())
 	tv.orig.Period = int64(1)
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))
 	tv.orig.DefaultSampleTypeIndex = int32(1)

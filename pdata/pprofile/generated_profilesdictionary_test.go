@@ -119,11 +119,11 @@ func generateTestProfilesDictionary() ProfilesDictionary {
 }
 
 func fillTestProfilesDictionary(tv ProfilesDictionary) {
-	fillTestMappingSlice(newMappingSlice(&tv.orig.MappingTable, tv.state))
-	fillTestLocationSlice(newLocationSlice(&tv.orig.LocationTable, tv.state))
-	fillTestFunctionSlice(newFunctionSlice(&tv.orig.FunctionTable, tv.state))
-	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
+	fillTestMappingSlice(tv.MappingTable())
+	fillTestLocationSlice(tv.LocationTable())
+	fillTestFunctionSlice(tv.FunctionTable())
+	fillTestLinkSlice(tv.LinkTable())
 	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
-	fillTestAttributeTableSlice(newAttributeTableSlice(&tv.orig.AttributeTable, tv.state))
-	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
+	fillTestAttributeTableSlice(tv.AttributeTable())
+	fillTestAttributeUnitSlice(tv.AttributeUnits())
 }

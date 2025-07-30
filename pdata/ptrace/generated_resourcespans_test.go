@@ -96,5 +96,5 @@ func generateTestResourceSpans() ResourceSpans {
 func fillTestResourceSpans(tv ResourceSpans) {
 	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeSpansSlice(newScopeSpansSlice(&tv.orig.ScopeSpans, tv.state))
+	fillTestScopeSpansSlice(tv.ScopeSpans())
 }

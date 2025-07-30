@@ -179,7 +179,7 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	tv.orig.Count = uint64(17)
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
 	internal.FillTestFloat64Slice(internal.NewFloat64Slice(&tv.orig.ExplicitBounds, tv.state))
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
+	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
