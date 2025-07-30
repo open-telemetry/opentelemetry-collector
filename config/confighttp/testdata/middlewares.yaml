@@ -1,0 +1,13 @@
+# Simple middleware-focused test configuration
+
+client:
+  endpoint: "http://localhost:4318/v1/traces"
+  middlewares:
+    - id: "fancy_middleware"
+    - id: "careful_middleware"
+
+server:
+  endpoint: "0.0.0.0:4318"
+  middlewares:
+    - id: "careful_middleware"
+    - id: "support_middleware"
