@@ -51,16 +51,25 @@ func TestSummaryDataPointSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSummaryDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewSummaryDataPointSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestSummaryDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
+}
+
+func TestSummaryDataPointSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewSummaryDataPointSlice()
+	src := generateTestSummaryDataPointSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestSummaryDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointSlice()
+	got.RemoveIf(func(el SummaryDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSummaryDataPointSliceAll(t *testing.T) {

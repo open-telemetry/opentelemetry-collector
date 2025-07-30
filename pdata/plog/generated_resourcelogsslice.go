@@ -130,6 +130,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -180,16 +182,30 @@ func (ms ResourceLogsSlice) unmarshalJSONIter(iter *json.Iterator) {
 }
 
 func copyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.ResourceLogs {
+	var newDest []*otlplogs.ResourceLogs
 	if cap(dest) < len(src) {
-		dest = make([]*otlplogs.ResourceLogs, len(src))
-		data := make([]otlplogs.ResourceLogs, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlplogs.ResourceLogs, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlplogs.ResourceLogs{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlplogs.ResourceLogs{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigResourceLogs(dest[i], src[i])
+		copyOrigResourceLogs(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

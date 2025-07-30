@@ -51,16 +51,25 @@ func TestLocationSliceReadOnly(t *testing.T) {
 
 func TestLocationSlice_CopyTo(t *testing.T) {
 	dest := NewLocationSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewLocationSlice().CopyTo(dest)
 	assert.Equal(t, NewLocationSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestLocationSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestLocationSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLocationSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestLocationSlice(), dest)
+}
+
+func TestLocationSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewLocationSlice()
+	src := generateTestLocationSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestLocationSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestLocationSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLocationSlice()
+	got.RemoveIf(func(el Location) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestLocationSliceAll(t *testing.T) {

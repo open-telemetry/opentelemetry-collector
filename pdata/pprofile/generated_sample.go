@@ -147,6 +147,29 @@ func (ms Sample) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Sample) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "locationsStartIndex", "locations_start_index":
+			ms.orig.LocationsStartIndex = iter.ReadInt32()
+		case "locationsLength", "locations_length":
+			ms.orig.LocationsLength = iter.ReadInt32()
+		case "value":
+			internal.UnmarshalJSONIterInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), iter)
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		case "linkIndex", "link_index":
+			ms.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: iter.ReadInt32()}
+		case "timestampsUnixNano", "timestamps_unix_nano":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigSample(dest, src *otlpprofiles.Sample) {
 	dest.LocationsStartIndex = src.LocationsStartIndex
 	dest.LocationsLength = src.LocationsLength

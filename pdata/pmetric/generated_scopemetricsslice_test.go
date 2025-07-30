@@ -51,16 +51,25 @@ func TestScopeMetricsSliceReadOnly(t *testing.T) {
 
 func TestScopeMetricsSlice_CopyTo(t *testing.T) {
 	dest := NewScopeMetricsSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeMetricsSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeMetricsSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestScopeMetricsSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestScopeMetricsSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeMetricsSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
+}
+
+func TestScopeMetricsSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewScopeMetricsSlice()
+	src := generateTestScopeMetricsSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestScopeMetricsSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestScopeMetricsSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeMetricsSlice()
+	got.RemoveIf(func(el ScopeMetrics) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestScopeMetricsSliceAll(t *testing.T) {

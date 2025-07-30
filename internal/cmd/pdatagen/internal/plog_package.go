@@ -8,6 +8,7 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -126,7 +127,7 @@ var logRecord = &messageStruct{
 			returnType: &TypedType{
 				structName: "SeverityNumber",
 				rawType:    "otlplogs.SeverityNumber",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: `otlplogs.SeverityNumber(0)`,
 				testVal:    `otlplogs.SeverityNumber(5)`,
 			},

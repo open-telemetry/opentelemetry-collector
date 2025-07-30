@@ -94,6 +94,23 @@ func (ms ResourceMetrics) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ResourceMetrics) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resource":
+			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
+		case "schemaUrl", "schema_url":
+			ms.orig.SchemaUrl = iter.ReadString()
+		case "scopeMetrics", "scope_metrics":
+			ms.ScopeMetrics().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
 	internal.CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.SchemaUrl = src.SchemaUrl

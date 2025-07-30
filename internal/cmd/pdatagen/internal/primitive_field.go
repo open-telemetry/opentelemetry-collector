@@ -53,6 +53,9 @@ const primitiveMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .d
 		dest.Write{{ upperFirst .returnType }}(ms.orig.{{ .originFieldName }})
 	}`
 
+const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
+
 type PrimitiveField struct {
 	fieldName       string
 	originFieldName string
@@ -83,6 +86,11 @@ func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 
 func (pf *PrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("primitiveMarshalJSONTemplate").Parse(primitiveMarshalJSONTemplate))
+	return executeTemplate(t, pf.templateFields(ms))
+}
+
+func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("primitiveUnmarshalJSONTemplate").Parse(primitiveUnmarshalJSONTemplate))
 	return executeTemplate(t, pf.templateFields(ms))
 }
 

@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 var emptyProfileID = ProfileID([16]byte{})
@@ -35,8 +34,4 @@ func (ms ProfileID) String() string {
 // IsEmpty returns true if id doesn't contain at least one non-zero byte.
 func (ms ProfileID) IsEmpty() bool {
 	return data.ProfileID(ms).IsEmpty()
-}
-
-func (ms ProfileID) marshalJSONStream(dest *json.Stream) {
-	data.ProfileID(ms).MarshalJSONStream(dest)
 }

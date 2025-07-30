@@ -48,6 +48,14 @@ const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.
 	ms.{{ .fieldName }}().marshalJSONStream(dest)
 	{{- end }}{{ if eq .returnType "TraceState" -}} } {{- end }}`
 
+const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	{{- else }}
+	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
+	{{- end }}`
+
 type MessageField struct {
 	fieldName     string
 	returnMessage *messageStruct
@@ -75,6 +83,11 @@ func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 
 func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("messageMarshalJSONTemplate").Parse(messageMarshalJSONTemplate))
+	return executeTemplate(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("messageUnmarshalJSONTemplate").Parse(messageUnmarshalJSONTemplate))
 	return executeTemplate(t, mf.templateFields(ms))
 }
 

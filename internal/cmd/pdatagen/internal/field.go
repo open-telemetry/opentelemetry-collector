@@ -11,6 +11,10 @@ type Field interface {
 	GenerateSetWithTestValue(ms *messageStruct) string
 
 	GenerateCopyOrig(ms *messageStruct) string
+
+	GenerateMarshalJSON(ms *messageStruct) string
+
+	GenerateUnmarshalJSON(ms *messageStruct) string
 }
 
 func origAccessor(packageName string) string {

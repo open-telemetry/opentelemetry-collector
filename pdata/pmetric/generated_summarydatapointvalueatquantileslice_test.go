@@ -51,16 +51,25 @@ func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointValueAtQuantileSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
 	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), dest)
 
-	// Test CopyTo larger slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	// Test CopyTo larger slice and EnsureCapacity
+	src := generateTestSummaryDataPointValueAtQuantileSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
+}
+
+func TestSummaryDataPointValueAtQuantileSlice_CopyToAndEnsureCapacity(t *testing.T) {
+	dest := NewSummaryDataPointValueAtQuantileSlice()
+	src := generateTestSummaryDataPointValueAtQuantileSlice()
+	dest.EnsureCapacity(src.Len())
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestSummaryDataPointValueAtQuantileSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointValueAtQuantileSlice()
+	got.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {

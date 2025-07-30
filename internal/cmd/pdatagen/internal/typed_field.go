@@ -34,15 +34,22 @@ const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originField
 const typedMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .defaultVal }} {
 		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
 		{{- if .isType }}
-		{{- if .isCommon }}
 		ms.orig.{{ .originFieldName }}.MarshalJSONStream(dest)
-		{{- else }}
-		ms.{{ .fieldName }}().marshalJSONStream(dest)
-		{{- end }}
-		{{- else }}
+		{{- else if .isEnum }}
+		dest.WriteInt32(int32(ms.orig.{{ .originFieldName }}))
+		{{- else }}	
 		dest.Write{{ upperFirst .rawType }}(ms.orig.{{ .originFieldName }})
 		{{- end }}
 	}`
+
+const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+		{{- if .isType }}
+		ms.orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
+		{{- else if .isEnum }}
+		ms.orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
+		{{- else }}	
+		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
+		{{- end }}`
 
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")
 type TypedField struct {
@@ -56,6 +63,7 @@ type TypedType struct {
 	packageName string
 	rawType     string
 	isType      bool
+	isEnum      bool
 	defaultVal  string
 	testVal     string
 }
@@ -85,6 +93,11 @@ func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("typedUnmarshalJSONTemplate").Parse(typedUnmarshalJSONTemplate))
+	return executeTemplate(t, ptf.templateFields(ms))
+}
+
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName": ms.getName(),
@@ -95,22 +108,21 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":        usedByOtherDataTypes(ptf.returnType.packageName),
-		"returnType":      ptf.returnType.structName,
-		"fieldName":       ptf.fieldName,
-		"lowerFieldName":  strings.ToLower(ptf.fieldName),
-		"testValue":       ptf.returnType.testVal,
-		"rawType":         ptf.returnType.rawType,
-		"isType":          ptf.returnType.isType,
-		"originFieldName": ptf.origFieldName(),
+		"isCommon":       usedByOtherDataTypes(ptf.returnType.packageName),
+		"returnType":     ptf.returnType.structName,
+		"fieldName":      ptf.fieldName,
+		"lowerFieldName": strings.ToLower(ptf.fieldName),
+		"testValue":      ptf.returnType.testVal,
+		"rawType":        ptf.returnType.rawType,
+		"isType":         ptf.returnType.isType,
+		"isEnum":         ptf.returnType.isEnum,
+		"originFieldName": func() string {
+			if ptf.originFieldName == "" {
+				return ptf.fieldName
+			}
+			return ptf.originFieldName
+		}(),
 	}
-}
-
-func (ptf *TypedField) origFieldName() string {
-	if ptf.originFieldName == "" {
-		return ptf.fieldName
-	}
-	return ptf.originFieldName
 }
 
 var _ Field = (*TypedField)(nil)

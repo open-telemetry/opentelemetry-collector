@@ -26,15 +26,22 @@ func NewMap(orig *[]otlpcommon.KeyValue, state *State) Map {
 }
 
 func CopyOrigMap(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
+	var newDest []otlpcommon.KeyValue
 	if cap(dest) < len(src) {
-		dest = make([]otlpcommon.KeyValue, len(src))
+		newDest = make([]otlpcommon.KeyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpcommon.KeyValue{}
+		}
 	}
-	dest = dest[:len(src)]
-	for i := 0; i < len(src); i++ {
-		dest[i].Key = src[i].Key
-		CopyOrigValue(&dest[i].Value, &src[i].Value)
+	for i := range src {
+		newDest[i].Key = src[i].Key
+		CopyOrigValue(&newDest[i].Value, &src[i].Value)
 	}
-	return dest
+	return newDest
 }
 
 func GenerateTestMap() Map {
