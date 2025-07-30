@@ -1747,8 +1747,8 @@ func TestUnmarshalYAMLComprehensiveConfig(t *testing.T) {
 
 	// Verify response headers
 	expectedResponseHeaders := map[string]configopaque.String{
-		"Server":                 "OpenTelemetry-Collector",
-		"X-Content-Type-Options": "nosniff",
+		"Server":   "OpenTelemetry-Collector",
+		"X-Flavor": "apple",
 	}
 	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
 

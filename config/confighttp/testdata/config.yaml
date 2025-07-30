@@ -82,7 +82,7 @@ server:
 
   # Authentication configuration
   auth:
-    authenticator: "basicauth"
+    authenticator: "basic"
 
   # Server timeouts
   read_timeout: 30s
@@ -99,7 +99,7 @@ server:
   # Response headers to add to every response
   response_headers:
     "Server": "OpenTelemetry-Collector"
-    "X-Content-Type-Options": "nosniff"
+    "X-Flavor": "apple"
 
   # Compression algorithms supported by the server
   compression_algorithms: ["", "gzip", "zstd", "zlib", "snappy", "deflate"]
