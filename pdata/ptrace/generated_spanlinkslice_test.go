@@ -55,7 +55,7 @@ func TestSpanLinkSlice_CopyTo(t *testing.T) {
 	NewSpanLinkSlice().CopyTo(dest)
 	assert.Equal(t, NewSpanLinkSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestSpanLinkSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
@@ -63,12 +63,12 @@ func TestSpanLinkSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
-}
 
-func TestSpanLinkSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewSpanLinkSlice()
-	src := generateTestSpanLinkSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewSpanLinkSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
 }

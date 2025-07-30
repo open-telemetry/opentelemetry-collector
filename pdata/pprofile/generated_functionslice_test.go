@@ -55,7 +55,7 @@ func TestFunctionSlice_CopyTo(t *testing.T) {
 	NewFunctionSlice().CopyTo(dest)
 	assert.Equal(t, NewFunctionSlice(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTestFunctionSlice()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
@@ -63,12 +63,12 @@ func TestFunctionSlice_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
-}
 
-func TestFunctionSlice_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := NewFunctionSlice()
-	src := generateTestFunctionSlice()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	NewFunctionSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
 }

@@ -61,7 +61,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	New{{ .structName }}().CopyTo(dest)
 	assert.Equal(t, New{{ .structName }}(), dest)
 
-	// Test CopyTo larger slice and EnsureCapacity
+	// Test CopyTo larger slice
 	src := generateTest{{ .structName }}()
 	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
@@ -69,12 +69,12 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	// Test CopyTo same size slice
 	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
-}
 
-func Test{{ .structName }}_CopyToAndEnsureCapacity(t *testing.T) {
-	dest := New{{ .structName }}()
-	src := generateTest{{ .structName }}()
-	dest.EnsureCapacity(src.Len())
+	// Test CopyTo smaller size slice
+	New{{ .structName }}().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
