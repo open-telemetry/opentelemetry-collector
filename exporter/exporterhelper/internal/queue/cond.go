@@ -43,24 +43,21 @@ func (c *cond) Broadcast() {
 func (c *cond) Wait(ctx context.Context) error {
 	c.waiting++
 	c.L.Unlock()
-
-	var err error
 	select {
 	case <-ctx.Done():
-		err = ctx.Err()
-	case <-c.ch:
-		err = nil
-	}
-
-	c.L.Lock()
-	// Always decrement waiting counter when we're done waiting
-	c.waiting--
-	if err != nil {
-		// Try to consume any signal that might have been sent while we were cancelled
-		select {
-		case <-c.ch:
-		default:
+		c.L.Lock()
+		if c.waiting == 0 {
+			// If waiting is 0, it means that there was a signal sent and nobody else waits for it.
+			// Consume it, so that we don't unblock other consumer unnecessary,
+			// or we don't block the producer because the channel buffer is full.
+			<-c.ch
+		} else {
+			// Decrease the number of waiting routines.
+			c.waiting--
 		}
+		return ctx.Err()
+	case <-c.ch:
+		c.L.Lock()
+		return nil
 	}
-	return err
 }

@@ -133,7 +133,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 		numRefs++
 	}
 	if numRefs > 1 {
-		done = newRefCountDone(done, int64(numRefs))
+		done = newRefCountDone(done, int64(len(reqList)))
 		if mergeSplitErr != nil {
 			done.OnDone(mergeSplitErr)
 		}
@@ -234,11 +234,8 @@ func (qb *partitionBatcher) flushCurrentBatchIfNecessary() {
 func (qb *partitionBatcher) flush(ctx context.Context, req request.Request, done queue.Done) {
 	qb.stopWG.Add(1)
 	qb.wp.execute(func() {
-		defer func() {
-			qb.stopWG.Done()
-		}()
-		err := qb.consumeFunc(ctx, req)
-		done.OnDone(err)
+		defer qb.stopWG.Done()
+		done.OnDone(qb.consumeFunc(ctx, req))
 	})
 }
 
@@ -256,12 +253,8 @@ func newWorkerPool(maxWorkers int) *workerPool {
 
 func (wp *workerPool) execute(f func()) {
 	<-wp.workers
-	go func() {
-		defer func() {
-			wp.workers <- struct{}{}
-		}()
-		f()
-	}()
+	go f()
+	wp.workers <- struct{}{}
 }
 
 type multiDone []queue.Done

@@ -9,9 +9,7 @@ cd /home/jmacd/src/otel/collector/processor/batchprocessor
 echo "Starting test in background..."
 go test -race -c .
 
-#TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelperWithPropagateErrors
-#TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelper
-TEST=TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelper
+#TEST=TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelper
 TEST=TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelperWithPropagateErrors
 
 echo "Testing ${TEST}"
