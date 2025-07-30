@@ -72,7 +72,7 @@ func (mb *multiBatcher) Consume(ctx context.Context, req request.Request, done q
 
 func (mb *multiBatcher) Shutdown(ctx context.Context) error {
 	var wg sync.WaitGroup
-	mb.shards.Range(func(_ any, shard any) bool {
+	mb.shards.Range(func(_, shard any) bool {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

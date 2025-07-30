@@ -84,7 +84,7 @@ func mergeSlice(src, dest reflect.Value) any {
 	return slice.Interface()
 }
 
-func isPresent(slice reflect.Value, val reflect.Value) bool {
+func isPresent(slice, val reflect.Value) bool {
 	for i := 0; i < slice.Len(); i++ {
 		if reflect.DeepEqual(val.Interface(), slice.Index(i).Interface()) {
 			return true
