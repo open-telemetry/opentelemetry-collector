@@ -4,7 +4,6 @@
 package configoptional // import "go.opentelemetry.io/collector/config/configoptional"
 
 import (
-	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -218,16 +217,14 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 }
 
 // MarshalScalar implements xconfmap.ScalarMarshaler.
-func (o Optional[T]) MarshalScalar() (string, error) {
-	if tm, ok := any(o.value).(encoding.TextMarshaler); ok {
-		str, err := tm.MarshalText()
-
-		if err != nil {
-			return "", err
-		}
-
-		return string(str), nil
+func (o Optional[T]) MarshalScalar(in *string) (string, error) {
+	if in != nil {
+		return *in, nil
 	}
 
 	return "", nil
+}
+
+func (o Optional[T]) GetScalarValue() any {
+	return o.value
 }

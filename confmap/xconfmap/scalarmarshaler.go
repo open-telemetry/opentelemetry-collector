@@ -4,6 +4,7 @@
 package xconfmap
 
 import (
+	"encoding"
 	"reflect"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -24,7 +25,9 @@ type ScalarMarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
 	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
-	MarshalScalar() (string, error)
+	MarshalScalar(*string) (string, error)
+
+	GetScalarValue() any
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
@@ -37,7 +40,21 @@ func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		return marshaler.MarshalScalar()
+		var s *string
+		v := marshaler.GetScalarValue()
+
+		if tm, ok := v.(encoding.TextMarshaler); ok {
+			b, err := tm.MarshalText()
+
+			if err != nil {
+				return nil, err
+			}
+
+			bs := string(b)
+			s = &bs
+		}
+
+		return marshaler.MarshalScalar(s)
 
 	})
 }
