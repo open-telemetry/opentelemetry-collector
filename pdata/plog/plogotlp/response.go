@@ -6,8 +6,6 @@ package plogotlp // import "go.opentelemetry.io/collector/pdata/plog/plogotlp"
 import (
 	"slices"
 
-	jsoniter "github.com/json-iterator/go"
-
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -46,7 +44,7 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	dest.WriteObjectField("partialSuccess")
 	ms.PartialSuccess().marshalJSONStream(dest)
 	dest.WriteObjectEnd()
-	return slices.Clone(dest.Buffer()), dest.Error
+	return slices.Clone(dest.Buffer()), dest.Error()
 }
 
 // UnmarshalJSON unmarshalls ExportResponse from JSON bytes.
@@ -54,7 +52,7 @@ func (ms ExportResponse) UnmarshalJSON(data []byte) error {
 	iter := json.BorrowIterator(data)
 	defer json.ReturnIterator(iter)
 	ms.unmarshalJSONIter(iter)
-	return iter.Error
+	return iter.Error()
 }
 
 // PartialSuccess returns the ExportPartialSuccess associated with this ExportResponse.
@@ -62,25 +60,11 @@ func (ms ExportResponse) PartialSuccess() ExportPartialSuccess {
 	return newExportPartialSuccess(&ms.orig.PartialSuccess, ms.state)
 }
 
-func (ms ExportResponse) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func (ms ExportResponse) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "partial_success", "partialSuccess":
 			ms.PartialSuccess().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func (ms ExportPartialSuccess) unmarshalJSONIter(iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(_ *jsoniter.Iterator, f string) bool {
-		switch f {
-		case "rejected_log_records", "rejectedLogRecords":
-			ms.orig.RejectedLogRecords = json.ReadInt64(iter)
-		case "error_message", "errorMessage":
-			ms.orig.ErrorMessage = iter.ReadString()
 		default:
 			iter.Skip()
 		}

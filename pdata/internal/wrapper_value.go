@@ -4,10 +4,7 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	"errors"
 	"fmt"
-
-	jsoniter "github.com/json-iterator/go"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -114,14 +111,14 @@ func MarshalJSONStreamValue(ms Value, dest *json.Stream) {
 		MarshalJSONStreamMap(NewMap(&v.KvlistValue.Values, ms.state), dest)
 		dest.WriteObjectEnd()
 	default:
-		dest.Error = errors.Join(dest.Error, fmt.Errorf("invalid value type in the passed attribute value: %T", ms.orig.Value))
+		dest.ReportError(fmt.Errorf("invalid value type in the passed attribute value: %T", ms.orig.Value))
 	}
 	dest.WriteObjectEnd()
 }
 
 // UnmarshalJSONIterValue Unmarshal JSON data and return otlpcommon.AnyValue
-func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+func UnmarshalJSONIterValue(val Value, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "stringValue", "string_value":
 			val.orig.Value = &otlpcommon.AnyValue_StringValue{
@@ -133,11 +130,11 @@ func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
 			}
 		case "intValue", "int_value":
 			val.orig.Value = &otlpcommon.AnyValue_IntValue{
-				IntValue: json.ReadInt64(iter),
+				IntValue: iter.ReadInt64(),
 			}
 		case "doubleValue", "double_value":
 			val.orig.Value = &otlpcommon.AnyValue_DoubleValue{
-				DoubleValue: json.ReadFloat64(iter),
+				DoubleValue: iter.ReadFloat64(),
 			}
 		case "bytesValue", "bytes_value":
 			val.orig.Value = &otlpcommon.AnyValue_BytesValue{}
@@ -157,9 +154,9 @@ func UnmarshalJSONIterValue(val Value, iter *jsoniter.Iterator) {
 	})
 }
 
-func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
+func readArray(iter *json.Iterator) *otlpcommon.ArrayValue {
 	v := &otlpcommon.ArrayValue{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "values":
 			UnmarshalJSONIterSlice(NewSlice(&v.Values, nil), iter)
@@ -171,9 +168,9 @@ func readArray(iter *jsoniter.Iterator) *otlpcommon.ArrayValue {
 	return v
 }
 
-func readKvlistValue(iter *jsoniter.Iterator) *otlpcommon.KeyValueList {
+func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
 	v := &otlpcommon.KeyValueList{}
-	iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "values":
 			UnmarshalJSONIterMap(NewMap(&v.Values, nil), iter)

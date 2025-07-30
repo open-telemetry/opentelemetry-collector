@@ -8,6 +8,7 @@ var ptrace = &Package{
 		name: "ptrace",
 		path: "ptrace",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -112,7 +113,7 @@ var span = &messageStruct{
 			returnType: &TypedType{
 				structName: "SpanKind",
 				rawType:    "otlptrace.Span_SpanKind",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: "otlptrace.Span_SpanKind(0)",
 				testVal:    "otlptrace.Span_SpanKind(3)",
 			},
@@ -198,7 +199,7 @@ var spanStatus = &messageStruct{
 			returnType: &TypedType{
 				structName: "StatusCode",
 				rawType:    "otlptrace.Status_StatusCode",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: "0",
 				testVal:    "1",
 			},

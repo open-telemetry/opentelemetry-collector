@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"github.com/gogo/protobuf/proto"
-	jsoniter "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -73,7 +72,7 @@ func (sid SpanID) MarshalJSONStream(dest *json.Stream) {
 }
 
 // UnmarshalJSONIter decodes SpanID from hex string.
-func (sid *SpanID) UnmarshalJSONIter(iter *jsoniter.Iterator) {
+func (sid *SpanID) UnmarshalJSONIter(iter *json.Iterator) {
 	*sid = [spanIDSize]byte{}
 	unmarshalJSON(sid[:], iter)
 }

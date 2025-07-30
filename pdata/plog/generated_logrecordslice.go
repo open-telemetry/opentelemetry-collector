@@ -130,6 +130,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LogRecordSlice) RemoveIf(f func(LogRecord) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -170,17 +172,40 @@ func (ms LogRecordSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms LogRecordSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlplogs.LogRecord{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogRecord {
+	var newDest []*otlplogs.LogRecord
 	if cap(dest) < len(src) {
-		dest = make([]*otlplogs.LogRecord, len(src))
-		data := make([]otlplogs.LogRecord, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlplogs.LogRecord, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlplogs.LogRecord{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlplogs.LogRecord{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigLogRecord(dest[i], src[i])
+		copyOrigLogRecord(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

@@ -192,6 +192,35 @@ func (ms Mapping) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Mapping) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "memoryStart", "memory_start":
+			ms.orig.MemoryStart = iter.ReadUint64()
+		case "memoryLimit", "memory_limit":
+			ms.orig.MemoryLimit = iter.ReadUint64()
+		case "fileOffset", "file_offset":
+			ms.orig.FileOffset = iter.ReadUint64()
+		case "filenameStrindex", "filename_strindex":
+			ms.orig.FilenameStrindex = iter.ReadInt32()
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		case "hasFunctions", "has_functions":
+			ms.orig.HasFunctions = iter.ReadBool()
+		case "hasFilenames", "has_filenames":
+			ms.orig.HasFilenames = iter.ReadBool()
+		case "hasLineNumbers", "has_line_numbers":
+			ms.orig.HasLineNumbers = iter.ReadBool()
+		case "hasInlineFrames", "has_inline_frames":
+			ms.orig.HasInlineFrames = iter.ReadBool()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.MemoryStart = src.MemoryStart
 	dest.MemoryLimit = src.MemoryLimit

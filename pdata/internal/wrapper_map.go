@@ -4,8 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -28,15 +26,22 @@ func NewMap(orig *[]otlpcommon.KeyValue, state *State) Map {
 }
 
 func CopyOrigMap(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
+	var newDest []otlpcommon.KeyValue
 	if cap(dest) < len(src) {
-		dest = make([]otlpcommon.KeyValue, len(src))
+		newDest = make([]otlpcommon.KeyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpcommon.KeyValue{}
+		}
 	}
-	dest = dest[:len(src)]
-	for i := 0; i < len(src); i++ {
-		dest[i].Key = src[i].Key
-		CopyOrigValue(&dest[i].Value, &src[i].Value)
+	for i := range src {
+		newDest[i].Key = src[i].Key
+		CopyOrigValue(&newDest[i].Value, &src[i].Value)
 	}
-	return dest
+	return newDest
 }
 
 func GenerateTestMap() Map {
@@ -87,10 +92,10 @@ func writeAttribute(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) 
 	dest.WriteObjectEnd()
 }
 
-func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {
-	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+func UnmarshalJSONIterMap(ms Map, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, otlpcommon.KeyValue{})
-		iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 			switch f {
 			case "key":
 				(*ms.orig)[len(*ms.orig)-1].Key = iter.ReadString()

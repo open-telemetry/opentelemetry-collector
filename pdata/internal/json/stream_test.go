@@ -58,12 +58,12 @@ func TestMarshalFloat(t *testing.T) {
 		{
 			name:       "positive infinity",
 			inputFloat: math.Inf(1),
-			expected:   `"+Inf"`,
+			expected:   `"Infinity"`,
 		},
 		{
 			name:       "negative infinity",
 			inputFloat: math.Inf(-1),
-			expected:   `"-Inf"`,
+			expected:   `"-Infinity"`,
 		},
 		{
 			name:       "not-a-number",

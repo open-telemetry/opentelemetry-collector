@@ -130,6 +130,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es SpanSlice) RemoveIf(f func(Span) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -170,17 +172,40 @@ func (ms SpanSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SpanSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlptrace.Span{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
+	var newDest []*otlptrace.Span
 	if cap(dest) < len(src) {
-		dest = make([]*otlptrace.Span, len(src))
-		data := make([]otlptrace.Span, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlptrace.Span, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlptrace.Span{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlptrace.Span{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigSpan(dest[i], src[i])
+		copyOrigSpan(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

@@ -4,24 +4,13 @@
 package json // import "go.opentelemetry.io/collector/pdata/internal/json"
 
 import (
-	"fmt"
+	"errors"
 	"io"
 	"math"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
 )
-
-// Stream avoids the need to explicitly call the `Stream.WriteMore` method while marshaling objects by
-// checking if a field was previously written inside the current object and automatically appending a ","
-// if so before writing the next field.
-type Stream struct {
-	*jsoniter.Stream
-	// wmTracker acts like a stack which pushes a new value when an object is started and removes the
-	// top when it is ended. The value added for every object tracks if there is any written field
-	// already for that object, and if it is then automatically add a "," before any new field.
-	wmTracker []bool
-}
 
 func BorrowStream(writer io.Writer) *Stream {
 	return &Stream{
@@ -32,6 +21,17 @@ func BorrowStream(writer io.Writer) *Stream {
 
 func ReturnStream(s *Stream) {
 	jsoniter.ConfigFastest.ReturnStream(s.Stream)
+}
+
+// Stream avoids the need to explicitly call the `Stream.WriteMore` method while marshaling objects by
+// checking if a field was previously written inside the current object and automatically appending a ","
+// if so before writing the next field.
+type Stream struct {
+	*jsoniter.Stream
+	// wmTracker acts like a stack which pushes a new value when an object is started and removes the
+	// top when it is ended. The value added for every object tracks if there is any written field
+	// already for that object, and if it is then automatically add a "," before any new field.
+	wmTracker []bool
 }
 
 func (ots *Stream) WriteObjectStart() {
@@ -63,12 +63,31 @@ func (ots *Stream) WriteUint64(val uint64) {
 	ots.WriteString(strconv.FormatUint(val, 10))
 }
 
-// WriteFloat64 gracefully handles infinity & NaN values
+// WriteFloat64 writes the JSON value that will be a number or one of the special string
+// values "NaN", "Infinity", and "-Infinity". Either numbers or strings are accepted.
+// Empty strings are invalid. Exponent notation is also accepted.
+// See https://protobuf.dev/programming-guides/json/.
 func (ots *Stream) WriteFloat64(val float64) {
-	if math.IsNaN(val) || math.IsInf(val, 0) {
-		ots.WriteString(fmt.Sprintf("%f", val))
+	if math.IsNaN(val) {
+		ots.WriteString("NaN")
+		return
+	}
+	if math.IsInf(val, 1) {
+		ots.WriteString("Infinity")
+		return
+	}
+	if math.IsInf(val, -1) {
+		ots.WriteString("-Infinity")
 		return
 	}
 
 	ots.Stream.WriteFloat64(val)
+}
+
+func (ots *Stream) ReportError(err error) {
+	ots.Stream.Error = errors.Join(ots.Stream.Error, err)
+}
+
+func (ots *Stream) Error() error {
+	return ots.Stream.Error
 }

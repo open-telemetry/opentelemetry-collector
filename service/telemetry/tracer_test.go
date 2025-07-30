@@ -130,12 +130,6 @@ func TestTelemetry_TracerProviderDisabled(t *testing.T) {
 		cfg.Traces.Level = configtelemetry.LevelNone
 		test(t, cfg)
 	})
-	t.Run("noop_tracer_gate", func(t *testing.T) {
-		setFeatureGateEnabled(t, noopTracerProvider, true)
-		cfg := &Config{}
-		cfg.Traces.Level = configtelemetry.LevelBasic
-		test(t, cfg)
-	})
 }
 
 func newOTLPSimpleSpanProcessor(srv *httptest.Server) config.SpanProcessor {

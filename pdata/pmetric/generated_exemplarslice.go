@@ -129,6 +129,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = otlpmetrics.Exemplar{}
 			continue
 		}
 		if newLen == i {
@@ -137,6 +138,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = otlpmetrics.Exemplar{}
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -161,13 +163,29 @@ func (ms ExemplarSlice) marshalJSONStream(dest *json.Stream) {
 	dest.WriteArrayEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, otlpmetrics.Exemplar{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
+	var newDest []otlpmetrics.Exemplar
 	if cap(dest) < len(src) {
-		dest = make([]otlpmetrics.Exemplar, len(src))
+		newDest = make([]otlpmetrics.Exemplar, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpmetrics.Exemplar{}
+		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigExemplar(&dest[i], &src[i])
+		copyOrigExemplar(&newDest[i], &src[i])
 	}
-	return dest
+	return newDest
 }
