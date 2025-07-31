@@ -49,9 +49,11 @@ import (
 // potentially high cardinality metrics. The gate will be removed when the collector allows for view configuration.
 var disableHighCardinalityMetricsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableHighCardinalityMetrics",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("controls whether the collector should enable potentially high"+
-		"cardinality metrics. The gate will be removed when the collector allows for view configuration."))
+	featuregate.StageDeprecated,
+	featuregate.WithRegisterToVersion("1.39.0"),
+	featuregate.WithRegisterDescription(
+		"Controls whether the collector should enable potentially high "+
+			"cardinality metrics. Deprecated, configure service::telemetry::metrics::views instead."))
 
 // ModuleInfo describes the Go module for a particular component.
 type ModuleInfo = moduleinfo.ModuleInfo
