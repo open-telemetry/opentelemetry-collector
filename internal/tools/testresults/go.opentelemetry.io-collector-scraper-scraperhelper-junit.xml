@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="31" failures="0" errors="0" time="1.934597">
+	<testsuite tests="28" failures="0" time="1.935000" name="go.opentelemetry.io/collector/scraper/scraperhelper" timestamp="2025-07-30T15:42:05-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController/NoScrapers" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController/AddLogsScrapersWithCollectionInterval" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController/AddLogsScrapers_ScrapeError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController/AddLogsScrapersWithInitializeAndClose" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController/AddLogsScrapersWithInitializeAndCloseErrors" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScrapeController" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController/NoScrapers" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController/AddMetricsScrapersWithCollectionInterval" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController/AddMetricsScrapers_ScrapeError" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController/AddMetricsScrapersWithInitializeAndClose" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController/AddMetricsScrapersWithInitializeAndCloseErrors" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScrapeController" time="0.010000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestSingleLogsScraperPerInterval" time="0.300000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestSingleMetricsScraperPerInterval" time="0.300000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScraperShutdownBeforeScrapeCanStart" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScraperShutdownBeforeScrapeCanStart" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeLogsDataOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestCheckScraperLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeMetricsDataOp" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestCheckScraperMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScraperControllerStartsOnInit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScraperControllerStartsOnInit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeControllerSettings/zero_value_configuration" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeControllerSettings/invalid_timeout" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeControllerSettings/default_configuration" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestScrapeControllerSettings" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestLogsScraperControllerInitialDelay" time="0.300000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper" name="TestMetricsScraperControllerInitialDelay" time="0.300000"></testcase>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="1.018000" name="go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata" timestamp="2025-07-30T15:42:05-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata" name="TestProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadata" name="TestNewTelemetryBuilder" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="1.014000" name="go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest" timestamp="2025-07-30T15:42:05-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/scraper/scraperhelper/internal/metadatatest" name="TestSetupTelemetry" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
