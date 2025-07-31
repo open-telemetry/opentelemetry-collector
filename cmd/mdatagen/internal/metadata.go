@@ -28,7 +28,7 @@ type Metadata struct {
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
-	ResourceAttributes map[AttributeName]Attribute `mapstructure:"resource_attributes"`
+	ResourceAttributes map[AttributeName]ResourceAttribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
 	Attributes map[AttributeName]Attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
@@ -287,13 +287,21 @@ type Warnings struct {
 	IfConfigured string `mapstructure:"if_configured"`
 }
 
+type ResourceAttribute struct {
+	Attribute `mapstructure:",squash"`
+	// Enabled defines whether the attribute is enabled by default.
+	Enabled bool `mapstructure:"enabled"`
+	// Warnings that will be shown to user under specified conditions.
+	Warnings Warnings `mapstructure:"warnings"`
+	// Optional defines whether the attribute is required.
+	Optional bool `mapstructure:"optional"`
+}
+
 type Attribute struct {
 	// Description describes the purpose of the attribute.
 	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
-	// Enabled defines whether the attribute is enabled by default.
-	Enabled bool `mapstructure:"enabled"`
 	// Include can be used to filter attributes.
 	Include []filter.Config `mapstructure:"include"`
 	// Include can be used to filter attributes.
@@ -304,10 +312,6 @@ type Attribute struct {
 	Type ValueType `mapstructure:"type"`
 	// FullName is the attribute name populated from the map key.
 	FullName AttributeName `mapstructure:"-"`
-	// Warnings that will be shown to user under specified conditions.
-	Warnings Warnings `mapstructure:"warnings"`
-	// Optional defines whether the attribute is required.
-	Optional bool `mapstructure:"optional"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
