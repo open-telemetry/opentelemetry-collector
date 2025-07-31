@@ -22,11 +22,11 @@ func WithScalarUnmarshaler() confmap.UnmarshalOption {
 // ScalarUnmarshaler is an interface which may be implemented by wrapper types
 // to customize their behavior when the type under the wrapper is a scalar value.
 type ScalarUnmarshaler interface {
-	// Unmarshal a Conf into the struct in a custom way.
-	// The Conf for this specific component may be nil or empty if no config available.
-	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
+	//UnmarshalScalar unmarshals a scalar into a value in a custom way.
 	UnmarshalScalar(val any) error
 
+	// ScalarType returns a value that can be used to get the type
+	// of the scalar using reflection.
 	ScalarType() any
 }
 

@@ -22,12 +22,10 @@ func WithScalarMarshaler() confmap.MarshalOption {
 // ScalarUnmarshaler is an interface which may be implemented by wrapper types
 // to customize their behavior when the type under the wrapper is a scalar value.
 type ScalarMarshaler interface {
-	// Unmarshal a Conf into the struct in a custom way.
-	// The Conf for this specific component may be nil or empty if no config available.
-	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
-	MarshalScalar(*string) (any, error)
-
-	GetScalarValue() any
+	// GetScalarValue gets the scalar value and marshals it.
+	// The struct implementing the interface is free to
+	// do any pre-processing to the value as part of marshaling.
+	GetScalarValue() (any, error)
 }
 
 // Provides a mechanism for individual structs to define their own unmarshal logic,
@@ -40,8 +38,11 @@ func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		var s *string
-		v := marshaler.GetScalarValue()
+		v, err := marshaler.GetScalarValue()
+
+		if err != nil {
+			return nil, err
+		}
 
 		if tm, ok := v.(encoding.TextMarshaler); ok {
 			b, err := tm.MarshalText()
@@ -50,11 +51,9 @@ func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 				return nil, err
 			}
 
-			bs := string(b)
-			s = &bs
+			return string(b), nil
 		}
 
-		return marshaler.MarshalScalar(s)
-
+		return v, nil
 	})
 }

@@ -216,15 +216,6 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	return nil
 }
 
-// MarshalScalar implements xconfmap.ScalarMarshaler.
-func (o Optional[T]) MarshalScalar(in *string) (any, error) {
-	if in != nil {
-		return *in, nil
-	}
-
+func (o Optional[T]) GetScalarValue() (any, error) {
 	return o.value, nil
-}
-
-func (o Optional[T]) GetScalarValue() any {
-	return o.value
 }
