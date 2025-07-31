@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="0" failures="0" errors="0" time="0.000107">
-	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/pdata/testdata" timestamp="2025-07-30T15:41:39-05:00">
-		<properties>
-			<property name="go.version" value="go1.24.5 linux/amd64"></property>
-		</properties>
-	</testsuite>
-</testsuites>
