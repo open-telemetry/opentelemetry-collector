@@ -13,7 +13,7 @@ go test -race -c .
 TEST=TestBatchProcessorSpansDeliveredEnforceBatchSize/TestBatchProcessorSpansDeliveredEnforceBatchSizeHelperWithPropagateErrors
 
 echo "Testing ${TEST}"
-./batchprocessor.test -test.v ${TEST} 2> deadlock_err 1> deadlock_out &
+./batchprocessor.test -test.v -test.run ${TEST} 2> deadlock_err 1> deadlock_out &
 TEST_PID=$!
 
 echo "Test started with PID: $TEST_PID"
@@ -32,3 +32,5 @@ sleep 2
 kill -9 $TEST_PID 2>/dev/null
 
 cat deadlock_err
+echo "To access the whole stacktrace (also shown above), see ./deadlock_err"
+echo "To view test output see ./deadlock_out"

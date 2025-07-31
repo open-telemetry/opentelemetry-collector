@@ -119,10 +119,8 @@ func (mq *memoryQueue[T]) add(ctx context.Context, el T, elSize int64) (*blockin
 	}
 
 	mq.items.push(ctx, el, done)
-	// Use Broadcast instead of Signal to ensure all waiting consumers are notified.
-	// This helps prevent the race condition where consumers might miss signals
-	// when combining WaitForResult=true and BlockOnOverflow=true.
-	mq.hasMoreElements.Broadcast()
+	// Signal one consumer if any.
+	mq.hasMoreElements.Signal()
 	return done, nil
 }
 
@@ -155,10 +153,6 @@ func (mq *memoryQueue[T]) onDone(bd *blockingDone, err error) {
 	defer mq.mu.Unlock()
 	mq.size -= bd.elSize
 	mq.hasMoreSpace.Signal()
-	// Add defensive broadcast to wake any waiting readers.
-	// This fixes the race condition where consumers might miss signals
-	// when combining WaitForResult=true and BlockOnOverflow=true.
-	mq.hasMoreElements.Broadcast()
 	if mq.waitForResult {
 		// In this case the done will be added back to the queue by the waiter.
 		bd.ch <- err

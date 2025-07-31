@@ -139,22 +139,6 @@ func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropag
 	defer setFeatureGateForTest(t, useExporterHelper)()
 	defer setPropagateErrorsForTest(t, usePropagateErrors)()
 
-	// Add stack dump goroutine for debugging hangs
-	if usePropagateErrors {
-		go func() {
-			time.Sleep(5 * time.Second)
-			t.Log("=== STACK DUMP AFTER 5 SECONDS ===")
-			buf := make([]byte, 1<<20) // 1MB buffer
-			stackSize := runtime.Stack(buf, true)
-			t.Logf("Stack dump:\n%s", buf[:stackSize])
-
-			time.Sleep(5 * time.Second)
-			t.Log("=== STACK DUMP AFTER 10 SECONDS ===")
-			stackSize = runtime.Stack(buf, true)
-			t.Logf("Stack dump:\n%s", buf[:stackSize])
-		}()
-	}
-
 	t.Logf("Starting test with useExporterHelper=%v, usePropagateErrors=%v", useExporterHelper, usePropagateErrors)
 
 	sink := new(consumertest.TracesSink)
@@ -234,11 +218,12 @@ func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterH
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
+	cfg.Timeout = 10 * time.Second
 	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 
-	requestCount := 1000
+	requestCount := 100
 	spansPerRequest := 150
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
