@@ -59,8 +59,10 @@ func scalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 		} else if from.CanConvert(tp.Elem().Type()) {
 			from.Convert(tp.Elem().Type())
 			v = from.Interface()
-		} else {
+		} else if _, ok := from.Interface().(map[string]any); ok {
 			v = tp.Elem().Interface()
+		} else {
+			v = from.Interface()
 		}
 
 		if err := unmarshaler.UnmarshalScalar(v); err != nil {
