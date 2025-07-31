@@ -89,12 +89,12 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
-// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+// BucketCounts returns the BucketCounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
 }
 
-// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+// ExplicitBounds returns the ExplicitBounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
 	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state))
 }
@@ -209,10 +209,14 @@ func (ms HistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("count")
 		dest.WriteUint64(ms.orig.Count)
 	}
-	dest.WriteObjectField("bucketCounts")
-	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
-	dest.WriteObjectField("explicitBounds")
-	internal.MarshalJSONStreamFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), dest)
+	if len(ms.orig.BucketCounts) > 0 {
+		dest.WriteObjectField("bucketCounts")
+		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	}
+	if len(ms.orig.ExplicitBounds) > 0 {
+		dest.WriteObjectField("explicitBounds")
+		internal.MarshalJSONStreamFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), dest)
+	}
 	if len(ms.orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
 		ms.Exemplars().marshalJSONStream(dest)
