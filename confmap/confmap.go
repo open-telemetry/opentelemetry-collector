@@ -91,7 +91,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	for _, opt := range opts {
 		internal.ApplyUnmarshalOption(opt, &set)
 	}
-	return decodeConfig(l, result, set, l.skipTopLevelUnmarshaler)
+	return decode(l.toStringMapWithExpand(), result, set, l.skipTopLevelUnmarshaler)
 }
 
 type MarshalOption interface {
@@ -257,14 +257,16 @@ func (l *Conf) ToStringMap() map[string]any {
 	return sanitize(l.toStringMapWithExpand()).(map[string]any)
 }
 
-// decodeConfig decodes the contents of the Conf into the result argument, using a
+// decode decodes the contents of the Conf into the result argument, using a
 // mapstructure decoder with the following notable behaviors. Ensures that maps whose
 // values are nil pointer structs resolved to the zero value of the target struct (see
 // expandNilStructPointers). Converts string to []string by splitting on ','. Ensures
 // uniqueness of component IDs (see mapKeyStringToMapKeyTextUnmarshalerHookFunc).
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
-func decodeConfig(m *Conf, result any, settings internal.UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
+//
+// TODO Move this to `internal`.
+func decode(input any, result any, settings internal.UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
 	hooks := []mapstructure.DecodeHookFunc{
 		useExpandValue(),
 		expandNilStructPointersHookFunc(),
@@ -293,7 +295,7 @@ func decodeConfig(m *Conf, result any, settings internal.UnmarshalOptions, skipT
 	if err != nil {
 		return err
 	}
-	if err = decoder.Decode(m.toStringMapWithExpand()); err != nil {
+	if err = decoder.Decode(input); err != nil {
 		if strings.HasPrefix(err.Error(), "error decoding ''") {
 			return errors.Unwrap(err)
 		}
