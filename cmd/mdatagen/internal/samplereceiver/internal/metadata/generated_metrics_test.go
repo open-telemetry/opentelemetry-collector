@@ -79,6 +79,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `optional.metric.empty_unit` should not be configured: This metric is deprecated and will be removed soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if tt.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `system.cpu.time`: This metric will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if tt.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `string.resource.attr_disable_warning`: This resource_attribute will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -114,6 +118,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			allMetricsCount++
 			mb.RecordOptionalMetricEmptyUnitDataPoint(ts, 1, "string_attr-val", true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemCPUTimeDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
 
 			rb := mb.NewResourceBuilder()
 			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
@@ -266,6 +274,41 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
 					assert.True(t, ok)
 					assert.True(t, attrVal.Bool())
+				case "system.cpu.time":
+					assert.False(t, validatedMetrics["system.cpu.time"], "Found a duplicate in the metrics slice: system.cpu.time")
+					validatedMetrics["system.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Monotonic cumulative sum int metric enabled by default.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "string_attr-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, 19, attrVal.Int())
+					attrVal, ok = dp.Attributes().Get("enum_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "red", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("slice_attr")
+					assert.True(t, ok)
+					assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					attrVal, ok = dp.Attributes().Get("map_attr")
+					assert.True(t, ok)
+					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					attrVal, ok = dp.Attributes().Get("optional_int_attr")
+					assert.True(t, ok)
+					assert.EqualValues(t, 17, attrVal.Int())
+					attrVal, ok = dp.Attributes().Get("optional_string_attr")
+					assert.True(t, ok)
+					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
 				}
 			}
 		})
