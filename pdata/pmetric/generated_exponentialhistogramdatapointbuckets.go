@@ -62,7 +62,7 @@ func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.orig.Offset = v
 }
 
-// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
+// BucketCounts returns the BucketCounts associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
 }
@@ -80,8 +80,10 @@ func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stre
 		dest.WriteObjectField("offset")
 		dest.WriteInt32(ms.orig.Offset)
 	}
-	dest.WriteObjectField("bucketCounts")
-	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	if len(ms.orig.BucketCounts) > 0 {
+		dest.WriteObjectField("bucketCounts")
+		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	}
 	dest.WriteObjectEnd()
 }
 
