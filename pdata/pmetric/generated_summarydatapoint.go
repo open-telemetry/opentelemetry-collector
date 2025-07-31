@@ -141,7 +141,7 @@ func (ms SummaryDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("count")
 		dest.WriteUint64(ms.orig.Count)
 	}
-	if ms.orig.Sum != float64(0.0) {
+	if ms.orig.Sum != float64(0) {
 		dest.WriteObjectField("sum")
 		dest.WriteFloat64(ms.orig.Sum)
 	}

@@ -75,10 +75,8 @@ const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }
 		ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
 
 type OptionalPrimitiveField struct {
-	fieldName  string
-	defaultVal string
-	testVal    string
-	returnType string
+	fieldName string
+	protoType ProtoType
 }
 
 func (opv *OptionalPrimitiveField) GenerateAccessors(ms *messageStruct) string {
@@ -115,11 +113,11 @@ func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
-		"defaultVal":       opv.defaultVal,
+		"defaultVal":       opv.protoType.defaultValue(),
 		"fieldName":        opv.fieldName,
 		"lowerFieldName":   strings.ToLower(opv.fieldName),
-		"testValue":        opv.testVal,
-		"returnType":       opv.returnType,
+		"testValue":        opv.protoType.testValue(opv.fieldName),
+		"returnType":       opv.protoType.goType(),
 		"originStructName": ms.originFullName,
 		"originStructType": ms.originFullName + "_" + opv.fieldName,
 	}

@@ -111,16 +111,12 @@ var logRecord = &messageStruct{
 			},
 		},
 		&PrimitiveField{
-			fieldName:  "EventName",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `""`,
+			fieldName: "EventName",
+			protoType: ProtoTypeString,
 		},
 		&PrimitiveField{
-			fieldName:  "SeverityText",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"INFO"`,
+			fieldName: "SeverityText",
+			protoType: ProtoTypeString,
 		},
 		&TypedField{
 			fieldName: "SeverityNumber",
@@ -133,8 +129,14 @@ var logRecord = &messageStruct{
 			},
 		},
 		bodyField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 	},
 }
 

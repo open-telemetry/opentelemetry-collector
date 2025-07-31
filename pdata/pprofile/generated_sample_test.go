@@ -66,19 +66,19 @@ func TestSample_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestSample_LocationsStartIndex(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LocationsStartIndex())
-	ms.SetLocationsStartIndex(int32(1))
-	assert.Equal(t, int32(1), ms.LocationsStartIndex())
+	ms.SetLocationsStartIndex(int32(13))
+	assert.Equal(t, int32(13), ms.LocationsStartIndex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(int32(1)) })
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsStartIndex(int32(13)) })
 }
 
 func TestSample_LocationsLength(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LocationsLength())
-	ms.SetLocationsLength(int32(1))
-	assert.Equal(t, int32(1), ms.LocationsLength())
+	ms.SetLocationsLength(int32(13))
+	assert.Equal(t, int32(13), ms.LocationsLength())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(int32(1)) })
+	assert.Panics(t, func() { newSample(&otlpprofiles.Sample{}, &sharedState).SetLocationsLength(int32(13)) })
 }
 
 func TestSample_Value(t *testing.T) {
@@ -98,13 +98,13 @@ func TestSample_AttributeIndices(t *testing.T) {
 func TestSample_LinkIndex(t *testing.T) {
 	ms := NewSample()
 	assert.Equal(t, int32(0), ms.LinkIndex())
-	ms.SetLinkIndex(int32(1))
+	ms.SetLinkIndex(int32(13))
 	assert.True(t, ms.HasLinkIndex())
-	assert.Equal(t, int32(1), ms.LinkIndex())
+	assert.Equal(t, int32(13), ms.LinkIndex())
 	ms.RemoveLinkIndex()
 	assert.False(t, ms.HasLinkIndex())
 	dest := NewSample()
-	dest.SetLinkIndex(int32(1))
+	dest.SetLinkIndex(int32(13))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasLinkIndex())
 }
@@ -123,10 +123,10 @@ func generateTestSample() Sample {
 }
 
 func fillTestSample(tv Sample) {
-	tv.orig.LocationsStartIndex = int32(1)
-	tv.orig.LocationsLength = int32(1)
+	tv.orig.LocationsStartIndex = int32(13)
+	tv.orig.LocationsLength = int32(13)
 	internal.FillTestInt64Slice(internal.NewInt64Slice(&tv.orig.Value, tv.state))
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
-	tv.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(1)}
+	tv.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.TimestampsUnixNano, tv.state))
 }
