@@ -1,0 +1,10 @@
+impl_int: 1
+impl_ntms: {}
+impl_str: test
+impl_tms: P
+non_impl_int: {}
+non_impl_ntms: {}
+non_impl_str: {}
+non_impl_tms: {}
+ntma: test
+tma: test
