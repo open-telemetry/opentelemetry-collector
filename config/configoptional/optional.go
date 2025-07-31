@@ -167,23 +167,23 @@ func (o *Optional[T]) Unmarshal(conf *confmap.Conf) error {
 	return nil
 }
 
-func (o *Optional[T]) UnmarshalScalar(val any) (any, error) {
+func (o *Optional[T]) UnmarshalScalar(val any) error {
 	if o.flavor == noneFlavor && val == nil {
 		// If the Optional is None and the configuration is nil, we do nothing.
 		// This replicates the behavior of unmarshaling into a field with a nil pointer.
-		return nil, nil
+		return nil
 	}
 
 	if val != nil {
 		v, ok := val.(T)
 		if !ok {
-			return nil, fmt.Errorf("val is %T, not %T", val, v)
+			return fmt.Errorf("val is %T, not %T", val, v)
 		}
 		o.value = v
 		o.flavor = someFlavor
 	}
 
-	return o.value, nil
+	return nil
 }
 
 func (o *Optional[T]) ScalarType() any {
@@ -217,12 +217,12 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 }
 
 // MarshalScalar implements xconfmap.ScalarMarshaler.
-func (o Optional[T]) MarshalScalar(in *string) (string, error) {
+func (o Optional[T]) MarshalScalar(in *string) (any, error) {
 	if in != nil {
 		return *in, nil
 	}
 
-	return "", nil
+	return o.value, nil
 }
 
 func (o Optional[T]) GetScalarValue() any {

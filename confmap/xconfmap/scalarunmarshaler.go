@@ -25,7 +25,7 @@ type ScalarUnmarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
 	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
-	UnmarshalScalar(val any) (any, error)
+	UnmarshalScalar(val any) error
 
 	ScalarType() any
 }
@@ -46,10 +46,9 @@ func scalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		v := from.Interface()
+		var v any
 		tp := reflect.New(reflect.TypeOf(unmarshaler.ScalarType()))
-		t := tp.Interface()
-		if tu, ok := t.(encoding.TextUnmarshaler); ok {
+		if tu, ok := tp.Interface().(encoding.TextUnmarshaler); ok {
 			// Should we error out here?
 			if str, ok := from.Interface().(string); ok {
 				if err := tu.UnmarshalText([]byte(str)); err != nil {
@@ -57,9 +56,18 @@ func scalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 				}
 				v = tp.Elem().Interface()
 			}
+		} else if from.CanConvert(tp.Elem().Type()) {
+			from.Convert(tp.Elem().Type())
+			v = from.Interface()
+		} else {
+			v = tp.Elem().Interface()
 		}
 
-		return unmarshaler.UnmarshalScalar(v)
+		if err := unmarshaler.UnmarshalScalar(v); err != nil {
+			return nil, err
+		}
+
+		return unmarshaler, nil
 	})
 }
 

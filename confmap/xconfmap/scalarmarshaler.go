@@ -25,7 +25,7 @@ type ScalarMarshaler interface {
 	// Unmarshal a Conf into the struct in a custom way.
 	// The Conf for this specific component may be nil or empty if no config available.
 	// This method should only be called by decoding hooks when calling Conf.Unmarshal.
-	MarshalScalar(*string) (string, error)
+	MarshalScalar(*string) (any, error)
 
 	GetScalarValue() any
 }
