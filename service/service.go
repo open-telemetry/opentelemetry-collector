@@ -48,7 +48,7 @@ import (
 var _ = featuregate.GlobalRegistry().MustRegister(
 	"telemetry.disableHighCardinalityMetrics",
 	featuregate.StageDeprecated,
-	featuregate.WithRegisterToVersion("1.39.0"),
+	featuregate.WithRegisterToVersion("0.133.0"),
 	featuregate.WithRegisterDescription(
 		"Controls whether the collector should enable potentially high "+
 			"cardinality metrics. Deprecated, configure service::telemetry::metrics::views instead."))
