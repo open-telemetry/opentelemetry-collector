@@ -138,8 +138,6 @@ func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropag
 	defer setFeatureGateForTest(t, useExporterHelper)()
 	defer setPropagateErrorsForTest(t, usePropagateErrors)()
 
-	t.Logf("Starting test with useExporterHelper=%v, usePropagateErrors=%v", useExporterHelper, usePropagateErrors)
-
 	sink := new(consumertest.TracesSink)
 
 	// Create a wrapper around the sink that logs when it's called

@@ -68,11 +68,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	if useExporterHelper.IsEnabled() {
-		if cfg.Timeout == 0 {
-			return errors.New("zero timeout is not supported while this feature flag is alpha")
-		}
 		if len(cfg.MetadataKeys) != 0 {
-			return errors.New("zero timeout is not supported while this feature flag is alpha")
+			return errors.New("metadata_keys not supported while this feature flag is alpha")
 		}
 	}
 	return nil

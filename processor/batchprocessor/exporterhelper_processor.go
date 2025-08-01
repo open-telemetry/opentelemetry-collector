@@ -68,10 +68,6 @@ func newTracesProcessorWithExporterHelper(set processor.Settings, nextConsumer c
 		cfg,
 		nextConsumer.ConsumeTraces,
 		exporterhelper.WithQueue(queueBatchConfig),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			println("ExporterHelper.Shutdown: traces processor shutdown called")
-			return nil
-		}),
 	)
 	return result, err
 }
@@ -92,10 +88,6 @@ func newMetricsProcessorWithExporterHelper(set processor.Settings, nextConsumer 
 		cfg,
 		nextConsumer.ConsumeMetrics,
 		exporterhelper.WithQueue(queueBatchConfig),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			println("ExporterHelper.Shutdown: metrics processor shutdown called")
-			return nil
-		}),
 	)
 }
 
@@ -115,9 +107,5 @@ func newLogsProcessorWithExporterHelper(set processor.Settings, nextConsumer con
 		cfg,
 		nextConsumer.ConsumeLogs,
 		exporterhelper.WithQueue(queueBatchConfig),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			println("ExporterHelper.Shutdown: logs processor shutdown called")
-			return nil
-		}),
 	)
 }
