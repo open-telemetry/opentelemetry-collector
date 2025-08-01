@@ -42,6 +42,8 @@ func fetchMergePaths(yamlBytes []byte) map[string]*options {
 }
 
 func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*options, path []string) {
+	// walkYAML recursively walks through the yaml tree and populates "res" with paths to merge.
+	// It keeps track of current path in "path" array. This is needed for final merge operation
 	if key != nil {
 		path = append(path, key.Value)
 	}
@@ -59,6 +61,8 @@ func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*options, path []s
 	case yaml.SequenceNode:
 		for _, n := range node.Content {
 			s := node.Tag
+			// By default, a yaml sequence node will have a "!!seq" tag.
+			// check if it has a custom tag and extract merge mode and other options.
 			if s != "!!seq" {
 				s = strings.TrimPrefix(s, "!")
 				q, _ := url.ParseQuery(s)
@@ -71,6 +75,8 @@ func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*options, path []s
 }
 
 func mergeAppend(mergeOpts map[string]*options) func(src, dest map[string]any) error {
+	// mergeOpts is the list of paths where component lists should be merged.
+
 	return func(src, dest map[string]any) error {
 		// mergeAppend recursively merges the src map into the dest map (left to right),
 		// modifying and expanding the dest map in the process.
