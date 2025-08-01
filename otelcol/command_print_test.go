@@ -42,7 +42,7 @@ func TestPrintCommand(t *testing.T) {
 		{
 			name: "valid URI",
 			set: confmap.ResolverSettings{
-				URIs: []string{"yaml:processors::batch/foo::timeout: 3s"},
+				URIs: []string{"yaml:processors::test/foo::timeout: 3s"},
 				ProviderFactories: []confmap.ProviderFactory{
 					yamlprovider.NewFactory(),
 				},
@@ -52,7 +52,7 @@ func TestPrintCommand(t *testing.T) {
 		{
 			name: "valid URI - no provider set",
 			set: confmap.ResolverSettings{
-				URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
+				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 				DefaultScheme: "yaml",
 			},
 			errString: "at least one Provider must be supplied",
@@ -60,7 +60,7 @@ func TestPrintCommand(t *testing.T) {
 		{
 			name: "valid URI - invalid scheme name",
 			set: confmap.ResolverSettings{
-				URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
+				URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 				DefaultScheme: "foo",
 				ProviderFactories: []confmap.ProviderFactory{
 					yamlprovider.NewFactory(),
@@ -93,7 +93,7 @@ func TestPrintCommand(t *testing.T) {
 func TestPrintCommandFeaturegateDisabled(t *testing.T) {
 	cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
-			URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
+			URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 			DefaultScheme: "foo",
 			ProviderFactories: []confmap.ProviderFactory{
 				yamlprovider.NewFactory(),

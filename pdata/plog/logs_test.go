@@ -172,3 +172,17 @@ func BenchmarkLogsUsage(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkLogsMarshalJSON(b *testing.B) {
+	md := NewLogs()
+	fillTestResourceLogsSlice(md.ResourceLogs())
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalLogs(md)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
+	}
+}

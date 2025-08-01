@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestStatus_MoveTo(t *testing.T) {
@@ -38,6 +40,26 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
+}
+
+func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestStatus()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewStatus()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestStatus_Code(t *testing.T) {

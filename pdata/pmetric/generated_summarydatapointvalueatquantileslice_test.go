@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummaryDataPointValueAtQuantileSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestSummaryDataPointValueAtQuantileSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantileSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointValueAtQuantileSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
 	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	src := generateTestSummaryDataPointValueAtQuantileSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewSummaryDataPointValueAtQuantileSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestSummaryDataPointValueAtQuantileSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSummaryDataPointValueAtQuantileSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointValueAtQuantileSlice()
+	got.RemoveIf(func(el SummaryDataPointValueAtQuantile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
 	ms := generateTestSummaryDataPointValueAtQuantileSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestSummaryDataPointValueAtQuantileSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestSummaryDataPointValueAtQuantileSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSummaryDataPointValueAtQuantileSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSummaryDataPointValueAtQuantileSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSummaryDataPointValueAtQuantileSlice_Sort(t *testing.T) {

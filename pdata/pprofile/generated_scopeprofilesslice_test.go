@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestScopeProfilesSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestScopeProfilesSliceReadOnly(t *testing.T) {
 
 func TestScopeProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewScopeProfilesSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeProfilesSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestScopeProfilesSlice().CopyTo(dest)
+	src := generateTestScopeProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeProfilesSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewScopeProfilesSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeProfilesSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestScopeProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestScopeProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeProfilesSlice()
+	got.RemoveIf(func(el ScopeProfiles) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestScopeProfilesSliceAll(t *testing.T) {
 	ms := generateTestScopeProfilesSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestScopeProfilesSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestScopeProfilesSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestScopeProfilesSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewScopeProfilesSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestScopeProfilesSlice_Sort(t *testing.T) {

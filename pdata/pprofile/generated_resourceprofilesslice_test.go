@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResourceProfilesSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestResourceProfilesSliceReadOnly(t *testing.T) {
 
 func TestResourceProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewResourceProfilesSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewResourceProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewResourceProfilesSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestResourceProfilesSlice().CopyTo(dest)
+	src := generateTestResourceProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestResourceProfilesSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewResourceProfilesSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceProfilesSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestResourceProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestResourceProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestResourceProfilesSlice()
+	got.RemoveIf(func(el ResourceProfiles) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestResourceProfilesSliceAll(t *testing.T) {
 	ms := generateTestResourceProfilesSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestResourceProfilesSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestResourceProfilesSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestResourceProfilesSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewResourceProfilesSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestResourceProfilesSlice_Sort(t *testing.T) {

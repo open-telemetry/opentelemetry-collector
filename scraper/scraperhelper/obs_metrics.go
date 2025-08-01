@@ -37,7 +37,7 @@ const (
 	formatKey = "format"
 )
 
-func wrapObsMetrics(sc scraper.Metrics, receiverID component.ID, scraperID component.ID, set component.TelemetrySettings) (scraper.Metrics, error) {
+func wrapObsMetrics(sc scraper.Metrics, receiverID, scraperID component.ID, set component.TelemetrySettings) (scraper.Metrics, error) {
 	telemetryBuilder, errBuilder := metadata.NewTelemetryBuilder(set)
 	if errBuilder != nil {
 		return nil, errBuilder
