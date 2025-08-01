@@ -5,6 +5,7 @@ package batchprocessor // import "go.opentelemetry.io/collector/processor/batchp
 
 import (
 	"context"
+	"runtime"
 
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/consumer"
@@ -21,7 +22,7 @@ func translateToExporterHelperConfig(cfg *Config) exporterhelper.QueueBatchConfi
 		WaitForResult:   propagateErrors.IsEnabled(),
 		BlockOnOverflow: true,
 		Sizer:           exporterhelper.RequestSizerTypeItems,
-		QueueSize:       int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 1000) * 10), // Increase queue size for better throughput
+		QueueSize:       int64(runtime.NumCPU()) * int64(max(cfg.SendBatchSize, cfg.SendBatchMaxSize, 100)),
 		NumConsumers:    1,
 	}
 

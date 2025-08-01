@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -145,37 +144,27 @@ func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropag
 
 	// Create a wrapper around the sink that logs when it's called
 	wrappedSink, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		t.Logf("Sink.ConsumeTraces called with %d spans", td.SpanCount())
-		buf := make([]byte, 4096)
-		stackSize := runtime.Stack(buf, false)
-		t.Logf("Sink.ConsumeTraces call stack:\n%s", buf[:stackSize])
 		return sink.ConsumeTraces(ctx, td)
 	})
 	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	t.Logf("Creating traces processor with config: SendBatchSize=%d", cfg.SendBatchSize)
 	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, wrappedSink)
 	require.NoError(t, err)
-	t.Logf("Traces processor created successfully")
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
-	t.Logf("Traces processor started successfully")
 
 	requestCount := 2 // Reduced for easier debugging
 	spansPerRequest := 100
 	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		t.Logf("Processing request %d/%d", requestNum+1, requestCount)
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
 		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
 			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
 		}
 		td.ResourceSpans().At(0).CopyTo(sentResourceSpans.AppendEmpty())
-		t.Logf("About to call ConsumeTraces for request %d", requestNum)
 		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
-		t.Logf("ConsumeTraces completed for request %d", requestNum)
 	}
 
 	// Added to test logic that check for empty resources.
@@ -223,16 +212,23 @@ func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterH
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 
-	requestCount := 100
+	requestCount := 1000
 	spansPerRequest := 150
+	var wg sync.WaitGroup
+	wg.Add(requestCount)
+	// Requests are in parallel
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
-		td := testdata.GenerateTraces(spansPerRequest)
-		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-		for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
-			spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
-		}
-		require.NoError(t, traces.ConsumeTraces(context.Background(), td))
+		go func() {
+			defer wg.Done()
+			td := testdata.GenerateTraces(spansPerRequest)
+			spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
+			for spanIndex := 0; spanIndex < spansPerRequest; spanIndex++ {
+				spans.At(spanIndex).SetName(getTestSpanName(requestNum, spanIndex))
+			}
+			require.NoError(t, traces.ConsumeTraces(context.Background(), td))
+		}()
 	}
+	wg.Wait()
 
 	// Added to test logic that check for empty resources.
 	td := ptrace.NewTraces()
