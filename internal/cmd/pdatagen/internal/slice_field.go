@@ -7,18 +7,12 @@ import (
 	"text/template"
 )
 
-const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .originFieldName }} associated with this {{ .structName }}.
+const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .isCommon }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}
-	{{- if .isBaseStructCommon -}}
-	, internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
-	{{- else -}}
-	, ms.state
-	{{- end -}}
-	))
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
-	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.state)
+	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
 	{{- end }}
 }`
 
@@ -36,11 +30,10 @@ const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 
 const sliceSetTestTemplate = `{{ if .isCommon -}}
 	{{ if not .isBaseStructCommon }}internal.{{ end }}FillTest{{ .returnType }}(
-	{{- if not .isBaseStructCommon }}internal.{{ end }}New
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))
 	{{- else -}}
-	fillTest{{ .returnType }}(new
-	{{-	end -}}
-	{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))`
+	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
+	{{-	end }}`
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = 
 {{- if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
@@ -56,11 +49,18 @@ const sliceMarshalJSONTemplate = `if len(ms.orig.{{ .originFieldName }}) > 0 {
 		{{- end }}
 	}`
 
+const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	{{- if .isCommon }}
+	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
+	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	{{- else }}
+	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
+	{{- end }}`
+
 type SliceField struct {
-	fieldName       string
-	originFieldName string
-	returnSlice     baseSlice
-	hideAccessors   bool
+	fieldName     string
+	returnSlice   baseSlice
+	hideAccessors bool
 }
 
 func (sf *SliceField) GenerateAccessors(ms *messageStruct) string {
@@ -94,10 +94,16 @@ func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
+func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("sliceUnmarshalJSONTemplate").Parse(sliceUnmarshalJSONTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
+}
+
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
-		"structName": ms.getName(),
-		"fieldName":  sf.fieldName,
+		"structName":      ms.getName(),
+		"fieldName":       sf.fieldName,
+		"originFieldName": sf.fieldName,
 		"packageName": func() string {
 			if sf.returnSlice.getPackageName() != ms.packageName {
 				return sf.returnSlice.getPackageName() + "."
@@ -109,12 +115,6 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 		"stateAccessor":      stateAccessor(ms.packageName),
 		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),
 		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
-		"originFieldName": func() string {
-			if sf.originFieldName == "" {
-				return sf.fieldName
-			}
-			return sf.originFieldName
-		}(),
 	}
 }
 

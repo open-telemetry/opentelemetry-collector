@@ -129,6 +129,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = v1.KeyValue{}
 			continue
 		}
 		if newLen == i {
@@ -137,6 +138,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = v1.KeyValue{}
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -171,12 +173,19 @@ func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
 }
 
 func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
+	var newDest []v1.KeyValue
 	if cap(dest) < len(src) {
-		dest = make([]v1.KeyValue, len(src))
+		newDest = make([]v1.KeyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = v1.KeyValue{}
+		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigAttribute(&dest[i], &src[i])
+		copyOrigAttribute(&newDest[i], &src[i])
 	}
-	return dest
+	return newDest
 }

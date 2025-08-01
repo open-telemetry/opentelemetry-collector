@@ -51,7 +51,11 @@ func TestProfile_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewProfile()
 	dest.unmarshalJSONIter(iter)
@@ -175,12 +179,12 @@ func generateTestProfile() Profile {
 }
 
 func fillTestProfile(tv Profile) {
-	fillTestValueTypeSlice(newValueTypeSlice(&tv.orig.SampleType, tv.state))
-	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
+	fillTestValueTypeSlice(tv.SampleType())
+	fillTestSampleSlice(tv.Sample())
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.LocationIndices, tv.state))
 	tv.orig.TimeNanos = 1234567890
 	tv.orig.DurationNanos = 1234567890
-	fillTestValueType(newValueType(&tv.orig.PeriodType, tv.state))
+	fillTestValueType(tv.PeriodType())
 	tv.orig.Period = int64(1)
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))
 	tv.orig.DefaultSampleTypeIndex = int32(1)

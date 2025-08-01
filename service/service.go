@@ -13,7 +13,6 @@ import (
 
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
@@ -106,7 +105,7 @@ type Service struct {
 	telemetrySettings component.TelemetrySettings
 	host              *graph.Host
 	collectorConf     *confmap.Conf
-	loggerProvider    log.LoggerProvider
+	sdk               *config.SDK
 }
 
 // New creates a new Service, its telemetry, and Components.
@@ -166,29 +165,31 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
+	srv.sdk = &sdk
+	defer func() {
+		if err != nil {
+			err = multierr.Append(err, sdk.Shutdown(ctx))
+		}
+	}()
 
 	telFactory := telemetry.NewFactory()
 	telset := telemetry.Settings{
-		AsyncErrorChannel: set.AsyncErrorChannel,
-		BuildInfo:         set.BuildInfo,
-		ZapOptions:        set.LoggingOptions,
-		SDK:               &sdk,
-		Resource:          res,
+		BuildInfo:  set.BuildInfo,
+		ZapOptions: set.LoggingOptions,
+		SDK:        &sdk,
+		Resource:   res,
 	}
 
 	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
 	if err != nil {
-		err = multierr.Append(err, sdk.Shutdown(ctx))
 		return nil, fmt.Errorf("failed to create logger: %w", err)
 	}
-	srv.loggerProvider = loggerProvider
 
 	// Use initialized logger to handle any subsequent errors
 	// https://github.com/open-telemetry/opentelemetry-collector/pull/13081
 	defer func() {
 		if err != nil {
 			logger.Error("error found during service initialization", zap.Error(err))
-			_ = sdk.Shutdown(ctx)
 		}
 	}()
 
@@ -300,34 +301,6 @@ func (srv *Service) Start(ctx context.Context) error {
 	return nil
 }
 
-func (srv *Service) shutdownTelemetry(ctx context.Context) error {
-	// The metric.MeterProvider and trace.TracerProvider interfaces do not have a Shutdown method.
-	// To shutdown the providers we try to cast to this interface, which matches the type signature used in the SDK.
-	type shutdownable interface {
-		Shutdown(context.Context) error
-	}
-
-	var err error
-	if prov, ok := srv.telemetrySettings.MeterProvider.(shutdownable); ok {
-		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown meter provider: %w", shutdownErr))
-		}
-	}
-
-	if prov, ok := srv.telemetrySettings.TracerProvider.(shutdownable); ok {
-		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
-		}
-	}
-
-	if prov, ok := srv.loggerProvider.(shutdownable); ok {
-		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
-			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
-		}
-	}
-	return err
-}
-
 // Shutdown the service. Shutdown will do the following steps in order:
 // 1. Notify extensions that the pipeline is shutting down.
 // 2. Shutdown all pipelines.
@@ -354,7 +327,9 @@ func (srv *Service) Shutdown(ctx context.Context) error {
 
 	srv.telemetrySettings.Logger.Info("Shutdown complete.")
 
-	errs = multierr.Append(errs, srv.shutdownTelemetry(ctx))
+	if err := srv.sdk.Shutdown(ctx); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("failed to shutdown telemetry: %w", err))
+	}
 
 	return errs
 }

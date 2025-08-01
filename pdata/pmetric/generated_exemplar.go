@@ -167,6 +167,34 @@ func (ms Exemplar) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Exemplar) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+
+		case "asDouble", "as_double":
+			ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
+				AsDouble: iter.ReadFloat64(),
+			}
+		case "asInt", "as_int":
+			ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
+				AsInt: iter.ReadInt64(),
+			}
+		case "filteredAttributes", "filtered_attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.FilteredAttributes, ms.state), iter)
+		case "traceId", "trace_id":
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.TimeUnixNano = src.TimeUnixNano
 	switch t := src.Value.(type) {

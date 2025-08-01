@@ -7,6 +7,8 @@ import (
 	_ "embed"
 	"strings"
 	"text/template"
+
+	"github.com/ettle/strcase"
 )
 
 var (
@@ -64,6 +66,8 @@ func templateNew(name string) *template.Template {
 		"upperFirst": upperFirst,
 		"lowerFirst": lowerFirst,
 		"sub":        sub,
+		"needSnake":  needSnake,
+		"toSnake":    strcase.ToSnake,
 	})
 }
 
@@ -77,4 +81,8 @@ func lowerFirst(s string) string {
 
 func sub(a, b int) int {
 	return a - b
+}
+
+func needSnake(str string) bool {
+	return strings.ToLower(str) != strcase.ToSnake(str)
 }

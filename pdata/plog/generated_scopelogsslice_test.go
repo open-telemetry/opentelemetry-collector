@@ -51,16 +51,25 @@ func TestScopeLogsSliceReadOnly(t *testing.T) {
 
 func TestScopeLogsSlice_CopyTo(t *testing.T) {
 	dest := NewScopeLogsSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeLogsSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeLogsSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestScopeLogsSlice().CopyTo(dest)
+	src := generateTestScopeLogsSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeLogsSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeLogsSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewScopeLogsSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestScopeLogsSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeLogsSlice()
+	got.RemoveIf(func(el ScopeLogs) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestScopeLogsSliceAll(t *testing.T) {

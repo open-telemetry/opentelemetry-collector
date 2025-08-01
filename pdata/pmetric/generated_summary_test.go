@@ -49,7 +49,11 @@ func TestSummary_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewSummary()
 	dest.unmarshalJSONIter(iter)
@@ -72,5 +76,5 @@ func generateTestSummary() Summary {
 }
 
 func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestSummaryDataPointSlice(tv.DataPoints())
 }

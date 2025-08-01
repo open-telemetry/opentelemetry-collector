@@ -122,6 +122,25 @@ func (ms Function) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Function) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "nameStrindex", "name_strindex":
+			ms.orig.NameStrindex = iter.ReadInt32()
+		case "systemNameStrindex", "system_name_strindex":
+			ms.orig.SystemNameStrindex = iter.ReadInt32()
+		case "filenameStrindex", "filename_strindex":
+			ms.orig.FilenameStrindex = iter.ReadInt32()
+		case "startLine", "start_line":
+			ms.orig.StartLine = iter.ReadInt64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex

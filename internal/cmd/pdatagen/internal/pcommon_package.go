@@ -8,6 +8,9 @@ var pcommon = &Package{
 		name: "pcommon",
 		path: "pcommon",
 		imports: []string{
+			`"iter"`,
+			`"sort"`,
+			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
@@ -23,6 +26,7 @@ var pcommon = &Package{
 		},
 	},
 	structs: []baseStruct{
+		sliceStruct,
 		scope,
 		resource,
 		byteSlice,
@@ -57,6 +61,12 @@ var scope = &messageStruct{
 var mapStruct = &sliceOfPtrs{
 	structName:  "Map",
 	packageName: "pcommon",
+}
+
+var sliceStruct = &sliceOfValues{
+	structName:  "Slice",
+	packageName: "pcommon",
+	element:     anyValue,
 }
 
 var scopeField = &MessageField{
@@ -165,9 +175,9 @@ var resource = &messageStruct{
 		&SliceField{
 			// Hide accessors for this field from 1.x public API since the proto field is experimental.
 			// It's available via the xpdata/entity.ResourceEntityRefs.
-			hideAccessors:   true,
-			originFieldName: "EntityRefs",
-			returnSlice:     entityRefSlice,
+			hideAccessors: true,
+			fieldName:     "EntityRefs",
+			returnSlice:   entityRefSlice,
 		},
 	},
 }

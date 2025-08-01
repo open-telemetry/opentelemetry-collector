@@ -92,6 +92,21 @@ func (ms SummaryDataPointValueAtQuantile) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SummaryDataPointValueAtQuantile) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "quantile":
+			ms.orig.Quantile = iter.ReadFloat64()
+		case "value":
+			ms.orig.Value = iter.ReadFloat64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value

@@ -50,7 +50,11 @@ func TestNumberDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewNumberDataPoint()
 	dest.unmarshalJSONIter(iter)
@@ -135,6 +139,6 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
+	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 }

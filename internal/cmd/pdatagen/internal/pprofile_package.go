@@ -8,6 +8,7 @@ var pprofile = &Package{
 		name: "pprofile",
 		path: "pprofile",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -292,7 +293,7 @@ var valueType = &messageStruct{
 			returnType: &TypedType{
 				structName: "AggregationTemporality",
 				rawType:    "otlpprofiles.AggregationTemporality",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: "otlpprofiles.AggregationTemporality(0)",
 				testVal:    "otlpprofiles.AggregationTemporality(1)",
 			},

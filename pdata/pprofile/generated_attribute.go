@@ -85,6 +85,21 @@ func (ms Attribute) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "key":
+			ms.orig.Key = iter.ReadString()
+		case "value":
+			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigAttribute(dest, src *v1.KeyValue) {
 	dest.Key = src.Key
 	internal.CopyOrigValue(&dest.Value, &src.Value)

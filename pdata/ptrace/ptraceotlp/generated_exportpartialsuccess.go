@@ -92,6 +92,21 @@ func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "rejectedSpans", "rejected_spans":
+			ms.orig.RejectedSpans = iter.ReadInt64()
+		case "errorMessage", "error_message":
+			ms.orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrigExportPartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage

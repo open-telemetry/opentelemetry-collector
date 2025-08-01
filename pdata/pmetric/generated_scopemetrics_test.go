@@ -50,7 +50,11 @@ func TestScopeMetrics_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewScopeMetrics()
 	dest.unmarshalJSONIter(iter)
@@ -92,5 +96,5 @@ func generateTestScopeMetrics() ScopeMetrics {
 func fillTestScopeMetrics(tv ScopeMetrics) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestMetricSlice(newMetricSlice(&tv.orig.Metrics, tv.state))
+	fillTestMetricSlice(tv.Metrics())
 }

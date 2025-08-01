@@ -456,7 +456,7 @@ func (v Value) Equal(c Value) bool {
 	return false
 }
 
-func newKeyValueString(k string, v string) otlpcommon.KeyValue {
+func newKeyValueString(k, v string) otlpcommon.KeyValue {
 	orig := otlpcommon.KeyValue{Key: k}
 	state := internal.StateMutable
 	akv := newValue(&orig.Value, &state)

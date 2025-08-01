@@ -8,6 +8,7 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -278,8 +279,14 @@ var histogramDataPoint = &messageStruct{
 		startTimeField,
 		timeField,
 		countField,
-		bucketCountsField,
-		explicitBoundsField,
+		&SliceField{
+			fieldName:   "BucketCounts",
+			returnSlice: uInt64Slice,
+		},
+		&SliceField{
+			fieldName:   "ExplicitBounds",
+			returnSlice: float64Slice,
+		},
 		exemplarsField,
 		dataPointFlagsField,
 		sumField,
@@ -350,7 +357,10 @@ var bucketsValues = &messageStruct{
 			defaultVal: "int32(0)",
 			testVal:    "int32(909)",
 		},
-		bucketCountsField,
+		&SliceField{
+			fieldName:   "BucketCounts",
+			returnSlice: uInt64Slice,
+		},
 	},
 }
 
@@ -472,24 +482,6 @@ var valueFloat64Field = &PrimitiveField{
 	testVal:    "float64(17.13)",
 }
 
-var bucketCountsField = &PrimitiveSliceField{
-	fieldName:         "BucketCounts",
-	returnType:        "UInt64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]uint64(nil)",
-	rawType:           "[]uint64",
-	testVal:           "[]uint64{1, 2, 3}",
-}
-
-var explicitBoundsField = &PrimitiveSliceField{
-	fieldName:         "ExplicitBounds",
-	returnType:        "Float64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]float64(nil)",
-	rawType:           "[]float64",
-	testVal:           "[]float64{1, 2, 3}",
-}
-
 var quantileField = &PrimitiveField{
 	fieldName:  "Quantile",
 	returnType: "float64",
@@ -509,7 +501,7 @@ var aggregationTemporalityField = &TypedField{
 	returnType: &TypedType{
 		structName: "AggregationTemporality",
 		rawType:    "otlpmetrics.AggregationTemporality",
-		isType:     true,
+		isEnum:     true,
 		defaultVal: "otlpmetrics.AggregationTemporality(0)",
 		testVal:    "otlpmetrics.AggregationTemporality(1)",
 	},

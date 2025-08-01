@@ -51,7 +51,11 @@ func TestSpan_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewSpan()
 	dest.unmarshalJSONIter(iter)
@@ -204,9 +208,9 @@ func fillTestSpan(tv Span) {
 	tv.orig.EndTimeUnixNano = 1234567890
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
-	fillTestSpanEventSlice(newSpanEventSlice(&tv.orig.Events, tv.state))
+	fillTestSpanEventSlice(tv.Events())
 	tv.orig.DroppedEventsCount = uint32(17)
-	fillTestSpanLinkSlice(newSpanLinkSlice(&tv.orig.Links, tv.state))
+	fillTestSpanLinkSlice(tv.Links())
 	tv.orig.DroppedLinksCount = uint32(17)
-	fillTestStatus(newStatus(&tv.orig.Status, tv.state))
+	fillTestStatus(tv.Status())
 }

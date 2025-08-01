@@ -51,16 +51,25 @@ func TestNumberDataPointSliceReadOnly(t *testing.T) {
 
 func TestNumberDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewNumberDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewNumberDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewNumberDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestNumberDataPointSlice().CopyTo(dest)
+	src := generateTestNumberDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestNumberDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewNumberDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestNumberDataPointSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestNumberDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestNumberDataPointSlice()
+	got.RemoveIf(func(el NumberDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestNumberDataPointSliceAll(t *testing.T) {

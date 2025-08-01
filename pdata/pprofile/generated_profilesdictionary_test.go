@@ -50,7 +50,11 @@ func TestProfilesDictionary_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewProfilesDictionary()
 	dest.unmarshalJSONIter(iter)
@@ -115,11 +119,11 @@ func generateTestProfilesDictionary() ProfilesDictionary {
 }
 
 func fillTestProfilesDictionary(tv ProfilesDictionary) {
-	fillTestMappingSlice(newMappingSlice(&tv.orig.MappingTable, tv.state))
-	fillTestLocationSlice(newLocationSlice(&tv.orig.LocationTable, tv.state))
-	fillTestFunctionSlice(newFunctionSlice(&tv.orig.FunctionTable, tv.state))
-	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
+	fillTestMappingSlice(tv.MappingTable())
+	fillTestLocationSlice(tv.LocationTable())
+	fillTestFunctionSlice(tv.FunctionTable())
+	fillTestLinkSlice(tv.LinkTable())
 	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
-	fillTestAttributeTableSlice(newAttributeTableSlice(&tv.orig.AttributeTable, tv.state))
-	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
+	fillTestAttributeTableSlice(tv.AttributeTable())
+	fillTestAttributeUnitSlice(tv.AttributeUnits())
 }

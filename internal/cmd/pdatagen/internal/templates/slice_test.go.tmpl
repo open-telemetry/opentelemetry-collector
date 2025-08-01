@@ -19,7 +19,11 @@ func Test{{ .structName }}(t *testing.T) {
 	es = new{{ .structName }}(&[]{{ .originElementType }}{}, &state)
 	assert.Equal(t, 0, es.Len())
 
+	{{ if eq .elementName "Value" -}}
+	emptyVal := New{{ .elementName }}Empty()
+	{{- else }}
 	emptyVal := New{{ .elementName }}()
+	{{- end }}
 	{{- if .isCommon }}
 	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
 	{{- else }}
@@ -53,16 +57,25 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
 	dest := New{{ .structName }}()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	New{{ .structName }}().CopyTo(dest)
 	assert.Equal(t, New{{ .structName }}(), dest)
 
 	// Test CopyTo larger slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src := generateTest{{ .structName }}()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 
 	// Test CopyTo same size slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTest{{ .structName }}(), dest)
+
+	// Test CopyTo smaller size slice
+	New{{ .structName }}().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
 
@@ -132,6 +145,14 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func Test{{ .structName }}_RemoveIfAll(t *testing.T) {
+	got := generateTest{{ .structName }}()
+	got.RemoveIf(func(el {{ .elementName }}) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func Test{{ .structName }}All(t *testing.T) {

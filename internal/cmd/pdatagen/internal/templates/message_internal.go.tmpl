@@ -59,3 +59,17 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 	{{ end -}}
 	dest.WriteObjectEnd()
 }
+
+// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		{{ range .fields -}}
+		{{ .GenerateUnmarshalJSON $.messageStruct }}
+		{{ end -}}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}

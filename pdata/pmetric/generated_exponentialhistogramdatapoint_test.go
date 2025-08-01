@@ -56,7 +56,11 @@ func TestExponentialHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewExponentialHistogramDataPoint()
 	dest.unmarshalJSONIter(iter)
@@ -214,9 +218,9 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.Count = uint64(17)
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Positive, tv.state))
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Negative, tv.state))
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
+	fillTestExponentialHistogramDataPointBuckets(tv.Positive())
+	fillTestExponentialHistogramDataPointBuckets(tv.Negative())
+	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}
