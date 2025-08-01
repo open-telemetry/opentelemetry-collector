@@ -32,16 +32,12 @@ var exportLogsPartialSuccess = &messageStruct{
 	originFullName: "otlpcollectorlog.ExportLogsPartialSuccess",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "RejectedLogRecords",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+			fieldName: "RejectedLogRecords",
+			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+			fieldName: "ErrorMessage",
+			protoType: ProtoTypeString,
 		},
 	},
 }

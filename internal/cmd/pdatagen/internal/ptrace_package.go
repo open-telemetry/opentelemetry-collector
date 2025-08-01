@@ -90,10 +90,8 @@ var spanSlice = &sliceOfPtrs{
 }
 
 var flagsField = &PrimitiveField{
-	fieldName:  "Flags",
-	returnType: "uint32",
-	defaultVal: `uint32(0)`,
-	testVal:    `uint32(0xf)`,
+	fieldName: "Flags",
+	protoType: ProtoTypeFixed32,
 }
 
 var span = &messageStruct{
@@ -104,7 +102,10 @@ var span = &messageStruct{
 	fields: []Field{
 		traceIDField,
 		spanIDField,
-		traceStateField,
+		&MessageField{
+			fieldName:     "TraceState",
+			returnMessage: traceState,
+		},
 		parentSpanIDField,
 		nameField,
 		flagsField,
@@ -120,27 +121,29 @@ var span = &messageStruct{
 		},
 		startTimeField,
 		endTimeField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 		&SliceField{
 			fieldName:   "Events",
 			returnSlice: spanEventSlice,
 		},
 		&PrimitiveField{
-			fieldName:  "DroppedEventsCount",
-			returnType: "uint32",
-			defaultVal: "uint32(0)",
-			testVal:    "uint32(17)",
+			fieldName: "DroppedEventsCount",
+			protoType: ProtoTypeUint32,
 		},
 		&SliceField{
 			fieldName:   "Links",
 			returnSlice: spanLinkSlice,
 		},
 		&PrimitiveField{
-			fieldName:  "DroppedLinksCount",
-			returnType: "uint32",
-			defaultVal: "uint32(0)",
-			testVal:    "uint32(17)",
+			fieldName: "DroppedLinksCount",
+			protoType: ProtoTypeUint32,
 		},
 		&MessageField{
 			fieldName:     "Status",
@@ -162,8 +165,14 @@ var spanEvent = &messageStruct{
 	fields: []Field{
 		timeField,
 		nameField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 	},
 }
 
@@ -181,10 +190,19 @@ var spanLink = &messageStruct{
 	fields: []Field{
 		traceIDField,
 		spanIDField,
-		traceStateField,
+		&MessageField{
+			fieldName:     "TraceState",
+			returnMessage: traceState,
+		},
 		flagsField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 	},
 }
 
@@ -205,22 +223,8 @@ var spanStatus = &messageStruct{
 			},
 		},
 		&PrimitiveField{
-			fieldName:  "Message",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"cancelled"`,
+			fieldName: "Message",
+			protoType: ProtoTypeString,
 		},
 	},
-}
-
-var traceStateField = &MessageField{
-	fieldName:     "TraceState",
-	returnMessage: traceState,
-}
-
-var droppedAttributesCount = &PrimitiveField{
-	fieldName:  "DroppedAttributesCount",
-	returnType: "uint32",
-	defaultVal: "uint32(0)",
-	testVal:    "uint32(17)",
 }

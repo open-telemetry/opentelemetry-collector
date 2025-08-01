@@ -66,10 +66,10 @@ func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())
-	ms.SetKey("key")
-	assert.Equal(t, "key", ms.Key())
+	ms.SetKey("test_key")
+	assert.Equal(t, "test_key", ms.Key())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("key") })
+	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("test_key") })
 }
 
 func TestAttribute_Value(t *testing.T) {
@@ -85,6 +85,6 @@ func generateTestAttribute() Attribute {
 }
 
 func fillTestAttribute(tv Attribute) {
-	tv.orig.Key = "key"
+	tv.orig.Key = "test_key"
 	internal.FillTestValue(internal.NewValue(&tv.orig.Value, tv.state))
 }

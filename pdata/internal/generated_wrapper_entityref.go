@@ -44,8 +44,8 @@ func GenerateTestEntityRef() EntityRef {
 }
 
 func FillTestEntityRef(tv EntityRef) {
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	tv.orig.Type = "host"
+	tv.orig.SchemaUrl = "test_schemaurl"
+	tv.orig.Type = "test_type"
 	FillTestStringSlice(NewStringSlice(&tv.orig.IdKeys, tv.state))
 	FillTestStringSlice(NewStringSlice(&tv.orig.DescriptionKeys, tv.state))
 }

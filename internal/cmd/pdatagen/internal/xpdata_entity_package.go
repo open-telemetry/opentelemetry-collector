@@ -44,10 +44,8 @@ var entityRef = &messageStruct{
 	fields: []Field{
 		schemaURLField,
 		&PrimitiveField{
-			fieldName:  "Type",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"host"`,
+			fieldName: "Type",
+			protoType: ProtoTypeString,
 		},
 		&SliceField{
 			fieldName:   "IdKeys",
