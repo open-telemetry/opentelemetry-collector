@@ -6,6 +6,7 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Profiles is the top-level struct that is propagated through the profiles pipeline.
@@ -71,4 +72,28 @@ func (ms Profiles) SampleCount() int {
 		}
 	}
 	return sampleCount
+}
+
+func (ms Profiles) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resourceProfiles")
+	ms.ResourceProfiles().marshalJSONStream(dest)
+	dest.WriteObjectField("dictionary")
+	ms.ProfilesDictionary().marshalJSONStream(dest)
+	dest.WriteObjectEnd()
+}
+
+func (ms Profiles) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resourceProfiles", "resource_profiles":
+			ms.ResourceProfiles().unmarshalJSONIter(iter)
+		case "dictionary":
+			ms.ProfilesDictionary().unmarshalJSONIter(iter)
+			return true
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

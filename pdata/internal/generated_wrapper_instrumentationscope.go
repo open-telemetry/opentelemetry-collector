@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type InstrumentationScope struct {
@@ -47,4 +48,45 @@ func FillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.orig.Version = "test_version"
 	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.DroppedAttributesCount = uint32(17)
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamInstrumentationScope(ms InstrumentationScope, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(ms.orig.Name)
+	}
+	if ms.orig.Version != "" {
+		dest.WriteObjectField("version")
+		dest.WriteString(ms.orig.Version)
+	}
+	if len(ms.orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONStreamMap(NewMap(&ms.orig.Attributes, ms.state), dest)
+	}
+	if ms.orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(ms.orig.DroppedAttributesCount)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIterInstrumentationScope unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "version":
+			ms.orig.Version = iter.ReadString()
+		case "attributes":
+			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

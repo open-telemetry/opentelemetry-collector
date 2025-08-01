@@ -8,10 +8,12 @@ var ptrace = &Package{
 		name: "ptrace",
 		path: "ptrace",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -20,9 +22,11 @@ var ptrace = &Package{
 			`"unsafe"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -51,10 +55,10 @@ var resourceSpans = &messageStruct{
 	structName:     "ResourceSpans",
 	description:    "// ResourceSpans is a collection of spans from a Resource.",
 	originFullName: "otlptrace.ResourceSpans",
-	fields: []baseField{
+	fields: []Field{
 		resourceField,
 		schemaURLField,
-		&sliceField{
+		&SliceField{
 			fieldName:   "ScopeSpans",
 			returnSlice: scopeSpansSlice,
 		},
@@ -70,10 +74,10 @@ var scopeSpans = &messageStruct{
 	structName:     "ScopeSpans",
 	description:    "// ScopeSpans is a collection of spans from a LibraryInstrumentation.",
 	originFullName: "otlptrace.ScopeSpans",
-	fields: []baseField{
+	fields: []Field{
 		scopeField,
 		schemaURLField,
-		&sliceField{
+		&SliceField{
 			fieldName:   "Spans",
 			returnSlice: spanSlice,
 		},
@@ -85,7 +89,7 @@ var spanSlice = &sliceOfPtrs{
 	element:    span,
 }
 
-var flagsField = &primitiveField{
+var flagsField = &PrimitiveField{
 	fieldName:  "Flags",
 	returnType: "uint32",
 	defaultVal: `uint32(0)`,
@@ -97,18 +101,19 @@ var span = &messageStruct{
 	description: "// Span represents a single operation within a trace.\n" +
 		"// See Span definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span",
-	fields: []baseField{
+	fields: []Field{
 		traceIDField,
 		spanIDField,
 		traceStateField,
 		parentSpanIDField,
 		nameField,
 		flagsField,
-		&primitiveTypedField{
+		&TypedField{
 			fieldName: "Kind",
-			returnType: &primitiveType{
+			returnType: &TypedType{
 				structName: "SpanKind",
 				rawType:    "otlptrace.Span_SpanKind",
+				isEnum:     true,
 				defaultVal: "otlptrace.Span_SpanKind(0)",
 				testVal:    "otlptrace.Span_SpanKind(3)",
 			},
@@ -117,27 +122,27 @@ var span = &messageStruct{
 		endTimeField,
 		attributes,
 		droppedAttributesCount,
-		&sliceField{
+		&SliceField{
 			fieldName:   "Events",
 			returnSlice: spanEventSlice,
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "DroppedEventsCount",
 			returnType: "uint32",
 			defaultVal: "uint32(0)",
 			testVal:    "uint32(17)",
 		},
-		&sliceField{
+		&SliceField{
 			fieldName:   "Links",
 			returnSlice: spanLinkSlice,
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "DroppedLinksCount",
 			returnType: "uint32",
 			defaultVal: "uint32(0)",
 			testVal:    "uint32(17)",
 		},
-		&messageField{
+		&MessageField{
 			fieldName:     "Status",
 			returnMessage: spanStatus,
 		},
@@ -154,7 +159,7 @@ var spanEvent = &messageStruct{
 	description: "// SpanEvent is a time-stamped annotation of the span, consisting of user-supplied\n" +
 		"// text description and key-value pairs. See OTLP for event definition.",
 	originFullName: "otlptrace.Span_Event",
-	fields: []baseField{
+	fields: []Field{
 		timeField,
 		nameField,
 		attributes,
@@ -173,7 +178,7 @@ var spanLink = &messageStruct{
 		"// different trace.\n" +
 		"// See Link definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto",
 	originFullName: "otlptrace.Span_Link",
-	fields: []baseField{
+	fields: []Field{
 		traceIDField,
 		spanIDField,
 		traceStateField,
@@ -188,17 +193,18 @@ var spanStatus = &messageStruct{
 	description: "// Status is an optional final status for this span. Semantically, when Status was not\n" +
 		"// set, that means the span ended without errors and to assume Status.Ok (code = 0).",
 	originFullName: "otlptrace.Status",
-	fields: []baseField{
-		&primitiveTypedField{
+	fields: []Field{
+		&TypedField{
 			fieldName: "Code",
-			returnType: &primitiveType{
+			returnType: &TypedType{
 				structName: "StatusCode",
 				rawType:    "otlptrace.Status_StatusCode",
+				isEnum:     true,
 				defaultVal: "0",
 				testVal:    "1",
 			},
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "Message",
 			returnType: "string",
 			defaultVal: `""`,
@@ -207,12 +213,12 @@ var spanStatus = &messageStruct{
 	},
 }
 
-var traceStateField = &messageField{
+var traceStateField = &MessageField{
 	fieldName:     "TraceState",
 	returnMessage: traceState,
 }
 
-var droppedAttributesCount = &primitiveField{
+var droppedAttributesCount = &PrimitiveField{
 	fieldName:  "DroppedAttributesCount",
 	returnType: "uint32",
 	defaultVal: "uint32(0)",

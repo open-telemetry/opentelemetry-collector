@@ -10,9 +10,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
@@ -46,6 +49,26 @@ func TestExponentialHistogramDataPointBuckets_CopyTo(t *testing.T) {
 	})
 }
 
+func TestExponentialHistogramDataPointBuckets_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExponentialHistogramDataPointBuckets()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewExponentialHistogramDataPointBuckets()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())
@@ -59,9 +82,9 @@ func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 
 func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
-	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
-	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
-	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())
+	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
+	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.BucketCounts()))
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
 }
 
 func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
@@ -72,5 +95,5 @@ func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramData
 
 func fillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
 	tv.orig.Offset = int32(909)
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
+	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
 }

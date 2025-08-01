@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .imports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .imports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 {{ .description }}
@@ -58,16 +58,6 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 	*ms.{{ .origAccessor }} = {{ .originName }}{}
 }
 
-{{ if .isCommon -}}
-func (ms {{ .structName }}) getOrig() *{{ .originName }} {
-	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
-}
-
-func (ms {{ .structName }}) getState() *internal.State {
-	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
-}
-{{- end }}
-
 {{ range .fields -}}
 {{ .GenerateAccessors $.messageStruct }}
 {{ end }}
@@ -82,7 +72,38 @@ func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	{{- end }}
 }
 
-{{ if not .isCommon -}}
+{{ if .isCommon -}}
+func (ms {{ .structName }}) getOrig() *{{ .originName }} {
+	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
+}
+
+func (ms {{ .structName }}) getState() *internal.State {
+	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
+}
+{{- else }}
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	{{ range .fields -}}
+	{{ .GenerateMarshalJSON $.messageStruct }}
+	{{ end -}}
+	dest.WriteObjectEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms {{ .structName }}) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		{{ range .fields -}}
+		{{ .GenerateUnmarshalJSON $.messageStruct }}
+		{{ end -}}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
 func copyOrig{{ .structName }}(dest, src *{{ .originName }}) {
 	{{- range .fields }}
 	{{ .GenerateCopyOrig $.messageStruct }}

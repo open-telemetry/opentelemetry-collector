@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type EntityRef struct {
@@ -47,4 +48,45 @@ func FillTestEntityRef(tv EntityRef) {
 	tv.orig.Type = "host"
 	FillTestStringSlice(NewStringSlice(&tv.orig.IdKeys, tv.state))
 	FillTestStringSlice(NewStringSlice(&tv.orig.DescriptionKeys, tv.state))
+}
+
+// MarshalJSONStream marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamEntityRef(ms EntityRef, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(ms.orig.SchemaUrl)
+	}
+	if ms.orig.Type != "" {
+		dest.WriteObjectField("type")
+		dest.WriteString(ms.orig.Type)
+	}
+	if len(ms.orig.IdKeys) > 0 {
+		dest.WriteObjectField("idKeys")
+		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), dest)
+	}
+	if len(ms.orig.DescriptionKeys) > 0 {
+		dest.WriteObjectField("descriptionKeys")
+		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIterEntityRef unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "schemaUrl", "schema_url":
+			ms.orig.SchemaUrl = iter.ReadString()
+		case "type":
+			ms.orig.Type = iter.ReadString()
+		case "idKeys", "id_keys":
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
+		case "descriptionKeys", "description_keys":
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

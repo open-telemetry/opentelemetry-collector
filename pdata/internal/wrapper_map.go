@@ -4,9 +4,8 @@
 package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
-	jsoniter "github.com/json-iterator/go"
-
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 type Map struct {
@@ -27,15 +26,22 @@ func NewMap(orig *[]otlpcommon.KeyValue, state *State) Map {
 }
 
 func CopyOrigMap(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
+	var newDest []otlpcommon.KeyValue
 	if cap(dest) < len(src) {
-		dest = make([]otlpcommon.KeyValue, len(src))
+		newDest = make([]otlpcommon.KeyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpcommon.KeyValue{}
+		}
 	}
-	dest = dest[:len(src)]
-	for i := 0; i < len(src); i++ {
-		dest[i].Key = src[i].Key
-		CopyOrigValue(&dest[i].Value, &src[i].Value)
+	for i := range src {
+		newDest[i].Key = src[i].Key
+		CopyOrigValue(&newDest[i].Value, &src[i].Value)
 	}
-	return dest
+	return newDest
 }
 
 func GenerateTestMap() Map {
@@ -47,14 +53,49 @@ func GenerateTestMap() Map {
 }
 
 func FillTestMap(dest Map) {
-	*dest.orig = nil
-	*dest.orig = append(*dest.orig, otlpcommon.KeyValue{Key: "k", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "v"}}})
+	*dest.orig = []otlpcommon.KeyValue{
+		{Key: "str", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
+		{Key: "bool", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: true}}},
+		{Key: "double", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: 3.14}}},
+		{Key: "int", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 123}}},
+		{Key: "bytes", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}}},
+		{Key: "array", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{
+			ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue{{Value: &otlpcommon.AnyValue_IntValue{IntValue: 321}}}},
+		}}},
+		{Key: "map", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{
+			KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue{{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}}}},
+		}}},
+	}
 }
 
-func UnmarshalJSONIterMap(ms Map, iter *jsoniter.Iterator) {
-	iter.ReadArrayCB(func(iter *jsoniter.Iterator) bool {
+// MarshalJSONStreamMap marshals all properties from the current struct to the destination stream.
+func MarshalJSONStreamMap(ms Map, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		writeAttribute(&(*ms.orig)[0], ms.state, dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		writeAttribute(&(*ms.orig)[i], ms.state, dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+func writeAttribute(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if attr.Key != "" {
+		dest.WriteObjectField("key")
+		dest.WriteString(attr.Key)
+	}
+	dest.WriteObjectField("value")
+	MarshalJSONStreamValue(NewValue(&attr.Value, state), dest)
+	dest.WriteObjectEnd()
+}
+
+func UnmarshalJSONIterMap(ms Map, iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
 		*ms.orig = append(*ms.orig, otlpcommon.KeyValue{})
-		iter.ReadObjectCB(func(iter *jsoniter.Iterator, f string) bool {
+		iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 			switch f {
 			case "key":
 				(*ms.orig)[len(*ms.orig)-1].Key = iter.ReadString()

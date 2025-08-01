@@ -9,6 +9,7 @@ package pprofileotlp
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -75,6 +76,35 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
 	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+}
+
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms ExportPartialSuccess) marshalJSONStream(dest *json.Stream) {
+	dest.WriteObjectStart()
+	if ms.orig.RejectedProfiles != int64(0) {
+		dest.WriteObjectField("rejectedProfiles")
+		dest.WriteInt64(ms.orig.RejectedProfiles)
+	}
+	if ms.orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(ms.orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "rejectedProfiles", "rejected_profiles":
+			ms.orig.RejectedProfiles = iter.ReadInt64()
+		case "errorMessage", "error_message":
+			ms.orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
 
 func copyOrigExportPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {

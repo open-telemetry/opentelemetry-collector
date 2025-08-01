@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestProfilesSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestProfilesSliceReadOnly(t *testing.T) {
 
 func TestProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewProfilesSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewProfilesSlice().CopyTo(dest)
 	assert.Equal(t, NewProfilesSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestProfilesSlice().CopyTo(dest)
+	src := generateTestProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestProfilesSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestProfilesSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewProfilesSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestProfilesSlice()
+	got.RemoveIf(func(el Profile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestProfilesSliceAll(t *testing.T) {
 	ms := generateTestProfilesSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestProfilesSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestProfilesSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestProfilesSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewProfilesSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestProfilesSlice_Sort(t *testing.T) {

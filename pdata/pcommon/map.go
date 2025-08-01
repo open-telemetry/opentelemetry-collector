@@ -94,8 +94,8 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 	m.getState().AssertMutable()
 	newLen := 0
 	for i := 0; i < len(*m.getOrig()); i++ {
-		akv := &(*m.getOrig())[i]
-		if f(akv.Key, newValue(&akv.Value, m.getState())) {
+		if f((*m.getOrig())[i].Key, newValue(&(*m.getOrig())[i].Value, m.getState())) {
+			(*m.getOrig())[i] = otlpcommon.KeyValue{}
 			continue
 		}
 		if newLen == i {
@@ -104,6 +104,7 @@ func (m Map) RemoveIf(f func(string, Value) bool) {
 			continue
 		}
 		(*m.getOrig())[newLen] = (*m.getOrig())[i]
+		(*m.getOrig())[i] = otlpcommon.KeyValue{}
 		newLen++
 	}
 	*m.getOrig() = (*m.getOrig())[:newLen]
@@ -124,7 +125,7 @@ func (m Map) PutEmpty(k string) Value {
 // PutStr performs the Insert or Update action. The Value is
 // inserted to the map that did not originally have the key. The key/value is
 // updated to the map where the key already existed.
-func (m Map) PutStr(k string, v string) {
+func (m Map) PutStr(k, v string) {
 	m.getState().AssertMutable()
 	if av, existing := m.Get(k); existing {
 		av.SetStr(v)

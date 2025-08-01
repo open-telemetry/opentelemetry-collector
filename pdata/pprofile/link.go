@@ -4,7 +4,7 @@
 package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 // Equal checks equality with another Link
-func (l Link) Equal(val Link) bool {
-	return l.TraceID() == val.TraceID() &&
-		l.SpanID() == val.SpanID()
+func (ms Link) Equal(val Link) bool {
+	return ms.TraceID() == val.TraceID() &&
+		ms.SpanID() == val.SpanID()
 }

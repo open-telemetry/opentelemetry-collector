@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanLinkSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestSpanLinkSliceReadOnly(t *testing.T) {
 
 func TestSpanLinkSlice_CopyTo(t *testing.T) {
 	dest := NewSpanLinkSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSpanLinkSlice().CopyTo(dest)
 	assert.Equal(t, NewSpanLinkSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestSpanLinkSlice().CopyTo(dest)
+	src := generateTestSpanLinkSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSpanLinkSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSpanLinkSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewSpanLinkSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestSpanLinkSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanLinkSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanLinkSlice()
+	got.RemoveIf(func(el SpanLink) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSpanLinkSliceAll(t *testing.T) {
 	ms := generateTestSpanLinkSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestSpanLinkSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestSpanLinkSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSpanLinkSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSpanLinkSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSpanLinkSlice_Sort(t *testing.T) {

@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -45,6 +47,26 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.Panics(t, func() {
 		ms.CopyTo(newExponentialHistogramDataPoint(&otlpmetrics.ExponentialHistogramDataPoint{}, &sharedState))
 	})
+}
+
+func TestExponentialHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExponentialHistogramDataPoint()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewExponentialHistogramDataPoint()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
@@ -196,9 +218,9 @@ func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
 	tv.orig.Count = uint64(17)
 	tv.orig.Scale = int32(4)
 	tv.orig.ZeroCount = uint64(201)
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Positive, tv.state))
-	fillTestExponentialHistogramDataPointBuckets(newExponentialHistogramDataPointBuckets(&tv.orig.Negative, tv.state))
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
+	fillTestExponentialHistogramDataPointBuckets(tv.Positive())
+	fillTestExponentialHistogramDataPointBuckets(tv.Negative())
+	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(17.13)}
 	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(9.23)}

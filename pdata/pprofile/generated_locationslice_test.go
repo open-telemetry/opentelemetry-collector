@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestLocationSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestLocationSliceReadOnly(t *testing.T) {
 
 func TestLocationSlice_CopyTo(t *testing.T) {
 	dest := NewLocationSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewLocationSlice().CopyTo(dest)
 	assert.Equal(t, NewLocationSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestLocationSlice().CopyTo(dest)
+	src := generateTestLocationSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestLocationSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestLocationSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewLocationSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestLocationSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLocationSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLocationSlice()
+	got.RemoveIf(func(el Location) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestLocationSliceAll(t *testing.T) {
 	ms := generateTestLocationSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestLocationSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestLocationSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestLocationSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewLocationSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestLocationSlice_Sort(t *testing.T) {

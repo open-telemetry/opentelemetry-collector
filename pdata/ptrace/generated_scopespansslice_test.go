@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestScopeSpansSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestScopeSpansSliceReadOnly(t *testing.T) {
 
 func TestScopeSpansSlice_CopyTo(t *testing.T) {
 	dest := NewScopeSpansSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeSpansSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeSpansSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestScopeSpansSlice().CopyTo(dest)
+	src := generateTestScopeSpansSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeSpansSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeSpansSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewScopeSpansSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestScopeSpansSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestScopeSpansSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeSpansSlice()
+	got.RemoveIf(func(el ScopeSpans) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestScopeSpansSliceAll(t *testing.T) {
 	ms := generateTestScopeSpansSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestScopeSpansSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestScopeSpansSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestScopeSpansSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewScopeSpansSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestScopeSpansSlice_Sort(t *testing.T) {

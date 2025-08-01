@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
@@ -135,5 +136,19 @@ func BenchmarkProfilesUsage(b *testing.B) {
 				})
 			}
 		}
+	}
+}
+
+func BenchmarkProfilesMarshalJSON(b *testing.B) {
+	md := NewProfiles()
+	fillTestResourceProfilesSlice(md.ResourceProfiles())
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalProfiles(md)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
 	}
 }
