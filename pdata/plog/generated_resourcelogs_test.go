@@ -96,5 +96,5 @@ func generateTestResourceLogs() ResourceLogs {
 func fillTestResourceLogs(tv ResourceLogs) {
 	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs, tv.state))
+	fillTestScopeLogsSlice(tv.ScopeLogs())
 }

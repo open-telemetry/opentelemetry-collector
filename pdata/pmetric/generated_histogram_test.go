@@ -85,5 +85,5 @@ func generateTestHistogram() Histogram {
 
 func fillTestHistogram(tv Histogram) {
 	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestHistogramDataPointSlice(tv.DataPoints())
 }
