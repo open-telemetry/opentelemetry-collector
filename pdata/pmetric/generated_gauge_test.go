@@ -76,5 +76,5 @@ func generateTestGauge() Gauge {
 }
 
 func fillTestGauge(tv Gauge) {
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestNumberDataPointSlice(tv.DataPoints())
 }

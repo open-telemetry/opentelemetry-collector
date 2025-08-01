@@ -131,6 +131,6 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Count = uint64(17)
 	tv.orig.Sum = float64(17.13)
-	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues, tv.state))
+	fillTestSummaryDataPointValueAtQuantileSlice(tv.QuantileValues())
 	tv.orig.Flags = 1
 }

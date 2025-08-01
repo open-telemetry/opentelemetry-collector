@@ -96,5 +96,5 @@ func generateTestResourceProfiles() ResourceProfiles {
 func fillTestResourceProfiles(tv ResourceProfiles) {
 	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
 	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeProfilesSlice(newScopeProfilesSlice(&tv.orig.ScopeProfiles, tv.state))
+	fillTestScopeProfilesSlice(tv.ScopeProfiles())
 }

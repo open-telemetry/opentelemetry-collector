@@ -118,7 +118,7 @@ func generateTestLocation() Location {
 func fillTestLocation(tv Location) {
 	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(1)}
 	tv.orig.Address = uint64(1)
-	fillTestLineSlice(newLineSlice(&tv.orig.Line, tv.state))
+	fillTestLineSlice(tv.Line())
 	tv.orig.IsFolded = true
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 }

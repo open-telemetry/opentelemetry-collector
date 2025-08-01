@@ -139,6 +139,6 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
+	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 }
