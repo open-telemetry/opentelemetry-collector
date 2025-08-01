@@ -9,7 +9,6 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
-	"net/url"
 	"reflect"
 	"slices"
 	"strings"
@@ -63,7 +62,7 @@ type Conf struct {
 	// isNil is true if this Conf was created from a nil field, as opposed to an empty map.
 	// AllKeys must return an empty slice if this is true.
 	isNil     bool
-	mergeOpts map[string]url.Values
+	mergeOpts map[string]*options
 }
 
 // AllKeys returns all keys holding a value, regardless of where they are set.
@@ -185,7 +184,7 @@ func (l *Conf) IsSet(key string) bool {
 func (l *Conf) Merge(in *Conf) error {
 	if enableMergeAppendOption.IsEnabled() {
 		// only use MergeAppend when enableMergeAppendOption featuregate is enabled.
-		return l.mergeAppend(in, l.mergeOpts)
+		return l.mergeAppend(in, in.mergeOpts)
 	}
 	l.isNil = l.isNil && in.isNil
 	return l.k.Merge(in.k)
@@ -205,7 +204,7 @@ func (l *Conf) Delete(key string) bool {
 // Additionally, mergeAppend performs deduplication when merging lists.
 // For example, if listA = [extension1, extension2] and listB = [extension1, extension3],
 // the resulting list will be [extension1, extension2, extension3].
-func (l *Conf) mergeAppend(in *Conf, mergeOpts map[string]url.Values) error {
+func (l *Conf) mergeAppend(in *Conf, mergeOpts map[string]*options) error {
 	err := l.k.Load(confmap.Provider(in.ToStringMap(), ""), nil, koanf.WithMergeFunc(mergeAppend(mergeOpts)))
 	if err != nil {
 		return err

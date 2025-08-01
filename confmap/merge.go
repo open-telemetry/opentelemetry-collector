@@ -13,26 +13,47 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func extractTags(yamlBytes []byte) map[string]url.Values {
+type options struct {
+	mode       string
+	duplicates bool
+
+	// glob to be set after the path is compiled
+	glob glob.Glob
+}
+
+func newOptions(mode string, duplicates bool) *options {
+	if mode == "" {
+		mode = "append"
+	}
+	return &options{
+		mode:       mode,
+		duplicates: duplicates,
+	}
+}
+
+func fetchMergePaths(yamlBytes []byte) map[string]*options {
 	var root yaml.Node
 	if err := yaml.Unmarshal([]byte(yamlBytes), &root); err != nil {
 		panic(err)
 	}
-	m := map[string]url.Values{}
-	walkYAML(nil, &root, m)
+	m := map[string]*options{}
+	walkYAML(nil, &root, m, []string{})
 	return m
 }
 
-func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]url.Values) {
+func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*options, path []string) {
+	if key != nil {
+		path = append(path, key.Value)
+	}
 	switch node.Kind {
 	case yaml.DocumentNode:
 		for _, n := range node.Content {
-			walkYAML(nil, n, res)
+			walkYAML(nil, n, res, path)
 		}
 
 	case yaml.MappingNode:
 		for i := 0; i < len(node.Content); i += 2 {
-			walkYAML(node.Content[i], node.Content[i+1], res)
+			walkYAML(node.Content[i], node.Content[i+1], res, path)
 		}
 
 	case yaml.SequenceNode:
@@ -41,14 +62,15 @@ func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]url.Values) {
 			if s != "!!seq" {
 				s = strings.TrimPrefix(s, "!")
 				q, _ := url.ParseQuery(s)
-				res[key.Value] = q
-				walkYAML(nil, n, res)
+
+				res[strings.Join(path, "::")] = newOptions(q.Get("mode"), q.Get("duplicates") == "true")
+				walkYAML(nil, n, res, path)
 			}
 		}
 	}
 }
 
-func mergeAppend(mergeOpts map[string]url.Values) func(src, dest map[string]any) error {
+func mergeAppend(mergeOpts map[string]*options) func(src, dest map[string]any) error {
 	return func(src, dest map[string]any) error {
 		// mergeAppend recursively merges the src map into the dest map (left to right),
 		// modifying and expanding the dest map in the process.
@@ -56,15 +78,9 @@ func mergeAppend(mergeOpts map[string]url.Values) func(src, dest map[string]any)
 		// final value is a name-aware copy of lists from src and dest.
 
 		// Compile the globs once
-		patterns := []string{
-			"service::extensions",
-			"service::**::receivers",
-			"service::**::exporters",
-		}
-		var globs []glob.Glob
-		for _, p := range patterns {
-			if g, err := glob.Compile(p); err == nil {
-				globs = append(globs, g)
+		for path, opt := range mergeOpts {
+			if g, err := glob.Compile(path); err == nil {
+				opt.glob = g
 			}
 		}
 
@@ -73,7 +89,7 @@ func mergeAppend(mergeOpts map[string]url.Values) func(src, dest map[string]any)
 		destFlat, _ := maps.Flatten(dest, []string{}, KeyDelimiter)
 
 		for sKey, sVal := range srcFlat {
-			if !isMatch(sKey, globs) {
+			if !isMatch(sKey, mergeOpts) {
 				continue
 			}
 
@@ -100,9 +116,9 @@ func mergeAppend(mergeOpts map[string]url.Values) func(src, dest map[string]any)
 }
 
 // isMatch checks if a key matches any glob in the list
-func isMatch(key string, globs []glob.Glob) bool {
-	for _, g := range globs {
-		if g.Match(key) {
+func isMatch(key string, mergeOpts map[string]*options) bool {
+	for _, opt := range mergeOpts {
+		if opt.glob.Match(key) {
 			return true
 		}
 	}

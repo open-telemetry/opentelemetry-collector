@@ -6,7 +6,6 @@ package confmap // import "go.opentelemetry.io/collector/confmap"
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"time"
 
 	"go.uber.org/zap"
@@ -111,7 +110,7 @@ type Retrieved struct {
 
 	stringRepresentation string
 	isSetString          bool
-	mergeOpts            map[string]url.Values
+	mergeOpts            map[string]*options
 }
 
 type retrievedSettings struct {
@@ -119,7 +118,7 @@ type retrievedSettings struct {
 	stringRepresentation string
 	isSetString          bool
 	closeFunc            CloseFunc
-	mergeOpts            map[string]url.Values
+	mergeOpts            map[string]*options
 }
 
 // RetrievedOption options to customize Retrieved values.
@@ -154,7 +153,7 @@ func withErrorHint(errorHint error) RetrievedOption {
 	})
 }
 
-func withMergeOpts(mergeOpts map[string]url.Values) RetrievedOption {
+func withMergeOpts(mergeOpts map[string]*options) RetrievedOption {
 	return retrievedOptionFunc(func(settings *retrievedSettings) {
 		settings.mergeOpts = mergeOpts
 	})
@@ -165,7 +164,7 @@ func withMergeOpts(mergeOpts map[string]url.Values) RetrievedOption {
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
 	if enableMergeAppendOption.IsEnabled() {
-		opts = append(opts, withMergeOpts(extractTags(yamlBytes)))
+		opts = append(opts, withMergeOpts(fetchMergePaths(yamlBytes)))
 	}
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
