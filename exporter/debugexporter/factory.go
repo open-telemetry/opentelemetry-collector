@@ -139,7 +139,14 @@ func createProfiles(ctx context.Context, set exporter.Settings, config component
 	)
 }
 
+// createLoggerFunc is a function variable that can be overridden in tests
+var createLoggerFunc = createLoggerImpl
+
 func createLogger(cfg *Config, logger *zap.Logger) (*zap.Logger, func() error) {
+	return createLoggerFunc(cfg, logger)
+}
+
+func createLoggerImpl(cfg *Config, logger *zap.Logger) (*zap.Logger, func() error) {
 	var exporterLogger *zap.Logger
 	var closer func() error
 	if cfg.UseInternalLogger {
