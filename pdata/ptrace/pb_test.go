@@ -4,6 +4,7 @@
 package ptrace
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -77,6 +78,12 @@ func generateBenchmarkTraces(metricsCount int) Traces {
 		im.SetName("test_name")
 		im.SetStartTimestamp(startTime)
 		im.SetEndTimestamp(endTime)
+		for j := 0; j < 10; j++ {
+			im.Attributes().PutStr(fmt.Sprintf("string_attr_%d", j), fmt.Sprintf("string_value_%d", j))
+		}
+		for j := 0; j < 10; j++ {
+			im.Attributes().PutInt(fmt.Sprintf("int_attr_%d", j), int64(j))
+		}
 	}
 	return md
 }
