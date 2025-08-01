@@ -142,7 +142,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
-	srv.sdk = &sdk
+	srv.sdk = sdk
 	defer func() {
 		if err != nil {
 			err = multierr.Append(err, sdk.Shutdown(ctx))
