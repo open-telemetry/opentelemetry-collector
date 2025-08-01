@@ -20,6 +20,13 @@ func NewSDK(ctx context.Context, cfg *Config, res *resource.Resource) (*config.S
 		mpConfig.Readers = nil
 	}
 
+	var resourceAttrs []config.AttributeNameValue
+	for _, r := range res.Attributes() {
+		resourceAttrs = append(resourceAttrs, config.AttributeNameValue{
+			Name: string(r.Key), Value: r.Value.AsString(),
+		})
+	}
+
 	sdk, err := config.NewSDK(
 		config.WithContext(ctx),
 		config.WithOpenTelemetryConfiguration(
@@ -31,7 +38,7 @@ func NewSDK(ctx context.Context, cfg *Config, res *resource.Resource) (*config.S
 				TracerProvider: &cfg.Traces.TracerProvider,
 				Resource: &config.Resource{
 					SchemaUrl:  ptr(semconv.SchemaURL),
-					Attributes: attributes(res, cfg),
+					Attributes: resourceAttrs,
 				},
 			},
 		),
