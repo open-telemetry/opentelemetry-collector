@@ -43,6 +43,8 @@ type Metadata struct {
 	ShortFolderName string `mapstructure:"-"`
 	// Tests is the set of tests generated with the component
 	Tests Tests `mapstructure:"tests"`
+	// PackageName is the name of the package where the component is defined.
+	PackageName string `mapstructure:"package_name"`
 }
 
 func (md Metadata) GetCodeCovComponentID() string {
@@ -306,6 +308,8 @@ type Attribute struct {
 	FullName AttributeName `mapstructure:"-"`
 	// Warnings that will be shown to user under specified conditions.
 	Warnings Warnings `mapstructure:"warnings"`
+	// Optional defines whether the attribute is required.
+	Optional bool `mapstructure:"optional"`
 }
 
 // Name returns actual name of the attribute that is set on the metric after applying NameOverride.
@@ -321,7 +325,7 @@ func (a Attribute) TestValue() string {
 		return a.TestTemplateKey()
 	}
 	if a.Enum != nil {
-		return fmt.Sprintf(`"%s"`, a.Enum[0])
+		return fmt.Sprintf(`%q`, a.Enum[0])
 	}
 	switch a.Type.ValueType {
 	case pcommon.ValueTypeEmpty:
@@ -373,4 +377,33 @@ func (a Attribute) TestResultTemplateKey() string {
 		return ".key"
 	}
 	return ""
+}
+
+type Signal struct {
+	// Enabled defines whether the signal is enabled by default.
+	Enabled bool `mapstructure:"enabled"`
+
+	// Warnings that will be shown to user under specified conditions.
+	Warnings Warnings `mapstructure:"warnings"`
+
+	// Description of the signal.
+	Description string `mapstructure:"description"`
+
+	// The stability level of the signal.
+	Stability Stability `mapstructure:"stability"`
+
+	// Extended documentation of the signal. If specified, this will be appended to the description used in generated documentation.
+	ExtendedDocumentation string `mapstructure:"extended_documentation"`
+
+	// Attributes is the list of attributes that the signal emits.
+	Attributes []AttributeName `mapstructure:"attributes"`
+}
+
+func (s Signal) HasOptionalAttribute(attrs map[AttributeName]Attribute) bool {
+	for _, attr := range s.Attributes {
+		if v, exists := attrs[attr]; exists && v.Optional {
+			return true
+		}
+	}
+	return false
 }

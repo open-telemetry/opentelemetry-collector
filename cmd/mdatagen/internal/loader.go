@@ -5,6 +5,8 @@ package internal // import "go.opentelemetry.io/collector/cmd/mdatagen/internal"
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -38,20 +40,24 @@ func LoadMetadata(filePath string) (Metadata, error) {
 	}
 
 	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "componenttest.NewNopHost()"}}
-	if err = conf.Unmarshal(&md); err != nil {
+	err = conf.Unmarshal(&md)
+	if err != nil {
 		return md, err
 	}
+	packageName, err := packageName(filepath.Dir(filePath))
+	if err != nil {
+		return md, fmt.Errorf("unable to determine package name: %w", err)
+	}
+	md.PackageName = packageName
+
 	if md.ScopeName == "" {
-		md.ScopeName, err = packageName()
-		if err != nil {
-			return md, err
-		}
+		md.ScopeName = packageName
 	}
 	if md.GeneratedPackageName == "" {
 		md.GeneratedPackageName = "metadata"
 	}
 
-	if err = md.Validate(); err != nil {
+	if err := md.Validate(); err != nil {
 		return md, err
 	}
 
@@ -80,11 +86,17 @@ func shortFolderName(filePath string) string {
 	return parentFolder
 }
 
-func packageName() (string, error) {
+func packageName(filePath string) (string, error) {
 	cmd := exec.Command("go", "list", "-f", "{{.ImportPath}}")
+	cmd.Dir = filePath
 	output, err := cmd.Output()
 	if err != nil {
-		return "", err
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
+			return "", fmt.Errorf("unable to determine package name: %v failed: (stderr) %v", cmd.Args, string(ee.Stderr))
+		}
+
+		return "", fmt.Errorf("unable to determine package name: %v failed: %v %w", cmd.Args, string(output), err)
 	}
 	return strings.TrimSpace(string(output)), nil
 }

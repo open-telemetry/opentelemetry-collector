@@ -5,7 +5,7 @@
 The collector should be observable and this must naturally include observability of its pipeline components. Pipeline components
 are those components of the collector which directly interact with data, specifically receivers, processors, exporters, and connectors.
 
-It is understood that each _type_ (`filelog`, `batch`, etc) of component may emit telemetry describing its internal workings,
+It is understood that each _type_ (`filelog`, `otlp`, etc) of component may emit telemetry describing its internal workings,
 and that these internally derived signals may vary greatly based on the concerns and maturity of each component. Naturally
 though, there is much we can do to normalize the telemetry emitted from and about pipeline components.
 
@@ -27,7 +27,7 @@ be automatically captured for each kind of pipeline component.
 
 ## Attributes
 
-Spans, data points, and log records should carry the following attributes:
+Traces, logs, and metrics should carry the following instrumentation scope attributes:
 
 ### Receivers
 
@@ -59,6 +59,8 @@ Note: The `otelcol.signal`, `otelcol.signal.output`, or `otelcol.pipeline.id` at
 are unified by the component implementation. For example, the `otlp` receiver is a singleton, so its telemetry is not specific to a signal.
 Similarly, the `memory_limiter` processor is a singleton, so its telemetry is not specific to a pipeline.
 
+These instrumentation scope attributes are automatically injected into the telemetry associated with a component, by wrapping the Logger, TracerProvider, and MeterProvider provided to it.
+
 ## Auto-Instrumentation Mechanism
 
 The mechanism of telemetry capture should be _external_ to components. Specifically, we should observe telemetry at each point where a
@@ -67,8 +69,8 @@ component graph, every _edge_ in the graph will have two layers of instrumentati
 consuming component. Importantly, each layer generates telemetry ascribed to a single component instance, so by having two layers per
 edge we can describe both sides of each handoff independently.
 
-Telemetry captured by this mechanism should be associated with an instrumentation scope corresponding to the package which implements
-the mechanism. Currently, that package is `service/internal/graph`, but this may change in the future. Notably, this telemetry is not
+Telemetry captured by this mechanism should be associated with an instrumentation scope with a name corresponding to the package which implements
+the mechanism. Currently, that package is `go.opentelemetry.io/collector/service`, but this may change in the future. Notably, this telemetry is not
 ascribed to individual component packages, both because the instrumentation scope is intended to describe the origin of the telemetry,
 and because no mechanism is presently identified which would allow us to determine the characteristics of a component-specific scope.
 
@@ -91,17 +93,14 @@ component to which the telemetry is attributed. Metrics which contain the term "
 while metrics which contain the term "consumed" describe data which is received by the component.
 
 For both metrics, an `otelcol.component.outcome` attribute with possible values `success`, `failure`, and `refused` should be automatically recorded,
-based on whether the corresponding function call returned successfully, returned an internal error, or propagated an error from a
-component further downstream.
+based on whether the corresponding function call returned successfully, returned an error originating from the associated component, or propagated an error from a component further downstream.
 
 Specifically, a call to `ConsumeX` is recorded with:
 - `otelcol.component.outcome = success` if the call returns `nil`;
 - `otelcol.component.outcome = failure` if the call returns a regular error;
 - `otelcol.component.outcome = refused` if the call returns an error tagged as coming from downstream.
-After inspecting the error, the instrumentation layer should tag it as coming from downstream before returning it to the parent component.
 
-The upstream component which called `ConsumeX` will have this `otelcol.component.outcome` attribute applied to its produced measurements, and the downstream
-component that `ConsumeX` was called on will have the attribute applied to its consumed measurements.
+After inspecting the error, the instrumentation layer should tag it as coming from downstream before returning it to the caller. Since there are two instrumentation layers between each pair of successive components (one recording produced data and one recording consumed data), this means that a call recorded with `outcome = failure` by the "consumer" layer will be recorded with `outcome = refused` by the "producer" layer, reflecting the fact that only the "consumer" component failed. In all other cases, the `outcome` recorded by both layers should be identical.
 
 Errors should be "tagged as coming from downstream" the same way permanent errors are currently handled: they can be wrapped in a `type downstreamError struct { err error }` wrapper error type, then checked with `errors.As`. Note that care may need to be taken when dealing with the `multiError`s returned by the `fanoutconsumer`. If PR #11085 introducing a single generic `Error` type is merged, an additional `downstream bool` field can be added to it to serve the same purpose instead.
 

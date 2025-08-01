@@ -15,8 +15,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 )
 
-var metricsBytesSizer = &sizer.MetricsBytesSizer{}
-
 func TestMergeMetrics(t *testing.T) {
 	mr1 := newMetricsRequest(testdata.GenerateMetrics(2))
 	mr2 := newMetricsRequest(testdata.GenerateMetrics(3))
@@ -136,6 +134,99 @@ func TestMergeSplitMetrics(t *testing.T) {
 	}
 }
 
+func TestSplitMetricsWithDataPointSplit(t *testing.T) {
+	generateTestMetrics := func(metricType pmetric.MetricType) pmetric.Metrics {
+		md := pmetric.NewMetrics()
+		m := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+		m.SetName("test_metric")
+		m.SetDescription("test_description")
+		m.SetUnit("test_unit")
+		m.Metadata().PutStr("test_metadata_key", "test_metadata_value")
+
+		const numDataPoints = 2
+
+		switch metricType {
+		case pmetric.MetricTypeSum:
+			sum := m.SetEmptySum()
+			for i := 0; i < numDataPoints; i++ {
+				sum.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeGauge:
+			gauge := m.SetEmptyGauge()
+			for i := 0; i < numDataPoints; i++ {
+				gauge.DataPoints().AppendEmpty().SetIntValue(int64(i + 1))
+			}
+		case pmetric.MetricTypeHistogram:
+			hist := m.SetEmptyHistogram()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				hist.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		case pmetric.MetricTypeExponentialHistogram:
+			expHist := m.SetEmptyExponentialHistogram()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				expHist.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		case pmetric.MetricTypeSummary:
+			summary := m.SetEmptySummary()
+			for i := uint64(0); i < uint64(numDataPoints); i++ {
+				summary.DataPoints().AppendEmpty().SetCount(i + 1)
+			}
+		}
+		return md
+	}
+
+	tests := []struct {
+		name       string
+		metricType pmetric.MetricType
+	}{
+		{
+			name:       "sum",
+			metricType: pmetric.MetricTypeSum,
+		},
+		{
+			name:       "gauge",
+			metricType: pmetric.MetricTypeGauge,
+		},
+		{
+			name:       "histogram",
+			metricType: pmetric.MetricTypeHistogram,
+		},
+		{
+			name:       "exponential_histogram",
+			metricType: pmetric.MetricTypeExponentialHistogram,
+		},
+		{
+			name:       "summary",
+			metricType: pmetric.MetricTypeSummary,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Generate metrics with 2 data points.
+			mr1 := newMetricsRequest(generateTestMetrics(tt.metricType))
+
+			// Split by data point, so maxSize is 1.
+			res, err := mr1.MergeSplit(context.Background(), 1, RequestSizerTypeItems, nil)
+			require.NoError(t, err)
+			require.Len(t, res, 2)
+
+			for _, req := range res {
+				actualRequest := req.(*metricsRequest)
+				// Each split request should contain one data point.
+				assert.Equal(t, 1, actualRequest.ItemsCount())
+				m := actualRequest.md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+				assert.Equal(t, "test_metric", m.Name())
+				assert.Equal(t, "test_description", m.Description())
+				assert.Equal(t, "test_unit", m.Unit())
+				assert.Equal(t, 1, m.Metadata().Len())
+				val, ok := m.Metadata().Get("test_metadata_key")
+				assert.True(t, ok)
+				assert.Equal(t, "test_metadata_value", val.AsString())
+			}
+		})
+	}
+}
+
 func TestMergeSplitMetricsInputNotModifiedIfErrorReturned(t *testing.T) {
 	r1 := newMetricsRequest(testdata.GenerateMetrics(18)) // 18 metrics, 36 data points
 	r2 := newLogsRequest(testdata.GenerateLogs(3))
@@ -212,85 +303,169 @@ func BenchmarkSplittingBasedOnItemCountHugeMetrics(b *testing.B) {
 }
 
 func TestMergeSplitMetricsBasedOnByteSize(t *testing.T) {
-	s := sizer.MetricsBytesSizer{}
 	tests := []struct {
-		name          string
-		szt           RequestSizerType
-		maxSize       int
-		mr1           Request
-		mr2           Request
-		expectedSizes []int
+		name             string
+		szt              RequestSizerType
+		maxSize          int
+		mr1              Request
+		mr2              Request
+		expected         []Request
+		expectSplitError bool
 	}{
 		{
-			name:          "both_requests_empty",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10)),
-			mr1:           newMetricsRequest(pmetric.NewMetrics()),
-			mr2:           newMetricsRequest(pmetric.NewMetrics()),
-			expectedSizes: []int{0},
+			name:     "both_requests_empty",
+			szt:      RequestSizerTypeBytes,
+			maxSize:  metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10)),
+			mr1:      newMetricsRequest(pmetric.NewMetrics()),
+			mr2:      newMetricsRequest(pmetric.NewMetrics()),
+			expected: []Request{newMetricsRequest(pmetric.NewMetrics())},
 		},
 		{
-			name:          "first_request_empty",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10)),
-			mr1:           newMetricsRequest(pmetric.NewMetrics()),
-			mr2:           newMetricsRequest(testdata.GenerateMetrics(5)),
-			expectedSizes: []int{1035},
+			name:     "first_request_empty",
+			szt:      RequestSizerTypeBytes,
+			maxSize:  metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10)),
+			mr1:      newMetricsRequest(pmetric.NewMetrics()),
+			mr2:      newMetricsRequest(testdata.GenerateMetrics(5)),
+			expected: []Request{newMetricsRequest(testdata.GenerateMetrics(5))},
 		},
 		{
-			name:          "first_empty_second_nil",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10)),
-			mr1:           newMetricsRequest(pmetric.NewMetrics()),
-			mr2:           nil,
-			expectedSizes: []int{0},
+			name:     "first_empty_second_nil",
+			szt:      RequestSizerTypeBytes,
+			maxSize:  metricsMarshaler.MetricsSize(testdata.GenerateMetrics(10)),
+			mr1:      newMetricsRequest(pmetric.NewMetrics()),
+			mr2:      nil,
+			expected: []Request{newMetricsRequest(pmetric.NewMetrics())},
 		},
 		{
-			name:          "merge_only",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11)),
-			mr1:           newMetricsRequest(testdata.GenerateMetrics(4)),
-			mr2:           newMetricsRequest(testdata.GenerateMetrics(6)),
-			expectedSizes: []int{2102},
+			name:    "merge_only",
+			szt:     RequestSizerTypeBytes,
+			maxSize: metricsMarshaler.MetricsSize(testdata.GenerateMetrics(15)) - 1,
+			mr1:     newMetricsRequest(testdata.GenerateMetrics(7)),
+			mr2:     newMetricsRequest(testdata.GenerateMetrics(7)),
+			expected: []Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(7)
+				testdata.GenerateMetrics(7).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+				return md
+			}())},
 		},
 		{
-			name:          "split_only",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       s.MetricsSize(testdata.GenerateMetrics(4)),
-			mr1:           newMetricsRequest(pmetric.NewMetrics()),
-			mr2:           newMetricsRequest(testdata.GenerateMetrics(10)),
-			expectedSizes: []int{706, 504, 625, 378},
+			name:    "split_only",
+			szt:     RequestSizerTypeBytes,
+			maxSize: metricsMarshaler.MetricsSize(testdata.GenerateMetrics(7)) + 1,
+			mr1:     newMetricsRequest(pmetric.NewMetrics()),
+			mr2:     newMetricsRequest(testdata.GenerateMetrics(17)),
+			expected: []Request{
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(testdata.GenerateMetrics(3)),
+			},
 		},
 		{
-			name:          "merge_and_split",
-			szt:           RequestSizerTypeBytes,
-			maxSize:       metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(10))/2 + metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(11))/2,
-			mr1:           newMetricsRequest(testdata.GenerateMetrics(8)),
-			mr2:           newMetricsRequest(testdata.GenerateMetrics(20)),
-			expectedSizes: []int{2107, 2022, 1954, 290},
+			name:    "merge_and_split",
+			szt:     RequestSizerTypeBytes,
+			maxSize: metricsMarshaler.MetricsSize(testdata.GenerateMetrics(7)) + 1,
+			mr1:     newMetricsRequest(testdata.GenerateMetrics(14)),
+			mr2:     newMetricsRequest(testdata.GenerateMetrics(11)),
+			expected: []Request{
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(testdata.GenerateMetrics(4)),
+			},
 		},
 		{
 			name:    "scope_metrics_split",
 			szt:     RequestSizerTypeBytes,
-			maxSize: metricsBytesSizer.MetricsSize(testdata.GenerateMetrics(4)),
+			maxSize: metricsMarshaler.MetricsSize(testdata.GenerateMetrics(7)) + 1,
 			mr1: newMetricsRequest(func() pmetric.Metrics {
-				md := testdata.GenerateMetrics(4)
+				md := testdata.GenerateMetrics(7)
 				extraScopeMetrics := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
-				testdata.GenerateMetrics(4).ResourceMetrics().At(0).ScopeMetrics().At(0).MoveTo(extraScopeMetrics)
+				testdata.GenerateMetrics(7).ResourceMetrics().At(0).ScopeMetrics().At(0).MoveTo(extraScopeMetrics)
 				extraScopeMetrics.Scope().SetName("extra scope")
 				return md
 			}()),
-			mr2:           nil,
-			expectedSizes: []int{706, 700, 85},
+			mr2: nil,
+			expected: []Request{
+				newMetricsRequest(testdata.GenerateMetrics(7)),
+				newMetricsRequest(func() pmetric.Metrics {
+					md := testdata.GenerateMetrics(7)
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetName("extra scope")
+					// Remove last data point.
+					lastDP := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).Summary().DataPoints().Len()
+					idx := 0
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(6).Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
+						idx++
+						return idx == lastDP
+					})
+					return md
+				}()),
+				newMetricsRequest(func() pmetric.Metrics {
+					md := testdata.GenerateMetrics(7)
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetName("extra scope")
+					// Remove all metrics but last one
+					lastM := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len()
+					idx := 0
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(pmetric.Metric) bool {
+						idx++
+						return idx != lastM
+					})
+					// Remove all data points but last one
+					lastDP := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().Len()
+					idx = 0
+					md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().RemoveIf(func(pmetric.SummaryDataPoint) bool {
+						idx++
+						return idx != lastDP
+					})
+					return md
+				}()),
+			},
+		},
+		{
+			name:    "unsplittable_large_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 10,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 100)))
+				return md
+			}()),
+			mr2:              nil,
+			expected:         []Request{},
+			expectSplitError: true,
+		},
+		{
+			name:    "splittable_then_unsplittable_metric",
+			szt:     RequestSizerTypeBytes,
+			maxSize: 1000,
+			mr1: newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(2)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetDescription(string(make([]byte, 1001)))
+				return md
+			}()),
+			mr2: nil,
+			expected: []Request{newMetricsRequest(func() pmetric.Metrics {
+				md := testdata.GenerateMetrics(1)
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription(string(make([]byte, 10)))
+				return md
+			}())},
+			expectSplitError: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			res, err := tt.mr1.MergeSplit(context.Background(), tt.maxSize, tt.szt, tt.mr2)
-			require.NoError(t, err)
-			assert.Len(t, res, len(tt.expectedSizes))
+			if tt.expectSplitError {
+				require.ErrorContains(t, err, "one datapoint size is greater than max size, dropping items:")
+			} else {
+				require.NoError(t, err)
+			}
+			require.Len(t, res, len(tt.expected))
 			for i := range res {
-				assert.Equal(t, tt.expectedSizes[i], res[i].(*metricsRequest).size(&s))
+				assert.Equal(t, tt.expected[i].(*metricsRequest).md, res[i].(*metricsRequest).md, i)
+				assert.Equal(t,
+					metricsMarshaler.MetricsSize(tt.expected[i].(*metricsRequest).md),
+					metricsMarshaler.MetricsSize(res[i].(*metricsRequest).md))
 			}
 		})
 	}
@@ -334,7 +509,8 @@ func TestExtractGaugeDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractGaugeDataPoints(gauge, tt.capacity, sz)
+			destMetric := pmetric.NewMetric()
+			removedSize := extractGaugeDataPoints(gauge, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Gauge().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -382,7 +558,8 @@ func TestExtractSumDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSumDataPoints(sum, tt.capacity, sz)
+			destMetric := pmetric.NewMetric()
+			removedSize := extractSumDataPoints(sum, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Sum().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -431,7 +608,8 @@ func TestExtractHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractHistogramDataPoints(histogram, tt.capacity, sz)
+			destMetric := pmetric.NewMetric()
+			removedSize := extractHistogramDataPoints(histogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Histogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -479,7 +657,8 @@ func TestExtractExponentialHistogramDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractExponentialHistogramDataPoints(expHistogram, tt.capacity, sz)
+			destMetric := pmetric.NewMetric()
+			removedSize := extractExponentialHistogramDataPoints(expHistogram, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.ExponentialHistogram().DataPoints().Len())
 			if tt.expectedPoints > 0 {
@@ -527,7 +706,8 @@ func TestExtractSummaryDataPoints(t *testing.T) {
 
 			sz := &mockMetricsSizer{dpSize: 1}
 
-			destMetric, removedSize := extractSummaryDataPoints(summary, tt.capacity, sz)
+			destMetric := pmetric.NewMetric()
+			removedSize := extractSummaryDataPoints(summary, destMetric, tt.capacity, sz)
 
 			assert.Equal(t, tt.expectedPoints, destMetric.Summary().DataPoints().Len())
 			if tt.expectedPoints > 0 {

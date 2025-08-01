@@ -5,7 +5,6 @@ package confmap
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"os"
 	"path/filepath"
@@ -15,7 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 )
 
 func TestToStringMapFlatten(t *testing.T) {
@@ -267,15 +266,14 @@ func TestUint32UnmarshalerSuccess(t *testing.T) {
 }
 
 func TestUint32UnmarshalerFailure(t *testing.T) {
-	testValue := -1000
 	stringMap := map[string]any{
-		"value": testValue,
+		"value": -1000,
 	}
 	conf := NewFromStringMap(stringMap)
 	cfg := &uint32Config{}
 	err := conf.Unmarshal(cfg)
 
-	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, "decoding failed due to the following error(s):\n\n'value' cannot parse value as 'uint32': -1000 overflows uint")
 }
 
 type uint64Config struct {
@@ -300,15 +298,14 @@ func TestUint64Unmarshaler(t *testing.T) {
 }
 
 func TestUint64UnmarshalerFailure(t *testing.T) {
-	testValue := -1000
 	stringMap := map[string]any{
-		"value": testValue,
+		"value": -1000,
 	}
 	conf := NewFromStringMap(stringMap)
 	cfg := &uint64Config{}
 	err := conf.Unmarshal(cfg)
 
-	assert.ErrorContains(t, err, fmt.Sprintf("decoding failed due to the following error(s):\n\ncannot parse 'value', %d overflows uint", testValue))
+	assert.ErrorContains(t, err, "decoding failed due to the following error(s):\n\n'value' cannot parse value as 'uint64': -1000 overflows uint")
 }
 
 func TestMapKeyStringToMapKeyTextUnmarshalerHookFuncDuplicateID(t *testing.T) {
@@ -546,7 +543,7 @@ func TestEmbeddedUnmarshalerError(t *testing.T) {
 	})
 
 	tc := &testConfigWithEmbeddedError{}
-	assert.EqualError(t, cfgMap.Unmarshal(tc), "embedded error")
+	assert.ErrorContains(t, cfgMap.Unmarshal(tc), "embedded error")
 }
 
 func TestEmbeddedMarshalerError(t *testing.T) {
@@ -638,7 +635,7 @@ func TestUnmarshalerErr(t *testing.T) {
 	})
 
 	tc := &testErrConfig{}
-	require.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\nerror decoding 'err': never works")
+	require.EqualError(t, cfgMap.Unmarshal(tc), "decoding failed due to the following error(s):\n\n'err' never works")
 	assert.Empty(t, tc.Err.Foo)
 }
 

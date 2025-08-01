@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -34,39 +33,44 @@ import (
 // itemsSizer is a sizer implementation that returns the size of a queue element as the number of items it contains.
 type itemsSizer struct{}
 
-func (is *itemsSizer) Sizeof(val uint64) int64 {
-	if val > math.MaxInt64 {
-		return math.MaxInt64
-	}
-	return int64(val)
+func (is *itemsSizer) Sizeof(val int64) int64 {
+	return val
 }
 
-type uint64Encoding struct{}
+type bytesSizer struct{}
 
-func (uint64Encoding) Marshal(_ context.Context, val uint64) ([]byte, error) {
-	return binary.LittleEndian.AppendUint64([]byte{}, val), nil
+func (is *bytesSizer) Sizeof(val int64) int64 {
+	return val * 10
 }
 
-func (uint64Encoding) Unmarshal(bytes []byte) (context.Context, uint64, error) {
-	if len(bytes) < 8 {
-		return context.Background(), 0, errInvalidValue
+type int64Encoding struct{}
+
+func (int64Encoding) Marshal(_ context.Context, val int64) ([]byte, error) {
+	str := strconv.FormatInt(val, 10)
+	return []byte(str), nil
+}
+
+func (int64Encoding) Unmarshal(bytes []byte) (context.Context, int64, error) {
+	val, err := strconv.ParseInt(string(bytes), 10, 64)
+	if err != nil {
+		return context.Background(), 0, err
 	}
-	return context.Background(), binary.LittleEndian.Uint64(bytes), nil
+	return context.Background(), val, nil
 }
 
 func newFakeBoundedStorageClient(maxSizeInBytes int) *fakeBoundedStorageClient {
 	return &fakeBoundedStorageClient{
 		st:             map[string][]byte{},
-		MaxSizeInBytes: maxSizeInBytes,
+		maxSizeInBytes: maxSizeInBytes,
 	}
 }
 
-// this storage client mimics the behavior of actual storage engines with limited storage space available
-// in general, real storage engines often have a per-write-transaction storage overhead, needing to keep
-// both the old and the new value stored until the transaction is committed
-// this is useful for testing the persistent queue queue behavior with a full disk
+// fakeBoundedStorageClient storage client mimics the behavior of actual storage engines with limited
+// storage space available in general, real storage engines often have a per-write-transaction
+// storage overhead, needing to keep both the old and the new value stored until the transaction
+// is committed this is useful for testing the persistent queue behavior with a full disk.
 type fakeBoundedStorageClient struct {
-	MaxSizeInBytes int
+	maxSizeInBytes int
 	st             map[string][]byte
 	sizeInBytes    int
 	mux            sync.Mutex
@@ -102,7 +106,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Oper
 	// the assumption here is that the new data needs to coexist with the old data on disk
 	// for the transaction to succeed
 	// this seems to be true for the file storage extension at least
-	if m.sizeInBytes+totalAdded > m.MaxSizeInBytes {
+	if m.sizeInBytes+totalAdded-totalRemoved > m.maxSizeInBytes {
 		return fmt.Errorf("insufficient space available: %w", syscall.ENOSPC)
 	}
 
@@ -127,7 +131,7 @@ func (m *fakeBoundedStorageClient) Batch(_ context.Context, ops ...*storage.Oper
 func (m *fakeBoundedStorageClient) SetMaxSizeInBytes(newMaxSize int) {
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	m.MaxSizeInBytes = newMaxSize
+	m.maxSizeInBytes = newMaxSize
 }
 
 func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
@@ -136,7 +140,7 @@ func (m *fakeBoundedStorageClient) GetSizeInBytes() int {
 	return m.sizeInBytes
 }
 
-func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded int, totalRemoved int) {
+func (m *fakeBoundedStorageClient) getTotalSizeChange(ops []*storage.Operation) (totalAdded, totalRemoved int) {
 	totalAdded, totalRemoved = 0, 0
 	for _, op := range ops {
 		switch op.Type {
@@ -212,111 +216,88 @@ func (m *fakeStorageClientWithErrors) Reset() {
 	m.nextErrorIndex = 0
 }
 
-// createAndStartTestPersistentQueue creates and starts a fake queue with the given capacity and number of consumers.
-func createAndStartTestPersistentQueue(t *testing.T, sizer request.Sizer[uint64], capacity int64, numConsumers int,
-	consumeFunc func(_ context.Context, item uint64) error,
-) Queue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     sizer,
-		capacity:  capacity,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
-	})
-	ac := newAsyncQueue(pq, numConsumers, func(ctx context.Context, item uint64, done Done) {
-		done.OnDone(consumeFunc(ctx, item))
-	})
-	host := hosttest.NewHost(map[component.ID]component.Component{
-		{}: storagetest.NewMockStorageExtension(nil),
-	})
-	require.NoError(t, ac.Start(context.Background(), host))
-	t.Cleanup(func() {
-		assert.NoError(t, ac.Shutdown(context.Background()))
-	})
-	return pq
+func newSettings(sizerType request.SizerType, capacity int64) Settings[int64] {
+	return Settings[int64]{
+		SizerType:  sizerType,
+		ItemsSizer: &itemsSizer{},
+		BytesSizer: &bytesSizer{},
+		Capacity:   capacity,
+		Signal:     pipeline.SignalTraces,
+		Encoding:   int64Encoding{},
+		ID:         component.NewID(exportertest.NopType),
+		Telemetry:  componenttest.NewNopTelemetrySettings(),
+	}
 }
 
-func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     request.RequestsSizer[uint64]{},
-		capacity:  1000,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
-	}).(*persistentQueue[uint64])
+func newSettingsWithStorage(sizerType request.SizerType, capacity int64) Settings[int64] {
+	set := newSettings(sizerType, capacity)
+	storageID := component.ID{}
+	set.StorageID = &storageID
+	return set
+}
+
+func createTestPersistentQueueWithClient(client storage.Client) *persistentQueue[int64] {
+	pq := newPersistentQueue[int64](newSettingsWithStorage(request.SizerTypeRequests, 1000)).(*persistentQueue[int64])
 	pq.initClient(context.Background(), client)
 	return pq
 }
 
-func createTestPersistentQueueWithRequestsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
-	return createTestPersistentQueueWithCapacityLimiter(tb, ext, request.RequestsSizer[uint64]{}, capacity)
+func createTestPersistentQueueWithRequestsSizer(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[int64] {
+	return createTestPersistentQueue(tb, ext, request.SizerTypeRequests, capacity)
 }
 
-func createTestPersistentQueueWithItemsCapacity(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[uint64] {
-	return createTestPersistentQueueWithCapacityLimiter(tb, ext, &itemsSizer{}, capacity)
+func createTestPersistentQueueWithItemsSizer(tb testing.TB, ext storage.Extension, capacity int64) *persistentQueue[int64] {
+	return createTestPersistentQueue(tb, ext, request.SizerTypeItems, capacity)
 }
 
-func createTestPersistentQueueWithCapacityLimiter(tb testing.TB, ext storage.Extension, sizer request.Sizer[uint64],
-	capacity int64,
-) *persistentQueue[uint64] {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-		sizer:     sizer,
-		capacity:  capacity,
-		signal:    pipeline.SignalTraces,
-		storageID: component.ID{},
-		encoding:  uint64Encoding{},
-		id:        component.NewID(exportertest.NopType),
-		telemetry: componenttest.NewNopTelemetrySettings(),
-	}).(*persistentQueue[uint64])
+func createTestPersistentQueue(tb testing.TB, ext storage.Extension, sizerType request.SizerType, capacity int64) *persistentQueue[int64] {
+	pq := newPersistentQueue[int64](newSettingsWithStorage(sizerType, capacity))
 	require.NoError(tb, pq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{{}: ext})))
-	return pq
+	return pq.(*persistentQueue[int64])
 }
 
 func TestPersistentQueue_FullCapacity(t *testing.T) {
 	tests := []struct {
 		name           string
-		sizer          request.Sizer[uint64]
+		sizerType      request.SizerType
 		capacity       int64
 		sizeMultiplier int64
 	}{
 		{
 			name:           "requests_capacity",
-			sizer:          request.RequestsSizer[uint64]{},
+			sizerType:      request.SizerTypeRequests,
 			capacity:       5,
 			sizeMultiplier: 1,
 		},
 		{
 			name:           "items_capacity",
-			sizer:          &itemsSizer{},
+			sizerType:      request.SizerTypeItems,
 			capacity:       55,
 			sizeMultiplier: 10,
+		},
+		{
+			name:           "bytes_capacity",
+			sizerType:      request.SizerTypeBytes,
+			capacity:       550,
+			sizeMultiplier: 100,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			done := make(chan struct{})
-			pq := createAndStartTestPersistentQueue(t,
-				tt.sizer, tt.capacity, 1,
-				func(context.Context, uint64) error {
-					<-done
-					return nil
-				})
+			ext := storagetest.NewMockStorageExtension(nil)
+			pq := createTestPersistentQueue(t, ext, tt.sizerType, tt.capacity)
 			assert.Equal(t, int64(0), pq.Size())
 
-			req := uint64(10)
-
-			// First request is picked by the consumer. Wait until the consumer is blocked on done.
-			require.NoError(t, pq.Offer(context.Background(), req))
-			assert.Eventually(t, func() bool {
-				return pq.Size() == 0
-			}, 2*time.Second, 10*time.Millisecond)
+			// The consumer picks first request. Wait until the consumer is blocked on done.
+			require.NoError(t, pq.Offer(context.Background(), int64(10)))
+			assert.Equal(t, 1*tt.sizeMultiplier, pq.Size())
+			_, _, done, ok := pq.Read(context.Background())
+			assert.True(t, ok)
+			done.OnDone(nil)
+			assert.Equal(t, int64(0), pq.Size())
 
 			for i := 0; i < 10; i++ {
-				result := pq.Offer(context.Background(), uint64(10))
+				result := pq.Offer(context.Background(), int64(10))
 				if i < 5 {
 					require.NoError(t, result)
 				} else {
@@ -324,22 +305,20 @@ func TestPersistentQueue_FullCapacity(t *testing.T) {
 				}
 			}
 			assert.Equal(t, 5*tt.sizeMultiplier, pq.Size())
-			close(done)
+			require.NoError(t, pq.Shutdown(context.Background()))
 		})
 	}
 }
 
 func TestPersistentQueue_Shutdown(t *testing.T) {
-	pq := createAndStartTestPersistentQueue(t,
-		request.RequestsSizer[uint64]{}, 1001, 1,
-		func(context.Context, uint64) error {
-			return nil
-		})
-	req := uint64(10)
+	ext := storagetest.NewMockStorageExtension(nil)
+	pq := createTestPersistentQueue(t, ext, request.SizerTypeRequests, 1001)
+	req := int64(10)
 
 	for i := 0; i < 1000; i++ {
-		assert.NoError(t, pq.Offer(context.Background(), req))
+		require.NoError(t, pq.Offer(context.Background(), req))
 	}
+	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_ConsumersProducers(t *testing.T) {
@@ -371,66 +350,62 @@ func TestPersistentQueue_ConsumersProducers(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("#messages: %d #consumers: %d", c.numMessagesProduced, c.numConsumers), func(t *testing.T) {
-			req := uint64(10)
-
 			consumed := &atomic.Int64{}
-			pq := createAndStartTestPersistentQueue(t,
-				request.RequestsSizer[uint64]{}, 1000, c.numConsumers,
-				func(context.Context, uint64) error {
-					consumed.Add(int64(1))
-					return nil
-				})
+
+			pq := newPersistentQueue[int64](newSettingsWithStorage(request.SizerTypeRequests, 1000))
+			aq := newAsyncQueue[int64](pq, c.numConsumers, func(_ context.Context, _ int64, done Done) {
+				consumed.Add(int64(1))
+				done.OnDone(nil)
+			})
+			require.NoError(t, aq.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
+				{}: storagetest.NewMockStorageExtension(nil),
+			},
+			)))
 
 			for i := 0; i < c.numMessagesProduced; i++ {
-				require.NoError(t, pq.Offer(context.Background(), req))
+				require.NoError(t, aq.Offer(context.Background(), int64(10)))
 			}
 
 			// Because the persistent queue is not draining after Shutdown, need to wait here for the drain.
 			assert.Eventually(t, func() bool {
 				return c.numMessagesProduced == int(consumed.Load())
 			}, 5*time.Second, 10*time.Millisecond)
+
+			require.NoError(t, aq.Shutdown(context.Background()))
 		})
 	}
 }
 
 func TestPersistentBlockingQueue(t *testing.T) {
 	tests := []struct {
-		name  string
-		sizer request.Sizer[uint64]
+		name      string
+		sizerType request.SizerType
 	}{
 		{
-			name:  "requests_based",
-			sizer: request.RequestsSizer[uint64]{},
+			name:      "requests_based",
+			sizerType: request.SizerTypeRequests,
 		},
 		{
-			name:  "items_based",
-			sizer: &itemsSizer{},
+			name:      "items_based",
+			sizerType: request.SizerTypeItems,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{
-				sizer:           tt.sizer,
-				capacity:        100,
-				blockOnOverflow: true,
-				signal:          pipeline.SignalTraces,
-				storageID:       component.ID{},
-				encoding:        uint64Encoding{},
-				id:              component.NewID(exportertest.NopType),
-				telemetry:       componenttest.NewNopTelemetrySettings(),
-			})
+			set := newSettingsWithStorage(tt.sizerType, 1000)
+			set.BlockOnOverflow = true
+			pq := newPersistentQueue[int64](set)
 			consumed := &atomic.Int64{}
-			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ uint64, done Done) {
+			ac := newAsyncQueue(pq, 10, func(_ context.Context, _ int64, done Done) {
 				consumed.Add(1)
 				done.OnDone(nil)
 			})
-			host := hosttest.NewHost(map[component.ID]component.Component{
+			require.NoError(t, ac.Start(context.Background(), hosttest.NewHost(map[component.ID]component.Component{
 				{}: storagetest.NewMockStorageExtension(nil),
-			})
-			require.NoError(t, ac.Start(context.Background(), host))
+			})))
 
-			td := uint64(10)
+			td := int64(10)
 			wg := &sync.WaitGroup{}
 			for i := 0; i < 10; i++ {
 				wg.Add(1)
@@ -538,20 +513,19 @@ func TestInvalidStorageExtensionType(t *testing.T) {
 }
 
 func TestPersistentQueue_StopAfterBadStart(t *testing.T) {
-	pq := newPersistentQueue[uint64](persistentQueueSettings[uint64]{})
+	storageID := component.ID{}
+	pq := newPersistentQueue[int64](Settings[int64]{StorageID: &storageID})
 	// verify that stopping a un-start/started w/error queue does not panic
 	assert.NoError(t, pq.Shutdown(context.Background()))
 }
 
 func TestPersistentQueue_CorruptedData(t *testing.T) {
 	cases := []struct {
-		name                               string
-		corruptAllData                     bool
-		corruptSomeData                    bool
-		corruptCurrentlyDispatchedItemsKey bool
-		corruptReadIndex                   bool
-		corruptWriteIndex                  bool
-		desiredQueueSize                   int64
+		name               string
+		corruptAllData     bool
+		corruptSomeData    bool
+		corruptMetadataKey bool
+		desiredQueueSize   int64
 	}{
 		{
 			name:             "corrupted no items",
@@ -568,27 +542,15 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 			desiredQueueSize: 2, // - the dispatched item which was corrupted.
 		},
 		{
-			name:                               "corrupted dispatched items key",
-			corruptCurrentlyDispatchedItemsKey: true,
-			desiredQueueSize:                   2,
+			name:               "corrupted metadata",
+			corruptMetadataKey: true,
+			desiredQueueSize:   0,
 		},
 		{
-			name:             "corrupted read index",
-			corruptReadIndex: true,
-			desiredQueueSize: 1, // The dispatched item.
-		},
-		{
-			name:              "corrupted write index",
-			corruptWriteIndex: true,
-			desiredQueueSize:  1, // The dispatched item.
-		},
-		{
-			name:                               "corrupted everything",
-			corruptAllData:                     true,
-			corruptCurrentlyDispatchedItemsKey: true,
-			corruptReadIndex:                   true,
-			corruptWriteIndex:                  true,
-			desiredQueueSize:                   0,
+			name:               "corrupted everything",
+			corruptAllData:     true,
+			corruptMetadataKey: true,
+			desiredQueueSize:   0,
 		},
 	}
 
@@ -597,17 +559,17 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			ext := storagetest.NewMockStorageExtension(nil)
-			ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+			ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
 			// Put some items, make sure they are loaded and shutdown the storage...
 			for i := 0; i < 3; i++ {
-				require.NoError(t, ps.Offer(context.Background(), uint64(50)))
+				require.NoError(t, ps.Offer(context.Background(), int64(50)))
 			}
 			assert.Equal(t, int64(3), ps.Size())
-			require.True(t, consume(ps, func(context.Context, uint64) error {
+			require.True(t, consume(ps, func(context.Context, int64) error {
 				return experr.NewShutdownErr(nil)
 			}))
-			assert.Equal(t, int64(2), ps.Size())
+			assert.Equal(t, int64(3), ps.Size())
 
 			// We can corrupt data (in several ways) and not worry since we return ShutdownErr client will not be touched.
 			if c.corruptAllData || c.corruptSomeData {
@@ -618,33 +580,26 @@ func TestPersistentQueue_CorruptedData(t *testing.T) {
 				require.NoError(t, ps.client.Set(context.Background(), "2", badBytes))
 			}
 
-			if c.corruptCurrentlyDispatchedItemsKey {
-				require.NoError(t, ps.client.Set(context.Background(), currentlyDispatchedItemsKey, badBytes))
-			}
-
-			if c.corruptReadIndex {
-				require.NoError(t, ps.client.Set(context.Background(), readIndexKey, badBytes))
-			}
-
-			if c.corruptWriteIndex {
-				require.NoError(t, ps.client.Set(context.Background(), writeIndexKey, badBytes))
+			if c.corruptMetadataKey {
+				require.NoError(t, ps.client.Set(context.Background(), metadataKey, badBytes))
 			}
 
 			// Cannot close until we corrupt the data because the
 			require.NoError(t, ps.Shutdown(context.Background()))
 
 			// Reload
-			newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+			newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 			assert.Equal(t, c.desiredQueueSize, newPs.Size())
+			require.NoError(t, newPs.Shutdown(context.Background()))
 		})
 	}
 }
 
 func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
-	req := uint64(50)
+	req := int64(50)
 
 	ext := storagetest.NewMockStorageExtension(nil)
-	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 
 	for i := 0; i < 5; i++ {
 		require.NoError(t, ps.Offer(context.Background(), req))
@@ -670,13 +625,13 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 
 	// Reload the storage. Since items 0 was not finished, this should be re-enqueued at the end.
 	// The queue should be essentially {3,4,0,2}.
-	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 	assert.Equal(t, int64(4), newPs.Size())
 	requireCurrentlyDispatchedItemsEqual(t, newPs, []uint64{})
 
 	// We should be able to pull all remaining items now
 	for i := 0; i < 4; i++ {
-		consume(newPs, func(_ context.Context, val uint64) error {
+		consume(newPs, func(_ context.Context, val int64) error {
 			assert.Equal(t, req, val)
 			return nil
 		})
@@ -699,10 +654,10 @@ func TestPersistentQueue_CurrentlyProcessedItems(t *testing.T) {
 // this test attempts to check if all the invariants are kept if the queue is recreated while
 // close to full and with some items dispatched
 func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
-	req := uint64(50)
+	req := int64(50)
 
 	ext := storagetest.NewMockStorageExtension(nil)
-	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 5)
+	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 5)
 
 	// Put in items up to capacity
 	for i := 0; i < 5; i++ {
@@ -710,7 +665,7 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	}
 	require.Equal(t, int64(5), ps.Size())
 
-	require.True(t, consume(ps, func(context.Context, uint64) error {
+	require.True(t, consume(ps, func(context.Context, int64) error {
 		// Check that size is still full even when consuming the element.
 		require.Equal(t, int64(5), ps.Size())
 		return experr.NewShutdownErr(nil)
@@ -718,15 +673,15 @@ func TestPersistentQueueStartWithNonDispatched(t *testing.T) {
 	require.NoError(t, ps.Shutdown(context.Background()))
 
 	// Reload with extra capacity to make sure we re-enqueue in-progress items.
-	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 5)
+	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 5)
 	require.Equal(t, int64(5), newPs.Size())
 }
 
 func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
-	req := uint64(1)
+	req := int64(1)
 
 	ext := storagetest.NewMockStorageExtensionWithDelay(nil, 20*time.Nanosecond)
-	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 25)
+	pq := createTestPersistentQueueWithItemsSizer(t, ext, 25)
 
 	proWg := sync.WaitGroup{}
 	// Sending small amount of data as windows test can't handle the test fast enough
@@ -753,7 +708,7 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 		go func() {
 			defer conWg.Done()
 			for i := 0; i < 10; i++ {
-				assert.True(t, consume(pq, func(context.Context, uint64) error { return nil }))
+				assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 			}
 		}()
 	}
@@ -787,9 +742,9 @@ func TestPersistentQueueStartWithNonDispatchedConcurrent(t *testing.T) {
 }
 
 func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
-	req := uint64(50)
+	req := int64(50)
 	ext := storagetest.NewMockStorageExtension(nil)
-	ps := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+	ps := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 	assert.Equal(t, int64(0), ps.Size())
 
 	// Put two elements and close the extension
@@ -800,17 +755,17 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 	_, _, _, _ = ps.Read(context.Background())
 	require.NoError(t, ps.Shutdown(context.Background()))
 
-	newPs := createTestPersistentQueueWithRequestsCapacity(t, ext, 1000)
+	newPs := createTestPersistentQueueWithRequestsSizer(t, ext, 1000)
 	require.Equal(t, int64(2), newPs.Size())
 
 	// Let's read both of the elements we put
-	consume(newPs, func(_ context.Context, val uint64) error {
+	consume(newPs, func(_ context.Context, val int64) error {
 		require.Equal(t, req, val)
 		return nil
 	})
 	assert.Equal(t, int64(1), newPs.Size())
 
-	consume(newPs, func(_ context.Context, val uint64) error {
+	consume(newPs, func(_ context.Context, val int64) error {
 		require.Equal(t, req, val)
 		return nil
 	})
@@ -820,9 +775,9 @@ func TestPersistentQueue_PutCloseReadClose(t *testing.T) {
 
 func BenchmarkPersistentQueue(b *testing.B) {
 	ext := storagetest.NewMockStorageExtension(nil)
-	ps := createTestPersistentQueueWithRequestsCapacity(b, ext, 10000000)
+	ps := createTestPersistentQueueWithRequestsSizer(b, ext, 10000000)
 
-	req := uint64(100)
+	req := int64(100)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -832,7 +787,7 @@ func BenchmarkPersistentQueue(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		require.True(b, consume(ps, func(context.Context, uint64) error { return nil }))
+		require.True(b, consume(ps, func(context.Context, int64) error { return nil }))
 	}
 	require.NoError(b, ext.Shutdown(context.Background()))
 }
@@ -858,7 +813,7 @@ func TestItemIndexMarshaling(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("#elements:%v", c.in), func(*testing.T) {
-			buf := itemIndexToBytes(c.in)
+			buf := binary.LittleEndian.AppendUint64([]byte{}, c.in)
 			out, err := bytesToItemIndex(buf)
 			require.NoError(t, err)
 			require.Equal(t, c.out, out)
@@ -896,12 +851,12 @@ func TestItemIndexArrayMarshaling(t *testing.T) {
 }
 
 func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
-	ps := createTestPersistentQueueWithRequestsCapacity(t, storagetest.NewMockStorageExtension(nil), 1000)
+	ps := createTestPersistentQueueWithRequestsSizer(t, storagetest.NewMockStorageExtension(nil), 1000)
 
 	assert.Equal(t, int64(0), ps.Size())
 	assert.False(t, ps.client.(*storagetest.MockStorageClient).IsClosed())
 
-	require.NoError(t, ps.Offer(context.Background(), uint64(50)))
+	require.NoError(t, ps.Offer(context.Background(), int64(50)))
 
 	_, _, done, ok := ps.Read(context.Background())
 	require.True(t, ok)
@@ -913,43 +868,45 @@ func TestPersistentQueue_ShutdownWhileConsuming(t *testing.T) {
 }
 
 func TestPersistentQueue_StorageFull(t *testing.T) {
-	marshaled, err := uint64Encoding{}.Marshal(context.Background(), uint64(50))
+	marshaled, err := int64Encoding{}.Marshal(context.Background(), int64(50))
 	require.NoError(t, err)
-	maxSizeInBytes := len(marshaled) * 5 // arbitrary small number
+	maxSizeInBytes := len(marshaled)*5 + 60 // arbitrary small number
 
 	client := newFakeBoundedStorageClient(maxSizeInBytes)
 	ps := createTestPersistentQueueWithClient(client)
 
 	// Put enough items in to fill the underlying storage
-	reqCount := int64(0)
+	reqCount := 0
 	for {
-		err = ps.Offer(context.Background(), uint64(50))
+		reqCount++
+		err = ps.Offer(context.Background(), int64(50))
 		if errors.Is(err, syscall.ENOSPC) {
 			break
 		}
 		require.NoError(t, err)
-		reqCount++
 	}
 
 	// Check that the size is correct
-	require.Equal(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
+	require.EqualValues(t, reqCount, ps.Size(), "Size must be equal to the number of items inserted")
 
-	// Manually set the storage to only have a small amount of free space left (needs 24).
-	newMaxSize := client.GetSizeInBytes() + 23
-	client.SetMaxSizeInBytes(newMaxSize)
+	// Manually set the storage to support writing the dispatch value.
+	client.SetMaxSizeInBytes(client.GetSizeInBytes() + 19)
 
-	// Take out all the items
-	// Getting the first item fails, as we can't update the state in storage, so we just delete it without returning it
-	// Subsequent items succeed, as deleting the first item frees enough space for the state update
-	reqCount--
-	for i := reqCount; i > 0; i-- {
-		require.True(t, consume(ps, func(context.Context, uint64) error { return nil }))
+	// Take out all the items except last. Last one is there only in metadata because the data write failed.
+	for i := 0; i < reqCount-1; i++ {
+		require.True(t, consume(ps, func(_ context.Context, val int64) error {
+			require.Equal(t, int64(50), val)
+			return nil
+		}))
 	}
+	require.Equal(t, int64(1), ps.Size())
+	// Add one more element, and then read (drain) so metadata will be fixed.
+	require.NoError(t, ps.Offer(context.Background(), int64(50)))
+	require.True(t, consume(ps, func(_ context.Context, val int64) error {
+		require.Equal(t, int64(50), val)
+		return nil
+	}))
 	require.Equal(t, int64(0), ps.Size())
-
-	// We should be able to put a new item in
-	// However, this will fail if deleting items fails with full storage
-	require.NoError(t, ps.Offer(context.Background(), uint64(50)))
 }
 
 func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
@@ -1004,45 +961,45 @@ func TestPersistentQueue_ItemDispatchingFinish_ErrorHandling(t *testing.T) {
 
 func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
-	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
+	pq := createTestPersistentQueueWithItemsSizer(t, ext, 100)
 
 	assert.Equal(t, int64(0), pq.Size())
 
 	// Fill the queue up to the capacity.
-	require.NoError(t, pq.Offer(context.Background(), uint64(40)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(40)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(20)))
+	require.NoError(t, pq.Offer(context.Background(), int64(40)))
+	require.NoError(t, pq.Offer(context.Background(), int64(40)))
+	require.NoError(t, pq.Offer(context.Background(), int64(20)))
 	assert.Equal(t, int64(100), pq.Size())
 
-	require.ErrorIs(t, pq.Offer(context.Background(), uint64(25)), ErrQueueIsFull)
+	require.ErrorIs(t, pq.Offer(context.Background(), int64(25)), ErrQueueIsFull)
 	assert.Equal(t, int64(100), pq.Size())
 
-	assert.True(t, consume(pq, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(40), val)
+	assert.True(t, consume(pq, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(40), val)
 		return nil
 	}))
 	assert.Equal(t, int64(60), pq.Size())
 
 	require.NoError(t, pq.Shutdown(context.Background()))
 
-	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
+	newPQ := createTestPersistentQueueWithItemsSizer(t, ext, 100)
 
 	// The queue should be restored to the previous size.
 	assert.Equal(t, int64(60), newPQ.Size())
 
-	require.NoError(t, newPQ.Offer(context.Background(), uint64(10)))
+	require.NoError(t, newPQ.Offer(context.Background(), int64(10)))
 
 	// Check the combined queue size.
 	assert.Equal(t, int64(70), newPQ.Size())
 
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(40), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(40), val)
 		return nil
 	}))
 	assert.Equal(t, int64(30), newPQ.Size())
 
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(20), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(20), val)
 		return nil
 	}))
 	assert.Equal(t, int64(10), newPQ.Size())
@@ -1050,59 +1007,58 @@ func TestPersistentQueue_ItemsCapacityUsageRestoredOnShutdown(t *testing.T) {
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
 
-// This test covers the case when the items capacity queue is enabled for the first time.
-func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
+func TestPersistentQueue_ItemsCapacityIsAlwyasRecorder(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
-	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
+	pq := createTestPersistentQueueWithRequestsSizer(t, ext, 100)
 
 	assert.Equal(t, int64(0), pq.Size())
 
-	require.NoError(t, pq.Offer(context.Background(), uint64(40)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(20)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(25)))
+	require.NoError(t, pq.Offer(context.Background(), int64(40)))
+	require.NoError(t, pq.Offer(context.Background(), int64(20)))
+	require.NoError(t, pq.Offer(context.Background(), int64(25)))
 	assert.Equal(t, int64(3), pq.Size())
 
-	assert.True(t, consume(pq, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(40), val)
+	assert.True(t, consume(pq, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(40), val)
 		return nil
 	}))
 	assert.Equal(t, int64(2), pq.Size())
 
 	require.NoError(t, pq.Shutdown(context.Background()))
 
-	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 100)
+	newPQ := createTestPersistentQueueWithItemsSizer(t, ext, 100)
 
-	// The queue items size cannot be restored, fall back to request-based size
-	assert.Equal(t, int64(2), newPQ.Size())
+	// The queue items size cannot be restored.
+	assert.Equal(t, int64(45), newPQ.Size())
 
-	require.NoError(t, newPQ.Offer(context.Background(), uint64(10)))
+	require.NoError(t, newPQ.Offer(context.Background(), int64(10)))
 
 	// Only new items are correctly reflected
-	assert.Equal(t, int64(12), newPQ.Size())
+	assert.Equal(t, int64(55), newPQ.Size())
 
 	// Consuming a restored request should reduce the restored size by 20 but it should not go to below zero
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(20), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(20), val)
 		return nil
 	}))
-	assert.Equal(t, int64(0), newPQ.Size())
+	assert.Equal(t, int64(35), newPQ.Size())
 
 	// Consuming another restored request should not affect the restored size since it's already dropped to 0.
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(25), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(25), val)
 		return nil
 	}))
-	assert.Equal(t, int64(0), newPQ.Size())
+	assert.Equal(t, int64(10), newPQ.Size())
 
 	// Adding another batch should update the size accordingly
-	require.NoError(t, newPQ.Offer(context.Background(), uint64(25)))
-	assert.Equal(t, int64(25), newPQ.Size())
+	require.NoError(t, newPQ.Offer(context.Background(), int64(25)))
+	assert.Equal(t, int64(35), newPQ.Size())
 
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(10), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(10), val)
 		return nil
 	}))
-	assert.Equal(t, int64(15), newPQ.Size())
+	assert.Equal(t, int64(25), newPQ.Size())
 
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
@@ -1111,19 +1067,19 @@ func TestPersistentQueue_ItemsCapacityUsageIsNotPreserved(t *testing.T) {
 // In that case, the queue has to be restored anyway even if it exceeds the capacity limit.
 func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
-	pq := createTestPersistentQueueWithRequestsCapacity(t, ext, 100)
+	pq := createTestPersistentQueueWithRequestsSizer(t, ext, 100)
 
 	assert.Equal(t, int64(0), pq.Size())
 
-	require.NoError(t, pq.Offer(context.Background(), uint64(40)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(20)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(25)))
-	require.NoError(t, pq.Offer(context.Background(), uint64(5)))
+	require.NoError(t, pq.Offer(context.Background(), int64(40)))
+	require.NoError(t, pq.Offer(context.Background(), int64(20)))
+	require.NoError(t, pq.Offer(context.Background(), int64(25)))
+	require.NoError(t, pq.Offer(context.Background(), int64(5)))
 
 	// Read the first request just to populate the read index in the storage.
 	// Otherwise, the write index won't be restored either.
-	assert.True(t, consume(pq, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(40), val)
+	assert.True(t, consume(pq, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(40), val)
 		return nil
 	}))
 	assert.Equal(t, int64(3), pq.Size())
@@ -1132,31 +1088,31 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 
 	// The queue is restarted with the less capacity than needed to restore the queued items, but with the same
 	// underlying storage. No need to drop requests that are over capacity since they are already in the storage.
-	newPQ := createTestPersistentQueueWithRequestsCapacity(t, ext, 2)
+	newPQ := createTestPersistentQueueWithRequestsSizer(t, ext, 2)
 
 	// The queue items size cannot be restored, fall back to request-based size
 	assert.Equal(t, int64(3), newPQ.Size())
 
 	// Queue is full
-	require.Error(t, newPQ.Offer(context.Background(), uint64(10)))
+	require.Error(t, newPQ.Offer(context.Background(), int64(10)))
 
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(20), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(20), val)
 		return nil
 	}))
 	assert.Equal(t, int64(2), newPQ.Size())
 
 	// Still full
-	require.Error(t, newPQ.Offer(context.Background(), uint64(10)))
+	require.Error(t, newPQ.Offer(context.Background(), int64(10)))
 
-	assert.True(t, consume(newPQ, func(_ context.Context, val uint64) error {
-		assert.Equal(t, uint64(25), val)
+	assert.True(t, consume(newPQ, func(_ context.Context, val int64) error {
+		assert.Equal(t, int64(25), val)
 		return nil
 	}))
 	assert.Equal(t, int64(1), newPQ.Size())
 
 	// Now it can accept new items
-	require.NoError(t, newPQ.Offer(context.Background(), uint64(10)))
+	require.NoError(t, newPQ.Offer(context.Background(), int64(10)))
 
 	require.NoError(t, newPQ.Shutdown(context.Background()))
 }
@@ -1165,43 +1121,50 @@ func TestPersistentQueue_RequestCapacityLessAfterRestart(t *testing.T) {
 // bigger value for the used size than the size of the actual items in the storage.
 func TestPersistentQueue_RestoredUsedSizeIsCorrectedOnDrain(t *testing.T) {
 	ext := storagetest.NewMockStorageExtension(nil)
-	pq := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+	pq := createTestPersistentQueueWithItemsSizer(t, ext, 1000)
 
 	assert.Equal(t, int64(0), pq.Size())
 
 	for i := 0; i < 6; i++ {
-		require.NoError(t, pq.Offer(context.Background(), uint64(10)))
+		require.NoError(t, pq.Offer(context.Background(), int64(10)))
 	}
 	assert.Equal(t, int64(60), pq.Size())
 
 	// Consume 30 items
 	for i := 0; i < 3; i++ {
-		assert.True(t, consume(pq, func(context.Context, uint64) error { return nil }))
+		assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
 	}
-	// The used size is now 30, but the snapshot should have 50, because it's taken every 5 read/writes.
 	assert.Equal(t, int64(30), pq.Size())
 
-	// Create a new queue pointed to the same storage
-	newPQ := createTestPersistentQueueWithItemsCapacity(t, ext, 1000)
+	// Corrupt the size, in reality the size is 30.
+	// Once the queue is drained, it will be updated to the correct size.
+	pq.metadata.ItemsSize = 50
+	assert.Equal(t, int64(50), pq.Size())
 
-	// This is an incorrect size restored from the snapshot.
-	// In reality the size should be 30. Once the queue is drained, it will be updated to the correct size.
-	assert.Equal(t, int64(50), newPQ.Size())
-
-	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
-	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
-	assert.Equal(t, int64(30), newPQ.Size())
+	assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
+	assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
+	assert.Equal(t, int64(30), pq.Size())
 
 	// Now the size must be correctly reflected
-	assert.True(t, consume(newPQ, func(context.Context, uint64) error { return nil }))
-	assert.Equal(t, int64(0), newPQ.Size())
+	assert.True(t, consume(pq, func(context.Context, int64) error { return nil }))
+	assert.Equal(t, int64(0), pq.Size())
 
-	require.NoError(t, newPQ.Shutdown(context.Background()))
 	require.NoError(t, pq.Shutdown(context.Background()))
 }
 
-func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[uint64], compare []uint64) {
+func requireCurrentlyDispatchedItemsEqual(t *testing.T, pq *persistentQueue[int64], compare []uint64) {
 	pq.mu.Lock()
 	defer pq.mu.Unlock()
 	assert.ElementsMatch(t, compare, pq.metadata.CurrentlyDispatchedItems)
+}
+
+func itemIndexArrayToBytes(arr []uint64) []byte {
+	size := len(arr)
+	buf := make([]byte, 0, 4+size*8)
+	//nolint:gosec
+	buf = binary.LittleEndian.AppendUint32(buf, uint32(size))
+	for _, item := range arr {
+		buf = binary.LittleEndian.AppendUint64(buf, item)
+	}
+	return buf
 }
