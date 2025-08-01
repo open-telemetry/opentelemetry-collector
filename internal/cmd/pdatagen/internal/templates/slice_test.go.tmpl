@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .testImports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .testImports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 func Test{{ .structName }}(t *testing.T) {
@@ -19,7 +19,11 @@ func Test{{ .structName }}(t *testing.T) {
 	es = new{{ .structName }}(&[]{{ .originElementType }}{}, &state)
 	assert.Equal(t, 0, es.Len())
 
+	{{ if eq .elementName "Value" -}}
+	emptyVal := New{{ .elementName }}Empty()
+	{{- else }}
 	emptyVal := New{{ .elementName }}()
+	{{- end }}
 	{{- if .isCommon }}
 	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
 	{{- else }}
@@ -53,16 +57,25 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
 	dest := New{{ .structName }}()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	New{{ .structName }}().CopyTo(dest)
 	assert.Equal(t, New{{ .structName }}(), dest)
 
 	// Test CopyTo larger slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src := generateTest{{ .structName }}()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 
 	// Test CopyTo same size slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTest{{ .structName }}(), dest)
+
+	// Test CopyTo smaller size slice
+	New{{ .structName }}().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
 
@@ -134,6 +147,14 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func Test{{ .structName }}_RemoveIfAll(t *testing.T) {
+	got := generateTest{{ .structName }}()
+	got.RemoveIf(func(el {{ .elementName }}) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func Test{{ .structName }}All(t *testing.T) {
 	ms := generateTest{{ .structName }}()
 	assert.NotEmpty(t, ms.Len())
@@ -144,6 +165,30 @@ func Test{{ .structName }}All(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTest{{ .structName }}()
+	{{- if .isCommon }}
+	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
+	{{- else }}
+	src.marshalJSONStream(stream)
+	{{- end }}
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := New{{ .structName }}()
+	{{- if .isCommon }}
+	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
+	{{- else }}
+	dest.unmarshalJSONIter(iter)
+	{{- end }}
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 {{ if eq .type "sliceOfPtrs" -}}

@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestScopeLogsSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestScopeLogsSliceReadOnly(t *testing.T) {
 
 func TestScopeLogsSlice_CopyTo(t *testing.T) {
 	dest := NewScopeLogsSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewScopeLogsSlice().CopyTo(dest)
 	assert.Equal(t, NewScopeLogsSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestScopeLogsSlice().CopyTo(dest)
+	src := generateTestScopeLogsSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestScopeLogsSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestScopeLogsSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewScopeLogsSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestScopeLogsSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestScopeLogsSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestScopeLogsSlice()
+	got.RemoveIf(func(el ScopeLogs) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestScopeLogsSliceAll(t *testing.T) {
 	ms := generateTestScopeLogsSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestScopeLogsSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestScopeLogsSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestScopeLogsSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewScopeLogsSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestScopeLogsSlice_Sort(t *testing.T) {

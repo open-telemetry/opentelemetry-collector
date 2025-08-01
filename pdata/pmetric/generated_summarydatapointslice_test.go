@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummaryDataPointSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestSummaryDataPointSliceReadOnly(t *testing.T) {
 
 func TestSummaryDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewSummaryDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSummaryDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewSummaryDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
+	src := generateTestSummaryDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSummaryDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewSummaryDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSummaryDataPointSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestSummaryDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSummaryDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSummaryDataPointSlice()
+	got.RemoveIf(func(el SummaryDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSummaryDataPointSliceAll(t *testing.T) {
 	ms := generateTestSummaryDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestSummaryDataPointSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestSummaryDataPointSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSummaryDataPointSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSummaryDataPointSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSummaryDataPointSlice_Sort(t *testing.T) {

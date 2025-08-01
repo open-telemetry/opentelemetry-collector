@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SampleSlice logically represents a slice of Sample.
@@ -129,6 +130,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es SampleSlice) RemoveIf(f func(Sample) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -156,17 +159,53 @@ func (es SampleSlice) Sort(less func(a, b Sample) bool) {
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms SampleSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SampleSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpprofiles.Sample{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sample {
+	var newDest []*otlpprofiles.Sample
 	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Sample, len(src))
-		data := make([]otlpprofiles.Sample, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpprofiles.Sample, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpprofiles.Sample{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpprofiles.Sample{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigSample(dest[i], src[i])
+		copyOrigSample(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

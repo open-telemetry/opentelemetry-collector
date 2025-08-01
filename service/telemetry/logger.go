@@ -4,12 +4,10 @@
 package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/noop"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-
-	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
 )
 
 // newLogger creates a Logger and a LoggerProvider from Config.
@@ -58,38 +56,22 @@ func newLogger(set Settings, cfg Config) (*zap.Logger, log.LoggerProvider, error
 		}))
 	}
 
-	var lp log.LoggerProvider
-	logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-		core = componentattribute.NewConsoleCoreWithAttributes(core, attribute.NewSet())
-
-		if len(cfg.Logs.Processors) > 0 && set.SDK != nil {
-			lp = set.SDK.LoggerProvider()
-			core = componentattribute.NewOTelTeeCoreWithAttributes(
+	if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
+		logger = logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+			return zapcore.NewSamplerWithOptions(
 				core,
-				lp,
-				"go.opentelemetry.io/collector/service/telemetry",
-				cfg.Logs.Level,
-				attribute.NewSet(),
+				cfg.Logs.Sampling.Tick,
+				cfg.Logs.Sampling.Initial,
+				cfg.Logs.Sampling.Thereafter,
 			)
-		}
+		}))
+	}
 
-		if cfg.Logs.Sampling != nil && cfg.Logs.Sampling.Enabled {
-			core = newSampledCore(core, cfg.Logs.Sampling)
-		}
-
-		return core
-	}))
-
+	var lp log.LoggerProvider
+	if set.SDK != nil {
+		lp = set.SDK.LoggerProvider()
+	} else {
+		lp = noop.NewLoggerProvider()
+	}
 	return logger, lp, nil
-}
-
-func newSampledCore(core zapcore.Core, sc *LogsSamplingConfig) zapcore.Core {
-	// Create a logger that samples every Nth message after the first M messages every S seconds
-	// where N = sc.Thereafter, M = sc.Initial, S = sc.Tick.
-	return componentattribute.NewSamplerCoreWithAttributes(
-		core,
-		sc.Tick,
-		sc.Initial,
-		sc.Thereafter,
-	)
 }

@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExemplarSlice(t *testing.T) {
@@ -48,16 +50,25 @@ func TestExemplarSliceReadOnly(t *testing.T) {
 
 func TestExemplarSlice_CopyTo(t *testing.T) {
 	dest := NewExemplarSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewExemplarSlice().CopyTo(dest)
 	assert.Equal(t, NewExemplarSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestExemplarSlice().CopyTo(dest)
+	src := generateTestExemplarSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExemplarSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestExemplarSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestExemplarSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewExemplarSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExemplarSlice(), dest)
 }
 
@@ -129,6 +140,14 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExemplarSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExemplarSlice()
+	got.RemoveIf(func(el Exemplar) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestExemplarSliceAll(t *testing.T) {
 	ms := generateTestExemplarSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -139,6 +158,22 @@ func TestExemplarSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestExemplarSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExemplarSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewExemplarSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func generateTestExemplarSlice() ExemplarSlice {

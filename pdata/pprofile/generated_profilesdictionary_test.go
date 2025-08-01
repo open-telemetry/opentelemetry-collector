@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -39,6 +41,26 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState)) })
+}
+
+func TestProfilesDictionary_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestProfilesDictionary()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewProfilesDictionary()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestProfilesDictionary_MappingTable(t *testing.T) {
@@ -97,11 +119,11 @@ func generateTestProfilesDictionary() ProfilesDictionary {
 }
 
 func fillTestProfilesDictionary(tv ProfilesDictionary) {
-	fillTestMappingSlice(newMappingSlice(&tv.orig.MappingTable, tv.state))
-	fillTestLocationSlice(newLocationSlice(&tv.orig.LocationTable, tv.state))
-	fillTestFunctionSlice(newFunctionSlice(&tv.orig.FunctionTable, tv.state))
-	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
+	fillTestMappingSlice(tv.MappingTable())
+	fillTestLocationSlice(tv.LocationTable())
+	fillTestFunctionSlice(tv.FunctionTable())
+	fillTestLinkSlice(tv.LinkTable())
 	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
-	fillTestAttributeTableSlice(newAttributeTableSlice(&tv.orig.AttributeTable, tv.state))
-	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
+	fillTestAttributeTableSlice(tv.AttributeTable())
+	fillTestAttributeUnitSlice(tv.AttributeUnits())
 }

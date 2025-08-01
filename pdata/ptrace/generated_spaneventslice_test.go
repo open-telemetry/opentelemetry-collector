@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanEventSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestSpanEventSliceReadOnly(t *testing.T) {
 
 func TestSpanEventSlice_CopyTo(t *testing.T) {
 	dest := NewSpanEventSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSpanEventSlice().CopyTo(dest)
 	assert.Equal(t, NewSpanEventSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestSpanEventSlice().CopyTo(dest)
+	src := generateTestSpanEventSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSpanEventSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSpanEventSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewSpanEventSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanEventSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestSpanEventSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanEventSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanEventSlice()
+	got.RemoveIf(func(el SpanEvent) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSpanEventSliceAll(t *testing.T) {
 	ms := generateTestSpanEventSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestSpanEventSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestSpanEventSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSpanEventSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSpanEventSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSpanEventSlice_Sort(t *testing.T) {

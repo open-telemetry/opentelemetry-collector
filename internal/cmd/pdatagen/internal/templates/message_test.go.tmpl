@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .testImports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .testImports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 func Test{{ .structName }}_MoveTo(t *testing.T) {
@@ -35,6 +35,34 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
+}
+
+func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTest{{ .structName }}()
+	{{- if .isCommon }}
+	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
+	{{- else }}
+	src.marshalJSONStream(stream)
+	{{- end }}
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := New{{ .structName }}()
+	{{- if .isCommon }}
+	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
+	{{- else }}
+	dest.unmarshalJSONIter(iter)
+	{{- end }}
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 {{ range .fields }}

@@ -8,10 +8,12 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -20,9 +22,11 @@ var plog = &Package{
 			`"unsafe"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -42,14 +46,14 @@ var resourceLogsSlice = &sliceOfPtrs{
 	element:    resourceLogs,
 }
 
-var resourceLogs = &messageValueStruct{
+var resourceLogs = &messageStruct{
 	structName:     "ResourceLogs",
 	description:    "// ResourceLogs is a collection of logs from a Resource.",
 	originFullName: "otlplogs.ResourceLogs",
-	fields: []baseField{
+	fields: []Field{
 		resourceField,
 		schemaURLField,
-		&sliceField{
+		&SliceField{
 			fieldName:   "ScopeLogs",
 			returnSlice: scopeLogsSlice,
 		},
@@ -61,14 +65,14 @@ var scopeLogsSlice = &sliceOfPtrs{
 	element:    scopeLogs,
 }
 
-var scopeLogs = &messageValueStruct{
+var scopeLogs = &messageStruct{
 	structName:     "ScopeLogs",
 	description:    "// ScopeLogs is a collection of logs from a LibraryInstrumentation.",
 	originFullName: "otlplogs.ScopeLogs",
-	fields: []baseField{
+	fields: []Field{
 		scopeField,
 		schemaURLField,
-		&sliceField{
+		&SliceField{
 			fieldName:   "LogRecords",
 			returnSlice: logSlice,
 		},
@@ -80,49 +84,50 @@ var logSlice = &sliceOfPtrs{
 	element:    logRecord,
 }
 
-var logRecord = &messageValueStruct{
+var logRecord = &messageStruct{
 	structName:     "LogRecord",
 	description:    "// LogRecord are experimental implementation of OpenTelemetry Log Data Model.\n",
 	originFullName: "otlplogs.LogRecord",
-	fields: []baseField{
-		&primitiveTypedField{
+	fields: []Field{
+		&TypedField{
 			fieldName:       "ObservedTimestamp",
 			originFieldName: "ObservedTimeUnixNano",
 			returnType:      timestampType,
 		},
-		&primitiveTypedField{
+		&TypedField{
 			fieldName:       "Timestamp",
 			originFieldName: "TimeUnixNano",
 			returnType:      timestampType,
 		},
 		traceIDField,
 		spanIDField,
-		&primitiveTypedField{
+		&TypedField{
 			fieldName: "Flags",
-			returnType: &primitiveType{
+			returnType: &TypedType{
 				structName: "LogRecordFlags",
 				rawType:    "uint32",
 				defaultVal: "0",
 				testVal:    "1",
 			},
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "EventName",
 			returnType: "string",
 			defaultVal: `""`,
 			testVal:    `""`,
 		},
-		&primitiveField{
+		&PrimitiveField{
 			fieldName:  "SeverityText",
 			returnType: "string",
 			defaultVal: `""`,
 			testVal:    `"INFO"`,
 		},
-		&primitiveTypedField{
+		&TypedField{
 			fieldName: "SeverityNumber",
-			returnType: &primitiveType{
+			returnType: &TypedType{
 				structName: "SeverityNumber",
 				rawType:    "otlplogs.SeverityNumber",
+				isEnum:     true,
 				defaultVal: `otlplogs.SeverityNumber(0)`,
 				testVal:    `otlplogs.SeverityNumber(5)`,
 			},
@@ -133,7 +138,7 @@ var logRecord = &messageValueStruct{
 	},
 }
 
-var bodyField = &messageValueField{
+var bodyField = &MessageField{
 	fieldName:     "Body",
 	returnMessage: anyValue,
 }
