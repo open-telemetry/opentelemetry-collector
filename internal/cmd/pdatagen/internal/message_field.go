@@ -55,6 +55,8 @@ const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{
 	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
 	{{- end }}`
 
+const messageSizeProtoTemplate = ``
+
 type MessageField struct {
 	fieldName     string
 	returnMessage *messageStruct
@@ -87,6 +89,11 @@ func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
 
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("messageUnmarshalJSONTemplate").Parse(messageUnmarshalJSONTemplate))
+	return executeTemplate(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("messageSizeProtoTemplate").Parse(messageSizeProtoTemplate))
 	return executeTemplate(t, mf.templateFields(ms))
 }
 

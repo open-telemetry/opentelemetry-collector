@@ -65,9 +65,7 @@ const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldNam
 
 type OneOfPrimitiveValue struct {
 	fieldName       string
-	defaultVal      string
-	testVal         string
-	returnType      string
+	protoType       ProtoType
 	originFieldName string
 }
 
@@ -109,7 +107,7 @@ func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *One
 func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
 		"structName":  ms.getName(),
-		"defaultVal":  opv.defaultVal,
+		"defaultVal":  opv.protoType.defaultValue(),
 		"packageName": "",
 		"accessorFieldName": func() string {
 			if of.omitOriginFieldNameInNames {
@@ -117,11 +115,11 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 			}
 			return opv.fieldName + of.originFieldName
 		}(),
-		"testValue":               opv.testVal,
+		"testValue":               opv.protoType.testValue(opv.fieldName),
 		"originOneOfTypeFuncName": of.typeFuncName(),
 		"typeName":                of.typeName + opv.fieldName,
 		"lowerFieldName":          strings.ToLower(opv.fieldName),
-		"returnType":              opv.returnType,
+		"returnType":              opv.protoType.goType(),
 		"originFieldName":         opv.originFieldName,
 		"originOneOfFieldName":    of.originFieldName,
 		"originStructName":        ms.originFullName,

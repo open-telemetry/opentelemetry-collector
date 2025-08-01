@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal"
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type Map struct {
@@ -72,16 +73,16 @@ func FillTestMap(dest Map) {
 func MarshalJSONStreamMap(ms Map, dest *json.Stream) {
 	dest.WriteArrayStart()
 	if len(*ms.orig) > 0 {
-		writeAttribute(&(*ms.orig)[0], ms.state, dest)
+		MarshalJSONStreamKeyValue(&(*ms.orig)[0], ms.state, dest)
 	}
 	for i := 1; i < len(*ms.orig); i++ {
 		dest.WriteMore()
-		writeAttribute(&(*ms.orig)[i], ms.state, dest)
+		MarshalJSONStreamKeyValue(&(*ms.orig)[i], ms.state, dest)
 	}
 	dest.WriteArrayEnd()
 }
 
-func writeAttribute(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) {
+func MarshalJSONStreamKeyValue(attr *otlpcommon.KeyValue, state *State, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if attr.Key != "" {
 		dest.WriteObjectField("key")
@@ -108,4 +109,21 @@ func UnmarshalJSONIterMap(ms Map, iter *json.Iterator) {
 		})
 		return true
 	})
+}
+
+func SizeProtoKeyValue(orig *otlpcommon.KeyValue) int {
+	if orig == nil {
+		return 0
+	}
+	var n int
+	_ = n
+	var l int
+	_ = l
+	l = len(orig.Key)
+	if l > 0 {
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	l = SizeProtoValue(&orig.Value)
+	n += 1 + l + proto.Sov(uint64(l))
+	return n
 }

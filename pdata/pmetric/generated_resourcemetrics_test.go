@@ -63,6 +63,19 @@ func TestResourceMetrics_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestResourceMetrics_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestResourceMetrics()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewResourceMetrics()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
 	internal.FillTestResource(internal.Resource(ms.Resource()))
@@ -72,11 +85,11 @@ func TestResourceMetrics_Resource(t *testing.T) {
 func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
+		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl")
 	})
 }
 
@@ -95,6 +108,6 @@ func generateTestResourceMetrics() ResourceMetrics {
 
 func fillTestResourceMetrics(tv ResourceMetrics) {
 	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	tv.orig.SchemaUrl = "test_schemaurl"
 	fillTestScopeMetricsSlice(tv.ScopeMetrics())
 }

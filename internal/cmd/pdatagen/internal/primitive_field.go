@@ -56,12 +56,11 @@ const primitiveMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .d
 const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
 
+const primitiveSizeProtoTemplate = ``
+
 type PrimitiveField struct {
-	fieldName       string
-	originFieldName string
-	returnType      string
-	defaultVal      string
-	testVal         string
+	fieldName string
+	protoType ProtoType
 }
 
 func (pf *PrimitiveField) GenerateAccessors(ms *messageStruct) string {
@@ -94,24 +93,24 @@ func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
+func (pf *PrimitiveField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("primitiveSizeProtoTemplate").Parse(primitiveSizeProtoTemplate))
+	return executeTemplate(t, pf.templateFields(ms))
+}
+
 func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
-		"defaultVal":       pf.defaultVal,
+		"defaultVal":       pf.protoType.defaultValue(),
 		"fieldName":        pf.fieldName,
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
-		"testValue":        pf.testVal,
-		"returnType":       pf.returnType,
+		"testValue":        pf.protoType.testValue(pf.fieldName),
+		"returnType":       pf.protoType.goType(),
 		"origAccessor":     origAccessor(ms.packageName),
 		"stateAccessor":    stateAccessor(ms.packageName),
 		"originStructName": ms.originFullName,
-		"originFieldName": func() string {
-			if pf.originFieldName == "" {
-				return pf.fieldName
-			}
-			return pf.originFieldName
-		}(),
+		"originFieldName":  pf.fieldName,
 	}
 }
 

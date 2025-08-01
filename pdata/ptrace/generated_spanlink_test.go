@@ -64,6 +64,19 @@ func TestSpanLink_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestSpanLink_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestSpanLink()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewSpanLink()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
@@ -89,10 +102,10 @@ func TestSpanLink_TraceState(t *testing.T) {
 func TestSpanLink_Flags(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, uint32(0), ms.Flags())
-	ms.SetFlags(uint32(0xf))
-	assert.Equal(t, uint32(0xf), ms.Flags())
+	ms.SetFlags(uint32(13))
+	assert.Equal(t, uint32(13), ms.Flags())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetFlags(uint32(0xf)) })
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetFlags(uint32(13)) })
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
@@ -105,10 +118,10 @@ func TestSpanLink_Attributes(t *testing.T) {
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestSpanLink() SpanLink {
@@ -121,7 +134,7 @@ func fillTestSpanLink(tv SpanLink) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState, tv.state))
-	tv.orig.Flags = uint32(0xf)
+	tv.orig.Flags = uint32(13)
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.orig.DroppedAttributesCount = uint32(13)
 }

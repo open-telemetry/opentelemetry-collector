@@ -62,22 +62,35 @@ func TestValueType_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestValueType_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestValueType()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewValueType()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.TypeStrindex())
-	ms.SetTypeStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.TypeStrindex())
+	ms.SetTypeStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.TypeStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(13)) })
 }
 
 func TestValueType_UnitStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.UnitStrindex())
-	ms.SetUnitStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func TestValueType_AggregationTemporality(t *testing.T) {
@@ -95,7 +108,7 @@ func generateTestValueType() ValueType {
 }
 
 func fillTestValueType(tv ValueType) {
-	tv.orig.TypeStrindex = int32(1)
-	tv.orig.UnitStrindex = int32(1)
+	tv.orig.TypeStrindex = int32(13)
+	tv.orig.UnitStrindex = int32(13)
 	tv.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
 }

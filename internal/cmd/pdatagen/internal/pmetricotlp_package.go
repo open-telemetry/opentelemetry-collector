@@ -33,16 +33,12 @@ var exportMetricsPartialSuccess = &messageStruct{
 	originFullName: "otlpcollectormetrics.ExportMetricsPartialSuccess",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "RejectedDataPoints",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+			fieldName: "RejectedDataPoints",
+			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+			fieldName: "ErrorMessage",
+			protoType: ProtoTypeString,
 		},
 	},
 }

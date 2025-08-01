@@ -63,6 +63,19 @@ func TestScopeSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestScopeSpans_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestScopeSpans()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewScopeSpans()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
 	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
@@ -72,12 +85,10 @@ func TestScopeSpans_Scope(t *testing.T) {
 func TestScopeSpans_SchemaUrl(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestScopeSpans_Spans(t *testing.T) {
@@ -95,6 +106,6 @@ func generateTestScopeSpans() ScopeSpans {
 
 func fillTestScopeSpans(tv ScopeSpans) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	tv.orig.SchemaUrl = "test_schemaurl"
 	fillTestSpanSlice(tv.Spans())
 }

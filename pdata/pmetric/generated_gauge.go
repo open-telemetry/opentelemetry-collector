@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 // Gauge represents the type of a numeric metric that always exports the "current value" for every data point.
@@ -82,6 +83,26 @@ func (ms Gauge) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoGauge(orig *otlpmetrics.Gauge) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	for i := 0; i < len(orig.DataPoints); i++ {
+		l = sizeProto(&orig.DataPoints[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func (ms Gauge) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Gauge) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigGauge(dest, src *otlpmetrics.Gauge) {

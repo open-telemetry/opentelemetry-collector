@@ -107,6 +107,23 @@ func (ms AttributeUnit) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoAttributeUnit(orig *otlpprofiles.AttributeUnit) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms AttributeUnit) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms AttributeUnit) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex

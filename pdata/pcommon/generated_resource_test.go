@@ -62,6 +62,19 @@ func TestResource_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestResource_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestResource()
+	buf := make([]byte, internal.SizeProtoResource(src.getOrig()))
+	n, err := internal.MarshalProtoResource(src.getOrig(), buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewResource()
+	require.NoError(t, internal.UnmarshalProtoResource(dest.getOrig(), buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, NewMap(), ms.Attributes())
@@ -72,10 +85,10 @@ func TestResource_Attributes(t *testing.T) {
 func TestResource_DroppedAttributesCount(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newResource(&otlpresource.Resource{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestResource() Resource {

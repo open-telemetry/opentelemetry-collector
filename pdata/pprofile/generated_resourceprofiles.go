@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -109,6 +110,27 @@ func (ms ResourceProfiles) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.ScopeProfiles); i++ {
+		l = sizeProto(&orig.ScopeProfiles[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func (ms ResourceProfiles) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms ResourceProfiles) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {

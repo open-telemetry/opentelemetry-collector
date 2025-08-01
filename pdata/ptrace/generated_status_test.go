@@ -62,6 +62,19 @@ func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestStatus_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestStatus()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewStatus()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestStatus_Code(t *testing.T) {
 	ms := NewStatus()
 	assert.Equal(t, StatusCode(0), ms.Code())
@@ -73,10 +86,10 @@ func TestStatus_Code(t *testing.T) {
 func TestStatus_Message(t *testing.T) {
 	ms := NewStatus()
 	assert.Empty(t, ms.Message())
-	ms.SetMessage("cancelled")
-	assert.Equal(t, "cancelled", ms.Message())
+	ms.SetMessage("test_message")
+	assert.Equal(t, "test_message", ms.Message())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("cancelled") })
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
 }
 
 func generateTestStatus() Status {
@@ -87,5 +100,5 @@ func generateTestStatus() Status {
 
 func fillTestStatus(tv Status) {
 	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
+	tv.orig.Message = "test_message"
 }

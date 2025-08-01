@@ -9,6 +9,7 @@ package internal
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type InstrumentationScope struct {
@@ -47,7 +48,7 @@ func FillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.orig.Name = "test_name"
 	tv.orig.Version = "test_version"
 	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.orig.DroppedAttributesCount = uint32(13)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -89,4 +90,23 @@ func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.I
 		}
 		return true
 	})
+}
+
+func SizeProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
+	n := 0
+
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = SizeProtoKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	return n
+}
+
+func MarshalProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

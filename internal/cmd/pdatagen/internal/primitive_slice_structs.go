@@ -29,6 +29,10 @@ func (iss *primitiveSliceStruct) getPackageName() string {
 	return iss.packageName
 }
 
+func (iss *primitiveSliceStruct) getElementName() string {
+	return iss.itemType
+}
+
 func (iss *primitiveSliceStruct) generate(packageInfo *PackageInfo) []byte {
 	var sb bytes.Buffer
 	if err := primitiveSliceTemplate.Execute(&sb, iss.templateFields(packageInfo)); err != nil {

@@ -81,11 +81,11 @@ func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQua
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
 func (ms SummaryDataPointValueAtQuantile) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	if ms.orig.Quantile != float64(0.0) {
+	if ms.orig.Quantile != float64(0) {
 		dest.WriteObjectField("quantile")
 		dest.WriteFloat64(ms.orig.Quantile)
 	}
-	if ms.orig.Value != float64(0.0) {
+	if ms.orig.Value != float64(0) {
 		dest.WriteObjectField("value")
 		dest.WriteFloat64(ms.orig.Value)
 	}
@@ -105,6 +105,23 @@ func (ms SummaryDataPointValueAtQuantile) unmarshalJSONIter(iter *json.Iterator)
 		}
 		return true
 	})
+}
+
+func sizeProtoSummaryDataPointValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms SummaryDataPointValueAtQuantile) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms SummaryDataPointValueAtQuantile) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {

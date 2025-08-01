@@ -100,6 +100,23 @@ func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoAttribute(orig *v1.KeyValue) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms Attribute) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Attribute) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigAttribute(dest, src *v1.KeyValue) {
 	dest.Key = src.Key
 	internal.CopyOrigValue(&dest.Value, &src.Value)

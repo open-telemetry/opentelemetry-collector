@@ -57,8 +57,18 @@ const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ i
 	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
 	{{- end }}`
 
+const sliceSizeProtoTemplate = `for i := 0; i < len(orig.{{ .originFieldName }}); i++ {
+	{{- if .isCommon }}
+		l = {{ if not .isBaseStructCommon }}internal.{{ end }}SizeProto{{ .returnElementName }}(&orig.{{ .originFieldName }}[i])
+	{{- else }}
+		l = sizeProto(&orig.{{ .originFieldName }}[i])
+	{{- end }}
+		n += {{ len .protoKey }} + l + proto.Sov(uint64(l))
+	}`
+
 type SliceField struct {
 	fieldName     string
+	protoID       uint32
 	returnSlice   baseSlice
 	hideAccessors bool
 }
@@ -99,6 +109,11 @@ func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
+func (sf *SliceField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("sliceSizeProtoTemplate").Parse(sliceSizeProtoTemplate))
+	return executeTemplate(t, sf.templateFields(ms))
+}
+
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName":      ms.getName(),
@@ -110,7 +125,9 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
+		"protoKey":           ProtoTypeMessage.genProtoKey(sf.protoID),
 		"returnType":         sf.returnSlice.getName(),
+		"returnElementName":  sf.returnSlice.getElementName(),
 		"origAccessor":       origAccessor(ms.packageName),
 		"stateAccessor":      stateAccessor(ms.packageName),
 		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),

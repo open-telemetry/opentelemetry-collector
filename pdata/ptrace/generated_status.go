@@ -108,6 +108,24 @@ func (ms Status) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoStatus(orig *otlptrace.Status) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	"Code"
+
+	return n
+}
+
+func (ms Status) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Status) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 	dest.Message = src.Message

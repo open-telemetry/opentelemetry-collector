@@ -63,6 +63,19 @@ func TestMetric_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestMetric_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestMetric()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewMetric()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Name())
@@ -84,10 +97,10 @@ func TestMetric_Description(t *testing.T) {
 func TestMetric_Unit(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Unit())
-	ms.SetUnit("1")
-	assert.Equal(t, "1", ms.Unit())
+	ms.SetUnit("test_unit")
+	assert.Equal(t, "test_unit", ms.Unit())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("1") })
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("test_unit") })
 }
 
 func TestMetric_Metadata(t *testing.T) {
@@ -206,7 +219,7 @@ func generateTestMetric() Metric {
 func fillTestMetric(tv Metric) {
 	tv.orig.Name = "test_name"
 	tv.orig.Description = "test_description"
-	tv.orig.Unit = "1"
+	tv.orig.Unit = "test_unit"
 	internal.FillTestMap(internal.NewMap(&tv.orig.Metadata, tv.state))
 	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	fillTestSum(newSum(tv.orig.GetSum(), tv.state))

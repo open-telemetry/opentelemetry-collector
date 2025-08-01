@@ -63,6 +63,19 @@ func TestNumberDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestNumberDataPoint_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestNumberDataPoint()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewNumberDataPoint()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestNumberDataPoint_Attributes(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
@@ -93,24 +106,24 @@ func TestNumberDataPoint_ValueType(t *testing.T) {
 
 func TestNumberDataPoint_DoubleValue(t *testing.T) {
 	ms := NewNumberDataPoint()
-	assert.InDelta(t, float64(0.0), ms.DoubleValue(), 0.01)
-	ms.SetDoubleValue(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.DoubleValue(), 0.01)
+	assert.InDelta(t, float64(0), ms.DoubleValue(), 0.01)
+	ms.SetDoubleValue(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
 	assert.Equal(t, NumberDataPointValueTypeDouble, ms.ValueType())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetDoubleValue(float64(17.13))
+		newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetDoubleValue(float64(3.1415926))
 	})
 }
 
 func TestNumberDataPoint_IntValue(t *testing.T) {
 	ms := NewNumberDataPoint()
 	assert.Equal(t, int64(0), ms.IntValue())
-	ms.SetIntValue(int64(17))
-	assert.Equal(t, int64(17), ms.IntValue())
+	ms.SetIntValue(int64(13))
+	assert.Equal(t, int64(13), ms.IntValue())
 	assert.Equal(t, NumberDataPointValueTypeInt, ms.ValueType())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetIntValue(int64(17)) })
+	assert.Panics(t, func() { newNumberDataPoint(&otlpmetrics.NumberDataPoint{}, &sharedState).SetIntValue(int64(13)) })
 }
 
 func TestNumberDataPoint_Exemplars(t *testing.T) {
@@ -138,7 +151,7 @@ func fillTestNumberDataPoint(tv NumberDataPoint) {
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(17.13)}
+	tv.orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
 }

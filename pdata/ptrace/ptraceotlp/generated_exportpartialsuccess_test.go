@@ -68,6 +68,19 @@ func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestExportPartialSuccess_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestExportPartialSuccess()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewExportPartialSuccess()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedSpans())
@@ -82,11 +95,11 @@ func TestExportPartialSuccess_RejectedSpans(t *testing.T) {
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectortrace.ExportTracePartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
@@ -98,5 +111,5 @@ func generateTestExportPartialSuccess() ExportPartialSuccess {
 
 func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
 	tv.orig.RejectedSpans = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	tv.orig.ErrorMessage = "test_errormessage"
 }

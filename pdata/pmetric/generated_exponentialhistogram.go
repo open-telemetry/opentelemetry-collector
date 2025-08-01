@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
@@ -100,6 +101,27 @@ func (ms ExponentialHistogram) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	"AggregationTemporality"
+	for i := 0; i < len(orig.DataPoints); i++ {
+		l = sizeProto(&orig.DataPoints[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func (ms ExponentialHistogram) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms ExponentialHistogram) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {

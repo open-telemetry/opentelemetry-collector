@@ -13,6 +13,7 @@ var xpdataEntity = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 		testImports: []string{
@@ -44,10 +45,8 @@ var entityRef = &messageStruct{
 	fields: []Field{
 		schemaURLField,
 		&PrimitiveField{
-			fieldName:  "Type",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"host"`,
+			fieldName: "Type",
+			protoType: ProtoTypeString,
 		},
 		&SliceField{
 			fieldName:   "IdKeys",

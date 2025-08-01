@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -271,6 +272,43 @@ func (ms HistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func sizeProtoHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = internal.SizeProtoKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"StartTimeUnixNano"
+	"TimeUnixNano"
+
+	for i := 0; i < len(orig.BucketCounts); i++ {
+		l = internal.SizeProtouint64(&orig.BucketCounts[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.ExplicitBounds); i++ {
+		l = internal.SizeProtofloat64(&orig.ExplicitBounds[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.Exemplars); i++ {
+		l = sizeProto(&orig.Exemplars[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	"Flags"
+
+	return n
+}
+
+func (ms HistogramDataPoint) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms HistogramDataPoint) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
 }
 
 func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {

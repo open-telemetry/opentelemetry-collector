@@ -107,6 +107,23 @@ func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms ExportPartialSuccess) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms ExportPartialSuccess) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigExportPartialSuccess(dest, src *otlpcollectorlog.ExportLogsPartialSuccess) {
 	dest.RejectedLogRecords = src.RejectedLogRecords
 	dest.ErrorMessage = src.ErrorMessage

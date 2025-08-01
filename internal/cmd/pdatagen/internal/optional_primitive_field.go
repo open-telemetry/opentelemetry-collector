@@ -74,11 +74,11 @@ const optionalPrimitiveMarshalJSONTemplate = `if ms.Has{{ .fieldName }}() {
 const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
 		ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
 
+const optionalPrimitiveSizeProtoTemplate = ``
+
 type OptionalPrimitiveField struct {
-	fieldName  string
-	defaultVal string
-	testVal    string
-	returnType string
+	fieldName string
+	protoType ProtoType
 }
 
 func (opv *OptionalPrimitiveField) GenerateAccessors(ms *messageStruct) string {
@@ -111,15 +111,20 @@ func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) stri
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
+func (opv *OptionalPrimitiveField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveSizeProtoTemplate").Parse(optionalPrimitiveSizeProtoTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
 func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
-		"defaultVal":       opv.defaultVal,
+		"defaultVal":       opv.protoType.defaultValue(),
 		"fieldName":        opv.fieldName,
 		"lowerFieldName":   strings.ToLower(opv.fieldName),
-		"testValue":        opv.testVal,
-		"returnType":       opv.returnType,
+		"testValue":        opv.protoType.testValue(opv.fieldName),
+		"returnType":       opv.protoType.goType(),
 		"originStructName": ms.originFullName,
 		"originStructType": ms.originFullName + "_" + opv.fieldName,
 	}

@@ -124,6 +124,23 @@ func (ms Line) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoLine(orig *otlpprofiles.Line) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms Line) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Line) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line

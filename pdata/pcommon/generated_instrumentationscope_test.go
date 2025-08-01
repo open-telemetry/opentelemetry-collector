@@ -62,6 +62,19 @@ func TestInstrumentationScope_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestInstrumentationScope_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestInstrumentationScope()
+	buf := make([]byte, internal.SizeProtoInstrumentationScope(src.getOrig()))
+	n, err := internal.MarshalProtoInstrumentationScope(src.getOrig(), buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewInstrumentationScope()
+	require.NoError(t, internal.UnmarshalProtoInstrumentationScope(dest.getOrig(), buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Empty(t, ms.Name())
@@ -92,11 +105,11 @@ func TestInstrumentationScope_Attributes(t *testing.T) {
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
+		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(13))
 	})
 }
 

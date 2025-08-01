@@ -141,6 +141,23 @@ func (ms Function) unmarshalJSONIter(iter *json.Iterator) {
 	})
 }
 
+func sizeProtoFunction(orig *otlpprofiles.Function) int {
+	var n int
+	_ = n
+	var l int
+	_ = l
+
+	return n
+}
+
+func (ms Function) marshalProto(buf []byte) (int, error) {
+	return ms.orig.MarshalToSizedBuffer(buf)
+}
+
+func (ms Function) unmarshalProto(buf []byte) error {
+	return ms.orig.Unmarshal(buf)
+}
+
 func copyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.NameStrindex = src.NameStrindex
 	dest.SystemNameStrindex = src.SystemNameStrindex

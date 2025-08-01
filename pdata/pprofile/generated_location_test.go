@@ -63,16 +63,29 @@ func TestLocation_MarshalAndUnmarshalJSON(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
+func TestLocation_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestLocation()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewLocation()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, int32(0), ms.MappingIndex())
-	ms.SetMappingIndex(int32(1))
+	ms.SetMappingIndex(int32(13))
 	assert.True(t, ms.HasMappingIndex())
-	assert.Equal(t, int32(1), ms.MappingIndex())
+	assert.Equal(t, int32(13), ms.MappingIndex())
 	ms.RemoveMappingIndex()
 	assert.False(t, ms.HasMappingIndex())
 	dest := NewLocation()
-	dest.SetMappingIndex(int32(1))
+	dest.SetMappingIndex(int32(13))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMappingIndex())
 }
@@ -80,10 +93,10 @@ func TestLocation_MappingIndex(t *testing.T) {
 func TestLocation_Address(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, uint64(0), ms.Address())
-	ms.SetAddress(uint64(1))
-	assert.Equal(t, uint64(1), ms.Address())
+	ms.SetAddress(uint64(13))
+	assert.Equal(t, uint64(13), ms.Address())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(1)) })
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(13)) })
 }
 
 func TestLocation_Line(t *testing.T) {
@@ -116,8 +129,8 @@ func generateTestLocation() Location {
 }
 
 func fillTestLocation(tv Location) {
-	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(1)}
-	tv.orig.Address = uint64(1)
+	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
+	tv.orig.Address = uint64(13)
 	fillTestLineSlice(tv.Line())
 	tv.orig.IsFolded = true
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))

@@ -14,6 +14,7 @@ var plog = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -111,16 +112,12 @@ var logRecord = &messageStruct{
 			},
 		},
 		&PrimitiveField{
-			fieldName:  "EventName",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `""`,
+			fieldName: "EventName",
+			protoType: ProtoTypeString,
 		},
 		&PrimitiveField{
-			fieldName:  "SeverityText",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"INFO"`,
+			fieldName: "SeverityText",
+			protoType: ProtoTypeString,
 		},
 		&TypedField{
 			fieldName: "SeverityNumber",
@@ -133,8 +130,14 @@ var logRecord = &messageStruct{
 			},
 		},
 		bodyField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 	},
 }
 

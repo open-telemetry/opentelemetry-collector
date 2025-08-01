@@ -69,14 +69,27 @@ func TestExponentialHistogramDataPointBuckets_MarshalAndUnmarshalJSON(t *testing
 	assert.Equal(t, src, dest)
 }
 
+func TestExponentialHistogramDataPointBuckets_MarshalAndUnmarshalProto(t *testing.T) {
+	src := generateTestExponentialHistogramDataPointBuckets()
+	buf := make([]byte, ms.sizeProto())
+	n, err := src.marshalProto(buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := NewExponentialHistogramDataPointBuckets()
+	require.NoError(t, dest.unmarshalProto(buf))
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())
-	ms.SetOffset(int32(909))
-	assert.Equal(t, int32(909), ms.Offset())
+	ms.SetOffset(int32(13))
+	assert.Equal(t, int32(13), ms.Offset())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(909))
+		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(13))
 	})
 }
 
@@ -94,6 +107,6 @@ func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramData
 }
 
 func fillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
-	tv.orig.Offset = int32(909)
+	tv.orig.Offset = int32(13)
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
 }
