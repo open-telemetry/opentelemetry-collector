@@ -157,10 +157,10 @@ func TestCreateTraces(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			tr, err := factory.CreateTraces(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -168,10 +168,10 @@ func TestCreateTraces(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, tr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.NoError(t, tr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(ctx))
 			}
 		})
 	}
@@ -251,10 +251,10 @@ func TestCreateMetric(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			mr, err := factory.CreateMetrics(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -262,10 +262,10 @@ func TestCreateMetric(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, mr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(ctx))
 			}
 		})
 	}
@@ -345,10 +345,10 @@ func TestCreateLogs(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -356,10 +356,10 @@ func TestCreateLogs(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, mr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, mr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				require.NoError(t, mr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, mr.Shutdown(context.Background()))
+				require.NoError(t, mr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, mr.Shutdown(ctx))
 			}
 		})
 	}
@@ -438,10 +438,10 @@ func TestCreateProfiles(t *testing.T) {
 			sink: consumertest.NewNop(),
 		},
 	}
-	ctx := context.Background()
 	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			tr, err := factory.(xreceiver.Factory).CreateProfiles(ctx, creationSet, tt.cfg, tt.sink)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -449,10 +449,10 @@ func TestCreateProfiles(t *testing.T) {
 			}
 			require.NoError(t, err)
 			if tt.wantStartErr {
-				assert.Error(t, tr.Start(context.Background(), componenttest.NewNopHost()))
+				assert.Error(t, tr.Start(ctx, componenttest.NewNopHost()))
 			} else {
-				assert.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				assert.NoError(t, tr.Shutdown(context.Background()))
+				assert.NoError(t, tr.Start(ctx, componenttest.NewNopHost()))
+				assert.NoError(t, tr.Shutdown(ctx))
 			}
 		})
 	}

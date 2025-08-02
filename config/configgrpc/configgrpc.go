@@ -453,7 +453,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var opts []grpc.ServerOption
 
 	if gss.TLS.HasValue() {
-		tlsCfg, err := gss.TLS.Get().LoadTLSConfig(context.Background())
+		tlsCfg, err := gss.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -509,13 +509,13 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth.HasValue() {
-		authenticator, err := gss.Auth.Get().GetServerAuthenticator(context.Background(), host.GetExtensions())
+		authenticator, err := gss.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
 		uInterceptors = append(uInterceptors, authUnaryServerInterceptor(authenticator))
-		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator))
+		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator)) //nolint:contextcheck // context already handled
 	}
 
 	otelOpts := []otelgrpc.Option{
@@ -527,7 +527,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	// Enable OpenTelemetry observability plugin.
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata)) //nolint:contextcheck // context already handled
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
