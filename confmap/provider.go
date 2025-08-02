@@ -110,6 +110,7 @@ type Retrieved struct {
 
 	stringRepresentation string
 	isSetString          bool
+	mergeOpts            map[string]*options
 }
 
 type retrievedSettings struct {
@@ -117,6 +118,7 @@ type retrievedSettings struct {
 	stringRepresentation string
 	isSetString          bool
 	closeFunc            CloseFunc
+	mergeOpts            map[string]*options
 }
 
 // RetrievedOption options to customize Retrieved values.
@@ -151,10 +153,19 @@ func withErrorHint(errorHint error) RetrievedOption {
 	})
 }
 
+func withMergeOpts(mergeOpts map[string]*options) RetrievedOption {
+	return retrievedOptionFunc(func(settings *retrievedSettings) {
+		settings.mergeOpts = mergeOpts
+	})
+}
+
 // NewRetrievedFromYAML returns a new Retrieved instance that contains the deserialized data from the yaml bytes.
 // * yamlBytes the yaml bytes that will be deserialized.
 // * opts specifies options associated with this Retrieved value, such as CloseFunc.
 func NewRetrievedFromYAML(yamlBytes []byte, opts ...RetrievedOption) (*Retrieved, error) {
+	if enableMergeAppendOption.IsEnabled() {
+		opts = append(opts, withMergeOpts(fetchMergePaths(yamlBytes)))
+	}
 	var rawConf any
 	if err := yaml.Unmarshal(yamlBytes, &rawConf); err != nil {
 		// If the string is not valid YAML, we try to use it verbatim as a string.
@@ -195,6 +206,7 @@ func NewRetrieved(rawConf any, opts ...RetrievedOption) (*Retrieved, error) {
 		closeFunc:            set.closeFunc,
 		stringRepresentation: set.stringRepresentation,
 		isSetString:          set.isSetString,
+		mergeOpts:            set.mergeOpts,
 	}, nil
 }
 
@@ -210,7 +222,9 @@ func (r *Retrieved) AsConf() (*Conf, error) {
 		}
 		return nil, fmt.Errorf("retrieved value (type=%T) cannot be used as a Conf", r.rawConf)
 	}
-	return NewFromStringMap(val), nil
+	c := NewFromStringMap(val)
+	c.mergeOpts = r.mergeOpts
+	return c, nil
 }
 
 // AsRaw returns the retrieved configuration parsed as an any which can be one of the following types:
