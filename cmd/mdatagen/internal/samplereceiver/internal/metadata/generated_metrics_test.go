@@ -33,6 +33,9 @@ func TestMetricsBuilder(t *testing.T) {
 			name: "default",
 		},
 		{
+			name: "reag_default",
+		},
+		{
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
@@ -101,6 +104,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
 
+			// my idea here is in order to test the reaggregation we (conditionally)
+			// record another data point with the exact same set of attributes. since
+			// default.metric has an aggregation strategy of 'sum' this should result
+			// in the value 4 being emitted
+			if tt.name == "reag_default" {
+				t.Log("record another datapoint for default.metric")
+				mb.RecordDefaultMetricDataPoint(ts, 3, "this_doesnt_matter", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
+			}
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
@@ -159,28 +171,70 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+
+					// modified to check for the new summed value of the two datapoints
+					if tt.name == "reag_default" {
+						assert.Equal(t, int64(4), dp.IntValue())
+					} else {
+						assert.Equal(t, int64(1), dp.IntValue())
+					}
+
 					attrVal, ok := dp.Attributes().Get("string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.StringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.EqualValues(t, 19, attrVal.Int())
+					if !mb.config.Attributes.OverriddenIntAttr.Enabled {
+						assert.False(t, ok)
+						assert.EqualValues(t, "", attrVal.Int())
+					} else {
+						assert.True(t, ok)
+						assert.EqualValues(t, 19, attrVal.Int())
+					}
 					attrVal, ok = dp.Attributes().Get("enum_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
+					if !mb.config.Attributes.EnumAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "red", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("slice_attr")
-					assert.True(t, ok)
-					assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					if !mb.config.Attributes.SliceAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Slice().AsRaw())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					}
 					attrVal, ok = dp.Attributes().Get("map_attr")
-					assert.True(t, ok)
-					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					if !mb.config.Attributes.MapAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Map().AsRaw())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					}
 					attrVal, ok = dp.Attributes().Get("optional_int_attr")
-					assert.True(t, ok)
-					assert.EqualValues(t, 17, attrVal.Int())
+					if !mb.config.Attributes.OptionalIntAttr.Enabled {
+						assert.False(t, ok)
+						assert.EqualValues(t, "", attrVal.Int())
+					} else {
+						assert.True(t, ok)
+						assert.EqualValues(t, 17, attrVal.Int())
+					}
 					attrVal, ok = dp.Attributes().Get("optional_string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.OptionalStringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					}
 				case "default.metric.to_be_removed":
 					assert.False(t, validatedMetrics["default.metric.to_be_removed"], "Found a duplicate in the metrics slice: default.metric.to_be_removed")
 					validatedMetrics["default.metric.to_be_removed"] = true
@@ -210,20 +264,45 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.StringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("state")
-					assert.True(t, ok)
-					assert.EqualValues(t, 19, attrVal.Int())
+					if !mb.config.Attributes.OverriddenIntAttr.Enabled {
+						assert.False(t, ok)
+						assert.EqualValues(t, "", attrVal.Int())
+					} else {
+						assert.True(t, ok)
+						assert.EqualValues(t, 19, attrVal.Int())
+					}
 					attrVal, ok = dp.Attributes().Get("enum_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "red", attrVal.Str())
+					if !mb.config.Attributes.EnumAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "red", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("slice_attr")
-					assert.True(t, ok)
-					assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					if !mb.config.Attributes.SliceAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Slice().AsRaw())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, []any{"slice_attr-item1", "slice_attr-item2"}, attrVal.Slice().AsRaw())
+					}
 					attrVal, ok = dp.Attributes().Get("map_attr")
-					assert.True(t, ok)
-					assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					if !mb.config.Attributes.MapAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Map().AsRaw())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, attrVal.Map().AsRaw())
+					}
 				case "optional.metric":
 					assert.False(t, validatedMetrics["optional.metric"], "Found a duplicate in the metrics slice: optional.metric")
 					validatedMetrics["optional.metric"] = true
@@ -237,17 +316,37 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.StringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
-					assert.True(t, ok)
-					assert.True(t, attrVal.Bool())
+					if !mb.config.Attributes.BooleanAttr.Enabled {
+						assert.False(t, ok)
+						assert.False(t, attrVal.Bool())
+					} else {
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					}
 					attrVal, ok = dp.Attributes().Get("boolean_attr2")
-					assert.True(t, ok)
-					assert.False(t, attrVal.Bool())
+					if !mb.config.Attributes.BooleanAttr2.Enabled {
+						assert.False(t, ok)
+						assert.False(t, attrVal.Bool())
+					} else {
+						assert.True(t, ok)
+						assert.False(t, attrVal.Bool())
+					}
 					attrVal, ok = dp.Attributes().Get("optional_string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.OptionalStringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "optional_string_attr-val", attrVal.Str())
+					}
 				case "optional.metric.empty_unit":
 					assert.False(t, validatedMetrics["optional.metric.empty_unit"], "Found a duplicate in the metrics slice: optional.metric.empty_unit")
 					validatedMetrics["optional.metric.empty_unit"] = true
@@ -261,11 +360,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("string_attr")
-					assert.True(t, ok)
-					assert.Equal(t, "string_attr-val", attrVal.Str())
+					if !mb.config.Attributes.StringAttr.Enabled {
+						assert.False(t, ok)
+						assert.Equal(t, "", attrVal.Str())
+					} else {
+						assert.True(t, ok)
+						assert.Equal(t, "string_attr-val", attrVal.Str())
+					}
 					attrVal, ok = dp.Attributes().Get("boolean_attr")
-					assert.True(t, ok)
-					assert.True(t, attrVal.Bool())
+					if !mb.config.Attributes.BooleanAttr.Enabled {
+						assert.False(t, ok)
+						assert.False(t, attrVal.Bool())
+					} else {
+						assert.True(t, ok)
+						assert.True(t, attrVal.Bool())
+					}
 				}
 			}
 		})

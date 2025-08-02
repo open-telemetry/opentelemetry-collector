@@ -80,6 +80,9 @@ attributes:
     type: <string|int|double|bool|bytes|slice|map>
     # Optional: indicates whether the attribute is optional or not.
     optional:
+    # Required: whether the metric attribute is enabled by default for the
+    # receiver instance. This only affects attributes present on metrics. 
+    enabled: bool
 
 # Optional: map of metric names with the key being the metric name and value
 # being described below.
@@ -118,6 +121,10 @@ metrics:
       input_type: string
     # Optional: array of attributes that were defined in the attributes section that are emitted by this metric.
     attributes: [string]
+    # Optional: strategy for approach to spacial reaggregation of metrics.
+    # Spacial reaggregation refers to metric aggregation based on present
+    # attributes, or dimensions, for a given metric.
+    aggregation_strategy: <sum|avg>
 
 # Optional: map of event names with the key being the event name and value
 # being described below.
