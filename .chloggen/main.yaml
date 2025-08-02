@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: otelcol
+
+note: |
+  Added support for safe config hot reload using `SIGHUP`.
+  When an invalid config is applied, the Collector no longer crashes — it continues running with the previous valid configuration.
+
+issues: [11817]
+
+subtext: |
+  This ensures better reliability during dynamic configuration updates in production environments.
+  The feature gracefully handles config reload failures without service disruption.
+
+change_logs: [user]
+

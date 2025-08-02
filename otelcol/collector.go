@@ -170,17 +170,9 @@ func buildModuleInfo(m map[component.Type]string) map[component.Type]service.Mod
 
 // setupConfigurationComponents loads the config, creates the graph, and starts the components. If all the steps succeeds it
 // sets the col.service with the service currently running.
-func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
+func (col *Collector) setupConfigurationComponents(ctx context.Context, cfg *Config, factories Factories) error {
 	col.setCollectorState(StateStarting)
-
-	factories, err := col.set.Factories()
-	if err != nil {
-		return fmt.Errorf("failed to initialize factories: %w", err)
-	}
-	cfg, err := col.configProvider.Get(ctx, factories)
-	if err != nil {
-		return fmt.Errorf("failed to get config: %w", err)
-	}
+	var err error
 
 	if err = xconfmap.Validate(cfg); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
@@ -189,7 +181,6 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	col.serviceConfig = &cfg.Service
 
 	conf := confmap.New()
-
 	if err = conf.Marshal(cfg); err != nil {
 		return fmt.Errorf("could not marshal configuration: %w", err)
 	}
@@ -222,9 +213,11 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	if col.updateConfigProviderLogger != nil {
 		col.updateConfigProviderLogger(col.service.Logger().Core())
 	}
+
 	if col.bc != nil {
 		x := col.bc.TakeLogs()
 		for _, log := range x {
@@ -242,23 +235,50 @@ func (col *Collector) setupConfigurationComponents(ctx context.Context) error {
 	if err = col.service.Start(ctx); err != nil {
 		return multierr.Combine(err, col.service.Shutdown(ctx))
 	}
-	col.setCollectorState(StateRunning)
 
+	col.setCollectorState(StateRunning)
 	return nil
 }
 
+func (col *Collector) loadConfiguration(ctx context.Context) (*Config, Factories, error) {
+	factories, err := col.set.Factories()
+	if err != nil {
+		return nil, Factories{}, fmt.Errorf("failed to initialize factories: %w", err)
+	}
+
+	cfg, err := col.configProvider.Get(ctx, factories)
+	if err != nil {
+		return nil, Factories{}, fmt.Errorf("failed to get config: %w", err)
+	}
+
+	if err := xconfmap.Validate(cfg); err != nil {
+		return nil, Factories{}, fmt.Errorf("invalid configuration: %w", err)
+	}
+
+	return cfg, factories, nil
+}
+
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
-	col.service.Logger().Warn("Config updated, restart service")
-	col.setCollectorState(StateClosing)
+	logger := col.service.Logger()
+	logger.Info("Reloading collector configuration...")
+
+	cfg, factories, err := col.loadConfiguration(ctx)
+	if err != nil {
+		logger.Warn("Configuration reload failed, keeping existing config", zap.Error(err))
+		return nil
+	}
 
 	if err := col.service.Shutdown(ctx); err != nil {
-		return fmt.Errorf("failed to shutdown the retiring config: %w", err)
+		logger.Warn("Error shutting down existing service", zap.Error(err))
+		return err
 	}
 
-	if err := col.setupConfigurationComponents(ctx); err != nil {
-		return fmt.Errorf("failed to setup configuration components: %w", err)
+	if err := col.setupConfigurationComponents(ctx, cfg, factories); err != nil {
+		logger.Warn("Failed to start service after config reload", zap.Error(err))
+		return err
 	}
 
+	logger.Info("Collector configuration reloaded successfully.")
 	return nil
 }
 
@@ -308,17 +328,23 @@ func newFallbackLogger(options []zap.Option) (*zap.Logger, error) {
 // Consecutive calls to Run are not allowed, Run shouldn't be called once a collector is shut down.
 // Sets up the control logic for config reloading and shutdown.
 func (col *Collector) Run(ctx context.Context) error {
-	// setupConfigurationComponents is the "main" function responsible for startup
-	if err := col.setupConfigurationComponents(ctx); err != nil {
+	col.setCollectorState(StateStarting)
+
+	cfg, factories, err := col.loadConfiguration(ctx)
+	if err == nil {
+		err = col.setupConfigurationComponents(ctx, cfg, factories)
+	}
+	if err != nil {
 		col.setCollectorState(StateClosed)
+
 		logger, loggerErr := newFallbackLogger(col.set.LoggingOptions)
 		if loggerErr != nil {
 			return errors.Join(err, fmt.Errorf("unable to create fallback logger: %w", loggerErr))
 		}
 
 		if col.bc != nil {
-			x := col.bc.TakeLogs()
-			for _, log := range x {
+			logs := col.bc.TakeLogs()
+			for _, log := range logs {
 				ce := logger.Core().Check(log.Entry, nil)
 				if ce != nil {
 					ce.Write(log.Context...)
@@ -351,9 +377,11 @@ LOOP:
 			if err := col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
+
 		case err := <-col.asyncErrorChannel:
 			col.service.Logger().Error("Asynchronous error received, terminating process", zap.Error(err))
 			break LOOP
+
 		case s := <-col.signalsChannel:
 			col.service.Logger().Info("Received signal from OS", zap.String("signal", s.String()))
 			if s != syscall.SIGHUP {
@@ -362,15 +390,18 @@ LOOP:
 			if err := col.reloadConfiguration(ctx); err != nil {
 				return err
 			}
+
 		case <-col.shutdownChan:
 			col.service.Logger().Info("Received shutdown request")
 			break LOOP
+
 		case <-ctx.Done():
 			col.service.Logger().Info("Context done, terminating process", zap.Error(ctx.Err()))
 			// Call shutdown with background context as the passed in context has been canceled
 			return col.shutdown(context.Background())
 		}
 	}
+
 	return col.shutdown(ctx)
 }
 
