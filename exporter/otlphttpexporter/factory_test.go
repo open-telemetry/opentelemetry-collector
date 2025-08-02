@@ -210,6 +210,17 @@ func TestCreateProfiles(t *testing.T) {
 	require.NotNil(t, oexp)
 }
 
+func TestCreateProfilesWithCustomEndpoint(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ProfilesEndpoint = "http://" + testutil.GetAvailableLocalAddress(t) + "/custom/profiles"
+
+	set := exportertest.NewNopSettings(factory.Type())
+	oexp, err := factory.(xexporter.Factory).CreateProfiles(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, oexp)
+}
+
 func TestComposeSignalURL(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -231,4 +242,16 @@ func TestComposeSignalURL(t *testing.T) {
 	url, err = composeSignalURL(cfg, "", "traces", "v2")
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:4318/v2/traces", url)
+
+	// Test profiles endpoint with v1development
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "", "profiles", "v1development")
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:4318/v1development/profiles", url)
+
+	// Test with custom profiles endpoint override
+	cfg.ClientConfig.Endpoint = "http://localhost:4318"
+	url, err = composeSignalURL(cfg, "http://custom:9090/profiles", "profiles", "v1development")
+	require.NoError(t, err)
+	assert.Equal(t, "http://custom:9090/profiles", url)
 }
