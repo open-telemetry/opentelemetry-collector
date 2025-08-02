@@ -7,6 +7,7 @@ import (
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/embedded"
 	"go.opentelemetry.io/otel/trace"
@@ -25,6 +26,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	attributeSet                  attribute.Set
 	meter                         metric.Meter
 	mu                            sync.Mutex
 	registrations                 []metric.Registration
@@ -46,6 +48,16 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+	return func(mb *TelemetryBuilder) {
+		mb.attributeSet = s
+	}
+}
+
+func (builder *TelemetryBuilder) RecordBatchSizeTriggerSendDataPoint(ctx context.Context, val int64) {
+	builder.BatchSizeTriggerSend.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
 // RegisterProcessRuntimeTotalAllocBytesCallback sets callback for observable ProcessRuntimeTotalAllocBytes metric.
 func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -61,6 +73,10 @@ func (builder *TelemetryBuilder) RegisterProcessRuntimeTotalAllocBytesCallback(c
 	return nil
 }
 
+func (builder *TelemetryBuilder) RecordQueueCapacityDataPoint(ctx context.Context, val int64) {
+	builder.QueueCapacity.Record(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
 // RegisterQueueLengthCallback sets callback for observable QueueLength metric.
 func (builder *TelemetryBuilder) RegisterQueueLengthCallback(cb metric.Int64Callback) error {
 	reg, err := builder.meter.RegisterCallback(func(ctx context.Context, o metric.Observer) error {
@@ -74,6 +90,10 @@ func (builder *TelemetryBuilder) RegisterQueueLengthCallback(cb metric.Int64Call
 	defer builder.mu.Unlock()
 	builder.registrations = append(builder.registrations, reg)
 	return nil
+}
+
+func (builder *TelemetryBuilder) RecordRequestDurationDataPoint(ctx context.Context, val float64) {
+	builder.RequestDuration.Record(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 type observerInt64 struct {
