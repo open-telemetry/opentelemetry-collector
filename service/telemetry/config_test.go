@@ -51,8 +51,8 @@ func TestConfigValidate(t *testing.T) {
 						Readers: []config.MetricReader{
 							{
 								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-									Host: newPtr("127.0.0.1"),
-									Port: newPtr(3333),
+									Host: ptr("127.0.0.1"),
+									Port: ptr(3333),
 								}}},
 							},
 						},
