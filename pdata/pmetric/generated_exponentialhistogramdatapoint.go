@@ -277,7 +277,7 @@ func (ms ExponentialHistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("max")
 		dest.WriteFloat64(ms.Max())
 	}
-	if ms.orig.ZeroThreshold != float64(0.0) {
+	if ms.orig.ZeroThreshold != float64(0) {
 		dest.WriteObjectField("zeroThreshold")
 		dest.WriteFloat64(ms.orig.ZeroThreshold)
 	}

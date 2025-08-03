@@ -72,12 +72,10 @@ func TestResourceSpans_Resource(t *testing.T) {
 func TestResourceSpans_SchemaUrl(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestResourceSpans_ScopeSpans(t *testing.T) {
@@ -95,6 +93,6 @@ func generateTestResourceSpans() ResourceSpans {
 
 func fillTestResourceSpans(tv ResourceSpans) {
 	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
+	tv.orig.SchemaUrl = "test_schemaurl"
 	fillTestScopeSpansSlice(tv.ScopeSpans())
 }

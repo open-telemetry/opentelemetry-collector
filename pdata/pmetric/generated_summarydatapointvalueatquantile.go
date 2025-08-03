@@ -81,11 +81,11 @@ func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQua
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
 func (ms SummaryDataPointValueAtQuantile) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	if ms.orig.Quantile != float64(0.0) {
+	if ms.orig.Quantile != float64(0) {
 		dest.WriteObjectField("quantile")
 		dest.WriteFloat64(ms.orig.Quantile)
 	}
-	if ms.orig.Value != float64(0.0) {
+	if ms.orig.Value != float64(0) {
 		dest.WriteObjectField("value")
 		dest.WriteFloat64(ms.orig.Value)
 	}

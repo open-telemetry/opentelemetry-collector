@@ -89,10 +89,10 @@ func TestHistogramDataPoint_Timestamp(t *testing.T) {
 func TestHistogramDataPoint_Count(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, uint64(0), ms.Count())
-	ms.SetCount(uint64(17))
-	assert.Equal(t, uint64(17), ms.Count())
+	ms.SetCount(uint64(13))
+	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(17)) })
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(13)) })
 }
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
@@ -126,42 +126,42 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 
 func TestHistogramDataPoint_Sum(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Sum(), 0.01)
-	ms.SetSum(float64(17.13))
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
 	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
 	ms.RemoveSum()
 	assert.False(t, ms.HasSum())
 	dest := NewHistogramDataPoint()
-	dest.SetSum(float64(17.13))
+	dest.SetSum(float64(3.1415926))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasSum())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Min(), 0.01)
-	ms.SetMin(float64(9.23))
+	assert.InDelta(t, float64(0), ms.Min(), 0.01)
+	ms.SetMin(float64(3.1415926))
 	assert.True(t, ms.HasMin())
-	assert.InDelta(t, float64(9.23), ms.Min(), 0.01)
+	assert.InDelta(t, float64(3.1415926), ms.Min(), 0.01)
 	ms.RemoveMin()
 	assert.False(t, ms.HasMin())
 	dest := NewHistogramDataPoint()
-	dest.SetMin(float64(9.23))
+	dest.SetMin(float64(3.1415926))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMin())
 }
 
 func TestHistogramDataPoint_Max(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Max(), 0.01)
-	ms.SetMax(float64(182.55))
+	assert.InDelta(t, float64(0), ms.Max(), 0.01)
+	ms.SetMax(float64(3.1415926))
 	assert.True(t, ms.HasMax())
-	assert.InDelta(t, float64(182.55), ms.Max(), 0.01)
+	assert.InDelta(t, float64(3.1415926), ms.Max(), 0.01)
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
 	dest := NewHistogramDataPoint()
-	dest.SetMax(float64(182.55))
+	dest.SetMax(float64(3.1415926))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMax())
 }
@@ -176,12 +176,12 @@ func fillTestHistogramDataPoint(tv HistogramDataPoint) {
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
+	tv.orig.Count = uint64(13)
 	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
 	internal.FillTestFloat64Slice(internal.NewFloat64Slice(&tv.orig.ExplicitBounds, tv.state))
 	fillTestExemplarSlice(tv.Exemplars())
 	tv.orig.Flags = 1
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
-	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
-	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
+	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
+	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
 }

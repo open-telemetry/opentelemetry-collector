@@ -73,10 +73,10 @@ func TestStatus_Code(t *testing.T) {
 func TestStatus_Message(t *testing.T) {
 	ms := NewStatus()
 	assert.Empty(t, ms.Message())
-	ms.SetMessage("cancelled")
-	assert.Equal(t, "cancelled", ms.Message())
+	ms.SetMessage("test_message")
+	assert.Equal(t, "test_message", ms.Message())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("cancelled") })
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
 }
 
 func generateTestStatus() Status {
@@ -87,5 +87,5 @@ func generateTestStatus() Status {
 
 func fillTestStatus(tv Status) {
 	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
+	tv.orig.Message = "test_message"
 }
