@@ -42,7 +42,7 @@ func (or *obsReport) recordInOut(ctx context.Context, incoming, outgoing int) {
 	or.telemetryBuilder.ProcessorOutgoingItems.Add(ctx, int64(outgoing), or.otelAttrs)
 }
 
-func (or *obsReport) recordDuration(ctx context.Context, startTime time.Time) {
+func (or *obsReport) recordInternalDuration(ctx context.Context, startTime time.Time) {
 	duration := time.Since(startTime)
-	or.telemetryBuilder.ProcessorDuration.Record(ctx, duration.Seconds(), or.otelAttrs)
+	or.telemetryBuilder.ProcessorInternalDuration.Record(ctx, duration.Seconds(), or.otelAttrs)
 }

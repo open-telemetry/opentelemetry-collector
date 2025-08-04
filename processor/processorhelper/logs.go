@@ -57,7 +57,7 @@ func NewLogs(
 
 		var errFunc error
 		ld, errFunc = logsFunc(ctx, ld)
-		obs.recordDuration(ctx, startTime)
+		obs.recordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, recordsIn, 0)

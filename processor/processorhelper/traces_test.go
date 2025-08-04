@@ -202,7 +202,7 @@ func TestTraces_ProcessDuration(t *testing.T) {
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), incomingTraces))
 	assert.NoError(t, tp.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorDuration(t, tel,
+	metadatatest.AssertEqualProcessorInternalDuration(t, tel,
 		[]metricdata.HistogramDataPoint[float64]{
 			{
 				Count:        1,

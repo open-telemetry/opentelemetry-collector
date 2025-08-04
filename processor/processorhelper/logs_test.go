@@ -200,7 +200,7 @@ func TestLogs_ProcessDuration(t *testing.T) {
 	assert.NoError(t, lp.ConsumeLogs(context.Background(), incomingLogs))
 	assert.NoError(t, lp.Shutdown(context.Background()))
 
-	metadatatest.AssertEqualProcessorDuration(t, tel,
+	metadatatest.AssertEqualProcessorInternalDuration(t, tel,
 		[]metricdata.HistogramDataPoint[float64]{
 			{
 				Count:        1,

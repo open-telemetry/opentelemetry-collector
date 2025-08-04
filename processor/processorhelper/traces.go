@@ -57,7 +57,7 @@ func NewTraces(
 
 		var errFunc error
 		td, errFunc = tracesFunc(ctx, td)
-		obs.recordDuration(ctx, startTime)
+		obs.recordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, spansIn, 0)

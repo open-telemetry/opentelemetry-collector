@@ -57,7 +57,7 @@ func NewMetrics(
 
 		var errFunc error
 		md, errFunc = metricsFunc(ctx, md)
-		obs.recordDuration(ctx, startTime)
+		obs.recordInternalDuration(ctx, startTime)
 		span.AddEvent("End processing.", eventOptions)
 		if errFunc != nil {
 			obs.recordInOut(ctx, pointsIn, 0)
