@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="33" failures="0" errors="0" time="1.956168">
+	<testsuite tests="30" failures="0" time="1.956000" name="go.opentelemetry.io/collector/processor/memorylimiterprocessor" timestamp="2025-07-30T15:41:43-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestCreateDefaultConfig" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestCreateProcessor" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentFactoryType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentConfigStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentLifecycle/logs-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentLifecycle/metrics-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentLifecycle/traces-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestComponentLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestNoDataLoss" time="0.930000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsMemoryPressureResponse/Below_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsMemoryPressureResponse/Above_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsMemoryPressureResponse/Below_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsMemoryPressureResponse/Above_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsMemoryPressureResponse" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestMetricsTelemetry" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestTraceMemoryPressureResponse/Below_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestTraceMemoryPressureResponse/Above_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestTraceMemoryPressureResponse/Below_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestTraceMemoryPressureResponse/Above_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestTraceMemoryPressureResponse" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestLogMemoryPressureResponse/Below_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestLogMemoryPressureResponse/Above_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestLogMemoryPressureResponse/Below_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestLogMemoryPressureResponse/Above_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestLogMemoryPressureResponse" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestProfileMemoryPressureResponse/Below_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestProfileMemoryPressureResponse/Above_memAllocLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestProfileMemoryPressureResponse/Below_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestProfileMemoryPressureResponse/Above_memSpikeLimit" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor" name="TestProfileMemoryPressureResponse" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="0" failures="0" time="0.000000" name="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal" timestamp="2025-07-30T15:41:43-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+	</testsuite>
+	<testsuite tests="2" failures="0" time="1.010000" name="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata" timestamp="2025-07-30T15:41:43-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata" name="TestProviders" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadata" name="TestNewTelemetryBuilder" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="1.010000" name="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadatatest" timestamp="2025-07-30T15:41:43-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/memorylimiterprocessor/internal/metadatatest" name="TestSetupTelemetry" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="0" errors="0" time="0.000318">
+	<testsuite tests="8" failures="0" time="0.000000" name="go.opentelemetry.io/collector/config/configretry" timestamp="2025-07-31T10:51:58-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestNewDefaultBackOffSettings" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestInvalidInitialInterval" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestInvalidRandomizationFactor" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestInvalidMultiplier" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestZeroMultiplierIsValid" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestInvalidMaxInterval" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestInvalidMaxElapsedTime" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configretry" name="TestDisabledWithInvalidValues" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
