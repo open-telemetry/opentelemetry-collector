@@ -8,3 +8,4 @@ non_impl_str: {}
 non_impl_tms: {}
 ntma: test
 tma: test
+recursive: P

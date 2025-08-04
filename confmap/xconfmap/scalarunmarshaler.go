@@ -4,7 +4,6 @@
 package xconfmap
 
 import (
-	"encoding"
 	"reflect"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -15,7 +14,7 @@ import (
 
 func WithScalarUnmarshaler() confmap.UnmarshalOption {
 	return internal.UnmarshalOptionFunc(func(uo *internal.UnmarshalOptions) {
-		uo.AdditionalDecodeHookFuncs = append(uo.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc())
+		uo.AdditionalDecodeHookFuncs = append(uo.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(*uo))
 	})
 }
 
@@ -33,9 +32,16 @@ type ScalarUnmarshaler interface {
 // Provides a mechanism for individual structs to define their own unmarshal logic,
 // by implementing the Unmarshaler interface, unless skipTopLevelUnmarshaler is
 // true and the struct matches the top level object being unmarshaled.
-func scalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
+func scalarunmarshalerHookFunc(opts internal.UnmarshalOptions) mapstructure.DecodeHookFuncValue {
 	return safeWrapDecodeHookFunc(func(from reflect.Value, to reflect.Value) (any, error) {
+		opts.AdditionalDecodeHookFuncs = append(opts.AdditionalDecodeHookFuncs, scalarunmarshalerHookFunc(opts))
+
 		if !to.CanAddr() {
+			return from.Interface(), nil
+		}
+
+		if from.Kind() == reflect.Struct ||
+			from.Kind() == reflect.Pointer && from.Elem().Kind() == reflect.Struct {
 			return from.Interface(), nil
 		}
 
@@ -46,26 +52,13 @@ func scalarunmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 			return from.Interface(), nil
 		}
 
-		var v any
-		tp := reflect.New(reflect.TypeOf(unmarshaler.ScalarType()))
-		if tu, ok := tp.Interface().(encoding.TextUnmarshaler); ok {
-			// Should we error out here?
-			if str, ok := from.Interface().(string); ok {
-				if err := tu.UnmarshalText([]byte(str)); err != nil {
-					return nil, err
-				}
-				v = tp.Elem().Interface()
-			}
-		} else if from.CanConvert(tp.Elem().Type()) {
-			from.Convert(tp.Elem().Type())
-			v = from.Interface()
-		} else if _, ok := from.Interface().(map[string]any); ok {
-			v = tp.Elem().Interface()
-		} else {
-			v = from.Interface()
+		resultVal := reflect.New(reflect.TypeOf(unmarshaler.ScalarType()))
+
+		if err := internal.Decode(from.Interface(), resultVal.Interface(), opts, false); err != nil {
+			return nil, err
 		}
 
-		if err := unmarshaler.UnmarshalScalar(v); err != nil {
+		if err := unmarshaler.UnmarshalScalar(resultVal.Elem().Interface()); err != nil {
 			return nil, err
 		}
 

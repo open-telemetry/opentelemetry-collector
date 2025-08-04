@@ -4,7 +4,6 @@
 package xconfmap
 
 import (
-	"encoding"
 	"reflect"
 
 	"github.com/go-viper/mapstructure/v2"
@@ -39,19 +38,8 @@ func scalarmarshalerHookFunc() mapstructure.DecodeHookFuncValue {
 		}
 
 		v, err := marshaler.GetScalarValue()
-
 		if err != nil {
 			return nil, err
-		}
-
-		if tm, ok := v.(encoding.TextMarshaler); ok {
-			b, err := tm.MarshalText()
-
-			if err != nil {
-				return nil, err
-			}
-
-			return string(b), nil
 		}
 
 		return v, nil
