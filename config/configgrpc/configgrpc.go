@@ -112,10 +112,6 @@ type ClientConfig struct {
 	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
-func ptr[T any](v T) *T {
-	return &v
-}
-
 // NewDefaultClientConfig returns a new instance of ClientConfig with default values.
 func NewDefaultClientConfig() ClientConfig {
 	return ClientConfig{
@@ -127,8 +123,8 @@ func NewDefaultClientConfig() ClientConfig {
 
 // KeepaliveServerConfig is the configuration for keepalive.
 type KeepaliveServerConfig struct {
-	ServerParameters  *KeepaliveServerParameters  `mapstructure:"server_parameters,omitempty"`
-	EnforcementPolicy *KeepaliveEnforcementPolicy `mapstructure:"enforcement_policy,omitempty"`
+	ServerParameters  configoptional.Optional[KeepaliveServerParameters]  `mapstructure:"server_parameters,omitempty"`
+	EnforcementPolicy configoptional.Optional[KeepaliveEnforcementPolicy] `mapstructure:"enforcement_policy,omitempty"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -136,8 +132,8 @@ type KeepaliveServerConfig struct {
 // NewDefaultKeepaliveServerConfig returns a new instance of KeepaliveServerConfig with default values.
 func NewDefaultKeepaliveServerConfig() KeepaliveServerConfig {
 	return KeepaliveServerConfig{
-		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
-		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
+		ServerParameters:  configoptional.Some(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 }
 
@@ -289,8 +285,7 @@ func (gcs *ClientConfig) addHeadersIfAbsent(ctx context.Context) context.Context
 	existingMd, _ := metadata.FromOutgoingContext(ctx)
 	for k, v := range gcs.Headers {
 		if len(existingMd.Get(k)) == 0 {
-			kv = append(kv, k)
-			kv = append(kv, string(v))
+			kv = append(kv, k, string(v))
 		}
 	}
 	return metadata.AppendToOutgoingContext(ctx, kv...)
@@ -359,7 +354,7 @@ func (gcs *ClientConfig) getGrpcDialOptions(
 	}
 
 	if gcs.BalancerName != "" {
-		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":"%s"}`, gcs.BalancerName)))
+		opts = append(opts, grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingPolicy":%q}`, gcs.BalancerName)))
 	}
 
 	if gcs.Authority != "" {
@@ -487,8 +482,8 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	// https://github.com/grpc/grpc-go/blob/120728e1f775e40a2a764341939b78d666b08260/internal/transport/http2_server.go#L184-L200
 	if gss.Keepalive.HasValue() {
 		keepaliveConfig := gss.Keepalive.Get()
-		if keepaliveConfig.ServerParameters != nil {
-			svrParams := keepaliveConfig.ServerParameters
+		if keepaliveConfig.ServerParameters.HasValue() {
+			svrParams := keepaliveConfig.ServerParameters.Get()
 			opts = append(opts, grpc.KeepaliveParams(keepalive.ServerParameters{
 				MaxConnectionIdle:     svrParams.MaxConnectionIdle,
 				MaxConnectionAge:      svrParams.MaxConnectionAge,
@@ -501,8 +496,8 @@ func (gss *ServerConfig) getGrpcServerOptions(
 		// to apply them over zero/nil values before passing these as grpc.ServerOptions.
 		// The following shows the server code for applying default grpc.ServerOptions.
 		// https://github.com/grpc/grpc-go/blob/120728e1f775e40a2a764341939b78d666b08260/internal/transport/http2_server.go#L202-L205
-		if keepaliveConfig.EnforcementPolicy != nil {
-			enfPol := keepaliveConfig.EnforcementPolicy
+		if keepaliveConfig.EnforcementPolicy.HasValue() {
+			enfPol := keepaliveConfig.EnforcementPolicy.Get()
 			opts = append(opts, grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
 				MinTime:             enfPol.MinTime,
 				PermitWithoutStream: enfPol.PermitWithoutStream,
@@ -519,12 +514,8 @@ func (gss *ServerConfig) getGrpcServerOptions(
 			return nil, err
 		}
 
-		uInterceptors = append(uInterceptors, func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			return authUnaryServerInterceptor(ctx, req, info, handler, authenticator)
-		})
-		sInterceptors = append(sInterceptors, func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-			return authStreamServerInterceptor(srv, ss, info, handler, authenticator)
-		})
+		uInterceptors = append(uInterceptors, authUnaryServerInterceptor(authenticator))
+		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator))
 	}
 
 	otelOpts := []otelgrpc.Option{
@@ -574,13 +565,13 @@ func getGRPCCompressionName(compressionType configcompression.Type) (string, err
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+func enhanceWithClientInformation(includeMetadata bool) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		return handler(contextWithClient(ctx, includeMetadata), req)
 	}
 }
 
-func enhanceStreamWithClientInformation(includeMetadata bool) func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func enhanceStreamWithClientInformation(includeMetadata bool) grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, wrapServerStream(contextWithClient(ss.Context(), includeMetadata), ss))
 	}
@@ -605,31 +596,35 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, server extensionauth.Server) (any, error) {
-	headers, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errMetadataNotFound
-	}
+func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		headers, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, errMetadataNotFound
+		}
 
-	ctx, err := server.Authenticate(ctx, headers)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
+		ctx, err := server.Authenticate(ctx, headers)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		}
 
-	return handler(ctx, req)
+		return handler(ctx, req)
+	}
 }
 
-func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, server extensionauth.Server) error {
-	ctx := stream.Context()
-	headers, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return errMetadataNotFound
-	}
+func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerInterceptor {
+	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := stream.Context()
+		headers, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return errMetadataNotFound
+		}
 
-	ctx, err := server.Authenticate(ctx, headers)
-	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
-	}
+		ctx, err := server.Authenticate(ctx, headers)
+		if err != nil {
+			return status.Error(codes.Unauthenticated, err.Error())
+		}
 
-	return handler(srv, wrapServerStream(ctx, stream))
+		return handler(srv, wrapServerStream(ctx, stream))
+	}
 }

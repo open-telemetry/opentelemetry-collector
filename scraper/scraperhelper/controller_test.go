@@ -440,7 +440,7 @@ func assertScraperSpan(t *testing.T, expectedErr error, spans []sdktrace.ReadOnl
 	assert.True(t, scraperSpan)
 }
 
-func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver component.ID, scraper component.ID, expectedErr error, sink *consumertest.LogsSink) {
+func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, expectedErr error, sink *consumertest.LogsSink) {
 	logRecordCounts := 0
 	for _, md := range sink.AllLogs() {
 		logRecordCounts += md.LogRecordCount()
@@ -479,7 +479,7 @@ func assertLogsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, rec
 		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 }
 
-func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver component.ID, scraper component.ID, expectedErr error, sink *consumertest.MetricsSink) {
+func assertMetricsScraperObsMetrics(t *testing.T, tel *componenttest.Telemetry, receiver, scraper component.ID, expectedErr error, sink *consumertest.MetricsSink) {
 	dataPointCounts := 0
 	for _, md := range sink.AllMetrics() {
 		dataPointCounts += md.DataPointCount()

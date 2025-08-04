@@ -90,8 +90,8 @@ func TestNewDefaultKeepaliveEnforcementPolicy(t *testing.T) {
 
 func TestNewDefaultKeepaliveServerConfig(t *testing.T) {
 	expected := KeepaliveServerConfig{
-		ServerParameters:  ptr(NewDefaultKeepaliveServerParameters()),
-		EnforcementPolicy: ptr(NewDefaultKeepaliveEnforcementPolicy()),
+		ServerParameters:  configoptional.Some(NewDefaultKeepaliveServerParameters()),
+		EnforcementPolicy: configoptional.Some(NewDefaultKeepaliveEnforcementPolicy()),
 	}
 	result := NewDefaultKeepaliveServerConfig()
 	assert.Equal(t, expected, result)
@@ -391,17 +391,17 @@ func TestAllGrpcServerSettingsExceptAuth(t *testing.T) {
 		ReadBufferSize:       1024,
 		WriteBufferSize:      1024,
 		Keepalive: configoptional.Some(KeepaliveServerConfig{
-			ServerParameters: &KeepaliveServerParameters{
+			ServerParameters: configoptional.Some(KeepaliveServerParameters{
 				MaxConnectionIdle:     time.Second,
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: time.Second,
 				Time:                  time.Second,
 				Timeout:               time.Second,
-			},
-			EnforcementPolicy: &KeepaliveEnforcementPolicy{
+			}),
+			EnforcementPolicy: configoptional.Some(KeepaliveEnforcementPolicy{
 				MinTime:             time.Second,
 				PermitWithoutStream: true,
-			},
+			}),
 		}),
 	}
 	opts, err := gss.getGrpcServerOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToServerOption{})
@@ -888,14 +888,16 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 	inCtx := peer.NewContext(context.Background(), &peer.Peer{
 		Addr: &net.IPAddr{IP: net.IPv4(1, 1, 1, 1)},
 	})
-	var outContext context.Context
 
 	stream := &mockedStream{
 		ctx: inCtx,
 	}
 
+	var handlerCalled bool
 	handler := func(_ any, stream grpc.ServerStream) error {
-		outContext = stream.Context()
+		handlerCalled = true
+		cl := client.FromContext(stream.Context())
+		assert.Equal(t, "1.1.1.1", cl.Addr.String())
 		return nil
 	}
 
@@ -904,9 +906,7 @@ func TestStreamInterceptorEnhancesClient(t *testing.T) {
 
 	// verify
 	require.NoError(t, err)
-
-	cl := client.FromContext(outContext)
-	assert.Equal(t, "1.1.1.1", cl.Addr.String())
+	assert.True(t, handlerCalled, "the handler should have been called")
 }
 
 type mockedStream struct {
@@ -991,9 +991,10 @@ func TestDefaultUnaryInterceptorAuthSucceeded(t *testing.T) {
 		return nil, nil
 	}
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
+	interceptor := authUnaryServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
+	res, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
 
 	// verify
 	assert.Nil(t, res)
@@ -1015,9 +1016,10 @@ func TestDefaultUnaryInterceptorAuthFailure(t *testing.T) {
 		return nil, nil
 	}
 	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
+	interceptor := authUnaryServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	res, err := authUnaryServerInterceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
+	res, err := interceptor(ctx, nil, &grpc.UnaryServerInfo{}, handler)
 
 	// verify
 	assert.Nil(t, res)
@@ -1036,9 +1038,10 @@ func TestDefaultUnaryInterceptorMissingMetadata(t *testing.T) {
 		assert.FailNow(t, "the handler should not have been called!")
 		return nil, nil
 	}
+	interceptor := authUnaryServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	res, err := authUnaryServerInterceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler, newMockAuthServer(authFunc))
+	res, err := interceptor(context.Background(), nil, &grpc.UnaryServerInfo{}, handler)
 
 	// verify
 	assert.Nil(t, res)
@@ -1063,13 +1066,13 @@ func TestDefaultStreamInterceptorAuthSucceeded(t *testing.T) {
 		handlerCalled = true
 		return nil
 	}
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 	streamServer := &mockServerStream{
-		ctx: ctx,
+		ctx: metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data")),
 	}
+	interceptor := authStreamServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
+	err := interceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
 	// verify
 	require.NoError(t, err)
@@ -1089,13 +1092,13 @@ func TestDefaultStreamInterceptorAuthFailure(t *testing.T) {
 		assert.FailNow(t, "the handler should not have been called on auth failure!")
 		return nil
 	}
-	ctx := metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data"))
 	streamServer := &mockServerStream{
-		ctx: ctx,
+		ctx: metadata.NewIncomingContext(context.Background(), metadata.Pairs("authorization", "some-auth-data")),
 	}
+	interceptor := authStreamServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
+	err := interceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
 	// verify
 	require.ErrorContains(t, err, expectedErr.Error()) // unfortunately, grpc errors don't wrap the original ones
@@ -1116,9 +1119,10 @@ func TestDefaultStreamInterceptorMissingMetadata(t *testing.T) {
 	streamServer := &mockServerStream{
 		ctx: context.Background(),
 	}
+	interceptor := authStreamServerInterceptor(newMockAuthServer(authFunc))
 
 	// test
-	err := authStreamServerInterceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler, newMockAuthServer(authFunc))
+	err := interceptor(nil, streamServer, &grpc.StreamServerInfo{}, handler)
 
 	// verify
 	assert.Equal(t, errMetadataNotFound, err)
