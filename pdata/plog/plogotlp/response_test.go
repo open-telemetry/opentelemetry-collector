@@ -4,27 +4,31 @@
 package plogotlp
 
 import (
-	"encoding/json"
+	stdjson "encoding/json"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 var (
-	_ json.Unmarshaler = ExportResponse{}
-	_ json.Marshaler   = ExportResponse{}
+	_ stdjson.Unmarshaler = ExportResponse{}
+	_ stdjson.Marshaler   = ExportResponse{}
 )
 
 func TestExportResponseJSON(t *testing.T) {
-	jsonStr := `{"partialSuccess": {"rejectedLogRecords":1, "errorMessage":"nothing"}}`
+	jsonStr := `{"partialSuccess": {"rejectedLogRecords":"1", "errorMessage":"nothing"}}`
 	val := NewExportResponse()
 	require.NoError(t, val.UnmarshalJSON([]byte(jsonStr)))
 	expected := NewExportResponse()
 	expected.PartialSuccess().SetRejectedLogRecords(1)
 	expected.PartialSuccess().SetErrorMessage("nothing")
 	assert.Equal(t, expected, val)
+	buf, err := val.MarshalJSON()
+	require.NoError(t, err)
+	assert.JSONEq(t, jsonStr, string(buf))
 }
 
 func TestUnmarshalJSONExportResponse(t *testing.T) {
@@ -36,10 +40,10 @@ func TestUnmarshalJSONExportResponse(t *testing.T) {
 
 func TestUnmarshalJsoniterExportPartialSuccess(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	val := NewExportPartialSuccess()
-	val.unmarshalJsoniter(iter)
-	require.NoError(t, iter.Error)
+	val.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, NewExportPartialSuccess(), val)
 }

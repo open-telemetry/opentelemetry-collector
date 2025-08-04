@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestMetricSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestMetricSliceReadOnly(t *testing.T) {
 
 func TestMetricSlice_CopyTo(t *testing.T) {
 	dest := NewMetricSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewMetricSlice().CopyTo(dest)
 	assert.Equal(t, NewMetricSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestMetricSlice().CopyTo(dest)
+	src := generateTestMetricSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestMetricSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestMetricSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewMetricSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestMetricSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestMetricSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestMetricSlice()
+	got.RemoveIf(func(el Metric) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestMetricSliceAll(t *testing.T) {
 	ms := generateTestMetricSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestMetricSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestMetricSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestMetricSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewMetricSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestMetricSlice_Sort(t *testing.T) {

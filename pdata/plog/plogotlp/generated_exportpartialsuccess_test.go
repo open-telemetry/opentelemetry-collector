@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -42,6 +44,26 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState)) })
 }
 
+func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExportPartialSuccess()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewExportPartialSuccess()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
+}
+
 func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedLogRecords())
@@ -56,11 +78,11 @@ func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
@@ -72,5 +94,5 @@ func generateTestExportPartialSuccess() ExportPartialSuccess {
 
 func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
 	tv.orig.RejectedLogRecords = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	tv.orig.ErrorMessage = "test_errormessage"
 }

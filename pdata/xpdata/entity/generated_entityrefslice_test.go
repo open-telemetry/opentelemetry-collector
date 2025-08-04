@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestEntityRefSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestEntityRefSliceReadOnly(t *testing.T) {
 
 func TestEntityRefSlice_CopyTo(t *testing.T) {
 	dest := NewEntityRefSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewEntityRefSlice().CopyTo(dest)
 	assert.Equal(t, NewEntityRefSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	src := generateTestEntityRefSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestEntityRefSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestEntityRefSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewEntityRefSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestEntityRefSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestEntityRefSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestEntityRefSlice()
+	got.RemoveIf(func(el EntityRef) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestEntityRefSliceAll(t *testing.T) {
 	ms := generateTestEntityRefSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestEntityRefSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestEntityRefSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestEntityRefSlice()
+	internal.MarshalJSONStreamEntityRefSlice(internal.EntityRefSlice(src), stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewEntityRefSlice()
+	internal.UnmarshalJSONIterEntityRefSlice(internal.EntityRefSlice(dest), iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestEntityRefSlice_Sort(t *testing.T) {

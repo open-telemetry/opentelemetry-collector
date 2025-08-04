@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -41,16 +43,36 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 }
 
+func TestLocation_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestLocation()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewLocation()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
+}
+
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, int32(0), ms.MappingIndex())
-	ms.SetMappingIndex(int32(1))
+	ms.SetMappingIndex(int32(13))
 	assert.True(t, ms.HasMappingIndex())
-	assert.Equal(t, int32(1), ms.MappingIndex())
+	assert.Equal(t, int32(13), ms.MappingIndex())
 	ms.RemoveMappingIndex()
 	assert.False(t, ms.HasMappingIndex())
 	dest := NewLocation()
-	dest.SetMappingIndex(int32(1))
+	dest.SetMappingIndex(int32(13))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMappingIndex())
 }
@@ -58,10 +80,10 @@ func TestLocation_MappingIndex(t *testing.T) {
 func TestLocation_Address(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, uint64(0), ms.Address())
-	ms.SetAddress(uint64(1))
-	assert.Equal(t, uint64(1), ms.Address())
+	ms.SetAddress(uint64(13))
+	assert.Equal(t, uint64(13), ms.Address())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(1)) })
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(13)) })
 }
 
 func TestLocation_Line(t *testing.T) {
@@ -94,9 +116,9 @@ func generateTestLocation() Location {
 }
 
 func fillTestLocation(tv Location) {
-	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(1)}
-	tv.orig.Address = uint64(1)
-	fillTestLineSlice(newLineSlice(&tv.orig.Line, tv.state))
+	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
+	tv.orig.Address = uint64(13)
+	fillTestLineSlice(tv.Line())
 	tv.orig.IsFolded = true
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 }

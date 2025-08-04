@@ -90,7 +90,6 @@ service:
 	pipelines:
 		profiles:
 			receivers: [otlp]
-			processors: [batch]
 			exporters: [otlp]
 ```
 

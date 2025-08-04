@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestHistogramDataPointSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewHistogramDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewHistogramDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewHistogramDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
+	src := generateTestHistogramDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewHistogramDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestHistogramDataPointSlice()
+	got.RemoveIf(func(el HistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestHistogramDataPointSliceAll(t *testing.T) {
 	ms := generateTestHistogramDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestHistogramDataPointSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestHistogramDataPointSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestHistogramDataPointSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewHistogramDataPointSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestHistogramDataPointSlice_Sort(t *testing.T) {

@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -41,6 +43,26 @@ func TestMetric_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newMetric(&otlpmetrics.Metric{}, &sharedState)) })
 }
 
+func TestMetric_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestMetric()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewMetric()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
+}
+
 func TestMetric_Name(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Name())
@@ -62,10 +84,10 @@ func TestMetric_Description(t *testing.T) {
 func TestMetric_Unit(t *testing.T) {
 	ms := NewMetric()
 	assert.Empty(t, ms.Unit())
-	ms.SetUnit("1")
-	assert.Equal(t, "1", ms.Unit())
+	ms.SetUnit("test_unit")
+	assert.Equal(t, "test_unit", ms.Unit())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("1") })
+	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("test_unit") })
 }
 
 func TestMetric_Metadata(t *testing.T) {
@@ -184,7 +206,7 @@ func generateTestMetric() Metric {
 func fillTestMetric(tv Metric) {
 	tv.orig.Name = "test_name"
 	tv.orig.Description = "test_description"
-	tv.orig.Unit = "1"
+	tv.orig.Unit = "test_unit"
 	internal.FillTestMap(internal.NewMap(&tv.orig.Metadata, tv.state))
 	tv.orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	fillTestSum(newSum(tv.orig.GetSum(), tv.state))

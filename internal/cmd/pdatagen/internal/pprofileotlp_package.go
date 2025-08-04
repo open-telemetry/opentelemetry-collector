@@ -30,18 +30,14 @@ var exportProfilesPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectorprofile.ExportProfilesPartialSuccess",
-	fields: []baseField{
-		&primitiveField{
-			fieldName:  "RejectedProfiles",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "RejectedProfiles",
+			protoType: ProtoTypeInt64,
 		},
-		&primitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+		&PrimitiveField{
+			fieldName: "ErrorMessage",
+			protoType: ProtoTypeString,
 		},
 	},
 }

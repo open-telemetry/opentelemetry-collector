@@ -10,9 +10,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestAttributeTableSlice(t *testing.T) {
@@ -48,16 +50,25 @@ func TestAttributeTableSliceReadOnly(t *testing.T) {
 
 func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewAttributeTableSlice().CopyTo(dest)
 	assert.Equal(t, NewAttributeTableSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestAttributeTableSlice().CopyTo(dest)
+	src := generateTestAttributeTableSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestAttributeTableSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestAttributeTableSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewAttributeTableSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
 
@@ -129,6 +140,14 @@ func TestAttributeTableSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestAttributeTableSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestAttributeTableSlice()
+	got.RemoveIf(func(el Attribute) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestAttributeTableSliceAll(t *testing.T) {
 	ms := generateTestAttributeTableSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -139,6 +158,22 @@ func TestAttributeTableSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestAttributeTableSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestAttributeTableSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewAttributeTableSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func generateTestAttributeTableSlice() AttributeTableSlice {

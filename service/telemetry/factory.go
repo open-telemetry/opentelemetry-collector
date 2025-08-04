@@ -29,11 +29,10 @@ var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry(
 
 // Settings holds configuration for building Telemetry.
 type Settings struct {
-	BuildInfo         component.BuildInfo
-	AsyncErrorChannel chan error
-	ZapOptions        []zap.Option
-	SDK               *config.SDK
-	Resource          *resource.Resource
+	BuildInfo  component.BuildInfo
+	ZapOptions []zap.Option
+	SDK        *config.SDK
+	Resource   *resource.Resource
 }
 
 // Factory is factory interface for telemetry.
@@ -104,6 +103,7 @@ func createDefaultConfig() component.Config {
 				Readers: []config.MetricReader{
 					{
 						Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
+							WithoutScopeInfo:  newPtr(true),
 							WithoutUnits:      newPtr(true),
 							WithoutTypeSuffix: newPtr(true),
 							Host:              &metricsHost,

@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSampleSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestSampleSliceReadOnly(t *testing.T) {
 
 func TestSampleSlice_CopyTo(t *testing.T) {
 	dest := NewSampleSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewSampleSlice().CopyTo(dest)
 	assert.Equal(t, NewSampleSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestSampleSlice().CopyTo(dest)
+	src := generateTestSampleSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestSampleSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestSampleSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewSampleSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestSampleSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSampleSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSampleSlice()
+	got.RemoveIf(func(el Sample) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSampleSliceAll(t *testing.T) {
 	ms := generateTestSampleSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestSampleSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestSampleSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestSampleSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewSampleSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestSampleSlice_Sort(t *testing.T) {

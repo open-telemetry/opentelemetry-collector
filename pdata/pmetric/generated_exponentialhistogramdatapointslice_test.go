@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewExponentialHistogramDataPointSlice().CopyTo(dest)
 	assert.Equal(t, NewExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
+	src := generateTestExponentialHistogramDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewExponentialHistogramDataPointSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExponentialHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExponentialHistogramDataPointSlice()
+	got.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 	ms := generateTestExponentialHistogramDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestExponentialHistogramDataPointSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestExponentialHistogramDataPointSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewExponentialHistogramDataPointSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {

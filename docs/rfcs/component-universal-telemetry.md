@@ -5,7 +5,7 @@
 The collector should be observable and this must naturally include observability of its pipeline components. Pipeline components
 are those components of the collector which directly interact with data, specifically receivers, processors, exporters, and connectors.
 
-It is understood that each _type_ (`filelog`, `batch`, etc) of component may emit telemetry describing its internal workings,
+It is understood that each _type_ (`filelog`, `otlp`, etc) of component may emit telemetry describing its internal workings,
 and that these internally derived signals may vary greatly based on the concerns and maturity of each component. Naturally
 though, there is much we can do to normalize the telemetry emitted from and about pipeline components.
 

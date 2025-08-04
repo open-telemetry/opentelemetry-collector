@@ -10,10 +10,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -40,6 +42,26 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
+}
+
+func TestLogRecord_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestLogRecord()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := NewLogRecord()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
@@ -85,19 +107,19 @@ func TestLogRecord_Flags(t *testing.T) {
 func TestLogRecord_EventName(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Empty(t, ms.EventName())
-	ms.SetEventName("")
-	assert.Empty(t, ms.EventName())
+	ms.SetEventName("test_eventname")
+	assert.Equal(t, "test_eventname", ms.EventName())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("") })
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("test_eventname") })
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Empty(t, ms.SeverityText())
-	ms.SetSeverityText("INFO")
-	assert.Equal(t, "INFO", ms.SeverityText())
+	ms.SetSeverityText("test_severitytext")
+	assert.Equal(t, "test_severitytext", ms.SeverityText())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetSeverityText("INFO") })
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetSeverityText("test_severitytext") })
 }
 
 func TestLogRecord_SeverityNumber(t *testing.T) {
@@ -124,10 +146,10 @@ func TestLogRecord_Attributes(t *testing.T) {
 func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestLogRecord() LogRecord {
@@ -142,10 +164,10 @@ func fillTestLogRecord(tv LogRecord) {
 	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	tv.orig.Flags = 1
-	tv.orig.EventName = ""
-	tv.orig.SeverityText = "INFO"
+	tv.orig.EventName = "test_eventname"
+	tv.orig.SeverityText = "test_severitytext"
 	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
 	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.orig.DroppedAttributesCount = uint32(13)
 }

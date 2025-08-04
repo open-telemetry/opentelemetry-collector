@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // HistogramDataPointSlice logically represents a slice of HistogramDataPoint.
@@ -129,6 +130,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -137,6 +139,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -156,17 +159,53 @@ func (es HistogramDataPointSlice) Sort(less func(a, b HistogramDataPoint) bool) 
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
 }
 
+// marshalJSONStream marshals all properties from the current struct to the destination stream.
+func (ms HistogramDataPointSlice) marshalJSONStream(dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(*ms.orig) > 0 {
+		ms.At(0).marshalJSONStream(dest)
+	}
+	for i := 1; i < len(*ms.orig); i++ {
+		dest.WriteMore()
+		ms.At(i).marshalJSONStream(dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms HistogramDataPointSlice) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		*ms.orig = append(*ms.orig, &otlpmetrics.HistogramDataPoint{})
+		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
+		return true
+	})
+}
+
 func copyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
+	var newDest []*otlpmetrics.HistogramDataPoint
 	if cap(dest) < len(src) {
-		dest = make([]*otlpmetrics.HistogramDataPoint, len(src))
-		data := make([]otlpmetrics.HistogramDataPoint, len(src))
-		for i := range src {
-			dest[i] = &data[i]
+		newDest = make([]*otlpmetrics.HistogramDataPoint, len(src))
+		// Copy old pointers to re-use.
+		copy(newDest, dest)
+		// Add new pointers for missing elements from len(dest) to len(srt).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.HistogramDataPoint{}
+		}
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = nil
+		}
+		// Add new pointers for missing elements.
+		// This can happen when len(dest) < len(src) < cap(dest).
+		for i := len(dest); i < len(src); i++ {
+			newDest[i] = &otlpmetrics.HistogramDataPoint{}
 		}
 	}
-	dest = dest[:len(src)]
 	for i := range src {
-		copyOrigHistogramDataPoint(dest[i], src[i])
+		copyOrigHistogramDataPoint(newDest[i], src[i])
 	}
-	return dest
+	return newDest
 }

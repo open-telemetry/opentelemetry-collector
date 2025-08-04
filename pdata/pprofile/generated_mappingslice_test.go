@@ -11,9 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestMappingSlice(t *testing.T) {
@@ -49,16 +51,25 @@ func TestMappingSliceReadOnly(t *testing.T) {
 
 func TestMappingSlice_CopyTo(t *testing.T) {
 	dest := NewMappingSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewMappingSlice().CopyTo(dest)
 	assert.Equal(t, NewMappingSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestMappingSlice().CopyTo(dest)
+	src := generateTestMappingSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMappingSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestMappingSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestMappingSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewMappingSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestMappingSlice(), dest)
 }
 
@@ -130,6 +141,14 @@ func TestMappingSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestMappingSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestMappingSlice()
+	got.RemoveIf(func(el Mapping) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestMappingSliceAll(t *testing.T) {
 	ms := generateTestMappingSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -140,6 +159,22 @@ func TestMappingSliceAll(t *testing.T) {
 		c++
 	}
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
+}
+
+func TestMappingSlice_MarshalAndUnmarshalJSON(t *testing.T) {
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	src := generateTestMappingSlice()
+	src.marshalJSONStream(stream)
+	require.NoError(t, stream.Error())
+
+	iter := json.BorrowIterator(stream.Buffer())
+	defer json.ReturnIterator(iter)
+	dest := NewMappingSlice()
+	dest.unmarshalJSONIter(iter)
+	require.NoError(t, iter.Error())
+
+	assert.Equal(t, src, dest)
 }
 
 func TestMappingSlice_Sort(t *testing.T) {
