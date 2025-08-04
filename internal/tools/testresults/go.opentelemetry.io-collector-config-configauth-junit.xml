@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="8" failures="0" errors="0" time="0.000100">
+	<testsuite tests="8" failures="0" time="0.000000" name="go.opentelemetry.io/collector/config/configauth" timestamp="2025-07-31T10:51:57-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetServer/obtain_server_authenticator" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetServer/not_a_server_authenticator" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetServer" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetServerFails" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetHTTPClient/obtain_client_authenticator" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetHTTPClient/not_a_client_authenticator" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetHTTPClient" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/config/configauth" name="TestGetGRPCClientFails" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
