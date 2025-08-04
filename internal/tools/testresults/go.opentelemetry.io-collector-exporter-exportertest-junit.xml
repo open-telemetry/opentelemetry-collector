@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="29" failures="0" errors="0" time="2.326190">
+	<testsuite tests="29" failures="0" time="2.326000" name="go.opentelemetry.io/collector/exporter/exportertest" timestamp="2025-07-30T15:41:11-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractLogs/always_succeed" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractLogs/random_non_permanent_error" time="0.120000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractLogs/random_permanent_error" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractLogs/random_error" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractLogs" time="0.430000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractMetrics/always_succeed" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractMetrics/random_non_permanent_error" time="0.120000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractMetrics/random_permanent_error" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractMetrics/random_error" time="0.120000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractMetrics" time="0.440000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractTraces/always_succeed" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractTraces/random_non_permanent_error" time="0.130000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractTraces/random_permanent_error" time="0.100000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractTraces/random_error" time="0.110000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCheckConsumeContractTraces" time="0.440000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestIDFromMetrics" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestIDFromTraces" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestIDFromLogs" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeLogsNonPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeLogsPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeLogsSuccess" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeTracesNonPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeTracesPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeTracesSuccess" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeMetricsNonPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeMetricsPermanent" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestConsumeMetricsSuccess" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestCapabilities" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/exporter/exportertest" name="TestNewNopFactory" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>

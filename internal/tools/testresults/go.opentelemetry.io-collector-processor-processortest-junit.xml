@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="6" failures="0" errors="0" time="1.011160">
+	<testsuite tests="6" failures="0" time="1.010000" name="go.opentelemetry.io/collector/processor/processortest" timestamp="2025-07-30T15:41:51-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestNewNopFactory" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestShutdownVerifier" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestShutdownVerifierLogsOnly" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestShutdownVerifierMetricsOnly" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestShutdownVerifierTracesOnly" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/processor/processortest" name="TestNewUnhealthyProcessorFactory" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
