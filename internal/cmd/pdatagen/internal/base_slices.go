@@ -98,6 +98,7 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 	state := stateAccessor(ss.packageName)
 	return map[string]any{
 		"type":               "sliceOfValues",
+		"isCommon":           usedByOtherDataTypes(ss.packageName),
 		"structName":         ss.getName(),
 		"elementName":        ss.element.getName(),
 		"originName":         ss.element.originFullName,
@@ -117,4 +118,4 @@ func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
-var _ baseStruct = (*sliceOfValues)(nil)
+var _ baseSlice = (*sliceOfValues)(nil)

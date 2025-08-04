@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestExponentialHistogramDataPointBuckets_MoveTo(t *testing.T) {
@@ -71,19 +72,19 @@ func TestExponentialHistogramDataPointBuckets_MarshalAndUnmarshalJSON(t *testing
 func TestExponentialHistogramDataPointBuckets_Offset(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
 	assert.Equal(t, int32(0), ms.Offset())
-	ms.SetOffset(int32(909))
-	assert.Equal(t, int32(909), ms.Offset())
+	ms.SetOffset(int32(13))
+	assert.Equal(t, int32(13), ms.Offset())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(909))
+		newExponentialHistogramDataPointBuckets(&otlpmetrics.ExponentialHistogramDataPoint_Buckets{}, &sharedState).SetOffset(int32(13))
 	})
 }
 
 func TestExponentialHistogramDataPointBuckets_BucketCounts(t *testing.T) {
 	ms := NewExponentialHistogramDataPointBuckets()
-	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
-	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
-	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())
+	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
+	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.BucketCounts()))
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
 }
 
 func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramDataPointBuckets {
@@ -93,6 +94,6 @@ func generateTestExponentialHistogramDataPointBuckets() ExponentialHistogramData
 }
 
 func fillTestExponentialHistogramDataPointBuckets(tv ExponentialHistogramDataPointBuckets) {
-	tv.orig.Offset = int32(909)
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
+	tv.orig.Offset = int32(13)
+	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
 }

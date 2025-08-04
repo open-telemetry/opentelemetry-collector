@@ -51,16 +51,25 @@ func TestFunctionSliceReadOnly(t *testing.T) {
 
 func TestFunctionSlice_CopyTo(t *testing.T) {
 	dest := NewFunctionSlice()
-	// Test CopyTo to empty
+	// Test CopyTo empty
 	NewFunctionSlice().CopyTo(dest)
 	assert.Equal(t, NewFunctionSlice(), dest)
 
 	// Test CopyTo larger slice
-	generateTestFunctionSlice().CopyTo(dest)
+	src := generateTestFunctionSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
 
 	// Test CopyTo same size slice
-	generateTestFunctionSlice().CopyTo(dest)
+	src.CopyTo(dest)
+	assert.Equal(t, generateTestFunctionSlice(), dest)
+
+	// Test CopyTo smaller size slice
+	NewFunctionSlice().CopyTo(dest)
+	assert.Equal(t, 0, dest.Len())
+
+	// Test CopyTo larger slice with enough capacity
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
 }
 
@@ -130,6 +139,14 @@ func TestFunctionSlice_RemoveIf(t *testing.T) {
 		return pos%3 == 0
 	})
 	assert.Equal(t, 5, filtered.Len())
+}
+
+func TestFunctionSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestFunctionSlice()
+	got.RemoveIf(func(el Function) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
 }
 
 func TestFunctionSliceAll(t *testing.T) {

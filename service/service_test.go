@@ -531,6 +531,30 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	assert.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
+func TestServiceTelemetryShutdownError(t *testing.T) {
+	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Level = zapcore.DebugLevel
+	cfg.Telemetry.Logs.Processors = []config.LogRecordProcessor{{
+		Batch: &config.BatchLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Protocol: ptr("http/protobuf"),
+					Endpoint: ptr("http://testing.invalid"),
+				},
+			},
+		},
+	}}
+
+	// Create and start a service
+	srv, err := New(context.Background(), newNopSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Shutdown the service
+	err = srv.Shutdown(context.Background())
+	assert.ErrorContains(t, err, `failed to shutdown telemetry`)
+}
+
 func TestExtensionNotificationFailure(t *testing.T) {
 	set := newNopSettings()
 	cfg := newNopConfig()

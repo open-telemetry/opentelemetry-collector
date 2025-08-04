@@ -82,11 +82,11 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectorprofile.ExportProfilesPartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
@@ -98,5 +98,5 @@ func generateTestExportPartialSuccess() ExportPartialSuccess {
 
 func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
 	tv.orig.RejectedProfiles = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	tv.orig.ErrorMessage = "test_errormessage"
 }

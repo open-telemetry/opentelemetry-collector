@@ -110,10 +110,10 @@ func TestProfile_PeriodType(t *testing.T) {
 func TestProfile_Period(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, int64(0), ms.Period())
-	ms.SetPeriod(int64(1))
-	assert.Equal(t, int64(1), ms.Period())
+	ms.SetPeriod(int64(13))
+	assert.Equal(t, int64(13), ms.Period())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetPeriod(int64(1)) })
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetPeriod(int64(13)) })
 }
 
 func TestProfile_CommentStrindices(t *testing.T) {
@@ -126,10 +126,10 @@ func TestProfile_CommentStrindices(t *testing.T) {
 func TestProfile_DefaultSampleTypeIndex(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, int32(0), ms.DefaultSampleTypeIndex())
-	ms.SetDefaultSampleTypeIndex(int32(1))
-	assert.Equal(t, int32(1), ms.DefaultSampleTypeIndex())
+	ms.SetDefaultSampleTypeIndex(int32(13))
+	assert.Equal(t, int32(13), ms.DefaultSampleTypeIndex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDefaultSampleTypeIndex(int32(1)) })
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDefaultSampleTypeIndex(int32(13)) })
 }
 
 func TestProfile_ProfileID(t *testing.T) {
@@ -143,19 +143,21 @@ func TestProfile_ProfileID(t *testing.T) {
 func TestProfile_DroppedAttributesCount(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func TestProfile_OriginalPayloadFormat(t *testing.T) {
 	ms := NewProfile()
 	assert.Empty(t, ms.OriginalPayloadFormat())
-	ms.SetOriginalPayloadFormat("original payload")
-	assert.Equal(t, "original payload", ms.OriginalPayloadFormat())
+	ms.SetOriginalPayloadFormat("test_originalpayloadformat")
+	assert.Equal(t, "test_originalpayloadformat", ms.OriginalPayloadFormat())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newProfile(&otlpprofiles.Profile{}, &sharedState).SetOriginalPayloadFormat("original payload") })
+	assert.Panics(t, func() {
+		newProfile(&otlpprofiles.Profile{}, &sharedState).SetOriginalPayloadFormat("test_originalpayloadformat")
+	})
 }
 
 func TestProfile_OriginalPayload(t *testing.T) {
@@ -179,18 +181,18 @@ func generateTestProfile() Profile {
 }
 
 func fillTestProfile(tv Profile) {
-	fillTestValueTypeSlice(newValueTypeSlice(&tv.orig.SampleType, tv.state))
-	fillTestSampleSlice(newSampleSlice(&tv.orig.Sample, tv.state))
+	fillTestValueTypeSlice(tv.SampleType())
+	fillTestSampleSlice(tv.Sample())
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.LocationIndices, tv.state))
 	tv.orig.TimeNanos = 1234567890
 	tv.orig.DurationNanos = 1234567890
-	fillTestValueType(newValueType(&tv.orig.PeriodType, tv.state))
-	tv.orig.Period = int64(1)
+	fillTestValueType(tv.PeriodType())
+	tv.orig.Period = int64(13)
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))
-	tv.orig.DefaultSampleTypeIndex = int32(1)
+	tv.orig.DefaultSampleTypeIndex = int32(13)
 	tv.orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.DroppedAttributesCount = uint32(17)
-	tv.orig.OriginalPayloadFormat = "original payload"
+	tv.orig.DroppedAttributesCount = uint32(13)
+	tv.orig.OriginalPayloadFormat = "test_originalpayloadformat"
 	internal.FillTestByteSlice(internal.NewByteSlice(&tv.orig.OriginalPayload, tv.state))
 	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
 }
