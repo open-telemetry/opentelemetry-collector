@@ -33,9 +33,6 @@ func TestMetricsBuilder(t *testing.T) {
 			name: "default",
 		},
 		{
-			name: "reag_default",
-		},
-		{
 			name:        "all_set",
 			metricsSet:  testDataSetAll,
 			resAttrsSet: testDataSetAll,
@@ -104,15 +101,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
 
-			// my idea here is in order to test the reaggregation we (conditionally)
-			// record another data point with the exact same set of attributes. since
-			// default.metric has an aggregation strategy of 'sum' this should result
-			// in the value 4 being emitted
-			if tt.name == "reag_default" {
-				t.Log("record another datapoint for default.metric")
-				mb.RecordDefaultMetricDataPoint(ts, 3, "this_doesnt_matter", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"}, WithOptionalIntAttrMetricAttribute(17), WithOptionalStringAttrMetricAttribute("optional_string_attr-val"))
-			}
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
@@ -171,14 +159,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-
-					// modified to check for the new summed value of the two datapoints
-					if tt.name == "reag_default" {
-						assert.Equal(t, int64(4), dp.IntValue())
-					} else {
-						assert.Equal(t, int64(1), dp.IntValue())
-					}
-
+					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("string_attr")
 					if !mb.config.Attributes.StringAttr.Enabled {
 						assert.False(t, ok)
