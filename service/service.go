@@ -389,7 +389,7 @@ func configureViews(level configtelemetry.Level) []config.View {
 		views = append(views,
 			dropViewOption(&config.ViewSelector{
 				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
-				InstrumentName: ptr("otelcol_processor_duration"),
+				InstrumentName: ptr("otelcol_processor_internal_duration"),
 			}),
 		)
 	}

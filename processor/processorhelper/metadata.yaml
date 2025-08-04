@@ -29,7 +29,7 @@ telemetry:
         value_type: int
         monotonic: true
 
-    processor_duration:
+    processor_internal_duration:
       enabled: true
       stability:
         level: alpha
