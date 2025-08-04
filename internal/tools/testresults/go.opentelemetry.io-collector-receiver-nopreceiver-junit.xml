@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="11" failures="0" errors="0" time="1.011972">
+	<testsuite tests="10" failures="0" time="1.012000" name="go.opentelemetry.io/collector/receiver/nopreceiver" timestamp="2025-07-30T15:41:54-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentFactoryType" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentConfigStruct" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/logs-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/logs-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/metrics-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/metrics-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/traces-shutdown" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle/traces-lifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestComponentLifecycle" time="0.000000"></testcase>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver" name="TestNewNopFactory" time="0.000000"></testcase>
+	</testsuite>
+	<testsuite tests="1" failures="0" time="1.010000" name="go.opentelemetry.io/collector/receiver/nopreceiver/internal/metadata" timestamp="2025-07-30T15:41:54-05:00">
+		<properties>
+			<property name="go.version" value="go1.24.5 linux/amd64"></property>
+		</properties>
+		<testcase classname="go.opentelemetry.io/collector/receiver/nopreceiver/internal/metadata" name="TestLogsBuilderAppendLogRecord" time="0.000000"></testcase>
+	</testsuite>
+</testsuites>
