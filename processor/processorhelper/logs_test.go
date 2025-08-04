@@ -183,7 +183,7 @@ func TestLogs_RecordIn_ErrorOut(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp())
 }
 
-func TestLogs_ProcessDuration(t *testing.T) {
+func TestLogs_ProcessInternalDuration(t *testing.T) {
 	mockAggregate := func(_ context.Context, _ plog.Logs) (plog.Logs, error) {
 		ld := plog.NewLogs()
 		ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()

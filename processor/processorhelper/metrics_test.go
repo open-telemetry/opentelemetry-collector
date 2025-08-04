@@ -181,7 +181,7 @@ func TestMetrics_RecordIn_ErrorOut(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp())
 }
 
-func TestMetrics_ProcesDuration(t *testing.T) {
+func TestMetrics_ProcessInternalDuration(t *testing.T) {
 	mockAggregate := func(_ context.Context, _ pmetric.Metrics) (pmetric.Metrics, error) {
 		md := pmetric.NewMetrics()
 		md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty()

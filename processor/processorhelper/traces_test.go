@@ -185,7 +185,7 @@ func TestTraces_RecordIn_ErrorOut(t *testing.T) {
 		}, metricdatatest.IgnoreTimestamp())
 }
 
-func TestTraces_ProcessDuration(t *testing.T) {
+func TestTraces_ProcessInternalDuration(t *testing.T) {
 	mockAggregate := func(_ context.Context, _ ptrace.Traces) (ptrace.Traces, error) {
 		td := ptrace.NewTraces()
 		td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
