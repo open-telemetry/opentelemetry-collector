@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="1" failures="0" errors="0" time="0.000065">
-	<testsuite tests="1" failures="0" time="0.000000" name="go.opentelemetry.io/collector/config/confighttp/xconfighttp" timestamp="2025-07-31T10:51:57-05:00">
-		<properties>
-			<property name="go.version" value="go1.24.5 linux/amd64"></property>
-		</properties>
-		<testcase classname="go.opentelemetry.io/collector/config/confighttp/xconfighttp" name="TestServerWithOtelHTTPOptions" time="0.000000"></testcase>
-	</testsuite>
-</testsuites>
