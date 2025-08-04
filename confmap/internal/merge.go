@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package confmap // import "go.opentelemetry.io/collector/confmap"
+package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
 	"reflect"
