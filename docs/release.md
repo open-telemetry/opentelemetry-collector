@@ -191,7 +191,7 @@ Once a module is ready to be released under the `1.x` version scheme, file a PR 
 | 2025-11-17 | v0.139.0 | [@jade-guiton-dd][10] | [@andrzej-stencel][4]   | [@dehaansa][16]            |
 | 2025-12-01 | v0.140.0 | [@dmathieu][12]       | [@braydonk][13]         | [@MovieStoreGuy][17]       |
 | 2025-12-14 | v0.141.0 | [@mx-psi][14]         | [@mx-psi][14]           | [@mx-psi][14]              |
-| 2025-12-28 | v0.132.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
+| 2025-12-28 | v0.142.0 | [@jmacd][1]           | [@ArthurSens][11]       | [@mowies][15]              |
 
 
 [1]: https://github.com/jmacd
