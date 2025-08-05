@@ -19,7 +19,7 @@ subtext: |
   The feature gate is now deprecated since metric views can be configured.
   The feature gate will be removed in v0.134.0.
 
-  The metrics attributes removed by this feature gate are no longer emitted
+  The metric attributes removed by this feature gate are no longer emitted
   by the Collector by default, but if needed, you can achieve the same
   functionality by configuring the following metric views:
 
