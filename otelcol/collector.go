@@ -260,11 +260,11 @@ func (col *Collector) loadConfiguration(ctx context.Context) (*Config, Factories
 
 func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	logger := col.service.Logger()
-	logger.Info("Reloading collector configuration...")
+	logger.Debug("Reloading collector configuration...")
 
 	cfg, factories, err := col.loadConfiguration(ctx)
 	if err != nil {
-		logger.Warn("Configuration reload failed, keeping existing config", zap.Error(err))
+		logger.Error("Configuration reload failed — continuing to run with the previous configuration", zap.Error(err))
 		return nil
 	}
 
