@@ -17,7 +17,6 @@ import (
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	semconv118 "go.opentelemetry.io/otel/semconv/v1.18.0"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	nooptrace "go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -130,10 +129,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	res := resource.New(set.BuildInfo, cfg.Telemetry.Resource)
 	pcommonRes := pdataFromSdk(res)
 
-	sch := semconv.SchemaURL
-
 	mpConfig := &cfg.Telemetry.Metrics.MeterProvider
-
 	if mpConfig.Views != nil {
 		if disableHighCardinalityMetricsFeatureGate.IsEnabled() {
 			return nil, errors.New("telemetry.disableHighCardinalityMetrics gate is incompatible with service::telemetry::metrics::views")
@@ -142,30 +138,11 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
 	}
 
-	if cfg.Telemetry.Metrics.Level == configtelemetry.LevelNone {
-		mpConfig.Readers = []config.MetricReader{}
-	}
-
-	sdk, err := config.NewSDK(
-		config.WithContext(ctx),
-		config.WithOpenTelemetryConfiguration(
-			config.OpenTelemetryConfiguration{
-				LoggerProvider: &config.LoggerProvider{
-					Processors: cfg.Telemetry.Logs.Processors,
-				},
-				MeterProvider:  mpConfig,
-				TracerProvider: &cfg.Telemetry.Traces.TracerProvider,
-				Resource: &config.Resource{
-					SchemaUrl:  &sch,
-					Attributes: attributes(res, cfg.Telemetry),
-				},
-			},
-		),
-	)
+	sdk, err := telemetry.NewSDK(ctx, &cfg.Telemetry, res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
-	srv.sdk = &sdk
+	srv.sdk = sdk
 	defer func() {
 		if err != nil {
 			err = multierr.Append(err, sdk.Shutdown(ctx))
@@ -176,7 +153,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
-		SDK:        &sdk,
+		SDK:        sdk,
 		Resource:   res,
 	}
 
