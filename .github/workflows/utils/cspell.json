@@ -502,6 +502,8 @@
       "zpagesextension",
       "zstd"
     ],
+    "enableGlobDot": true,
+    "files": ["**/*.{md,yaml,yml}"],
     "globRoot": "../../..",
     "ignorePaths": [
       ".golangci.yml",
