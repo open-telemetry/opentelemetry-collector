@@ -19,7 +19,5 @@ jobs:
         uses: streetsidesoftware/cspell-action@dcd03dc3e8a59ec2e360d0c62db517baa0b4bb6d # v7.2.0
         with:
           incremental_files_only: false
-          files: |
-            **/*.{md,yaml,yml}
+          use_cspell_files: true
           config: '.github/workflows/utils/cspell.json'
-          check_dot_files: true
