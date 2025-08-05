@@ -17,7 +17,34 @@ issues: [13537]
 # Use pipe (|) for multiline entries.
 subtext: |
   The feature gate is now deprecated since metric views can be configured.
-  The gate will be removed in v0.134.0.
+  The feature gate will be removed in v0.134.0.
+
+  The metrics attributes removed by this feature gate are no longer emitted
+  by the Collector by default, but if needed, you can achieve the same
+  functionality by configuring the following metric views:
+
+  ```yaml
+  service:
+    telemetry:
+      metrics:
+        level: detailed
+        views:
+          - selector:
+              meter_name: "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+            stream:
+              attribute_keys:
+                excluded: ["net.sock.peer.addr", "net.sock.peer.port", "net.sock.peer.name"]
+          - selector:
+              meter_name: "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+            stream:
+              attribute_keys:
+                excluded: ["net.host.name", "net.host.port"]
+  ```
+
+  Note that this requires setting `service::telemetry::metrics::level: detailed`.
+  If you have a strong use case for using views in combination with a different
+  level, please show your interest in
+  https://github.com/open-telemetry/opentelemetry-collector/issues/10769.
 
 # Optional: The change log or logs in which this entry should be included.
 # e.g. '[user]' or '[user, api]'
