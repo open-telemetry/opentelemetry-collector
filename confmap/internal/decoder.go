@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-viper/mapstructure/v2"
+
 	"go.opentelemetry.io/collector/confmap/internal/third_party/composehook"
 )
 

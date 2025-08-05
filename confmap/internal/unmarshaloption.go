@@ -22,7 +22,7 @@ func (fn UnmarshalOptionFunc) apply(set *UnmarshalOptions) {
 	fn(set)
 }
 
-// Apply Option simply calls (UnmarshalOption).apply. This function allows us
+// ApplyUnmarshalOption simply calls (UnmarshalOption).apply. This function allows us
 // to keep the `apply“ function private and therefore keep `confmap.UnmarshalOption`
 // without any exported methods.
 func ApplyUnmarshalOption(uo UnmarshalOption, set *UnmarshalOptions) {

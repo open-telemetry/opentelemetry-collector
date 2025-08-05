@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/confmap/internal"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"go.opentelemetry.io/collector/confmap/internal"
 )
 
 // follows drive-letter specification:

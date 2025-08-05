@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/confmap/internal"
 
 import (
 	"github.com/go-viper/mapstructure/v2"
+
 	encoder "go.opentelemetry.io/collector/confmap/internal/mapstructure"
 )
 
