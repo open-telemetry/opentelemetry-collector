@@ -124,7 +124,7 @@ func (pm *processMetrics) updateSysMem(_ context.Context, obs metric.Int64Observ
 }
 
 func (pm *processMetrics) updateCPUSeconds(_ context.Context, obs metric.Float64Observer) error {
-	times, err := pm.proc.TimesWithContext(pm.context)
+	times, err := pm.proc.TimesWithContext(pm.context) //nolint:contextcheck
 	if err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (pm *processMetrics) updateCPUSeconds(_ context.Context, obs metric.Float64
 }
 
 func (pm *processMetrics) updateRSSMemory(_ context.Context, obs metric.Int64Observer) error {
-	mem, err := pm.proc.MemoryInfoWithContext(pm.context)
+	mem, err := pm.proc.MemoryInfoWithContext(pm.context) //nolint:contextcheck
 	if err != nil {
 		return err
 	}

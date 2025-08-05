@@ -274,6 +274,7 @@
       "jmacd",
       "jpkrohling",
       "jsoniter",
+      "jsonpb",
       "kafkaexporter",
       "kafkaexporter's",
       "kafkareceiver",
@@ -369,6 +370,7 @@
       "pprof",
       "pprofextension",
       "pprofile",
+      "pprofiles",
       "pprofileotlp",
       "preconfigured",
       "priya",
@@ -445,6 +447,7 @@
       "testdata",
       "testfunc",
       "testonly",
+      "testprocessor",
       "testprovider",
       "testresults",
       "testutil",
@@ -499,6 +502,7 @@
       "zpagesextension",
       "zstd"
     ],
+    "globRoot": "../../..",
     "ignorePaths": [
       ".golangci.yml",
       ".github/**/*"
