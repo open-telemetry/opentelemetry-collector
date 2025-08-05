@@ -183,6 +183,7 @@ The event will be renamed soon.
 | string.resource.attr_disable_warning | Resource attribute with any string value. | Any Str | true |
 | string.resource.attr_remove_warning | Resource attribute with any string value. | Any Str | false |
 | string.resource.attr_to_be_removed | Resource attribute with any string value. | Any Str | true |
+| string.template.resource.attr | Resource attribute with a template string values. | Any Str | true |
 
 ## Internal Telemetry
 

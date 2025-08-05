@@ -463,6 +463,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings connector.Settings, op
 	if mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["string.resource.attr_to_be_removed"] = filter.CreateFilter(mbc.ResourceAttributes.StringResourceAttrToBeRemoved.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.StringTemplateResourceAttr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["string.template.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringTemplateResourceAttr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.StringTemplateResourceAttr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["string.template.resource.attr"] = filter.CreateFilter(mbc.ResourceAttributes.StringTemplateResourceAttr.MetricsExclude)
+	}
 
 	for _, op := range options {
 		op.apply(mb)

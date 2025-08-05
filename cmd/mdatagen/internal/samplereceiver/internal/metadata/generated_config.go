@@ -138,6 +138,7 @@ type ResourceAttributesConfig struct {
 	StringResourceAttrDisableWarning ResourceAttributeConfig `mapstructure:"string.resource.attr_disable_warning"`
 	StringResourceAttrRemoveWarning  ResourceAttributeConfig `mapstructure:"string.resource.attr_remove_warning"`
 	StringResourceAttrToBeRemoved    ResourceAttributeConfig `mapstructure:"string.resource.attr_to_be_removed"`
+	StringTemplateResourceAttr       ResourceAttributeConfig `mapstructure:"string.template.resource.attr"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -164,6 +165,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: false,
 		},
 		StringResourceAttrToBeRemoved: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		StringTemplateResourceAttr: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

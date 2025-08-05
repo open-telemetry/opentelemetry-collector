@@ -85,6 +85,15 @@ func TestLoadMetadata(t *testing.T) {
 						},
 						FullName: "string.enum.resource.attr",
 					},
+					"string.template.resource.attr": {
+						Description: "Resource attribute with a template string values.",
+						Enabled:     true,
+						IsTemplate:  true,
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeStr,
+						},
+						FullName: "string.template.resource.attr",
+					},
 					"optional.resource.attr": {
 						Description: "Explicitly disabled ResourceAttribute.",
 						Enabled:     false,
@@ -455,6 +464,11 @@ func TestLoadMetadata(t *testing.T) {
 			name:    "testdata/invalid_type_rattr.yaml",
 			want:    Metadata{},
 			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"invalidtype\"",
+		},
+		{
+			name:    "testdata/invalid_type_template.yaml",
+			want:    Metadata{},
+			wantErr: "decoding failed due to the following error(s):\n\n'resource_attributes[string.resource.attr].type' invalid type: \"enum\"",
 		},
 		{
 			name:    "testdata/no_enabled.yaml",

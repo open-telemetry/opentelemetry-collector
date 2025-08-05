@@ -124,6 +124,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetStringResourceAttrDisableWarning("string.resource.attr_disable_warning-val")
 			rb.SetStringResourceAttrRemoveWarning("string.resource.attr_remove_warning-val")
 			rb.SetStringResourceAttrToBeRemoved("string.resource.attr_to_be_removed-val")
+			rb.SetStringTemplateResourceAttr("key", "val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

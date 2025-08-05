@@ -29,6 +29,12 @@ resource_attributes:
     enum: [one, two]
     enabled: true
 
+  string.template.resource.attr:
+    description: Resource attribute with a template string values.
+    type: string
+    is_template: true
+    enabled: true
+
   optional.resource.attr:
     description: Explicitly disabled ResourceAttribute.
     type: string
