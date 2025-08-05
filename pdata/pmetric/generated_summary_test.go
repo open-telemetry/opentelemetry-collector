@@ -76,5 +76,5 @@ func generateTestSummary() Summary {
 }
 
 func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints, tv.state))
+	fillTestSummaryDataPointSlice(tv.DataPoints())
 }

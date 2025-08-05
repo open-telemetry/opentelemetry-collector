@@ -72,12 +72,10 @@ func TestScopeProfiles_Scope(t *testing.T) {
 func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
@@ -95,6 +93,6 @@ func generateTestScopeProfiles() ScopeProfiles {
 
 func fillTestScopeProfiles(tv ScopeProfiles) {
 	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfilesSlice(newProfilesSlice(&tv.orig.Profiles, tv.state))
+	tv.orig.SchemaUrl = "test_schemaurl"
+	fillTestProfilesSlice(tv.Profiles())
 }

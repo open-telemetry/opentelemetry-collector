@@ -47,7 +47,7 @@ func FillTestInstrumentationScope(tv InstrumentationScope) {
 	tv.orig.Name = "test_name"
 	tv.orig.Version = "test_version"
 	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.orig.DroppedAttributesCount = uint32(13)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
