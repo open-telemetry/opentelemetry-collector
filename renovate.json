@@ -79,7 +79,7 @@
       "matchSourceUrls": [
         "https://go.opentelemetry.io/otel{/,}**"
       ],
-      "ignoreVersions": ["!/v0.59.*/"]
+      "allowedVersions": "!/v0.59.*/"
     },
     {
       "matchManagers": [
