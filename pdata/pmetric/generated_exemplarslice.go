@@ -147,7 +147,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigExemplarSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -170,22 +170,4 @@ func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
-	var newDest []otlpmetrics.Exemplar
-	if cap(dest) < len(src) {
-		newDest = make([]otlpmetrics.Exemplar, len(src))
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpmetrics.Exemplar{}
-		}
-	}
-	for i := range src {
-		copyOrigExemplar(&newDest[i], &src[i])
-	}
-	return newDest
 }

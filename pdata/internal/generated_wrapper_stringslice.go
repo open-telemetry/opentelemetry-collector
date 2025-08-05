@@ -27,11 +27,6 @@ func NewStringSlice(orig *[]string, state *State) StringSlice {
 	return StringSlice{orig: orig, state: state}
 }
 
-func CopyOrigStringSlice(dst, src []string) []string {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
 func FillTestStringSlice(ms StringSlice) {
 	*ms.orig = []string{"a", "b", "c"}
 }
@@ -63,4 +58,8 @@ func UnmarshalJSONIterStringSlice(ms StringSlice, iter *json.Iterator) {
 		*ms.orig = append(*ms.orig, iter.ReadString())
 		return true
 	})
+}
+
+func CopyOrigStringSlice(dst, src []string) []string {
+	return append(dst[:0], src...)
 }

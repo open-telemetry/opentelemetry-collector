@@ -97,7 +97,7 @@ func (ms Function) SetStartLine(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
-	copyOrigFunction(dest.orig, ms.orig)
+	internal.CopyOrigFunction(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -139,11 +139,4 @@ func (ms Function) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigFunction(dest, src *otlpprofiles.Function) {
-	dest.NameStrindex = src.NameStrindex
-	dest.SystemNameStrindex = src.SystemNameStrindex
-	dest.FilenameStrindex = src.FilenameStrindex
-	dest.StartLine = src.StartLine
 }

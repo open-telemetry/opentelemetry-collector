@@ -147,7 +147,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeTableSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigKeyValueSlice(*dest.orig, *es.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -170,22 +170,4 @@ func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
-	var newDest []v1.KeyValue
-	if cap(dest) < len(src) {
-		newDest = make([]v1.KeyValue, len(src))
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = v1.KeyValue{}
-		}
-	}
-	for i := range src {
-		copyOrigAttribute(&newDest[i], &src[i])
-	}
-	return newDest
 }

@@ -164,7 +164,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.state.AssertMutable()
-	copyOrigLogRecord(dest.orig, ms.orig)
+	internal.CopyOrigLogRecord(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -246,18 +246,4 @@ func (ms LogRecord) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigLogRecord(dest, src *otlplogs.LogRecord) {
-	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
-	dest.Flags = src.Flags
-	dest.EventName = src.EventName
-	dest.SeverityText = src.SeverityText
-	dest.SeverityNumber = src.SeverityNumber
-	internal.CopyOrigValue(&dest.Body, &src.Body)
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }

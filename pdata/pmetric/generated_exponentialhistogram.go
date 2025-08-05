@@ -70,7 +70,7 @@ func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
-	copyOrigExponentialHistogram(dest.orig, ms.orig)
+	internal.CopyOrigExponentialHistogram(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -100,9 +100,4 @@ func (ms ExponentialHistogram) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.DataPoints = copyOrigExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }

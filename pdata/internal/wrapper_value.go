@@ -27,7 +27,7 @@ func NewValue(orig *otlpcommon.AnyValue, state *State) Value {
 	return Value{orig: orig, state: state}
 }
 
-func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
+func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 	switch sv := src.Value.(type) {
 	case *otlpcommon.AnyValue_KvlistValue:
 		dv, ok := dest.Value.(*otlpcommon.AnyValue_KvlistValue)
@@ -50,7 +50,7 @@ func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
 			dv.ArrayValue = nil
 			return
 		}
-		dv.ArrayValue.Values = CopyOrigSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
+		dv.ArrayValue.Values = CopyOrigAnyValueSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
 	case *otlpcommon.AnyValue_BytesValue:
 		bv, ok := dest.Value.(*otlpcommon.AnyValue_BytesValue)
 		if !ok {

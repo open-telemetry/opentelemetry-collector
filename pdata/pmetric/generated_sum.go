@@ -80,7 +80,7 @@ func (ms Sum) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	copyOrigSum(dest.orig, ms.orig)
+	internal.CopyOrigSum(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -116,10 +116,4 @@ func (ms Sum) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigSum(dest, src *otlpmetrics.Sum) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.IsMonotonic = src.IsMonotonic
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }

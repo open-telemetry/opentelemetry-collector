@@ -93,7 +93,7 @@ func (ms SpanEvent) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanEvent) CopyTo(dest SpanEvent) {
 	dest.state.AssertMutable()
-	copyOrigSpanEvent(dest.orig, ms.orig)
+	internal.CopyOrigSpan_Event(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -135,11 +135,4 @@ func (ms SpanEvent) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigSpanEvent(dest, src *otlptrace.Span_Event) {
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Name = src.Name
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }

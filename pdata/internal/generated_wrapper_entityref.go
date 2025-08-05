@@ -28,13 +28,6 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
-	dest.SchemaUrl = src.SchemaUrl
-	dest.Type = src.Type
-	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
-	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
-}
-
 func GenerateTestEntityRef() EntityRef {
 	orig := otlpcommon.EntityRef{}
 	state := StateMutable
@@ -89,4 +82,11 @@ func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+	dest.SchemaUrl = src.SchemaUrl
+	dest.Type = src.Type
+	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
+	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
 }

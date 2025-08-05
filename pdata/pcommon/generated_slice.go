@@ -143,7 +143,7 @@ func (es Slice) RemoveIf(f func(Value) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es Slice) CopyTo(dest Slice) {
 	dest.getState().AssertMutable()
-	*dest.getOrig() = internal.CopyOrigSlice(*dest.getOrig(), *es.getOrig())
+	*dest.getOrig() = internal.CopyOrigAnyValueSlice(*dest.getOrig(), *es.getOrig())
 }
 
 func (ms Slice) getOrig() *[]otlpcommon.AnyValue {
