@@ -118,4 +118,4 @@ func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
-var _ baseStruct = (*sliceOfValues)(nil)
+var _ baseSlice = (*sliceOfValues)(nil)

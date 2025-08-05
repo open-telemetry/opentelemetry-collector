@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 )
 
-var noopTracerProvider = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
+var _ = featuregate.GlobalRegistry().MustRegister("service.noopTracerProvider",
 	featuregate.StageDeprecated,
 	featuregate.WithRegisterFromVersion("v0.107.0"),
 	featuregate.WithRegisterToVersion("v0.109.0"),
@@ -52,7 +52,7 @@ func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) 
 
 // newTracerProvider creates a new TracerProvider from Config.
 func newTracerProvider(set Settings, cfg Config) (trace.TracerProvider, error) {
-	if noopTracerProvider.IsEnabled() || cfg.Traces.Level == configtelemetry.LevelNone {
+	if cfg.Traces.Level == configtelemetry.LevelNone {
 		return &noopNoContextTracerProvider{}, nil
 	}
 

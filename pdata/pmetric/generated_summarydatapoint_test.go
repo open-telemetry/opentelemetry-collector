@@ -89,19 +89,19 @@ func TestSummaryDataPoint_Timestamp(t *testing.T) {
 func TestSummaryDataPoint_Count(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, uint64(0), ms.Count())
-	ms.SetCount(uint64(17))
-	assert.Equal(t, uint64(17), ms.Count())
+	ms.SetCount(uint64(13))
+	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetCount(uint64(17)) })
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetCount(uint64(13)) })
 }
 
 func TestSummaryDataPoint_Sum(t *testing.T) {
 	ms := NewSummaryDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Sum(), 0.01)
-	ms.SetSum(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetSum(float64(17.13)) })
+	assert.Panics(t, func() { newSummaryDataPoint(&otlpmetrics.SummaryDataPoint{}, &sharedState).SetSum(float64(3.1415926)) })
 }
 
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
@@ -129,8 +129,8 @@ func fillTestSummaryDataPoint(tv SummaryDataPoint) {
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
 	tv.orig.StartTimeUnixNano = 1234567890
 	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.Sum = float64(17.13)
-	fillTestSummaryDataPointValueAtQuantileSlice(newSummaryDataPointValueAtQuantileSlice(&tv.orig.QuantileValues, tv.state))
+	tv.orig.Count = uint64(13)
+	tv.orig.Sum = float64(3.1415926)
+	fillTestSummaryDataPointValueAtQuantileSlice(tv.QuantileValues())
 	tv.orig.Flags = 1
 }
