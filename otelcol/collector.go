@@ -269,12 +269,12 @@ func (col *Collector) reloadConfiguration(ctx context.Context) error {
 	}
 
 	if err := col.service.Shutdown(ctx); err != nil {
-		logger.Warn("Error shutting down existing service", zap.Error(err))
+		logger.Error("Error shutting down existing service", zap.Error(err))
 		return err
 	}
 
 	if err := col.setupConfigurationComponents(ctx, cfg, factories); err != nil {
-		logger.Warn("Failed to start service after config reload", zap.Error(err))
+		logger.Error("Failed to start service after config reload", zap.Error(err))
 		return err
 	}
 
