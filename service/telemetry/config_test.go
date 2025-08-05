@@ -6,15 +6,18 @@ package telemetry
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -28,58 +31,88 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 }
 
-func TestUnmarshalEmptyMetricReaders(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_empty_readers.yaml"))
-	require.NoError(t, err)
-	cfg := NewFactory().CreateDefaultConfig()
-	require.NoError(t, cm.Unmarshal(&cfg))
-	require.Empty(t, cfg.(*Config).Metrics.Readers)
-}
+func TestConfig(t *testing.T) {
+	t.Parallel()
 
-func TestConfigValidate(t *testing.T) {
-	tests := []struct {
-		name    string
-		cfg     *Config
-		success bool
-	}{
-		{
-			name: "basic metric telemetry",
-			cfg: &Config{
-				Metrics: MetricsConfig{
-					Level: configtelemetry.LevelBasic,
-					MeterProvider: config.MeterProvider{
-						Readers: []config.MetricReader{
-							{
-								Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: &config.Prometheus{
-									Host: ptr("127.0.0.1"),
-									Port: ptr(3333),
-								}}},
-							},
+	type testcase struct {
+		setup        func(*testing.T) // optional testcase setup
+		config       *Config
+		unmarshalErr string
+		validateErr  string
+	}
+
+	tests := map[string]testcase{
+		"config_empty.yaml": {
+			config: createDefaultConfig().(*Config),
+		},
+		"config_logs.yaml": {
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Logs.Development = true
+				cfg.Logs.DisableCaller = true
+				cfg.Logs.DisableStacktrace = true
+				cfg.Logs.InitialFields = map[string]any{"fieldKey": "fieldValue"}
+				cfg.Logs.Level = zap.InfoLevel
+				cfg.Logs.Sampling = &LogsSamplingConfig{
+					Enabled:    false,
+					Tick:       1 * time.Second,
+					Initial:    234,
+					Thereafter: 567,
+				}
+				cfg.Logs.Processors = []config.LogRecordProcessor{{
+					Batch: &config.BatchLogRecordProcessor{
+						Exporter: config.LogRecordExporter{
+							Console: config.Console{},
 						},
 					},
-				},
-			},
-			success: true,
+				}}
+				return cfg
+			}(),
 		},
-		{
-			name: "invalid metric telemetry",
-			cfg: &Config{
-				Metrics: MetricsConfig{
-					Level: configtelemetry.LevelBasic,
-				},
-			},
-			success: false,
+		"config_metrics_empty_readers.yaml": {
+			config: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.Metrics.Level = configtelemetry.LevelNone
+				cfg.Metrics.Readers = []config.MetricReader{}
+				return cfg
+			}(),
+		},
+		"config_invalid_unknown_field.yaml": {
+			unmarshalErr: `invalid keys: unknown`,
+		},
+		"config_invalid_metrics_empty_readers.yaml": {
+			validateErr: `collector telemetry metrics reader should exist when metric level is not none`,
+		},
+		"config_invalid_metrics_views_level.yaml": {
+			validateErr: `service::telemetry::metrics::views can only be set when service::telemetry::metrics::level is detailed`,
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := tt.cfg.Validate()
-			if tt.success {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
+	for filename, test := range tests {
+		t.Run(filename, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
 			}
+
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", filename))
+			require.NoError(t, err)
+
+			cfg := createDefaultConfig().(*Config)
+			err = cm.Unmarshal(cfg)
+			if test.unmarshalErr != "" {
+				assert.ErrorContains(t, err, test.unmarshalErr)
+				return
+			}
+			require.NoError(t, err)
+
+			err = xconfmap.Validate(cfg)
+			if test.validateErr != "" {
+				assert.ErrorContains(t, err, test.validateErr)
+				return
+			}
+			require.NoError(t, err)
+
+			assert.Equal(t, test.config, cfg)
 		})
 	}
 }
