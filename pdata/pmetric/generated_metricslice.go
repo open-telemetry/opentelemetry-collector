@@ -148,7 +148,7 @@ func (es MetricSlice) RemoveIf(f func(Metric) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MetricSlice) CopyTo(dest MetricSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigMetricSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigMetricSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Metric elements within MetricSlice given the
@@ -179,33 +179,4 @@ func (ms MetricSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
-	var newDest []*otlpmetrics.Metric
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpmetrics.Metric, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.Metric{}
-		}
-	}
-	for i := range src {
-		copyOrigMetric(newDest[i], src[i])
-	}
-	return newDest
 }

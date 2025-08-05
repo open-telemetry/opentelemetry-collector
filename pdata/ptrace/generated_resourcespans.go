@@ -75,7 +75,7 @@ func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceSpans) CopyTo(dest ResourceSpans) {
 	dest.state.AssertMutable()
-	copyOrigResourceSpans(dest.orig, ms.orig)
+	internal.CopyOrigResourceSpans(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -109,10 +109,4 @@ func (ms ResourceSpans) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
-	internal.CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.ScopeSpans = copyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 }

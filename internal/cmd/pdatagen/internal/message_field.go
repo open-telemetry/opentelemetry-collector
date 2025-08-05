@@ -11,9 +11,9 @@ import (
 const messageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
 	{{- if .isCommon }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
-	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
+	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }})
 	{{- end }}
 }`
 
@@ -29,28 +29,24 @@ const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }
 }`
 
 const messageSetTestTemplate = `{{- if .isCommon -}}
-	internal.FillTest{{ .returnType }}(internal.New{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))
+	internal.FillTest{{ .returnType }}(internal.New{{ .returnType }}(&tv.orig.{{ .fieldOriginFullName }}, tv.state))
 	{{- else -}}
 	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
 	{{-	end }}`
 
-const messageCopyOrigTemplate = `{{- if .isCommon -}}
-	internal.CopyOrig{{- .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})
-	{{- else -}}
-	copyOrig{{ .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})
-	{{- end }}`
+const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
-const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.orig.{{ .originFieldName }} != "" { {{ end -}}
-	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
+const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.orig.{{ .fieldOriginFullName }} != "" { {{ end -}}
+	dest.WriteObjectField("{{ lowerFirst .fieldOriginFullName }}")
 	{{- if .isCommon }}
-	internal.MarshalJSONStream{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
+	internal.MarshalJSONStream{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .fieldOriginFullName }}, ms.state), dest)
 	{{- else }}
 	ms.{{ .fieldName }}().marshalJSONStream(dest)
 	{{- end }}{{ if eq .returnType "TraceState" -}} } {{- end }}`
 
-const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }}"{{ if needSnake .fieldOriginFullName -}}, "{{ toSnake .fieldOriginFullName }}"{{- end }}:
 	{{- if .isCommon }}
-	internal.UnmarshalJSONIter{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
+	internal.UnmarshalJSONIter{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .fieldOriginFullName }}, ms.state), iter)
 	{{- else }}
 	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
 	{{- end }}`
@@ -92,12 +88,13 @@ func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 
 func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
-		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
-		"structName":      ms.getName(),
-		"fieldName":       mf.fieldName,
-		"originFieldName": mf.fieldName,
-		"lowerFieldName":  strings.ToLower(mf.fieldName),
-		"returnType":      mf.returnMessage.getName(),
+		"isCommon":            usedByOtherDataTypes(mf.returnMessage.packageName),
+		"structName":          ms.getName(),
+		"fieldName":           mf.fieldName,
+		"fieldOriginFullName": mf.fieldName,
+		"fieldOriginName":     mf.returnMessage.getOriginName(),
+		"lowerFieldName":      strings.ToLower(mf.fieldName),
+		"returnType":          mf.returnMessage.getName(),
 		"packageName": func() string {
 			if mf.returnMessage.packageName != ms.packageName {
 				return mf.returnMessage.packageName + "."

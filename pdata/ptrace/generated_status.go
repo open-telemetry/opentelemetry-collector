@@ -76,7 +76,7 @@ func (ms Status) SetMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Status) CopyTo(dest Status) {
 	dest.state.AssertMutable()
-	copyOrigStatus(dest.orig, ms.orig)
+	internal.CopyOrigStatus(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -106,9 +106,4 @@ func (ms Status) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigStatus(dest, src *otlptrace.Status) {
-	dest.Code = src.Code
-	dest.Message = src.Message
 }

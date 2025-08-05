@@ -119,7 +119,7 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigSummaryDataPoint(dest.orig, ms.orig)
+	internal.CopyOrigSummaryDataPoint(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -179,14 +179,4 @@ func (ms SummaryDataPoint) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Count = src.Count
-	dest.Sum = src.Sum
-	dest.QuantileValues = copyOrigSummaryDataPointValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
-	dest.Flags = src.Flags
 }

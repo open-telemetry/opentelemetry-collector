@@ -28,24 +28,6 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 	return Slice{orig: orig, state: state}
 }
 
-func CopyOrigSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
-	var newDest []otlpcommon.AnyValue
-	if cap(dest) < len(src) {
-		newDest = make([]otlpcommon.AnyValue, len(src))
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpcommon.AnyValue{}
-		}
-	}
-	for i := range src {
-		CopyOrigValue(&newDest[i], &src[i])
-	}
-	return newDest
-}
-
 func GenerateTestSlice() Slice {
 	orig := []otlpcommon.AnyValue(nil)
 	state := StateMutable
@@ -82,4 +64,22 @@ func UnmarshalJSONIterSlice(ms Slice, iter *json.Iterator) {
 		UnmarshalJSONIterValue(NewValue(&(*ms.orig)[len(*ms.orig)-1], ms.state), iter)
 		return true
 	})
+}
+
+func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
+	var newDest []otlpcommon.AnyValue
+	if cap(dest) < len(src) {
+		newDest = make([]otlpcommon.AnyValue, len(src))
+	} else {
+		newDest = dest[:len(src)]
+		// Cleanup the rest of the elements so GC can free the memory.
+		// This can happen when len(src) < len(dest) < cap(dest).
+		for i := len(src); i < len(dest); i++ {
+			dest[i] = otlpcommon.AnyValue{}
+		}
+	}
+	for i := range src {
+		CopyOrigAnyValue(&newDest[i], &src[i])
+	}
+	return newDest
 }

@@ -148,7 +148,7 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSummaryDataPointValueAtQuantileSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSummaryDataPoint_ValueAtQuantileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
@@ -179,33 +179,4 @@ func (ms SummaryDataPointValueAtQuantileSlice) unmarshalJSONIter(iter *json.Iter
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigSummaryDataPointValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	var newDest []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		}
-	}
-	for i := range src {
-		copyOrigSummaryDataPointValueAtQuantile(newDest[i], src[i])
-	}
-	return newDest
 }

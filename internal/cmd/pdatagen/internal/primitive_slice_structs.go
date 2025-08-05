@@ -53,10 +53,19 @@ func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []by
 	return sb.Bytes()
 }
 
+func (iss *primitiveSliceStruct) getOriginName() string {
+	return iss.getName()
+}
+
+func (iss *primitiveSliceStruct) getElementOriginName() string {
+	return upperFirst(iss.itemType)
+}
+
 func (iss *primitiveSliceStruct) templateFields(packageInfo *PackageInfo) map[string]any {
 	return map[string]any{
 		"structName":           iss.getName(),
 		"itemType":             iss.itemType,
+		"elementOriginName":    iss.getElementOriginName(),
 		"lowerStructName":      strings.ToLower(iss.structName[:1]) + iss.structName[1:],
 		"testOrigVal":          iss.testOrigVal,
 		"testInterfaceOrigVal": iss.testInterfaceOrigVal,

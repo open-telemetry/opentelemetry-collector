@@ -29,11 +29,6 @@ func NewByteSlice(orig *[]byte, state *State) ByteSlice {
 	return ByteSlice{orig: orig, state: state}
 }
 
-func CopyOrigByteSlice(dst, src []byte) []byte {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
 func FillTestByteSlice(ms ByteSlice) {
 	*ms.orig = []byte{1, 2, 3}
 }
@@ -60,4 +55,8 @@ func UnmarshalJSONIterByteSlice(ms ByteSlice, iter *json.Iterator) {
 		iter.ReportError("base64.Decode", err.Error())
 	}
 	*ms.orig = (*ms.orig)[:n]
+}
+
+func CopyOrigByteSlice(dst, src []byte) []byte {
+	return append(dst[:0], src...)
 }
