@@ -177,7 +177,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 
 	qb.currentBatchMu.Unlock()
 	if firstBatch != nil {
-		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
+		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done) //nolint:contextcheck //context already handled
 	}
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)
