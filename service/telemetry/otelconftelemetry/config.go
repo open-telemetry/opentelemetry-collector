@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
 	"errors"

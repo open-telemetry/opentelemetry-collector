@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
 	"context"
@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 // factoryOption apply changes to Factory.
@@ -47,7 +48,7 @@ func (f *factory) CreateDefaultConfig() component.Config {
 }
 
 // createLoggerFunc is the equivalent of Factory.CreateLogger.
-type createLoggerFunc func(context.Context, Settings, component.Config) (*zap.Logger, log.LoggerProvider, error)
+type createLoggerFunc func(context.Context, telemetry.Settings, component.Config) (*zap.Logger, log.LoggerProvider, error)
 
 // withLogger overrides the default no-op logger.
 func withLogger(createLogger createLoggerFunc) factoryOption {
@@ -56,7 +57,7 @@ func withLogger(createLogger createLoggerFunc) factoryOption {
 	})
 }
 
-func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
+func (f *factory) CreateLogger(ctx context.Context, set telemetry.Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 	if f.createLoggerFunc == nil {
 		return zap.NewNop(), lognoop.NewLoggerProvider(), nil
 	}
@@ -64,7 +65,7 @@ func (f *factory) CreateLogger(ctx context.Context, set Settings, cfg component.
 }
 
 // createTracerProviderFunc is the equivalent of Factory.CreateTracerProvider.
-type createTracerProviderFunc func(context.Context, Settings, component.Config) (trace.TracerProvider, error)
+type createTracerProviderFunc func(context.Context, telemetry.Settings, component.Config) (trace.TracerProvider, error)
 
 // withTracerProvider overrides the default no-op tracer provider.
 func withTracerProvider(createTracerProvider createTracerProviderFunc) factoryOption {
@@ -73,7 +74,7 @@ func withTracerProvider(createTracerProvider createTracerProviderFunc) factoryOp
 	})
 }
 
-func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
+func (f *factory) CreateTracerProvider(ctx context.Context, set telemetry.Settings, cfg component.Config) (trace.TracerProvider, error) {
 	if f.createTracerProviderFunc == nil {
 		return tracenoop.NewTracerProvider(), nil
 	}
@@ -81,7 +82,7 @@ func (f *factory) CreateTracerProvider(ctx context.Context, set Settings, cfg co
 }
 
 // createMeterProviderFunc is the equivalent of Factory.CreateMeterProvider.
-type createMeterProviderFunc func(context.Context, Settings, component.Config) (metric.MeterProvider, error)
+type createMeterProviderFunc func(context.Context, telemetry.Settings, component.Config) (metric.MeterProvider, error)
 
 // withMeterProvider overrides the default no-op meter provider.
 func withMeterProvider(createMeterProvider createMeterProviderFunc) factoryOption {
@@ -90,7 +91,7 @@ func withMeterProvider(createMeterProvider createMeterProviderFunc) factoryOptio
 	})
 }
 
-func (f *factory) CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+func (f *factory) CreateMeterProvider(ctx context.Context, set telemetry.Settings, cfg component.Config) (metric.MeterProvider, error) {
 	if f.createMeterProviderFunc == nil {
 		return metricnoop.NewMeterProvider(), nil
 	}

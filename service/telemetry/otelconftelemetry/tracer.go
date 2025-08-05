@@ -1,12 +1,13 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
 	"context"
 	"errors"
 
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/contrib/propagators/b3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
@@ -51,7 +52,7 @@ func (n *noopNoContextTracerProvider) Tracer(_ string, _ ...trace.TracerOption) 
 }
 
 // newTracerProvider creates a new TracerProvider from Config.
-func newTracerProvider(set Settings, cfg Config) (trace.TracerProvider, error) {
+func newTracerProvider(cfg Config, sdk *config.SDK) (trace.TracerProvider, error) {
 	if cfg.Traces.Level == configtelemetry.LevelNone {
 		return &noopNoContextTracerProvider{}, nil
 	}
@@ -62,8 +63,8 @@ func newTracerProvider(set Settings, cfg Config) (trace.TracerProvider, error) {
 		return nil, err
 	}
 
-	if set.SDK != nil {
-		return set.SDK.TracerProvider(), nil
+	if sdk != nil {
+		return sdk.TracerProvider(), nil
 	}
 	return nil, errors.New("no sdk set")
 }

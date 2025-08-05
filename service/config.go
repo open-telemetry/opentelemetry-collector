@@ -6,13 +6,13 @@ package service // import "go.opentelemetry.io/collector/service"
 import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // Config defines the configurable components of the Service.
 type Config struct {
 	// Telemetry is the configuration for collector's own telemetry.
-	Telemetry telemetry.Config `mapstructure:"telemetry"`
+	Telemetry otelconftelemetry.Config `mapstructure:"telemetry"`
 
 	// Extensions are the ordered list of extensions configured for the service.
 	Extensions extensions.Config `mapstructure:"extensions,omitempty"`

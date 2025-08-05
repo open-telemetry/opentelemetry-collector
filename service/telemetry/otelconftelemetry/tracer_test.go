@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
@@ -44,7 +44,7 @@ func TestNewTracerProvider(t *testing.T) {
 			defer func() {
 				require.NoError(t, sdk.Shutdown(context.Background()))
 			}()
-			provider, err := newTracerProvider(Settings{SDK: sdk}, tt.cfg)
+			provider, err := newTracerProvider(tt.cfg, sdk)
 			require.NoError(t, err)
 			require.IsType(t, tt.wantTracerProvider, provider)
 		})

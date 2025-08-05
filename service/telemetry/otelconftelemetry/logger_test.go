@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/log"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/service/internal/resource"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 const (
@@ -111,7 +113,7 @@ func TestNewLogger(t *testing.T) {
 				require.NoError(t, sdk.Shutdown(context.Background()))
 			}()
 
-			_, _, err = newLogger(Settings{SDK: sdk}, tt.cfg)
+			_, _, err = newLogger(telemetry.Settings{}, tt.cfg, sdk, nil)
 			if tt.wantErr != nil {
 				require.ErrorContains(t, err, tt.wantErr.Error())
 			} else {
@@ -199,15 +201,17 @@ func TestNewLoggerWithResource(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			observerCore, observedLogs := observer.New(zap.InfoLevel)
 
-			set := Settings{
+			set := telemetry.Settings{
 				ZapOptions: []zap.Option{
 					zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 						return zapcore.NewTee(core, observerCore)
 					}),
 				},
 			}
+
+			var res *sdkresource.Resource
 			if tt.wantFields != nil {
-				set.Resource = resource.New(tt.buildInfo, tt.resourceConfig)
+				res = resource.New(tt.buildInfo, tt.resourceConfig)
 			}
 
 			cfg := Config{
@@ -217,7 +221,7 @@ func TestNewLoggerWithResource(t *testing.T) {
 				},
 			}
 
-			mylogger, _, _ := newLogger(set, cfg)
+			mylogger, _, _ := newLogger(set, cfg, nil, res)
 			mylogger.Info("Test log message")
 			require.Len(t, observedLogs.All(), 1)
 
@@ -327,7 +331,7 @@ func newOTLPLoggerProvider(t *testing.T, level zapcore.Level, handler http.Handl
 		assert.NoError(t, sdk.Shutdown(context.Background()))
 	})
 
-	_, lp, err := newLogger(Settings{SDK: sdk}, cfg)
+	_, lp, err := newLogger(telemetry.Settings{}, cfg, sdk, res)
 	require.NoError(t, err)
 	require.NotNil(t, lp)
 	return lp

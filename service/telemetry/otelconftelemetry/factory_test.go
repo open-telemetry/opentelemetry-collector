@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry
+package otelconftelemetry
 
 import (
 	"context"
@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -42,7 +42,7 @@ func TestDefaultConfig(t *testing.T) {
 				// Restore previous value.
 				require.NoError(t, featuregate.GlobalRegistry().Set(useLocalHostAsDefaultMetricsAddressFeatureGate.ID(), prev))
 			}()
-			cfg := NewFactory().CreateDefaultConfig()
+			cfg := NewFactory(nil, nil).CreateDefaultConfig()
 			require.Len(t, cfg.(*Config).Metrics.Readers, 1)
 			assert.Equal(t, tt.expected, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Host)
 			assert.Equal(t, 8888, *cfg.(*Config).Metrics.Readers[0].Pull.Exporter.Prometheus.Port)
@@ -105,8 +105,8 @@ func TestTelemetryConfiguration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := NewFactory()
-			set := Settings{ZapOptions: []zap.Option{}}
+			f := NewFactory(nil, nil)
+			set := telemetry.Settings{}
 			logger, _, err := f.CreateLogger(context.Background(), set, tt.cfg)
 			if tt.success {
 				require.NoError(t, err)
@@ -163,9 +163,9 @@ func TestSampledLogger(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := NewFactory()
+			f := NewFactory(nil, nil)
 			ctx := context.Background()
-			set := Settings{ZapOptions: []zap.Option{}}
+			set := telemetry.Settings{}
 			logger, _, err := f.CreateLogger(ctx, set, tt.cfg)
 			require.NoError(t, err)
 			assert.NotNil(t, logger)
