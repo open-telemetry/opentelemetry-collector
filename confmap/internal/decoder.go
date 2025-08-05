@@ -39,22 +39,6 @@ func WithIgnoreUnused() UnmarshalOption {
 // Decodes time.Duration from strings. Allows custom unmarshaling for structs implementing
 // encoding.TextUnmarshaler. Allows custom unmarshaling for structs implementing confmap.Unmarshaler.
 func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshaler bool) error {
-	hooks := settings.AdditionalDecodeHookFuncs
-	hooks = slices.Concat(hooks, []mapstructure.DecodeHookFunc{
-		useExpandValue(),
-		expandNilStructPointersHookFunc(),
-		mapstructure.StringToSliceHookFunc(","),
-		mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
-		mapstructure.StringToTimeDurationHookFunc(),
-		mapstructure.TextUnmarshallerHookFunc(),
-		unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
-		// after the main unmarshaler hook is called,
-		// we unmarshal the embedded structs if present to merge with the result:
-		unmarshalerEmbeddedStructsHookFunc(),
-		zeroSliceAndMapHookFunc(),
-	})
-	// hooks = append(hooks, )
-
 	dc := &mapstructure.DecoderConfig{
 		ErrorUnused:      !settings.IgnoreUnused,
 		Result:           result,
@@ -62,7 +46,19 @@ func Decode(input, result any, settings UnmarshalOptions, skipTopLevelUnmarshale
 		WeaklyTypedInput: false,
 		MatchName:        caseSensitiveMatchName,
 		DecodeNil:        true,
-		DecodeHook:       composehook.ComposeDecodeHookFunc(hooks...),
+		DecodeHook: composehook.ComposeDecodeHookFunc(
+			useExpandValue(),
+			expandNilStructPointersHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+			mapKeyStringToMapKeyTextUnmarshalerHookFunc(),
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.TextUnmarshallerHookFunc(),
+			unmarshalerHookFunc(result, skipTopLevelUnmarshaler),
+			// after the main unmarshaler hook is called,
+			// we unmarshal the embedded structs if present to merge with the result:
+			unmarshalerEmbeddedStructsHookFunc(),
+			zeroSliceAndMapHookFunc(),
+		),
 	}
 	decoder, err := mapstructure.NewDecoder(dc)
 	if err != nil {
@@ -269,42 +265,6 @@ func unmarshalerHookFunc(result any, skipTopLevelUnmarshaler bool) mapstructure.
 		}
 
 		return unmarshaler, nil
-	})
-}
-
-// marshalerHookFunc returns a DecodeHookFuncValue that checks structs that aren't
-// the original to see if they implement the Marshaler interface.
-func marshalerHookFunc(orig any) mapstructure.DecodeHookFuncValue {
-	origType := reflect.TypeOf(orig)
-	return safeWrapDecodeHookFunc(func(from, _ reflect.Value) (any, error) {
-		if from.Kind() != reflect.Struct {
-			return from.Interface(), nil
-		}
-
-		// ignore original to avoid infinite loop.
-		if from.Type() == origType && reflect.DeepEqual(from.Interface(), orig) {
-			return from.Interface(), nil
-		}
-		marshaler, ok := from.Interface().(Marshaler)
-		if !ok {
-			return from.Interface(), nil
-		}
-		conf := NewFromStringMap(nil)
-		if err := marshaler.Marshal(conf); err != nil {
-			return nil, err
-		}
-
-		stringMap := conf.ToStringMap()
-		if stringMap == nil {
-			// If conf is still nil after marshaling, we want to encode it as an untyped nil
-			// instead of a map-typed nil. This ensures the value is a proper null value
-			// in the final marshaled output instead of an empty map. We hit this case
-			// when marshaling wrapper structs that have no direct representation
-			// in the marshaled output that aren't tagged with "squash" on the fields
-			// they're used on.
-			return nil, nil
-		}
-		return stringMap, nil
 	})
 }
 

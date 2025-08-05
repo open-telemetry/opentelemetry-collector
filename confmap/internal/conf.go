@@ -56,7 +56,7 @@ func NewFromStringMap(data map[string]any) *Conf {
 func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 	set := UnmarshalOptions{}
 	for _, opt := range opts {
-		ApplyUnmarshalOption(opt, &set)
+		opt.apply(&set)
 	}
 	return Decode(l.toStringMapWithExpand(), result, set, l.skipTopLevelUnmarshaler)
 }
@@ -65,7 +65,7 @@ func (l *Conf) Unmarshal(result any, opts ...UnmarshalOption) error {
 func (l *Conf) Marshal(rawVal any, opts ...MarshalOption) error {
 	set := MarshalOptions{}
 	for _, opt := range opts {
-		ApplyMarshalOption(opt, &set)
+		opt.apply(&set)
 	}
 	enc := encoder.New(EncoderConfig(rawVal, set))
 	data, err := enc.Encode(rawVal)
