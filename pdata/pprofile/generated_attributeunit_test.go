@@ -65,21 +65,21 @@ func TestAttributeUnit_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestAttributeUnit_AttributeKeyStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
 	assert.Equal(t, int32(0), ms.AttributeKeyStrindex())
-	ms.SetAttributeKeyStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.AttributeKeyStrindex())
+	ms.SetAttributeKeyStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.AttributeKeyStrindex())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKeyStrindex(int32(1))
+		newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKeyStrindex(int32(13))
 	})
 }
 
 func TestAttributeUnit_UnitStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
 	assert.Equal(t, int32(0), ms.UnitStrindex())
-	ms.SetUnitStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnitStrindex(int32(1)) })
+	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func generateTestAttributeUnit() AttributeUnit {
@@ -89,6 +89,6 @@ func generateTestAttributeUnit() AttributeUnit {
 }
 
 func fillTestAttributeUnit(tv AttributeUnit) {
-	tv.orig.AttributeKeyStrindex = int32(1)
-	tv.orig.UnitStrindex = int32(1)
+	tv.orig.AttributeKeyStrindex = int32(13)
+	tv.orig.UnitStrindex = int32(13)
 }

@@ -119,10 +119,15 @@ type ClientConfig struct {
 	// Cookies configures the cookie management of the HTTP client.
 	Cookies CookiesConfig `mapstructure:"cookies,omitempty"`
 
+	// Enabling ForceAttemptHTTP2 forces the HTTP transport to use the HTTP/2 protocol.
+	// By default, this is set to true.
+	// NOTE: HTTP/2 does not support settings such as MaxConnsPerHost, MaxIdleConnsPerHost and MaxIdleConns.
+	ForceAttemptHTTP2 bool `mapstructure:"force_attempt_http2,omitempty"`
+
 	// Middlewares are used to add custom functionality to the HTTP client.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // CookiesConfig defines the configuration of the HTTP client regarding cookies served by the server.
@@ -141,9 +146,10 @@ func NewDefaultClientConfig() ClientConfig {
 	defaultTransport := http.DefaultTransport.(*http.Transport)
 
 	return ClientConfig{
-		Headers:         map[string]configopaque.String{},
-		MaxIdleConns:    defaultTransport.MaxIdleConns,
-		IdleConnTimeout: defaultTransport.IdleConnTimeout,
+		Headers:           map[string]configopaque.String{},
+		MaxIdleConns:      defaultTransport.MaxIdleConns,
+		IdleConnTimeout:   defaultTransport.IdleConnTimeout,
+		ForceAttemptHTTP2: true,
 	}
 }
 
@@ -184,6 +190,7 @@ func (hcs *ClientConfig) ToClient(ctx context.Context, host component.Host, sett
 	transport.MaxIdleConnsPerHost = hcs.MaxIdleConnsPerHost
 	transport.MaxConnsPerHost = hcs.MaxConnsPerHost
 	transport.IdleConnTimeout = hcs.IdleConnTimeout
+	transport.ForceAttemptHTTP2 = hcs.ForceAttemptHTTP2
 
 	// Setting the Proxy URL
 	if hcs.ProxyURL != "" {
@@ -372,7 +379,7 @@ type ServerConfig struct {
 	// Middlewares are used to add custom functionality to the HTTP server.
 	// Middleware handlers are called in the order they appear in this list,
 	// with the first middleware becoming the outermost handler.
-	Middlewares []configmiddleware.Config `mapstructure:"middleware,omitempty"`
+	Middlewares []configmiddleware.Config `mapstructure:"middlewares,omitempty"`
 }
 
 // NewDefaultServerConfig returns ServerConfig type object with default values.

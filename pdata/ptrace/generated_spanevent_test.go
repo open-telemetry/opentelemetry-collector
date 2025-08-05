@@ -90,10 +90,10 @@ func TestSpanEvent_Attributes(t *testing.T) {
 func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newSpanEvent(&otlptrace.Span_Event{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
 }
 
 func generateTestSpanEvent() SpanEvent {
@@ -106,5 +106,5 @@ func fillTestSpanEvent(tv SpanEvent) {
 	tv.orig.TimeUnixNano = 1234567890
 	tv.orig.Name = "test_name"
 	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	tv.orig.DroppedAttributesCount = uint32(13)
 }

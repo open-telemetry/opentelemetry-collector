@@ -66,21 +66,19 @@ func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestEntityRef_SchemaUrl(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestEntityRef_Type(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.Type())
-	ms.SetType("host")
-	assert.Equal(t, "host", ms.Type())
+	ms.SetType("test_type")
+	assert.Equal(t, "test_type", ms.Type())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetType("host") })
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetType("test_type") })
 }
 
 func TestEntityRef_IdKeys(t *testing.T) {
