@@ -336,6 +336,8 @@
       "otelcol",
       "otelcoltest",
       "otelcorecol",
+      "otelgrpc",
+      "otelhttp",
       "otelsvc",
       "oteltest",
       "otelzap",
