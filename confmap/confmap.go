@@ -9,16 +9,12 @@ import (
 	"go.opentelemetry.io/collector/confmap/internal"
 )
 
-var (
-	// KeyDelimiter is used as the default key delimiter in the default koanf instance.
-	KeyDelimiter = internal.KeyDelimiter
-)
+// KeyDelimiter is used as the default key delimiter in the default koanf instance.
+var KeyDelimiter = internal.KeyDelimiter
 
-var (
-	// MapstructureTag is the struct field tag used to record marshaling/unmarshaling settings.
-	// See https://pkg.go.dev/github.com/go-viper/mapstructure/v2 for supported values.
-	MapstructureTag = internal.MapstructureTag
-)
+// MapstructureTag is the struct field tag used to record marshaling/unmarshaling settings.
+// See https://pkg.go.dev/github.com/go-viper/mapstructure/v2 for supported values.
+var MapstructureTag = internal.MapstructureTag
 
 // New creates a new empty confmap.Conf instance.
 func New() *Conf {

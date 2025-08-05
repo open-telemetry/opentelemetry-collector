@@ -17,7 +17,7 @@ func (c confmapModuleFactory[T, S]) Create(s S) T {
 	return c.f(s)
 }
 
-func newConfmapModuleFactory[T any, S any](f createConfmapFunc[T, S]) moduleFactory[T, S] {
+func newConfmapModuleFactory[T, S any](f createConfmapFunc[T, S]) moduleFactory[T, S] {
 	return confmapModuleFactory[T, S]{
 		f: f,
 	}
