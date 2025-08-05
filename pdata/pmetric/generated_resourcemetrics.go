@@ -75,7 +75,7 @@ func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceMetrics) CopyTo(dest ResourceMetrics) {
 	dest.state.AssertMutable()
-	copyOrigResourceMetrics(dest.orig, ms.orig)
+	internal.CopyOrigResourceMetrics(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -109,10 +109,4 @@ func (ms ResourceMetrics) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigResourceMetrics(dest, src *otlpmetrics.ResourceMetrics) {
-	internal.CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.ScopeMetrics = copyOrigScopeMetricsSlice(dest.ScopeMetrics, src.ScopeMetrics)
 }

@@ -9,6 +9,8 @@ import (
 
 type baseSlice interface {
 	getName() string
+	getOriginName() string
+	getElementOriginName() string
 	getPackageName() string
 }
 
@@ -47,25 +49,34 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 	orig := origAccessor(ss.packageName)
 	state := stateAccessor(ss.packageName)
 	return map[string]any{
-		"type":               "sliceOfPtrs",
-		"isCommon":           usedByOtherDataTypes(ss.packageName),
-		"structName":         ss.structName,
-		"elementName":        ss.element.getName(),
-		"originName":         ss.element.originFullName,
-		"originElementType":  "*" + ss.element.originFullName,
-		"originElementPtr":   "",
-		"emptyOriginElement": "&" + ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.getName() + "((*es." + orig + ")[i], es." + state + ")",
-		"origAccessor":       orig,
-		"stateAccessor":      state,
-		"packageName":        packageInfo.name,
-		"imports":            packageInfo.imports,
-		"testImports":        packageInfo.testImports,
+		"type":                  "sliceOfPtrs",
+		"isCommon":              usedByOtherDataTypes(ss.packageName),
+		"structName":            ss.structName,
+		"elementName":           ss.element.getName(),
+		"elementOriginFullName": ss.element.originFullName,
+		"elementOriginName":     ss.getElementOriginName(),
+		"originElementType":     "*" + ss.element.originFullName,
+		"originElementPtr":      "",
+		"emptyOriginElement":    "&" + ss.element.originFullName + "{}",
+		"newElement":            "new" + ss.element.getName() + "((*es." + orig + ")[i], es." + state + ")",
+		"origAccessor":          orig,
+		"stateAccessor":         state,
+		"packageName":           packageInfo.name,
+		"imports":               packageInfo.imports,
+		"testImports":           packageInfo.testImports,
 	}
 }
 
 func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+}
+
+func (ss *sliceOfPtrs) getOriginName() string {
+	return ss.element.getOriginName() + "Slice"
+}
+
+func (ss *sliceOfPtrs) getElementOriginName() string {
+	return ss.element.getOriginName()
 }
 
 var _ baseStruct = (*sliceOfPtrs)(nil)
@@ -97,25 +108,34 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 	orig := origAccessor(ss.packageName)
 	state := stateAccessor(ss.packageName)
 	return map[string]any{
-		"type":               "sliceOfValues",
-		"isCommon":           usedByOtherDataTypes(ss.packageName),
-		"structName":         ss.getName(),
-		"elementName":        ss.element.getName(),
-		"originName":         ss.element.originFullName,
-		"originElementType":  ss.element.originFullName,
-		"originElementPtr":   "&",
-		"emptyOriginElement": ss.element.originFullName + "{}",
-		"newElement":         "new" + ss.element.getName() + "(&(*es." + orig + ")[i], es." + state + ")",
-		"origAccessor":       orig,
-		"stateAccessor":      state,
-		"packageName":        packageInfo.name,
-		"imports":            packageInfo.imports,
-		"testImports":        packageInfo.testImports,
+		"type":                  "sliceOfValues",
+		"isCommon":              usedByOtherDataTypes(ss.packageName),
+		"structName":            ss.getName(),
+		"elementName":           ss.element.getName(),
+		"elementOriginFullName": ss.element.originFullName,
+		"elementOriginName":     ss.getElementOriginName(),
+		"originElementType":     ss.element.originFullName,
+		"originElementPtr":      "&",
+		"emptyOriginElement":    ss.element.originFullName + "{}",
+		"newElement":            "new" + ss.element.getName() + "(&(*es." + orig + ")[i], es." + state + ")",
+		"origAccessor":          orig,
+		"stateAccessor":         state,
+		"packageName":           packageInfo.name,
+		"imports":               packageInfo.imports,
+		"testImports":           packageInfo.testImports,
 	}
 }
 
 func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+}
+
+func (ss *sliceOfValues) getOriginName() string {
+	return ss.element.getOriginName() + "Slice"
+}
+
+func (ss *sliceOfValues) getElementOriginName() string {
+	return ss.element.getOriginName()
 }
 
 var _ baseSlice = (*sliceOfValues)(nil)

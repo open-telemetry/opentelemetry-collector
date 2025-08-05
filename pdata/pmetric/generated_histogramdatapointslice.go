@@ -148,7 +148,7 @@ func (es HistogramDataPointSlice) RemoveIf(f func(HistogramDataPoint) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es HistogramDataPointSlice) CopyTo(dest HistogramDataPointSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigHistogramDataPointSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigHistogramDataPointSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the HistogramDataPoint elements within HistogramDataPointSlice given the
@@ -179,33 +179,4 @@ func (ms HistogramDataPointSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
-	var newDest []*otlpmetrics.HistogramDataPoint
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpmetrics.HistogramDataPoint, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.HistogramDataPoint{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.HistogramDataPoint{}
-		}
-	}
-	for i := range src {
-		copyOrigHistogramDataPoint(newDest[i], src[i])
-	}
-	return newDest
 }

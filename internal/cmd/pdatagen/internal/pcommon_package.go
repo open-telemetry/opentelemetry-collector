@@ -65,7 +65,7 @@ var scope = &messageStruct{
 var mapStruct = &sliceOfValues{
 	structName:  "Map",
 	packageName: "pcommon",
-	element:     keyValue,
+	element:     attribute,
 }
 
 var sliceStruct = &sliceOfValues{
@@ -80,8 +80,9 @@ var scopeField = &MessageField{
 }
 
 var traceState = &messageStruct{
-	structName:  "TraceState",
-	packageName: "pcommon",
+	structName:     "TraceState",
+	packageName:    "pcommon",
+	originFullName: "otlpcommon.TraceState", // Fake name to generate correct CopyOrig* name.
 }
 
 var timestampType = &TypedType{
@@ -113,12 +114,6 @@ var endTimeField = &TypedField{
 var nameField = &PrimitiveField{
 	fieldName: "Name",
 	protoType: ProtoTypeString,
-}
-
-var keyValue = &messageStruct{
-	structName:     "KeyValue",
-	packageName:    "pcommon",
-	originFullName: "otlpcommon.AnyValue",
 }
 
 var anyValue = &messageStruct{

@@ -27,11 +27,6 @@ func NewFloat64Slice(orig *[]float64, state *State) Float64Slice {
 	return Float64Slice{orig: orig, state: state}
 }
 
-func CopyOrigFloat64Slice(dst, src []float64) []float64 {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
 func FillTestFloat64Slice(ms Float64Slice) {
 	*ms.orig = []float64{1.1, 2.2, 3.3}
 }
@@ -63,4 +58,8 @@ func UnmarshalJSONIterFloat64Slice(ms Float64Slice, iter *json.Iterator) {
 		*ms.orig = append(*ms.orig, iter.ReadFloat64())
 		return true
 	})
+}
+
+func CopyOrigFloat64Slice(dst, src []float64) []float64 {
+	return append(dst[:0], src...)
 }

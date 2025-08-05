@@ -134,7 +134,7 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
-	copyOrigExemplar(dest.orig, ms.orig)
+	internal.CopyOrigExemplar(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -193,17 +193,4 @@ func (ms Exemplar) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
-	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: t.AsDouble}
-	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: t.AsInt}
-	}
-	dest.FilteredAttributes = internal.CopyOrigMap(dest.FilteredAttributes, src.FilteredAttributes)
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
 }

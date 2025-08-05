@@ -202,7 +202,7 @@ func (ms Span) Status() Status {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
 	dest.state.AssertMutable()
-	copyOrigSpan(dest.orig, ms.orig)
+	internal.CopyOrigSpan(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -314,23 +314,4 @@ func (ms Span) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigSpan(dest, src *otlptrace.Span) {
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
-	internal.CopyOrigTraceState(&dest.TraceState, &src.TraceState)
-	dest.ParentSpanId = src.ParentSpanId
-	dest.Name = src.Name
-	dest.Flags = src.Flags
-	dest.Kind = src.Kind
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.EndTimeUnixNano = src.EndTimeUnixNano
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.Events = copyOrigSpanEventSlice(dest.Events, src.Events)
-	dest.DroppedEventsCount = src.DroppedEventsCount
-	dest.Links = copyOrigSpanLinkSlice(dest.Links, src.Links)
-	dest.DroppedLinksCount = src.DroppedLinksCount
-	copyOrigStatus(&dest.Status, &src.Status)
 }

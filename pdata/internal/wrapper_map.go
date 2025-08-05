@@ -38,8 +38,7 @@ func CopyOrigMap(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
 		}
 	}
 	for i := range src {
-		newDest[i].Key = src[i].Key
-		CopyOrigValue(&newDest[i].Value, &src[i].Value)
+		CopyOrigKeyValue(&newDest[i], &src[i])
 	}
 	return newDest
 }

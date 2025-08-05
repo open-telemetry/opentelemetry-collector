@@ -31,11 +31,6 @@ func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName 
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func CopyOrig{{ .structName }}(dst, src []{{ .itemType }}) []{{ .itemType }} {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
 func FillTest{{ .structName }}(ms {{ .structName}}) {
 	*ms.orig = []{{ .itemType }}{ {{ .testOrigVal }} }
 }
@@ -81,4 +76,8 @@ func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterato
 		return true
 	})
 	{{- end }}
+}
+
+func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
+return append(dst[:0], src...)
 }

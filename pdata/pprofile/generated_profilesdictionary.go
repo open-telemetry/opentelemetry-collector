@@ -89,7 +89,7 @@ func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	copyOrigProfilesDictionary(dest.orig, ms.orig)
+	internal.CopyOrigProfilesDictionary(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -149,14 +149,4 @@ func (ms ProfilesDictionary) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
-	dest.MappingTable = copyOrigMappingSlice(dest.MappingTable, src.MappingTable)
-	dest.LocationTable = copyOrigLocationSlice(dest.LocationTable, src.LocationTable)
-	dest.FunctionTable = copyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)
-	dest.LinkTable = copyOrigLinkSlice(dest.LinkTable, src.LinkTable)
-	dest.StringTable = internal.CopyOrigStringSlice(dest.StringTable, src.StringTable)
-	dest.AttributeTable = copyOrigAttributeTableSlice(dest.AttributeTable, src.AttributeTable)
-	dest.AttributeUnits = copyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
 }

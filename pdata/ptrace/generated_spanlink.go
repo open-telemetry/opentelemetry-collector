@@ -111,7 +111,7 @@ func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SpanLink) CopyTo(dest SpanLink) {
 	dest.state.AssertMutable()
-	copyOrigSpanLink(dest.orig, ms.orig)
+	internal.CopyOrigSpan_Link(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -165,13 +165,4 @@ func (ms SpanLink) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigSpanLink(dest, src *otlptrace.Span_Link) {
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
-	internal.CopyOrigTraceState(&dest.TraceState, &src.TraceState)
-	dest.Flags = src.Flags
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }

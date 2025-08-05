@@ -35,9 +35,7 @@ const sliceSetTestTemplate = `{{ if .isCommon -}}
 	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
 	{{-	end }}`
 
-const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = 
-{{- if .isCommon }}{{ if not .isBaseStructCommon }}internal.{{ end }}CopyOrig{{ else }}copyOrig{{ end }}
-{{- .returnType }}(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
+const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
 const sliceMarshalJSONTemplate = `if len(ms.orig.{{ .originFieldName }}) > 0 {
 		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
@@ -101,9 +99,10 @@ func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
-		"structName":      ms.getName(),
-		"fieldName":       sf.fieldName,
-		"originFieldName": sf.fieldName,
+		"structName":        ms.getName(),
+		"fieldName":         sf.fieldName,
+		"originFieldName":   sf.fieldName,
+		"elementOriginName": sf.returnSlice.getElementOriginName(),
 		"packageName": func() string {
 			if sf.returnSlice.getPackageName() != ms.packageName {
 				return sf.returnSlice.getPackageName() + "."

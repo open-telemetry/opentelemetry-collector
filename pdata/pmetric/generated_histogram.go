@@ -69,7 +69,7 @@ func (ms Histogram) DataPoints() HistogramDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Histogram) CopyTo(dest Histogram) {
 	dest.state.AssertMutable()
-	copyOrigHistogram(dest.orig, ms.orig)
+	internal.CopyOrigHistogram(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -99,9 +99,4 @@ func (ms Histogram) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigHistogram(dest, src *otlpmetrics.Histogram) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.DataPoints = copyOrigHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }

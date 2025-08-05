@@ -60,7 +60,7 @@ fillTest{{ .returnType }}(new{{ .returnType }}(tv.orig.Get{{ .returnType }}(), t
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
-		copyOrig{{ .returnType }}({{ .lowerFieldName }}, t.{{ .fieldName }})
+		CopyOrig{{ .returnType }}({{ .lowerFieldName }}, t.{{ .fieldName }})
 		dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 			{{ .fieldName }}: {{ .lowerFieldName }},
 		}`

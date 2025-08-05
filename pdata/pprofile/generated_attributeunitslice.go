@@ -148,7 +148,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
@@ -179,33 +179,4 @@ func (ms AttributeUnitSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
-	var newDest []*otlpprofiles.AttributeUnit
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpprofiles.AttributeUnit, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.AttributeUnit{}
-		}
-	}
-	for i := range src {
-		copyOrigAttributeUnit(newDest[i], src[i])
-	}
-	return newDest
 }

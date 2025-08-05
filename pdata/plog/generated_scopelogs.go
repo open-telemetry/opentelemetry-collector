@@ -75,7 +75,7 @@ func (ms ScopeLogs) LogRecords() LogRecordSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ScopeLogs) CopyTo(dest ScopeLogs) {
 	dest.state.AssertMutable()
-	copyOrigScopeLogs(dest.orig, ms.orig)
+	internal.CopyOrigScopeLogs(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -109,10 +109,4 @@ func (ms ScopeLogs) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
-	internal.CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.LogRecords = copyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
 }
