@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
@@ -20,4 +21,37 @@ func FillOrigTestResourceLogs(orig *otlplogs.ResourceLogs) {
 	FillOrigTestResource(&orig.Resource)
 	orig.SchemaUrl = "test_schemaurl"
 	orig.ScopeLogs = GenerateOrigTestScopeLogsSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resource")
+	MarshalJSONOrigResource(&orig.Resource, dest)
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if len(orig.ScopeLogs) > 0 {
+		dest.WriteObjectField("scopeLogs")
+		MarshalJSONOrigScopeLogsSlice(orig.ScopeLogs, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigResourceLogs unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigResourceLogs(orig *otlplogs.ResourceLogs, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resource":
+			UnmarshalJSONOrigResource(&orig.Resource, iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "scopeLogs", "scope_logs":
+			orig.ScopeLogs = UnmarshalJSONOrigScopeLogsSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

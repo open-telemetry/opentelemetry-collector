@@ -97,8 +97,10 @@ func (ms Metrics) MarkReadOnly() {
 
 func (ms Metrics) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	dest.WriteObjectField("resourceMetrics")
-	ms.ResourceMetrics().marshalJSONStream(dest)
+	if len(ms.getOrig().ResourceMetrics) > 0 {
+		dest.WriteObjectField("resourceMetrics")
+		internal.MarshalJSONOrigResourceMetricsSlice(ms.getOrig().ResourceMetrics, dest)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -106,10 +108,7 @@ func (ms Metrics) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource_metrics", "resourceMetrics":
-			iter.ReadArrayCB(func(iter *json.Iterator) bool {
-				ms.ResourceMetrics().AppendEmpty().unmarshalJSONIter(iter)
-				return true
-			})
+			ms.getOrig().ResourceMetrics = internal.UnmarshalJSONOrigResourceMetricsSlice(iter)
 		default:
 			iter.Skip()
 		}

@@ -62,12 +62,12 @@ const oneOfMessageTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldN
 
 const oneOfMessageMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
 	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-	new{{ .returnType }}(ov.{{ .fieldName }}, ms.state).marshalJSONStream(dest)`
+	MarshalJSONOrig{{ .fieldOriginName }}(ov.{{ .fieldName }}, dest)`
 
 const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
-	new{{ .returnType }}(val, ms.state).unmarshalJSONIter(iter)`
+	orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
+	UnmarshalJSONOrig{{ .fieldOriginName }}(val, iter)`
 
 type OneOfMessageValue struct {
 	fieldName              string

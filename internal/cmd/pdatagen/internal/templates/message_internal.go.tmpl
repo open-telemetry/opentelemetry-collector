@@ -39,28 +39,6 @@ func GenerateTest{{ .structName }}() {{ .structName }} {
 	return New{{ .structName }}(&orig, &state)
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
-func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
-	dest.WriteObjectStart()
-	{{ range .fields -}}
-	{{ .GenerateMarshalJSON $.messageStruct }}
-	{{ end -}}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		{{ range .fields -}}
-		{{ .GenerateUnmarshalJSON $.messageStruct }}
-		{{ end -}}
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
 {{ end }}
 
 func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
@@ -73,4 +51,27 @@ func FillOrigTest{{ .originName }}(orig *{{ .originFullName }}) {
 	{{- range .fields }}
 	{{ .GenerateSetWithTestValue $.messageStruct }}
 	{{- end }}
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.Stream) {
+	dest.WriteObjectStart()
+	{{ range .fields -}}
+	{{ .GenerateMarshalJSON $.messageStruct }}
+	{{ end -}}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrig{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		{{ range .fields -}}
+		{{ .GenerateUnmarshalJSON $.messageStruct }}
+		{{ end -}}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

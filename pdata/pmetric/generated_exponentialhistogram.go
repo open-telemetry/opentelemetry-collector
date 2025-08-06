@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExponentialHistogram represents the type of a metric that is calculated by aggregating
@@ -71,33 +70,4 @@ func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
 func (ms ExponentialHistogram) CopyTo(dest ExponentialHistogram) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExponentialHistogram(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExponentialHistogram) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
-	}
-	if len(ms.orig.DataPoints) > 0 {
-		dest.WriteObjectField("dataPoints")
-		ms.DataPoints().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExponentialHistogram) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "aggregationTemporality", "aggregation_temporality":
-			ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
-		case "dataPoints", "data_points":
-			ms.DataPoints().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

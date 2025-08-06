@@ -31,23 +31,13 @@ const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
-const sliceMarshalJSONTemplate = `if len(ms.orig.{{ .originFieldName }}) > 0 {
+const sliceMarshalJSONTemplate = `if len(orig.{{ .originFieldName }}) > 0 {
 		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		{{- if .isCommon }}
-		{{ if not .isBaseStructCommon }}internal.{{ end }}MarshalJSONStream{{ .returnType }}(
-		{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
-		{{- else }}
-		ms.{{ .fieldName }}().marshalJSONStream(dest)
-		{{- end }}
+		MarshalJSONOrig{{ .elementOriginName }}Slice(orig.{{ .originFieldName }}, dest)
 	}`
 
 const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	{{- if .isCommon }}
-	{{ if not .isBaseStructCommon }}internal.{{ end }}UnmarshalJSONIter{{ .returnType }}(
-	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
-	{{- else }}
-	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
-	{{- end }}`
+	orig.{{ .originFieldName }} = UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)`
 
 type SliceField struct {
 	fieldName     string
@@ -103,11 +93,10 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"returnType":         sf.returnSlice.getName(),
-		"origAccessor":       origAccessor(ms.packageName),
-		"stateAccessor":      stateAccessor(ms.packageName),
-		"isCommon":           usedByOtherDataTypes(sf.returnSlice.getPackageName()),
-		"isBaseStructCommon": usedByOtherDataTypes(ms.packageName),
+		"returnType":    sf.returnSlice.getName(),
+		"origAccessor":  origAccessor(ms.packageName),
+		"stateAccessor": stateAccessor(ms.packageName),
+		"isCommon":      usedByOtherDataTypes(sf.returnSlice.getPackageName()),
 	}
 }
 

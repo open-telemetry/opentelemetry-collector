@@ -10,8 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigInstrumentationScope(t *testing.T) {
@@ -21,5 +23,26 @@ func TestCopyOrigInstrumentationScope(t *testing.T) {
 	assert.Equal(t, &otlpcommon.InstrumentationScope{}, dest)
 	FillOrigTestInstrumentationScope(src)
 	CopyOrigInstrumentationScope(dest, src)
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
+	src := &otlpcommon.InstrumentationScope{}
+	FillOrigTestInstrumentationScope(src)
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	MarshalJSONOrigInstrumentationScope(src, stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := &otlpcommon.InstrumentationScope{}
+	UnmarshalJSONOrigInstrumentationScope(dest, iter)
+	require.NoError(t, iter.Error())
+
 	assert.Equal(t, src, dest)
 }

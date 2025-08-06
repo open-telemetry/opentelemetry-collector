@@ -35,47 +35,6 @@ func GenerateTestEntityRef() EntityRef {
 	return NewEntityRef(&orig, &state)
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamEntityRef(ms EntityRef, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if ms.orig.Type != "" {
-		dest.WriteObjectField("type")
-		dest.WriteString(ms.orig.Type)
-	}
-	if len(ms.orig.IdKeys) > 0 {
-		dest.WriteObjectField("idKeys")
-		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), dest)
-	}
-	if len(ms.orig.DescriptionKeys) > 0 {
-		dest.WriteObjectField("descriptionKeys")
-		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONIterEntityRef unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "schemaUrl", "schema_url":
-			ms.orig.SchemaUrl = iter.ReadString()
-		case "type":
-			ms.orig.Type = iter.ReadString()
-		case "idKeys", "id_keys":
-			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
-		case "descriptionKeys", "description_keys":
-			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Type = src.Type
@@ -88,4 +47,45 @@ func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
 	orig.Type = "test_type"
 	orig.IdKeys = GenerateOrigTestStringSlice()
 	orig.DescriptionKeys = GenerateOrigTestStringSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if orig.Type != "" {
+		dest.WriteObjectField("type")
+		dest.WriteString(orig.Type)
+	}
+	if len(orig.IdKeys) > 0 {
+		dest.WriteObjectField("idKeys")
+		MarshalJSONOrigStringSlice(orig.IdKeys, dest)
+	}
+	if len(orig.DescriptionKeys) > 0 {
+		dest.WriteObjectField("descriptionKeys")
+		MarshalJSONOrigStringSlice(orig.DescriptionKeys, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "type":
+			orig.Type = iter.ReadString()
+		case "idKeys", "id_keys":
+			orig.IdKeys = UnmarshalJSONOrigStringSlice(iter)
+		case "descriptionKeys", "description_keys":
+			orig.DescriptionKeys = UnmarshalJSONOrigStringSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
@@ -16,4 +17,27 @@ func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
 
 func FillOrigTestGauge(orig *otlpmetrics.Gauge) {
 	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		MarshalJSONOrigNumberDataPointSlice(orig.DataPoints, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigGauge unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "dataPoints", "data_points":
+			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

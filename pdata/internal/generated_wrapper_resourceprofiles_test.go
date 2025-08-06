@@ -10,8 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigResourceProfiles(t *testing.T) {
@@ -21,5 +23,26 @@ func TestCopyOrigResourceProfiles(t *testing.T) {
 	assert.Equal(t, &otlpprofiles.ResourceProfiles{}, dest)
 	FillOrigTestResourceProfiles(src)
 	CopyOrigResourceProfiles(dest, src)
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigResourceProfiles(t *testing.T) {
+	src := &otlpprofiles.ResourceProfiles{}
+	FillOrigTestResourceProfiles(src)
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	MarshalJSONOrigResourceProfiles(src, stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := &otlpprofiles.ResourceProfiles{}
+	UnmarshalJSONOrigResourceProfiles(dest, iter)
+	require.NoError(t, iter.Error())
+
 	assert.Equal(t, src, dest)
 }

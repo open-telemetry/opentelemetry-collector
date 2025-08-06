@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -165,85 +164,4 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.state.AssertMutable()
 	internal.CopyOrigLogRecord(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms LogRecord) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.ObservedTimeUnixNano != 0 {
-		dest.WriteObjectField("observedTimeUnixNano")
-		dest.WriteUint64(ms.orig.ObservedTimeUnixNano)
-	}
-	if ms.orig.TimeUnixNano != 0 {
-		dest.WriteObjectField("timeUnixNano")
-		dest.WriteUint64(ms.orig.TimeUnixNano)
-	}
-	if ms.orig.TraceId != data.TraceID([16]byte{}) {
-		dest.WriteObjectField("traceId")
-		ms.orig.TraceId.MarshalJSONStream(dest)
-	}
-	if ms.orig.SpanId != data.SpanID([8]byte{}) {
-		dest.WriteObjectField("spanId")
-		ms.orig.SpanId.MarshalJSONStream(dest)
-	}
-	if ms.orig.Flags != 0 {
-		dest.WriteObjectField("flags")
-		dest.WriteUint32(ms.orig.Flags)
-	}
-	if ms.orig.EventName != "" {
-		dest.WriteObjectField("eventName")
-		dest.WriteString(ms.orig.EventName)
-	}
-	if ms.orig.SeverityText != "" {
-		dest.WriteObjectField("severityText")
-		dest.WriteString(ms.orig.SeverityText)
-	}
-	if ms.orig.SeverityNumber != otlplogs.SeverityNumber(0) {
-		dest.WriteObjectField("severityNumber")
-		dest.WriteInt32(int32(ms.orig.SeverityNumber))
-	}
-	dest.WriteObjectField("body")
-	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Body, ms.state), dest)
-	if len(ms.orig.Attributes) > 0 {
-		dest.WriteObjectField("attributes")
-		internal.MarshalJSONStreamMap(internal.NewMap(&ms.orig.Attributes, ms.state), dest)
-	}
-	if ms.orig.DroppedAttributesCount != uint32(0) {
-		dest.WriteObjectField("droppedAttributesCount")
-		dest.WriteUint32(ms.orig.DroppedAttributesCount)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms LogRecord) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "observedTimeUnixNano", "observed_time_unix_nano":
-			ms.orig.ObservedTimeUnixNano = iter.ReadUint64()
-		case "timeUnixNano", "time_unix_nano":
-			ms.orig.TimeUnixNano = iter.ReadUint64()
-		case "traceId", "trace_id":
-			ms.orig.TraceId.UnmarshalJSONIter(iter)
-		case "spanId", "span_id":
-			ms.orig.SpanId.UnmarshalJSONIter(iter)
-		case "flags":
-			ms.orig.Flags = iter.ReadUint32()
-		case "eventName", "event_name":
-			ms.orig.EventName = iter.ReadString()
-		case "severityText", "severity_text":
-			ms.orig.SeverityText = iter.ReadString()
-		case "severityNumber", "severity_number":
-			ms.orig.SeverityNumber = otlplogs.SeverityNumber(iter.ReadEnumValue(otlplogs.SeverityNumber_value))
-		case "body":
-			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Body, ms.state), iter)
-		case "attributes":
-			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
-		case "droppedAttributesCount", "dropped_attributes_count":
-			ms.orig.DroppedAttributesCount = iter.ReadUint32()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }
