@@ -6,7 +6,6 @@ package confmap
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -509,17 +508,4 @@ func runScenario(t *testing.T, path string) {
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
 		})
 	}
-}
-
-func TestTags(t *testing.T) {
-	if true {
-		require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
-		defer func() {
-			// Restore previous value.
-			require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
-		}()
-	}
-	b, _ := os.ReadFile("testdata/config.yml")
-	r, _ := NewRetrievedFromYAML(b)
-	fmt.Println(r.mergeOpts)
 }

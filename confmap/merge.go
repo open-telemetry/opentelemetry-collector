@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gobwas/glob"
 	"github.com/knadh/koanf/maps"
 	"go.yaml.in/yaml/v3"
 )
@@ -16,9 +15,6 @@ import (
 type options struct {
 	mode       string
 	duplicates bool
-
-	// glob to be set after the path is compiled
-	glob glob.Glob
 }
 
 func newOptions(mode string, duplicates bool) *options {
@@ -32,8 +28,11 @@ func newOptions(mode string, duplicates bool) *options {
 }
 
 func fetchMergePaths(yamlBytes []byte) map[string]*options {
+	// fetchMergePaths takes the input yaml and extracts the path that has custom tags set
+	// It returns a "map" of paths->options, where options are the merge options to use.
+	// Right now, we only support list merging options. In future, we can support an option to override maps.
 	var root yaml.Node
-	if err := yaml.Unmarshal([]byte(yamlBytes), &root); err != nil {
+	if err := yaml.Unmarshal(yamlBytes, &root); err != nil {
 		panic(err)
 	}
 	m := map[string]*options{}
@@ -65,10 +64,11 @@ func walkYAML(key *yaml.Node, node *yaml.Node, res map[string]*options, path []s
 			// check if it has a custom tag and extract merge mode and other options.
 			if s != "!!seq" {
 				s = strings.TrimPrefix(s, "!")
-				q, _ := url.ParseQuery(s)
-
-				res[strings.Join(path, "::")] = newOptions(q.Get("mode"), q.Get("duplicates") == "true")
-				walkYAML(nil, n, res, path)
+				q, err := url.ParseQuery(s)
+				if err == nil {
+					res[strings.Join(path, "::")] = newOptions(q.Get("mode"), q.Get("duplicates") == "true")
+					walkYAML(nil, n, res, path)
+				}
 			}
 		}
 	}
@@ -82,13 +82,6 @@ func mergeAppend(mergeOpts map[string]*options) func(src, dest map[string]any) e
 		// modifying and expanding the dest map in the process.
 		// This function does not overwrite component lists, and ensures that the
 		// final value is a name-aware copy of lists from src and dest.
-
-		// Compile the globs once
-		for path, opt := range mergeOpts {
-			if g, err := glob.Compile(path); err == nil {
-				opt.glob = g
-			}
-		}
 
 		// Flatten both source and destination maps
 		srcFlat, _ := maps.Flatten(src, []string{}, KeyDelimiter)
@@ -121,10 +114,10 @@ func mergeAppend(mergeOpts map[string]*options) func(src, dest map[string]any) e
 	}
 }
 
-// isMatch checks if a key matches any glob in the list
-func isMatch(key string, mergeOpts map[string]*options) bool {
-	for _, opt := range mergeOpts {
-		if opt.glob.Match(key) {
+// isMatch checks if a key matches any of the extracted paths
+func isMatch(sKey string, mergeOpts map[string]*options) bool {
+	for key, _ := range mergeOpts {
+		if strings.EqualFold(key, sKey) {
 			return true
 		}
 	}
