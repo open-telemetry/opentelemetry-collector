@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
+	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/pipelines"
 	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
@@ -624,7 +625,7 @@ func TestServiceFatalError(t *testing.T) {
 
 	go func() {
 		ev := componentstatus.NewFatalErrorEvent(assert.AnError)
-		srv.host.NotifyComponentStatusChange(&componentstatus.InstanceID{}, ev)
+		srv.host.NotifyComponentStatusChange(&status.InstanceID{}, ev)
 	}()
 
 	err = <-srv.host.AsyncErrorChannel

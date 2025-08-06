@@ -7,8 +7,10 @@ package otelcol
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"testing"
@@ -23,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/processor/processortest"
 )
 
@@ -138,7 +141,7 @@ func TestCollectorReportError(t *testing.T) {
 
 // NewStatusWatcherExtensionFactory returns a component.ExtensionFactory to construct a status watcher extension.
 func NewStatusWatcherExtensionFactory(
-	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event),
+	onStatusChanged func(componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID, event *componentstatus.Event),
 ) extension.Factory {
 	return extension.NewFactory(
 		component.MustNewType("statuswatcher"),
@@ -156,11 +159,11 @@ func NewStatusWatcherExtensionFactory(
 type statusWatcherExtension struct {
 	component.StartFunc
 	component.ShutdownFunc
-	onStatusChanged func(source *componentstatus.InstanceID, event *componentstatus.Event)
+	onStatusChanged func(componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID, event *componentstatus.Event)
 }
 
-func (e statusWatcherExtension) ComponentStatusChanged(source *componentstatus.InstanceID, event *componentstatus.Event) {
-	e.onStatusChanged(source, event)
+func (e statusWatcherExtension) ComponentStatusChanged(componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID, event *componentstatus.Event) {
+	e.onStatusChanged(componentID, kind, pipelineIDs, event)
 }
 
 func TestComponentStatusWatcher(t *testing.T) {
@@ -173,14 +176,20 @@ func TestComponentStatusWatcher(t *testing.T) {
 	factories.Processors[unhealthyProcessorFactory.Type()] = unhealthyProcessorFactory
 
 	// Keep track of all status changes in a map.
-	changedComponents := map[*componentstatus.InstanceID][]componentstatus.Status{}
+	changedComponents := map[string][]componentstatus.Status{}
 	var mux sync.Mutex
-	onStatusChanged := func(source *componentstatus.InstanceID, event *componentstatus.Event) {
-		if source.ComponentID().Type() != unhealthyProcessorFactory.Type() {
+	onStatusChanged := func(componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID, event *componentstatus.Event) {
+		if componentID.Type() != unhealthyProcessorFactory.Type() {
 			return
 		}
 		mux.Lock()
 		defer mux.Unlock()
+		ids := make([]string, len(pipelineIDs))
+		for i, id := range pipelineIDs {
+			ids[i] = id.String()
+		}
+		source := fmt.Sprintf("%s-%s-%s", componentID, kind, strings.Join(ids, "|"))
+
 		changedComponents[source] = append(changedComponents[source], event.Status())
 	}
 
@@ -227,7 +236,7 @@ func TestComponentStatusWatcher(t *testing.T) {
 
 		for k, v := range changedComponents {
 			// All processors must report a status change with the same ID
-			assert.Equal(t, component.NewID(unhealthyProcessorFactory.Type()), k.ComponentID())
+			assert.True(t, strings.HasPrefix(k, component.NewID(unhealthyProcessorFactory.Type()).String()))
 			// And all must have a valid startup sequence
 			assert.Equal(t, startupStatuses(v), v)
 		}
