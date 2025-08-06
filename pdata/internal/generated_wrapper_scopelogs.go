@@ -15,3 +15,9 @@ func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.LogRecords = CopyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
 }
+
+func FillOrigTestScopeLogs(orig *otlplogs.ScopeLogs) {
+	FillOrigTestInstrumentationScope(&orig.Scope)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.LogRecords = GenerateOrigTestLogRecordSlice()
+}

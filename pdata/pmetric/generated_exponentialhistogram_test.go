@@ -73,17 +73,12 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 func TestExponentialHistogram_DataPoints(t *testing.T) {
 	ms := NewExponentialHistogram()
 	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
-	fillTestExponentialHistogramDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestExponentialHistogram() ExponentialHistogram {
-	tv := NewExponentialHistogram()
-	fillTestExponentialHistogram(tv)
-	return tv
-}
-
-func fillTestExponentialHistogram(tv ExponentialHistogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(tv.DataPoints())
+	ms := NewExponentialHistogram()
+	internal.FillOrigTestExponentialHistogram(ms.orig)
+	return ms
 }

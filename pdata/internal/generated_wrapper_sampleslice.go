@@ -38,3 +38,12 @@ func CopyOrigSampleSlice(dest, src []*otlpprofiles.Sample) []*otlpprofiles.Sampl
 	}
 	return newDest
 }
+
+func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
+	orig := make([]*otlpprofiles.Sample, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.Sample{}
+		FillOrigTestSample(orig[i])
+	}
+	return orig
+}

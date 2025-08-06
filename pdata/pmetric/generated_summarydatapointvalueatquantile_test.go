@@ -91,12 +91,7 @@ func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 }
 
 func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(3.1415926)
-	tv.orig.Value = float64(3.1415926)
+	ms := NewSummaryDataPointValueAtQuantile()
+	internal.FillOrigTestSummaryDataPoint_ValueAtQuantile(ms.orig)
+	return ms
 }

@@ -84,14 +84,14 @@ func TestEntityRef_Type(t *testing.T) {
 func TestEntityRef_IdKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.IdKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.IdKeys()))
+	ms.getOrig().IdKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.IdKeys())
 }
 
 func TestEntityRef_DescriptionKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.DescriptionKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.DescriptionKeys()))
+	ms.getOrig().DescriptionKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.DescriptionKeys())
 }
 

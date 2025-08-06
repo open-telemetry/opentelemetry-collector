@@ -29,19 +29,9 @@ func NewEntityRefSlice(orig *[]*otlpcommon.EntityRef, state *State) EntityRefSli
 }
 
 func GenerateTestEntityRefSlice() EntityRefSlice {
-	orig := []*otlpcommon.EntityRef(nil)
+	orig := GenerateOrigTestEntityRefSlice()
 	state := StateMutable
-	es := NewEntityRefSlice(&orig, &state)
-	FillTestEntityRefSlice(es)
-	return es
-}
-
-func FillTestEntityRefSlice(es EntityRefSlice) {
-	*es.orig = make([]*otlpcommon.EntityRef, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpcommon.EntityRef{}
-		FillTestEntityRef(NewEntityRef((*es.orig)[i], es.state))
-	}
+	return NewEntityRefSlice(&orig, &state)
 }
 
 // MarshalJSONStreamEntityRefSlice marshals all properties from the current struct to the destination stream.
@@ -93,4 +83,13 @@ func CopyOrigEntityRefSlice(dest, src []*otlpcommon.EntityRef) []*otlpcommon.Ent
 		CopyOrigEntityRef(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
+	orig := make([]*otlpcommon.EntityRef, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpcommon.EntityRef{}
+		FillOrigTestEntityRef(orig[i])
+	}
+	return orig
 }

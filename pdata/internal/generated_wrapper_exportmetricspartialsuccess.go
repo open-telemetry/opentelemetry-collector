@@ -14,3 +14,8 @@ func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportM
 	dest.RejectedDataPoints = src.RejectedDataPoints
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+func FillOrigTestExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) {
+	orig.RejectedDataPoints = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}

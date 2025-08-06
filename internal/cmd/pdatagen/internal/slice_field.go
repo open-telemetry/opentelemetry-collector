@@ -19,21 +19,15 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}(), ms.{{ .fieldName }}())
+	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
 	{{- if .isCommon }}
-	internal.FillTest{{ .returnType }}(internal.{{ .returnType }}(ms.{{ .fieldName }}()))
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
-	fillTest{{ .returnType }}(ms.{{ .fieldName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const sliceSetTestTemplate = `{{ if .isCommon -}}
-	{{ if not .isBaseStructCommon }}internal.{{ end }}FillTest{{ .returnType }}(
-	{{- if not .isBaseStructCommon }}internal.{{ end }}New{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))
-	{{- else -}}
-	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
-	{{-	end }}`
+const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .elementOriginName }}Slice()`
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 

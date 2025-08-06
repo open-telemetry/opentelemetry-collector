@@ -74,17 +74,13 @@ func TestAttribute_Key(t *testing.T) {
 
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
-	internal.FillTestValue(internal.Value(ms.Value()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
+	internal.FillOrigTestAnyValue(&ms.orig.Value)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	tv := NewAttribute()
-	fillTestAttribute(tv)
-	return tv
-}
-
-func fillTestAttribute(tv Attribute) {
-	tv.orig.Key = "test_key"
-	internal.FillTestValue(internal.NewValue(&tv.orig.Value, tv.state))
+	ms := NewAttribute()
+	internal.FillOrigTestKeyValue(ms.orig)
+	return ms
 }

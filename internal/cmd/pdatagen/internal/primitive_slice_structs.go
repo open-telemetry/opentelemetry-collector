@@ -4,7 +4,6 @@
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
 
 import (
-	"bytes"
 	"strings"
 )
 
@@ -30,27 +29,19 @@ func (iss *primitiveSliceStruct) getPackageName() string {
 }
 
 func (iss *primitiveSliceStruct) generate(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := primitiveSliceTemplate.Execute(&sb, iss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(primitiveSliceTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) generateTests(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := primitiveSliceTestTemplate.Execute(&sb, iss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(primitiveSliceTestTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) generateInternal(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := primitiveSliceInternalTemplate.Execute(&sb, iss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(primitiveSliceInternalTemplate, iss.templateFields(packageInfo)))
+}
+
+func (iss *primitiveSliceStruct) generateInternalTests(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(primitiveSliceInternalTestTemplate, iss.templateFields(packageInfo)))
 }
 
 func (iss *primitiveSliceStruct) getOriginName() string {

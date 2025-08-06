@@ -14,3 +14,8 @@ func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofile.Export
 	dest.RejectedProfiles = src.RejectedProfiles
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+func FillOrigTestExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) {
+	orig.RejectedProfiles = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}

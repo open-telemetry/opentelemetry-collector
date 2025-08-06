@@ -7,10 +7,16 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
+}
+
+func FillOrigTestLink(orig *otlpprofiles.Link) {
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 }

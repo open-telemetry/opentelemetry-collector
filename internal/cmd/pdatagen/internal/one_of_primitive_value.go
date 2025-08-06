@@ -44,7 +44,7 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 }
 `
 
-const oneOfPrimitiveSetTestTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:

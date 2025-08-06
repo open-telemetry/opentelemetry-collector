@@ -16,3 +16,10 @@ func CopyOrigFunction(dest, src *otlpprofiles.Function) {
 	dest.FilenameStrindex = src.FilenameStrindex
 	dest.StartLine = src.StartLine
 }
+
+func FillOrigTestFunction(orig *otlpprofiles.Function) {
+	orig.NameStrindex = int32(13)
+	orig.SystemNameStrindex = int32(13)
+	orig.FilenameStrindex = int32(13)
+	orig.StartLine = int64(13)
+}

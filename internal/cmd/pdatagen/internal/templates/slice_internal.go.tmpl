@@ -33,19 +33,9 @@ func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .st
 }
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := []{{ .originElementType }}(nil)
+	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
 	state := StateMutable
-	es := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(es)
-	return es
-}
-
-func FillTest{{ .structName }}(es {{ .structName }}) {
-	*es.orig = make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = {{ .emptyOriginElement }}
-		FillTest{{ .elementName }}(New{{ .elementName }}({{ .originElementPtr }}(*es.orig)[i], es.state))
-	}
+	return New{{ .structName }}(&orig, &state)
 }
 
 // MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
@@ -108,4 +98,13 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ .originElementType }})
 	CopyOrig{{ .elementOriginName }}({{ .originElementPtr }}newDest[i], {{ .originElementPtr }}src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .originElementType }} {
+	orig := make([]{{ .originElementType }}, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = {{ .emptyOriginElement }}
+		FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[i])
+	}
+	return orig
 }

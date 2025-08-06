@@ -28,9 +28,9 @@ func TestMetricSlice(t *testing.T) {
 	emptyVal := NewMetric()
 	testVal := generateTestMetric()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestMetric(el)
+		internal.FillOrigTestMetric((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestMetricSliceReadOnly(t *testing.T) {
 
 func TestMetricSlice_CopyTo(t *testing.T) {
 	dest := NewMetricSlice()
-	// Test CopyTo empty
-	NewMetricSlice().CopyTo(dest)
-	assert.Equal(t, NewMetricSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestMetricSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestMetricSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestMetricSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewMetricSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestMetricSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestMetricSlice_Sort(t *testing.T) {
 }
 
 func generateTestMetricSlice() MetricSlice {
-	es := NewMetricSlice()
-	fillTestMetricSlice(es)
-	return es
-}
-
-func fillTestMetricSlice(es MetricSlice) {
-	*es.orig = make([]*otlpmetrics.Metric, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.Metric{}
-		fillTestMetric(newMetric((*es.orig)[i], es.state))
-	}
+	ms := NewMetricSlice()
+	*ms.orig = internal.GenerateOrigTestMetricSlice()
+	return ms
 }

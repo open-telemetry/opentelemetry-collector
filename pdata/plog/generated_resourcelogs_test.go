@@ -65,7 +65,8 @@ func TestResourceLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
@@ -81,18 +82,12 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
-	fillTestScopeLogsSlice(ms.ScopeLogs())
+	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
 	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
 }
 
 func generateTestResourceLogs() ResourceLogs {
-	tv := NewResourceLogs()
-	fillTestResourceLogs(tv)
-	return tv
-}
-
-func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestScopeLogsSlice(tv.ScopeLogs())
+	ms := NewResourceLogs()
+	internal.FillOrigTestResourceLogs(ms.orig)
+	return ms
 }

@@ -30,17 +30,9 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 
 func GenerateTestInstrumentationScope() InstrumentationScope {
 	orig := otlpcommon.InstrumentationScope{}
+	FillOrigTestInstrumentationScope(&orig)
 	state := StateMutable
-	tv := NewInstrumentationScope(&orig, &state)
-	FillTestInstrumentationScope(tv)
-	return tv
-}
-
-func FillTestInstrumentationScope(tv InstrumentationScope) {
-	tv.orig.Name = "test_name"
-	tv.orig.Version = "test_version"
-	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(13)
+	return NewInstrumentationScope(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -89,4 +81,11 @@ func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
 	dest.Version = src.Version
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestInstrumentationScope(orig *otlpcommon.InstrumentationScope) {
+	orig.Name = "test_name"
+	orig.Version = "test_version"
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
 }

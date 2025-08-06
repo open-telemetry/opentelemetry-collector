@@ -13,3 +13,7 @@ import (
 func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+func FillOrigTestGauge(orig *otlpmetrics.Gauge) {
+	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+}

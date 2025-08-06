@@ -14,3 +14,8 @@ func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTrace
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+func FillOrigTestExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) {
+	orig.RejectedSpans = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}

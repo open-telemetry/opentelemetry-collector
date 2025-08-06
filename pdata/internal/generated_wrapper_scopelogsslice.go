@@ -38,3 +38,12 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 	}
 	return newDest
 }
+
+func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
+	orig := make([]*otlplogs.ScopeLogs, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlplogs.ScopeLogs{}
+		FillOrigTestScopeLogs(orig[i])
+	}
+	return orig
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	otlpprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
@@ -17,41 +18,41 @@ import (
 )
 
 func TestReadOnlyProfilesInvalidUsage(t *testing.T) {
-	profiles := NewProfiles()
-	assert.False(t, profiles.IsReadOnly())
-	res := profiles.ResourceProfiles().AppendEmpty().Resource()
+	pd := NewProfiles()
+	assert.False(t, pd.IsReadOnly())
+	res := pd.ResourceProfiles().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
-	profiles.MarkReadOnly()
-	assert.True(t, profiles.IsReadOnly())
+	pd.MarkReadOnly()
+	assert.True(t, pd.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 
 func TestSampleCount(t *testing.T) {
-	profiles := NewProfiles()
-	assert.Equal(t, 0, profiles.SampleCount())
+	pd := NewProfiles()
+	assert.Equal(t, 0, pd.SampleCount())
 
-	rs := profiles.ResourceProfiles().AppendEmpty()
-	assert.Equal(t, 0, profiles.SampleCount())
+	rs := pd.ResourceProfiles().AppendEmpty()
+	assert.Equal(t, 0, pd.SampleCount())
 
 	ils := rs.ScopeProfiles().AppendEmpty()
-	assert.Equal(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, pd.SampleCount())
 
 	ps := ils.Profiles().AppendEmpty()
-	assert.Equal(t, 0, profiles.SampleCount())
+	assert.Equal(t, 0, pd.SampleCount())
 
 	ps.Sample().AppendEmpty()
-	assert.Equal(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, pd.SampleCount())
 
 	ils2 := rs.ScopeProfiles().AppendEmpty()
-	assert.Equal(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, pd.SampleCount())
 
 	ps2 := ils2.Profiles().AppendEmpty()
-	assert.Equal(t, 1, profiles.SampleCount())
+	assert.Equal(t, 1, pd.SampleCount())
 
 	ps2.Sample().AppendEmpty()
-	assert.Equal(t, 2, profiles.SampleCount())
+	assert.Equal(t, 2, pd.SampleCount())
 
-	rms := profiles.ResourceProfiles()
+	rms := pd.ResourceProfiles()
 	rms.EnsureCapacity(3)
 	rms.AppendEmpty().ScopeProfiles().AppendEmpty()
 	ilss := rms.AppendEmpty().ScopeProfiles().AppendEmpty().Profiles().AppendEmpty().Sample()
@@ -59,7 +60,7 @@ func TestSampleCount(t *testing.T) {
 		ilss.AppendEmpty()
 	}
 	// 5 + 2 (from rms.At(0) and rms.At(1) initialized first)
-	assert.Equal(t, 7, profiles.SampleCount())
+	assert.Equal(t, 7, pd.SampleCount())
 }
 
 func TestSampleCountWithEmpty(t *testing.T) {
@@ -93,8 +94,7 @@ func TestSampleCountWithEmpty(t *testing.T) {
 }
 
 func BenchmarkProfilesUsage(b *testing.B) {
-	profiles := NewProfiles()
-	fillTestResourceProfilesSlice(profiles.ResourceProfiles())
+	pd := generateTestProfiles()
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	testValProfileID := ProfileID(data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	testSecondValProfileID := ProfileID(data.ProfileID([16]byte{2, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
@@ -103,8 +103,8 @@ func BenchmarkProfilesUsage(b *testing.B) {
 	b.ResetTimer()
 
 	for bb := 0; bb < b.N; bb++ {
-		for i := 0; i < profiles.ResourceProfiles().Len(); i++ {
-			rs := profiles.ResourceProfiles().At(i)
+		for i := 0; i < pd.ResourceProfiles().Len(); i++ {
+			rs := pd.ResourceProfiles().At(i)
 			res := rs.Resource()
 			res.Attributes().PutStr("foo", "bar")
 			v, ok := res.Attributes().Get("foo")
@@ -140,15 +140,21 @@ func BenchmarkProfilesUsage(b *testing.B) {
 }
 
 func BenchmarkProfilesMarshalJSON(b *testing.B) {
-	md := NewProfiles()
-	fillTestResourceProfilesSlice(md.ResourceProfiles())
+	pd := generateTestProfiles()
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		jsonBuf, err := encoder.MarshalProfiles(md)
+		jsonBuf, err := encoder.MarshalProfiles(pd)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
+}
+
+func generateTestProfiles() Profiles {
+	pd := NewProfiles()
+	pd.getOrig().ResourceProfiles = internal.GenerateOrigTestResourceProfilesSlice()
+	internal.FillOrigTestProfilesDictionary(&pd.getOrig().Dictionary)
+	return pd
 }

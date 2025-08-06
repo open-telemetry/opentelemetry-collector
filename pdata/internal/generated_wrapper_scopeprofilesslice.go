@@ -38,3 +38,12 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 	}
 	return newDest
 }
+
+func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
+	orig := make([]*otlpprofiles.ScopeProfiles, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.ScopeProfiles{}
+		FillOrigTestScopeProfiles(orig[i])
+	}
+	return orig
+}

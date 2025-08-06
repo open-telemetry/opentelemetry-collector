@@ -48,3 +48,12 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 		}
 	}
 }
+
+func FillOrigTestMetric(orig *otlpmetrics.Metric) {
+	orig.Name = "test_name"
+	orig.Description = "test_description"
+	orig.Unit = "test_unit"
+	orig.Metadata = GenerateOrigTestKeyValueSlice()
+	orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+	FillOrigTestSum(orig.GetSum())
+}

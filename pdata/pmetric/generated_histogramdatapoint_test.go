@@ -66,7 +66,7 @@ func TestHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -98,21 +98,21 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
-	internal.FillTestUInt64Slice(internal.UInt64Slice(ms.BucketCounts()))
+	ms.orig.BucketCounts = internal.GenerateOrigTestUint64Slice()
 	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewFloat64Slice(), ms.ExplicitBounds())
-	internal.FillTestFloat64Slice(internal.Float64Slice(ms.ExplicitBounds()))
+	ms.orig.ExplicitBounds = internal.GenerateOrigTestFloat64Slice()
 	assert.Equal(t, pcommon.Float64Slice(internal.GenerateTestFloat64Slice()), ms.ExplicitBounds())
 }
 
 func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	fillTestExemplarSlice(ms.Exemplars())
+	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
 	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
@@ -167,21 +167,7 @@ func TestHistogramDataPoint_Max(t *testing.T) {
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	tv := NewHistogramDataPoint()
-	fillTestHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(13)
-	internal.FillTestUInt64Slice(internal.NewUInt64Slice(&tv.orig.BucketCounts, tv.state))
-	internal.FillTestFloat64Slice(internal.NewFloat64Slice(&tv.orig.ExplicitBounds, tv.state))
-	fillTestExemplarSlice(tv.Exemplars())
-	tv.orig.Flags = 1
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
-	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
-	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
+	ms := NewHistogramDataPoint()
+	internal.FillOrigTestHistogramDataPoint(ms.orig)
+	return ms
 }

@@ -90,13 +90,7 @@ func TestLine_Column(t *testing.T) {
 }
 
 func generateTestLine() Line {
-	tv := NewLine()
-	fillTestLine(tv)
-	return tv
-}
-
-func fillTestLine(tv Line) {
-	tv.orig.FunctionIndex = int32(13)
-	tv.orig.Line = int64(13)
-	tv.orig.Column = int64(13)
+	ms := NewLine()
+	internal.FillOrigTestLine(ms.orig)
+	return ms
 }

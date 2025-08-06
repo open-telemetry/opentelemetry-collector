@@ -27,16 +27,10 @@ func NewFloat64Slice(orig *[]float64, state *State) Float64Slice {
 	return Float64Slice{orig: orig, state: state}
 }
 
-func FillTestFloat64Slice(ms Float64Slice) {
-	*ms.orig = []float64{1.1, 2.2, 3.3}
-}
-
 func GenerateTestFloat64Slice() Float64Slice {
-	orig := []float64(nil)
+	orig := GenerateOrigTestFloat64Slice()
 	state := StateMutable
-	ms := NewFloat64Slice(&orig, &state)
-	FillTestFloat64Slice(ms)
-	return ms
+	return NewFloat64Slice(&orig, &state)
 }
 
 // MarshalJSONStreamFloat64Slice marshals all properties from the current struct to the destination stream.
@@ -62,4 +56,8 @@ func UnmarshalJSONIterFloat64Slice(ms Float64Slice, iter *json.Iterator) {
 
 func CopyOrigFloat64Slice(dst, src []float64) []float64 {
 	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestFloat64Slice() []float64 {
+	return []float64{1.1, 2.2, 3.3}
 }

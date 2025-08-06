@@ -87,12 +87,7 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	tv := NewExportPartialSuccess()
-	fillTestExportPartialSuccess(tv)
-	return tv
-}
-
-func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedLogRecords = int64(13)
-	tv.orig.ErrorMessage = "test_errormessage"
+	ms := NewExportPartialSuccess()
+	internal.FillOrigTestExportLogsPartialSuccess(ms.orig)
+	return ms
 }

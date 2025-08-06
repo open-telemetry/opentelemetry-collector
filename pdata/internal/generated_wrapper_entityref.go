@@ -30,17 +30,9 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 
 func GenerateTestEntityRef() EntityRef {
 	orig := otlpcommon.EntityRef{}
+	FillOrigTestEntityRef(&orig)
 	state := StateMutable
-	tv := NewEntityRef(&orig, &state)
-	FillTestEntityRef(tv)
-	return tv
-}
-
-func FillTestEntityRef(tv EntityRef) {
-	tv.orig.SchemaUrl = "test_schemaurl"
-	tv.orig.Type = "test_type"
-	FillTestStringSlice(NewStringSlice(&tv.orig.IdKeys, tv.state))
-	FillTestStringSlice(NewStringSlice(&tv.orig.DescriptionKeys, tv.state))
+	return NewEntityRef(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -89,4 +81,11 @@ func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 	dest.Type = src.Type
 	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
 	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
+}
+
+func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Type = "test_type"
+	orig.IdKeys = GenerateOrigTestStringSlice()
+	orig.DescriptionKeys = GenerateOrigTestStringSlice()
 }

@@ -27,3 +27,12 @@ func CopyOrigSample(dest, src *otlpprofiles.Sample) {
 	}
 	dest.TimestampsUnixNano = CopyOrigUint64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
 }
+
+func FillOrigTestSample(orig *otlpprofiles.Sample) {
+	orig.LocationsStartIndex = int32(13)
+	orig.LocationsLength = int32(13)
+	orig.Value = GenerateOrigTestInt64Slice()
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: int32(13)}
+	orig.TimestampsUnixNano = GenerateOrigTestUint64Slice()
+}

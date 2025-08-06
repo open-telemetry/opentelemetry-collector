@@ -3,10 +3,6 @@
 
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
 
-import (
-	"bytes"
-)
-
 type baseSlice interface {
 	getName() string
 	getOriginName() string
@@ -30,19 +26,19 @@ func (ss *sliceOfPtrs) getPackageName() string {
 }
 
 func (ss *sliceOfPtrs) generate(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfPtrs) generateTests(packageInfo *PackageInfo) []byte {
-	var sb bytes.Buffer
-	if err := sliceTestTemplate.Execute(&sb, ss.templateFields(packageInfo)); err != nil {
-		panic(err)
-	}
-	return sb.Bytes()
+	return []byte(executeTemplate(sliceTestTemplate, ss.templateFields(packageInfo)))
+}
+
+func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+}
+
+func (ss *sliceOfPtrs) generateInternalTests(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(sliceInternalTestTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
@@ -65,10 +61,6 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 		"imports":               packageInfo.imports,
 		"testImports":           packageInfo.testImports,
 	}
-}
-
-func (ss *sliceOfPtrs) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfPtrs) getOriginName() string {
@@ -104,6 +96,14 @@ func (ss *sliceOfValues) generateTests(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(sliceTestTemplate, ss.templateFields(packageInfo)))
 }
 
+func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
+}
+
+func (ss *sliceOfValues) generateInternalTests(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(sliceInternalTestTemplate, ss.templateFields(packageInfo)))
+}
+
 func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any {
 	orig := origAccessor(ss.packageName)
 	state := stateAccessor(ss.packageName)
@@ -124,10 +124,6 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 		"imports":               packageInfo.imports,
 		"testImports":           packageInfo.testImports,
 	}
-}
-
-func (ss *sliceOfValues) generateInternal(packageInfo *PackageInfo) []byte {
-	return []byte(executeTemplate(sliceInternalTemplate, ss.templateFields(packageInfo)))
 }
 
 func (ss *sliceOfValues) getOriginName() string {

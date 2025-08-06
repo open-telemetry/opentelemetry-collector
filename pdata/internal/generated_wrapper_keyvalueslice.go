@@ -25,3 +25,12 @@ func CopyOrigKeyValueSlice(dest, src []v1.KeyValue) []v1.KeyValue {
 	}
 	return newDest
 }
+
+func GenerateOrigTestKeyValueSlice() []v1.KeyValue {
+	orig := make([]v1.KeyValue, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = v1.KeyValue{}
+		FillOrigTestKeyValue(&orig[i])
+	}
+	return orig
+}

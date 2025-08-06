@@ -27,9 +27,9 @@ func TestAttributeTableSlice(t *testing.T) {
 	emptyVal := NewAttribute()
 	testVal := generateTestAttribute()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestAttribute(el)
+		internal.FillOrigTestKeyValue(&(*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -50,24 +50,7 @@ func TestAttributeTableSliceReadOnly(t *testing.T) {
 
 func TestAttributeTableSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeTableSlice()
-	// Test CopyTo empty
-	NewAttributeTableSlice().CopyTo(dest)
-	assert.Equal(t, NewAttributeTableSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestAttributeTableSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeTableSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeTableSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewAttributeTableSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeTableSlice(), dest)
 }
@@ -177,15 +160,7 @@ func TestAttributeTableSlice_MarshalAndUnmarshalJSON(t *testing.T) {
 }
 
 func generateTestAttributeTableSlice() AttributeTableSlice {
-	es := NewAttributeTableSlice()
-	fillTestAttributeTableSlice(es)
-	return es
-}
-
-func fillTestAttributeTableSlice(es AttributeTableSlice) {
-	*es.orig = make([]v1.KeyValue, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = v1.KeyValue{}
-		fillTestAttribute(newAttribute(&(*es.orig)[i], es.state))
-	}
+	ms := NewAttributeTableSlice()
+	*ms.orig = internal.GenerateOrigTestKeyValueSlice()
+	return ms
 }

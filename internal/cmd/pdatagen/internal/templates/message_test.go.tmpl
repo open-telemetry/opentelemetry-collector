@@ -73,16 +73,8 @@ func generateTest{{ .structName }}() {{ .structName }} {
     {{- if .isCommon }}
     return {{ .structName }}(internal.GenerateTest{{ .structName }}())
     {{- else }}
-	tv := New{{ .structName }}()
-	fillTest{{ .structName }}(tv)
-	return tv
+	ms := New{{ .structName }}()
+	internal.FillOrigTest{{ .originName }}(ms.orig)
+	return ms
 	{{- end }}
 }
-
-{{ if not .isCommon -}}
-func fillTest{{ .structName }}(tv {{ .structName }}) {
-	{{- range .fields }}
-	{{ .GenerateSetWithTestValue $.messageStruct }}
-	{{- end }}
-}
-{{ end }}

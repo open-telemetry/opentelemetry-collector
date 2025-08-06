@@ -65,15 +65,11 @@ func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 	}
 }
 
-func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
-}
-
 func GenerateTestValue() Value {
 	var orig otlpcommon.AnyValue
+	FillOrigTestAnyValue(&orig)
 	state := StateMutable
 	ms := NewValue(&orig, &state)
-	FillTestValue(ms)
 	return ms
 }
 
@@ -180,4 +176,8 @@ func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
 		return true
 	})
 	return v
+}
+
+func FillOrigTestAnyValue(orig *otlpcommon.AnyValue) {
+	orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }

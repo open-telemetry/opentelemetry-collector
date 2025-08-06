@@ -15,3 +15,9 @@ func CopyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Metrics = CopyOrigMetricSlice(dest.Metrics, src.Metrics)
 }
+
+func FillOrigTestScopeMetrics(orig *otlpmetrics.ScopeMetrics) {
+	FillOrigTestInstrumentationScope(&orig.Scope)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Metrics = GenerateOrigTestMetricSlice()
+}

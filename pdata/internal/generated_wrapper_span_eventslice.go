@@ -38,3 +38,12 @@ func CopyOrigSpan_EventSlice(dest, src []*otlptrace.Span_Event) []*otlptrace.Spa
 	}
 	return newDest
 }
+
+func GenerateOrigTestSpan_EventSlice() []*otlptrace.Span_Event {
+	orig := make([]*otlptrace.Span_Event, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlptrace.Span_Event{}
+		FillOrigTestSpan_Event(orig[i])
+	}
+	return orig
+}

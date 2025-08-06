@@ -65,7 +65,8 @@ func TestScopeSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestScopeSpans_Scope(t *testing.T) {
 	ms := NewScopeSpans()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
@@ -81,18 +82,12 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 func TestScopeSpans_Spans(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Equal(t, NewSpanSlice(), ms.Spans())
-	fillTestSpanSlice(ms.Spans())
+	ms.orig.Spans = internal.GenerateOrigTestSpanSlice()
 	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
 }
 
 func generateTestScopeSpans() ScopeSpans {
-	tv := NewScopeSpans()
-	fillTestScopeSpans(tv)
-	return tv
-}
-
-func fillTestScopeSpans(tv ScopeSpans) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestSpanSlice(tv.Spans())
+	ms := NewScopeSpans()
+	internal.FillOrigTestScopeSpans(ms.orig)
+	return ms
 }

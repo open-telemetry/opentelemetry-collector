@@ -16,3 +16,10 @@ func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
 }
+
+func FillOrigTestSpan_Event(orig *otlptrace.Span_Event) {
+	orig.TimeUnixNano = 1234567890
+	orig.Name = "test_name"
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+}

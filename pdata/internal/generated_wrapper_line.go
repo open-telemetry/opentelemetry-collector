@@ -15,3 +15,9 @@ func CopyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.Line = src.Line
 	dest.Column = src.Column
 }
+
+func FillOrigTestLine(orig *otlpprofiles.Line) {
+	orig.FunctionIndex = int32(13)
+	orig.Line = int64(13)
+	orig.Column = int64(13)
+}

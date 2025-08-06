@@ -102,7 +102,7 @@ func TestMapping_FilenameStrindex(t *testing.T) {
 func TestMapping_AttributeIndices(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
@@ -143,19 +143,7 @@ func TestMapping_HasInlineFrames(t *testing.T) {
 }
 
 func generateTestMapping() Mapping {
-	tv := NewMapping()
-	fillTestMapping(tv)
-	return tv
-}
-
-func fillTestMapping(tv Mapping) {
-	tv.orig.MemoryStart = uint64(13)
-	tv.orig.MemoryLimit = uint64(13)
-	tv.orig.FileOffset = uint64(13)
-	tv.orig.FilenameStrindex = int32(13)
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
-	tv.orig.HasFunctions = true
-	tv.orig.HasFilenames = true
-	tv.orig.HasLineNumbers = true
-	tv.orig.HasInlineFrames = true
+	ms := NewMapping()
+	internal.FillOrigTestMapping(ms.orig)
+	return ms
 }

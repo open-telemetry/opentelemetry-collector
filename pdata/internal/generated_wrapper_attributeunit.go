@@ -14,3 +14,8 @@ func CopyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
 	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
 	dest.UnitStrindex = src.UnitStrindex
 }
+
+func FillOrigTestAttributeUnit(orig *otlpprofiles.AttributeUnit) {
+	orig.AttributeKeyStrindex = int32(13)
+	orig.UnitStrindex = int32(13)
+}

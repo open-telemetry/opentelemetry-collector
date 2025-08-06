@@ -14,3 +14,8 @@ func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.Expone
 	dest.Offset = src.Offset
 	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
 }
+
+func FillOrigTestExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
+	orig.Offset = int32(13)
+	orig.BucketCounts = GenerateOrigTestUint64Slice()
+}

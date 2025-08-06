@@ -66,7 +66,7 @@ func TestSummaryDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestSummaryDataPoint_Attributes(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -107,7 +107,7 @@ func TestSummaryDataPoint_Sum(t *testing.T) {
 func TestSummaryDataPoint_QuantileValues(t *testing.T) {
 	ms := NewSummaryDataPoint()
 	assert.Equal(t, NewSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
-	fillTestSummaryDataPointValueAtQuantileSlice(ms.QuantileValues())
+	ms.orig.QuantileValues = internal.GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
 	assert.Equal(t, generateTestSummaryDataPointValueAtQuantileSlice(), ms.QuantileValues())
 }
 
@@ -120,17 +120,7 @@ func TestSummaryDataPoint_Flags(t *testing.T) {
 }
 
 func generateTestSummaryDataPoint() SummaryDataPoint {
-	tv := NewSummaryDataPoint()
-	fillTestSummaryDataPoint(tv)
-	return tv
-}
-
-func fillTestSummaryDataPoint(tv SummaryDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(13)
-	tv.orig.Sum = float64(3.1415926)
-	fillTestSummaryDataPointValueAtQuantileSlice(tv.QuantileValues())
-	tv.orig.Flags = 1
+	ms := NewSummaryDataPoint()
+	internal.FillOrigTestSummaryDataPoint(ms.orig)
+	return ms
 }

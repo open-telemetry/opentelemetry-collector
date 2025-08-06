@@ -85,7 +85,7 @@ func TestInstrumentationScope_Version(t *testing.T) {
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 

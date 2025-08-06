@@ -12,3 +12,8 @@ func CopyOrigKeyValue(dest, src *v1.KeyValue) {
 	dest.Key = src.Key
 	CopyOrigAnyValue(&dest.Value, &src.Value)
 }
+
+func FillOrigTestKeyValue(orig *v1.KeyValue) {
+	orig.Key = "test_key"
+	FillOrigTestAnyValue(&orig.Value)
+}

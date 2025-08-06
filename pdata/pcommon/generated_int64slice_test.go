@@ -135,7 +135,7 @@ func TestInt64Slice_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := NewInt64Slice()
-	internal.FillTestInt64Slice(internal.Int64Slice(src))
+	*src.getOrig() = internal.GenerateOrigTestInt64Slice()
 	internal.MarshalJSONStreamInt64Slice(internal.Int64Slice(src), stream)
 	require.NoError(t, stream.Error())
 

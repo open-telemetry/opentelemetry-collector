@@ -89,13 +89,7 @@ func TestValueType_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestValueType() ValueType {
-	tv := NewValueType()
-	fillTestValueType(tv)
-	return tv
-}
-
-func fillTestValueType(tv ValueType) {
-	tv.orig.TypeStrindex = int32(13)
-	tv.orig.UnitStrindex = int32(13)
-	tv.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+	ms := NewValueType()
+	internal.FillOrigTestValueType(ms.orig)
+	return ms
 }

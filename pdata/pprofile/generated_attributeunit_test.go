@@ -83,12 +83,7 @@ func TestAttributeUnit_UnitStrindex(t *testing.T) {
 }
 
 func generateTestAttributeUnit() AttributeUnit {
-	tv := NewAttributeUnit()
-	fillTestAttributeUnit(tv)
-	return tv
-}
-
-func fillTestAttributeUnit(tv AttributeUnit) {
-	tv.orig.AttributeKeyStrindex = int32(13)
-	tv.orig.UnitStrindex = int32(13)
+	ms := NewAttributeUnit()
+	internal.FillOrigTestAttributeUnit(ms.orig)
+	return ms
 }

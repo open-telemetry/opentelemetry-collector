@@ -53,3 +53,20 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	}
 	dest.ZeroThreshold = src.ZeroThreshold
 }
+
+func FillOrigTestExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.Scale = int32(13)
+	orig.ZeroCount = uint64(13)
+	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Positive)
+	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Negative)
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
+	orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
+	orig.ZeroThreshold = float64(3.1415926)
+}

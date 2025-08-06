@@ -31,16 +31,10 @@ func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName 
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func FillTest{{ .structName }}(ms {{ .structName}}) {
-	*ms.orig = []{{ .itemType }}{ {{ .testOrigVal }} }
-}
-
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := []{{ .itemType }}(nil)
+	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
 	state := StateMutable
-	ms := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(ms)
-	return ms
+	return New{{ .structName }}(&orig, &state)
 }
 
 // MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
@@ -79,5 +73,9 @@ func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterato
 }
 
 func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
-return append(dst[:0], src...)
+	return append(dst[:0], src...)
+}
+
+func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
+	return []{{ .itemType }}{ {{ .testOrigVal }} }
 }

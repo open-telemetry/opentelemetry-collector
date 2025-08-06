@@ -15,3 +15,9 @@ func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Profiles = CopyOrigProfileSlice(dest.Profiles, src.Profiles)
 }
+
+func FillOrigTestScopeProfiles(orig *otlpprofiles.ScopeProfiles) {
+	FillOrigTestInstrumentationScope(&orig.Scope)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Profiles = GenerateOrigTestProfileSlice()
+}

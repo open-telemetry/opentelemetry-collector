@@ -38,3 +38,12 @@ func CopyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.L
 	}
 	return newDest
 }
+
+func GenerateOrigTestLocationSlice() []*otlpprofiles.Location {
+	orig := make([]*otlpprofiles.Location, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.Location{}
+		FillOrigTestLocation(orig[i])
+	}
+	return orig
+}

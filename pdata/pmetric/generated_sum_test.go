@@ -82,18 +82,12 @@ func TestSum_IsMonotonic(t *testing.T) {
 func TestSum_DataPoints(t *testing.T) {
 	ms := NewSum()
 	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	fillTestNumberDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSum() Sum {
-	tv := NewSum()
-	fillTestSum(tv)
-	return tv
-}
-
-func fillTestSum(tv Sum) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(tv.DataPoints())
+	ms := NewSum()
+	internal.FillOrigTestSum(ms.orig)
+	return ms
 }

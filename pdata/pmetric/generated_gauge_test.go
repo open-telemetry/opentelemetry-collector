@@ -65,16 +65,12 @@ func TestGauge_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestGauge_DataPoints(t *testing.T) {
 	ms := NewGauge()
 	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	fillTestNumberDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestGauge() Gauge {
-	tv := NewGauge()
-	fillTestGauge(tv)
-	return tv
-}
-
-func fillTestGauge(tv Gauge) {
-	fillTestNumberDataPointSlice(tv.DataPoints())
+	ms := NewGauge()
+	internal.FillOrigTestGauge(ms.orig)
+	return ms
 }
