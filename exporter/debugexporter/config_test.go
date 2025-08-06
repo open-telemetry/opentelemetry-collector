@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 )
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
@@ -34,6 +35,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Verbosity:          configtelemetry.LevelDetailed,
 				SamplingInitial:    10,
 				SamplingThereafter: 50,
+				Output:             internal.NewDefaultOutputConfig(),
 			},
 		},
 		{
@@ -120,6 +122,54 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Verbosity: configtelemetry.LevelDetailed,
 			},
+		},
+		{
+			name: "both include and exclude for scope",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Scope: internal.ScopeOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for scope",
+		},
+		{
+			name: "both include and exclude for resource",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Resource: internal.ResourceOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for resource",
+		},
+		{
+			name: "both include and exclude for record",
+			cfg: &Config{
+				Output: internal.OutputConfig{
+					Record: internal.RecordOutputConfig{
+						Enabled: true,
+						AttributesOutputConfig: internal.AttributesOutputConfig{
+							Include: []string{"service.name"},
+							Exclude: []string{"service.version"},
+							Enabled: true,
+						},
+					},
+				},
+			},
+			expectedErr: "cannot specify both include and exclude attributes for record",
 		},
 	}
 

@@ -1,0 +1,9 @@
+ResourceSpans #0
+Resource SchemaURL: 
+Resource attributes:
+     -> attribute.keep: Str(resource-keep)
+ScopeSpans #0
+ScopeSpans SchemaURL: 
+InstrumentationScope  
+InstrumentationScope attributes:
+     -> attribute.keep: Str(scope-keep)

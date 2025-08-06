@@ -41,13 +41,13 @@ func (textProfilesMarshaler) MarshalProfiles(pd pprofile.Profiles) ([]byte, erro
 		buf.logEntry("ResourceProfiles #%d", i)
 		rp := rps.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rp.SchemaUrl())
-		buf.logAttributes("Resource attributes", rp.Resource().Attributes())
+		buf.logAttributes("Resource attributes", rp.Resource().Attributes(), nil)
 		ilps := rp.ScopeProfiles()
 		for j := 0; j < ilps.Len(); j++ {
 			buf.logEntry("ScopeProfiles #%d", j)
 			ilp := ilps.At(j)
 			buf.logEntry("ScopeProfiles SchemaURL: %s", ilp.SchemaUrl())
-			buf.logInstrumentationScope(ilp.Scope())
+			buf.logInstrumentationScope(ilp.Scope(), nil)
 			profiles := ilp.Profiles()
 			for k := 0; k < profiles.Len(); k++ {
 				buf.logEntry("Profile #%d", k)
