@@ -52,7 +52,7 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
-const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
+const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {

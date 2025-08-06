@@ -38,3 +38,12 @@ func CopyOrigScopeMetricsSlice(dest, src []*otlpmetrics.ScopeMetrics) []*otlpmet
 	}
 	return newDest
 }
+
+func GenerateOrigTestScopeMetricsSlice() []*otlpmetrics.ScopeMetrics {
+	orig := make([]*otlpmetrics.ScopeMetrics, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.ScopeMetrics{}
+		FillOrigTestScopeMetrics(orig[i])
+	}
+	return orig
+}

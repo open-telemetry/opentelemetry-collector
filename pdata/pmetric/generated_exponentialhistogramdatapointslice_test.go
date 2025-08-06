@@ -28,9 +28,9 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	emptyVal := NewExponentialHistogramDataPoint()
 	testVal := generateTestExponentialHistogramDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestExponentialHistogramDataPoint(el)
+		internal.FillOrigTestExponentialHistogramDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
-	// Test CopyTo empty
-	NewExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestExponentialHistogramDataPointSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
-	es := NewExponentialHistogramDataPointSlice()
-	fillTestExponentialHistogramDataPointSlice(es)
-	return es
-}
-
-func fillTestExponentialHistogramDataPointSlice(es ExponentialHistogramDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewExponentialHistogramDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	return ms
 }

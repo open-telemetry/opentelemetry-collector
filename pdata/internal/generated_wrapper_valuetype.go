@@ -15,3 +15,9 @@ func CopyOrigValueType(dest, src *otlpprofiles.ValueType) {
 	dest.UnitStrindex = src.UnitStrindex
 	dest.AggregationTemporality = src.AggregationTemporality
 }
+
+func FillOrigTestValueType(orig *otlpprofiles.ValueType) {
+	orig.TypeStrindex = int32(13)
+	orig.UnitStrindex = int32(13)
+	orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+}

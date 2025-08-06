@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 )
 
@@ -22,4 +23,18 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	CopyOrigAnyValue(&dest.Body, &src.Body)
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestLogRecord(orig *otlplogs.LogRecord) {
+	orig.ObservedTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	orig.Flags = 1
+	orig.EventName = "test_eventname"
+	orig.SeverityText = "test_severitytext"
+	orig.SeverityNumber = otlplogs.SeverityNumber(5)
+	FillOrigTestAnyValue(&orig.Body)
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
 }

@@ -38,3 +38,12 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 	}
 	return newDest
 }
+
+func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
+	orig := make([]*otlpprofiles.ValueType, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.ValueType{}
+		FillOrigTestValueType(orig[i])
+	}
+	return orig
+}

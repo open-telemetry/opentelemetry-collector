@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 )
 
@@ -27,4 +28,23 @@ func CopyOrigSpan(dest, src *otlptrace.Span) {
 	dest.Links = CopyOrigSpan_LinkSlice(dest.Links, src.Links)
 	dest.DroppedLinksCount = src.DroppedLinksCount
 	CopyOrigStatus(&dest.Status, &src.Status)
+}
+
+func FillOrigTestSpan(orig *otlptrace.Span) {
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	FillOrigTestTraceState(&orig.TraceState)
+	orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	orig.Name = "test_name"
+	orig.Flags = uint32(13)
+	orig.Kind = otlptrace.Span_SpanKind(3)
+	orig.StartTimeUnixNano = 1234567890
+	orig.EndTimeUnixNano = 1234567890
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+	orig.Events = GenerateOrigTestSpan_EventSlice()
+	orig.DroppedEventsCount = uint32(13)
+	orig.Links = GenerateOrigTestSpan_LinkSlice()
+	orig.DroppedLinksCount = uint32(13)
+	FillOrigTestStatus(&orig.Status)
 }

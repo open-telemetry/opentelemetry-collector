@@ -83,7 +83,7 @@ func TestSpanEvent_Name(t *testing.T) {
 func TestSpanEvent_Attributes(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -97,14 +97,7 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	tv := NewSpanEvent()
-	fillTestSpanEvent(tv)
-	return tv
-}
-
-func fillTestSpanEvent(tv SpanEvent) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Name = "test_name"
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(13)
+	ms := NewSpanEvent()
+	internal.FillOrigTestSpan_Event(ms.orig)
+	return ms
 }

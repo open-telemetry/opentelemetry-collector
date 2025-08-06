@@ -28,9 +28,9 @@ func TestScopeMetricsSlice(t *testing.T) {
 	emptyVal := NewScopeMetrics()
 	testVal := generateTestScopeMetrics()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestScopeMetrics(el)
+		internal.FillOrigTestScopeMetrics((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestScopeMetricsSliceReadOnly(t *testing.T) {
 
 func TestScopeMetricsSlice_CopyTo(t *testing.T) {
 	dest := NewScopeMetricsSlice()
-	// Test CopyTo empty
-	NewScopeMetricsSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeMetricsSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestScopeMetricsSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewScopeMetricsSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeMetricsSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestScopeMetricsSlice_Sort(t *testing.T) {
 }
 
 func generateTestScopeMetricsSlice() ScopeMetricsSlice {
-	es := NewScopeMetricsSlice()
-	fillTestScopeMetricsSlice(es)
-	return es
-}
-
-func fillTestScopeMetricsSlice(es ScopeMetricsSlice) {
-	*es.orig = make([]*otlpmetrics.ScopeMetrics, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ScopeMetrics{}
-		fillTestScopeMetrics(newScopeMetrics((*es.orig)[i], es.state))
-	}
+	ms := NewScopeMetricsSlice()
+	*ms.orig = internal.GenerateOrigTestScopeMetricsSlice()
+	return ms
 }

@@ -65,7 +65,8 @@ func TestScopeProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
@@ -81,18 +82,12 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	fillTestProfilesSlice(ms.Profiles())
+	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
 	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	tv := NewScopeProfiles()
-	fillTestScopeProfiles(tv)
-	return tv
-}
-
-func fillTestScopeProfiles(tv ScopeProfiles) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestProfilesSlice(tv.Profiles())
+	ms := NewScopeProfiles()
+	internal.FillOrigTestScopeProfiles(ms.orig)
+	return ms
 }

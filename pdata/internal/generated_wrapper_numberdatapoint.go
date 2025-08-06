@@ -23,3 +23,12 @@ func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
 }
+
+func FillOrigTestNumberDataPoint(orig *otlpmetrics.NumberDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+}

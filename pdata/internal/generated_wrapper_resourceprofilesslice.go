@@ -38,3 +38,12 @@ func CopyOrigResourceProfilesSlice(dest, src []*otlpprofiles.ResourceProfiles) [
 	}
 	return newDest
 }
+
+func GenerateOrigTestResourceProfilesSlice() []*otlpprofiles.ResourceProfiles {
+	orig := make([]*otlpprofiles.ResourceProfiles, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.ResourceProfiles{}
+		FillOrigTestResourceProfiles(orig[i])
+	}
+	return orig
+}

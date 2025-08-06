@@ -14,3 +14,8 @@ func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryData
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
 }
+
+func FillOrigTestSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	orig.Quantile = float64(3.1415926)
+	orig.Value = float64(3.1415926)
+}

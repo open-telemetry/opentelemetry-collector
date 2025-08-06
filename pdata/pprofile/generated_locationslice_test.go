@@ -28,9 +28,9 @@ func TestLocationSlice(t *testing.T) {
 	emptyVal := NewLocation()
 	testVal := generateTestLocation()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLocation(el)
+		internal.FillOrigTestLocation((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestLocationSliceReadOnly(t *testing.T) {
 
 func TestLocationSlice_CopyTo(t *testing.T) {
 	dest := NewLocationSlice()
-	// Test CopyTo empty
-	NewLocationSlice().CopyTo(dest)
-	assert.Equal(t, NewLocationSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestLocationSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLocationSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLocationSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewLocationSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLocationSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestLocationSlice_Sort(t *testing.T) {
 }
 
 func generateTestLocationSlice() LocationSlice {
-	es := NewLocationSlice()
-	fillTestLocationSlice(es)
-	return es
-}
-
-func fillTestLocationSlice(es LocationSlice) {
-	*es.orig = make([]*otlpprofiles.Location, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Location{}
-		fillTestLocation(newLocation((*es.orig)[i], es.state))
-	}
+	ms := NewLocationSlice()
+	*ms.orig = internal.GenerateOrigTestLocationSlice()
+	return ms
 }

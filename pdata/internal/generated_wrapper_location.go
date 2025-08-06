@@ -26,3 +26,11 @@ func CopyOrigLocation(dest, src *otlpprofiles.Location) {
 	dest.IsFolded = src.IsFolded
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
 }
+
+func FillOrigTestLocation(orig *otlpprofiles.Location) {
+	orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
+	orig.Address = uint64(13)
+	orig.Line = GenerateOrigTestLineSlice()
+	orig.IsFolded = true
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+}

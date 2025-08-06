@@ -38,3 +38,12 @@ func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*o
 	}
 	return newDest
 }
+
+func GenerateOrigTestNumberDataPointSlice() []*otlpmetrics.NumberDataPoint {
+	orig := make([]*otlpmetrics.NumberDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.NumberDataPoint{}
+		FillOrigTestNumberDataPoint(orig[i])
+	}
+	return orig
+}

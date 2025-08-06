@@ -38,3 +38,12 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 	}
 	return newDest
 }
+
+func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
+	orig := make([]*otlpmetrics.HistogramDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.HistogramDataPoint{}
+		FillOrigTestHistogramDataPoint(orig[i])
+	}
+	return orig
+}

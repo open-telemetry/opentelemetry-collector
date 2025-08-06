@@ -28,9 +28,9 @@ func TestEntityRefSlice(t *testing.T) {
 	emptyVal := NewEntityRef()
 	testVal := EntityRef(internal.GenerateTestEntityRef())
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		internal.FillTestEntityRef(internal.EntityRef(el))
+		internal.FillOrigTestEntityRef((*es.getOrig())[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestEntityRefSliceReadOnly(t *testing.T) {
 
 func TestEntityRefSlice_CopyTo(t *testing.T) {
 	dest := NewEntityRefSlice()
-	// Test CopyTo empty
-	NewEntityRefSlice().CopyTo(dest)
-	assert.Equal(t, NewEntityRefSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestEntityRefSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestEntityRefSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestEntityRefSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewEntityRefSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestEntityRefSlice(), dest)
 }
@@ -194,5 +177,7 @@ func TestEntityRefSlice_Sort(t *testing.T) {
 }
 
 func generateTestEntityRefSlice() EntityRefSlice {
-	return EntityRefSlice(internal.GenerateTestEntityRefSlice())
+	ms := NewEntityRefSlice()
+	*ms.getOrig() = internal.GenerateOrigTestEntityRefSlice()
+	return ms
 }

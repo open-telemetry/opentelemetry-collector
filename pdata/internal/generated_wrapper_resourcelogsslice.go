@@ -38,3 +38,12 @@ func CopyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.R
 	}
 	return newDest
 }
+
+func GenerateOrigTestResourceLogsSlice() []*otlplogs.ResourceLogs {
+	orig := make([]*otlplogs.ResourceLogs, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlplogs.ResourceLogs{}
+		FillOrigTestResourceLogs(orig[i])
+	}
+	return orig
+}

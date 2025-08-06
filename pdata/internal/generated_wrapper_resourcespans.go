@@ -15,3 +15,9 @@ func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
 }
+
+func FillOrigTestResourceSpans(orig *otlptrace.ResourceSpans) {
+	FillOrigTestResource(&orig.Resource)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
+}

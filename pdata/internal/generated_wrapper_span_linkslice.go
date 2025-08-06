@@ -38,3 +38,12 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 	}
 	return newDest
 }
+
+func GenerateOrigTestSpan_LinkSlice() []*otlptrace.Span_Link {
+	orig := make([]*otlptrace.Span_Link, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlptrace.Span_Link{}
+		FillOrigTestSpan_Link(orig[i])
+	}
+	return orig
+}

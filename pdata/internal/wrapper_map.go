@@ -44,27 +44,9 @@ func CopyOrigMap(dest, src []otlpcommon.KeyValue) []otlpcommon.KeyValue {
 }
 
 func GenerateTestMap() Map {
-	var orig []otlpcommon.KeyValue
+	orig := GenerateOrigTestKeyValueSlice()
 	state := StateMutable
-	ms := NewMap(&orig, &state)
-	FillTestMap(ms)
-	return ms
-}
-
-func FillTestMap(dest Map) {
-	*dest.orig = []otlpcommon.KeyValue{
-		{Key: "str", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}},
-		{Key: "bool", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BoolValue{BoolValue: true}}},
-		{Key: "double", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: 3.14}}},
-		{Key: "int", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_IntValue{IntValue: 123}}},
-		{Key: "bytes", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}}},
-		{Key: "array", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_ArrayValue{
-			ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue{{Value: &otlpcommon.AnyValue_IntValue{IntValue: 321}}}},
-		}}},
-		{Key: "map", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_KvlistValue{
-			KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue{{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}}}},
-		}}},
-	}
+	return NewMap(&orig, &state)
 }
 
 // MarshalJSONStreamMap marshals all properties from the current struct to the destination stream.

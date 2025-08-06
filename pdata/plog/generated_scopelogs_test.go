@@ -65,7 +65,8 @@ func TestScopeLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
@@ -81,18 +82,12 @@ func TestScopeLogs_SchemaUrl(t *testing.T) {
 func TestScopeLogs_LogRecords(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	fillTestLogRecordSlice(ms.LogRecords())
+	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
 	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
 func generateTestScopeLogs() ScopeLogs {
-	tv := NewScopeLogs()
-	fillTestScopeLogs(tv)
-	return tv
-}
-
-func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestLogRecordSlice(tv.LogRecords())
+	ms := NewScopeLogs()
+	internal.FillOrigTestScopeLogs(ms.orig)
+	return ms
 }

@@ -80,12 +80,7 @@ func TestStatus_Message(t *testing.T) {
 }
 
 func generateTestStatus() Status {
-	tv := NewStatus()
-	fillTestStatus(tv)
-	return tv
-}
-
-func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "test_message"
+	ms := NewStatus()
+	internal.FillOrigTestStatus(ms.orig)
+	return ms
 }

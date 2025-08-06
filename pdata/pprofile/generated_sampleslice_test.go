@@ -28,9 +28,9 @@ func TestSampleSlice(t *testing.T) {
 	emptyVal := NewSample()
 	testVal := generateTestSample()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSample(el)
+		internal.FillOrigTestSample((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestSampleSliceReadOnly(t *testing.T) {
 
 func TestSampleSlice_CopyTo(t *testing.T) {
 	dest := NewSampleSlice()
-	// Test CopyTo empty
-	NewSampleSlice().CopyTo(dest)
-	assert.Equal(t, NewSampleSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestSampleSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSampleSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSampleSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewSampleSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSampleSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestSampleSlice_Sort(t *testing.T) {
 }
 
 func generateTestSampleSlice() SampleSlice {
-	es := NewSampleSlice()
-	fillTestSampleSlice(es)
-	return es
-}
-
-func fillTestSampleSlice(es SampleSlice) {
-	*es.orig = make([]*otlpprofiles.Sample, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Sample{}
-		fillTestSample(newSample((*es.orig)[i], es.state))
-	}
+	ms := NewSampleSlice()
+	*ms.orig = internal.GenerateOrigTestSampleSlice()
+	return ms
 }

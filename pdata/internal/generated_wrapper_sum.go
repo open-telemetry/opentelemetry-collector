@@ -15,3 +15,9 @@ func CopyOrigSum(dest, src *otlpmetrics.Sum) {
 	dest.IsMonotonic = src.IsMonotonic
 	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+func FillOrigTestSum(orig *otlpmetrics.Sum) {
+	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	orig.IsMonotonic = true
+	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+}

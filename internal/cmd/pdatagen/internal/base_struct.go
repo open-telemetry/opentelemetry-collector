@@ -12,6 +12,7 @@ type baseStruct interface {
 	generate(packageInfo *PackageInfo) []byte
 	generateTests(packageInfo *PackageInfo) []byte
 	generateInternal(packageInfo *PackageInfo) []byte
+	generateInternalTests(packageInfo *PackageInfo) []byte
 }
 
 // messageStruct generates a struct for a proto message. The struct can be generated both as a common struct
@@ -38,6 +39,10 @@ func (ms *messageStruct) generateTests(packageInfo *PackageInfo) []byte {
 
 func (ms *messageStruct) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(packageInfo)))
+}
+
+func (ms *messageStruct) generateInternalTests(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(messageInternalTestTemplate, ms.templateFields(packageInfo)))
 }
 
 func (ms *messageStruct) templateFields(packageInfo *PackageInfo) map[string]any {

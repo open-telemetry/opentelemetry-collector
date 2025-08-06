@@ -65,7 +65,8 @@ func TestResourceSpans_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
@@ -81,18 +82,12 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 func TestResourceSpans_ScopeSpans(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
-	fillTestScopeSpansSlice(ms.ScopeSpans())
+	ms.orig.ScopeSpans = internal.GenerateOrigTestScopeSpansSlice()
 	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
 }
 
 func generateTestResourceSpans() ResourceSpans {
-	tv := NewResourceSpans()
-	fillTestResourceSpans(tv)
-	return tv
-}
-
-func fillTestResourceSpans(tv ResourceSpans) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestScopeSpansSlice(tv.ScopeSpans())
+	ms := NewResourceSpans()
+	internal.FillOrigTestResourceSpans(ms.orig)
+	return ms
 }

@@ -38,3 +38,12 @@ func CopyOrigLogRecordSlice(dest, src []*otlplogs.LogRecord) []*otlplogs.LogReco
 	}
 	return newDest
 }
+
+func GenerateOrigTestLogRecordSlice() []*otlplogs.LogRecord {
+	orig := make([]*otlplogs.LogRecord, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlplogs.LogRecord{}
+		FillOrigTestLogRecord(orig[i])
+	}
+	return orig
+}

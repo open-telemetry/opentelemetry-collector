@@ -13,3 +13,7 @@ import (
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+func FillOrigTestSummary(orig *otlpmetrics.Summary) {
+	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
+}

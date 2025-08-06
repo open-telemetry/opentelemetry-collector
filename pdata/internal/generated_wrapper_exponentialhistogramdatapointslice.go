@@ -38,3 +38,12 @@ func CopyOrigExponentialHistogramDataPointSlice(dest, src []*otlpmetrics.Exponen
 	}
 	return newDest
 }
+
+func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.ExponentialHistogramDataPoint {
+	orig := make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
+		FillOrigTestExponentialHistogramDataPoint(orig[i])
+	}
+	return orig
+}

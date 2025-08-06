@@ -65,7 +65,7 @@ func TestResource_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestResource_Attributes(t *testing.T) {
 	ms := NewResource()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 

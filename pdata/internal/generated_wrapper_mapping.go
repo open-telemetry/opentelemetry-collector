@@ -21,3 +21,15 @@ func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.HasLineNumbers = src.HasLineNumbers
 	dest.HasInlineFrames = src.HasInlineFrames
 }
+
+func FillOrigTestMapping(orig *otlpprofiles.Mapping) {
+	orig.MemoryStart = uint64(13)
+	orig.MemoryLimit = uint64(13)
+	orig.FileOffset = uint64(13)
+	orig.FilenameStrindex = int32(13)
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.HasFunctions = true
+	orig.HasFilenames = true
+	orig.HasLineNumbers = true
+	orig.HasInlineFrames = true
+}

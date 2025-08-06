@@ -50,3 +50,17 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 		dest.Max_ = nil
 	}
 }
+
+func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.BucketCounts = GenerateOrigTestUint64Slice()
+	orig.ExplicitBounds = GenerateOrigTestFloat64Slice()
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+	orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
+	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
+}

@@ -28,9 +28,9 @@ func TestLogRecordSlice(t *testing.T) {
 	emptyVal := NewLogRecord()
 	testVal := generateTestLogRecord()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLogRecord(el)
+		internal.FillOrigTestLogRecord((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestLogRecordSliceReadOnly(t *testing.T) {
 
 func TestLogRecordSlice_CopyTo(t *testing.T) {
 	dest := NewLogRecordSlice()
-	// Test CopyTo empty
-	NewLogRecordSlice().CopyTo(dest)
-	assert.Equal(t, NewLogRecordSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestLogRecordSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLogRecordSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLogRecordSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewLogRecordSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLogRecordSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestLogRecordSlice_Sort(t *testing.T) {
 }
 
 func generateTestLogRecordSlice() LogRecordSlice {
-	es := NewLogRecordSlice()
-	fillTestLogRecordSlice(es)
-	return es
-}
-
-func fillTestLogRecordSlice(es LogRecordSlice) {
-	*es.orig = make([]*otlplogs.LogRecord, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.LogRecord{}
-		fillTestLogRecord(newLogRecord((*es.orig)[i], es.state))
-	}
+	ms := NewLogRecordSlice()
+	*ms.orig = internal.GenerateOrigTestLogRecordSlice()
+	return ms
 }

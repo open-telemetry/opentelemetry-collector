@@ -99,14 +99,7 @@ func TestFunction_StartLine(t *testing.T) {
 }
 
 func generateTestFunction() Function {
-	tv := NewFunction()
-	fillTestFunction(tv)
-	return tv
-}
-
-func fillTestFunction(tv Function) {
-	tv.orig.NameStrindex = int32(13)
-	tv.orig.SystemNameStrindex = int32(13)
-	tv.orig.FilenameStrindex = int32(13)
-	tv.orig.StartLine = int64(13)
+	ms := NewFunction()
+	internal.FillOrigTestFunction(ms.orig)
+	return ms
 }

@@ -14,3 +14,8 @@ func CopyOrigExportLogsPartialSuccess(dest, src *otlpcollectorlog.ExportLogsPart
 	dest.RejectedLogRecords = src.RejectedLogRecords
 	dest.ErrorMessage = src.ErrorMessage
 }
+
+func FillOrigTestExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) {
+	orig.RejectedLogRecords = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}

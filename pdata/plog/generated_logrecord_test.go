@@ -132,14 +132,15 @@ func TestLogRecord_SeverityNumber(t *testing.T) {
 
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
-	internal.FillTestValue(internal.Value(ms.Body()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
+	internal.FillOrigTestAnyValue(&ms.orig.Body)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -153,21 +154,7 @@ func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestLogRecord() LogRecord {
-	tv := NewLogRecord()
-	fillTestLogRecord(tv)
-	return tv
-}
-
-func fillTestLogRecord(tv LogRecord) {
-	tv.orig.ObservedTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.Flags = 1
-	tv.orig.EventName = "test_eventname"
-	tv.orig.SeverityText = "test_severitytext"
-	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(13)
+	ms := NewLogRecord()
+	internal.FillOrigTestLogRecord(ms.orig)
+	return ms
 }

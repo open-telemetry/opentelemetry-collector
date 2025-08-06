@@ -14,3 +14,8 @@ func CopyOrigStatus(dest, src *otlptrace.Status) {
 	dest.Code = src.Code
 	dest.Message = src.Message
 }
+
+func FillOrigTestStatus(orig *otlptrace.Status) {
+	orig.Code = 1
+	orig.Message = "test_message"
+}

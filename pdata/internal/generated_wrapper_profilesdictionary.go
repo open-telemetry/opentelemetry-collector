@@ -19,3 +19,13 @@ func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.AttributeTable = CopyOrigKeyValueSlice(dest.AttributeTable, src.AttributeTable)
 	dest.AttributeUnits = CopyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
 }
+
+func FillOrigTestProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) {
+	orig.MappingTable = GenerateOrigTestMappingSlice()
+	orig.LocationTable = GenerateOrigTestLocationSlice()
+	orig.FunctionTable = GenerateOrigTestFunctionSlice()
+	orig.LinkTable = GenerateOrigTestLinkSlice()
+	orig.StringTable = GenerateOrigTestStringSlice()
+	orig.AttributeTable = GenerateOrigTestKeyValueSlice()
+	orig.AttributeUnits = GenerateOrigTestAttributeUnitSlice()
+}

@@ -27,16 +27,10 @@ func NewInt32Slice(orig *[]int32, state *State) Int32Slice {
 	return Int32Slice{orig: orig, state: state}
 }
 
-func FillTestInt32Slice(ms Int32Slice) {
-	*ms.orig = []int32{1, 2, 3}
-}
-
 func GenerateTestInt32Slice() Int32Slice {
-	orig := []int32(nil)
+	orig := GenerateOrigTestInt32Slice()
 	state := StateMutable
-	ms := NewInt32Slice(&orig, &state)
-	FillTestInt32Slice(ms)
-	return ms
+	return NewInt32Slice(&orig, &state)
 }
 
 // MarshalJSONStreamInt32Slice marshals all properties from the current struct to the destination stream.
@@ -62,4 +56,8 @@ func UnmarshalJSONIterInt32Slice(ms Int32Slice, iter *json.Iterator) {
 
 func CopyOrigInt32Slice(dst, src []int32) []int32 {
 	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestInt32Slice() []int32 {
+	return []int32{1, 2, 3}
 }

@@ -27,7 +27,7 @@ const typedAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 	assert.Equal(t, testVal{{ .fieldName }}, ms.{{ .fieldName }}())
 }`
 
-const typedSetTestTemplate = `tv.orig.{{ .originFieldName }} = {{ .testValue }}`
+const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 

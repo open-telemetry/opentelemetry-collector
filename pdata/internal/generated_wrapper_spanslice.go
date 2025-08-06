@@ -38,3 +38,12 @@ func CopyOrigSpanSlice(dest, src []*otlptrace.Span) []*otlptrace.Span {
 	}
 	return newDest
 }
+
+func GenerateOrigTestSpanSlice() []*otlptrace.Span {
+	orig := make([]*otlptrace.Span, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlptrace.Span{}
+		FillOrigTestSpan(orig[i])
+	}
+	return orig
+}

@@ -28,9 +28,9 @@ func TestLinkSlice(t *testing.T) {
 	emptyVal := NewLink()
 	testVal := generateTestLink()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLink(el)
+		internal.FillOrigTestLink((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +51,7 @@ func TestLinkSliceReadOnly(t *testing.T) {
 
 func TestLinkSlice_CopyTo(t *testing.T) {
 	dest := NewLinkSlice()
-	// Test CopyTo empty
-	NewLinkSlice().CopyTo(dest)
-	assert.Equal(t, NewLinkSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestLinkSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLinkSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestLinkSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewLinkSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestLinkSlice(), dest)
 }
@@ -194,15 +177,7 @@ func TestLinkSlice_Sort(t *testing.T) {
 }
 
 func generateTestLinkSlice() LinkSlice {
-	es := NewLinkSlice()
-	fillTestLinkSlice(es)
-	return es
-}
-
-func fillTestLinkSlice(es LinkSlice) {
-	*es.orig = make([]*otlpprofiles.Link, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Link{}
-		fillTestLink(newLink((*es.orig)[i], es.state))
-	}
+	ms := NewLinkSlice()
+	*ms.orig = internal.GenerateOrigTestLinkSlice()
+	return ms
 }

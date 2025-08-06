@@ -18,5 +18,6 @@ func main() {
 		check(fp.GenerateFiles())
 		check(fp.GenerateTestFiles())
 		check(fp.GenerateInternalFiles())
+		check(fp.GenerateInternalTestsFiles())
 	}
 }

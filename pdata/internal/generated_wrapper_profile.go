@@ -7,6 +7,7 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 )
 
@@ -25,4 +26,21 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
 	dest.OriginalPayload = CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+}
+
+func FillOrigTestProfile(orig *otlpprofiles.Profile) {
+	orig.SampleType = GenerateOrigTestValueTypeSlice()
+	orig.Sample = GenerateOrigTestSampleSlice()
+	orig.LocationIndices = GenerateOrigTestInt32Slice()
+	orig.TimeNanos = 1234567890
+	orig.DurationNanos = 1234567890
+	FillOrigTestValueType(&orig.PeriodType)
+	orig.Period = int64(13)
+	orig.CommentStrindices = GenerateOrigTestInt32Slice()
+	orig.DefaultSampleTypeIndex = int32(13)
+	orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.DroppedAttributesCount = uint32(13)
+	orig.OriginalPayloadFormat = "test_originalpayloadformat"
+	orig.OriginalPayload = GenerateOrigTestByteSlice()
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
 }

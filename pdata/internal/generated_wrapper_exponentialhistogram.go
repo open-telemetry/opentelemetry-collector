@@ -14,3 +14,8 @@ func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.DataPoints = CopyOrigExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
 }
+
+func FillOrigTestExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) {
+	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
+}

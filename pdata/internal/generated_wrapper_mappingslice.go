@@ -38,3 +38,12 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 	}
 	return newDest
 }
+
+func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
+	orig := make([]*otlpprofiles.Mapping, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.Mapping{}
+		FillOrigTestMapping(orig[i])
+	}
+	return orig
+}

@@ -65,7 +65,8 @@ func TestResourceMetrics_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestResourceMetrics_Resource(t *testing.T) {
 	ms := NewResourceMetrics()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
@@ -83,18 +84,12 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 func TestResourceMetrics_ScopeMetrics(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
-	fillTestScopeMetricsSlice(ms.ScopeMetrics())
+	ms.orig.ScopeMetrics = internal.GenerateOrigTestScopeMetricsSlice()
 	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
 func generateTestResourceMetrics() ResourceMetrics {
-	tv := NewResourceMetrics()
-	fillTestResourceMetrics(tv)
-	return tv
-}
-
-func fillTestResourceMetrics(tv ResourceMetrics) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestScopeMetricsSlice(tv.ScopeMetrics())
+	ms := NewResourceMetrics()
+	internal.FillOrigTestResourceMetrics(ms.orig)
+	return ms
 }

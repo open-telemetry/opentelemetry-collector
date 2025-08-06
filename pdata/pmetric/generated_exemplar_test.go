@@ -100,7 +100,7 @@ func TestExemplar_IntValue(t *testing.T) {
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
+	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
 
@@ -121,15 +121,7 @@ func TestExemplar_SpanID(t *testing.T) {
 }
 
 func generateTestExemplar() Exemplar {
-	tv := NewExemplar()
-	fillTestExemplar(tv)
-	return tv
-}
-
-func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes, tv.state))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	ms := NewExemplar()
+	internal.FillOrigTestExemplar(ms.orig)
+	return ms
 }

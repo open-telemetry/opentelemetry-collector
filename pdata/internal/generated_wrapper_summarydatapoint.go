@@ -19,3 +19,13 @@ func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
 	dest.QuantileValues = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
 	dest.Flags = src.Flags
 }
+
+func FillOrigTestSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.Sum = float64(3.1415926)
+	orig.QuantileValues = GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	orig.Flags = 1
+}
