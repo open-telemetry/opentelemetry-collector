@@ -253,11 +253,3 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts.extensionIDs = order
 	return exts, nil
 }
-
-type nopReporter struct{}
-
-func (r *nopReporter) Ready() {}
-
-func (r *nopReporter) ReportStatus(*status.InstanceID, *componentstatus.Event) {}
-
-func (r *nopReporter) ReportOKIfStarting(*status.InstanceID) {}

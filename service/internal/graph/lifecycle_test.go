@@ -194,7 +194,7 @@ func testGraphStartStopComponentError(t *testing.T) {
 		F: r1,
 		T: e1,
 	})
-	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
+	require.ErrorIs(t, pg.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}), r1.startErr)
 	assert.EqualError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()), "bar")
 }
 
@@ -274,7 +274,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -288,7 +288,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -302,7 +302,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 			}
 			pipelines, err := Build(context.Background(), set)
 			require.NoError(t, err)
-			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+			require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 			assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 		})
 
@@ -322,7 +322,7 @@ func testGraphFailToStartAndShutdown(t *testing.T) {
 				}
 				pipelines, err := Build(context.Background(), set)
 				require.NoError(t, err)
-				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*componentstatus.InstanceID, *componentstatus.Event) {}, func(error) {})}))
+				require.Error(t, pipelines.StartAll(context.Background(), &Host{Reporter: status.NewReporter(func(*status.InstanceID, *componentstatus.Event) {}, func(error) {})}))
 				assert.Error(t, pipelines.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 			})
 		}

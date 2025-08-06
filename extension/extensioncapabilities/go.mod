@@ -7,7 +7,7 @@ require (
 	go.opentelemetry.io/collector/component/componentstatus v0.132.0
 	go.opentelemetry.io/collector/confmap v1.39.0
 	go.opentelemetry.io/collector/extension v1.39.0
-	go.opentelemetry.io/collector/pipeline v0.39.0
+	go.opentelemetry.io/collector/pipeline v1.39.0
 )
 
 require (
