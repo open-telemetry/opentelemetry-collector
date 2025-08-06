@@ -49,7 +49,11 @@ func TestStatus_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewStatus()
 	dest.unmarshalJSONIter(iter)
@@ -69,19 +73,14 @@ func TestStatus_Code(t *testing.T) {
 func TestStatus_Message(t *testing.T) {
 	ms := NewStatus()
 	assert.Empty(t, ms.Message())
-	ms.SetMessage("cancelled")
-	assert.Equal(t, "cancelled", ms.Message())
+	ms.SetMessage("test_message")
+	assert.Equal(t, "test_message", ms.Message())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("cancelled") })
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
 }
 
 func generateTestStatus() Status {
-	tv := NewStatus()
-	fillTestStatus(tv)
-	return tv
-}
-
-func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
+	ms := NewStatus()
+	internal.FillOrigTestStatus(ms.orig)
+	return ms
 }

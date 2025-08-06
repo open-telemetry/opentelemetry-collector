@@ -130,6 +130,7 @@ func (es LineSlice) RemoveIf(f func(Line) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LineSlice) RemoveIf(f func(Line) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es LineSlice) RemoveIf(f func(Line) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LineSlice) CopyTo(dest LineSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLineSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLineSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Line elements within LineSlice given the
@@ -177,19 +179,4 @@ func (ms LineSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Line, len(src))
-		data := make([]otlpprofiles.Line, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigLine(dest[i], src[i])
-	}
-	return dest
 }

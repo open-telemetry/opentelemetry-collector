@@ -75,7 +75,7 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	copyOrigAttributeUnit(dest.orig, ms.orig)
+	internal.CopyOrigAttributeUnit(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -92,7 +92,17 @@ func (ms AttributeUnit) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
-	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
-	dest.UnitStrindex = src.UnitStrindex
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms AttributeUnit) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributeKeyStrindex", "attribute_key_strindex":
+			ms.orig.AttributeKeyStrindex = iter.ReadInt32()
+		case "unitStrindex", "unit_strindex":
+			ms.orig.UnitStrindex = iter.ReadInt32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

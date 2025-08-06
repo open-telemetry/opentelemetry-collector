@@ -28,9 +28,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/configmiddleware"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
@@ -89,6 +92,28 @@ func TestAllHTTPClientSettings(t *testing.T) {
 				MaxIdleConns:         maxIdleConns,
 				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
 				MaxConnsPerHost:      maxConnsPerHost,
+				IdleConnTimeout:      idleConnTimeout,
+				Compression:          "",
+				DisableKeepAlives:    true,
+				Cookies:              CookiesConfig{Enabled: true},
+				HTTP2ReadIdleTimeout: idleConnTimeout,
+				HTTP2PingTimeout:     http2PingTimeout,
+			},
+			shouldError: false,
+		},
+		{
+			name: "all_valid_settings_http2_enabled",
+			settings: ClientConfig{
+				Endpoint: "localhost:1234",
+				TLS: configtls.ClientConfig{
+					Insecure: false,
+				},
+				ReadBufferSize:       1024,
+				WriteBufferSize:      512,
+				MaxIdleConns:         maxIdleConns,
+				MaxIdleConnsPerHost:  maxIdleConnsPerHost,
+				MaxConnsPerHost:      maxConnsPerHost,
+				ForceAttemptHTTP2:    true,
 				IdleConnTimeout:      idleConnTimeout,
 				Compression:          "",
 				DisableKeepAlives:    true,
@@ -667,14 +692,14 @@ func TestHttpReception(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &ServerConfig{
+			sc := &ServerConfig{
 				Endpoint: "localhost:0",
 				TLS:      tt.tlsServerCreds,
 			}
-			ln, err := hss.ToListener(context.Background())
+			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServer(
+			s, err := sc.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -695,12 +720,13 @@ func TestHttpReception(t *testing.T) {
 				expectedProto = "HTTP/1.1"
 			}
 
-			hcs := &ClientConfig{
-				Endpoint: prefix + ln.Addr().String(),
-				TLS:      *tt.tlsClientCreds,
+			cc := &ClientConfig{
+				Endpoint:          prefix + ln.Addr().String(),
+				TLS:               *tt.tlsClientCreds,
+				ForceAttemptHTTP2: true,
 			}
 
-			client, errClient := hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+			client, errClient := cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 			require.NoError(t, errClient)
 
 			if tt.forceHTTP1 {
@@ -708,7 +734,7 @@ func TestHttpReception(t *testing.T) {
 				client.Transport.(*http.Transport).ForceAttemptHTTP2 = false
 			}
 
-			resp, errResp := client.Get(hcs.Endpoint)
+			resp, errResp := client.Get(cc.Endpoint)
 			if tt.hasError {
 				require.Error(t, errResp)
 			} else {
@@ -779,15 +805,15 @@ func TestHttpCors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &ServerConfig{
+			sc := &ServerConfig{
 				Endpoint: "localhost:0",
 				CORS:     tt.CORSConfig,
 			}
 
-			ln, err := hss.ToListener(context.Background())
+			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServer(
+			s, err := sc.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -822,13 +848,13 @@ func TestHttpCors(t *testing.T) {
 }
 
 func TestHttpCorsInvalidSettings(t *testing.T) {
-	hss := &ServerConfig{
+	sc := &ServerConfig{
 		Endpoint: "localhost:0",
 		CORS:     configoptional.Some(CORSConfig{AllowedHeaders: []string{"some-header"}}),
 	}
 
 	// This effectively does not enable CORS but should also not cause an error
-	s, err := hss.ToServer(
+	s, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -839,7 +865,7 @@ func TestHttpCorsInvalidSettings(t *testing.T) {
 }
 
 func TestHttpCorsWithSettings(t *testing.T) {
-	hss := &ServerConfig{
+	sc := &ServerConfig{
 		Endpoint: "localhost:0",
 		CORS: configoptional.Some(CORSConfig{
 			AllowedOrigins: []string{"*"},
@@ -859,7 +885,7 @@ func TestHttpCorsWithSettings(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
+	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), nil)
 	require.NoError(t, err)
 	require.NotNil(t, srv)
 
@@ -897,15 +923,15 @@ func TestHttpServerHeaders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			hss := &ServerConfig{
+			sc := &ServerConfig{
 				Endpoint:        "localhost:0",
 				ResponseHeaders: tt.headers,
 			}
 
-			ln, err := hss.ToListener(context.Background())
+			ln, err := sc.ToListener(context.Background())
 			require.NoError(t, err)
 
-			s, err := hss.ToServer(
+			s, err := sc.ToServer(
 				context.Background(),
 				componenttest.NewNopHost(),
 				componenttest.NewNopTelemetrySettings(),
@@ -928,7 +954,7 @@ func TestHttpServerHeaders(t *testing.T) {
 	}
 }
 
-func verifyCorsResp(t *testing.T, url string, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
+func verifyCorsResp(t *testing.T, url, origin string, set configoptional.Optional[CORSConfig], extraHeader bool, wantStatus int, wantAllowed bool) {
 	req, err := http.NewRequest(http.MethodOptions, url, http.NoBody)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
@@ -1152,7 +1178,7 @@ func TestContextWithClient(t *testing.T) {
 func TestServerAuth(t *testing.T) {
 	// prepare
 	authCalled := false
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
@@ -1175,7 +1201,7 @@ func TestServerAuth(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -1187,7 +1213,7 @@ func TestServerAuth(t *testing.T) {
 }
 
 func TestInvalidServerAuth(t *testing.T) {
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
 				AuthenticatorID: nonExistingID,
@@ -1195,14 +1221,14 @@ func TestInvalidServerAuth(t *testing.T) {
 		}),
 	}
 
-	srv, err := hss.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
+	srv, err := sc.ToServer(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), http.NewServeMux())
 	require.Error(t, err)
 	require.Nil(t, srv)
 }
 
 func TestFailedServerAuth(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
@@ -1218,7 +1244,7 @@ func TestFailedServerAuth(t *testing.T) {
 		},
 	}
 
-	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	require.NoError(t, err)
 
 	// tt
@@ -1232,7 +1258,7 @@ func TestFailedServerAuth(t *testing.T) {
 
 func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: configoptional.Some(AuthConfig{
 			Config: configauth.Config{
@@ -1256,7 +1282,7 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 		http.Error(w, err, http.StatusInternalServerError)
 	}
 
-	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
+	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}), WithErrorHandler(eh))
 	require.NoError(t, err)
 
 	// tt
@@ -1270,7 +1296,7 @@ func TestFailedServerAuthWithErrorHandler(t *testing.T) {
 
 func TestServerWithErrorHandler(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Endpoint: "localhost:0",
 	}
 	eh := func(w http.ResponseWriter, _ *http.Request, _ string, statusCode int) {
@@ -1279,7 +1305,7 @@ func TestServerWithErrorHandler(t *testing.T) {
 		http.Error(w, "invalid request", http.StatusInternalServerError)
 	}
 
-	srv, err := hss.ToServer(
+	srv, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1301,13 +1327,13 @@ func TestServerWithErrorHandler(t *testing.T) {
 
 func TestServerWithDecoder(t *testing.T) {
 	// prepare
-	hss := NewDefaultServerConfig()
-	hss.Endpoint = "localhost:0"
+	sc := NewDefaultServerConfig()
+	sc.Endpoint = "localhost:0"
 	decoder := func(body io.ReadCloser) (io.ReadCloser, error) {
 		return body, nil
 	}
 
-	srv, err := hss.ToServer(
+	srv, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1329,12 +1355,12 @@ func TestServerWithDecoder(t *testing.T) {
 
 func TestServerWithDecompression(t *testing.T) {
 	// prepare
-	hss := ServerConfig{
+	sc := ServerConfig{
 		MaxRequestBodySize: 1000, // 1 KB
 	}
 	body := []byte(strings.Repeat("a", 1000*1000)) // 1 MB
 
-	srv, err := hss.ToServer(
+	srv, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1417,7 +1443,7 @@ func TestDefaultMaxRequestBodySize(t *testing.T) {
 func TestAuthWithQueryParams(t *testing.T) {
 	// prepare
 	authCalled := false
-	hss := ServerConfig{
+	sc := ServerConfig{
 		Endpoint: "localhost:0",
 		Auth: configoptional.Some(AuthConfig{
 			RequestParameters: []string{"auth"},
@@ -1443,7 +1469,7 @@ func TestAuthWithQueryParams(t *testing.T) {
 		handlerCalled = true
 	})
 
-	srv, err := hss.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
+	srv, err := sc.ToServer(context.Background(), host, componenttest.NewNopTelemetrySettings(), handler)
 	require.NoError(t, err)
 
 	// tt
@@ -1505,12 +1531,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		ServerName: "localhost",
 	}
 
-	hss := &ServerConfig{
+	sc := &ServerConfig{
 		Endpoint: "localhost:0",
 		TLS:      tlsServerCreds,
 	}
 
-	s, err := hss.ToServer(
+	s, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -1519,7 +1545,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 			assert.NoError(b, errWrite)
 		}))
 	require.NoError(b, err)
-	ln, err := hss.ToListener(context.Background())
+	ln, err := sc.ToListener(context.Background())
 	require.NoError(b, err)
 
 	go func() {
@@ -1530,7 +1556,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 	}()
 
 	for _, bb := range tests {
-		hcs := &ClientConfig{
+		cc := &ClientConfig{
 			Endpoint: "https://" + ln.Addr().String(),
 			TLS:      *tlsClientCreds,
 		}
@@ -1538,12 +1564,12 @@ func BenchmarkHttpRequest(b *testing.B) {
 		b.Run(bb.name, func(b *testing.B) {
 			var c *http.Client
 			if !bb.clientPerThread {
-				c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+				c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 				require.NoError(b, err)
 			}
 			b.RunParallel(func(pb *testing.PB) {
 				if c == nil {
-					c, err = hcs.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
+					c, err = cc.ToClient(context.Background(), componenttest.NewNopHost(), nilProvidersSettings)
 					require.NoError(b, err)
 				}
 				if bb.forceHTTP1 {
@@ -1551,7 +1577,7 @@ func BenchmarkHttpRequest(b *testing.B) {
 				}
 
 				for pb.Next() {
-					resp, errResp := c.Get(hcs.Endpoint)
+					resp, errResp := c.Get(cc.Endpoint)
 					require.NoError(b, errResp)
 					body, errRead := io.ReadAll(resp.Body)
 					_ = resp.Body.Close()
@@ -1632,4 +1658,155 @@ func TestHTTPServerTelemetry_Tracing(t *testing.T) {
 			assert.Equal(t, testcase.expectedSpanName, spans[0].Name())
 		})
 	}
+}
+
+// TestUnmarshalYAMLWithMiddlewares tests that the "middlewares" field is correctly
+// parsed from YAML configurations (fixing the bug where "middleware" was used instead)
+func TestUnmarshalYAMLWithMiddlewares(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "middlewares.yaml"))
+	require.NoError(t, err)
+
+	// Test client configuration
+	var clientConfig ClientConfig
+	clientSub, err := cm.Sub("client")
+	require.NoError(t, err)
+	require.NoError(t, clientSub.Unmarshal(&clientConfig))
+
+	// Validate the client configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
+
+	assert.Equal(t, "http://localhost:4318/v1/traces", clientConfig.Endpoint)
+	require.Len(t, clientConfig.Middlewares, 2)
+	assert.Equal(t, component.MustNewID("fancy_middleware"), clientConfig.Middlewares[0].ID)
+	assert.Equal(t, component.MustNewID("careful_middleware"), clientConfig.Middlewares[1].ID)
+
+	// Test server configuration
+	var serverConfig ServerConfig
+	serverSub, err := cm.Sub("server")
+	require.NoError(t, err)
+	require.NoError(t, serverSub.Unmarshal(&serverConfig))
+
+	// Validate the server configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
+
+	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
+	require.Len(t, serverConfig.Middlewares, 2)
+	assert.Equal(t, component.MustNewID("careful_middleware"), serverConfig.Middlewares[0].ID)
+	assert.Equal(t, component.MustNewID("support_middleware"), serverConfig.Middlewares[1].ID)
+}
+
+// TestUnmarshalYAMLComprehensiveConfig tests the complete configuration example
+// to ensure all fields including middlewares are parsed correctly
+func TestUnmarshalYAMLComprehensiveConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	// Test client configuration
+	var clientConfig ClientConfig
+	clientSub, err := cm.Sub("client")
+	require.NoError(t, err)
+	require.NoError(t, clientSub.Unmarshal(&clientConfig))
+
+	// Validate the client configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&clientConfig), "Client configuration should be valid")
+
+	// Verify basic fields
+	assert.Equal(t, "http://example.com:4318/v1/traces", clientConfig.Endpoint)
+	assert.Equal(t, "http://proxy.example.com:8080", clientConfig.ProxyURL)
+	assert.Equal(t, 30*time.Second, clientConfig.Timeout)
+	assert.Equal(t, 4096, clientConfig.ReadBufferSize)
+	assert.Equal(t, 4096, clientConfig.WriteBufferSize)
+	assert.Equal(t, configcompression.TypeGzip, clientConfig.Compression)
+
+	// Verify TLS configuration
+	assert.False(t, clientConfig.TLS.Insecure)
+	assert.Equal(t, "/path/to/client.crt", clientConfig.TLS.CertFile)
+	assert.Equal(t, "/path/to/client.key", clientConfig.TLS.KeyFile)
+	assert.Equal(t, "/path/to/ca.crt", clientConfig.TLS.CAFile)
+	assert.Equal(t, "example.com", clientConfig.TLS.ServerName)
+
+	// Verify headers
+	expectedHeaders := map[string]configopaque.String{
+		"User-Agent":      "OpenTelemetry-Collector/1.0",
+		"X-Custom-Header": "custom-value",
+	}
+	assert.Equal(t, expectedHeaders, clientConfig.Headers)
+
+	// Verify middlewares
+	require.Len(t, clientConfig.Middlewares, 2)
+	assert.Equal(t, component.MustNewID("middleware1"), clientConfig.Middlewares[0].ID)
+	assert.Equal(t, component.MustNewID("middleware2"), clientConfig.Middlewares[1].ID)
+
+	// Test server configuration
+	var serverConfig ServerConfig
+	serverSub, err := cm.Sub("server")
+	require.NoError(t, err)
+	require.NoError(t, serverSub.Unmarshal(&serverConfig))
+
+	// Validate the server configuration using reflection-based validation
+	require.NoError(t, xconfmap.Validate(&serverConfig), "Server configuration should be valid")
+
+	// Verify basic fields
+	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
+	assert.Equal(t, 30*time.Second, serverConfig.ReadTimeout)
+	assert.Equal(t, 10*time.Second, serverConfig.ReadHeaderTimeout)
+	assert.Equal(t, 30*time.Second, serverConfig.WriteTimeout)
+	assert.Equal(t, 120*time.Second, serverConfig.IdleTimeout)
+	assert.Equal(t, int64(33554432), serverConfig.MaxRequestBodySize)
+	assert.True(t, serverConfig.IncludeMetadata)
+
+	// Verify TLS configuration
+	assert.Equal(t, "/path/to/server.crt", serverConfig.TLS.Get().CertFile)
+	assert.Equal(t, "/path/to/server.key", serverConfig.TLS.Get().KeyFile)
+	assert.Equal(t, "/path/to/ca.crt", serverConfig.TLS.Get().CAFile)
+	assert.Equal(t, "/path/to/client-ca.crt", serverConfig.TLS.Get().ClientCAFile)
+
+	// Verify CORS configuration
+	expectedOrigins := []string{"https://example.com", "https://*.test.com"}
+	assert.Equal(t, expectedOrigins, serverConfig.CORS.Get().AllowedOrigins)
+	corsHeaders := []string{"Content-Type", "Accept"}
+	assert.Equal(t, corsHeaders, serverConfig.CORS.Get().AllowedHeaders)
+	assert.Equal(t, 7200, serverConfig.CORS.Get().MaxAge)
+
+	// Verify response headers
+	expectedResponseHeaders := map[string]configopaque.String{
+		"Server":   "OpenTelemetry-Collector",
+		"X-Flavor": "apple",
+	}
+	assert.Equal(t, expectedResponseHeaders, serverConfig.ResponseHeaders)
+
+	// Verify compression algorithms
+	expectedAlgorithms := []string{"", "gzip", "zstd", "zlib", "snappy", "deflate"}
+	assert.Equal(t, expectedAlgorithms, serverConfig.CompressionAlgorithms)
+
+	// Verify middlewares
+	require.Len(t, serverConfig.Middlewares, 3)
+	assert.Equal(t, component.MustNewID("server_middleware1"), serverConfig.Middlewares[0].ID)
+	assert.Equal(t, component.MustNewID("server_middleware2"), serverConfig.Middlewares[1].ID)
+	assert.Equal(t, component.MustNewID("server_middleware3"), serverConfig.Middlewares[2].ID)
+}
+
+// TestMiddlewaresFieldCompatibility tests that the new "middlewares" field name
+// is used instead of the old "middleware" name, ensuring the bug is fixed
+func TestMiddlewaresFieldCompatibility(t *testing.T) {
+	// Test that we can create a config with middlewares using the new field name
+	clientConfig := ClientConfig{
+		Endpoint: "http://localhost:4318",
+		Middlewares: []configmiddleware.Config{
+			{ID: component.MustNewID("test_middleware")},
+		},
+	}
+	assert.Equal(t, "http://localhost:4318", clientConfig.Endpoint)
+	assert.Len(t, clientConfig.Middlewares, 1)
+	assert.Equal(t, component.MustNewID("test_middleware"), clientConfig.Middlewares[0].ID)
+
+	serverConfig := ServerConfig{
+		Endpoint: "0.0.0.0:4318",
+		Middlewares: []configmiddleware.Config{
+			{ID: component.MustNewID("server_middleware")},
+		},
+	}
+	assert.Equal(t, "0.0.0.0:4318", serverConfig.Endpoint)
+	assert.Len(t, serverConfig.Middlewares, 1)
+	assert.Equal(t, component.MustNewID("server_middleware"), serverConfig.Middlewares[0].ID)
 }

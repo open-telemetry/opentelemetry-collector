@@ -392,7 +392,7 @@ func (pq *persistentQueue[T]) getNextItem(ctx context.Context) (uint64, T, conte
 }
 
 // onDone should be called to remove the item of the given index from the queue once processing is finished.
-func (pq *persistentQueue[T]) onDone(index uint64, itemsSize int64, bytesSize int64, consumeErr error) {
+func (pq *persistentQueue[T]) onDone(index uint64, itemsSize, bytesSize int64, consumeErr error) {
 	// Delete the item from the persistent storage after it was processed.
 	pq.mu.Lock()
 	// Always unref client even if the consumer is shutdown because we always ref it for every valid request.
@@ -485,7 +485,7 @@ func (pq *persistentQueue[T]) enqueueNotDispatchedReqs(ctx context.Context, disp
 			pq.logger.Warn("Failed unmarshalling item", zap.String(zapKey, op.Key), zap.Error(err))
 			continue
 		}
-		if pq.putInternal(reqCtx, req) != nil {
+		if pq.putInternal(reqCtx, req) != nil { //nolint:contextcheck
 			errCount++
 		}
 	}

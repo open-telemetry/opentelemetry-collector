@@ -89,12 +89,12 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
-// BucketCounts returns the bucketcounts associated with this HistogramDataPoint.
+// BucketCounts returns the BucketCounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
 }
 
-// ExplicitBounds returns the explicitbounds associated with this HistogramDataPoint.
+// ExplicitBounds returns the ExplicitBounds associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) ExplicitBounds() pcommon.Float64Slice {
 	return pcommon.Float64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state))
 }
@@ -187,7 +187,7 @@ func (ms HistogramDataPoint) RemoveMax() {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms HistogramDataPoint) CopyTo(dest HistogramDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigHistogramDataPoint(dest.orig, ms.orig)
+	internal.CopyOrigHistogramDataPoint(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -209,10 +209,14 @@ func (ms HistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("count")
 		dest.WriteUint64(ms.orig.Count)
 	}
-	dest.WriteObjectField("bucketCounts")
-	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
-	dest.WriteObjectField("explicitBounds")
-	internal.MarshalJSONStreamFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), dest)
+	if len(ms.orig.BucketCounts) > 0 {
+		dest.WriteObjectField("bucketCounts")
+		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	}
+	if len(ms.orig.ExplicitBounds) > 0 {
+		dest.WriteObjectField("explicitBounds")
+		internal.MarshalJSONStreamFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), dest)
+	}
 	if len(ms.orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
 		ms.Exemplars().marshalJSONStream(dest)
@@ -236,43 +240,35 @@ func (ms HistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Count = src.Count
-	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
-	dest.ExplicitBounds = internal.CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
-	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
-	if srcSum, ok := src.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
-		destSum, ok := dest.Sum_.(*otlpmetrics.HistogramDataPoint_Sum)
-		if !ok {
-			destSum = &otlpmetrics.HistogramDataPoint_Sum{}
-			dest.Sum_ = destSum
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms HistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "bucketCounts", "bucket_counts":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
+		case "explicitBounds", "explicit_bounds":
+			internal.UnmarshalJSONIterFloat64Slice(internal.NewFloat64Slice(&ms.orig.ExplicitBounds, ms.state), iter)
+		case "exemplars":
+			ms.Exemplars().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "sum":
+			ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "min":
+			ms.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			ms.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		default:
+			iter.Skip()
 		}
-		destSum.Sum = srcSum.Sum
-	} else {
-		dest.Sum_ = nil
-	}
-	if srcMin, ok := src.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
-		destMin, ok := dest.Min_.(*otlpmetrics.HistogramDataPoint_Min)
-		if !ok {
-			destMin = &otlpmetrics.HistogramDataPoint_Min{}
-			dest.Min_ = destMin
-		}
-		destMin.Min = srcMin.Min
-	} else {
-		dest.Min_ = nil
-	}
-	if srcMax, ok := src.Max_.(*otlpmetrics.HistogramDataPoint_Max); ok {
-		destMax, ok := dest.Max_.(*otlpmetrics.HistogramDataPoint_Max)
-		if !ok {
-			destMax = &otlpmetrics.HistogramDataPoint_Max{}
-			dest.Max_ = destMax
-		}
-		destMax.Max = srcMax.Max
-	} else {
-		dest.Max_ = nil
-	}
+		return true
+	})
 }

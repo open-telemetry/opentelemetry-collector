@@ -129,6 +129,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = v1.KeyValue{}
 			continue
 		}
 		if newLen == i {
@@ -137,6 +138,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = v1.KeyValue{}
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +147,7 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeTableSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigKeyValueSlice(*dest.orig, *es.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -168,15 +170,4 @@ func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
-	if cap(dest) < len(src) {
-		dest = make([]v1.KeyValue, len(src))
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigAttribute(&dest[i], &src[i])
-	}
-	return dest
 }

@@ -109,7 +109,7 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	copyOrigLocation(dest.orig, ms.orig)
+	internal.CopyOrigLocation(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -138,19 +138,23 @@ func (ms Location) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigLocation(dest, src *otlpprofiles.Location) {
-	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
-		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
-		if !ok {
-			destMappingIndex = &otlpprofiles.Location_MappingIndex{}
-			dest.MappingIndex_ = destMappingIndex
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Location) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "mappingIndex", "mapping_index":
+			ms.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
+		case "address":
+			ms.orig.Address = iter.ReadUint64()
+		case "line":
+			ms.Line().unmarshalJSONIter(iter)
+		case "isFolded", "is_folded":
+			ms.orig.IsFolded = iter.ReadBool()
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		default:
+			iter.Skip()
 		}
-		destMappingIndex.MappingIndex = srcMappingIndex.MappingIndex
-	} else {
-		dest.MappingIndex_ = nil
-	}
-	dest.Address = src.Address
-	dest.Line = copyOrigLineSlice(dest.Line, src.Line)
-	dest.IsFolded = src.IsFolded
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+		return true
+	})
 }

@@ -75,24 +75,34 @@ func (ms SummaryDataPointValueAtQuantile) SetValue(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPointValueAtQuantile) CopyTo(dest SummaryDataPointValueAtQuantile) {
 	dest.state.AssertMutable()
-	copyOrigSummaryDataPointValueAtQuantile(dest.orig, ms.orig)
+	internal.CopyOrigSummaryDataPoint_ValueAtQuantile(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
 func (ms SummaryDataPointValueAtQuantile) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	if ms.orig.Quantile != float64(0.0) {
+	if ms.orig.Quantile != float64(0) {
 		dest.WriteObjectField("quantile")
 		dest.WriteFloat64(ms.orig.Quantile)
 	}
-	if ms.orig.Value != float64(0.0) {
+	if ms.orig.Value != float64(0) {
 		dest.WriteObjectField("value")
 		dest.WriteFloat64(ms.orig.Value)
 	}
 	dest.WriteObjectEnd()
 }
 
-func copyOrigSummaryDataPointValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
-	dest.Quantile = src.Quantile
-	dest.Value = src.Value
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SummaryDataPointValueAtQuantile) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "quantile":
+			ms.orig.Quantile = iter.ReadFloat64()
+		case "value":
+			ms.orig.Value = iter.ReadFloat64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

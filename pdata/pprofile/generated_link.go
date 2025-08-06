@@ -77,7 +77,7 @@ func (ms Link) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Link) CopyTo(dest Link) {
 	dest.state.AssertMutable()
-	copyOrigLink(dest.orig, ms.orig)
+	internal.CopyOrigLink(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -94,7 +94,17 @@ func (ms Link) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigLink(dest, src *otlpprofiles.Link) {
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Link) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "traceId", "trace_id":
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

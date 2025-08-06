@@ -130,6 +130,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es FunctionSlice) RemoveIf(f func(Function) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es FunctionSlice) CopyTo(dest FunctionSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigFunctionSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigFunctionSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Function elements within FunctionSlice given the
@@ -177,19 +179,4 @@ func (ms FunctionSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigFunctionSlice(dest, src []*otlpprofiles.Function) []*otlpprofiles.Function {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Function, len(src))
-		data := make([]otlpprofiles.Function, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigFunction(dest[i], src[i])
-	}
-	return dest
 }

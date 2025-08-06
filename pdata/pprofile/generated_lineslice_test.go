@@ -28,9 +28,9 @@ func TestLineSlice(t *testing.T) {
 	emptyVal := NewLine()
 	testVal := generateTestLine()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestLine(el)
+		internal.FillOrigTestLine((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,16 +51,8 @@ func TestLineSliceReadOnly(t *testing.T) {
 
 func TestLineSlice_CopyTo(t *testing.T) {
 	dest := NewLineSlice()
-	// Test CopyTo to empty
-	NewLineSlice().CopyTo(dest)
-	assert.Equal(t, NewLineSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestLineSlice().CopyTo(dest)
-	assert.Equal(t, generateTestLineSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestLineSlice().CopyTo(dest)
+	src := generateTestLineSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestLineSlice(), dest)
 }
 
@@ -132,6 +124,14 @@ func TestLineSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestLineSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestLineSlice()
+	got.RemoveIf(func(el Line) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestLineSliceAll(t *testing.T) {
 	ms := generateTestLineSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -177,15 +177,7 @@ func TestLineSlice_Sort(t *testing.T) {
 }
 
 func generateTestLineSlice() LineSlice {
-	es := NewLineSlice()
-	fillTestLineSlice(es)
-	return es
-}
-
-func fillTestLineSlice(es LineSlice) {
-	*es.orig = make([]*otlpprofiles.Line, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Line{}
-		fillTestLine(newLine((*es.orig)[i], es.state))
-	}
+	ms := NewLineSlice()
+	*ms.orig = internal.GenerateOrigTestLineSlice()
+	return ms
 }

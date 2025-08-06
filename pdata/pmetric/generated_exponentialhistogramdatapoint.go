@@ -223,7 +223,7 @@ func (ms ExponentialHistogramDataPoint) SetZeroThreshold(v float64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPoint) CopyTo(dest ExponentialHistogramDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigExponentialHistogramDataPoint(dest.orig, ms.orig)
+	internal.CopyOrigExponentialHistogramDataPoint(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -277,53 +277,48 @@ func (ms ExponentialHistogramDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("max")
 		dest.WriteFloat64(ms.Max())
 	}
-	if ms.orig.ZeroThreshold != float64(0.0) {
+	if ms.orig.ZeroThreshold != float64(0) {
 		dest.WriteObjectField("zeroThreshold")
 		dest.WriteFloat64(ms.orig.ZeroThreshold)
 	}
 	dest.WriteObjectEnd()
 }
 
-func copyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Count = src.Count
-	dest.Scale = src.Scale
-	dest.ZeroCount = src.ZeroCount
-	copyOrigExponentialHistogramDataPointBuckets(&dest.Positive, &src.Positive)
-	copyOrigExponentialHistogramDataPointBuckets(&dest.Negative, &src.Negative)
-	dest.Exemplars = copyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
-	if srcSum, ok := src.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum); ok {
-		destSum, ok := dest.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
-		if !ok {
-			destSum = &otlpmetrics.ExponentialHistogramDataPoint_Sum{}
-			dest.Sum_ = destSum
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExponentialHistogramDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "scale":
+			ms.orig.Scale = iter.ReadInt32()
+		case "zeroCount", "zero_count":
+			ms.orig.ZeroCount = iter.ReadUint64()
+		case "positive":
+			ms.Positive().unmarshalJSONIter(iter)
+		case "negative":
+			ms.Negative().unmarshalJSONIter(iter)
+		case "exemplars":
+			ms.Exemplars().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "sum":
+			ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "min":
+			ms.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			ms.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		case "zeroThreshold", "zero_threshold":
+			ms.orig.ZeroThreshold = iter.ReadFloat64()
+		default:
+			iter.Skip()
 		}
-		destSum.Sum = srcSum.Sum
-	} else {
-		dest.Sum_ = nil
-	}
-	if srcMin, ok := src.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
-		destMin, ok := dest.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min)
-		if !ok {
-			destMin = &otlpmetrics.ExponentialHistogramDataPoint_Min{}
-			dest.Min_ = destMin
-		}
-		destMin.Min = srcMin.Min
-	} else {
-		dest.Min_ = nil
-	}
-	if srcMax, ok := src.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max); ok {
-		destMax, ok := dest.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max)
-		if !ok {
-			destMax = &otlpmetrics.ExponentialHistogramDataPoint_Max{}
-			dest.Max_ = destMax
-		}
-		destMax.Max = srcMax.Max
-	} else {
-		dest.Max_ = nil
-	}
-	dest.ZeroThreshold = src.ZeroThreshold
+		return true
+	})
 }

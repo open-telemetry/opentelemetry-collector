@@ -49,7 +49,11 @@ func TestAttributeUnit_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewAttributeUnit()
 	dest.unmarshalJSONIter(iter)
@@ -61,30 +65,25 @@ func TestAttributeUnit_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestAttributeUnit_AttributeKeyStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
 	assert.Equal(t, int32(0), ms.AttributeKeyStrindex())
-	ms.SetAttributeKeyStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.AttributeKeyStrindex())
+	ms.SetAttributeKeyStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.AttributeKeyStrindex())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKeyStrindex(int32(1))
+		newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetAttributeKeyStrindex(int32(13))
 	})
 }
 
 func TestAttributeUnit_UnitStrindex(t *testing.T) {
 	ms := NewAttributeUnit()
 	assert.Equal(t, int32(0), ms.UnitStrindex())
-	ms.SetUnitStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnitStrindex(int32(1)) })
+	assert.Panics(t, func() { newAttributeUnit(&otlpprofiles.AttributeUnit{}, &sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func generateTestAttributeUnit() AttributeUnit {
-	tv := NewAttributeUnit()
-	fillTestAttributeUnit(tv)
-	return tv
-}
-
-func fillTestAttributeUnit(tv AttributeUnit) {
-	tv.orig.AttributeKeyStrindex = int32(1)
-	tv.orig.UnitStrindex = int32(1)
+	ms := NewAttributeUnit()
+	internal.FillOrigTestAttributeUnit(ms.orig)
+	return ms
 }

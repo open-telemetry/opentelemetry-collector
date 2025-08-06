@@ -49,7 +49,11 @@ func TestHistogram_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewHistogram()
 	dest.unmarshalJSONIter(iter)
@@ -69,17 +73,12 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 func TestHistogram_DataPoints(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	fillTestHistogramDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
 	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestHistogram() Histogram {
-	tv := NewHistogram()
-	fillTestHistogram(tv)
-	return tv
-}
-
-func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewHistogram()
+	internal.FillOrigTestHistogram(ms.orig)
+	return ms
 }

@@ -50,7 +50,11 @@ func TestScopeLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewScopeLogs()
 	dest.unmarshalJSONIter(iter)
@@ -61,36 +65,29 @@ func TestScopeLogs_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestScopeLogs_Scope(t *testing.T) {
 	ms := NewScopeLogs()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
 func TestScopeLogs_SchemaUrl(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestScopeLogs_LogRecords(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	fillTestLogRecordSlice(ms.LogRecords())
+	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
 	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
 func generateTestScopeLogs() ScopeLogs {
-	tv := NewScopeLogs()
-	fillTestScopeLogs(tv)
-	return tv
-}
-
-func fillTestScopeLogs(tv ScopeLogs) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestLogRecordSlice(newLogRecordSlice(&tv.orig.LogRecords, tv.state))
+	ms := NewScopeLogs()
+	internal.FillOrigTestScopeLogs(ms.orig)
+	return ms
 }

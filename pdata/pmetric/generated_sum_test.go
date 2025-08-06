@@ -49,7 +49,11 @@ func TestSum_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewSum()
 	dest.unmarshalJSONIter(iter)
@@ -78,18 +82,12 @@ func TestSum_IsMonotonic(t *testing.T) {
 func TestSum_DataPoints(t *testing.T) {
 	ms := NewSum()
 	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	fillTestNumberDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
 	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSum() Sum {
-	tv := NewSum()
-	fillTestSum(tv)
-	return tv
-}
-
-func fillTestSum(tv Sum) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(newNumberDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewSum()
+	internal.FillOrigTestSum(ms.orig)
+	return ms
 }

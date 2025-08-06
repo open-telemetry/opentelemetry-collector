@@ -17,10 +17,12 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/service/internal/promtest"
+	"go.opentelemetry.io/collector/service/internal/resource"
 )
 
 const (
@@ -57,9 +59,7 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr":  "",
-						"net_sock_peer_name":  "",
-						"net_sock_peer_port":  "",
+						"rpc_system":          "grpc",
 						"service_name":        "otelcol",
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
@@ -68,8 +68,7 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name":       "",
-						"net_host_port":       "",
+						"http_request_method": "GET",
 						"service_name":        "otelcol",
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
@@ -107,31 +106,19 @@ func TestTelemetryInit(t *testing.T) {
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			sdk, err := config.NewSDK(
-				config.WithContext(context.Background()),
-				config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
-					MeterProvider: &config.MeterProvider{
-						Readers: cfg.Metrics.Readers,
-					},
-					Resource: &config.Resource{
-						SchemaUrl: ptr(""),
-						Attributes: []config.AttributeNameValue{
-							{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
-							{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
-							{Name: string(semconv.ServiceVersionKey), Value: "latest"},
-						},
-					},
-				}),
-			)
+			res := resource.New(component.BuildInfo{}, map[string]*string{
+				string(semconv.ServiceNameKey):       ptr("otelcol"),
+				string(semconv.ServiceVersionKey):    ptr("latest"),
+				string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
+			})
+			sdk, err := NewSDK(context.Background(), &cfg, res)
 			require.NoError(t, err)
+			t.Cleanup(func() {
+				assert.NoError(t, sdk.Shutdown(context.Background()))
+			})
 
-			mp, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
+			mp, err := newMeterProvider(Settings{SDK: sdk}, cfg)
 			require.NoError(t, err)
-			defer func() {
-				if prov, ok := mp.(interface{ Shutdown(context.Context) error }); ok {
-					require.NoError(t, prov.Shutdown(context.Background()))
-				}
-			}()
 
 			createTestMetrics(t, mp)
 
@@ -167,16 +154,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.NetSockPeerAddrKey), ""),
-		attribute.String(string(semconv.NetSockPeerPortKey), ""),
-		attribute.String(string(semconv.NetSockPeerNameKey), ""),
+		attribute.String(string(semconv.RPCSystemKey), "grpc"),
 	)))
 
 	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.NetHostNameKey), ""),
-		attribute.String(string(semconv.NetHostPortKey), ""),
+		attribute.String(string(semconv.HTTPRequestMethodKey), "GET"),
 	)))
 }
 
@@ -212,6 +196,35 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 	return parsed
 }
 
+func TestTelemetryMetricsDisabled(t *testing.T) {
+	cfg := Config{
+		Metrics: MetricsConfig{
+			Level: configtelemetry.LevelNormal,
+			MeterProvider: config.MeterProvider{
+				Readers: []config.MetricReader{{
+					Periodic: &config.PeriodicMetricReader{
+						Exporter: config.PushMetricExporter{
+							// Invalid, no protocol defined
+							OTLP: &config.OTLPMetric{},
+						},
+					},
+				}},
+			},
+		},
+	}
+
+	res := resource.New(component.BuildInfo{}, nil)
+	_, err := NewSDK(context.Background(), &cfg, res)
+	require.EqualError(t, err, "no valid metric exporter")
+
+	// Setting Metrics.Level to LevelNone disables metrics,
+	// so the invalid configuration should not cause an error.
+	cfg.Metrics.Level = configtelemetry.LevelNone
+	sdk, err := NewSDK(context.Background(), &cfg, res)
+	require.NoError(t, err)
+	assert.NoError(t, sdk.Shutdown(context.Background()))
+}
+
 // Test that the MeterProvider implements the 'Enabled' functionality.
 // See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
 func TestInstrumentEnabled(t *testing.T) {
@@ -226,29 +239,20 @@ func TestInstrumentEnabled(t *testing.T) {
 			},
 		},
 	}
-	sdk, err := config.NewSDK(
-		config.WithContext(context.Background()),
-		config.WithOpenTelemetryConfiguration(config.OpenTelemetryConfiguration{
-			MeterProvider: &config.MeterProvider{
-				Readers: cfg.Metrics.Readers,
-			},
-			Resource: &config.Resource{
-				SchemaUrl: ptr(""),
-				Attributes: []config.AttributeNameValue{
-					{Name: string(semconv.ServiceInstanceIDKey), Value: testInstanceID},
-					{Name: string(semconv.ServiceNameKey), Value: "otelcol"},
-					{Name: string(semconv.ServiceVersionKey), Value: "latest"},
-				},
-			},
-		}),
-	)
+
+	res := resource.New(component.BuildInfo{}, map[string]*string{
+		string(semconv.ServiceNameKey):       ptr("otelcol"),
+		string(semconv.ServiceVersionKey):    ptr("latest"),
+		string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
+	})
+	sdk, err := NewSDK(context.Background(), &cfg, res)
 	require.NoError(t, err)
-	meterProvider, err := newMeterProvider(Settings{SDK: &sdk}, cfg)
-	defer func() {
-		if prov, ok := meterProvider.(interface{ Shutdown(context.Context) error }); ok {
-			require.NoError(t, prov.Shutdown(context.Background()))
-		}
-	}()
+	t.Cleanup(func() {
+		assert.NoError(t, sdk.Shutdown(context.Background()))
+	})
+	require.NoError(t, err)
+
+	meterProvider, err := newMeterProvider(Settings{SDK: sdk}, cfg)
 	require.NoError(t, err)
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
@@ -294,8 +298,4 @@ func TestInstrumentEnabled(t *testing.T) {
 	require.NoError(t, err)
 	_, ok = floatGauge.(enabledInstrument)
 	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
-}
-
-func ptr[T any](v T) *T {
-	return &v
 }

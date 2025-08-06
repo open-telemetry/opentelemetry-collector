@@ -49,7 +49,11 @@ func TestLine_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewLine()
 	dest.unmarshalJSONIter(iter)
@@ -61,38 +65,32 @@ func TestLine_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestLine_FunctionIndex(t *testing.T) {
 	ms := NewLine()
 	assert.Equal(t, int32(0), ms.FunctionIndex())
-	ms.SetFunctionIndex(int32(1))
-	assert.Equal(t, int32(1), ms.FunctionIndex())
+	ms.SetFunctionIndex(int32(13))
+	assert.Equal(t, int32(13), ms.FunctionIndex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetFunctionIndex(int32(1)) })
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetFunctionIndex(int32(13)) })
 }
 
 func TestLine_Line(t *testing.T) {
 	ms := NewLine()
 	assert.Equal(t, int64(0), ms.Line())
-	ms.SetLine(int64(1))
-	assert.Equal(t, int64(1), ms.Line())
+	ms.SetLine(int64(13))
+	assert.Equal(t, int64(13), ms.Line())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetLine(int64(1)) })
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetLine(int64(13)) })
 }
 
 func TestLine_Column(t *testing.T) {
 	ms := NewLine()
 	assert.Equal(t, int64(0), ms.Column())
-	ms.SetColumn(int64(1))
-	assert.Equal(t, int64(1), ms.Column())
+	ms.SetColumn(int64(13))
+	assert.Equal(t, int64(13), ms.Column())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetColumn(int64(1)) })
+	assert.Panics(t, func() { newLine(&otlpprofiles.Line{}, &sharedState).SetColumn(int64(13)) })
 }
 
 func generateTestLine() Line {
-	tv := NewLine()
-	fillTestLine(tv)
-	return tv
-}
-
-func fillTestLine(tv Line) {
-	tv.orig.FunctionIndex = int32(1)
-	tv.orig.Line = int64(1)
-	tv.orig.Column = int64(1)
+	ms := NewLine()
+	internal.FillOrigTestLine(ms.orig)
+	return ms
 }

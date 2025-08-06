@@ -8,6 +8,7 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -110,30 +111,32 @@ var logRecord = &messageStruct{
 			},
 		},
 		&PrimitiveField{
-			fieldName:  "EventName",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `""`,
+			fieldName: "EventName",
+			protoType: ProtoTypeString,
 		},
 		&PrimitiveField{
-			fieldName:  "SeverityText",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"INFO"`,
+			fieldName: "SeverityText",
+			protoType: ProtoTypeString,
 		},
 		&TypedField{
 			fieldName: "SeverityNumber",
 			returnType: &TypedType{
 				structName: "SeverityNumber",
 				rawType:    "otlplogs.SeverityNumber",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: `otlplogs.SeverityNumber(0)`,
 				testVal:    `otlplogs.SeverityNumber(5)`,
 			},
 		},
 		bodyField,
-		attributes,
-		droppedAttributesCount,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
+		&PrimitiveField{
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
 	},
 }
 

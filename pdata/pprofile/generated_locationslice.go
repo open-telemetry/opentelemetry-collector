@@ -130,6 +130,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLocationSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the
@@ -177,19 +179,4 @@ func (ms LocationSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.Location {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Location, len(src))
-		data := make([]otlpprofiles.Location, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigLocation(dest[i], src[i])
-	}
-	return dest
 }

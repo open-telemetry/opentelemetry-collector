@@ -168,7 +168,7 @@ func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := New{{ .structName }}()
-	internal.FillTest{{ .structName }}(internal.{{ .structName }}(src))
+	*src.getOrig() = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
 	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
 	require.NoError(t, stream.Error())
 

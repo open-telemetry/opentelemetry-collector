@@ -86,7 +86,7 @@ func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	copyOrigValueType(dest.orig, ms.orig)
+	internal.CopyOrigValueType(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -102,13 +102,24 @@ func (ms ValueType) marshalJSONStream(dest *json.Stream) {
 	}
 	if ms.orig.AggregationTemporality != otlpprofiles.AggregationTemporality(0) {
 		dest.WriteObjectField("aggregationTemporality")
-		ms.AggregationTemporality().marshalJSONStream(dest)
+		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
 	}
 	dest.WriteObjectEnd()
 }
 
-func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
-	dest.TypeStrindex = src.TypeStrindex
-	dest.UnitStrindex = src.UnitStrindex
-	dest.AggregationTemporality = src.AggregationTemporality
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ValueType) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "typeStrindex", "type_strindex":
+			ms.orig.TypeStrindex = iter.ReadInt32()
+		case "unitStrindex", "unit_strindex":
+			ms.orig.UnitStrindex = iter.ReadInt32()
+		case "aggregationTemporality", "aggregation_temporality":
+			ms.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(iter.ReadEnumValue(otlpprofiles.AggregationTemporality_value))
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -130,6 +130,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSpanLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSpan_LinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
@@ -177,19 +179,4 @@ func (ms SpanLinkSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigSpanLinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_Link {
-	if cap(dest) < len(src) {
-		dest = make([]*otlptrace.Span_Link, len(src))
-		data := make([]otlptrace.Span_Link, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigSpanLink(dest[i], src[i])
-	}
-	return dest
 }

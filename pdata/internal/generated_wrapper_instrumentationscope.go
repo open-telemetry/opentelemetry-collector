@@ -28,26 +28,11 @@ func NewInstrumentationScope(orig *otlpcommon.InstrumentationScope, state *State
 	return InstrumentationScope{orig: orig, state: state}
 }
 
-func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
-	dest.Name = src.Name
-	dest.Version = src.Version
-	dest.Attributes = CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-}
-
 func GenerateTestInstrumentationScope() InstrumentationScope {
 	orig := otlpcommon.InstrumentationScope{}
+	FillOrigTestInstrumentationScope(&orig)
 	state := StateMutable
-	tv := NewInstrumentationScope(&orig, &state)
-	FillTestInstrumentationScope(tv)
-	return tv
-}
-
-func FillTestInstrumentationScope(tv InstrumentationScope) {
-	tv.orig.Name = "test_name"
-	tv.orig.Version = "test_version"
-	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	return NewInstrumentationScope(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -70,4 +55,37 @@ func MarshalJSONStreamInstrumentationScope(ms InstrumentationScope, dest *json.S
 		dest.WriteUint32(ms.orig.DroppedAttributesCount)
 	}
 	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIterInstrumentationScope unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterInstrumentationScope(ms InstrumentationScope, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "version":
+			ms.orig.Version = iter.ReadString()
+		case "attributes":
+			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func CopyOrigInstrumentationScope(dest, src *otlpcommon.InstrumentationScope) {
+	dest.Name = src.Name
+	dest.Version = src.Version
+	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestInstrumentationScope(orig *otlpcommon.InstrumentationScope) {
+	orig.Name = "test_name"
+	orig.Version = "test_version"
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
 }

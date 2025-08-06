@@ -134,7 +134,7 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
-	copyOrigExemplar(dest.orig, ms.orig)
+	internal.CopyOrigExemplar(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -167,15 +167,30 @@ func (ms Exemplar) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
-	dest.TimeUnixNano = src.TimeUnixNano
-	switch t := src.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		dest.Value = &otlpmetrics.Exemplar_AsDouble{AsDouble: t.AsDouble}
-	case *otlpmetrics.Exemplar_AsInt:
-		dest.Value = &otlpmetrics.Exemplar_AsInt{AsInt: t.AsInt}
-	}
-	dest.FilteredAttributes = internal.CopyOrigMap(dest.FilteredAttributes, src.FilteredAttributes)
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Exemplar) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+
+		case "asDouble", "as_double":
+			ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
+				AsDouble: iter.ReadFloat64(),
+			}
+		case "asInt", "as_int":
+			ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
+				AsInt: iter.ReadInt64(),
+			}
+		case "filteredAttributes", "filtered_attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.FilteredAttributes, ms.state), iter)
+		case "traceId", "trace_id":
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

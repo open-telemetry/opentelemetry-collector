@@ -33,16 +33,12 @@ var exportTracePartialSuccess = &messageStruct{
 	originFullName: "otlpcollectortrace.ExportTracePartialSuccess",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "RejectedSpans",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+			fieldName: "RejectedSpans",
+			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+			fieldName: "ErrorMessage",
+			protoType: ProtoTypeString,
 		},
 	},
 }

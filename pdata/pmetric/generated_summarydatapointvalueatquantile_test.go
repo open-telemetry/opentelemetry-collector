@@ -55,7 +55,11 @@ func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewSummaryDataPointValueAtQuantile()
 	dest.unmarshalJSONIter(iter)
@@ -66,33 +70,28 @@ func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
-	assert.InDelta(t, float64(0.0), ms.Quantile(), 0.01)
-	ms.SetQuantile(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.Quantile(), 0.01)
+	assert.InDelta(t, float64(0), ms.Quantile(), 0.01)
+	ms.SetQuantile(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.Quantile(), 0.01)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetQuantile(float64(17.13))
+		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetQuantile(float64(3.1415926))
 	})
 }
 
 func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
-	assert.InDelta(t, float64(0.0), ms.Value(), 0.01)
-	ms.SetValue(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.Value(), 0.01)
+	assert.InDelta(t, float64(0), ms.Value(), 0.01)
+	ms.SetValue(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.Value(), 0.01)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetValue(float64(17.13))
+		newSummaryDataPointValueAtQuantile(&otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, &sharedState).SetValue(float64(3.1415926))
 	})
 }
 
 func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(17.13)
-	tv.orig.Value = float64(17.13)
+	ms := NewSummaryDataPointValueAtQuantile()
+	internal.FillOrigTestSummaryDataPoint_ValueAtQuantile(ms.orig)
+	return ms
 }

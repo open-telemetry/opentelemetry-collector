@@ -70,7 +70,7 @@ func (ms Attribute) Value() pcommon.Value {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
-	copyOrigAttribute(dest.orig, ms.orig)
+	internal.CopyOrigKeyValue(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -85,7 +85,17 @@ func (ms Attribute) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigAttribute(dest, src *v1.KeyValue) {
-	dest.Key = src.Key
-	internal.CopyOrigValue(&dest.Value, &src.Value)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "key":
+			ms.orig.Key = iter.ReadString()
+		case "value":
+			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

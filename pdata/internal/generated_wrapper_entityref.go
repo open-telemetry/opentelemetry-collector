@@ -28,26 +28,11 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 	return EntityRef{orig: orig, state: state}
 }
 
-func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
-	dest.SchemaUrl = src.SchemaUrl
-	dest.Type = src.Type
-	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
-	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
-}
-
 func GenerateTestEntityRef() EntityRef {
 	orig := otlpcommon.EntityRef{}
+	FillOrigTestEntityRef(&orig)
 	state := StateMutable
-	tv := NewEntityRef(&orig, &state)
-	FillTestEntityRef(tv)
-	return tv
-}
-
-func FillTestEntityRef(tv EntityRef) {
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	tv.orig.Type = "host"
-	FillTestStringSlice(NewStringSlice(&tv.orig.IdKeys, tv.state))
-	FillTestStringSlice(NewStringSlice(&tv.orig.DescriptionKeys, tv.state))
+	return NewEntityRef(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -70,4 +55,37 @@ func MarshalJSONStreamEntityRef(ms EntityRef, dest *json.Stream) {
 		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), dest)
 	}
 	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIterEntityRef unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "schemaUrl", "schema_url":
+			ms.orig.SchemaUrl = iter.ReadString()
+		case "type":
+			ms.orig.Type = iter.ReadString()
+		case "idKeys", "id_keys":
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
+		case "descriptionKeys", "description_keys":
+			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
+	dest.SchemaUrl = src.SchemaUrl
+	dest.Type = src.Type
+	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
+	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
+}
+
+func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Type = "test_type"
+	orig.IdKeys = GenerateOrigTestStringSlice()
+	orig.DescriptionKeys = GenerateOrigTestStringSlice()
 }

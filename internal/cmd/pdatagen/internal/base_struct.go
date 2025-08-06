@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
+import (
+	"strings"
+)
 
 type baseStruct interface {
 	getName() string
+	getOriginName() string
 	generate(packageInfo *PackageInfo) []byte
 	generateTests(packageInfo *PackageInfo) []byte
 	generateInternal(packageInfo *PackageInfo) []byte
+	generateInternalTests(packageInfo *PackageInfo) []byte
 }
 
 // messageStruct generates a struct for a proto message. The struct can be generated both as a common struct
@@ -36,20 +41,30 @@ func (ms *messageStruct) generateInternal(packageInfo *PackageInfo) []byte {
 	return []byte(executeTemplate(messageInternalTemplate, ms.templateFields(packageInfo)))
 }
 
+func (ms *messageStruct) generateInternalTests(packageInfo *PackageInfo) []byte {
+	return []byte(executeTemplate(messageInternalTestTemplate, ms.templateFields(packageInfo)))
+}
+
 func (ms *messageStruct) templateFields(packageInfo *PackageInfo) map[string]any {
 	return map[string]any{
-		"messageStruct": ms,
-		"fields":        ms.fields,
-		"structName":    ms.getName(),
-		"originName":    ms.originFullName,
-		"description":   ms.description,
-		"isCommon":      usedByOtherDataTypes(ms.packageName),
-		"origAccessor":  origAccessor(ms.packageName),
-		"stateAccessor": stateAccessor(ms.packageName),
-		"packageName":   packageInfo.name,
-		"imports":       packageInfo.imports,
-		"testImports":   packageInfo.testImports,
+		"messageStruct":  ms,
+		"fields":         ms.fields,
+		"structName":     ms.getName(),
+		"originFullName": ms.originFullName,
+		"originName":     ms.getOriginName(),
+		"description":    ms.description,
+		"isCommon":       usedByOtherDataTypes(ms.packageName),
+		"origAccessor":   origAccessor(ms.packageName),
+		"stateAccessor":  stateAccessor(ms.packageName),
+		"packageName":    packageInfo.name,
+		"imports":        packageInfo.imports,
+		"testImports":    packageInfo.testImports,
 	}
+}
+
+func (ms *messageStruct) getOriginName() string {
+	_, after, _ := strings.Cut(ms.originFullName, ".")
+	return after
 }
 
 var _ baseStruct = (*messageStruct)(nil)

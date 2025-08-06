@@ -50,7 +50,11 @@ func TestScopeProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewScopeProfiles()
 	dest.unmarshalJSONIter(iter)
@@ -61,36 +65,29 @@ func TestScopeProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
 
 func TestScopeProfiles_Scope(t *testing.T) {
 	ms := NewScopeProfiles()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
 func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestScopeProfiles_Profiles(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	fillTestProfilesSlice(ms.Profiles())
+	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
 	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {
-	tv := NewScopeProfiles()
-	fillTestScopeProfiles(tv)
-	return tv
-}
-
-func fillTestScopeProfiles(tv ScopeProfiles) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestProfilesSlice(newProfilesSlice(&tv.orig.Profiles, tv.state))
+	ms := NewScopeProfiles()
+	internal.FillOrigTestScopeProfiles(ms.orig)
+	return ms
 }

@@ -50,7 +50,11 @@ func TestMapping_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewMapping()
 	dest.unmarshalJSONIter(iter)
@@ -62,43 +66,43 @@ func TestMapping_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestMapping_MemoryStart(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, uint64(0), ms.MemoryStart())
-	ms.SetMemoryStart(uint64(1))
-	assert.Equal(t, uint64(1), ms.MemoryStart())
+	ms.SetMemoryStart(uint64(13))
+	assert.Equal(t, uint64(13), ms.MemoryStart())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryStart(uint64(1)) })
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryStart(uint64(13)) })
 }
 
 func TestMapping_MemoryLimit(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, uint64(0), ms.MemoryLimit())
-	ms.SetMemoryLimit(uint64(1))
-	assert.Equal(t, uint64(1), ms.MemoryLimit())
+	ms.SetMemoryLimit(uint64(13))
+	assert.Equal(t, uint64(13), ms.MemoryLimit())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryLimit(uint64(1)) })
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetMemoryLimit(uint64(13)) })
 }
 
 func TestMapping_FileOffset(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, uint64(0), ms.FileOffset())
-	ms.SetFileOffset(uint64(1))
-	assert.Equal(t, uint64(1), ms.FileOffset())
+	ms.SetFileOffset(uint64(13))
+	assert.Equal(t, uint64(13), ms.FileOffset())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFileOffset(uint64(1)) })
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFileOffset(uint64(13)) })
 }
 
 func TestMapping_FilenameStrindex(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, int32(0), ms.FilenameStrindex())
-	ms.SetFilenameStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.FilenameStrindex())
+	ms.SetFilenameStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.FilenameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFilenameStrindex(int32(1)) })
+	assert.Panics(t, func() { newMapping(&otlpprofiles.Mapping{}, &sharedState).SetFilenameStrindex(int32(13)) })
 }
 
 func TestMapping_AttributeIndices(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
@@ -139,19 +143,7 @@ func TestMapping_HasInlineFrames(t *testing.T) {
 }
 
 func generateTestMapping() Mapping {
-	tv := NewMapping()
-	fillTestMapping(tv)
-	return tv
-}
-
-func fillTestMapping(tv Mapping) {
-	tv.orig.MemoryStart = uint64(1)
-	tv.orig.MemoryLimit = uint64(1)
-	tv.orig.FileOffset = uint64(1)
-	tv.orig.FilenameStrindex = int32(1)
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
-	tv.orig.HasFunctions = true
-	tv.orig.HasFilenames = true
-	tv.orig.HasLineNumbers = true
-	tv.orig.HasInlineFrames = true
+	ms := NewMapping()
+	internal.FillOrigTestMapping(ms.orig)
+	return ms
 }

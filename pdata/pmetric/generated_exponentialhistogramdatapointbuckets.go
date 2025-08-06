@@ -62,7 +62,7 @@ func (ms ExponentialHistogramDataPointBuckets) SetOffset(v int32) {
 	ms.orig.Offset = v
 }
 
-// BucketCounts returns the bucketcounts associated with this ExponentialHistogramDataPointBuckets.
+// BucketCounts returns the BucketCounts associated with this ExponentialHistogramDataPointBuckets.
 func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
 }
@@ -70,7 +70,7 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	copyOrigExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
+	internal.CopyOrigExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -80,12 +80,24 @@ func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stre
 		dest.WriteObjectField("offset")
 		dest.WriteInt32(ms.orig.Offset)
 	}
-	dest.WriteObjectField("bucketCounts")
-	internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	if len(ms.orig.BucketCounts) > 0 {
+		dest.WriteObjectField("bucketCounts")
+		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
+	}
 	dest.WriteObjectEnd()
 }
 
-func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
-	dest.Offset = src.Offset
-	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ExponentialHistogramDataPointBuckets) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "offset":
+			ms.orig.Offset = iter.ReadInt32()
+		case "bucketCounts", "bucket_counts":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

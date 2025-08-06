@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
-
 import (
 	"strings"
 	"text/template"
@@ -53,7 +52,7 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
-const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
+const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
@@ -72,11 +71,12 @@ const optionalPrimitiveMarshalJSONTemplate = `if ms.Has{{ .fieldName }}() {
 		dest.Write{{ upperFirst .returnType }}(ms.{{ .fieldName }}())
 	}`
 
+const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
+		ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
+
 type OptionalPrimitiveField struct {
-	fieldName  string
-	defaultVal string
-	testVal    string
-	returnType string
+	fieldName string
+	protoType ProtoType
 }
 
 func (opv *OptionalPrimitiveField) GenerateAccessors(ms *messageStruct) string {
@@ -104,15 +104,20 @@ func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
+func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveUnmarshalJSONTemplate").Parse(optionalPrimitiveUnmarshalJSONTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
 func (opv *OptionalPrimitiveField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
-		"defaultVal":       opv.defaultVal,
+		"defaultVal":       opv.protoType.defaultValue(),
 		"fieldName":        opv.fieldName,
 		"lowerFieldName":   strings.ToLower(opv.fieldName),
-		"testValue":        opv.testVal,
-		"returnType":       opv.returnType,
+		"testValue":        opv.protoType.testValue(opv.fieldName),
+		"returnType":       opv.protoType.goType(),
 		"originStructName": ms.originFullName,
 		"originStructType": ms.originFullName + "_" + opv.fieldName,
 	}

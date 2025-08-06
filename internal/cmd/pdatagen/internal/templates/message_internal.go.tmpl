@@ -8,18 +8,19 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element "go.opentelemetry.io/collector/pdata/internal" }}
+	{{ if ne $element "\"go.opentelemetry.io/collector/pdata/internal\"" }}
 	{{ $element }}
 	{{- end }}
 	{{- end }}
 )
+{{ if .isCommon }}
 
 type {{ .structName }} struct {
-	orig *{{ .originName }}
+	orig *{{ .originFullName }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originName }} {
+func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originFullName }} {
 	return ms.orig
 }
 
@@ -27,28 +28,15 @@ func Get{{ .structName }}State(ms {{ .structName }}) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *{{ .originName }}, state *State) {{ .structName }} {
+func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structName }} {
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func CopyOrig{{ .structName }}(dest, src *{{ .originName }}) {
-    {{- range .fields }}
-    {{ .GenerateCopyOrig $.messageStruct }}
-    {{- end }}
-}
-
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := {{ .originName }}{}
+	orig := {{ .originFullName }}{}
+	FillOrigTest{{ .originName }}(&orig)
 	state := StateMutable
-	tv := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(tv)
-	return tv
-}
-
-func FillTest{{ .structName }}(tv {{ .structName }}) {
-	{{- range .fields }}
-	{{ .GenerateSetWithTestValue $.messageStruct }}
-	{{- end }}
+	return New{{ .structName }}(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -58,4 +46,31 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 	{{ .GenerateMarshalJSON $.messageStruct }}
 	{{ end -}}
 	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		{{ range .fields -}}
+		{{ .GenerateUnmarshalJSON $.messageStruct }}
+		{{ end -}}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+{{ end }}
+
+func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
+	{{- range .fields }}
+	{{ .GenerateCopyOrig $.messageStruct }}
+	{{- end }}
+}
+
+func FillOrigTest{{ .originName }}(orig *{{ .originFullName }}) {
+	{{- range .fields }}
+	{{ .GenerateSetWithTestValue $.messageStruct }}
+	{{- end }}
 }

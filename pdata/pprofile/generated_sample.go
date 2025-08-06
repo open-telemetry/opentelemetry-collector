@@ -114,7 +114,7 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
-	copyOrigSample(dest.orig, ms.orig)
+	internal.CopyOrigSample(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -147,20 +147,25 @@ func (ms Sample) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigSample(dest, src *otlpprofiles.Sample) {
-	dest.LocationsStartIndex = src.LocationsStartIndex
-	dest.LocationsLength = src.LocationsLength
-	dest.Value = internal.CopyOrigInt64Slice(dest.Value, src.Value)
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
-	if srcLinkIndex, ok := src.LinkIndex_.(*otlpprofiles.Sample_LinkIndex); ok {
-		destLinkIndex, ok := dest.LinkIndex_.(*otlpprofiles.Sample_LinkIndex)
-		if !ok {
-			destLinkIndex = &otlpprofiles.Sample_LinkIndex{}
-			dest.LinkIndex_ = destLinkIndex
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Sample) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "locationsStartIndex", "locations_start_index":
+			ms.orig.LocationsStartIndex = iter.ReadInt32()
+		case "locationsLength", "locations_length":
+			ms.orig.LocationsLength = iter.ReadInt32()
+		case "value":
+			internal.UnmarshalJSONIterInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), iter)
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		case "linkIndex", "link_index":
+			ms.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: iter.ReadInt32()}
+		case "timestampsUnixNano", "timestamps_unix_nano":
+			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), iter)
+		default:
+			iter.Skip()
 		}
-		destLinkIndex.LinkIndex = srcLinkIndex.LinkIndex
-	} else {
-		dest.LinkIndex_ = nil
-	}
-	dest.TimestampsUnixNano = internal.CopyOrigUInt64Slice(dest.TimestampsUnixNano, src.TimestampsUnixNano)
+		return true
+	})
 }

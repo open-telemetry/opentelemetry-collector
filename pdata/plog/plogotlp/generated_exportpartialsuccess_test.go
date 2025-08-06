@@ -51,7 +51,11 @@ func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewExportPartialSuccess()
 	dest.unmarshalJSONIter(iter)
@@ -74,21 +78,16 @@ func TestExportPartialSuccess_RejectedLogRecords(t *testing.T) {
 func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Empty(t, ms.ErrorMessage())
-	ms.SetErrorMessage("error message")
-	assert.Equal(t, "error message", ms.ErrorMessage())
+	ms.SetErrorMessage("test_errormessage")
+	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("error message")
+		newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	tv := NewExportPartialSuccess()
-	fillTestExportPartialSuccess(tv)
-	return tv
-}
-
-func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedLogRecords = int64(13)
-	tv.orig.ErrorMessage = "error message"
+	ms := NewExportPartialSuccess()
+	internal.FillOrigTestExportLogsPartialSuccess(ms.orig)
+	return ms
 }

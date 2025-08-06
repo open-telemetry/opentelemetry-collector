@@ -80,7 +80,7 @@ func (ms Sum) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	copyOrigSum(dest.orig, ms.orig)
+	internal.CopyOrigSum(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -88,7 +88,7 @@ func (ms Sum) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
 	if ms.orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
 		dest.WriteObjectField("aggregationTemporality")
-		ms.AggregationTemporality().marshalJSONStream(dest)
+		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
 	}
 	if ms.orig.IsMonotonic != false {
 		dest.WriteObjectField("isMonotonic")
@@ -101,8 +101,19 @@ func (ms Sum) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigSum(dest, src *otlpmetrics.Sum) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.IsMonotonic = src.IsMonotonic
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Sum) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "aggregationTemporality", "aggregation_temporality":
+			ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
+		case "isMonotonic", "is_monotonic":
+			ms.orig.IsMonotonic = iter.ReadBool()
+		case "dataPoints", "data_points":
+			ms.DataPoints().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

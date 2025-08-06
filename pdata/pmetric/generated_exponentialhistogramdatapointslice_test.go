@@ -28,9 +28,9 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	emptyVal := NewExponentialHistogramDataPoint()
 	testVal := generateTestExponentialHistogramDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestExponentialHistogramDataPoint(el)
+		internal.FillOrigTestExponentialHistogramDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,16 +51,8 @@ func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
-	// Test CopyTo to empty
-	NewExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestExponentialHistogramDataPointSlice().CopyTo(dest)
+	src := generateTestExponentialHistogramDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
 
@@ -132,6 +124,14 @@ func TestExponentialHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExponentialHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExponentialHistogramDataPointSlice()
+	got.RemoveIf(func(el ExponentialHistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 	ms := generateTestExponentialHistogramDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -177,15 +177,7 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
-	es := NewExponentialHistogramDataPointSlice()
-	fillTestExponentialHistogramDataPointSlice(es)
-	return es
-}
-
-func fillTestExponentialHistogramDataPointSlice(es ExponentialHistogramDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewExponentialHistogramDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	return ms
 }

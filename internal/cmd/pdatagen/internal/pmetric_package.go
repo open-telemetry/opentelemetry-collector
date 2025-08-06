@@ -8,6 +8,7 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -109,16 +110,12 @@ var metric = &messageStruct{
 	fields: []Field{
 		nameField,
 		&PrimitiveField{
-			fieldName:  "Description",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"test_description"`,
+			fieldName: "Description",
+			protoType: ProtoTypeString,
 		},
 		&PrimitiveField{
-			fieldName:  "Unit",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"1"`,
+			fieldName: "Unit",
+			protoType: ProtoTypeString,
 		},
 		&SliceField{
 			fieldName:   "Metadata",
@@ -178,7 +175,10 @@ var sum = &messageStruct{
 	originFullName: "otlpmetrics.Sum",
 	fields: []Field{
 		aggregationTemporalityField,
-		isMonotonicField,
+		&PrimitiveField{
+			fieldName: "IsMonotonic",
+			protoType: ProtoTypeBool,
+		},
 		&SliceField{
 			fieldName:   "DataPoints",
 			returnSlice: numberDataPointSlice,
@@ -235,7 +235,10 @@ var numberDataPoint = &messageStruct{
 	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
 	fields: []Field{
-		attributes,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
 		startTimeField,
 		timeField,
 		&OneOfField{
@@ -246,20 +249,19 @@ var numberDataPoint = &messageStruct{
 				&OneOfPrimitiveValue{
 					fieldName:       "Double",
 					originFieldName: "AsDouble",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
+					protoType:       ProtoTypeDouble,
 				},
 				&OneOfPrimitiveValue{
 					fieldName:       "Int",
 					originFieldName: "AsInt",
-					returnType:      "int64",
-					defaultVal:      "int64(0)",
-					testVal:         "int64(17)",
+					protoType:       ProtoTypeSFixed64,
 				},
 			},
 		},
-		exemplarsField,
+		&SliceField{
+			fieldName:   "Exemplars",
+			returnSlice: exemplarSlice,
+		},
 		dataPointFlagsField,
 	},
 }
@@ -274,17 +276,41 @@ var histogramDataPoint = &messageStruct{
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
 	fields: []Field{
-		attributes,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
 		startTimeField,
 		timeField,
-		countField,
-		bucketCountsField,
-		explicitBoundsField,
-		exemplarsField,
+		&PrimitiveField{
+			fieldName: "Count",
+			protoType: ProtoTypeFixed64,
+		},
+		&SliceField{
+			fieldName:   "BucketCounts",
+			returnSlice: uInt64Slice,
+		},
+		&SliceField{
+			fieldName:   "ExplicitBounds",
+			returnSlice: float64Slice,
+		},
+		&SliceField{
+			fieldName:   "Exemplars",
+			returnSlice: exemplarSlice,
+		},
 		dataPointFlagsField,
-		sumField,
-		minField,
-		maxField,
+		&OptionalPrimitiveField{
+			fieldName: "Sum",
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Min",
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Max",
+			protoType: ProtoTypeDouble,
+		},
 	},
 }
 
@@ -301,21 +327,23 @@ var exponentialHistogramDataPoint = &messageStruct{
 	// distribution of those values across a set of buckets.`,
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
 	fields: []Field{
-		attributes,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
 		startTimeField,
 		timeField,
-		countField,
 		&PrimitiveField{
-			fieldName:  "Scale",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(4)",
+			fieldName: "Count",
+			protoType: ProtoTypeFixed64,
 		},
 		&PrimitiveField{
-			fieldName:  "ZeroCount",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(201)",
+			fieldName: "Scale",
+			protoType: ProtoTypeSInt32,
+		},
+		&PrimitiveField{
+			fieldName: "ZeroCount",
+			protoType: ProtoTypeFixed64,
 		},
 		&MessageField{
 			fieldName:     "Positive",
@@ -325,16 +353,26 @@ var exponentialHistogramDataPoint = &messageStruct{
 			fieldName:     "Negative",
 			returnMessage: bucketsValues,
 		},
-		exemplarsField,
+		&SliceField{
+			fieldName:   "Exemplars",
+			returnSlice: exemplarSlice,
+		},
 		dataPointFlagsField,
-		sumField,
-		minField,
-		maxField,
+		&OptionalPrimitiveField{
+			fieldName: "Sum",
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Min",
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Max",
+			protoType: ProtoTypeDouble,
+		},
 		&PrimitiveField{
-			fieldName:  "ZeroThreshold",
-			returnType: "float64",
-			defaultVal: "float64(0.0)",
-			testVal:    "float64(0.5)",
+			fieldName: "ZeroThreshold",
+			protoType: ProtoTypeDouble,
 		},
 	},
 }
@@ -345,12 +383,13 @@ var bucketsValues = &messageStruct{
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "Offset",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(909)",
+			fieldName: "Offset",
+			protoType: ProtoTypeSInt32,
 		},
-		bucketCountsField,
+		&SliceField{
+			fieldName:   "BucketCounts",
+			returnSlice: uInt64Slice,
+		},
 	},
 }
 
@@ -364,11 +403,20 @@ var summaryDataPoint = &messageStruct{
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
 	fields: []Field{
-		attributes,
+		&SliceField{
+			fieldName:   "Attributes",
+			returnSlice: mapStruct,
+		},
 		startTimeField,
 		timeField,
-		countField,
-		doubleSumField,
+		&PrimitiveField{
+			fieldName: "Count",
+			protoType: ProtoTypeFixed64,
+		},
+		&PrimitiveField{
+			fieldName: "Sum",
+			protoType: ProtoTypeDouble,
+		},
 		&SliceField{
 			fieldName:   "QuantileValues",
 			returnSlice: quantileValuesSlice,
@@ -387,8 +435,14 @@ var quantileValues = &messageStruct{
 	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
 	fields: []Field{
-		quantileField,
-		valueFloat64Field,
+		&PrimitiveField{
+			fieldName: "Quantile",
+			protoType: ProtoTypeDouble,
+		},
+		&PrimitiveField{
+			fieldName: "Value",
+			protoType: ProtoTypeDouble,
+		},
 	},
 }
 
@@ -414,16 +468,12 @@ var exemplar = &messageStruct{
 				&OneOfPrimitiveValue{
 					fieldName:       "Double",
 					originFieldName: "AsDouble",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
+					protoType:       ProtoTypeDouble,
 				},
 				&OneOfPrimitiveValue{
 					fieldName:       "Int",
 					originFieldName: "AsInt",
-					returnType:      "int64",
-					defaultVal:      "int64(0)",
-					testVal:         "int64(17)",
+					protoType:       ProtoTypeSFixed64,
 				},
 			},
 		},
@@ -446,92 +496,13 @@ var dataPointFlagsField = &TypedField{
 	},
 }
 
-var exemplarsField = &SliceField{
-	fieldName:   "Exemplars",
-	returnSlice: exemplarSlice,
-}
-
-var countField = &PrimitiveField{
-	fieldName:  "Count",
-	returnType: "uint64",
-	defaultVal: "uint64(0)",
-	testVal:    "uint64(17)",
-}
-
-var doubleSumField = &PrimitiveField{
-	fieldName:  "Sum",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var valueFloat64Field = &PrimitiveField{
-	fieldName:  "Value",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var bucketCountsField = &PrimitiveSliceField{
-	fieldName:         "BucketCounts",
-	returnType:        "UInt64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]uint64(nil)",
-	rawType:           "[]uint64",
-	testVal:           "[]uint64{1, 2, 3}",
-}
-
-var explicitBoundsField = &PrimitiveSliceField{
-	fieldName:         "ExplicitBounds",
-	returnType:        "Float64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]float64(nil)",
-	rawType:           "[]float64",
-	testVal:           "[]float64{1, 2, 3}",
-}
-
-var quantileField = &PrimitiveField{
-	fieldName:  "Quantile",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var isMonotonicField = &PrimitiveField{
-	fieldName:  "IsMonotonic",
-	returnType: "bool",
-	defaultVal: "false",
-	testVal:    "true",
-}
-
 var aggregationTemporalityField = &TypedField{
 	fieldName: "AggregationTemporality",
 	returnType: &TypedType{
 		structName: "AggregationTemporality",
 		rawType:    "otlpmetrics.AggregationTemporality",
-		isType:     true,
+		isEnum:     true,
 		defaultVal: "otlpmetrics.AggregationTemporality(0)",
 		testVal:    "otlpmetrics.AggregationTemporality(1)",
 	},
-}
-
-var sumField = &OptionalPrimitiveField{
-	fieldName:  "Sum",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var minField = &OptionalPrimitiveField{
-	fieldName:  "Min",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(9.23)",
-}
-
-var maxField = &OptionalPrimitiveField{
-	fieldName:  "Max",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(182.55)",
 }

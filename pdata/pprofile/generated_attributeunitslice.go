@@ -130,6 +130,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es AttributeUnitSlice) RemoveIf(f func(AttributeUnit) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeUnitSlice) CopyTo(dest AttributeUnitSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeUnitSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigAttributeUnitSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the AttributeUnit elements within AttributeUnitSlice given the
@@ -177,19 +179,4 @@ func (ms AttributeUnitSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.AttributeUnit, len(src))
-		data := make([]otlpprofiles.AttributeUnit, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigAttributeUnit(dest[i], src[i])
-	}
-	return dest
 }

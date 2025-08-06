@@ -78,7 +78,8 @@
       "groupName": "All go.opentelemetry.io/contrib packages",
       "matchSourceUrls": [
         "https://go.opentelemetry.io/otel{/,}**"
-      ]
+      ],
+      "allowedVersions": "!/v0.59.*/"
     },
     {
       "matchManagers": [

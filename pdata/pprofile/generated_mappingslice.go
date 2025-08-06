@@ -130,6 +130,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es MappingSlice) RemoveIf(f func(Mapping) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es MappingSlice) CopyTo(dest MappingSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigMappingSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigMappingSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Mapping elements within MappingSlice given the
@@ -177,19 +179,4 @@ func (ms MappingSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Mapping {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Mapping, len(src))
-		data := make([]otlpprofiles.Mapping, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigMapping(dest[i], src[i])
-	}
-	return dest
 }

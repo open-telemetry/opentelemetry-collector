@@ -32,16 +32,12 @@ var exportProfilesPartialSuccess = &messageStruct{
 	originFullName: "otlpcollectorprofile.ExportProfilesPartialSuccess",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "RejectedProfiles",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+			fieldName: "RejectedProfiles",
+			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+			fieldName: "ErrorMessage",
+			protoType: ProtoTypeString,
 		},
 	},
 }

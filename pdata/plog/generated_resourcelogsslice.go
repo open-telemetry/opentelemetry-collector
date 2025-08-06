@@ -130,6 +130,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es ResourceLogsSlice) RemoveIf(f func(ResourceLogs) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ResourceLogsSlice) CopyTo(dest ResourceLogsSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigResourceLogsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigResourceLogsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ResourceLogs elements within ResourceLogsSlice given the
@@ -177,19 +179,4 @@ func (ms ResourceLogsSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigResourceLogsSlice(dest, src []*otlplogs.ResourceLogs) []*otlplogs.ResourceLogs {
-	if cap(dest) < len(src) {
-		dest = make([]*otlplogs.ResourceLogs, len(src))
-		data := make([]otlplogs.ResourceLogs, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigResourceLogs(dest[i], src[i])
-	}
-	return dest
 }

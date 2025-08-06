@@ -130,6 +130,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +139,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +148,7 @@ func (es LinkSlice) RemoveIf(f func(Link) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LinkSlice) CopyTo(dest LinkSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Link elements within LinkSlice given the
@@ -177,19 +179,4 @@ func (ms LinkSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigLinkSlice(dest, src []*otlpprofiles.Link) []*otlpprofiles.Link {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.Link, len(src))
-		data := make([]otlpprofiles.Link, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigLink(dest[i], src[i])
-	}
-	return dest
 }

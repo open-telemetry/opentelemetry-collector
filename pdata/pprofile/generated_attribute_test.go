@@ -50,7 +50,11 @@ func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
 	src.marshalJSONStream(stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewAttribute()
 	dest.unmarshalJSONIter(iter)
@@ -62,25 +66,21 @@ func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())
-	ms.SetKey("key")
-	assert.Equal(t, "key", ms.Key())
+	ms.SetKey("test_key")
+	assert.Equal(t, "test_key", ms.Key())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("key") })
+	assert.Panics(t, func() { newAttribute(&v1.KeyValue{}, &sharedState).SetKey("test_key") })
 }
 
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
-	internal.FillTestValue(internal.Value(ms.Value()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
+	internal.FillOrigTestAnyValue(&ms.orig.Value)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	tv := NewAttribute()
-	fillTestAttribute(tv)
-	return tv
-}
-
-func fillTestAttribute(tv Attribute) {
-	tv.orig.Key = "key"
-	internal.FillTestValue(internal.NewValue(&tv.orig.Value, tv.state))
+	ms := NewAttribute()
+	internal.FillOrigTestKeyValue(ms.orig)
+	return ms
 }

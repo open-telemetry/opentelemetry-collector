@@ -75,7 +75,7 @@ func (ms ResourceProfiles) ScopeProfiles() ScopeProfilesSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceProfiles) CopyTo(dest ResourceProfiles) {
 	dest.state.AssertMutable()
-	copyOrigResourceProfiles(dest.orig, ms.orig)
+	internal.CopyOrigResourceProfiles(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -94,8 +94,19 @@ func (ms ResourceProfiles) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
-	internal.CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.ScopeProfiles = copyOrigScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms ResourceProfiles) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resource":
+			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
+		case "schemaUrl", "schema_url":
+			ms.orig.SchemaUrl = iter.ReadString()
+		case "scopeProfiles", "scope_profiles":
+			ms.ScopeProfiles().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -28,24 +28,11 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-func CopyOrigResource(dest, src *otlpresource.Resource) {
-	dest.Attributes = CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
-}
-
 func GenerateTestResource() Resource {
 	orig := otlpresource.Resource{}
+	FillOrigTestResource(&orig)
 	state := StateMutable
-	tv := NewResource(&orig, &state)
-	FillTestResource(tv)
-	return tv
-}
-
-func FillTestResource(tv Resource) {
-	FillTestMap(NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
-	FillTestEntityRefSlice(NewEntityRefSlice(&tv.orig.EntityRefs, tv.state))
+	return NewResource(&orig, &state)
 }
 
 // MarshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -64,4 +51,33 @@ func MarshalJSONStreamResource(ms Resource, dest *json.Stream) {
 		MarshalJSONStreamEntityRefSlice(NewEntityRefSlice(&ms.orig.EntityRefs, ms.state), dest)
 	}
 	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONIterResource unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONIterResource(ms Resource, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			UnmarshalJSONIterMap(NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		case "entityRefs", "entity_refs":
+			UnmarshalJSONIterEntityRefSlice(NewEntityRefSlice(&ms.orig.EntityRefs, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func CopyOrigResource(dest, src *otlpresource.Resource) {
+	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
+}
+
+func FillOrigTestResource(orig *otlpresource.Resource) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+	orig.EntityRefs = GenerateOrigTestEntityRefSlice()
 }

@@ -119,7 +119,7 @@ func (ms SummaryDataPoint) SetFlags(v DataPointFlags) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms SummaryDataPoint) CopyTo(dest SummaryDataPoint) {
 	dest.state.AssertMutable()
-	copyOrigSummaryDataPoint(dest.orig, ms.orig)
+	internal.CopyOrigSummaryDataPoint(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -141,7 +141,7 @@ func (ms SummaryDataPoint) marshalJSONStream(dest *json.Stream) {
 		dest.WriteObjectField("count")
 		dest.WriteUint64(ms.orig.Count)
 	}
-	if ms.orig.Sum != float64(0.0) {
+	if ms.orig.Sum != float64(0) {
 		dest.WriteObjectField("sum")
 		dest.WriteFloat64(ms.orig.Sum)
 	}
@@ -156,12 +156,27 @@ func (ms SummaryDataPoint) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.Count = src.Count
-	dest.Sum = src.Sum
-	dest.QuantileValues = copyOrigSummaryDataPointValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
-	dest.Flags = src.Flags
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms SummaryDataPoint) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			ms.orig.Count = iter.ReadUint64()
+		case "sum":
+			ms.orig.Sum = iter.ReadFloat64()
+		case "quantileValues", "quantile_values":
+			ms.QuantileValues().unmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

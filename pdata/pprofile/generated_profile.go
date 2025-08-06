@@ -167,7 +167,7 @@ func (ms Profile) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Profile) CopyTo(dest Profile) {
 	dest.state.AssertMutable()
-	copyOrigProfile(dest.orig, ms.orig)
+	internal.CopyOrigProfile(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -209,7 +209,7 @@ func (ms Profile) marshalJSONStream(dest *json.Stream) {
 	}
 	if ms.orig.ProfileId != data.ProfileID([16]byte{}) {
 		dest.WriteObjectField("profileId")
-		ms.ProfileID().marshalJSONStream(dest)
+		ms.orig.ProfileId.MarshalJSONStream(dest)
 	}
 	if ms.orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
@@ -230,19 +230,41 @@ func (ms Profile) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigProfile(dest, src *otlpprofiles.Profile) {
-	dest.SampleType = copyOrigValueTypeSlice(dest.SampleType, src.SampleType)
-	dest.Sample = copyOrigSampleSlice(dest.Sample, src.Sample)
-	dest.LocationIndices = internal.CopyOrigInt32Slice(dest.LocationIndices, src.LocationIndices)
-	dest.TimeNanos = src.TimeNanos
-	dest.DurationNanos = src.DurationNanos
-	copyOrigValueType(&dest.PeriodType, &src.PeriodType)
-	dest.Period = src.Period
-	dest.CommentStrindices = internal.CopyOrigInt32Slice(dest.CommentStrindices, src.CommentStrindices)
-	dest.DefaultSampleTypeIndex = src.DefaultSampleTypeIndex
-	dest.ProfileId = src.ProfileId
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
-	dest.OriginalPayload = internal.CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Profile) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "sampleType", "sample_type":
+			ms.SampleType().unmarshalJSONIter(iter)
+		case "sample":
+			ms.Sample().unmarshalJSONIter(iter)
+		case "locationIndices", "location_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.LocationIndices, ms.state), iter)
+		case "timeNanos", "time_nanos":
+			ms.orig.TimeNanos = iter.ReadInt64()
+		case "durationNanos", "duration_nanos":
+			ms.orig.DurationNanos = iter.ReadInt64()
+		case "periodType", "period_type":
+			ms.PeriodType().unmarshalJSONIter(iter)
+		case "period":
+			ms.orig.Period = iter.ReadInt64()
+		case "commentStrindices", "comment_strindices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.CommentStrindices, ms.state), iter)
+		case "defaultSampleTypeIndex", "default_sample_type_index":
+			ms.orig.DefaultSampleTypeIndex = iter.ReadInt32()
+		case "profileId", "profile_id":
+			ms.orig.ProfileId.UnmarshalJSONIter(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		case "originalPayloadFormat", "original_payload_format":
+			ms.orig.OriginalPayloadFormat = iter.ReadString()
+		case "originalPayload", "original_payload":
+			internal.UnmarshalJSONIterByteSlice(internal.NewByteSlice(&ms.orig.OriginalPayload, ms.state), iter)
+		case "attributeIndices", "attribute_indices":
+			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

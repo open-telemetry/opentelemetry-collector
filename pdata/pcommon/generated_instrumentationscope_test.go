@@ -49,7 +49,11 @@ func TestInstrumentationScope_MarshalAndUnmarshalJSON(t *testing.T) {
 	internal.MarshalJSONStreamInstrumentationScope(internal.InstrumentationScope(src), stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewInstrumentationScope()
 	internal.UnmarshalJSONIterInstrumentationScope(internal.InstrumentationScope(dest), iter)
@@ -81,18 +85,18 @@ func TestInstrumentationScope_Version(t *testing.T) {
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
+		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(13))
 	})
 }
 

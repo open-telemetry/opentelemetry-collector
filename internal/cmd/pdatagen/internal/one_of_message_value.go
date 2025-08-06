@@ -36,31 +36,23 @@ func (ms {{ .structName }}) SetEmpty{{ .fieldName }}() {{ .returnType }} {
 
 const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
-	fillTest{{ .returnType }}(ms.SetEmpty{{ .fieldName }}())
+	ms.SetEmpty{{ .fieldName }}()
+	assert.Equal(t, New{{ .returnType }}(), ms.{{ .fieldName }}())
+	internal.FillOrigTest{{ .returnType }}(ms.orig.Get{{ .originOneOfFieldName }}().(*{{ .originStructType }}).{{ .fieldName }})
 	assert.Equal(t, {{ .typeName }}, ms.{{ .originOneOfTypeFuncName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { new{{ .structName }}(&{{ .originStructName }}{}, &sharedState).SetEmpty{{ .fieldName }}() })
 }
-
-func Test{{ .structName }}_CopyTo_{{ .fieldName }}(t *testing.T) {
-	ms := New{{ .structName }}()
-	fillTest{{ .returnType }}(ms.SetEmpty{{ .fieldName }}())
-	dest := New{{ .structName }}()
-	ms.CopyTo(dest)
-	assert.Equal(t, ms, dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originStructName }}{}, &sharedState)) })
-}
 `
 
-const oneOfMessageSetTestTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .fieldName -}}{ 
+const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .fieldName -}}{ 
 {{- .fieldName }}: &{{ .originFieldPackageName }}.{{ .fieldName }}{}}
-fillTest{{ .returnType }}(new{{ .returnType }}(tv.orig.Get{{ .returnType }}(), tv.state))`
+FillOrigTest{{ .fieldOriginName }}(orig.Get{{ .returnType }}())`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
-		copyOrig{{ .returnType }}({{ .lowerFieldName }}, t.{{ .fieldName }})
+		CopyOrig{{ .fieldOriginName }}({{ .lowerFieldName }}, t.{{ .fieldName }})
 		dest.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 			{{ .fieldName }}: {{ .lowerFieldName }},
 		}`
@@ -71,6 +63,11 @@ const oneOfMessageTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldN
 const oneOfMessageMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
 	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
 	new{{ .returnType }}(ov.{{ .fieldName }}, ms.state).marshalJSONStream(dest)`
+
+const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
+	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
+	new{{ .returnType }}(val, ms.state).unmarshalJSONIter(iter)`
 
 type OneOfMessageValue struct {
 	fieldName              string
@@ -108,11 +105,17 @@ func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfFi
 	return executeTemplate(t, omv.templateFields(ms, of))
 }
 
+func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfMessageUnmarshalJSONTemplate").Parse(oneOfMessageUnmarshalJSONTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
+}
+
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
 		"fieldName":               omv.fieldName,
 		"originFieldName":         omv.fieldName,
 		"originOneOfFieldName":    of.originFieldName,
+		"fieldOriginName":         omv.returnMessage.getOriginName(),
 		"typeName":                of.typeName + omv.fieldName,
 		"structName":              ms.getName(),
 		"returnType":              omv.returnMessage.getName(),

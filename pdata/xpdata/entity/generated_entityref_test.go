@@ -50,7 +50,11 @@ func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 	internal.MarshalJSONStreamEntityRef(internal.EntityRef(src), stream)
 	require.NoError(t, stream.Error())
 
-	iter := json.BorrowIterator(stream.Buffer())
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
 	defer json.ReturnIterator(iter)
 	dest := NewEntityRef()
 	internal.UnmarshalJSONIterEntityRef(internal.EntityRef(dest), iter)
@@ -62,34 +66,32 @@ func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
 func TestEntityRef_SchemaUrl(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
 func TestEntityRef_Type(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.Type())
-	ms.SetType("host")
-	assert.Equal(t, "host", ms.Type())
+	ms.SetType("test_type")
+	assert.Equal(t, "test_type", ms.Type())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetType("host") })
+	assert.Panics(t, func() { newEntityRef(&otlpcommon.EntityRef{}, &sharedState).SetType("test_type") })
 }
 
 func TestEntityRef_IdKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.IdKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.IdKeys()))
+	ms.getOrig().IdKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.IdKeys())
 }
 
 func TestEntityRef_DescriptionKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.DescriptionKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.DescriptionKeys()))
+	ms.getOrig().DescriptionKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.DescriptionKeys())
 }
 

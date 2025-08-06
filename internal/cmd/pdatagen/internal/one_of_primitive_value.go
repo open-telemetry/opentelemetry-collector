@@ -44,7 +44,7 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 }
 `
 
-const oneOfPrimitiveSetTestTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
@@ -58,11 +58,14 @@ const oneOfPrimitiveMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .ori
 	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
 	dest.Write{{ upperFirst .returnType }}(ov.{{ .originFieldName }})`
 
+const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
+	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
+		{{ .originFieldName }}: iter.Read{{ upperFirst .returnType }}(),
+	}`
+
 type OneOfPrimitiveValue struct {
 	fieldName       string
-	defaultVal      string
-	testVal         string
-	returnType      string
+	protoType       ProtoType
 	originFieldName string
 }
 
@@ -96,10 +99,15 @@ func (opv *OneOfPrimitiveValue) GenerateMarshalJSON(ms *messageStruct, of *OneOf
 	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
+func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfPrimitiveUnmarshalJSONTemplate").Parse(oneOfPrimitiveUnmarshalJSONTemplate))
+	return executeTemplate(t, opv.templateFields(ms, of))
+}
+
 func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
 		"structName":  ms.getName(),
-		"defaultVal":  opv.defaultVal,
+		"defaultVal":  opv.protoType.defaultValue(),
 		"packageName": "",
 		"accessorFieldName": func() string {
 			if of.omitOriginFieldNameInNames {
@@ -107,11 +115,11 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 			}
 			return opv.fieldName + of.originFieldName
 		}(),
-		"testValue":               opv.testVal,
+		"testValue":               opv.protoType.testValue(opv.fieldName),
 		"originOneOfTypeFuncName": of.typeFuncName(),
 		"typeName":                of.typeName + opv.fieldName,
 		"lowerFieldName":          strings.ToLower(opv.fieldName),
-		"returnType":              opv.returnType,
+		"returnType":              opv.protoType.goType(),
 		"originFieldName":         opv.originFieldName,
 		"originOneOfFieldName":    of.originFieldName,
 		"originStructName":        ms.originFullName,

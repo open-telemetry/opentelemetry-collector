@@ -28,9 +28,9 @@ func TestSpanSlice(t *testing.T) {
 	emptyVal := NewSpan()
 	testVal := generateTestSpan()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSpan(el)
+		internal.FillOrigTestSpan((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,16 +51,8 @@ func TestSpanSliceReadOnly(t *testing.T) {
 
 func TestSpanSlice_CopyTo(t *testing.T) {
 	dest := NewSpanSlice()
-	// Test CopyTo to empty
-	NewSpanSlice().CopyTo(dest)
-	assert.Equal(t, NewSpanSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestSpanSlice().CopyTo(dest)
-	assert.Equal(t, generateTestSpanSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestSpanSlice().CopyTo(dest)
+	src := generateTestSpanSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanSlice(), dest)
 }
 
@@ -132,6 +124,14 @@ func TestSpanSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestSpanSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestSpanSlice()
+	got.RemoveIf(func(el Span) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestSpanSliceAll(t *testing.T) {
 	ms := generateTestSpanSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -177,15 +177,7 @@ func TestSpanSlice_Sort(t *testing.T) {
 }
 
 func generateTestSpanSlice() SpanSlice {
-	es := NewSpanSlice()
-	fillTestSpanSlice(es)
-	return es
-}
-
-func fillTestSpanSlice(es SpanSlice) {
-	*es.orig = make([]*otlptrace.Span, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span{}
-		fillTestSpan(newSpan((*es.orig)[i], es.state))
-	}
+	ms := NewSpanSlice()
+	*ms.orig = internal.GenerateOrigTestSpanSlice()
+	return ms
 }

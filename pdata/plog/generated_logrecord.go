@@ -164,7 +164,7 @@ func (ms LogRecord) SetDroppedAttributesCount(v uint32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms LogRecord) CopyTo(dest LogRecord) {
 	dest.state.AssertMutable()
-	copyOrigLogRecord(dest.orig, ms.orig)
+	internal.CopyOrigLogRecord(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -200,7 +200,7 @@ func (ms LogRecord) marshalJSONStream(dest *json.Stream) {
 	}
 	if ms.orig.SeverityNumber != otlplogs.SeverityNumber(0) {
 		dest.WriteObjectField("severityNumber")
-		ms.SeverityNumber().marshalJSONStream(dest)
+		dest.WriteInt32(int32(ms.orig.SeverityNumber))
 	}
 	dest.WriteObjectField("body")
 	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Body, ms.state), dest)
@@ -215,16 +215,35 @@ func (ms LogRecord) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigLogRecord(dest, src *otlplogs.LogRecord) {
-	dest.ObservedTimeUnixNano = src.ObservedTimeUnixNano
-	dest.TimeUnixNano = src.TimeUnixNano
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
-	dest.Flags = src.Flags
-	dest.EventName = src.EventName
-	dest.SeverityText = src.SeverityText
-	dest.SeverityNumber = src.SeverityNumber
-	internal.CopyOrigValue(&dest.Body, &src.Body)
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms LogRecord) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "observedTimeUnixNano", "observed_time_unix_nano":
+			ms.orig.ObservedTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			ms.orig.TimeUnixNano = iter.ReadUint64()
+		case "traceId", "trace_id":
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "eventName", "event_name":
+			ms.orig.EventName = iter.ReadString()
+		case "severityText", "severity_text":
+			ms.orig.SeverityText = iter.ReadString()
+		case "severityNumber", "severity_number":
+			ms.orig.SeverityNumber = otlplogs.SeverityNumber(iter.ReadEnumValue(otlplogs.SeverityNumber_value))
+		case "body":
+			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Body, ms.state), iter)
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -202,7 +202,7 @@ func (ms Span) Status() Status {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Span) CopyTo(dest Span) {
 	dest.state.AssertMutable()
-	copyOrigSpan(dest.orig, ms.orig)
+	internal.CopyOrigSpan(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -234,7 +234,7 @@ func (ms Span) marshalJSONStream(dest *json.Stream) {
 	}
 	if ms.orig.Kind != otlptrace.Span_SpanKind(0) {
 		dest.WriteObjectField("kind")
-		ms.Kind().marshalJSONStream(dest)
+		dest.WriteInt32(int32(ms.orig.Kind))
 	}
 	if ms.orig.StartTimeUnixNano != 0 {
 		dest.WriteObjectField("startTimeUnixNano")
@@ -273,21 +273,45 @@ func (ms Span) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectEnd()
 }
 
-func copyOrigSpan(dest, src *otlptrace.Span) {
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
-	internal.CopyOrigTraceState(&dest.TraceState, &src.TraceState)
-	dest.ParentSpanId = src.ParentSpanId
-	dest.Name = src.Name
-	dest.Flags = src.Flags
-	dest.Kind = src.Kind
-	dest.StartTimeUnixNano = src.StartTimeUnixNano
-	dest.EndTimeUnixNano = src.EndTimeUnixNano
-	dest.Attributes = internal.CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.Events = copyOrigSpanEventSlice(dest.Events, src.Events)
-	dest.DroppedEventsCount = src.DroppedEventsCount
-	dest.Links = copyOrigSpanLinkSlice(dest.Links, src.Links)
-	dest.DroppedLinksCount = src.DroppedLinksCount
-	copyOrigStatus(&dest.Status, &src.Status)
+// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
+func (ms Span) unmarshalJSONIter(iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "traceId", "trace_id":
+			ms.orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			ms.orig.SpanId.UnmarshalJSONIter(iter)
+		case "traceState", "trace_state":
+			internal.UnmarshalJSONIterTraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state), iter)
+		case "parentSpanId", "parent_span_id":
+			ms.orig.ParentSpanId.UnmarshalJSONIter(iter)
+		case "name":
+			ms.orig.Name = iter.ReadString()
+		case "flags":
+			ms.orig.Flags = iter.ReadUint32()
+		case "kind":
+			ms.orig.Kind = otlptrace.Span_SpanKind(iter.ReadEnumValue(otlptrace.Span_SpanKind_value))
+		case "startTimeUnixNano", "start_time_unix_nano":
+			ms.orig.StartTimeUnixNano = iter.ReadUint64()
+		case "endTimeUnixNano", "end_time_unix_nano":
+			ms.orig.EndTimeUnixNano = iter.ReadUint64()
+		case "attributes":
+			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Attributes, ms.state), iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			ms.orig.DroppedAttributesCount = iter.ReadUint32()
+		case "events":
+			ms.Events().unmarshalJSONIter(iter)
+		case "droppedEventsCount", "dropped_events_count":
+			ms.orig.DroppedEventsCount = iter.ReadUint32()
+		case "links":
+			ms.Links().unmarshalJSONIter(iter)
+		case "droppedLinksCount", "dropped_links_count":
+			ms.orig.DroppedLinksCount = iter.ReadUint32()
+		case "status":
+			ms.Status().unmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

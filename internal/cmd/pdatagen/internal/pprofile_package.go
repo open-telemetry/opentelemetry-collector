@@ -8,6 +8,7 @@ var pprofile = &Package{
 		name: "pprofile",
 		path: "pprofile",
 		imports: []string{
+			`"iter"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -181,20 +182,16 @@ var profile = &messageStruct{
 			returnMessage: valueType,
 		},
 		&PrimitiveField{
-			fieldName:  "Period",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName: "Period",
+			protoType: ProtoTypeInt64,
 		},
 		&SliceField{
 			fieldName:   "CommentStrindices",
 			returnSlice: int32Slice,
 		},
 		&PrimitiveField{
-			fieldName:  "DefaultSampleTypeIndex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "DefaultSampleTypeIndex",
+			protoType: ProtoTypeInt32,
 		},
 		&TypedField{
 			fieldName:       "ProfileID",
@@ -207,12 +204,13 @@ var profile = &messageStruct{
 				testVal:    "data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 			},
 		},
-		droppedAttributesCount,
 		&PrimitiveField{
-			fieldName:  "OriginalPayloadFormat",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"original payload"`,
+			fieldName: "DroppedAttributesCount",
+			protoType: ProtoTypeUint32,
+		},
+		&PrimitiveField{
+			fieldName: "OriginalPayloadFormat",
+			protoType: ProtoTypeString,
 		},
 		&SliceField{
 			fieldName:   "OriginalPayload",
@@ -236,16 +234,12 @@ var attributeUnit = &messageStruct{
 	originFullName: "otlpprofiles.AttributeUnit",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "AttributeKeyStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "AttributeKeyStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "UnitStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "UnitStrindex",
+			protoType: ProtoTypeInt32,
 		},
 	},
 }
@@ -276,23 +270,19 @@ var valueType = &messageStruct{
 	originFullName: "otlpprofiles.ValueType",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "TypeStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "TypeStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "UnitStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "UnitStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&TypedField{
 			fieldName: "AggregationTemporality",
 			returnType: &TypedType{
 				structName: "AggregationTemporality",
 				rawType:    "otlpprofiles.AggregationTemporality",
-				isType:     true,
+				isEnum:     true,
 				defaultVal: "otlpprofiles.AggregationTemporality(0)",
 				testVal:    "otlpprofiles.AggregationTemporality(1)",
 			},
@@ -311,16 +301,12 @@ var sample = &messageStruct{
 	originFullName: "otlpprofiles.Sample",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "LocationsStartIndex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "LocationsStartIndex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "LocationsLength",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "LocationsLength",
+			protoType: ProtoTypeInt32,
 		},
 		&SliceField{
 			fieldName:   "Value",
@@ -331,10 +317,8 @@ var sample = &messageStruct{
 			returnSlice: int32Slice,
 		},
 		&OptionalPrimitiveField{
-			fieldName:  "LinkIndex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "LinkIndex",
+			protoType: ProtoTypeInt32,
 		},
 		&SliceField{
 			fieldName:   "TimestampsUnixNano",
@@ -354,56 +338,40 @@ var mapping = &messageStruct{
 	originFullName: "otlpprofiles.Mapping",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "MemoryStart",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			fieldName: "MemoryStart",
+			protoType: ProtoTypeUint64,
 		},
 		&PrimitiveField{
-			fieldName:  "MemoryLimit",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			fieldName: "MemoryLimit",
+			protoType: ProtoTypeUint64,
 		},
 		&PrimitiveField{
-			fieldName:  "FileOffset",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			fieldName: "FileOffset",
+			protoType: ProtoTypeUint64,
 		},
 		&PrimitiveField{
-			fieldName:  "FilenameStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "FilenameStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
 			returnSlice: int32Slice,
 		},
 		&PrimitiveField{
-			fieldName:  "HasFunctions",
-			returnType: "bool",
-			defaultVal: "false",
-			testVal:    "true",
+			fieldName: "HasFunctions",
+			protoType: ProtoTypeBool,
 		},
 		&PrimitiveField{
-			fieldName:  "HasFilenames",
-			returnType: "bool",
-			defaultVal: "false",
-			testVal:    "true",
+			fieldName: "HasFilenames",
+			protoType: ProtoTypeBool,
 		},
 		&PrimitiveField{
-			fieldName:  "HasLineNumbers",
-			returnType: "bool",
-			defaultVal: "false",
-			testVal:    "true",
+			fieldName: "HasLineNumbers",
+			protoType: ProtoTypeBool,
 		},
 		&PrimitiveField{
-			fieldName:  "HasInlineFrames",
-			returnType: "bool",
-			defaultVal: "false",
-			testVal:    "true",
+			fieldName: "HasInlineFrames",
+			protoType: ProtoTypeBool,
 		},
 	},
 }
@@ -419,26 +387,20 @@ var location = &messageStruct{
 	originFullName: "otlpprofiles.Location",
 	fields: []Field{
 		&OptionalPrimitiveField{
-			fieldName:  "MappingIndex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "MappingIndex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "Address",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(1)",
+			fieldName: "Address",
+			protoType: ProtoTypeUint64,
 		},
 		&SliceField{
 			fieldName:   "Line",
 			returnSlice: lineSlice,
 		},
 		&PrimitiveField{
-			fieldName:  "IsFolded",
-			returnType: "bool",
-			defaultVal: "false",
-			testVal:    "true",
+			fieldName: "IsFolded",
+			protoType: ProtoTypeBool,
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
@@ -458,22 +420,16 @@ var line = &messageStruct{
 	originFullName: "otlpprofiles.Line",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "FunctionIndex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "FunctionIndex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "Line",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName: "Line",
+			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
-			fieldName:  "Column",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName: "Column",
+			protoType: ProtoTypeInt64,
 		},
 	},
 }
@@ -489,28 +445,20 @@ var function = &messageStruct{
 	originFullName: "otlpprofiles.Function",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "NameStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "NameStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "SystemNameStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "SystemNameStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "FilenameStrindex",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(1)",
+			fieldName: "FilenameStrindex",
+			protoType: ProtoTypeInt32,
 		},
 		&PrimitiveField{
-			fieldName:  "StartLine",
-			returnType: "int64",
-			defaultVal: "int64(0)",
-			testVal:    "int64(1)",
+			fieldName: "StartLine",
+			protoType: ProtoTypeInt64,
 		},
 	},
 }
@@ -526,10 +474,8 @@ var attribute = &messageStruct{
 	originFullName: "v1.KeyValue",
 	fields: []Field{
 		&PrimitiveField{
-			fieldName:  "Key",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"key"`,
+			fieldName: "Key",
+			protoType: ProtoTypeString,
 		},
 		&MessageField{
 			fieldName:     "Value",

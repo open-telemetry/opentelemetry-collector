@@ -27,9 +27,9 @@ func TestExemplarSlice(t *testing.T) {
 	emptyVal := NewExemplar()
 	testVal := generateTestExemplar()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestExemplar(el)
+		internal.FillOrigTestExemplar(&(*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -50,16 +50,8 @@ func TestExemplarSliceReadOnly(t *testing.T) {
 
 func TestExemplarSlice_CopyTo(t *testing.T) {
 	dest := NewExemplarSlice()
-	// Test CopyTo to empty
-	NewExemplarSlice().CopyTo(dest)
-	assert.Equal(t, NewExemplarSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestExemplarSlice().CopyTo(dest)
-	assert.Equal(t, generateTestExemplarSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestExemplarSlice().CopyTo(dest)
+	src := generateTestExemplarSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestExemplarSlice(), dest)
 }
 
@@ -131,6 +123,14 @@ func TestExemplarSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestExemplarSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestExemplarSlice()
+	got.RemoveIf(func(el Exemplar) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestExemplarSliceAll(t *testing.T) {
 	ms := generateTestExemplarSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -160,15 +160,7 @@ func TestExemplarSlice_MarshalAndUnmarshalJSON(t *testing.T) {
 }
 
 func generateTestExemplarSlice() ExemplarSlice {
-	es := NewExemplarSlice()
-	fillTestExemplarSlice(es)
-	return es
-}
-
-func fillTestExemplarSlice(es ExemplarSlice) {
-	*es.orig = make([]otlpmetrics.Exemplar, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpmetrics.Exemplar{}
-		fillTestExemplar(newExemplar(&(*es.orig)[i], es.state))
-	}
+	ms := NewExemplarSlice()
+	*ms.orig = internal.GenerateOrigTestExemplarSlice()
+	return ms
 }

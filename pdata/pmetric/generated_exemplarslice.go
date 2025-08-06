@@ -129,6 +129,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = otlpmetrics.Exemplar{}
 			continue
 		}
 		if newLen == i {
@@ -137,6 +138,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = otlpmetrics.Exemplar{}
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -145,7 +147,7 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigExemplarSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -168,15 +170,4 @@ func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
-	if cap(dest) < len(src) {
-		dest = make([]otlpmetrics.Exemplar, len(src))
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigExemplar(&dest[i], &src[i])
-	}
-	return dest
 }

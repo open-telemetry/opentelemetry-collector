@@ -135,7 +135,7 @@ func TestFloat64Slice_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := NewFloat64Slice()
-	internal.FillTestFloat64Slice(internal.Float64Slice(src))
+	*src.getOrig() = internal.GenerateOrigTestFloat64Slice()
 	internal.MarshalJSONStreamFloat64Slice(internal.Float64Slice(src), stream)
 	require.NoError(t, stream.Error())
 

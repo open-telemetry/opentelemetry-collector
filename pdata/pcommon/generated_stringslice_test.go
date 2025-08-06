@@ -135,7 +135,7 @@ func TestStringSlice_MarshalAndUnmarshalJSON(t *testing.T) {
 	stream := json.BorrowStream(nil)
 	defer json.ReturnStream(stream)
 	src := NewStringSlice()
-	internal.FillTestStringSlice(internal.StringSlice(src))
+	*src.getOrig() = internal.GenerateOrigTestStringSlice()
 	internal.MarshalJSONStreamStringSlice(internal.StringSlice(src), stream)
 	require.NoError(t, stream.Error())
 

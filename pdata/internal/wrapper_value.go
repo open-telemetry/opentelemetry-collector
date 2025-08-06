@@ -27,7 +27,7 @@ func NewValue(orig *otlpcommon.AnyValue, state *State) Value {
 	return Value{orig: orig, state: state}
 }
 
-func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
+func CopyOrigAnyValue(dest, src *otlpcommon.AnyValue) {
 	switch sv := src.Value.(type) {
 	case *otlpcommon.AnyValue_KvlistValue:
 		dv, ok := dest.Value.(*otlpcommon.AnyValue_KvlistValue)
@@ -50,7 +50,7 @@ func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
 			dv.ArrayValue = nil
 			return
 		}
-		dv.ArrayValue.Values = CopyOrigSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
+		dv.ArrayValue.Values = CopyOrigAnyValueSlice(dv.ArrayValue.Values, sv.ArrayValue.Values)
 	case *otlpcommon.AnyValue_BytesValue:
 		bv, ok := dest.Value.(*otlpcommon.AnyValue_BytesValue)
 		if !ok {
@@ -65,15 +65,11 @@ func CopyOrigValue(dest, src *otlpcommon.AnyValue) {
 	}
 }
 
-func FillTestValue(dest Value) {
-	dest.orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
-}
-
 func GenerateTestValue() Value {
 	var orig otlpcommon.AnyValue
+	FillOrigTestAnyValue(&orig)
 	state := StateMutable
 	ms := NewValue(&orig, &state)
-	FillTestValue(ms)
 	return ms
 }
 
@@ -180,4 +176,8 @@ func readKvlistValue(iter *json.Iterator) *otlpcommon.KeyValueList {
 		return true
 	})
 	return v
+}
+
+func FillOrigTestAnyValue(orig *otlpcommon.AnyValue) {
+	orig.Value = &otlpcommon.AnyValue_StringValue{StringValue: "v"}
 }
