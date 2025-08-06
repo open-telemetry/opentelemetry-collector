@@ -48,13 +48,13 @@ const primitiveSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}
 
 const primitiveCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const primitiveMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .defaultVal }} {
+const primitiveMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defaultVal }} {
 		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		dest.Write{{ upperFirst .returnType }}(ms.orig.{{ .originFieldName }})
+		dest.Write{{ upperFirst .returnType }}(orig.{{ .originFieldName }})
 	}`
 
 const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
+		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
 
 type PrimitiveField struct {
 	fieldName string

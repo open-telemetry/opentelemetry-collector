@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigProfileSlice(dest, src []*otlpprofiles.Profile) []*otlpprofiles.Profile {
@@ -45,5 +46,29 @@ func GenerateOrigTestProfileSlice() []*otlpprofiles.Profile {
 		orig[i] = &otlpprofiles.Profile{}
 		FillOrigTestProfile(orig[i])
 	}
+	return orig
+}
+
+// MarshalJSONOrigProfileSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigProfileSlice(orig []*otlpprofiles.Profile, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigProfile(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigProfile(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigProfileSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigProfileSlice(iter *json.Iterator) []*otlpprofiles.Profile {
+	var orig []*otlpprofiles.Profile
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.Profile{})
+		UnmarshalJSONOrigProfile(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

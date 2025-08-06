@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
@@ -18,4 +19,33 @@ func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
 func FillOrigTestExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) {
 	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+		dest.WriteObjectField("aggregationTemporality")
+		dest.WriteInt32(int32(orig.AggregationTemporality))
+	}
+	if len(orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		MarshalJSONOrigExponentialHistogramDataPointSlice(orig.DataPoints, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigExponentialHistogram unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "aggregationTemporality", "aggregation_temporality":
+			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
+		case "dataPoints", "data_points":
+			orig.DataPoints = UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

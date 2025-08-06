@@ -76,10 +76,12 @@ func (ms Profiles) SampleCount() int {
 
 func (ms Profiles) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	dest.WriteObjectField("resourceProfiles")
-	ms.ResourceProfiles().marshalJSONStream(dest)
+	if len(ms.getOrig().ResourceProfiles) > 0 {
+		dest.WriteObjectField("resourceProfiles")
+		internal.MarshalJSONOrigResourceProfilesSlice(ms.getOrig().ResourceProfiles, dest)
+	}
 	dest.WriteObjectField("dictionary")
-	ms.ProfilesDictionary().marshalJSONStream(dest)
+	internal.MarshalJSONOrigProfilesDictionary(&ms.getOrig().Dictionary, dest)
 	dest.WriteObjectEnd()
 }
 
@@ -87,9 +89,9 @@ func (ms Profiles) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceProfiles", "resource_profiles":
-			ms.ResourceProfiles().unmarshalJSONIter(iter)
+			ms.getOrig().ResourceProfiles = internal.UnmarshalJSONOrigResourceProfilesSlice(iter)
 		case "dictionary":
-			ms.ProfilesDictionary().unmarshalJSONIter(iter)
+			internal.UnmarshalJSONOrigProfilesDictionary(&ms.getOrig().Dictionary, iter)
 			return true
 		default:
 			iter.Skip()

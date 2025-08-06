@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigNumberDataPointSlice(dest, src []*otlpmetrics.NumberDataPoint) []*otlpmetrics.NumberDataPoint {
@@ -45,5 +46,29 @@ func GenerateOrigTestNumberDataPointSlice() []*otlpmetrics.NumberDataPoint {
 		orig[i] = &otlpmetrics.NumberDataPoint{}
 		FillOrigTestNumberDataPoint(orig[i])
 	}
+	return orig
+}
+
+// MarshalJSONOrigNumberDataPointSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigNumberDataPointSlice(orig []*otlpmetrics.NumberDataPoint, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigNumberDataPoint(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigNumberDataPoint(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigNumberDataPointSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigNumberDataPointSlice(iter *json.Iterator) []*otlpmetrics.NumberDataPoint {
+	var orig []*otlpmetrics.NumberDataPoint
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpmetrics.NumberDataPoint{})
+		UnmarshalJSONOrigNumberDataPoint(orig[len(orig)-1], iter)
+		return true
+	})
 	return orig
 }

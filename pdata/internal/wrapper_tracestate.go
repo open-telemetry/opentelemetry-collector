@@ -31,14 +31,14 @@ func GenerateTestTraceState() TraceState {
 	return NewTraceState(&orig, &state)
 }
 
-// MarshalJSONStreamTraceState marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamTraceState(ms TraceState, dest *json.Stream) {
-	dest.WriteString(*ms.orig)
+// MarshalJSONOrigTraceState marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigTraceState(orig *string, dest *json.Stream) {
+	dest.WriteString(*orig)
 }
 
-// UnmarshalJSONIterTraceState marshals all properties from the current struct to the destination stream.
-func UnmarshalJSONIterTraceState(ms TraceState, iter *json.Iterator) {
-	*ms.orig = iter.ReadString()
+// UnmarshalJSONOrigTraceState marshals all properties from the current struct to the destination stream.
+func UnmarshalJSONOrigTraceState(orig *string, iter *json.Iterator) {
+	*orig = iter.ReadString()
 }
 
 func CopyOrigTraceState(dest, src *string) {

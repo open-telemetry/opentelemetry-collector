@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -115,57 +114,4 @@ func (ms Sample) TimestampsUnixNano() pcommon.UInt64Slice {
 func (ms Sample) CopyTo(dest Sample) {
 	dest.state.AssertMutable()
 	internal.CopyOrigSample(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Sample) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.LocationsStartIndex != int32(0) {
-		dest.WriteObjectField("locationsStartIndex")
-		dest.WriteInt32(ms.orig.LocationsStartIndex)
-	}
-	if ms.orig.LocationsLength != int32(0) {
-		dest.WriteObjectField("locationsLength")
-		dest.WriteInt32(ms.orig.LocationsLength)
-	}
-	if len(ms.orig.Value) > 0 {
-		dest.WriteObjectField("value")
-		internal.MarshalJSONStreamInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), dest)
-	}
-	if len(ms.orig.AttributeIndices) > 0 {
-		dest.WriteObjectField("attributeIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
-	}
-	if ms.HasLinkIndex() {
-		dest.WriteObjectField("linkIndex")
-		dest.WriteInt32(ms.LinkIndex())
-	}
-	if len(ms.orig.TimestampsUnixNano) > 0 {
-		dest.WriteObjectField("timestampsUnixNano")
-		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Sample) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "locationsStartIndex", "locations_start_index":
-			ms.orig.LocationsStartIndex = iter.ReadInt32()
-		case "locationsLength", "locations_length":
-			ms.orig.LocationsLength = iter.ReadInt32()
-		case "value":
-			internal.UnmarshalJSONIterInt64Slice(internal.NewInt64Slice(&ms.orig.Value, ms.state), iter)
-		case "attributeIndices", "attribute_indices":
-			internal.UnmarshalJSONIterInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), iter)
-		case "linkIndex", "link_index":
-			ms.orig.LinkIndex_ = &otlpprofiles.Sample_LinkIndex{LinkIndex: iter.ReadInt32()}
-		case "timestampsUnixNano", "timestamps_unix_nano":
-			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.TimestampsUnixNano, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

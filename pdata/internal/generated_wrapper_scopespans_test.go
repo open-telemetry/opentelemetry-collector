@@ -10,8 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestCopyOrigScopeSpans(t *testing.T) {
@@ -21,5 +23,26 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 	assert.Equal(t, &otlptrace.ScopeSpans{}, dest)
 	FillOrigTestScopeSpans(src)
 	CopyOrigScopeSpans(dest, src)
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
+	src := &otlptrace.ScopeSpans{}
+	FillOrigTestScopeSpans(src)
+	stream := json.BorrowStream(nil)
+	defer json.ReturnStream(stream)
+	MarshalJSONOrigScopeSpans(src, stream)
+	require.NoError(t, stream.Error())
+
+	// Append an unknown field at the start to ensure unknown fields are skipped
+	// and the unmarshal logic continues.
+	buf := stream.Buffer()
+	assert.EqualValues(t, '{', buf[0])
+	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+	defer json.ReturnIterator(iter)
+	dest := &otlptrace.ScopeSpans{}
+	UnmarshalJSONOrigScopeSpans(dest, iter)
+	require.NoError(t, iter.Error())
+
 	assert.Equal(t, src, dest)
 }
