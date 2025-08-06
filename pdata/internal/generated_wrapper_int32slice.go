@@ -27,11 +27,6 @@ func NewInt32Slice(orig *[]int32, state *State) Int32Slice {
 	return Int32Slice{orig: orig, state: state}
 }
 
-func CopyOrigInt32Slice(dst, src []int32) []int32 {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
 func FillTestInt32Slice(ms Int32Slice) {
 	*ms.orig = []int32{1, 2, 3}
 }
@@ -63,4 +58,8 @@ func UnmarshalJSONIterInt32Slice(ms Int32Slice, iter *json.Iterator) {
 		*ms.orig = append(*ms.orig, iter.ReadInt32())
 		return true
 	})
+}
+
+func CopyOrigInt32Slice(dst, src []int32) []int32 {
+	return append(dst[:0], src...)
 }

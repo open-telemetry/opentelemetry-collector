@@ -75,7 +75,7 @@ func (ms ExportPartialSuccess) SetErrorMessage(v string) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExportPartialSuccess) CopyTo(dest ExportPartialSuccess) {
 	dest.state.AssertMutable()
-	copyOrigExportPartialSuccess(dest.orig, ms.orig)
+	internal.CopyOrigExportProfilesPartialSuccess(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -105,9 +105,4 @@ func (ms ExportPartialSuccess) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigExportPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {
-	dest.RejectedProfiles = src.RejectedProfiles
-	dest.ErrorMessage = src.ErrorMessage
 }

@@ -86,7 +86,7 @@ func (ms ValueType) SetAggregationTemporality(v AggregationTemporality) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ValueType) CopyTo(dest ValueType) {
 	dest.state.AssertMutable()
-	copyOrigValueType(dest.orig, ms.orig)
+	internal.CopyOrigValueType(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -122,10 +122,4 @@ func (ms ValueType) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigValueType(dest, src *otlpprofiles.ValueType) {
-	dest.TypeStrindex = src.TypeStrindex
-	dest.UnitStrindex = src.UnitStrindex
-	dest.AggregationTemporality = src.AggregationTemporality
 }

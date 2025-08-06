@@ -148,7 +148,7 @@ func (es ScopeLogsSlice) RemoveIf(f func(ScopeLogs) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ScopeLogsSlice) CopyTo(dest ScopeLogsSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigScopeLogsSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigScopeLogsSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ScopeLogs elements within ScopeLogsSlice given the
@@ -179,33 +179,4 @@ func (ms ScopeLogsSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLogs {
-	var newDest []*otlplogs.ScopeLogs
-	if cap(dest) < len(src) {
-		newDest = make([]*otlplogs.ScopeLogs, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlplogs.ScopeLogs{}
-		}
-	}
-	for i := range src {
-		copyOrigScopeLogs(newDest[i], src[i])
-	}
-	return newDest
 }

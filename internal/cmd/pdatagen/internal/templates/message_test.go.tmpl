@@ -21,8 +21,8 @@ func Test{{ .structName }}_MoveTo(t *testing.T) {
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originName }}{}, &sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originFullName }}{}, &sharedState).MoveTo(dest) })
 }
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
@@ -34,7 +34,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
+	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
 }
 
 func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {

@@ -28,12 +28,6 @@ func NewResource(orig *otlpresource.Resource, state *State) Resource {
 	return Resource{orig: orig, state: state}
 }
 
-func CopyOrigResource(dest, src *otlpresource.Resource) {
-	dest.Attributes = CopyOrigMap(dest.Attributes, src.Attributes)
-	dest.DroppedAttributesCount = src.DroppedAttributesCount
-	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
-}
-
 func GenerateTestResource() Resource {
 	orig := otlpresource.Resource{}
 	state := StateMutable
@@ -81,4 +75,10 @@ func UnmarshalJSONIterResource(ms Resource, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func CopyOrigResource(dest, src *otlpresource.Resource) {
+	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
+	dest.DroppedAttributesCount = src.DroppedAttributesCount
+	dest.EntityRefs = CopyOrigEntityRefSlice(dest.EntityRefs, src.EntityRefs)
 }

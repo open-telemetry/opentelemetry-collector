@@ -148,7 +148,7 @@ func (es ProfilesSlice) RemoveIf(f func(Profile) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ProfilesSlice) CopyTo(dest ProfilesSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigProfilesSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigProfileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Profile elements within ProfilesSlice given the
@@ -179,33 +179,4 @@ func (ms ProfilesSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigProfilesSlice(dest, src []*otlpprofiles.Profile) []*otlpprofiles.Profile {
-	var newDest []*otlpprofiles.Profile
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpprofiles.Profile, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Profile{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Profile{}
-		}
-	}
-	for i := range src {
-		copyOrigProfile(newDest[i], src[i])
-	}
-	return newDest
 }

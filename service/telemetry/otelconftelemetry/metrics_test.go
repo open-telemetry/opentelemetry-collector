@@ -17,7 +17,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	semconv "go.opentelemetry.io/otel/semconv/v1.18.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
@@ -59,9 +59,7 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + grpcPrefix + counterName: {
 					value: 11,
 					labels: map[string]string{
-						"net_sock_peer_addr":  "",
-						"net_sock_peer_name":  "",
-						"net_sock_peer_port":  "",
+						"rpc_system":          "grpc",
 						"service_name":        "otelcol",
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
@@ -70,8 +68,7 @@ func TestTelemetryInit(t *testing.T) {
 				metricPrefix + httpPrefix + counterName: {
 					value: 10,
 					labels: map[string]string{
-						"net_host_name":       "",
-						"net_host_port":       "",
+						"http_request_method": "GET",
 						"service_name":        "otelcol",
 						"service_version":     "latest",
 						"service_instance_id": testInstanceID,
@@ -157,16 +154,13 @@ func createTestMetrics(t *testing.T, mp metric.MeterProvider) {
 	grpcExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc").Int64Counter(metricPrefix + grpcPrefix + counterName)
 	require.NoError(t, err)
 	grpcExampleCounter.Add(context.Background(), 11, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.NetSockPeerAddrKey), ""),
-		attribute.String(string(semconv.NetSockPeerPortKey), ""),
-		attribute.String(string(semconv.NetSockPeerNameKey), ""),
+		attribute.String(string(semconv.RPCSystemKey), "grpc"),
 	)))
 
 	httpExampleCounter, err := mp.Meter("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp").Int64Counter(metricPrefix + httpPrefix + counterName)
 	require.NoError(t, err)
 	httpExampleCounter.Add(context.Background(), 10, metric.WithAttributeSet(attribute.NewSet(
-		attribute.String(string(semconv.NetHostNameKey), ""),
-		attribute.String(string(semconv.NetHostPortKey), ""),
+		attribute.String(string(semconv.HTTPRequestMethodKey), "GET"),
 	)))
 }
 

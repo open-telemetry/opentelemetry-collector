@@ -148,7 +148,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSpanLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSpan_LinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
@@ -179,33 +179,4 @@ func (ms SpanLinkSlice) unmarshalJSONIter(iter *json.Iterator) {
 		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
 		return true
 	})
-}
-
-func copyOrigSpanLinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_Link {
-	var newDest []*otlptrace.Span_Link
-	if cap(dest) < len(src) {
-		newDest = make([]*otlptrace.Span_Link, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
-		}
-	}
-	for i := range src {
-		copyOrigSpanLink(newDest[i], src[i])
-	}
-	return newDest
 }

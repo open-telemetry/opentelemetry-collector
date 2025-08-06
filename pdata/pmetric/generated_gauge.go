@@ -58,7 +58,7 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
 	dest.state.AssertMutable()
-	copyOrigGauge(dest.orig, ms.orig)
+	internal.CopyOrigGauge(dest.orig, ms.orig)
 }
 
 // marshalJSONStream marshals all properties from the current struct to the destination stream.
@@ -82,8 +82,4 @@ func (ms Gauge) unmarshalJSONIter(iter *json.Iterator) {
 		}
 		return true
 	})
-}
-
-func copyOrigGauge(dest, src *otlpmetrics.Gauge) {
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 }

@@ -67,12 +67,8 @@ func (p *Package) GenerateTestFiles() error {
 
 // GenerateInternalFiles generates files with internal pdata structures for this Package.
 func (p *Package) GenerateInternalFiles() error {
-	if !usedByOtherDataTypes(p.info.name) {
-		return nil
-	}
-
 	for _, s := range p.structs {
-		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getName())+".go")
+		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getOriginName())+".go")
 		if err := os.WriteFile(path, s.generateInternal(p.info), 0o600); err != nil {
 			return err
 		}
