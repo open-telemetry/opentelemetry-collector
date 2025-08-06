@@ -417,7 +417,7 @@ func TestStatusReportedOnStartupShutdown(t *testing.T) {
 			}
 
 			var actualStatuses []*componentstatus.Event
-			rep := status.NewReporter(func(_ *componentstatus.InstanceID, ev *componentstatus.Event) {
+			rep := status.NewReporter(func(_ *status.InstanceID, ev *componentstatus.Event) {
 				actualStatuses = append(actualStatuses, ev)
 			}, func(err error) {
 				require.NoError(t, err)

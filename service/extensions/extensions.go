@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/internal/telemetry"
 	"go.opentelemetry.io/collector/internal/telemetry/componentattribute"
+	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
@@ -31,7 +32,7 @@ const zExtensionName = "zextensionname"
 type Extensions struct {
 	telemetry    component.TelemetrySettings
 	extMap       map[component.ID]extension.Extension
-	instanceIDs  map[component.ID]*componentstatus.InstanceID
+	instanceIDs  map[component.ID]*status.InstanceID
 	extensionIDs []component.ID // start order (and reverse stop order)
 	reporter     status.Reporter
 }
@@ -128,11 +129,25 @@ func (bes *Extensions) NotifyConfig(ctx context.Context, conf *confmap.Conf) err
 	return errs
 }
 
+// Deprecated: [v0.131.0] use NotifyComponentStatusChange2 instead
 func (bes *Extensions) NotifyComponentStatusChange(source *componentstatus.InstanceID, event *componentstatus.Event) {
+	pipelineIDs := make([]pipeline.ID, 0, 1)
+	source.AllPipelineIDs(func(id pipeline.ID) bool {
+		pipelineIDs = append(pipelineIDs, id)
+		return true
+	})
+	bes.NotifyComponentStatusChange2(source.ComponentID(), source.Kind(), pipelineIDs, event)
+}
+
+func (bes *Extensions) NotifyComponentStatusChange2(componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID, event *componentstatus.Event) {
 	for _, extID := range bes.extensionIDs {
 		ext := bes.extMap[extID]
-		if sw, ok := ext.(componentstatus.Watcher); ok {
-			sw.ComponentStatusChanged(source, event)
+
+		switch w := ext.(type) {
+		case extensioncapabilities.Watcher:
+			w.ComponentStatusChanged(componentID, kind, pipelineIDs, event)
+		case componentstatus.Watcher: //nolint:staticcheck // SA1019
+			w.ComponentStatusChanged(componentstatus.NewInstanceID(componentID, kind, pipelineIDs...), event)
 		}
 	}
 }
@@ -201,7 +216,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts := &Extensions{
 		telemetry:    set.Telemetry,
 		extMap:       make(map[component.ID]extension.Extension),
-		instanceIDs:  make(map[component.ID]*componentstatus.InstanceID),
+		instanceIDs:  make(map[component.ID]*status.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
 		reporter:     status.NewNopStatusReporter(),
 	}
@@ -211,7 +226,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	}
 
 	for _, extID := range cfg {
-		instanceID := componentstatus.NewInstanceID(extID, component.KindExtension)
+		instanceID := status.NewInstanceID(extID, component.KindExtension)
 		extSet := extension.Settings{
 			ID:                extID,
 			TelemetrySettings: telemetry.WithAttributeSet(set.Telemetry, *attribute.Extension(extID).Set()),
