@@ -129,9 +129,9 @@ func testProcessorLifecycle(t *testing.T, useExporterHelper bool) {
 }
 
 func TestBatchProcessorSpansDelivered(t *testing.T) {
-	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDelivered(t, false, false) })                  // Test legacy implementation
-	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, false) })                   // Test new implementation
-	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, true) }) // Test new implementation with propagate errors
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDelivered(t, false, false) })
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, false) })
+	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDelivered(t, true, true) })
 }
 
 func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropagateErrors bool) {
@@ -140,21 +140,18 @@ func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropag
 
 	sink := new(consumertest.TracesSink)
 
-	// Create a wrapper around the sink that logs when it's called
-	wrappedSink, err := consumer.NewTraces(func(ctx context.Context, td ptrace.Traces) error {
-		return sink.ConsumeTraces(ctx, td)
-	})
-	require.NoError(t, err)
-
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
-	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, wrappedSink)
+	// Batch timeout is reduced in case of propagateErrors
+	cfg.Timeout = time.Microsecond
+	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
 
-	requestCount := 2 // Reduced for easier debugging
+	requestCount := 1000
 	spansPerRequest := 100
 	sentResourceSpans := ptrace.NewTraces().ResourceSpans()
+
 	for requestNum := 0; requestNum < requestCount; requestNum++ {
 		td := testdata.GenerateTraces(spansPerRequest)
 		spans := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
@@ -185,27 +182,19 @@ func testBatchProcessorSpansDelivered(t *testing.T, useExporterHelper, usePropag
 }
 
 func TestBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T) {
-	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, false, false) })                  // Test legacy implementation
-	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, false) })                   // Test new implementation
-	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, true) }) // Test new implementation with propagate errors
+	t.Run(t.Name()+"Legacy", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, false, false) })
+	t.Run(t.Name()+"Helper", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, false) })
+	t.Run(t.Name()+"HelperWithPropagateErrors", func(t *testing.T) { testBatchProcessorSpansDeliveredEnforceBatchSize(t, true, true) })
 }
 
 func testBatchProcessorSpansDeliveredEnforceBatchSize(t *testing.T, useExporterHelper, usePropagateErrors bool) {
 	defer setFeatureGateForTest(t, useExporterHelper)()
-	if usePropagateErrors {
-		err := featuregate.GlobalRegistry().Set("processor.batch.propagateerrors", true)
-		require.NoError(t, err)
-		defer func() {
-			err := featuregate.GlobalRegistry().Set("processor.batch.propagateerrors", false)
-			require.NoError(t, err)
-		}()
-	}
+	defer setPropagateErrorsForTest(t, usePropagateErrors)()
 
 	sink := new(consumertest.TracesSink)
 	cfg := createDefaultConfig().(*Config)
 	cfg.SendBatchSize = 128
 	cfg.SendBatchMaxSize = 130
-	cfg.Timeout = 10 * time.Second
 	traces, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err)
 	require.NoError(t, traces.Start(context.Background(), componenttest.NewNopHost()))
