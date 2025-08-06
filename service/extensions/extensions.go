@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/attribute"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
+	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/zpages"
 )
 
@@ -218,7 +219,7 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 		extMap:       make(map[component.ID]extension.Extension),
 		instanceIDs:  make(map[component.ID]*status.InstanceID),
 		extensionIDs: make([]component.ID, 0, len(cfg)),
-		reporter:     &nopReporter{},
+		reporter:     statustest.NewNopStatusReporter(),
 	}
 
 	for _, opt := range options {
@@ -253,11 +254,3 @@ func New(ctx context.Context, set Settings, cfg Config, options ...Option) (*Ext
 	exts.extensionIDs = order
 	return exts, nil
 }
-
-type nopReporter struct{}
-
-func (r *nopReporter) Ready() {}
-
-func (r *nopReporter) ReportStatus(*status.InstanceID, *componentstatus.Event) {}
-
-func (r *nopReporter) ReportOKIfStarting(*status.InstanceID) {}

@@ -8,6 +8,8 @@ import (
 	"go.opentelemetry.io/collector/service/internal/status"
 )
 
+// NewNopStatusReporter creates a status reporter that discards any events.
+// TODO move to service/status
 func NewNopStatusReporter() status.Reporter {
 	return &nopStatusReporter{}
 }
