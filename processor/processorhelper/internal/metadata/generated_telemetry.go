@@ -3,9 +3,11 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
 
@@ -23,6 +25,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	attributeSet           attribute.Set
 	meter                  metric.Meter
 	mu                     sync.Mutex
 	registrations          []metric.Registration
@@ -39,6 +42,20 @@ type telemetryBuilderOptionFunc func(mb *TelemetryBuilder)
 
 func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
+}
+
+func WithAttributeSet(s attribute.Set) telemetryBuilderOptionFunc {
+	return func(mb *TelemetryBuilder) {
+		mb.attributeSet = s
+	}
+}
+
+func (builder *TelemetryBuilder) RecordProcessorIncomingItemsDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorIncomingItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
+}
+
+func (builder *TelemetryBuilder) RecordProcessorOutgoingItemsDataPoint(ctx context.Context, val int64) {
+	builder.ProcessorOutgoingItems.Add(ctx, val, metric.WithAttributeSet(builder.attributeSet))
 }
 
 // Shutdown unregister all registered callbacks for async instruments.
