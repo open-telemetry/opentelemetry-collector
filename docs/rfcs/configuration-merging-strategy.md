@@ -30,7 +30,179 @@ More specifically, this RFC aims to:
         - `processors`
         - `transformprocessor` statements
 
-## Proposed approach
+## Proposed approaches:
+
+### Approach 1 (Recommended): Use yaml tags
+
+The first approach relys on the concept of [yaml tags](https://tutorialreference.com/yaml/yaml-tags). We can specify a custom tag in our configuration files to indiciate the list we want to merge.
+
+Consider following two configurations:
+
+```yaml
+#main.yaml
+receivers:
+    ...
+exporters:
+    ...
+extensions:
+    extension1:
+
+service:
+  extensions: [extension1]
+  pipelines:
+    logs:
+      receivers: [...]
+      exporters: [...]
+```
+
+```yaml
+#extra.yaml
+extensions:
+    extension2:
+
+service:
+  extensions: !mode=append [extension2]
+```
+
+After running the collector with above configurations, the `service::extensions` path will get merged and final configuration will look like:
+
+```yaml
+#final.yaml
+receivers:
+    ...
+exporters:
+    ...
+extensions:
+    extension1:
+    extension2:
+
+service:
+  extensions: [extension1, extension2]
+  pipelines:
+    logs:
+      receivers: [...]
+      exporters: [...]
+```
+
+This approach completely relys on the configuration files and doesn't introduce any command line option.
+Internally, we will loop through the yaml tree and fetch the paths we want to merged based on user-defined tags, then merge the lists found at those paths.
+
+Our "custom" yaml tag will be in the format of URI query parameters. For starters, we can support following options:
+1. `mode`:
+    - This setting will control the ordering of merged list.
+    - The value will be either of `append` or `prepend`.
+    - Default: `append`
+2. `duplicates`:
+    - This setting controls the duplication of elements in the final list. 
+    - If the user wants to allow duplicates, they can simply turn this flag on.
+    - Default: `false`
+3. `recursive`:
+    - This setting controls the merging of child elemts of the give yaml path. 
+    - This is useful if user wants to merge all the lists under a give sub-tree. 
+        - For eg. merging all the lists under `service` stanza.
+
+#### Examples of first approach
+
+1. _Append the `service::extensions` list_:
+
+```yaml
+#main.yaml
+receivers:
+    ...
+exporters:
+    ...
+extensions:
+    extension1:
+
+service:
+  extensions: [extension1]
+  pipelines:
+    logs:
+      receivers: [...]
+      exporters: [...]
+      
+---
+
+#extra.yaml
+extensions:
+    extension2:
+
+service:
+  extensions: !mode=append [extension2]
+```
+
+```yaml
+#final.yaml
+receivers:
+    ...
+exporters:
+    ...
+extensions:
+    extension1:
+    extension2:
+
+service:
+  extensions: [extension1, extension2]
+  pipelines:
+    logs:
+      receivers: [...]
+      exporters: [...]
+```
+
+2. _Append all the lists under `service::*` stanza_:
+
+
+```yaml
+#main.yaml
+receivers:
+    ...
+exporters:
+    ...
+extensions:
+    extension1:
+
+service:
+  extensions: [extension1]
+  pipelines:
+    logs:
+      receivers: [...]
+      exporters: [...]
+      
+---
+
+#extra.yaml
+extensions:
+    extension2:
+receiver:
+    receiver2:
+
+service: !mode=append&recursive=true
+  extensions: [extension2]
+  pipelines:
+    logs:
+        receivers: [receiver2]
+```
+
+```yaml
+#final.yaml
+receivers:
+    ...
+    receiver2:
+exporters:
+    ...
+extensions:
+    extension1:
+    extension2:
+
+service:
+  extensions: [extension1, extension2]
+  pipelines:
+    logs:
+      receivers: [..., receiver2]
+      exporters: [...]
+```
+
+### Approach 2: URI params
 
 The proposed approach will rely on concept of URI query parameters([_RFC 3986_](https://datatracker.ietf.org/doc/html/rfc3986#page-23)). Our configuration URIs already adhere to this syntax and we can extend it to support query params instead adding new CLI flags. 
 
@@ -47,7 +219,7 @@ We will support new parameters to config URIs as follows:
 2. `merge_mode`: One of `prepend` or `append`.
     - This setting will control the ordering of merged list.
 
-### Examples
+#### Examples of second approach
 
 Here are some examples:
 
