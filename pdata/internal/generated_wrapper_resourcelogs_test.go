@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
+	src := &otlplogs.ResourceLogs{}
+	FillOrigTestResourceLogs(src)
+	buf, err := MarshalProtoOrigResourceLogs(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigResourceLogs(src))
+
+	dest := &otlplogs.ResourceLogs{}
+	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyResourceLogs(t *testing.T) {
+	src := &otlplogs.ResourceLogs{}
+	buf, err := MarshalProtoOrigResourceLogs(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigResourceLogs(src))
+
+	dest := &otlplogs.ResourceLogs{}
+	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
+	assert.Equal(t, src, dest)
+}

@@ -9,6 +9,7 @@ package internal
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type EntityRef struct {
@@ -88,4 +89,35 @@ func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator)
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Type)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for _, s := range orig.IdKeys {
+		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for _, s := range orig.DescriptionKeys {
+		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -33,10 +33,12 @@ var exportProfilesPartialSuccess = &messageStruct{
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "RejectedProfiles",
+			protoID:   1,
 			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
 			fieldName: "ErrorMessage",
+			protoID:   2,
 			protoType: ProtoTypeString,
 		},
 	},

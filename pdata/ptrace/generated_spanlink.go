@@ -80,17 +80,6 @@ func (ms SpanLink) TraceState() pcommon.TraceState {
 	return pcommon.TraceState(internal.NewTraceState(&ms.orig.TraceState, ms.state))
 }
 
-// Flags returns the flags associated with this SpanLink.
-func (ms SpanLink) Flags() uint32 {
-	return ms.orig.Flags
-}
-
-// SetFlags replaces the flags associated with this SpanLink.
-func (ms SpanLink) SetFlags(v uint32) {
-	ms.state.AssertMutable()
-	ms.orig.Flags = v
-}
-
 // Attributes returns the Attributes associated with this SpanLink.
 func (ms SpanLink) Attributes() pcommon.Map {
 	return pcommon.Map(internal.NewMap(&ms.orig.Attributes, ms.state))
@@ -105,6 +94,17 @@ func (ms SpanLink) DroppedAttributesCount() uint32 {
 func (ms SpanLink) SetDroppedAttributesCount(v uint32) {
 	ms.state.AssertMutable()
 	ms.orig.DroppedAttributesCount = v
+}
+
+// Flags returns the flags associated with this SpanLink.
+func (ms SpanLink) Flags() uint32 {
+	return ms.orig.Flags
+}
+
+// SetFlags replaces the flags associated with this SpanLink.
+func (ms SpanLink) SetFlags(v uint32) {
+	ms.state.AssertMutable()
+	ms.orig.Flags = v
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

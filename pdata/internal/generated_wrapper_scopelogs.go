@@ -9,18 +9,19 @@ package internal
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigScopeLogs(dest, src *otlplogs.ScopeLogs) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.LogRecords = CopyOrigLogRecordSlice(dest.LogRecords, src.LogRecords)
+	dest.SchemaUrl = src.SchemaUrl
 }
 
 func FillOrigTestScopeLogs(orig *otlplogs.ScopeLogs) {
 	FillOrigTestInstrumentationScope(&orig.Scope)
-	orig.SchemaUrl = "test_schemaurl"
 	orig.LogRecords = GenerateOrigTestLogRecordSlice()
+	orig.SchemaUrl = "test_schemaurl"
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -28,13 +29,13 @@ func MarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, dest *json.Stream) {
 	dest.WriteObjectStart()
 	dest.WriteObjectField("scope")
 	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
 	if len(orig.LogRecords) > 0 {
 		dest.WriteObjectField("logRecords")
 		MarshalJSONOrigLogRecordSlice(orig.LogRecords, dest)
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
 	}
 	dest.WriteObjectEnd()
 }
@@ -45,13 +46,38 @@ func UnmarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, iter *json.Iterator) {
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
-		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
 		case "logRecords", "log_records":
 			orig.LogRecords = UnmarshalJSONOrigLogRecordSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.LogRecords {
+		l = SizeProtoOrigLogRecord(orig.LogRecords[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

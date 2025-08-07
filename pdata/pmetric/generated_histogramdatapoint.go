@@ -88,6 +88,29 @@ func (ms HistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
+// Sum returns the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) Sum() float64 {
+	return ms.orig.GetSum()
+}
+
+// HasSum returns true if the HistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms HistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
+}
+
+// SetSum replaces the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) SetSum(v float64) {
+	ms.state.AssertMutable()
+	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
+}
+
+// RemoveSum removes the sum associated with this HistogramDataPoint.
+func (ms HistogramDataPoint) RemoveSum() {
+	ms.state.AssertMutable()
+	ms.orig.Sum_ = nil
+}
+
 // BucketCounts returns the BucketCounts associated with this HistogramDataPoint.
 func (ms HistogramDataPoint) BucketCounts() pcommon.UInt64Slice {
 	return pcommon.UInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state))
@@ -112,29 +135,6 @@ func (ms HistogramDataPoint) Flags() DataPointFlags {
 func (ms HistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.state.AssertMutable()
 	ms.orig.Flags = uint32(v)
-}
-
-// Sum returns the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
-}
-
-// HasSum returns true if the HistogramDataPoint contains a
-// Sum value, false otherwise.
-func (ms HistogramDataPoint) HasSum() bool {
-	return ms.orig.Sum_ != nil
-}
-
-// SetSum replaces the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) SetSum(v float64) {
-	ms.state.AssertMutable()
-	ms.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: v}
-}
-
-// RemoveSum removes the sum associated with this HistogramDataPoint.
-func (ms HistogramDataPoint) RemoveSum() {
-	ms.state.AssertMutable()
-	ms.orig.Sum_ = nil
 }
 
 // Min returns the min associated with this HistogramDataPoint.

@@ -84,11 +84,6 @@ func (ms Metric) SetUnit(v string) {
 	ms.orig.Unit = v
 }
 
-// Metadata returns the Metadata associated with this Metric.
-func (ms Metric) Metadata() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.Metadata, ms.state))
-}
-
 // Type returns the type of the data for this Metric.
 // Calling this function on zero-initialized Metric will cause a panic.
 func (ms Metric) Type() MetricType {
@@ -235,6 +230,11 @@ func (ms Metric) SetEmptySummary() Summary {
 	val := &otlpmetrics.Summary{}
 	ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
 	return newSummary(val, ms.state)
+}
+
+// Metadata returns the Metadata associated with this Metric.
+func (ms Metric) Metadata() pcommon.Map {
+	return pcommon.Map(internal.NewMap(&ms.orig.Metadata, ms.state))
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

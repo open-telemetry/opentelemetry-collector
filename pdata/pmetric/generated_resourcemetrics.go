@@ -55,6 +55,11 @@ func (ms ResourceMetrics) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
 }
 
+// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
+func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
+	return newScopeMetricsSlice(&ms.orig.ScopeMetrics, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceMetrics.
 func (ms ResourceMetrics) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -64,11 +69,6 @@ func (ms ResourceMetrics) SchemaUrl() string {
 func (ms ResourceMetrics) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// ScopeMetrics returns the ScopeMetrics associated with this ResourceMetrics.
-func (ms ResourceMetrics) ScopeMetrics() ScopeMetricsSlice {
-	return newScopeMetricsSlice(&ms.orig.ScopeMetrics, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

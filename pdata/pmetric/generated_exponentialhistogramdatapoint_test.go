@@ -81,6 +81,20 @@ func TestExponentialHistogramDataPoint_Count(t *testing.T) {
 	})
 }
 
+func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.True(t, ms.HasSum())
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+	dest := NewExponentialHistogramDataPoint()
+	dest.SetSum(float64(3.1415926))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
+}
+
 func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, int32(0), ms.Scale())
@@ -117,13 +131,6 @@ func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Negative())
 }
 
-func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
-	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
-	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
-}
-
 func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, DataPointFlags(0), ms.Flags())
@@ -132,18 +139,11 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
-func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
-	ms.SetSum(float64(3.1415926))
-	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-	dest := NewExponentialHistogramDataPoint()
-	dest.SetSum(float64(3.1415926))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasSum())
+	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
+	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
+	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {

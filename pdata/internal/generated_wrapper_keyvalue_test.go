@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
+	src := &v1.KeyValue{}
+	FillOrigTestKeyValue(src)
+	buf, err := MarshalProtoOrigKeyValue(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigKeyValue(src))
+
+	dest := &v1.KeyValue{}
+	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyKeyValue(t *testing.T) {
+	src := &v1.KeyValue{}
+	buf, err := MarshalProtoOrigKeyValue(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigKeyValue(src))
+
+	dest := &v1.KeyValue{}
+	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
+	assert.Equal(t, src, dest)
+}

@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigExportProfilesPartialSuccess(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigExportProfilesPartialSuccess(t *testing.T) {
+	src := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
+	FillOrigTestExportProfilesPartialSuccess(src)
+	buf, err := MarshalProtoOrigExportProfilesPartialSuccess(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExportProfilesPartialSuccess(src))
+
+	dest := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
+	require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyExportProfilesPartialSuccess(t *testing.T) {
+	src := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
+	buf, err := MarshalProtoOrigExportProfilesPartialSuccess(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExportProfilesPartialSuccess(src))
+
+	dest := &otlpcollectorprofile.ExportProfilesPartialSuccess{}
+	require.NoError(t, UnmarshalProtoOrigExportProfilesPartialSuccess(dest, buf))
+	assert.Equal(t, src, dest)
+}

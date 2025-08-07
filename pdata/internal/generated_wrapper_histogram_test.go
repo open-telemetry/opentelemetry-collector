@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigHistogram(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigHistogram(t *testing.T) {
+	src := &otlpmetrics.Histogram{}
+	FillOrigTestHistogram(src)
+	buf, err := MarshalProtoOrigHistogram(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigHistogram(src))
+
+	dest := &otlpmetrics.Histogram{}
+	require.NoError(t, UnmarshalProtoOrigHistogram(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyHistogram(t *testing.T) {
+	src := &otlpmetrics.Histogram{}
+	buf, err := MarshalProtoOrigHistogram(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigHistogram(src))
+
+	dest := &otlpmetrics.Histogram{}
+	require.NoError(t, UnmarshalProtoOrigHistogram(dest, buf))
+	assert.Equal(t, src, dest)
+}

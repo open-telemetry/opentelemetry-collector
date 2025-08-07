@@ -68,13 +68,6 @@ func TestMetric_Unit(t *testing.T) {
 	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetUnit("test_unit") })
 }
 
-func TestMetric_Metadata(t *testing.T) {
-	ms := NewMetric()
-	assert.Equal(t, pcommon.NewMap(), ms.Metadata())
-	ms.orig.Metadata = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Metadata())
-}
-
 func TestMetric_Type(t *testing.T) {
 	tv := NewMetric()
 	assert.Equal(t, MetricTypeEmpty, tv.Type())
@@ -133,6 +126,13 @@ func TestMetric_Summary(t *testing.T) {
 	assert.Equal(t, generateTestSummary(), ms.Summary())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newMetric(&otlpmetrics.Metric{}, &sharedState).SetEmptySummary() })
+}
+
+func TestMetric_Metadata(t *testing.T) {
+	ms := NewMetric()
+	assert.Equal(t, pcommon.NewMap(), ms.Metadata())
+	ms.orig.Metadata = internal.GenerateOrigTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Metadata())
 }
 
 func generateTestMetric() Metric {

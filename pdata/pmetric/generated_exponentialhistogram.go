@@ -50,6 +50,11 @@ func (ms ExponentialHistogram) MoveTo(dest ExponentialHistogram) {
 	*ms.orig = otlpmetrics.ExponentialHistogram{}
 }
 
+// DataPoints returns the DataPoints associated with this ExponentialHistogram.
+func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
+	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this ExponentialHistogram.
 func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -59,11 +64,6 @@ func (ms ExponentialHistogram) AggregationTemporality() AggregationTemporality {
 func (ms ExponentialHistogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
-}
-
-// DataPoints returns the DataPoints associated with this ExponentialHistogram.
-func (ms ExponentialHistogram) DataPoints() ExponentialHistogramDataPointSlice {
-	return newExponentialHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

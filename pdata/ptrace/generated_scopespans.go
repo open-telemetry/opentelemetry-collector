@@ -55,6 +55,11 @@ func (ms ScopeSpans) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
 }
 
+// Spans returns the Spans associated with this ScopeSpans.
+func (ms ScopeSpans) Spans() SpanSlice {
+	return newSpanSlice(&ms.orig.Spans, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeSpans.
 func (ms ScopeSpans) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -64,11 +69,6 @@ func (ms ScopeSpans) SchemaUrl() string {
 func (ms ScopeSpans) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// Spans returns the Spans associated with this ScopeSpans.
-func (ms ScopeSpans) Spans() SpanSlice {
-	return newSpanSlice(&ms.orig.Spans, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

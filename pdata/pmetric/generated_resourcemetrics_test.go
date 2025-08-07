@@ -48,6 +48,13 @@ func TestResourceMetrics_Resource(t *testing.T) {
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
+func TestResourceMetrics_ScopeMetrics(t *testing.T) {
+	ms := NewResourceMetrics()
+	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
+	ms.orig.ScopeMetrics = internal.GenerateOrigTestScopeMetricsSlice()
+	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
+}
+
 func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	ms := NewResourceMetrics()
 	assert.Empty(t, ms.SchemaUrl())
@@ -57,13 +64,6 @@ func TestResourceMetrics_SchemaUrl(t *testing.T) {
 	assert.Panics(t, func() {
 		newResourceMetrics(&otlpmetrics.ResourceMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl")
 	})
-}
-
-func TestResourceMetrics_ScopeMetrics(t *testing.T) {
-	ms := NewResourceMetrics()
-	assert.Equal(t, NewScopeMetricsSlice(), ms.ScopeMetrics())
-	ms.orig.ScopeMetrics = internal.GenerateOrigTestScopeMetricsSlice()
-	assert.Equal(t, generateTestScopeMetricsSlice(), ms.ScopeMetrics())
 }
 
 func generateTestResourceMetrics() ResourceMetrics {

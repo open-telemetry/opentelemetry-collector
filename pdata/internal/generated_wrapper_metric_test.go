@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigMetric(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigMetric(t *testing.T) {
+	src := &otlpmetrics.Metric{}
+	FillOrigTestMetric(src)
+	buf, err := MarshalProtoOrigMetric(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigMetric(src))
+
+	dest := &otlpmetrics.Metric{}
+	require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyMetric(t *testing.T) {
+	src := &otlpmetrics.Metric{}
+	buf, err := MarshalProtoOrigMetric(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigMetric(src))
+
+	dest := &otlpmetrics.Metric{}
+	require.NoError(t, UnmarshalProtoOrigMetric(dest, buf))
+	assert.Equal(t, src, dest)
+}

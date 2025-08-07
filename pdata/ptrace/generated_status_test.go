@@ -40,14 +40,6 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
 }
 
-func TestStatus_Code(t *testing.T) {
-	ms := NewStatus()
-	assert.Equal(t, StatusCode(0), ms.Code())
-	testValCode := StatusCode(1)
-	ms.SetCode(testValCode)
-	assert.Equal(t, testValCode, ms.Code())
-}
-
 func TestStatus_Message(t *testing.T) {
 	ms := NewStatus()
 	assert.Empty(t, ms.Message())
@@ -55,6 +47,14 @@ func TestStatus_Message(t *testing.T) {
 	assert.Equal(t, "test_message", ms.Message())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
+}
+
+func TestStatus_Code(t *testing.T) {
+	ms := NewStatus()
+	assert.Equal(t, StatusCode(otlptrace.Status_StatusCode(0)), ms.Code())
+	testValCode := StatusCode(otlptrace.Status_StatusCode(1))
+	ms.SetCode(testValCode)
+	assert.Equal(t, testValCode, ms.Code())
 }
 
 func generateTestStatus() Status {

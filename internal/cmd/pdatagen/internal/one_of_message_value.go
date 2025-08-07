@@ -71,8 +71,13 @@ const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName 
 
 type OneOfMessageValue struct {
 	fieldName              string
+	protoID                uint32
 	originFieldPackageName string
 	returnMessage          *messageStruct
+}
+
+func (omv *OneOfMessageValue) GetOriginFieldName() string {
+	return omv.fieldName
 }
 
 func (omv *OneOfMessageValue) GenerateAccessors(ms *messageStruct, of *OneOfField) string {
@@ -108,6 +113,17 @@ func (omv *OneOfMessageValue) GenerateMarshalJSON(ms *messageStruct, of *OneOfFi
 func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string {
 	t := template.Must(templateNew("oneOfMessageUnmarshalJSONTemplate").Parse(oneOfMessageUnmarshalJSONTemplate))
 	return executeTemplate(t, omv.templateFields(ms, of))
+}
+
+func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
+	pf := &ProtoField{
+		Type:        ProtoTypeMessage,
+		ID:          omv.protoID,
+		Name:        of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
+		MessageName: omv.returnMessage.getOriginName(),
+		Nullable:    true,
+	}
+	return pf.genSizeProto()
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {

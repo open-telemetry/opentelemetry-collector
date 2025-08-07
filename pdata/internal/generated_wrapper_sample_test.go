@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigSample(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSample(t *testing.T) {
+	src := &otlpprofiles.Sample{}
+	FillOrigTestSample(src)
+	buf, err := MarshalProtoOrigSample(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSample(src))
+
+	dest := &otlpprofiles.Sample{}
+	require.NoError(t, UnmarshalProtoOrigSample(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptySample(t *testing.T) {
+	src := &otlpprofiles.Sample{}
+	buf, err := MarshalProtoOrigSample(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSample(src))
+
+	dest := &otlpprofiles.Sample{}
+	require.NoError(t, UnmarshalProtoOrigSample(dest, buf))
+	assert.Equal(t, src, dest)
+}

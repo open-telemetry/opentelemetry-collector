@@ -48,6 +48,13 @@ func TestScopeLogs_Scope(t *testing.T) {
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
+func TestScopeLogs_LogRecords(t *testing.T) {
+	ms := NewScopeLogs()
+	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
+	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
+	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
+}
+
 func TestScopeLogs_SchemaUrl(t *testing.T) {
 	ms := NewScopeLogs()
 	assert.Empty(t, ms.SchemaUrl())
@@ -55,13 +62,6 @@ func TestScopeLogs_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newScopeLogs(&otlplogs.ScopeLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeLogs_LogRecords(t *testing.T) {
-	ms := NewScopeLogs()
-	assert.Equal(t, NewLogRecordSlice(), ms.LogRecords())
-	ms.orig.LogRecords = internal.GenerateOrigTestLogRecordSlice()
-	assert.Equal(t, generateTestLogRecordSlice(), ms.LogRecords())
 }
 
 func generateTestScopeLogs() ScopeLogs {

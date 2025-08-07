@@ -55,6 +55,11 @@ func (ms ScopeProfiles) Scope() pcommon.InstrumentationScope {
 	return pcommon.InstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state))
 }
 
+// Profiles returns the Profiles associated with this ScopeProfiles.
+func (ms ScopeProfiles) Profiles() ProfilesSlice {
+	return newProfilesSlice(&ms.orig.Profiles, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ScopeProfiles.
 func (ms ScopeProfiles) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -64,11 +69,6 @@ func (ms ScopeProfiles) SchemaUrl() string {
 func (ms ScopeProfiles) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// Profiles returns the Profiles associated with this ScopeProfiles.
-func (ms ScopeProfiles) Profiles() ProfilesSlice {
-	return newProfilesSlice(&ms.orig.Profiles, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

@@ -9,18 +9,19 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.Metrics = CopyOrigMetricSlice(dest.Metrics, src.Metrics)
+	dest.SchemaUrl = src.SchemaUrl
 }
 
 func FillOrigTestScopeMetrics(orig *otlpmetrics.ScopeMetrics) {
 	FillOrigTestInstrumentationScope(&orig.Scope)
-	orig.SchemaUrl = "test_schemaurl"
 	orig.Metrics = GenerateOrigTestMetricSlice()
+	orig.SchemaUrl = "test_schemaurl"
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -28,13 +29,13 @@ func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stre
 	dest.WriteObjectStart()
 	dest.WriteObjectField("scope")
 	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
 	if len(orig.Metrics) > 0 {
 		dest.WriteObjectField("metrics")
 		MarshalJSONOrigMetricSlice(orig.Metrics, dest)
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
 	}
 	dest.WriteObjectEnd()
 }
@@ -45,13 +46,38 @@ func UnmarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.It
 		switch f {
 		case "scope":
 			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
-		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
 		case "metrics":
 			orig.Metrics = UnmarshalJSONOrigMetricSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.Metrics {
+		l = SizeProtoOrigMetric(orig.Metrics[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

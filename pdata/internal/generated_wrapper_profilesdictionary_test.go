@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigProfilesDictionary(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigProfilesDictionary(t *testing.T) {
+	src := &otlpprofiles.ProfilesDictionary{}
+	FillOrigTestProfilesDictionary(src)
+	buf, err := MarshalProtoOrigProfilesDictionary(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigProfilesDictionary(src))
+
+	dest := &otlpprofiles.ProfilesDictionary{}
+	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyProfilesDictionary(t *testing.T) {
+	src := &otlpprofiles.ProfilesDictionary{}
+	buf, err := MarshalProtoOrigProfilesDictionary(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigProfilesDictionary(src))
+
+	dest := &otlpprofiles.ProfilesDictionary{}
+	require.NoError(t, UnmarshalProtoOrigProfilesDictionary(dest, buf))
+	assert.Equal(t, src, dest)
+}

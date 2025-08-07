@@ -9,6 +9,7 @@ package internal
 import (
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExportProfilesPartialSuccess(dest, src *otlpcollectorprofile.ExportProfilesPartialSuccess) {
@@ -48,4 +49,26 @@ func UnmarshalJSONOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Ex
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) int {
+	var n int
+	var l int
+	_ = l
+	if orig.RejectedProfiles != 0 {
+		n += 1 + proto.Sov(uint64(orig.RejectedProfiles))
+	}
+	l = len(orig.ErrorMessage)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

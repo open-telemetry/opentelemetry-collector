@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
@@ -104,4 +105,50 @@ func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigMapping(orig *otlpprofiles.Mapping) int {
+	var n int
+	var l int
+	_ = l
+	if orig.MemoryStart != 0 {
+		n += 1 + proto.Sov(uint64(orig.MemoryStart))
+	}
+	if orig.MemoryLimit != 0 {
+		n += 1 + proto.Sov(uint64(orig.MemoryLimit))
+	}
+	if orig.FileOffset != 0 {
+		n += 1 + proto.Sov(uint64(orig.FileOffset))
+	}
+	if orig.FilenameStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.FilenameStrindex))
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.HasFunctions {
+		n += 2
+	}
+	if orig.HasFilenames {
+		n += 2
+	}
+	if orig.HasLineNumbers {
+		n += 2
+	}
+	if orig.HasInlineFrames {
+		n += 2
+	}
+	return n
+}
+
+func MarshalProtoOrigMapping(orig *otlpprofiles.Mapping) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigFunction(dest, src *otlpprofiles.Function) {
@@ -64,4 +65,31 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
+	var n int
+	var l int
+	_ = l
+	if orig.NameStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.NameStrindex))
+	}
+	if orig.SystemNameStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.SystemNameStrindex))
+	}
+	if orig.FilenameStrindex != 0 {
+		n += 1 + proto.Sov(uint64(orig.FilenameStrindex))
+	}
+	if orig.StartLine != 0 {
+		n += 1 + proto.Sov(uint64(orig.StartLine))
+	}
+	return n
+}
+
+func MarshalProtoOrigFunction(orig *otlpprofiles.Function) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

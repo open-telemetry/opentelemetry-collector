@@ -77,6 +77,7 @@ func templateNew(name string) *template.Template {
 	return template.New(name).Funcs(template.FuncMap{
 		"upperFirst": upperFirst,
 		"lowerFirst": lowerFirst,
+		"add":        add,
 		"sub":        sub,
 		"needSnake":  needSnake,
 		"toSnake":    strcase.ToSnake,
@@ -89,6 +90,10 @@ func upperFirst(s string) string {
 
 func lowerFirst(s string) string {
 	return strings.ToLower(s[0:1]) + s[1:]
+}
+
+func add(a, b int) int {
+	return a + b
 }
 
 func sub(a, b int) int {

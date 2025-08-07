@@ -9,13 +9,13 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 	dest.Name = src.Name
 	dest.Description = src.Description
 	dest.Unit = src.Unit
-	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
 	switch t := src.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
 		gauge := &otlpmetrics.Gauge{}
@@ -48,15 +48,16 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 			Summary: summary,
 		}
 	}
+	dest.Metadata = CopyOrigKeyValueSlice(dest.Metadata, src.Metadata)
 }
 
 func FillOrigTestMetric(orig *otlpmetrics.Metric) {
 	orig.Name = "test_name"
 	orig.Description = "test_description"
 	orig.Unit = "test_unit"
-	orig.Metadata = GenerateOrigTestKeyValueSlice()
 	orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
 	FillOrigTestSum(orig.GetSum())
+	orig.Metadata = GenerateOrigTestKeyValueSlice()
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -73,10 +74,6 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 	if orig.Unit != "" {
 		dest.WriteObjectField("unit")
 		dest.WriteString(orig.Unit)
-	}
-	if len(orig.Metadata) > 0 {
-		dest.WriteObjectField("metadata")
-		MarshalJSONOrigKeyValueSlice(orig.Metadata, dest)
 	}
 	switch ov := orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
@@ -95,6 +92,10 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 		dest.WriteObjectField("summary")
 		MarshalJSONOrigSummary(ov.Summary, dest)
 	}
+	if len(orig.Metadata) > 0 {
+		dest.WriteObjectField("metadata")
+		MarshalJSONOrigKeyValueSlice(orig.Metadata, dest)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -108,8 +109,6 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 			orig.Description = iter.ReadString()
 		case "unit":
 			orig.Unit = iter.ReadString()
-		case "metadata":
-			orig.Metadata = UnmarshalJSONOrigKeyValueSlice(iter)
 
 		case "gauge":
 			val := &otlpmetrics.Gauge{}
@@ -131,9 +130,59 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 			val := &otlpmetrics.Summary{}
 			orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
 			UnmarshalJSONOrigSummary(val, iter)
+		case "metadata":
+			orig.Metadata = UnmarshalJSONOrigKeyValueSlice(iter)
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Description)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Unit)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	switch orig.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+		l = SizeProtoOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge)
+		n += 1 + proto.Sov(uint64(l)) + l
+	case *otlpmetrics.Metric_Sum:
+		l = SizeProtoOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum)
+		n += 1 + proto.Sov(uint64(l)) + l
+	case *otlpmetrics.Metric_Histogram:
+		l = SizeProtoOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram)
+		n += 1 + proto.Sov(uint64(l)) + l
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		l = SizeProtoOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram)
+		n += 1 + proto.Sov(uint64(l)) + l
+	case *otlpmetrics.Metric_Summary:
+		l = SizeProtoOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Metadata {
+		l = SizeProtoOrigKeyValue(&orig.Metadata[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigMetric(orig *otlpmetrics.Metric) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

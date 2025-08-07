@@ -42,6 +42,13 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
 }
 
+func TestExemplar_FilteredAttributes(t *testing.T) {
+	ms := NewExemplar()
+	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
+	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
+}
+
 func TestExemplar_Timestamp(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
@@ -75,11 +82,12 @@ func TestExemplar_IntValue(t *testing.T) {
 	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetIntValue(int64(13)) })
 }
 
-func TestExemplar_FilteredAttributes(t *testing.T) {
+func TestExemplar_SpanID(t *testing.T) {
 	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetSpanID(testValSpanID)
+	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
 func TestExemplar_TraceID(t *testing.T) {
@@ -88,14 +96,6 @@ func TestExemplar_TraceID(t *testing.T) {
 	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 	ms.SetTraceID(testValTraceID)
 	assert.Equal(t, testValTraceID, ms.TraceID())
-}
-
-func TestExemplar_SpanID(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetSpanID(testValSpanID)
-	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
 func generateTestExemplar() Exemplar {

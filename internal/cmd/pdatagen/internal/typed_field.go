@@ -55,17 +55,19 @@ const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ i
 type TypedField struct {
 	fieldName       string
 	originFieldName string
+	protoID         uint32
 	returnType      *TypedType
 }
 
 type TypedType struct {
 	structName  string
 	packageName string
-	rawType     string
-	isType      bool
-	isEnum      bool
-	defaultVal  string
-	testVal     string
+
+	protoType   ProtoType
+	messageName string
+
+	defaultVal string
+	testVal    string
 }
 
 func (ptf *TypedField) GenerateAccessors(ms *messageStruct) string {
@@ -98,6 +100,16 @@ func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
+	pf := &ProtoField{
+		Type:        ptf.returnType.protoType,
+		ID:          ptf.protoID,
+		Name:        ptf.getOriginFieldName(),
+		MessageName: ptf.returnType.structName,
+	}
+	return pf.genSizeProto()
+}
+
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName": ms.getName(),
@@ -108,21 +120,23 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":       usedByOtherDataTypes(ptf.returnType.packageName),
-		"returnType":     ptf.returnType.structName,
-		"fieldName":      ptf.fieldName,
-		"lowerFieldName": strings.ToLower(ptf.fieldName),
-		"testValue":      ptf.returnType.testVal,
-		"rawType":        ptf.returnType.rawType,
-		"isType":         ptf.returnType.isType,
-		"isEnum":         ptf.returnType.isEnum,
-		"originFieldName": func() string {
-			if ptf.originFieldName == "" {
-				return ptf.fieldName
-			}
-			return ptf.originFieldName
-		}(),
+		"isCommon":        usedByOtherDataTypes(ptf.returnType.packageName),
+		"returnType":      ptf.returnType.structName,
+		"fieldName":       ptf.fieldName,
+		"lowerFieldName":  strings.ToLower(ptf.fieldName),
+		"testValue":       ptf.returnType.testVal,
+		"rawType":         ptf.returnType.protoType.goType(ptf.returnType.messageName),
+		"isType":          ptf.returnType.protoType == ProtoTypeMessage,
+		"isEnum":          ptf.returnType.protoType == ProtoTypeEnum,
+		"originFieldName": ptf.getOriginFieldName(),
 	}
+}
+
+func (ptf *TypedField) getOriginFieldName() string {
+	if ptf.originFieldName == "" {
+		return ptf.fieldName
+	}
+	return ptf.originFieldName
 }
 
 var _ Field = (*TypedField)(nil)

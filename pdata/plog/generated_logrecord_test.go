@@ -42,14 +42,6 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
 }
 
-func TestLogRecord_ObservedTimestamp(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, pcommon.Timestamp(0), ms.ObservedTimestamp())
-	testValObservedTimestamp := pcommon.Timestamp(1234567890)
-	ms.SetObservedTimestamp(testValObservedTimestamp)
-	assert.Equal(t, testValObservedTimestamp, ms.ObservedTimestamp())
-}
-
 func TestLogRecord_Timestamp(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
@@ -58,37 +50,20 @@ func TestLogRecord_Timestamp(t *testing.T) {
 	assert.Equal(t, testValTimestamp, ms.Timestamp())
 }
 
-func TestLogRecord_TraceID(t *testing.T) {
+func TestLogRecord_ObservedTimestamp(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetTraceID(testValTraceID)
-	assert.Equal(t, testValTraceID, ms.TraceID())
+	assert.Equal(t, pcommon.Timestamp(0), ms.ObservedTimestamp())
+	testValObservedTimestamp := pcommon.Timestamp(1234567890)
+	ms.SetObservedTimestamp(testValObservedTimestamp)
+	assert.Equal(t, testValObservedTimestamp, ms.ObservedTimestamp())
 }
 
-func TestLogRecord_SpanID(t *testing.T) {
+func TestLogRecord_SeverityNumber(t *testing.T) {
 	ms := NewLogRecord()
-	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
-	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetSpanID(testValSpanID)
-	assert.Equal(t, testValSpanID, ms.SpanID())
-}
-
-func TestLogRecord_Flags(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, LogRecordFlags(0), ms.Flags())
-	testValFlags := LogRecordFlags(1)
-	ms.SetFlags(testValFlags)
-	assert.Equal(t, testValFlags, ms.Flags())
-}
-
-func TestLogRecord_EventName(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Empty(t, ms.EventName())
-	ms.SetEventName("test_eventname")
-	assert.Equal(t, "test_eventname", ms.EventName())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("test_eventname") })
+	assert.Equal(t, SeverityNumber(otlplogs.SeverityNumber(0)), ms.SeverityNumber())
+	testValSeverityNumber := SeverityNumber(otlplogs.SeverityNumber(5))
+	ms.SetSeverityNumber(testValSeverityNumber)
+	assert.Equal(t, testValSeverityNumber, ms.SeverityNumber())
 }
 
 func TestLogRecord_SeverityText(t *testing.T) {
@@ -98,14 +73,6 @@ func TestLogRecord_SeverityText(t *testing.T) {
 	assert.Equal(t, "test_severitytext", ms.SeverityText())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetSeverityText("test_severitytext") })
-}
-
-func TestLogRecord_SeverityNumber(t *testing.T) {
-	ms := NewLogRecord()
-	assert.Equal(t, SeverityNumber(otlplogs.SeverityNumber(0)), ms.SeverityNumber())
-	testValSeverityNumber := SeverityNumber(otlplogs.SeverityNumber(5))
-	ms.SetSeverityNumber(testValSeverityNumber)
-	assert.Equal(t, testValSeverityNumber, ms.SeverityNumber())
 }
 
 func TestLogRecord_Body(t *testing.T) {
@@ -129,6 +96,39 @@ func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+}
+
+func TestLogRecord_Flags(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, LogRecordFlags(0), ms.Flags())
+	testValFlags := LogRecordFlags(1)
+	ms.SetFlags(testValFlags)
+	assert.Equal(t, testValFlags, ms.Flags())
+}
+
+func TestLogRecord_TraceID(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetTraceID(testValTraceID)
+	assert.Equal(t, testValTraceID, ms.TraceID())
+}
+
+func TestLogRecord_SpanID(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Equal(t, pcommon.SpanID(data.SpanID([8]byte{})), ms.SpanID())
+	testValSpanID := pcommon.SpanID(data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetSpanID(testValSpanID)
+	assert.Equal(t, testValSpanID, ms.SpanID())
+}
+
+func TestLogRecord_EventName(t *testing.T) {
+	ms := NewLogRecord()
+	assert.Empty(t, ms.EventName())
+	ms.SetEventName("test_eventname")
+	assert.Equal(t, "test_eventname", ms.EventName())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newLogRecord(&otlplogs.LogRecord{}, &sharedState).SetEventName("test_eventname") })
 }
 
 func generateTestLogRecord() LogRecord {

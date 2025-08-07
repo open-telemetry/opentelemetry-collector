@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigExponentialHistogramDataPoint(t *testing.T) 
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigExponentialHistogramDataPoint(t *testing.T) {
+	src := &otlpmetrics.ExponentialHistogramDataPoint{}
+	FillOrigTestExponentialHistogramDataPoint(src)
+	buf, err := MarshalProtoOrigExponentialHistogramDataPoint(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExponentialHistogramDataPoint(src))
+
+	dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+	require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyExponentialHistogramDataPoint(t *testing.T) {
+	src := &otlpmetrics.ExponentialHistogramDataPoint{}
+	buf, err := MarshalProtoOrigExponentialHistogramDataPoint(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExponentialHistogramDataPoint(src))
+
+	dest := &otlpmetrics.ExponentialHistogramDataPoint{}
+	require.NoError(t, UnmarshalProtoOrigExponentialHistogramDataPoint(dest, buf))
+	assert.Equal(t, src, dest)
+}

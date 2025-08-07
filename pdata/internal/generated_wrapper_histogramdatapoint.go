@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
@@ -16,10 +17,6 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
-	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
-	dest.ExplicitBounds = CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
 	if srcSum, ok := src.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		destSum, ok := dest.Sum_.(*otlpmetrics.HistogramDataPoint_Sum)
 		if !ok {
@@ -30,6 +27,10 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	} else {
 		dest.Sum_ = nil
 	}
+	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.ExplicitBounds = CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
+	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Flags = src.Flags
 	if srcMin, ok := src.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		destMin, ok := dest.Min_.(*otlpmetrics.HistogramDataPoint_Min)
 		if !ok {
@@ -57,11 +58,11 @@ func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Count = uint64(13)
+	orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
 	orig.BucketCounts = GenerateOrigTestUint64Slice()
 	orig.ExplicitBounds = GenerateOrigTestFloat64Slice()
 	orig.Exemplars = GenerateOrigTestExemplarSlice()
 	orig.Flags = 1
-	orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
 	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
 }
@@ -85,6 +86,10 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 		dest.WriteObjectField("count")
 		dest.WriteUint64(orig.Count)
 	}
+	if orig.Sum_ != nil {
+		dest.WriteObjectField("sum")
+		dest.WriteFloat64(orig.GetSum())
+	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
 		MarshalJSONOrigUint64Slice(orig.BucketCounts, dest)
@@ -100,10 +105,6 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 	if orig.Flags != 0 {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
-	}
-	if orig.Sum_ != nil {
-		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.GetSum())
 	}
 	if orig.Min_ != nil {
 		dest.WriteObjectField("min")
@@ -128,6 +129,8 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "count":
 			orig.Count = iter.ReadUint64()
+		case "sum":
+			orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "bucketCounts", "bucket_counts":
 			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
 		case "explicitBounds", "explicit_bounds":
@@ -136,8 +139,6 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
 		case "flags":
 			orig.Flags = iter.ReadUint32()
-		case "sum":
-			orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "min":
 			orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: iter.ReadFloat64()}
 		case "max":
@@ -147,4 +148,58 @@ func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, i
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.Count != 0 {
+		n += 9
+	}
+	if orig.Sum_ != nil {
+		n += 9
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		l *= 8
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.ExplicitBounds)
+	if l > 0 {
+		l *= 8
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Exemplars {
+		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Flags != 0 {
+		n += 1 + proto.Sov(uint64(orig.Flags))
+	}
+	if orig.Min_ != nil {
+		n += 9
+	}
+	if orig.Max_ != nil {
+		n += 9
+	}
+	return n
+}
+
+func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

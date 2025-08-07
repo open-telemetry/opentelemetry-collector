@@ -50,6 +50,13 @@ const oneOfUnmarshalJSONTemplate = `
 	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
 	{{- end }}`
 
+const oneOfSizeProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
+		{{ .GenerateSizeProto $.baseStruct $.OneOfField }}
+	{{- end }}
+}`
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -95,6 +102,11 @@ func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, of.templateFields(ms))
 }
 
+func (of *OneOfField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfSizeProtoTemplate").Parse(oneOfSizeProtoTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"baseStruct":           ms,
@@ -115,6 +127,7 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 var _ Field = (*OneOfField)(nil)
 
 type oneOfValue interface {
+	GetOriginFieldName() string
 	GenerateAccessors(ms *messageStruct, of *OneOfField) string
 	GenerateTests(ms *messageStruct, of *OneOfField) string
 	GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string
@@ -122,4 +135,5 @@ type oneOfValue interface {
 	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
+	GenerateSizeProto(ms *messageStruct, of *OneOfField) string
 }

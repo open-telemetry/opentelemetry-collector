@@ -48,6 +48,13 @@ func TestResourceLogs_Resource(t *testing.T) {
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
+func TestResourceLogs_ScopeLogs(t *testing.T) {
+	ms := NewResourceLogs()
+	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
+	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
+	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
+}
+
 func TestResourceLogs_SchemaUrl(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Empty(t, ms.SchemaUrl())
@@ -55,13 +62,6 @@ func TestResourceLogs_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestResourceLogs_ScopeLogs(t *testing.T) {
-	ms := NewResourceLogs()
-	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
-	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
-	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
 }
 
 func generateTestResourceLogs() ResourceLogs {
