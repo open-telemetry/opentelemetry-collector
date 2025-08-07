@@ -9,11 +9,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 func TestServerAuthenticateFunc(t *testing.T) {
 	var called bool
-	var server Server = ServerAuthenticateFunc(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
+	var server extensioncapabilities.Authenticator = ServerAuthenticateFunc(func(ctx context.Context, _ map[string][]string) (context.Context, error) {
 		called = true
 		return ctx, nil
 	})

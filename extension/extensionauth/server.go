@@ -12,6 +12,7 @@ import (
 // names from the [configauth.Config] configuration. Each Server is free to define its own behavior and configuration options,
 // but note that the expectations that come as part of Extensions exist here as well. For instance, multiple instances of the same
 // authenticator should be possible to exist under different names.
+// Deprecated: [v0.131.0] Use extensioncapabilities.Authenticator instead.
 type Server interface {
 	// Authenticate checks whether the given map contains valid auth data. Successfully authenticated calls will always return a nil error.
 	// When the authentication fails, an error must be returned and the caller must not retry. This function is typically called from interceptors,
