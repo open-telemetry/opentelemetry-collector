@@ -30,7 +30,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/status"
-	"go.opentelemetry.io/collector/service/internal/status/statustest"
 	"go.opentelemetry.io/collector/service/internal/testcomponents"
 	"go.opentelemetry.io/collector/service/pipelines"
 )
@@ -917,7 +916,7 @@ func testConnectorPipelinesGraph(t *testing.T) {
 			}
 
 			// Shut down the entire component graph
-			require.NoError(t, pg.ShutdownAll(context.Background(), statustest.NewNopStatusReporter()))
+			require.NoError(t, pg.ShutdownAll(context.Background(), status.NewNopStatusReporter()))
 
 			// Check each pipeline individually, ensuring that all components are stopped.
 			for pipelineID := range tt.pipelineConfigs {
