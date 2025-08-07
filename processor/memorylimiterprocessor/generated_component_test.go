@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/service/hostcapabilities"
 )
 
 var typ = component.MustNewType("memory_limiter")
@@ -72,7 +73,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := componenttest.NewNopHost()
+			host := NewNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -143,4 +144,23 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	return traces
+}
+
+var _ component.Host = (*nopHost)(nil)
+var _ hostcapabilities.ComponentFactory = (*nopHost)(nil)
+
+// nopHost mocks the service's host implementation for test purposes.
+type nopHost struct{}
+
+// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
+func NewNopHost() component.Host {
+	return &nopHost{}
+}
+
+func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+	return nil
 }
