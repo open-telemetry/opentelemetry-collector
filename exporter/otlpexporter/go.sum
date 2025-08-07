@@ -75,10 +75,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/service v0.131.0 h1:7ublBccmw+TomxIY/RgTIQUvSr9VJbmJIsM3wM6i52A=
-go.opentelemetry.io/collector/service v0.131.0/go.mod h1:ape463bqfQDrKfxTqf3SOCDk3Okawtmf5vkOwDj74Fw=
-go.opentelemetry.io/collector/service/hostcapabilities v0.131.0 h1:TI514y00lT1A7/0fKCepLU8S9kZ3oPW+ZBG0M3TjdgU=
-go.opentelemetry.io/collector/service/hostcapabilities v0.131.0/go.mod h1:MqBeJjsCNd8n4pYTFnl1YggIbnEJM+RImk42j6fAf6Y=
 go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 h1:FGre0nZh5BSw7G73VpT3xs38HchsfPsa2aZtMp0NPOs=
 go.opentelemetry.io/contrib/bridges/otelzap v0.12.0/go.mod h1:X2PYPViI2wTPIMIOBjG17KNybTzsrATnvPJ02kkz7LM=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.62.0 h1:rbRJ8BBoVMsQShESYZ0FkvcITu8X8QNwJogcLUmDNNw=
