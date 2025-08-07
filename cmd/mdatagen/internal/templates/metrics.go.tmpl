@@ -126,7 +126,34 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	{{- if eq $metric.Data.Type "Histogram" }}
+	// For histogram metrics, set count, sum, and bucket data
+	dp.SetCount(1)
+	dp.SetSum(val)
+	{{- if $metric.Data.Boundaries }}
+	// Set explicit bucket boundaries
+	boundaries := []float64{ {{- range $i, $boundary := $metric.Data.Boundaries }}{{ if $i }}, {{ end }}{{ $boundary }}{{ end -}} }
+	dp.ExplicitBounds().FromRaw(boundaries)
+
+	// Find the appropriate bucket for the value
+	bucketCounts := make([]uint64, {{ len $metric.Data.Boundaries | inc }})
+	bucketIndex := len(boundaries) // Default to the last bucket (+Inf)
+	for i, boundary := range boundaries {
+		if val < boundary {
+			bucketIndex = i
+			break
+		}
+	}
+	bucketCounts[bucketIndex] = 1
+	dp.BucketCounts().FromRaw(bucketCounts)
+	{{- else }}
+	// No explicit boundaries defined
+	dp.ExplicitBounds().FromRaw([]float64{})
+	dp.BucketCounts().FromRaw([]uint64{1})
+	{{- end }}
+	{{- else }}
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+	{{- end }}
 	{{- range $metric.Attributes }}
     {{- if not (attributeInfo .).Optional -}}
 	{{- template "putAttribute" . -}}
