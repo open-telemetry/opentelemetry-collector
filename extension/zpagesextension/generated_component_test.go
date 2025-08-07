@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/hostcapabilities"
 )
 
@@ -55,6 +56,7 @@ func TestComponentLifecycle(t *testing.T) {
 
 var _ component.Host = (*nopHost)(nil)
 var _ hostcapabilities.ComponentFactory = (*nopHost)(nil)
+var _ hostcapabilities.ModuleInfo = (*nopHost)(nil)
 
 // nopHost mocks the service's host implementation for test purposes.
 type nopHost struct{}
@@ -70,4 +72,8 @@ func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 
 func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
+}
+
+func (nh *nopHost) GetModuleInfos() service.ModuleInfos {
+	return service.ModuleInfos{}
 }
