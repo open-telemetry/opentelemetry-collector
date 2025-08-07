@@ -181,3 +181,35 @@ replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../ext
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
+
+replace go.opentelemetry.io/collector/extension/zpagesextension => ../../extension/zpagesextension
+
+replace go.opentelemetry.io/collector/config/configtelemetry => ../../config/configtelemetry
+
+replace go.opentelemetry.io/collector/service/hostcapabilities => ../../service/hostcapabilities
+
+replace go.opentelemetry.io/collector/connector/connectortest => ../../connector/connectortest
+
+replace go.opentelemetry.io/collector/connector => ../../connector
+
+replace go.opentelemetry.io/collector/confmap/provider/fileprovider => ../../confmap/provider/fileprovider
+
+replace go.opentelemetry.io/collector/service => ../../service
+
+replace go.opentelemetry.io/collector/processor/xprocessor => ../../processor/xprocessor
+
+replace go.opentelemetry.io/collector/confmap/provider/yamlprovider => ../../confmap/provider/yamlprovider
+
+replace go.opentelemetry.io/collector/processor => ../../processor
+
+replace go.opentelemetry.io/collector/processor/processortest => ../../processor/processortest
+
+replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus
+
+replace go.opentelemetry.io/collector/connector/xconnector => ../../connector/xconnector
+
+replace go.opentelemetry.io/collector/otelcol => ../../otelcol
+
+replace go.opentelemetry.io/collector/internal/fanoutconsumer => ../../internal/fanoutconsumer
