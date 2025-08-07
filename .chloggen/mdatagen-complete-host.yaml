@@ -7,10 +7,10 @@ change_type: enhancement
 component: cmd/mdatagen
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Use a custom host implemenation
+note: Use a custom host implementation for lifecycle tests
 
 # One or more tracking issues or pull requests related to the change
-issues: []
+issues: [13589]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
