@@ -314,3 +314,37 @@ func TestSplitMetricsMultipleILM(t *testing.T) {
 	assert.Equal(t, "test-metric-int-0-0", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 	assert.Equal(t, "test-metric-int-0-4", split.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).Name())
 }
+
+func BenchmarkSplitMetrics1k(b *testing.B) {
+	benchmarkHelper(b, 1000)
+}
+
+func BenchmarkSplitMetrics16k(b *testing.B) {
+	benchmarkHelper(b, 16000)
+}
+
+func BenchmarkSplitMetrics64k(b *testing.B) {
+	benchmarkHelper(b, 64000)
+}
+
+func benchmarkHelper(b *testing.B, metricCount int) {
+	b.StopTimer()
+
+	md := testdata.GenerateMetrics(metricCount / 2)
+	// Make sure GenerateMetrics put two data points in each metric.
+	assert.Equal(b, md.DataPointCount(), metricCount)
+
+	for i := 0; i < b.N; i++ {
+		mdClone := pmetric.NewMetrics()
+		md.CopyTo(mdClone)
+
+		splitSize := 1
+		remainingDataPoints := metricCount
+		b.StartTimer()
+		for remainingDataPoints > 0 {
+			_ = splitMetrics(splitSize, mdClone)
+			remainingDataPoints -= splitSize
+		}
+		b.StopTimer()
+	}
+}
