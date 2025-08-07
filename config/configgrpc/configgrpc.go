@@ -36,7 +36,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configoptional"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 var errMetadataNotFound = errors.New("no request metadata found")
@@ -596,7 +596,7 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
+func authUnaryServerInterceptor(server extensioncapabilities.Authenticator) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		headers, ok := metadata.FromIncomingContext(ctx)
 		if !ok {
@@ -612,7 +612,7 @@ func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInt
 	}
 }
 
-func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerInterceptor {
+func authStreamServerInterceptor(server extensioncapabilities.Authenticator) grpc.StreamServerInterceptor {
 	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		ctx := stream.Context()
 		headers, ok := metadata.FromIncomingContext(ctx)

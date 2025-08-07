@@ -7,12 +7,13 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 var (
-	_ extension.Extension      = (*nopClient)(nil)
-	_ extensionauth.HTTPClient = (*nopClient)(nil)
-	_ extensionauth.GRPCClient = (*nopClient)(nil)
+	_ extension.Extension                              = (*nopClient)(nil)
+	_ extensioncapabilities.HTTPClientAuthRoundTripper = (*nopClient)(nil)
+	_ extensioncapabilities.GRPCClientAuthenticator    = (*nopClient)(nil)
 )
 
 type nopClient struct {
@@ -22,7 +23,7 @@ type nopClient struct {
 	extensionauth.ClientPerRPCCredentialsFunc
 }
 
-// NewNopClient returns a new [extension.Extension] that implements the [extensionauth.HTTPClient] and [extensionauth.GRPCClient].
+// NewNopClient returns a new [extension.Extension] that implements the [extensioncapabilities.HTTPClientAuthRoundTripper] and [extensioncapabilities.GRPCClientAuthenticator].
 // For HTTP requests it returns the base RoundTripper and for gRPC requests it returns a nil [credentials.PerRPCCredentials].
 func NewNopClient() extension.Extension {
 	return &nopClient{}
