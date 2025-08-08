@@ -107,17 +107,26 @@ telemetry:
       enabled: true
       stability:
         level: alpha
-      description: Current size of the retry queue (in batches)
+      description: Current size of the retry queue (in batches).
       unit: "{batches}"
       gauge:
         value_type: int
         async: true
 
+    exporter_queue_batch_size:
+      enabled: true
+      stability:
+        level: alpha
+      description: Size of the batches added to the retry queue (in bytes).
+      unit: "{By}"
+      histogram:
+        value_type: int
+
     exporter_queue_capacity:
       enabled: true
       stability:
         level: alpha
-      description: Fixed capacity of the retry queue (in batches)
+      description: Fixed capacity of the retry queue (in batches).
       unit: "{batches}"
       gauge:
         value_type: int

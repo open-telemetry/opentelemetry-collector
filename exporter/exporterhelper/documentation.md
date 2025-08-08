@@ -30,9 +30,17 @@ Number of spans failed to be added to the sending queue. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_exporter_queue_batch_size
+
+Size of the batches added to the retry queue (in bytes). [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {By} | Histogram | Int |
+
 ### otelcol_exporter_queue_capacity
 
-Fixed capacity of the retry queue (in batches) [alpha]
+Fixed capacity of the retry queue (in batches). [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -40,7 +48,7 @@ Fixed capacity of the retry queue (in batches) [alpha]
 
 ### otelcol_exporter_queue_size
 
-Current size of the retry queue (in batches) [alpha]
+Current size of the retry queue (in batches). [alpha]
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
