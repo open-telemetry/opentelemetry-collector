@@ -30,6 +30,7 @@ func unmarshal(v *confmap.Conf, factories Factories) (*configSettings, error) {
 	// TODO remove these params once SDK and resource creation are encapsulated
 	// within the otelconftelemetry factory. They are not used when creating
 	// the default config.
+	// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 	telFactory := otelconftelemetry.NewFactory(nil, nil)
 	defaultTelConfig := *telFactory.CreateDefaultConfig().(*otelconftelemetry.Config)
 
