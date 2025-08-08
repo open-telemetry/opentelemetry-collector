@@ -75,3 +75,21 @@ func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.
 		return true
 	})
 }
+
+func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
+	var n int
+	var l int
+	_ = l
+	{{ range .fields -}}
+	{{ .GenerateSizeProto $.messageStruct }}
+	{{ end -}}
+	return n
+}
+
+func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

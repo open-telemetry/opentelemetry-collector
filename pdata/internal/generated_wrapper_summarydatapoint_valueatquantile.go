@@ -49,3 +49,19 @@ func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.Summary
 		return true
 	})
 }
+
+func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

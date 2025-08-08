@@ -47,3 +47,19 @@ func UnmarshalJSONOrigKeyValue(orig *v1.KeyValue, iter *json.Iterator) {
 		return true
 	})
 }
+
+func SizeProtoOrigKeyValue(orig *v1.KeyValue) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigKeyValue(orig *v1.KeyValue, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigKeyValue(orig *v1.KeyValue, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

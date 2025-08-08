@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigResourceSpans(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigResourceSpans(t *testing.T) {
+	src := &otlptrace.ResourceSpans{}
+	FillOrigTestResourceSpans(src)
+	buf := make([]byte, SizeProtoOrigResourceSpans(src))
+	n, err := MarshalProtoOrigResourceSpans(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlptrace.ResourceSpans{}
+	require.NoError(t, UnmarshalProtoOrigResourceSpans(dest, buf))
+	assert.Equal(t, src, dest)
+}

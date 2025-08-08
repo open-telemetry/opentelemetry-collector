@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
@@ -48,4 +49,24 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Ex
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.BucketCounts); i++ {
+		l = SizeProtoOrigUint64(&orig.BucketCounts[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

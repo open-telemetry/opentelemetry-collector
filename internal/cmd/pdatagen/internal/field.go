@@ -15,6 +15,8 @@ type Field interface {
 	GenerateMarshalJSON(ms *messageStruct) string
 
 	GenerateUnmarshalJSON(ms *messageStruct) string
+
+	GenerateSizeProto(ms *messageStruct) string
 }
 
 func origAccessor(packageName string) string {

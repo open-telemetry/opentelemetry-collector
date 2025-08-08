@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigGauge(dest, src *otlpmetrics.Gauge) {
@@ -40,4 +41,23 @@ func UnmarshalJSONOrigGauge(orig *otlpmetrics.Gauge, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigGauge(orig *otlpmetrics.Gauge) int {
+	var n int
+	var l int
+	_ = l
+	for i := 0; i < len(orig.DataPoints); i++ {
+		l = SizeProtoOrigNumberDataPoint(&orig.DataPoints[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

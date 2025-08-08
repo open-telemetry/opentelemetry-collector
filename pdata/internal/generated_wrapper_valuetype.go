@@ -57,3 +57,20 @@ func UnmarshalJSONOrigValueType(orig *otlpprofiles.ValueType, iter *json.Iterato
 		return true
 	})
 }
+
+func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {
+	var n int
+	var l int
+	_ = l
+
+	"AggregationTemporality"
+	return n
+}
+
+func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

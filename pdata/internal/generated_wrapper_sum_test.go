@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
+	src := &otlpmetrics.Sum{}
+	FillOrigTestSum(src)
+	buf := make([]byte, SizeProtoOrigSum(src))
+	n, err := MarshalProtoOrigSum(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpmetrics.Sum{}
+	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
+	assert.Equal(t, src, dest)
+}

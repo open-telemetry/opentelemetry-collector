@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
@@ -88,4 +89,47 @@ func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, 
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int {
+	var n int
+	var l int
+	_ = l
+	for i := 0; i < len(orig.MappingTable); i++ {
+		l = SizeProtoOrigMapping(&orig.MappingTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.LocationTable); i++ {
+		l = SizeProtoOrigLocation(&orig.LocationTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.FunctionTable); i++ {
+		l = SizeProtoOrigFunction(&orig.FunctionTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.LinkTable); i++ {
+		l = SizeProtoOrigLink(&orig.LinkTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.StringTable); i++ {
+		l = SizeProtoOrigString(&orig.StringTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.AttributeTable); i++ {
+		l = SizeProtoOrigKeyValue(&orig.AttributeTable[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	for i := 0; i < len(orig.AttributeUnits); i++ {
+		l = SizeProtoOrigAttributeUnit(&orig.AttributeUnits[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

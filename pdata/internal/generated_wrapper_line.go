@@ -57,3 +57,19 @@ func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
 		return true
 	})
 }
+
+func SizeProtoOrigLine(orig *otlpprofiles.Line) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigLine(orig *otlpprofiles.Line, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

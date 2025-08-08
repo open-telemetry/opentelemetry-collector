@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
+	src := &otlpprofiles.ScopeProfiles{}
+	FillOrigTestScopeProfiles(src)
+	buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+	n, err := MarshalProtoOrigScopeProfiles(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlpprofiles.ScopeProfiles{}
+	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+	assert.Equal(t, src, dest)
+}

@@ -51,6 +51,8 @@ const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ i
 		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
 		{{- end }}`
 
+const typedSizeProtoTemplate = `"{{ .originFieldName }}"`
+
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")
 type TypedField struct {
 	fieldName       string
@@ -95,6 +97,11 @@ func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
 
 func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("typedUnmarshalJSONTemplate").Parse(typedUnmarshalJSONTemplate))
+	return executeTemplate(t, ptf.templateFields(ms))
+}
+
+func (ptf *TypedField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("typedSizeProtoTemplate").Parse(typedSizeProtoTemplate))
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 

@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSpan(dest, src *otlptrace.Span) {
@@ -159,4 +160,42 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSpan(orig *otlptrace.Span) int {
+	var n int
+	var l int
+	_ = l
+	"TraceId"
+	"SpanId"
+
+	"ParentSpanId"
+
+	"Kind"
+	"StartTimeUnixNano"
+	"EndTimeUnixNano"
+	for i := 0; i < len(orig.Attributes); i++ {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	for i := 0; i < len(orig.Events); i++ {
+		l = SizeProtoOrigSpan_Event(&orig.Events[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	for i := 0; i < len(orig.Links); i++ {
+		l = SizeProtoOrigSpan_Link(&orig.Links[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	return n
+}
+
+func MarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

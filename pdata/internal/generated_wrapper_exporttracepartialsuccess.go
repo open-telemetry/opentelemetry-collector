@@ -49,3 +49,19 @@ func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportT
 		return true
 	})
 }
+
+func SizeProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

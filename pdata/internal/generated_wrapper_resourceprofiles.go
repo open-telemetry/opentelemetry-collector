@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
@@ -54,4 +55,24 @@ func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.ScopeProfiles); i++ {
+		l = SizeProtoOrigScopeProfiles(&orig.ScopeProfiles[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

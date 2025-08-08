@@ -44,3 +44,16 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
+	src := &{{ .originFullName }}{}
+	FillOrigTest{{ .originName }}(src)
+	buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
+	n, err := MarshalProtoOrig{{ .originName }}(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &{{ .originFullName }}{}
+	require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
+	assert.Equal(t, src, dest)
+}

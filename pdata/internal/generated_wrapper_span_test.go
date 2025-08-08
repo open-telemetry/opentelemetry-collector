@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
+	src := &otlptrace.Span{}
+	FillOrigTestSpan(src)
+	buf := make([]byte, SizeProtoOrigSpan(src))
+	n, err := MarshalProtoOrigSpan(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlptrace.Span{}
+	require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+	assert.Equal(t, src, dest)
+}

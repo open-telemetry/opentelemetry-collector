@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigHistogram(dest, src *otlpmetrics.Histogram) {
@@ -48,4 +49,24 @@ func UnmarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, iter *json.Iterator
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigHistogram(orig *otlpmetrics.Histogram) int {
+	var n int
+	var l int
+	_ = l
+	"AggregationTemporality"
+	for i := 0; i < len(orig.DataPoints); i++ {
+		l = SizeProtoOrigHistogramDataPoint(&orig.DataPoints[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+	return n
+}
+
+func MarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

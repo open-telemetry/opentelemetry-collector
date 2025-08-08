@@ -46,3 +46,16 @@ func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
+	src := &otlplogs.LogRecord{}
+	FillOrigTestLogRecord(src)
+	buf := make([]byte, SizeProtoOrigLogRecord(src))
+	n, err := MarshalProtoOrigLogRecord(src, buf)
+	require.NoError(t, err)
+	assert.Equal(t, n, len(buf))
+
+	dest := &otlplogs.LogRecord{}
+	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
+	assert.Equal(t, src, dest)
+}

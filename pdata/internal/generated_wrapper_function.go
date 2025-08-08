@@ -65,3 +65,19 @@ func UnmarshalJSONOrigFunction(orig *otlpprofiles.Function, iter *json.Iterator)
 		return true
 	})
 }
+
+func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
+	var n int
+	var l int
+	_ = l
+
+	return n
+}
+
+func MarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) error {
+	return orig.Unmarshal(buf)
+}

@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
@@ -136,4 +137,25 @@ func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
+	var n int
+	var l int
+	_ = l
+
+	for i := 0; i < len(orig.Metadata); i++ {
+		l = SizeProtoOrigKeyValue(&orig.Metadata[i])
+		n += 1 + l + proto.Sov(uint64(l))
+	}
+
+	return n
+}
+
+func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) (int, error) {
+	return orig.MarshalToSizedBuffer(buf)
+}
+
+func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {
+	return orig.Unmarshal(buf)
 }
