@@ -599,19 +599,19 @@ func generateLifecycleTestTraces() ptrace.Traces {
 {{- end }}
 
 {{- if not .Tests.SkipLifecycle }}
-var _ component.Host = (*nopHost)(nil)
+var _ component.Host = (*mdatagenNopHost)(nil)
 
-type nopHost struct{}
+type mdatagenNopHost struct{}
 
-func newNopHost() component.Host {
-	return &nopHost{}
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
 {{- end }}

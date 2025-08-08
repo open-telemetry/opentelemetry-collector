@@ -63,7 +63,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstConnector, err := tt.createFn(context.Background(), connectortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := newNopHost()
+			host := newMdatagenNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstConnector.Start(context.Background(), host))
 			require.NoError(t, firstConnector.Shutdown(context.Background()))
@@ -75,18 +75,18 @@ func TestComponentLifecycle(t *testing.T) {
 	}
 }
 
-var _ component.Host = (*nopHost)(nil)
+var _ component.Host = (*mdatagenNopHost)(nil)
 
-type nopHost struct{}
+type mdatagenNopHost struct{}
 
-func newNopHost() component.Host {
-	return &nopHost{}
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
