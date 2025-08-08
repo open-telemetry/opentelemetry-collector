@@ -9,6 +9,7 @@ var pcommon = &Package{
 		path: "pcommon",
 		imports: []string{
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
