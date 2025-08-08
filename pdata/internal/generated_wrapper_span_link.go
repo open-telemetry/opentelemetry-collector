@@ -7,6 +7,9 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -109,8 +112,51 @@ func SizeProtoOrigSpan_Link(orig *otlptrace.Span_Link) int {
 	return n
 }
 
-func MarshalProtoOrigSpan_Link(orig *otlptrace.Span_Link) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSpan_Link(orig *otlptrace.Span_Link, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.TraceId != nil {
+		l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.SpanId != nil {
+		l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.TraceState)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.TraceState)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x22
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x28
+	}
+	if orig.Flags != 0 {
+		pos -= 4
+		encoding_binary.LittleEndian.PutUint32(buf[pos:], math.Float32bits(orig.Flags))
+		pos--
+		buf[pos] = 0x35
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigSpan_Link(orig *otlptrace.Span_Link, buf []byte) error {

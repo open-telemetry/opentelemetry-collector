@@ -7,6 +7,9 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -209,8 +212,107 @@ func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
 	return n
 }
 
-func MarshalProtoOrigProfile(orig *otlpprofiles.Profile) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.SampleType {
+		l = MarshalProtoOrigValueType(orig.SampleType[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := range orig.Sample {
+		l = MarshalProtoOrigSample(orig.Sample[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	if len(orig.LocationIndices) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.LocationIndices))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.TimeNanos != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.TimeNanos))
+		pos--
+		buf[pos] = 0x20
+	}
+	if orig.DurationNanos != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DurationNanos))
+		pos--
+		buf[pos] = 0x28
+	}
+	if orig.PeriodType != nil {
+		l = MarshalProtoOrigValueType(&orig.PeriodType, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
+	}
+	if orig.Period != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Period))
+		pos--
+		buf[pos] = 0x38
+	}
+	if len(orig.CommentStrindices) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.CommentStrindices))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x42
+	}
+	if orig.DefaultSampleTypeIndex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DefaultSampleTypeIndex))
+		pos--
+		buf[pos] = 0x48
+	}
+	if orig.ProfileId != nil {
+		l = MarshalProtoOrigProfileID(&orig.ProfileId, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x52
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x58
+	}
+	l = len(orig.OriginalPayloadFormat)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.OriginalPayloadFormat)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x62
+	}
+	l = len(orig.OriginalPayload)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.OriginalPayload)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x6a
+	}
+	if len(orig.AttributeIndices) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x72
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {

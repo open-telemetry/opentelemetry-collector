@@ -7,8 +7,15 @@
 package ptrace
 
 import (
+	"iter"
+	"sort"
+
 	"go.opentelemetry.io/collector/pdata/internal"
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Status is an optional final status for this span. Semantically, when Status was not

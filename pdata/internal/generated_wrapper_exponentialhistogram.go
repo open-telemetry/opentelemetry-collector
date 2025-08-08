@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -65,8 +69,23 @@ func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) i
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = MarshalProtoOrigExponentialHistogramDataPoint(orig.DataPoints[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.AggregationTemporality != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
+		pos--
+		buf[pos] = 0x10
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) error {

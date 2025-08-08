@@ -8,8 +8,6 @@ package internal
 
 import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
-	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
@@ -65,8 +63,24 @@ func SizeProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportM
 	return n
 }
 
-func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.RejectedDataPoints != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.RejectedDataPoints))
+		pos--
+		buf[pos] = 0x8
+	}
+	l = len(orig.ErrorMessage)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.ErrorMessage)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) error {
