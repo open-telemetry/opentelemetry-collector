@@ -34,7 +34,7 @@ More specifically, this RFC aims to:
 
 ### Approach 1 (Recommended): Use yaml tags
 
-The first approach relys on the concept of [yaml tags](https://tutorialreference.com/yaml/yaml-tags). We can specify a custom tag in our configuration files to indiciate the list we want to merge.
+The first approach relis on the concept of [yaml tags](https://tutorialreference.com/yaml/yaml-tags). We can specify a custom tag in our configuration files to indicate the lists we want to merge.
 
 Consider following two configurations:
 
@@ -84,7 +84,7 @@ service:
       exporters: [...]
 ```
 
-This approach completely relys on the configuration files and doesn't introduce any command line option.
+This approach completely relies on the configuration files and doesn't introduce any command line option.
 Internally, we will loop through the yaml tree and fetch the paths we want to merged based on user-defined tags, then merge the lists found at those paths.
 
 Our "custom" yaml tag will be in the format of URI query parameters. For starters, we can support following options:
@@ -103,7 +103,7 @@ Our "custom" yaml tag will be in the format of URI query parameters. For starter
 
 #### Examples of first approach
 
-1. _Append the `service::extensions` list_:
+1. _Merge the `service::extensions` list_:
 
 ```yaml
 #main.yaml
@@ -149,7 +149,7 @@ service:
       exporters: [...]
 ```
 
-2. _Append all the lists under `service::*` stanza_:
+2. _Merge all the lists under `service::*` stanza_:
 
 
 ```yaml
