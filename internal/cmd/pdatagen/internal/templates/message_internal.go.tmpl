@@ -8,10 +8,8 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element "\"go.opentelemetry.io/collector/pdata/internal\"" }}
 	{{ $element }}
-	{{- end }}
-	{{- end }}
+	{{ end }}
 )
 {{ if .isCommon }}
 

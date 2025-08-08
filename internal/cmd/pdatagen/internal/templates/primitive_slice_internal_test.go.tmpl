@@ -8,10 +8,8 @@ package internal
 
 import (
 	{{ range $index, $element := .testImports -}}
-	{{ if ne $element "go.opentelemetry.io/collector/pdata/internal" }}
 	{{ $element }}
-	{{- end }}
-	{{- end }}
+	{{ end }}
 )
 
 func TestCopyOrig{{ .elementOriginName }}Slice(t *testing.T) {
