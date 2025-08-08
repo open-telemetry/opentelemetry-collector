@@ -151,7 +151,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 	qb.currentBatch.req = reqList[0]
 	qb.currentBatch.done = append(qb.currentBatch.done, done)
 
-	mergedCtx := context.Background()
+	mergedCtx := context.Background() //nolint:contextcheck
 	if qb.mergeCtx != nil {
 		mergedCtx = qb.mergeCtx(qb.currentBatch.ctx, ctx)
 	}
@@ -185,7 +185,7 @@ func (qb *partitionBatcher) Consume(ctx context.Context, req request.Request, do
 
 	qb.currentBatchMu.Unlock()
 	if firstBatch != nil {
-		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done) //nolint:contextcheck //context already handled
+		qb.flush(firstBatch.ctx, firstBatch.req, firstBatch.done)
 	}
 	for i := 0; i < len(reqList); i++ {
 		qb.flush(ctx, reqList[i], done)

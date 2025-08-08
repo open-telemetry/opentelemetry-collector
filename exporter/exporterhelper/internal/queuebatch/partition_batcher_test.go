@@ -521,17 +521,17 @@ func TestShardBatcher_EmptyRequestList(t *testing.T) {
 func TestPartitionBatcher_ContextMerging(t *testing.T) {
 	tests := []struct {
 		name         string
-		mergeCtxFunc func(ctx1 context.Context, ctx2 context.Context) context.Context
+		mergeCtxFunc func(ctx1, ctx2 context.Context) context.Context
 	}{
 		{
 			name: "merge_context_with_timestamp",
-			mergeCtxFunc: func(ctx1 context.Context, _ context.Context) context.Context {
+			mergeCtxFunc: func(ctx1, _ context.Context) context.Context {
 				return context.WithValue(ctx1, timestampKey, 1234)
 			},
 		},
 		{
 			name: "merge_context_returns_background",
-			mergeCtxFunc: func(context.Context, context.Context) context.Context {
+			mergeCtxFunc: func(_, _ context.Context) context.Context {
 				return context.Background()
 			},
 		},
