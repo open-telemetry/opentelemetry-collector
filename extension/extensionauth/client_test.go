@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/credentials"
+
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 func TestRoundTripperFunc(t *testing.T) {
@@ -40,7 +42,7 @@ func (c *customPerRPCCredentials) RequireTransportSecurity() bool {
 
 func TestWithPerRPCCredentialsFunc(t *testing.T) {
 	var called bool
-	var grpcClient GRPCClient = ClientPerRPCCredentialsFunc(func() (credentials.PerRPCCredentials, error) {
+	var grpcClient extensioncapabilities.GRPCClientAuthenticator = ClientPerRPCCredentialsFunc(func() (credentials.PerRPCCredentials, error) {
 		called = true
 		return &customPerRPCCredentials{}, nil
 	})
