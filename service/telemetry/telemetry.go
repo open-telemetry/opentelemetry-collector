@@ -18,7 +18,9 @@ type Settings struct {
 
 // TODO create abstract Telemetry interface and Factory interfaces
 // that are implemented by otelconftelemetry.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 
-// TODO remove this once opentelemetry-collector-contrib is updated
-// to use otelconftelemetry instead.
+// NOTE TracesConfig will be removed once opentelemetry-collector-contrib
+// has been updated to use otelconftelemetry instead; use at your own risk.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 type TracesConfig = migration.TracesConfigV030

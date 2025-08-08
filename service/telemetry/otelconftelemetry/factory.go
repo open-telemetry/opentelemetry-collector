@@ -31,6 +31,9 @@ var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry(
 // Factory is factory interface for telemetry.
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
+//
+// NOTE This API is experimental and will change soon - use at your own risk.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 type Factory interface {
 	// CreateDefaultConfig creates the default configuration for the telemetry.
 	// TODO: Should we just inherit from component.Factory?
@@ -51,9 +54,11 @@ type Factory interface {
 
 // NewFactory creates a new Factory.
 //
-// TODO remove the sdk and res parameters once the factory is fully
-// self-contained and is responsible for creating the SDK and resource
-// itself.
+// NOTE This API is experimental and will change soon - use at your own risk.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+//
+// TODO remove the parameters once the factory is fully self-contained
+// and is responsible for creating the SDK and resource itself.
 func NewFactory(sdk *config.SDK, res *resource.Resource) Factory {
 	return newFactory(createDefaultConfig,
 		withLogger(func(_ context.Context, set telemetry.Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
