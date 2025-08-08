@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
+	src := &otlpmetrics.Gauge{}
+	FillOrigTestGauge(src)
+	buf, err := MarshalProtoOrigGauge(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigGauge(src))
+
+	dest := &otlpmetrics.Gauge{}
+	require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyGauge(t *testing.T) {
+	src := &otlpmetrics.Gauge{}
+	buf, err := MarshalProtoOrigGauge(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigGauge(src))
+
+	dest := &otlpmetrics.Gauge{}
+	require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
+	assert.Equal(t, src, dest)
+}

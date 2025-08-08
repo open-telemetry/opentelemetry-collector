@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
@@ -88,4 +89,42 @@ func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter 
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.Count != 0 {
+		n += 9
+	}
+	if orig.Sum != 0 {
+		n += 9
+	}
+	for i := range orig.QuantileValues {
+		l = SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Flags != 0 {
+		n += 1 + proto.Sov(uint64(orig.Flags))
+	}
+	return n
+}
+
+func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

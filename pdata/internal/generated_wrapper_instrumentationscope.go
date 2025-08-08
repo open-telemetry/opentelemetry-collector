@@ -9,6 +9,7 @@ package internal
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type InstrumentationScope struct {
@@ -88,4 +89,34 @@ func UnmarshalJSONOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Version)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	return n
+}
+
+func MarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigInstrumentationScope(orig *otlpcommon.InstrumentationScope, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

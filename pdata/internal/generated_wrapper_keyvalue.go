@@ -9,6 +9,7 @@ package internal
 import (
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigKeyValue(dest, src *v1.KeyValue) {
@@ -46,4 +47,25 @@ func UnmarshalJSONOrigKeyValue(orig *v1.KeyValue, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigKeyValue(orig *v1.KeyValue) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.Key)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = SizeProtoOrigAnyValue(&orig.Value)
+	n += 1 + proto.Sov(uint64(l)) + l
+	return n
+}
+
+func MarshalProtoOrigKeyValue(orig *v1.KeyValue) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigKeyValue(orig *v1.KeyValue, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -9,18 +9,19 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeProfiles = CopyOrigScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
+	dest.SchemaUrl = src.SchemaUrl
 }
 
 func FillOrigTestResourceProfiles(orig *otlpprofiles.ResourceProfiles) {
 	FillOrigTestResource(&orig.Resource)
-	orig.SchemaUrl = "test_schemaurl"
 	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
+	orig.SchemaUrl = "test_schemaurl"
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -28,13 +29,13 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 	dest.WriteObjectStart()
 	dest.WriteObjectField("resource")
 	MarshalJSONOrigResource(&orig.Resource, dest)
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
 	if len(orig.ScopeProfiles) > 0 {
 		dest.WriteObjectField("scopeProfiles")
 		MarshalJSONOrigScopeProfilesSlice(orig.ScopeProfiles, dest)
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
 	}
 	dest.WriteObjectEnd()
 }
@@ -45,13 +46,38 @@ func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
-		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
 		case "scopeProfiles", "scope_profiles":
 			orig.ScopeProfiles = UnmarshalJSONOrigScopeProfilesSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigResource(&orig.Resource)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.ScopeProfiles {
+		l = SizeProtoOrigScopeProfiles(orig.ScopeProfiles[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

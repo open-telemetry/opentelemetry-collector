@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
+	src := &otlpcommon.InstrumentationScope{}
+	FillOrigTestInstrumentationScope(src)
+	buf, err := MarshalProtoOrigInstrumentationScope(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigInstrumentationScope(src))
+
+	dest := &otlpcommon.InstrumentationScope{}
+	require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyInstrumentationScope(t *testing.T) {
+	src := &otlpcommon.InstrumentationScope{}
+	buf, err := MarshalProtoOrigInstrumentationScope(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigInstrumentationScope(src))
+
+	dest := &otlpcommon.InstrumentationScope{}
+	require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
+	assert.Equal(t, src, dest)
+}

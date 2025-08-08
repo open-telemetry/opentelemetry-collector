@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
@@ -143,4 +144,75 @@ func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.SampleType {
+		l = SizeProtoOrigValueType(orig.SampleType[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Sample {
+		l = SizeProtoOrigSample(orig.Sample[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.LocationIndices) > 0 {
+		l = 0
+		for _, e := range orig.LocationIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.TimeNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.TimeNanos))
+	}
+	if orig.DurationNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.DurationNanos))
+	}
+	l = SizeProtoOrigValueType(&orig.PeriodType)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.Period != 0 {
+		n += 1 + proto.Sov(uint64(orig.Period))
+	}
+	if len(orig.CommentStrindices) > 0 {
+		l = 0
+		for _, e := range orig.CommentStrindices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DefaultSampleTypeIndex != 0 {
+		n += 1 + proto.Sov(uint64(orig.DefaultSampleTypeIndex))
+	}
+	l = SizeProtoOrigProfileID(&orig.ProfileId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	l = len(orig.OriginalPayloadFormat)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.OriginalPayload)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigProfile(orig *otlpprofiles.Profile) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Link(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSpan_Link(t *testing.T) {
+	src := &otlptrace.Span_Link{}
+	FillOrigTestSpan_Link(src)
+	buf, err := MarshalProtoOrigSpan_Link(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSpan_Link(src))
+
+	dest := &otlptrace.Span_Link{}
+	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptySpan_Link(t *testing.T) {
+	src := &otlptrace.Span_Link{}
+	buf, err := MarshalProtoOrigSpan_Link(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSpan_Link(src))
+
+	dest := &otlptrace.Span_Link{}
+	require.NoError(t, UnmarshalProtoOrigSpan_Link(dest, buf))
+	assert.Equal(t, src, dest)
+}

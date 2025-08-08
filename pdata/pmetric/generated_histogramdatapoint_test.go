@@ -73,6 +73,20 @@ func TestHistogramDataPoint_Count(t *testing.T) {
 	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(13)) })
 }
 
+func TestHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.True(t, ms.HasSum())
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+	dest := NewHistogramDataPoint()
+	dest.SetSum(float64(3.1415926))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
+}
+
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
@@ -100,20 +114,6 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	testValFlags := DataPointFlags(1)
 	ms.SetFlags(testValFlags)
 	assert.Equal(t, testValFlags, ms.Flags())
-}
-
-func TestHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
-	ms.SetSum(float64(3.1415926))
-	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-	dest := NewHistogramDataPoint()
-	dest.SetSum(float64(3.1415926))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasSum())
 }
 
 func TestHistogramDataPoint_Min(t *testing.T) {

@@ -9,28 +9,29 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExponentialHistogram(dest, src *otlpmetrics.ExponentialHistogram) {
-	dest.AggregationTemporality = src.AggregationTemporality
 	dest.DataPoints = CopyOrigExponentialHistogramDataPointSlice(dest.DataPoints, src.DataPoints)
+	dest.AggregationTemporality = src.AggregationTemporality
 }
 
 func FillOrigTestExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) {
-	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 	orig.DataPoints = GenerateOrigTestExponentialHistogramDataPointSlice()
+	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
 func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, dest *json.Stream) {
 	dest.WriteObjectStart()
-	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(orig.AggregationTemporality))
-	}
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
 		MarshalJSONOrigExponentialHistogramDataPointSlice(orig.DataPoints, dest)
+	}
+	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+		dest.WriteObjectField("aggregationTemporality")
+		dest.WriteInt32(int32(orig.AggregationTemporality))
 	}
 	dest.WriteObjectEnd()
 }
@@ -39,13 +40,35 @@ func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram,
 func UnmarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
-		case "aggregationTemporality", "aggregation_temporality":
-			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		case "dataPoints", "data_points":
 			orig.DataPoints = UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter)
+		case "aggregationTemporality", "aggregation_temporality":
+			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = SizeProtoOrigExponentialHistogramDataPoint(orig.DataPoints[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.AggregationTemporality != 0 {
+		n += 1 + proto.Sov(uint64(orig.AggregationTemporality))
+	}
+	return n
+}
+
+func MarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

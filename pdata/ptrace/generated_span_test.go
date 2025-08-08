@@ -73,15 +73,6 @@ func TestSpan_ParentSpanID(t *testing.T) {
 	assert.Equal(t, testValParentSpanID, ms.ParentSpanID())
 }
 
-func TestSpan_Name(t *testing.T) {
-	ms := NewSpan()
-	assert.Empty(t, ms.Name())
-	ms.SetName("test_name")
-	assert.Equal(t, "test_name", ms.Name())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetName("test_name") })
-}
-
 func TestSpan_Flags(t *testing.T) {
 	ms := NewSpan()
 	assert.Equal(t, uint32(0), ms.Flags())
@@ -89,6 +80,15 @@ func TestSpan_Flags(t *testing.T) {
 	assert.Equal(t, uint32(13), ms.Flags())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetFlags(uint32(13)) })
+}
+
+func TestSpan_Name(t *testing.T) {
+	ms := NewSpan()
+	assert.Empty(t, ms.Name())
+	ms.SetName("test_name")
+	assert.Equal(t, "test_name", ms.Name())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSpan(&otlptrace.Span{}, &sharedState).SetName("test_name") })
 }
 
 func TestSpan_Kind(t *testing.T) {

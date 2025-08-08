@@ -91,6 +91,29 @@ func (ms ExponentialHistogramDataPoint) SetCount(v uint64) {
 	ms.orig.Count = v
 }
 
+// Sum returns the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Sum() float64 {
+	return ms.orig.GetSum()
+}
+
+// HasSum returns true if the ExponentialHistogramDataPoint contains a
+// Sum value, false otherwise.
+func (ms ExponentialHistogramDataPoint) HasSum() bool {
+	return ms.orig.Sum_ != nil
+}
+
+// SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
+	ms.state.AssertMutable()
+	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
+}
+
+// RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) RemoveSum() {
+	ms.state.AssertMutable()
+	ms.orig.Sum_ = nil
+}
+
 // Scale returns the scale associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Scale() int32 {
 	return ms.orig.Scale
@@ -123,11 +146,6 @@ func (ms ExponentialHistogramDataPoint) Negative() ExponentialHistogramDataPoint
 	return newExponentialHistogramDataPointBuckets(&ms.orig.Negative, ms.state)
 }
 
-// Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
-	return newExemplarSlice(&ms.orig.Exemplars, ms.state)
-}
-
 // Flags returns the flags associated with this ExponentialHistogramDataPoint.
 func (ms ExponentialHistogramDataPoint) Flags() DataPointFlags {
 	return DataPointFlags(ms.orig.Flags)
@@ -139,27 +157,9 @@ func (ms ExponentialHistogramDataPoint) SetFlags(v DataPointFlags) {
 	ms.orig.Flags = uint32(v)
 }
 
-// Sum returns the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) Sum() float64 {
-	return ms.orig.GetSum()
-}
-
-// HasSum returns true if the ExponentialHistogramDataPoint contains a
-// Sum value, false otherwise.
-func (ms ExponentialHistogramDataPoint) HasSum() bool {
-	return ms.orig.Sum_ != nil
-}
-
-// SetSum replaces the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) SetSum(v float64) {
-	ms.state.AssertMutable()
-	ms.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: v}
-}
-
-// RemoveSum removes the sum associated with this ExponentialHistogramDataPoint.
-func (ms ExponentialHistogramDataPoint) RemoveSum() {
-	ms.state.AssertMutable()
-	ms.orig.Sum_ = nil
+// Exemplars returns the Exemplars associated with this ExponentialHistogramDataPoint.
+func (ms ExponentialHistogramDataPoint) Exemplars() ExemplarSlice {
+	return newExemplarSlice(&ms.orig.Exemplars, ms.state)
 }
 
 // Min returns the min associated with this ExponentialHistogramDataPoint.

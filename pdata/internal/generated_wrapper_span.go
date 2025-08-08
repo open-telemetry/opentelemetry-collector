@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSpan(dest, src *otlptrace.Span) {
@@ -17,8 +18,8 @@ func CopyOrigSpan(dest, src *otlptrace.Span) {
 	dest.SpanId = src.SpanId
 	CopyOrigTraceState(&dest.TraceState, &src.TraceState)
 	dest.ParentSpanId = src.ParentSpanId
-	dest.Name = src.Name
 	dest.Flags = src.Flags
+	dest.Name = src.Name
 	dest.Kind = src.Kind
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.EndTimeUnixNano = src.EndTimeUnixNano
@@ -36,8 +37,8 @@ func FillOrigTestSpan(orig *otlptrace.Span) {
 	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 	FillOrigTestTraceState(&orig.TraceState)
 	orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	orig.Name = "test_name"
 	orig.Flags = uint32(13)
+	orig.Name = "test_name"
 	orig.Kind = otlptrace.Span_SpanKind(3)
 	orig.StartTimeUnixNano = 1234567890
 	orig.EndTimeUnixNano = 1234567890
@@ -69,13 +70,13 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 		dest.WriteObjectField("parentSpanId")
 		orig.ParentSpanId.MarshalJSONStream(dest)
 	}
-	if orig.Name != "" {
-		dest.WriteObjectField("name")
-		dest.WriteString(orig.Name)
-	}
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
+	}
+	if orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(orig.Name)
 	}
 	if orig.Kind != otlptrace.Span_SpanKind(0) {
 		dest.WriteObjectField("kind")
@@ -130,10 +131,10 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 			UnmarshalJSONOrigTraceState(&orig.TraceState, iter)
 		case "parentSpanId", "parent_span_id":
 			orig.ParentSpanId.UnmarshalJSONIter(iter)
-		case "name":
-			orig.Name = iter.ReadString()
 		case "flags":
 			orig.Flags = iter.ReadUint32()
+		case "name":
+			orig.Name = iter.ReadString()
 		case "kind":
 			orig.Kind = otlptrace.Span_SpanKind(iter.ReadEnumValue(otlptrace.Span_SpanKind_value))
 		case "startTimeUnixNano", "start_time_unix_nano":
@@ -159,4 +160,68 @@ func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSpan(orig *otlptrace.Span) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigTraceID(&orig.TraceId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	l = SizeProtoOrigSpanID(&orig.SpanId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	l = len(orig.TraceState)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = SizeProtoOrigSpanID(&orig.ParentSpanId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.Flags != 0 {
+		n += 6
+	}
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Kind != 0 {
+		n += 1 + proto.Sov(uint64(orig.Kind))
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.EndTimeUnixNano != 0 {
+		n += 9
+	}
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	for i := range orig.Events {
+		l = SizeProtoOrigSpan_Event(orig.Events[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedEventsCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedEventsCount))
+	}
+	for i := range orig.Links {
+		l = SizeProtoOrigSpan_Link(orig.Links[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedLinksCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedLinksCount))
+	}
+	l = SizeProtoOrigStatus(&orig.Status)
+	n += 1 + proto.Sov(uint64(l)) + l
+	return n
+}
+
+func MarshalProtoOrigSpan(orig *otlptrace.Span) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSpan(orig *otlptrace.Span, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

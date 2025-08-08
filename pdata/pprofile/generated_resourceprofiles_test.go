@@ -48,6 +48,13 @@ func TestResourceProfiles_Resource(t *testing.T) {
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
+func TestResourceProfiles_ScopeProfiles(t *testing.T) {
+	ms := NewResourceProfiles()
+	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
+	ms.orig.ScopeProfiles = internal.GenerateOrigTestScopeProfilesSlice()
+	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
+}
+
 func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Empty(t, ms.SchemaUrl())
@@ -57,13 +64,6 @@ func TestResourceProfiles_SchemaUrl(t *testing.T) {
 	assert.Panics(t, func() {
 		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl")
 	})
-}
-
-func TestResourceProfiles_ScopeProfiles(t *testing.T) {
-	ms := NewResourceProfiles()
-	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
-	ms.orig.ScopeProfiles = internal.GenerateOrigTestScopeProfilesSlice()
-	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
 func generateTestResourceProfiles() ResourceProfiles {

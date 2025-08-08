@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigExportLogsPartialSuccess(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigExportLogsPartialSuccess(t *testing.T) {
+	src := &otlpcollectorlog.ExportLogsPartialSuccess{}
+	FillOrigTestExportLogsPartialSuccess(src)
+	buf, err := MarshalProtoOrigExportLogsPartialSuccess(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExportLogsPartialSuccess(src))
+
+	dest := &otlpcollectorlog.ExportLogsPartialSuccess{}
+	require.NoError(t, UnmarshalProtoOrigExportLogsPartialSuccess(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyExportLogsPartialSuccess(t *testing.T) {
+	src := &otlpcollectorlog.ExportLogsPartialSuccess{}
+	buf, err := MarshalProtoOrigExportLogsPartialSuccess(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigExportLogsPartialSuccess(src))
+
+	dest := &otlpcollectorlog.ExportLogsPartialSuccess{}
+	require.NoError(t, UnmarshalProtoOrigExportLogsPartialSuccess(dest, buf))
+	assert.Equal(t, src, dest)
+}

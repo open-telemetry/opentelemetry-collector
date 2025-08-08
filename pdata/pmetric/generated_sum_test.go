@@ -40,6 +40,13 @@ func TestSum_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
 }
 
+func TestSum_DataPoints(t *testing.T) {
+	ms := NewSum()
+	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
+	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
+}
+
 func TestSum_AggregationTemporality(t *testing.T) {
 	ms := NewSum()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
@@ -55,13 +62,6 @@ func TestSum_IsMonotonic(t *testing.T) {
 	assert.True(t, ms.IsMonotonic())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).SetIsMonotonic(true) })
-}
-
-func TestSum_DataPoints(t *testing.T) {
-	ms := NewSum()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
-	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSum() Sum {

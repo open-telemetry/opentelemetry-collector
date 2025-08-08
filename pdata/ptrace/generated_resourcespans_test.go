@@ -48,6 +48,13 @@ func TestResourceSpans_Resource(t *testing.T) {
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
+func TestResourceSpans_ScopeSpans(t *testing.T) {
+	ms := NewResourceSpans()
+	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
+	ms.orig.ScopeSpans = internal.GenerateOrigTestScopeSpansSlice()
+	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
+}
+
 func TestResourceSpans_SchemaUrl(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Empty(t, ms.SchemaUrl())
@@ -55,13 +62,6 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestResourceSpans_ScopeSpans(t *testing.T) {
-	ms := NewResourceSpans()
-	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
-	ms.orig.ScopeSpans = internal.GenerateOrigTestScopeSpansSlice()
-	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
 }
 
 func generateTestResourceSpans() ResourceSpans {

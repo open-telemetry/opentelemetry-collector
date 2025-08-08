@@ -49,6 +49,11 @@ func (ms Histogram) MoveTo(dest Histogram) {
 	*ms.orig = otlpmetrics.Histogram{}
 }
 
+// DataPoints returns the DataPoints associated with this Histogram.
+func (ms Histogram) DataPoints() HistogramDataPointSlice {
+	return newHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Histogram.
 func (ms Histogram) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -58,11 +63,6 @@ func (ms Histogram) AggregationTemporality() AggregationTemporality {
 func (ms Histogram) SetAggregationTemporality(v AggregationTemporality) {
 	ms.state.AssertMutable()
 	ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(v)
-}
-
-// DataPoints returns the DataPoints associated with this Histogram.
-func (ms Histogram) DataPoints() HistogramDataPointSlice {
-	return newHistogramDataPointSlice(&ms.orig.DataPoints, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

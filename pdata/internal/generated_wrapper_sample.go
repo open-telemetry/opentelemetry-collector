@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSample(dest, src *otlpprofiles.Sample) {
@@ -89,4 +90,49 @@ func UnmarshalJSONOrigSample(orig *otlpprofiles.Sample, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
+	var n int
+	var l int
+	_ = l
+	if orig.LocationsStartIndex != 0 {
+		n += 1 + proto.Sov(uint64(orig.LocationsStartIndex))
+	}
+	if orig.LocationsLength != 0 {
+		n += 1 + proto.Sov(uint64(orig.LocationsLength))
+	}
+	if len(orig.Value) > 0 {
+		l = 0
+		for _, e := range orig.Value {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.LinkIndex_ != nil {
+		n += 1 + proto.Sov(uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	}
+	if len(orig.TimestampsUnixNano) > 0 {
+		l = 0
+		for _, e := range orig.TimestampsUnixNano {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigSample(orig *otlpprofiles.Sample) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -48,6 +48,13 @@ func TestScopeProfiles_Scope(t *testing.T) {
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
+func TestScopeProfiles_Profiles(t *testing.T) {
+	ms := NewScopeProfiles()
+	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
+	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
+	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
+}
+
 func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	ms := NewScopeProfiles()
 	assert.Empty(t, ms.SchemaUrl())
@@ -55,13 +62,6 @@ func TestScopeProfiles_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newScopeProfiles(&otlpprofiles.ScopeProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeProfiles_Profiles(t *testing.T) {
-	ms := NewScopeProfiles()
-	assert.Equal(t, NewProfilesSlice(), ms.Profiles())
-	ms.orig.Profiles = internal.GenerateOrigTestProfileSlice()
-	assert.Equal(t, generateTestProfilesSlice(), ms.Profiles())
 }
 
 func generateTestScopeProfiles() ScopeProfiles {

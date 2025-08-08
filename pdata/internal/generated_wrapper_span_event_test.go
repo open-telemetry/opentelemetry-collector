@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigSpan_Event(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSpan_Event(t *testing.T) {
+	src := &otlptrace.Span_Event{}
+	FillOrigTestSpan_Event(src)
+	buf, err := MarshalProtoOrigSpan_Event(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSpan_Event(src))
+
+	dest := &otlptrace.Span_Event{}
+	require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptySpan_Event(t *testing.T) {
+	src := &otlptrace.Span_Event{}
+	buf, err := MarshalProtoOrigSpan_Event(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSpan_Event(src))
+
+	dest := &otlptrace.Span_Event{}
+	require.NoError(t, UnmarshalProtoOrigSpan_Event(dest, buf))
+	assert.Equal(t, src, dest)
+}

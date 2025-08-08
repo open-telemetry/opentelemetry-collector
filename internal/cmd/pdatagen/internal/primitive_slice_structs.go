@@ -48,6 +48,10 @@ func (iss *primitiveSliceStruct) getOriginName() string {
 	return iss.getName()
 }
 
+func (iss *primitiveSliceStruct) getElementProtoType() ProtoType {
+	return ProtoTypeInt64
+}
+
 func (iss *primitiveSliceStruct) getElementOriginName() string {
 	return upperFirst(iss.itemType)
 }

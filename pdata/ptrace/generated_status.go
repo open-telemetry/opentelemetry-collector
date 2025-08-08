@@ -50,17 +50,6 @@ func (ms Status) MoveTo(dest Status) {
 	*ms.orig = otlptrace.Status{}
 }
 
-// Code returns the code associated with this Status.
-func (ms Status) Code() StatusCode {
-	return StatusCode(ms.orig.Code)
-}
-
-// SetCode replaces the code associated with this Status.
-func (ms Status) SetCode(v StatusCode) {
-	ms.state.AssertMutable()
-	ms.orig.Code = otlptrace.Status_StatusCode(v)
-}
-
 // Message returns the message associated with this Status.
 func (ms Status) Message() string {
 	return ms.orig.Message
@@ -70,6 +59,17 @@ func (ms Status) Message() string {
 func (ms Status) SetMessage(v string) {
 	ms.state.AssertMutable()
 	ms.orig.Message = v
+}
+
+// Code returns the code associated with this Status.
+func (ms Status) Code() StatusCode {
+	return StatusCode(ms.orig.Code)
+}
+
+// SetCode replaces the code associated with this Status.
+func (ms Status) SetCode(v StatusCode) {
+	ms.state.AssertMutable()
+	ms.orig.Code = otlptrace.Status_StatusCode(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

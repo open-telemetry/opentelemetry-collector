@@ -42,6 +42,7 @@ const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }
 
 type MessageField struct {
 	fieldName     string
+	protoID       uint32
 	returnMessage *messageStruct
 }
 
@@ -73,6 +74,21 @@ func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("messageUnmarshalJSONTemplate").Parse(messageUnmarshalJSONTemplate))
 	return executeTemplate(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
+	pt := ProtoTypeMessage
+	if mf.returnMessage.getName() == "TraceState" {
+		pt = ProtoTypeString
+	}
+	pf := &ProtoField{
+		Type:        pt,
+		ID:          mf.protoID,
+		Name:        mf.fieldName,
+		MessageName: mf.returnMessage.getOriginName(),
+		Nullable:    false,
+	}
+	return pf.genSizeProto()
 }
 
 func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {

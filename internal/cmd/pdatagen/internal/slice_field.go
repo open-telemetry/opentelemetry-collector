@@ -41,6 +41,8 @@ const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ i
 
 type SliceField struct {
 	fieldName     string
+	protoType     ProtoType
+	protoID       uint32
 	returnSlice   baseSlice
 	hideAccessors bool
 }
@@ -79,6 +81,19 @@ func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
 func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("sliceUnmarshalJSONTemplate").Parse(sliceUnmarshalJSONTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
+}
+
+func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
+	_, nullable := sf.returnSlice.(*sliceOfPtrs)
+	pf := &ProtoField{
+		Type:        sf.protoType,
+		ID:          sf.protoID,
+		Name:        sf.fieldName,
+		MessageName: sf.returnSlice.getElementOriginName(),
+		Repeated:    sf.protoType != ProtoTypeBytes,
+		Nullable:    nullable,
+	}
+	return pf.genSizeProto()
 }
 
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {

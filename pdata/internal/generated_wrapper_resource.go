@@ -9,6 +9,7 @@ package internal
 import (
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type Resource struct {
@@ -80,4 +81,30 @@ func UnmarshalJSONOrigResource(orig *otlpresource.Resource, iter *json.Iterator)
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigResource(orig *otlpresource.Resource) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	for i := range orig.EntityRefs {
+		l = SizeProtoOrigEntityRef(orig.EntityRefs[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigResource(orig *otlpresource.Resource) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

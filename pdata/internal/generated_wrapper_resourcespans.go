@@ -9,18 +9,19 @@ package internal
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
+	dest.SchemaUrl = src.SchemaUrl
 }
 
 func FillOrigTestResourceSpans(orig *otlptrace.ResourceSpans) {
 	FillOrigTestResource(&orig.Resource)
-	orig.SchemaUrl = "test_schemaurl"
 	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
+	orig.SchemaUrl = "test_schemaurl"
 }
 
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
@@ -28,13 +29,13 @@ func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stre
 	dest.WriteObjectStart()
 	dest.WriteObjectField("resource")
 	MarshalJSONOrigResource(&orig.Resource, dest)
-	if orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(orig.SchemaUrl)
-	}
 	if len(orig.ScopeSpans) > 0 {
 		dest.WriteObjectField("scopeSpans")
 		MarshalJSONOrigScopeSpansSlice(orig.ScopeSpans, dest)
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
 	}
 	dest.WriteObjectEnd()
 }
@@ -45,13 +46,38 @@ func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.It
 		switch f {
 		case "resource":
 			UnmarshalJSONOrigResource(&orig.Resource, iter)
-		case "schemaUrl", "schema_url":
-			orig.SchemaUrl = iter.ReadString()
 		case "scopeSpans", "scope_spans":
 			orig.ScopeSpans = UnmarshalJSONOrigScopeSpansSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
 		default:
 			iter.Skip()
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigResource(&orig.Resource)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.ScopeSpans {
+		l = SizeProtoOrigScopeSpans(orig.ScopeSpans[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -49,6 +49,11 @@ func (ms Sum) MoveTo(dest Sum) {
 	*ms.orig = otlpmetrics.Sum{}
 }
 
+// DataPoints returns the DataPoints associated with this Sum.
+func (ms Sum) DataPoints() NumberDataPointSlice {
+	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -69,11 +74,6 @@ func (ms Sum) IsMonotonic() bool {
 func (ms Sum) SetIsMonotonic(v bool) {
 	ms.state.AssertMutable()
 	ms.orig.IsMonotonic = v
-}
-
-// DataPoints returns the DataPoints associated with this Sum.
-func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

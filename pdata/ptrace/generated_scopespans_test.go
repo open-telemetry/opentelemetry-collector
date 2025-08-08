@@ -48,6 +48,13 @@ func TestScopeSpans_Scope(t *testing.T) {
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
 }
 
+func TestScopeSpans_Spans(t *testing.T) {
+	ms := NewScopeSpans()
+	assert.Equal(t, NewSpanSlice(), ms.Spans())
+	ms.orig.Spans = internal.GenerateOrigTestSpanSlice()
+	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
+}
+
 func TestScopeSpans_SchemaUrl(t *testing.T) {
 	ms := NewScopeSpans()
 	assert.Empty(t, ms.SchemaUrl())
@@ -55,13 +62,6 @@ func TestScopeSpans_SchemaUrl(t *testing.T) {
 	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { newScopeSpans(&otlptrace.ScopeSpans{}, &sharedState).SetSchemaUrl("test_schemaurl") })
-}
-
-func TestScopeSpans_Spans(t *testing.T) {
-	ms := NewScopeSpans()
-	assert.Equal(t, NewSpanSlice(), ms.Spans())
-	ms.orig.Spans = internal.GenerateOrigTestSpanSlice()
-	assert.Equal(t, generateTestSpanSlice(), ms.Spans())
 }
 
 func generateTestScopeSpans() ScopeSpans {

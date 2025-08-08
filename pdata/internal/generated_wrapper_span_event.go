@@ -9,6 +9,7 @@ package internal
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
@@ -64,4 +65,33 @@ func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
+	var n int
+	var l int
+	_ = l
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	return n
+}
+
+func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

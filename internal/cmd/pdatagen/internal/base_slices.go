@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/
 type baseSlice interface {
 	getName() string
 	getOriginName() string
+	getElementProtoType() ProtoType
 	getElementOriginName() string
 	getPackageName() string
 }
@@ -65,6 +66,10 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 
 func (ss *sliceOfPtrs) getOriginName() string {
 	return ss.element.getOriginName() + "Slice"
+}
+
+func (ss *sliceOfPtrs) getElementProtoType() ProtoType {
+	return ProtoTypeMessage
 }
 
 func (ss *sliceOfPtrs) getElementOriginName() string {
@@ -128,6 +133,10 @@ func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any
 
 func (ss *sliceOfValues) getOriginName() string {
 	return ss.element.getOriginName() + "Slice"
+}
+
+func (ss *sliceOfValues) getElementProtoType() ProtoType {
+	return ProtoTypeMessage
 }
 
 func (ss *sliceOfValues) getElementOriginName() string {

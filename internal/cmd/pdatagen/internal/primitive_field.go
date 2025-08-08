@@ -59,6 +59,7 @@ const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"
 type PrimitiveField struct {
 	fieldName string
 	protoType ProtoType
+	protoID   uint32
 }
 
 func (pf *PrimitiveField) GenerateAccessors(ms *messageStruct) string {
@@ -91,15 +92,24 @@ func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
+func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {
+	ptf := &ProtoField{
+		Type: pf.protoType,
+		ID:   pf.protoID,
+		Name: pf.fieldName,
+	}
+	return ptf.genSizeProto()
+}
+
 func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"structName":       ms.getName(),
 		"packageName":      "",
-		"defaultVal":       pf.protoType.defaultValue(),
+		"defaultVal":       pf.protoType.defaultValue(""),
 		"fieldName":        pf.fieldName,
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
 		"testValue":        pf.protoType.testValue(pf.fieldName),
-		"returnType":       pf.protoType.goType(),
+		"returnType":       pf.protoType.goType(""),
 		"origAccessor":     origAccessor(ms.packageName),
 		"stateAccessor":    stateAccessor(ms.packageName),
 		"originStructName": ms.originFullName,

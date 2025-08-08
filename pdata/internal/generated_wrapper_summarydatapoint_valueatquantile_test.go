@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
+	buf, err := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
+
+	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptySummaryDataPoint_ValueAtQuantile(t *testing.T) {
+	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	buf, err := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
+
+	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+	assert.Equal(t, src, dest)
+}

@@ -9,6 +9,7 @@ package internal
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
@@ -16,12 +17,6 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
-	dest.Scale = src.Scale
-	dest.ZeroCount = src.ZeroCount
-	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Positive, &src.Positive)
-	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Negative, &src.Negative)
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
 	if srcSum, ok := src.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum); ok {
 		destSum, ok := dest.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum)
 		if !ok {
@@ -32,6 +27,12 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 	} else {
 		dest.Sum_ = nil
 	}
+	dest.Scale = src.Scale
+	dest.ZeroCount = src.ZeroCount
+	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Positive, &src.Positive)
+	CopyOrigExponentialHistogramDataPoint_Buckets(&dest.Negative, &src.Negative)
+	dest.Flags = src.Flags
+	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	if srcMin, ok := src.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min); ok {
 		destMin, ok := dest.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min)
 		if !ok {
@@ -60,13 +61,13 @@ func FillOrigTestExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHist
 	orig.StartTimeUnixNano = 1234567890
 	orig.TimeUnixNano = 1234567890
 	orig.Count = uint64(13)
+	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
 	orig.Scale = int32(13)
 	orig.ZeroCount = uint64(13)
 	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Positive)
 	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Negative)
-	orig.Exemplars = GenerateOrigTestExemplarSlice()
 	orig.Flags = 1
-	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
 	orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
 	orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
 	orig.ZeroThreshold = float64(3.1415926)
@@ -91,6 +92,10 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 		dest.WriteObjectField("count")
 		dest.WriteUint64(orig.Count)
 	}
+	if orig.Sum_ != nil {
+		dest.WriteObjectField("sum")
+		dest.WriteFloat64(orig.GetSum())
+	}
 	if orig.Scale != int32(0) {
 		dest.WriteObjectField("scale")
 		dest.WriteInt32(orig.Scale)
@@ -103,17 +108,13 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, dest)
 	dest.WriteObjectField("negative")
 	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, dest)
-	if len(orig.Exemplars) > 0 {
-		dest.WriteObjectField("exemplars")
-		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
-	}
 	if orig.Flags != 0 {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
-	if orig.Sum_ != nil {
-		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.GetSum())
+	if len(orig.Exemplars) > 0 {
+		dest.WriteObjectField("exemplars")
+		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
 	}
 	if orig.Min_ != nil {
 		dest.WriteObjectField("min")
@@ -142,6 +143,8 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 			orig.TimeUnixNano = iter.ReadUint64()
 		case "count":
 			orig.Count = iter.ReadUint64()
+		case "sum":
+			orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
 		case "scale":
 			orig.Scale = iter.ReadInt32()
 		case "zeroCount", "zero_count":
@@ -150,12 +153,10 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, iter)
 		case "negative":
 			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, iter)
-		case "exemplars":
-			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
 		case "flags":
 			orig.Flags = iter.ReadUint32()
-		case "sum":
-			orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "exemplars":
+			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
 		case "min":
 			orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: iter.ReadFloat64()}
 		case "max":
@@ -167,4 +168,61 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.Exponentia
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.Count != 0 {
+		n += 9
+	}
+	if orig.Sum_ != nil {
+		n += 9
+	}
+	if orig.Scale != 0 {
+		n += 1 + proto.Soz(uint64(orig.Scale))
+	}
+	if orig.ZeroCount != 0 {
+		n += 9
+	}
+	l = SizeProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Positive)
+	n += 1 + proto.Sov(uint64(l)) + l
+	l = SizeProtoOrigExponentialHistogramDataPoint_Buckets(&orig.Negative)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.Flags != 0 {
+		n += 1 + proto.Sov(uint64(orig.Flags))
+	}
+	for i := range orig.Exemplars {
+		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Min_ != nil {
+		n += 9
+	}
+	if orig.Max_ != nil {
+		n += 9
+	}
+	if orig.ZeroThreshold != 0 {
+		n += 9
+	}
+	return n
+}
+
+func MarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

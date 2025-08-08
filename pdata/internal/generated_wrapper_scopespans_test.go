@@ -46,3 +46,26 @@ func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
 
 	assert.Equal(t, src, dest)
 }
+
+func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
+	src := &otlptrace.ScopeSpans{}
+	FillOrigTestScopeSpans(src)
+	buf, err := MarshalProtoOrigScopeSpans(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigScopeSpans(src))
+
+	dest := &otlptrace.ScopeSpans{}
+	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+	assert.Equal(t, src, dest)
+}
+
+func TestMarshalAndUnmarshalProtoOrigEmptyScopeSpans(t *testing.T) {
+	src := &otlptrace.ScopeSpans{}
+	buf, err := MarshalProtoOrigScopeSpans(src)
+	require.NoError(t, err)
+	assert.Equal(t, len(buf), SizeProtoOrigScopeSpans(src))
+
+	dest := &otlptrace.ScopeSpans{}
+	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+	assert.Equal(t, src, dest)
+}

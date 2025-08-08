@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
@@ -49,4 +50,23 @@ func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigLink(orig *otlpprofiles.Link) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigTraceID(&orig.TraceId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	l = SizeProtoOrigSpanID(&orig.SpanId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	return n
+}
+
+func MarshalProtoOrigLink(orig *otlpprofiles.Link) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

@@ -90,17 +90,6 @@ func (ms Span) SetParentSpanID(v pcommon.SpanID) {
 	ms.orig.ParentSpanId = data.SpanID(v)
 }
 
-// Name returns the name associated with this Span.
-func (ms Span) Name() string {
-	return ms.orig.Name
-}
-
-// SetName replaces the name associated with this Span.
-func (ms Span) SetName(v string) {
-	ms.state.AssertMutable()
-	ms.orig.Name = v
-}
-
 // Flags returns the flags associated with this Span.
 func (ms Span) Flags() uint32 {
 	return ms.orig.Flags
@@ -110,6 +99,17 @@ func (ms Span) Flags() uint32 {
 func (ms Span) SetFlags(v uint32) {
 	ms.state.AssertMutable()
 	ms.orig.Flags = v
+}
+
+// Name returns the name associated with this Span.
+func (ms Span) Name() string {
+	return ms.orig.Name
+}
+
+// SetName replaces the name associated with this Span.
+func (ms Span) SetName(v string) {
+	ms.state.AssertMutable()
+	ms.orig.Name = v
 }
 
 // Kind returns the kind associated with this Span.

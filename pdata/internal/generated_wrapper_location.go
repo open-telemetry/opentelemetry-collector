@@ -9,6 +9,7 @@ package internal
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigLocation(dest, src *otlpprofiles.Location) {
@@ -81,4 +82,39 @@ func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator)
 		}
 		return true
 	})
+}
+
+func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
+	var n int
+	var l int
+	_ = l
+	if orig.MappingIndex_ != nil {
+		n += 1 + proto.Sov(uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	}
+	if orig.Address != 0 {
+		n += 1 + proto.Sov(uint64(orig.Address))
+	}
+	for i := range orig.Line {
+		l = SizeProtoOrigLine(orig.Line[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.IsFolded {
+		n += 2
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigLocation(orig *otlpprofiles.Location) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

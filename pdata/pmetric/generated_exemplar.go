@@ -54,6 +54,11 @@ func (ms Exemplar) MoveTo(dest Exemplar) {
 	*ms.orig = otlpmetrics.Exemplar{}
 }
 
+// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
+func (ms Exemplar) FilteredAttributes() pcommon.Map {
+	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes, ms.state))
+}
+
 // Timestamp returns the timestamp associated with this Exemplar.
 func (ms Exemplar) Timestamp() pcommon.Timestamp {
 	return pcommon.Timestamp(ms.orig.TimeUnixNano)
@@ -103,9 +108,15 @@ func (ms Exemplar) SetIntValue(v int64) {
 	}
 }
 
-// FilteredAttributes returns the FilteredAttributes associated with this Exemplar.
-func (ms Exemplar) FilteredAttributes() pcommon.Map {
-	return pcommon.Map(internal.NewMap(&ms.orig.FilteredAttributes, ms.state))
+// SpanID returns the spanid associated with this Exemplar.
+func (ms Exemplar) SpanID() pcommon.SpanID {
+	return pcommon.SpanID(ms.orig.SpanId)
+}
+
+// SetSpanID replaces the spanid associated with this Exemplar.
+func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
+	ms.state.AssertMutable()
+	ms.orig.SpanId = data.SpanID(v)
 }
 
 // TraceID returns the traceid associated with this Exemplar.
@@ -117,17 +128,6 @@ func (ms Exemplar) TraceID() pcommon.TraceID {
 func (ms Exemplar) SetTraceID(v pcommon.TraceID) {
 	ms.state.AssertMutable()
 	ms.orig.TraceId = data.TraceID(v)
-}
-
-// SpanID returns the spanid associated with this Exemplar.
-func (ms Exemplar) SpanID() pcommon.SpanID {
-	return pcommon.SpanID(ms.orig.SpanId)
-}
-
-// SetSpanID replaces the spanid associated with this Exemplar.
-func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
-	ms.state.AssertMutable()
-	ms.orig.SpanId = data.SpanID(v)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.

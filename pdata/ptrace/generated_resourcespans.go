@@ -55,6 +55,11 @@ func (ms ResourceSpans) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
 }
 
+// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
+func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
+	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceSpans.
 func (ms ResourceSpans) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -64,11 +69,6 @@ func (ms ResourceSpans) SchemaUrl() string {
 func (ms ResourceSpans) SetSchemaUrl(v string) {
 	ms.state.AssertMutable()
 	ms.orig.SchemaUrl = v
-}
-
-// ScopeSpans returns the ScopeSpans associated with this ResourceSpans.
-func (ms ResourceSpans) ScopeSpans() ScopeSpansSlice {
-	return newScopeSpansSlice(&ms.orig.ScopeSpans, ms.state)
 }
 
 // CopyTo copies all properties from the current struct overriding the destination.
