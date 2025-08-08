@@ -7,8 +7,13 @@
 package internal
 
 import (
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
+	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigKeyValueSlice(dest, src []v1.KeyValue) []v1.KeyValue {

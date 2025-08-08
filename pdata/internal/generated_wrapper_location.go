@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -111,8 +115,46 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 	return n
 }
 
-func MarshalProtoOrigLocation(orig *otlpprofiles.Location) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+	pos--
+	buf[pos] = 0x8
+
+	if orig.Address != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Address))
+		pos--
+		buf[pos] = 0x10
+	}
+	for i := range orig.Line {
+		l = MarshalProtoOrigLine(orig.Line[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.IsFolded {
+		pos--
+		if orig.IsFolded {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x20
+	}
+	if len(orig.AttributeIndices) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x2a
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {

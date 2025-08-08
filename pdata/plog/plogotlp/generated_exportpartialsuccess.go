@@ -7,7 +7,6 @@
 package plogotlp
 
 import (
-	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 

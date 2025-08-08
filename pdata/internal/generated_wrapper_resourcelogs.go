@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -74,8 +78,33 @@ func SizeProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) int {
 	return n
 }
 
-func MarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Resource != nil {
+		l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := range orig.ScopeLogs {
+		l = MarshalProtoOrigScopeLogs(orig.ScopeLogs[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigResourceLogs(orig *otlplogs.ResourceLogs, buf []byte) error {

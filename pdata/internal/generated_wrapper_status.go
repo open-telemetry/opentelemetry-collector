@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -65,8 +69,24 @@ func SizeProtoOrigStatus(orig *otlptrace.Status) int {
 	return n
 }
 
-func MarshalProtoOrigStatus(orig *otlptrace.Status) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	l = len(orig.Message)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Message)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	if orig.Code != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Code))
+		pos--
+		buf[pos] = 0x18
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigStatus(orig *otlptrace.Status, buf []byte) error {

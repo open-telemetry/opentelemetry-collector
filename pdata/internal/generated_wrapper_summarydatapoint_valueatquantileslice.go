@@ -7,8 +7,13 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {

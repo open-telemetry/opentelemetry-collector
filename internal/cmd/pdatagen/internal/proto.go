@@ -75,20 +75,6 @@ func (pt ProtoType) goType(messageName string) string {
 	}
 }
 
-func (pt ProtoType) wireType() WireType {
-	switch pt {
-	case ProtoTypeInt32, ProtoTypeInt64, ProtoTypeUint32, ProtoTypeUint64, ProtoTypeSInt32, ProtoTypeSInt64, ProtoTypeBool, ProtoTypeEnum:
-		return WireTypeVarint
-	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeFloat:
-		return WireTypeI32
-	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeDouble:
-		return WireTypeI64
-	case ProtoTypeBytes, ProtoTypeMessage, ProtoTypeString:
-		return WireTypeLen
-	}
-	panic("unreachable")
-}
-
 func (pt ProtoType) defaultValue(messageName string) string {
 	switch pt {
 	case ProtoTypeInt32, ProtoTypeInt64, ProtoTypeUint32, ProtoTypeUint64, ProtoTypeSInt32, ProtoTypeSInt64, ProtoTypeEnum, ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeFloat, ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeDouble:
@@ -123,6 +109,42 @@ func (pt ProtoType) testValue(fieldName string) string {
 	}
 }
 
+type ProtoField struct {
+	Type        ProtoType
+	Name        string
+	MessageName string
+	ID          uint32
+	Repeated    bool
+	Nullable    bool
+}
+
+func (pf *ProtoField) wireType() WireType {
+	switch pf.Type {
+	case ProtoTypeInt32, ProtoTypeInt64, ProtoTypeUint32, ProtoTypeUint64, ProtoTypeSInt32, ProtoTypeSInt64, ProtoTypeBool, ProtoTypeEnum:
+		// In proto3, repeated scalar types are packed; hence they use Length-Delimited (Wire Type 2).
+		if pf.Repeated {
+			return WireTypeLen
+		}
+		return WireTypeVarint
+	case ProtoTypeFixed32, ProtoTypeSFixed32, ProtoTypeFloat:
+		// In proto3, repeated scalar types are packed; hence they use Length-Delimited (Wire Type 2).
+		if pf.Repeated {
+			return WireTypeLen
+		}
+		return WireTypeI32
+	case ProtoTypeFixed64, ProtoTypeSFixed64, ProtoTypeDouble:
+		// In proto3, repeated scalar types are packed; hence they use Length-Delimited (Wire Type 2).
+		if pf.Repeated {
+			return WireTypeLen
+		}
+		return WireTypeI64
+	case ProtoTypeBytes, ProtoTypeMessage, ProtoTypeString:
+		return WireTypeLen
+	}
+	panic("unreachable")
+}
+
+// genProtoKey encodes the field key, and returns it in the reverse order.
 func genProtoKey(fieldNumber uint32, wt WireType) []string {
 	x := fieldNumber<<3 | uint32(wt)
 	i := 0
@@ -138,13 +160,4 @@ func genProtoKey(fieldNumber uint32, wt WireType) []string {
 		ret = append(ret, fmt.Sprintf("%#v", keybuf[i]))
 	}
 	return ret
-}
-
-type ProtoField struct {
-	Type        ProtoType
-	Name        string
-	MessageName string
-	ID          uint32
-	Repeated    bool
-	Nullable    bool
 }

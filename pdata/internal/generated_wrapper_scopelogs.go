@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -74,8 +78,33 @@ func SizeProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) int {
 	return n
 }
 
-func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Scope != nil {
+		l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := range orig.LogRecords {
+		l = MarshalProtoOrigLogRecord(orig.LogRecords[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigScopeLogs(orig *otlplogs.ScopeLogs, buf []byte) error {

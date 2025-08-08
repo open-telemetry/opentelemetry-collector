@@ -7,10 +7,16 @@
 package internal
 
 import (
-	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"iter"
+	"sort"
+	
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
+	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	
 )
+
 
 func CopyOrigExponentialHistogramDataPoint_Buckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
 	dest.Offset = src.Offset
@@ -41,9 +47,9 @@ func UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Ex
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "offset":
-			orig.Offset = iter.ReadInt32()
+		orig.Offset = iter.ReadInt32()
 		case "bucketCounts", "bucket_counts":
-			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
+	orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
 		default:
 			iter.Skip()
 		}
@@ -56,20 +62,35 @@ func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expone
 	var l int
 	_ = l
 	if orig.Offset != 0 {
-		n += 1 + proto.Soz(uint64(orig.Offset))
+		n+= 1 + proto.Soz(uint64(orig.Offset))
 	}
 	if len(orig.BucketCounts) > 0 {
 		l = 0
 		for _, e := range orig.BucketCounts {
 			l += proto.Sov(uint64(e))
 		}
-		n += 1 + proto.Sov(uint64(l)) + l
+		n+= 1 + proto.Sov(uint64(l)) + l
 	}
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Offset != 0 {
+		n+= <no value> + proto.Soz(uint64(orig.Offset))
+	}
+	if len(orig.BucketCounts) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.BucketCounts))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x12
+		}
+	return pos
 }
 
 func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {

@@ -3,15 +3,16 @@
 
 package proto // import "go.opentelemetry.io/collector/pdata/internal/proto"
 
-func EncodeVarint(dAtA []byte, offset int, v uint64) int {
+// EncodeVarint encodes the variant at the end of the buffer.
+func EncodeVarint(buf []byte, offset int, v uint64) int {
 	offset -= Sov(v)
 	base := offset
 	for v >= 1<<7 {
 		//nolint:gosec
-		dAtA[offset] = uint8(v&0x7f | 0x80)
+		buf[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
-	dAtA[offset] = uint8(v)
+	buf[offset] = uint8(v)
 	return base
 }

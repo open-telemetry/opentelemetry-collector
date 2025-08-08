@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -74,8 +78,33 @@ func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
 	return n
 }
 
-func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Scope != nil {
+		l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := range orig.Spans {
+		l = MarshalProtoOrigSpan(orig.Spans[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {

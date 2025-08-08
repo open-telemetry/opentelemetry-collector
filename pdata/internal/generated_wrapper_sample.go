@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -129,8 +133,52 @@ func SizeProtoOrigSample(orig *otlpprofiles.Sample) int {
 	return n
 }
 
-func MarshalProtoOrigSample(orig *otlpprofiles.Sample) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.LocationsStartIndex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.LocationsStartIndex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.LocationsLength != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.LocationsLength))
+		pos--
+		buf[pos] = 0x10
+	}
+	if len(orig.Value) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.Value))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if len(orig.AttributeIndices) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x22
+	}
+	pos = proto.EncodeVarint(buf, pos, uint64(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex))
+	pos--
+	buf[pos] = 0x28
+
+	if len(orig.TimestampsUnixNano) > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.TimestampsUnixNano))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x32
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigSample(orig *otlpprofiles.Sample, buf []byte) error {

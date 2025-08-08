@@ -7,6 +7,10 @@
 package internal
 
 import (
+	"iter"
+	"sort"
+
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -75,8 +79,26 @@ func SizeProtoOrigValueType(orig *otlpprofiles.ValueType) int {
 	return n
 }
 
-func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.TypeStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.TypeStrindex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.UnitStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.UnitStrindex))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.AggregationTemporality != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
+		pos--
+		buf[pos] = 0x18
+	}
+	return pos
 }
 
 func UnmarshalProtoOrigValueType(orig *otlpprofiles.ValueType, buf []byte) error {
