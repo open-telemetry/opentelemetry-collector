@@ -68,6 +68,16 @@ jobs:
         with:
           go-version: oldstable
           cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
+
       - name: Run tests
         run: |
           chmod +x /tmp/contrib/.tools/*

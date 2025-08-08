@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry
+package otelconftelemetry
 
 import (
 	"context"
@@ -117,7 +117,7 @@ func TestTelemetryInit(t *testing.T) {
 				assert.NoError(t, sdk.Shutdown(context.Background()))
 			})
 
-			mp, err := newMeterProvider(Settings{SDK: sdk}, cfg)
+			mp, err := newMeterProvider(cfg, sdk)
 			require.NoError(t, err)
 
 			createTestMetrics(t, mp)
@@ -197,30 +197,20 @@ func getMetricsFromPrometheus(t *testing.T, endpoint string) map[string]*io_prom
 }
 
 func TestTelemetryMetricsDisabled(t *testing.T) {
-	cfg := Config{
-		Metrics: MetricsConfig{
-			Level: configtelemetry.LevelNormal,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{{
-					Periodic: &config.PeriodicMetricReader{
-						Exporter: config.PushMetricExporter{
-							// Invalid, no protocol defined
-							OTLP: &config.OTLPMetric{},
-						},
-					},
-				}},
-			},
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		// Invalid -- no OTLP protocol defined
+		Periodic: &config.PeriodicMetricReader{Exporter: config.PushMetricExporter{OTLP: &config.OTLPMetric{}}},
+	}}
 
 	res := resource.New(component.BuildInfo{}, nil)
-	_, err := NewSDK(context.Background(), &cfg, res)
+	_, err := NewSDK(context.Background(), cfg, res)
 	require.EqualError(t, err, "no valid metric exporter")
 
 	// Setting Metrics.Level to LevelNone disables metrics,
 	// so the invalid configuration should not cause an error.
 	cfg.Metrics.Level = configtelemetry.LevelNone
-	sdk, err := NewSDK(context.Background(), &cfg, res)
+	sdk, err := NewSDK(context.Background(), cfg, res)
 	require.NoError(t, err)
 	assert.NoError(t, sdk.Shutdown(context.Background()))
 }
@@ -229,30 +219,19 @@ func TestTelemetryMetricsDisabled(t *testing.T) {
 // See https://pkg.go.dev/go.opentelemetry.io/otel/sdk/metric/internal/x#readme-instrument-enabled.
 func TestInstrumentEnabled(t *testing.T) {
 	prom := promtest.GetAvailableLocalAddressPrometheus(t)
-	cfg := Config{
-		Metrics: MetricsConfig{
-			Level: configtelemetry.LevelDetailed,
-			MeterProvider: config.MeterProvider{
-				Readers: []config.MetricReader{{
-					Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
-				}},
-			},
-		},
-	}
+	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.Readers = []config.MetricReader{{
+		Pull: &config.PullMetricReader{Exporter: config.PullMetricExporter{Prometheus: prom}},
+	}}
 
-	res := resource.New(component.BuildInfo{}, map[string]*string{
-		string(semconv.ServiceNameKey):       ptr("otelcol"),
-		string(semconv.ServiceVersionKey):    ptr("latest"),
-		string(semconv.ServiceInstanceIDKey): ptr(testInstanceID),
-	})
-	sdk, err := NewSDK(context.Background(), &cfg, res)
+	sdk, err := NewSDK(context.Background(), cfg, resource.New(component.BuildInfo{}, nil))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		assert.NoError(t, sdk.Shutdown(context.Background()))
 	})
 	require.NoError(t, err)
 
-	meterProvider, err := newMeterProvider(Settings{SDK: sdk}, cfg)
+	meterProvider, err := newMeterProvider(*cfg, sdk)
 	require.NoError(t, err)
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
@@ -261,41 +240,33 @@ func TestInstrumentEnabled(t *testing.T) {
 
 	intCnt, err := meter.Int64Counter("int64.counter")
 	require.NoError(t, err)
-	_, ok := intCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64Counter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intCnt)
 
 	intUpDownCnt, err := meter.Int64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Int64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intUpDownCnt)
 
 	intHist, err := meter.Int64Histogram("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intHist.(enabledInstrument)
-	assert.True(t, ok, "Int64Histogram does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intHist)
 
 	intGauge, err := meter.Int64Gauge("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = intGauge.(enabledInstrument)
-	assert.True(t, ok, "Int64Gauge does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), intGauge)
 
 	floatCnt, err := meter.Float64Counter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64Counter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatCnt)
 
 	floatUpDownCnt, err := meter.Float64UpDownCounter("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatUpDownCnt.(enabledInstrument)
-	assert.True(t, ok, "Float64UpDownCounter does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatUpDownCnt)
 
 	floatHist, err := meter.Float64Histogram("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatHist.(enabledInstrument)
-	assert.True(t, ok, "Float64Histogram does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatHist)
 
 	floatGauge, err := meter.Float64Gauge("int64.updowncounter")
 	require.NoError(t, err)
-	_, ok = floatGauge.(enabledInstrument)
-	assert.True(t, ok, "Float64Gauge does not implement the experimental 'Enabled' method")
+	assert.Implements(t, new(enabledInstrument), floatGauge)
 }

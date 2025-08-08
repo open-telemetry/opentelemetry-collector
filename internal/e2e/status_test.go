@@ -32,7 +32,7 @@ import (
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 var nopType = component.MustNewType("nop")
@@ -79,12 +79,12 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 
 	cfg := service.Config{
-		Telemetry: telemetry.Config{
-			Logs: telemetry.LogsConfig{
+		Telemetry: otelconftelemetry.Config{
+			Logs: otelconftelemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
-				Sampling: &telemetry.LogsSamplingConfig{
+				Sampling: &otelconftelemetry.LogsSamplingConfig{
 					Enabled:    true,
 					Tick:       10 * time.Second,
 					Initial:    100,
@@ -96,7 +96,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 				DisableStacktrace: false,
 				InitialFields:     map[string]any(nil),
 			},
-			Metrics: telemetry.MetricsConfig{
+			Metrics: otelconftelemetry.MetricsConfig{
 				Level: configtelemetry.LevelNone,
 			},
 		},

@@ -40,6 +40,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/resource"
 	"go.opentelemetry.io/collector/service/internal/status"
 	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 // This feature gate is deprecated and will be removed in 1.40.0. Views can now be configured.
@@ -134,7 +135,7 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		mpConfig.Views = configureViews(cfg.Telemetry.Metrics.Level)
 	}
 
-	sdk, err := telemetry.NewSDK(ctx, &cfg.Telemetry, res)
+	sdk, err := otelconftelemetry.NewSDK(ctx, &cfg.Telemetry, res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SDK: %w", err)
 	}
@@ -145,12 +146,10 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 		}
 	}()
 
-	telFactory := telemetry.NewFactory()
+	telFactory := otelconftelemetry.NewFactory(sdk, res)
 	telset := telemetry.Settings{
 		BuildInfo:  set.BuildInfo,
 		ZapOptions: set.LoggingOptions,
-		SDK:        sdk,
-		Resource:   res,
 	}
 
 	logger, loggerProvider, err := telFactory.CreateLogger(ctx, telset, &cfg.Telemetry)
@@ -227,14 +226,14 @@ func New(ctx context.Context, set Settings, cfg Config) (*Service, error) {
 	return srv, nil
 }
 
-func logsAboutMeterProvider(logger *zap.Logger, cfg telemetry.MetricsConfig, mp metric.MeterProvider) {
+func logsAboutMeterProvider(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig, mp metric.MeterProvider) {
 	if cfg.Level == configtelemetry.LevelNone || len(cfg.Readers) == 0 {
 		logger.Info("Skipped telemetry setup.")
 		return
 	}
 
 	if lmp, ok := mp.(interface {
-		LogAboutServers(logger *zap.Logger, cfg telemetry.MetricsConfig)
+		LogAboutServers(logger *zap.Logger, cfg otelconftelemetry.MetricsConfig)
 	}); ok {
 		lmp.LogAboutServers(logger, cfg)
 	}
@@ -378,6 +377,11 @@ func configureViews(level configtelemetry.Level) []config.View {
 			}),
 			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
+			}),
+			// Drop duration metric if the level is not detailed
+			dropViewOption(&config.ViewSelector{
+				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
+				InstrumentName: ptr("otelcol_processor_internal_duration"),
 			}),
 		)
 	}
