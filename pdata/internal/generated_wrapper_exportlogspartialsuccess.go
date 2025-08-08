@@ -65,8 +65,24 @@ func SizeProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPart
 	return n
 }
 
-func MarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.RejectedLogRecords != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.RejectedLogRecords))
+		pos--
+		buf[pos] = 0x8
+	}
+	l = len(orig.ErrorMessage)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.ErrorMessage)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigExportLogsPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, buf []byte) error {

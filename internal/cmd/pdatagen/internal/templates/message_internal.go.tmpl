@@ -84,8 +84,14 @@ func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
 	return n
 }
 
-func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	{{ range .fields -}}
+	{{ .GenerateMarshalProto $.messageStruct }}
+	{{ end -}}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {

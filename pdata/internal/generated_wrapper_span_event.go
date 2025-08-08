@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"encoding/binary"
+
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -88,8 +90,37 @@ func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
 	return n
 }
 
-func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x9
+	}
+	l = len(orig.Name)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Name)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x20
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error {

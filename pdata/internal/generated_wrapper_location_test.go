@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigLocation(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 	src := &otlpprofiles.Location{}
 	FillOrigTestLocation(src)
-	buf, err := MarshalProtoOrigLocation(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLocation(src))
+	buf := make([]byte, SizeProtoOrigLocation(src))
+	gotSize := MarshalProtoOrigLocation(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.Location{}
 	require.NoError(t, UnmarshalProtoOrigLocation(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigLocation(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyLocation(t *testing.T) {
 	src := &otlpprofiles.Location{}
-	buf, err := MarshalProtoOrigLocation(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLocation(src))
+	buf := make([]byte, SizeProtoOrigLocation(src))
+	gotSize := MarshalProtoOrigLocation(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.Location{}
 	require.NoError(t, UnmarshalProtoOrigLocation(dest, buf))

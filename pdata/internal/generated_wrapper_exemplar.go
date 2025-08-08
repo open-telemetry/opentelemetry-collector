@@ -7,6 +7,9 @@
 package internal
 
 import (
+	"encoding/binary"
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -116,8 +119,51 @@ func SizeProtoOrigExemplar(orig *otlpmetrics.Exemplar) int {
 	return n
 }
 
-func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.FilteredAttributes {
+		l = MarshalProtoOrigKeyValue(&orig.FilteredAttributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x3a
+	}
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x11
+	}
+	switch orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble))
+		pos--
+		buf[pos] = 0x19
+
+	case *otlpmetrics.Exemplar_AsInt:
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt))
+		pos--
+		buf[pos] = 0x31
+
+	}
+
+	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x22
+
+	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x2a
+
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigExemplar(orig *otlpmetrics.Exemplar, buf []byte) error {

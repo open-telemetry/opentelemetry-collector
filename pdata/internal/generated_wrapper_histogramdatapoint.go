@@ -7,6 +7,9 @@
 package internal
 
 import (
+	"encoding/binary"
+	"math"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -196,8 +199,89 @@ func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
 	return n
 }
 
-func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x4a
+	}
+	if orig.StartTimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.StartTimeUnixNano))
+		pos--
+		buf[pos] = 0x11
+	}
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x19
+	}
+	if orig.Count != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Count))
+		pos--
+		buf[pos] = 0x21
+	}
+	if orig.Sum_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum))
+		pos--
+		buf[pos] = 0x29
+
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		for i := l - 1; i >= 0; i-- {
+			pos -= 8
+			binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.BucketCounts[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(l*8))
+		pos--
+		buf[pos] = 0x32
+	}
+	l = len(orig.ExplicitBounds)
+	if l > 0 {
+		for i := l - 1; i >= 0; i-- {
+			pos -= 8
+			binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.ExplicitBounds[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(l*8))
+		pos--
+		buf[pos] = 0x3a
+	}
+	for i := range orig.Exemplars {
+		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x42
+	}
+	if orig.Flags != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Flags))
+		pos--
+		buf[pos] = 0x50
+	}
+	if orig.Min_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min))
+		pos--
+		buf[pos] = 0x59
+
+	}
+	if orig.Max_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max))
+		pos--
+		buf[pos] = 0x61
+
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {

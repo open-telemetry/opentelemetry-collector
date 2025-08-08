@@ -11,6 +11,11 @@ var pprofileotlp = &Package{
 		name: "pprofileotlp",
 		path: filepath.Join("pprofile", "pprofileotlp"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 		},
 		testImports: []string{

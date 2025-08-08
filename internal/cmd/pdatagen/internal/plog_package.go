@@ -8,7 +8,9 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,

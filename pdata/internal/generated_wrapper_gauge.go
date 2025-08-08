@@ -54,8 +54,18 @@ func SizeProtoOrigGauge(orig *otlpmetrics.Gauge) int {
 	return n
 }
 
-func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigGauge(orig *otlpmetrics.Gauge, buf []byte) error {

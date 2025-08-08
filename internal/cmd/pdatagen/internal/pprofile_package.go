@@ -8,7 +8,9 @@ var pprofile = &Package{
 		name: "pprofile",
 		path: "pprofile",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -438,7 +440,7 @@ var mapping = &messageStruct{
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     15,
+			protoID:     5,
 			protoType:   ProtoTypeInt32,
 			returnSlice: int32Slice,
 		},

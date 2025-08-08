@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 	src := &otlpmetrics.Sum{}
 	FillOrigTestSum(src)
-	buf, err := MarshalProtoOrigSum(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSum(src))
+	buf := make([]byte, SizeProtoOrigSum(src))
+	gotSize := MarshalProtoOrigSum(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.Sum{}
 	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptySum(t *testing.T) {
 	src := &otlpmetrics.Sum{}
-	buf, err := MarshalProtoOrigSum(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSum(src))
+	buf := make([]byte, SizeProtoOrigSum(src))
+	gotSize := MarshalProtoOrigSum(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.Sum{}
 	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))

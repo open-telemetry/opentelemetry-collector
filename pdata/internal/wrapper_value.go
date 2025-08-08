@@ -185,3 +185,8 @@ func FillOrigTestAnyValue(orig *otlpcommon.AnyValue) {
 func SizeProtoOrigAnyValue(orig *otlpcommon.AnyValue) int {
 	return orig.Size()
 }
+
+func MarshalProtoOrigAnyValue(orig *otlpcommon.AnyValue, buf []byte) int {
+	size, _ := orig.MarshalToSizedBuffer(buf)
+	return size
+}

@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 	src := &otlpmetrics.SummaryDataPoint{}
 	FillOrigTestSummaryDataPoint(src)
-	buf, err := MarshalProtoOrigSummaryDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint(src))
+	buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+	gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.SummaryDataPoint{}
 	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptySummaryDataPoint(t *testing.T) {
 	src := &otlpmetrics.SummaryDataPoint{}
-	buf, err := MarshalProtoOrigSummaryDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigSummaryDataPoint(src))
+	buf := make([]byte, SizeProtoOrigSummaryDataPoint(src))
+	gotSize := MarshalProtoOrigSummaryDataPoint(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.SummaryDataPoint{}
 	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint(dest, buf))
