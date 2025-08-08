@@ -78,7 +78,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			c, err := tt.createFn(context.Background(), processortest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := newNopHost()
+			host := newMdatagenNopHost()
 			err = c.Start(context.Background(), host)
 			require.NoError(t, err)
 			require.NotPanics(t, func() {
@@ -151,18 +151,18 @@ func generateLifecycleTestTraces() ptrace.Traces {
 	return traces
 }
 
-var _ component.Host = (*nopHost)(nil)
+var _ component.Host = (*mdatagenNopHost)(nil)
 
-type nopHost struct{}
+type mdatagenNopHost struct{}
 
-func newNopHost() component.Host {
-	return &nopHost{}
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }

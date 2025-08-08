@@ -42,28 +42,28 @@ func TestComponentLifecycle(t *testing.T) {
 	t.Run("lifecycle", func(t *testing.T) {
 		firstExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, firstExt.Start(context.Background(), newNopHost()))
+		require.NoError(t, firstExt.Start(context.Background(), newMdatagenNopHost()))
 		require.NoError(t, firstExt.Shutdown(context.Background()))
 
 		secondExt, err := factory.Create(context.Background(), extensiontest.NewNopSettings(typ), cfg)
 		require.NoError(t, err)
-		require.NoError(t, secondExt.Start(context.Background(), newNopHost()))
+		require.NoError(t, secondExt.Start(context.Background(), newMdatagenNopHost()))
 		require.NoError(t, secondExt.Shutdown(context.Background()))
 	})
 }
 
-var _ component.Host = (*nopHost)(nil)
+var _ component.Host = (*mdatagenNopHost)(nil)
 
-type nopHost struct{}
+type mdatagenNopHost struct{}
 
-func newNopHost() component.Host {
-	return &nopHost{}
+func newMdatagenNopHost() component.Host {
+	return &mdatagenNopHost{}
 }
 
-func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
+func (mnh *mdatagenNopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func (nh *nopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (mnh *mdatagenNopHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	return nil
 }
