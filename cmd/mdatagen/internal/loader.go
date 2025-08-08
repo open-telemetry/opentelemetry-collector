@@ -39,7 +39,7 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return Metadata{}, err
 	}
 
-	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "NewNopHost()"}}
+	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "newNopHost()"}}
 	err = conf.Unmarshal(&md)
 	if err != nil {
 		return md, err

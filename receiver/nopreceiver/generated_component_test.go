@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/service/hostcapabilities"
 )
 
 var typ = component.MustNewType("nop")
@@ -74,7 +73,7 @@ func TestComponentLifecycle(t *testing.T) {
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
 			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
-			host := NewNopHost()
+			host := newNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
@@ -87,13 +86,10 @@ func TestComponentLifecycle(t *testing.T) {
 }
 
 var _ component.Host = (*nopHost)(nil)
-var _ hostcapabilities.ComponentFactory = (*nopHost)(nil)
 
-// nopHost mocks the service's host implementation for test purposes.
 type nopHost struct{}
 
-// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
-func NewNopHost() component.Host {
+func newNopHost() component.Host {
 	return &nopHost{}
 }
 

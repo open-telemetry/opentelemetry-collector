@@ -400,7 +400,7 @@ func TestLoadMetadata(t *testing.T) {
 				},
 				ScopeName:       "go.opentelemetry.io/collector/internal/receiver/samplereceiver",
 				ShortFolderName: "sample",
-				Tests:           Tests{Host: "NewNopHost()"},
+				Tests:           Tests{Host: "newNopHost()"},
 			},
 		},
 		{
@@ -412,7 +412,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "NewNopHost()"},
+				Tests:                Tests{Host: "newNopHost()"},
 			},
 		},
 		{
@@ -423,7 +423,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "NewNopHost()"},
+				Tests:                Tests{Host: "newNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{
@@ -442,7 +442,7 @@ func TestLoadMetadata(t *testing.T) {
 				ScopeName:            "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				PackageName:          "go.opentelemetry.io/collector/cmd/mdatagen/internal/testdata",
 				ShortFolderName:      "testdata",
-				Tests:                Tests{Host: "NewNopHost()"},
+				Tests:                Tests{Host: "newNopHost()"},
 				Status: &Status{
 					Class: "receiver",
 					Stability: map[component.StabilityLevel][]string{

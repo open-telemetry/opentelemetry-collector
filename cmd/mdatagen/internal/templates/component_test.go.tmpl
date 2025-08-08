@@ -54,7 +54,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	{{- end }}
-	"go.opentelemetry.io/collector/service/hostcapabilities"
 	{{- end }}
 )
 
@@ -601,13 +600,10 @@ func generateLifecycleTestTraces() ptrace.Traces {
 
 {{- if not .Tests.SkipLifecycle }}
 var _ component.Host = (*nopHost)(nil)
-var _ hostcapabilities.ComponentFactory = (*nopHost)(nil)
 
-// nopHost mocks the service's host implementation for test purposes.
 type nopHost struct{}
 
-// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
-func NewNopHost() component.Host {
+func newNopHost() component.Host {
 	return &nopHost{}
 }
 

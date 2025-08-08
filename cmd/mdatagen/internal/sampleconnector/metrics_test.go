@@ -23,7 +23,7 @@ func TestGeneratedMetrics(t *testing.T) {
 }
 
 func TestNopConnector(t *testing.T) {
-	connector, err := createMetricsToMetricsConnector(context.Background(), connectortest.NewNopSettings(metadata.Type), NewNopHost(), new(consumertest.MetricsSink))
+	connector, err := createMetricsToMetricsConnector(context.Background(), connectortest.NewNopSettings(metadata.Type), newNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	require.False(t, connector.Capabilities().MutatesData)
 	require.NoError(t, connector.ConsumeMetrics(context.Background(), pmetric.NewMetrics()))

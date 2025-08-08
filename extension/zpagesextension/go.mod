@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.37.0
 	go.opentelemetry.io/collector/extension v1.37.0
 	go.opentelemetry.io/collector/extension/extensiontest v0.131.0
-	go.opentelemetry.io/collector/service/hostcapabilities v0.131.0
 	go.opentelemetry.io/contrib/zpages v0.62.0
 	go.opentelemetry.io/otel/sdk v1.37.0
 	go.opentelemetry.io/otel/trace v1.37.0
@@ -60,7 +59,6 @@ require (
 	go.opentelemetry.io/collector/internal/telemetry v0.131.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.37.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.131.0 // indirect
-	go.opentelemetry.io/collector/service v0.131.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.12.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.62.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
