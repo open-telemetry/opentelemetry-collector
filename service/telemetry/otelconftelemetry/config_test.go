@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry
+package otelconftelemetry
 
 import (
 	"path/filepath"
@@ -21,11 +21,13 @@ import (
 )
 
 func TestComponentConfigStruct(t *testing.T) {
-	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+	require.NoError(t, componenttest.CheckConfigStruct(
+		NewFactory(nil, nil).CreateDefaultConfig(),
+	))
 }
 
 func TestUnmarshalDefaultConfig(t *testing.T) {
-	factory := NewFactory()
+	factory := NewFactory(nil, nil)
 	cfg := factory.CreateDefaultConfig()
 	require.NoError(t, confmap.New().Unmarshal(&cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)

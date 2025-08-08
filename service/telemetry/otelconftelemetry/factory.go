@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/collector/service/telemetry"
 )
 
 var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -27,49 +28,50 @@ var useLocalHostAsDefaultMetricsAddressFeatureGate = featuregate.GlobalRegistry(
 	featuregate.WithRegisterDescription("controls whether default Prometheus metrics server use localhost as the default host for their endpoints"),
 )
 
-// Settings holds configuration for building Telemetry.
-type Settings struct {
-	BuildInfo  component.BuildInfo
-	ZapOptions []zap.Option
-	SDK        *config.SDK
-	Resource   *resource.Resource
-}
-
 // Factory is factory interface for telemetry.
 // This interface cannot be directly implemented. Implementations must
 // use the NewFactory to implement it.
+//
+// NOTE This API is experimental and will change soon - use at your own risk.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
 type Factory interface {
 	// CreateDefaultConfig creates the default configuration for the telemetry.
 	// TODO: Should we just inherit from component.Factory?
 	CreateDefaultConfig() component.Config
 
 	// CreateLogger creates a logger.
-	CreateLogger(ctx context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error)
+	CreateLogger(context.Context, telemetry.Settings, component.Config) (*zap.Logger, log.LoggerProvider, error)
 
 	// CreateTracerProvider creates a TracerProvider.
-	CreateTracerProvider(ctx context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error)
+	CreateTracerProvider(context.Context, telemetry.Settings, component.Config) (trace.TracerProvider, error)
 
 	// CreateMeterProvider creates a MeterProvider.
-	CreateMeterProvider(ctx context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error)
+	CreateMeterProvider(context.Context, telemetry.Settings, component.Config) (metric.MeterProvider, error)
 
 	// unexportedFactoryFunc is used to prevent external implementations of Factory.
 	unexportedFactoryFunc()
 }
 
 // NewFactory creates a new Factory.
-func NewFactory() Factory {
+//
+// NOTE This API is experimental and will change soon - use at your own risk.
+// See https://github.com/open-telemetry/opentelemetry-collector/issues/4970
+//
+// TODO remove the parameters once the factory is fully self-contained
+// and is responsible for creating the SDK and resource itself.
+func NewFactory(sdk *config.SDK, res *resource.Resource) Factory {
 	return newFactory(createDefaultConfig,
-		withLogger(func(_ context.Context, set Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
+		withLogger(func(_ context.Context, set telemetry.Settings, cfg component.Config) (*zap.Logger, log.LoggerProvider, error) {
 			c := *cfg.(*Config)
-			return newLogger(set, c)
+			return newLogger(set, c, sdk, res)
 		}),
-		withTracerProvider(func(_ context.Context, set Settings, cfg component.Config) (trace.TracerProvider, error) {
+		withTracerProvider(func(_ context.Context, _ telemetry.Settings, cfg component.Config) (trace.TracerProvider, error) {
 			c := *cfg.(*Config)
-			return newTracerProvider(set, c)
+			return newTracerProvider(c, sdk)
 		}),
-		withMeterProvider(func(_ context.Context, set Settings, cfg component.Config) (metric.MeterProvider, error) {
+		withMeterProvider(func(_ context.Context, _ telemetry.Settings, cfg component.Config) (metric.MeterProvider, error) {
 			c := *cfg.(*Config)
-			return newMeterProvider(set, c)
+			return newMeterProvider(c, sdk)
 		}),
 	)
 }

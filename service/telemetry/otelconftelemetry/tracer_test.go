@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry // import "go.opentelemetry.io/collector/service/telemetry"
+package otelconftelemetry // import "go.opentelemetry.io/collector/service/telemetry"
 
 import (
 	"context"
@@ -48,7 +48,7 @@ func TestTracerProvider(t *testing.T) {
 		assert.NoError(t, sdk.Shutdown(context.Background()))
 	}()
 
-	provider, err := newTracerProvider(Settings{SDK: sdk}, *cfg)
+	provider, err := newTracerProvider(*cfg, sdk)
 	require.NoError(t, err)
 	require.NotNil(t, provider)
 
@@ -79,7 +79,7 @@ func TestTelemetry_TracerProvider_Propagators(t *testing.T) {
 		assert.NoError(t, sdk.Shutdown(context.Background()))
 	}()
 
-	provider, err := newTracerProvider(Settings{SDK: sdk}, *cfg)
+	provider, err := newTracerProvider(*cfg, sdk)
 	require.NoError(t, err)
 	propagator := otel.GetTextMapPropagator()
 	require.NotNil(t, propagator)
@@ -117,7 +117,7 @@ func TestTelemetry_TracerProviderDisabled(t *testing.T) {
 			assert.NoError(t, sdk.Shutdown(context.Background()))
 		}()
 
-		provider, err := newTracerProvider(Settings{SDK: sdk}, *cfg)
+		provider, err := newTracerProvider(*cfg, sdk)
 		require.NoError(t, err)
 		tracer := provider.Tracer("test_tracer")
 		_, span := tracer.Start(context.Background(), "test_span")

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package telemetry
+package otelconftelemetry
 
 import (
 	"context"
@@ -117,7 +117,7 @@ func TestTelemetryInit(t *testing.T) {
 				assert.NoError(t, sdk.Shutdown(context.Background()))
 			})
 
-			mp, err := newMeterProvider(Settings{SDK: sdk}, cfg)
+			mp, err := newMeterProvider(cfg, sdk)
 			require.NoError(t, err)
 
 			createTestMetrics(t, mp)
@@ -231,7 +231,7 @@ func TestInstrumentEnabled(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	meterProvider, err := newMeterProvider(Settings{SDK: sdk}, *cfg)
+	meterProvider, err := newMeterProvider(*cfg, sdk)
 	require.NoError(t, err)
 
 	meter := meterProvider.Meter("go.opentelemetry.io/collector/service/telemetry")
