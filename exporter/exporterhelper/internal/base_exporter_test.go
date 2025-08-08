@@ -10,16 +10,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/hosttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/storagetest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pipeline"
+	"go.opentelemetry.io/otel/codes"
 )
 
 func TestBaseExporter(t *testing.T) {
@@ -107,10 +111,9 @@ func TestExporterStartupDebugLogging(t *testing.T) {
 		{
 			name:         "queue disabled",
 			queueEnabled: false,
-			expectedLogs: 3,
+			expectedLogs: 2,
 			expectedMessages: []string{
 				"Starting exporter",
-				"Starting QueueSender",
 				"Started exporter",
 			},
 		},
@@ -129,7 +132,6 @@ func TestExporterStartupDebugLogging(t *testing.T) {
 			bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				WithQueue(qCfg),
-				WithBatcher(NewDefaultBatcherConfig()),
 				WithRetry(rCfg))
 			require.NoError(t, err)
 			require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
@@ -147,6 +149,231 @@ func TestExporterStartupDebugLogging(t *testing.T) {
 			require.NoError(t, bs.Shutdown(context.Background()))
 		})
 	}
+}
+
+func TestExporterStartupQueueSenderError(t *testing.T) {
+	storageError := errors.New("could not get storage client")
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	logger, observed := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+	rCfg := configretry.NewDefaultBackOffConfig()
+	rCfg.Enabled = false
+	qCfg := NewDefaultQueueConfig()
+	qCfg.Enabled = true
+	storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
+	qCfg.StorageID = &storageID
+
+	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
+		WithQueueBatchSettings(newFakeQueueBatch()),
+		WithQueue(qCfg),
+		WithRetry(rCfg))
+	require.NoError(t, err)
+
+	// Create a host with a mock storage extension that returns an error
+	host := hosttest.NewHost(map[component.ID]component.Component{
+		storageID: storagetest.NewMockStorageExtension(storageError),
+	})
+
+	// Start should fail due to QueueSender error
+	startErr := bs.Start(context.Background(), host)
+	require.Error(t, startErr)
+	assert.Contains(t, startErr.Error(), "could not get storage client")
+
+	// Check debug logs
+	debugLogs := observed.FilterLevelExact(zap.DebugLevel).All()
+	require.Len(t, debugLogs, 2)
+	assert.Contains(t, debugLogs[0].Message, "Starting exporter")
+	assert.Contains(t, debugLogs[1].Message, "Starting QueueSender")
+
+	// Check error logs
+	errorLogs := observed.FilterLevelExact(zap.ErrorLevel).All()
+	require.Len(t, errorLogs, 1)
+	assert.Contains(t, errorLogs[0].Message, "Failed to start QueueSender")
+	assert.Contains(t, errorLogs[0].ContextMap()["error"], "could not get storage client")
+	assert.Contains(t, errorLogs[0].ContextMap()["exporter"], set.ID.String())
+}
+
+func TestExporterStartupTraceSpans(t *testing.T) {
+	// Create telemetry with span recorder
+	tt := componenttest.NewTelemetry()
+	t.Cleanup(func() { require.NoError(t, tt.Shutdown(context.Background())) })
+
+	set := exportertest.NewNopSettings(exportertest.NopType)
+	set.TelemetrySettings = tt.NewTelemetrySettings()
+	logger, _ := observer.New(zap.DebugLevel)
+	set.Logger = zap.New(logger)
+
+	// Test case 1: Successful start with QueueSender
+	t.Run("successful_start_with_queue", func(t *testing.T) {
+		// Reset span recorder
+		tt.SpanRecorder.Reset()
+
+		rCfg := configretry.NewDefaultBackOffConfig()
+		rCfg.Enabled = false
+		qCfg := NewDefaultQueueConfig()
+		qCfg.Enabled = true
+		storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
+		qCfg.StorageID = &storageID
+
+		bs, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport,
+			WithQueueBatchSettings(newFakeQueueBatch()),
+			WithQueue(qCfg),
+			WithRetry(rCfg))
+		require.NoError(t, err)
+
+		// Create a host with a mock storage extension that succeeds
+		host := hosttest.NewHost(map[component.ID]component.Component{
+			storageID: storagetest.NewMockStorageExtension(nil),
+		})
+
+		// Start should succeed
+		startErr := bs.Start(context.Background(), host)
+		require.NoError(t, startErr)
+
+		// Verify spans were recorded
+		spans := tt.SpanRecorder.Ended()
+		require.Len(t, spans, 2)
+
+		// Find spans by name
+		var startSpan, queueSpan sdktrace.ReadOnlySpan
+		for _, span := range spans {
+			switch span.Name() {
+			case "Start":
+				startSpan = span
+			case "StartQueueSender":
+				queueSpan = span
+			}
+		}
+		require.NotNil(t, startSpan, "Start span not found")
+		require.NotNil(t, queueSpan, "StartQueueSender span not found")
+
+		// Check the main "Start" span
+		assert.Equal(t, "exporterhelper", startSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Unset, startSpan.Status().Code)
+
+		// Check the "StartQueueSender" span
+		assert.Equal(t, "exporterhelper", queueSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Unset, queueSpan.Status().Code)
+
+		// Verify span hierarchy
+		assert.Equal(t, startSpan.SpanContext(), queueSpan.Parent())
+
+		require.NoError(t, bs.Shutdown(context.Background()))
+	})
+
+	// Test case 2: Successful start without QueueSender
+	t.Run("successful_start_without_queue", func(t *testing.T) {
+		// Reset span recorder
+		tt.SpanRecorder.Reset()
+
+		bs, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport)
+		require.NoError(t, err)
+
+		// Start should succeed
+		startErr := bs.Start(context.Background(), componenttest.NewNopHost())
+		require.NoError(t, startErr)
+
+		// Verify only one span was recorded (no QueueSender)
+		spans := tt.SpanRecorder.Ended()
+		require.Len(t, spans, 1)
+
+		// Check the main "Start" span
+		startSpan := spans[0]
+		assert.Equal(t, "Start", startSpan.Name())
+		assert.Equal(t, "exporterhelper", startSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Unset, startSpan.Status().Code)
+
+		require.NoError(t, bs.Shutdown(context.Background()))
+	})
+
+	// Test case 3: Failed start due to QueueSender error
+	t.Run("failed_start_queue_sender_error", func(t *testing.T) {
+		// Reset span recorder
+		tt.SpanRecorder.Reset()
+
+		storageError := errors.New("could not get storage client")
+		rCfg := configretry.NewDefaultBackOffConfig()
+		rCfg.Enabled = false
+		qCfg := NewDefaultQueueConfig()
+		qCfg.Enabled = true
+		storageID := component.NewIDWithName(component.MustNewType("file_storage"), "storage")
+		qCfg.StorageID = &storageID
+
+		bs, err := NewBaseExporter(set, pipeline.SignalMetrics, noopExport,
+			WithQueueBatchSettings(newFakeQueueBatch()),
+			WithQueue(qCfg),
+			WithRetry(rCfg))
+		require.NoError(t, err)
+
+		// Create a host with a mock storage extension that returns an error
+		host := hosttest.NewHost(map[component.ID]component.Component{
+			storageID: storagetest.NewMockStorageExtension(storageError),
+		})
+
+		// Start should fail due to QueueSender error
+		startErr := bs.Start(context.Background(), host)
+		require.Error(t, startErr)
+		assert.Contains(t, startErr.Error(), "could not get storage client")
+
+		// Verify spans were recorded
+		spans := tt.SpanRecorder.Ended()
+		require.Len(t, spans, 2)
+
+		// Find spans by name
+		var startSpan, queueSpan sdktrace.ReadOnlySpan
+		for _, span := range spans {
+			switch span.Name() {
+			case "Start":
+				startSpan = span
+			case "StartQueueSender":
+				queueSpan = span
+			}
+		}
+		require.NotNil(t, startSpan, "Start span not found")
+		require.NotNil(t, queueSpan, "StartQueueSender span not found")
+
+		// Check the main "Start" span
+		assert.Equal(t, "exporterhelper", startSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Unset, startSpan.Status().Code)
+
+		// Check the "StartQueueSender" span with error
+		assert.Equal(t, "exporterhelper", queueSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Error, queueSpan.Status().Code)
+		assert.Equal(t, storageError.Error(), queueSpan.Status().Description)
+
+		// Verify span hierarchy
+		assert.Equal(t, startSpan.SpanContext(), queueSpan.Parent())
+
+	})
+
+	// Test case 4: Failed start due to wrapped exporter error
+	t.Run("failed_start_wrapped_exporter_error", func(t *testing.T) {
+		// Reset span recorder
+		tt.SpanRecorder.Reset()
+
+		wrappedError := errors.New("wrapped exporter start failed")
+		bs, err := NewBaseExporter(
+			set, pipeline.SignalMetrics, noopExport,
+			WithStart(func(context.Context, component.Host) error { return wrappedError }),
+		)
+		require.NoError(t, err)
+
+		// Start should fail due to wrapped exporter error
+		startErr := bs.Start(context.Background(), componenttest.NewNopHost())
+		require.Error(t, startErr)
+		assert.Equal(t, wrappedError, startErr)
+
+		// Verify only one span was recorded (no QueueSender span created)
+		spans := tt.SpanRecorder.Ended()
+		require.Len(t, spans, 1)
+
+		// Check the main "Start" span
+		startSpan := spans[0]
+		assert.Equal(t, "Start", startSpan.Name())
+		assert.Equal(t, "exporterhelper", startSpan.InstrumentationLibrary().Name)
+		assert.Equal(t, codes.Error, startSpan.Status().Code)
+		assert.Equal(t, wrappedError.Error(), startSpan.Status().Description)
+	})
 }
 
 func TestExporterShutdownDebugLogging(t *testing.T) {
@@ -189,13 +416,11 @@ func TestExporterShutdownDebugLogging(t *testing.T) {
 			name:         "queue disabled, retry enabled",
 			queueEnabled: false,
 			retryEnabled: true,
-			expectedLogs: 7,
+			expectedLogs: 5,
 			expectedMessages: []string{
 				"Begin exporter shutdown sequence.",
 				"Shutting down exporter retry sender...",
 				"Shutdown exporter retry sender",
-				"Shutting down queue sender...",
-				"Shutdown queue sender",
 				"Shutting down exporter...",
 				"Shutdown exporter",
 			},
@@ -204,11 +429,9 @@ func TestExporterShutdownDebugLogging(t *testing.T) {
 			name:         "queue and retry disabled",
 			queueEnabled: false,
 			retryEnabled: false,
-			expectedLogs: 5,
+			expectedLogs: 3,
 			expectedMessages: []string{
 				"Begin exporter shutdown sequence.",
-				"Shutting down queue sender...",
-				"Shutdown queue sender",
 				"Shutting down exporter...",
 				"Shutdown exporter",
 			},
@@ -228,7 +451,6 @@ func TestExporterShutdownDebugLogging(t *testing.T) {
 			bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 				WithQueueBatchSettings(newFakeQueueBatch()),
 				WithQueue(qCfg),
-				WithBatcher(NewDefaultBatcherConfig()),
 				WithRetry(rCfg))
 			require.NoError(t, err)
 			require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
