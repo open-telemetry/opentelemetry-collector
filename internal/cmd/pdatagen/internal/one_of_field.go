@@ -39,7 +39,7 @@ const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- end }}
 }`
 
-const oneOfMarshalJSONTemplate = `switch ov := ms.{{ .origAccessor }}.{{ .originFieldName }}.(type) {
+const oneOfMarshalJSONTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
 		{{- range .values }}
 		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
 		{{- end }}

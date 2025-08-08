@@ -7,7 +7,9 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
@@ -21,4 +23,70 @@ func CopyOrigExemplar(dest, src *otlpmetrics.Exemplar) {
 	dest.FilteredAttributes = CopyOrigKeyValueSlice(dest.FilteredAttributes, src.FilteredAttributes)
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
+}
+
+func FillOrigTestExemplar(orig *otlpmetrics.Exemplar) {
+	orig.TimeUnixNano = 1234567890
+	orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
+	orig.FilteredAttributes = GenerateOrigTestKeyValueSlice()
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	switch ov := orig.Value.(type) {
+	case *otlpmetrics.Exemplar_AsDouble:
+		dest.WriteObjectField("asDouble")
+		dest.WriteFloat64(ov.AsDouble)
+	case *otlpmetrics.Exemplar_AsInt:
+		dest.WriteObjectField("asInt")
+		dest.WriteInt64(ov.AsInt)
+	}
+	if len(orig.FilteredAttributes) > 0 {
+		dest.WriteObjectField("filteredAttributes")
+		MarshalJSONOrigKeyValueSlice(orig.FilteredAttributes, dest)
+	}
+	if orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		orig.TraceId.MarshalJSONStream(dest)
+	}
+	if orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		orig.SpanId.MarshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigExemplar unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+
+		case "asDouble", "as_double":
+			orig.Value = &otlpmetrics.Exemplar_AsDouble{
+				AsDouble: iter.ReadFloat64(),
+			}
+		case "asInt", "as_int":
+			orig.Value = &otlpmetrics.Exemplar_AsInt{
+				AsInt: iter.ReadInt64(),
+			}
+		case "filteredAttributes", "filtered_attributes":
+			orig.FilteredAttributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "traceId", "trace_id":
+			orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			orig.SpanId.UnmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

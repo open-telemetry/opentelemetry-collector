@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -135,62 +134,4 @@ func (ms Exemplar) SetSpanID(v pcommon.SpanID) {
 func (ms Exemplar) CopyTo(dest Exemplar) {
 	dest.state.AssertMutable()
 	internal.CopyOrigExemplar(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Exemplar) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.TimeUnixNano != 0 {
-		dest.WriteObjectField("timeUnixNano")
-		dest.WriteUint64(ms.orig.TimeUnixNano)
-	}
-	switch ov := ms.orig.Value.(type) {
-	case *otlpmetrics.Exemplar_AsDouble:
-		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(ov.AsDouble)
-	case *otlpmetrics.Exemplar_AsInt:
-		dest.WriteObjectField("asInt")
-		dest.WriteInt64(ov.AsInt)
-	}
-	if len(ms.orig.FilteredAttributes) > 0 {
-		dest.WriteObjectField("filteredAttributes")
-		internal.MarshalJSONStreamMap(internal.NewMap(&ms.orig.FilteredAttributes, ms.state), dest)
-	}
-	if ms.orig.TraceId != data.TraceID([16]byte{}) {
-		dest.WriteObjectField("traceId")
-		ms.orig.TraceId.MarshalJSONStream(dest)
-	}
-	if ms.orig.SpanId != data.SpanID([8]byte{}) {
-		dest.WriteObjectField("spanId")
-		ms.orig.SpanId.MarshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Exemplar) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "timeUnixNano", "time_unix_nano":
-			ms.orig.TimeUnixNano = iter.ReadUint64()
-
-		case "asDouble", "as_double":
-			ms.orig.Value = &otlpmetrics.Exemplar_AsDouble{
-				AsDouble: iter.ReadFloat64(),
-			}
-		case "asInt", "as_int":
-			ms.orig.Value = &otlpmetrics.Exemplar_AsInt{
-				AsInt: iter.ReadInt64(),
-			}
-		case "filteredAttributes", "filtered_attributes":
-			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.FilteredAttributes, ms.state), iter)
-		case "traceId", "trace_id":
-			ms.orig.TraceId.UnmarshalJSONIter(iter)
-		case "spanId", "span_id":
-			ms.orig.SpanId.UnmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

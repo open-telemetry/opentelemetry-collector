@@ -27,28 +27,28 @@ const typedAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 	assert.Equal(t, testVal{{ .fieldName }}, ms.{{ .fieldName }}())
 }`
 
-const typedSetTestTemplate = `tv.orig.{{ .originFieldName }} = {{ .testValue }}`
+const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const typedMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .defaultVal }} {
+const typedMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defaultVal }} {
 		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
 		{{- if .isType }}
-		ms.orig.{{ .originFieldName }}.MarshalJSONStream(dest)
+		orig.{{ .originFieldName }}.MarshalJSONStream(dest)
 		{{- else if .isEnum }}
-		dest.WriteInt32(int32(ms.orig.{{ .originFieldName }}))
+		dest.WriteInt32(int32(orig.{{ .originFieldName }}))
 		{{- else }}	
-		dest.Write{{ upperFirst .rawType }}(ms.orig.{{ .originFieldName }})
+		dest.Write{{ upperFirst .rawType }}(orig.{{ .originFieldName }})
 		{{- end }}
 	}`
 
 const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		{{- if .isType }}
-		ms.orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
+		orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
 		{{- else if .isEnum }}
-		ms.orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
+		orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
 		{{- else }}	
-		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
+		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
 		{{- end }}`
 
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")

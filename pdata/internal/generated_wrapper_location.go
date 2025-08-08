@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLocation(dest, src *otlpprofiles.Location) {
@@ -25,4 +26,59 @@ func CopyOrigLocation(dest, src *otlpprofiles.Location) {
 	dest.Line = CopyOrigLineSlice(dest.Line, src.Line)
 	dest.IsFolded = src.IsFolded
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+}
+
+func FillOrigTestLocation(orig *otlpprofiles.Location) {
+	orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
+	orig.Address = uint64(13)
+	orig.Line = GenerateOrigTestLineSlice()
+	orig.IsFolded = true
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.MappingIndex_ != nil {
+		dest.WriteObjectField("mappingIndex")
+		dest.WriteInt32(orig.GetMappingIndex())
+	}
+	if orig.Address != uint64(0) {
+		dest.WriteObjectField("address")
+		dest.WriteUint64(orig.Address)
+	}
+	if len(orig.Line) > 0 {
+		dest.WriteObjectField("line")
+		MarshalJSONOrigLineSlice(orig.Line, dest)
+	}
+	if orig.IsFolded != false {
+		dest.WriteObjectField("isFolded")
+		dest.WriteBool(orig.IsFolded)
+	}
+	if len(orig.AttributeIndices) > 0 {
+		dest.WriteObjectField("attributeIndices")
+		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigLocation unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLocation(orig *otlpprofiles.Location, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "mappingIndex", "mapping_index":
+			orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: iter.ReadInt32()}
+		case "address":
+			orig.Address = iter.ReadUint64()
+		case "line":
+			orig.Line = UnmarshalJSONOrigLineSlice(iter)
+		case "isFolded", "is_folded":
+			orig.IsFolded = iter.ReadBool()
+		case "attributeIndices", "attribute_indices":
+			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

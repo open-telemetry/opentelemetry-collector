@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -242,83 +241,4 @@ func (ms Metric) SetEmptySummary() Summary {
 func (ms Metric) CopyTo(dest Metric) {
 	dest.state.AssertMutable()
 	internal.CopyOrigMetric(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Metric) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Name != "" {
-		dest.WriteObjectField("name")
-		dest.WriteString(ms.orig.Name)
-	}
-	if ms.orig.Description != "" {
-		dest.WriteObjectField("description")
-		dest.WriteString(ms.orig.Description)
-	}
-	if ms.orig.Unit != "" {
-		dest.WriteObjectField("unit")
-		dest.WriteString(ms.orig.Unit)
-	}
-	if len(ms.orig.Metadata) > 0 {
-		dest.WriteObjectField("metadata")
-		internal.MarshalJSONStreamMap(internal.NewMap(&ms.orig.Metadata, ms.state), dest)
-	}
-	switch ov := ms.orig.Data.(type) {
-	case *otlpmetrics.Metric_Gauge:
-		dest.WriteObjectField("gauge")
-		newGauge(ov.Gauge, ms.state).marshalJSONStream(dest)
-	case *otlpmetrics.Metric_Sum:
-		dest.WriteObjectField("sum")
-		newSum(ov.Sum, ms.state).marshalJSONStream(dest)
-	case *otlpmetrics.Metric_Histogram:
-		dest.WriteObjectField("histogram")
-		newHistogram(ov.Histogram, ms.state).marshalJSONStream(dest)
-	case *otlpmetrics.Metric_ExponentialHistogram:
-		dest.WriteObjectField("exponentialHistogram")
-		newExponentialHistogram(ov.ExponentialHistogram, ms.state).marshalJSONStream(dest)
-	case *otlpmetrics.Metric_Summary:
-		dest.WriteObjectField("summary")
-		newSummary(ov.Summary, ms.state).marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Metric) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "name":
-			ms.orig.Name = iter.ReadString()
-		case "description":
-			ms.orig.Description = iter.ReadString()
-		case "unit":
-			ms.orig.Unit = iter.ReadString()
-		case "metadata":
-			internal.UnmarshalJSONIterMap(internal.NewMap(&ms.orig.Metadata, ms.state), iter)
-
-		case "gauge":
-			val := &otlpmetrics.Gauge{}
-			ms.orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
-			newGauge(val, ms.state).unmarshalJSONIter(iter)
-		case "sum":
-			val := &otlpmetrics.Sum{}
-			ms.orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
-			newSum(val, ms.state).unmarshalJSONIter(iter)
-		case "histogram":
-			val := &otlpmetrics.Histogram{}
-			ms.orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
-			newHistogram(val, ms.state).unmarshalJSONIter(iter)
-		case "exponentialHistogram", "exponential_histogram":
-			val := &otlpmetrics.ExponentialHistogram{}
-			ms.orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
-			newExponentialHistogram(val, ms.state).unmarshalJSONIter(iter)
-		case "summary":
-			val := &otlpmetrics.Summary{}
-			ms.orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
-			newSummary(val, ms.state).unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

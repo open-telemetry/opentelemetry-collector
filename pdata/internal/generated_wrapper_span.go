@@ -7,7 +7,9 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan(dest, src *otlptrace.Span) {
@@ -27,4 +29,134 @@ func CopyOrigSpan(dest, src *otlptrace.Span) {
 	dest.Links = CopyOrigSpan_LinkSlice(dest.Links, src.Links)
 	dest.DroppedLinksCount = src.DroppedLinksCount
 	CopyOrigStatus(&dest.Status, &src.Status)
+}
+
+func FillOrigTestSpan(orig *otlptrace.Span) {
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	FillOrigTestTraceState(&orig.TraceState)
+	orig.ParentSpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	orig.Name = "test_name"
+	orig.Flags = uint32(13)
+	orig.Kind = otlptrace.Span_SpanKind(3)
+	orig.StartTimeUnixNano = 1234567890
+	orig.EndTimeUnixNano = 1234567890
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+	orig.Events = GenerateOrigTestSpan_EventSlice()
+	orig.DroppedEventsCount = uint32(13)
+	orig.Links = GenerateOrigTestSpan_LinkSlice()
+	orig.DroppedLinksCount = uint32(13)
+	FillOrigTestStatus(&orig.Status)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		orig.TraceId.MarshalJSONStream(dest)
+	}
+	if orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		orig.SpanId.MarshalJSONStream(dest)
+	}
+	if orig.TraceState != "" {
+		dest.WriteObjectField("traceState")
+		MarshalJSONOrigTraceState(&orig.TraceState, dest)
+	}
+	if orig.ParentSpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("parentSpanId")
+		orig.ParentSpanId.MarshalJSONStream(dest)
+	}
+	if orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(orig.Name)
+	}
+	if orig.Flags != uint32(0) {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	if orig.Kind != otlptrace.Span_SpanKind(0) {
+		dest.WriteObjectField("kind")
+		dest.WriteInt32(int32(orig.Kind))
+	}
+	if orig.StartTimeUnixNano != 0 {
+		dest.WriteObjectField("startTimeUnixNano")
+		dest.WriteUint64(orig.StartTimeUnixNano)
+	}
+	if orig.EndTimeUnixNano != 0 {
+		dest.WriteObjectField("endTimeUnixNano")
+		dest.WriteUint64(orig.EndTimeUnixNano)
+	}
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	if len(orig.Events) > 0 {
+		dest.WriteObjectField("events")
+		MarshalJSONOrigSpan_EventSlice(orig.Events, dest)
+	}
+	if orig.DroppedEventsCount != uint32(0) {
+		dest.WriteObjectField("droppedEventsCount")
+		dest.WriteUint32(orig.DroppedEventsCount)
+	}
+	if len(orig.Links) > 0 {
+		dest.WriteObjectField("links")
+		MarshalJSONOrigSpan_LinkSlice(orig.Links, dest)
+	}
+	if orig.DroppedLinksCount != uint32(0) {
+		dest.WriteObjectField("droppedLinksCount")
+		dest.WriteUint32(orig.DroppedLinksCount)
+	}
+	dest.WriteObjectField("status")
+	MarshalJSONOrigStatus(&orig.Status, dest)
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSpan unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSpan(orig *otlptrace.Span, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "traceId", "trace_id":
+			orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			orig.SpanId.UnmarshalJSONIter(iter)
+		case "traceState", "trace_state":
+			UnmarshalJSONOrigTraceState(&orig.TraceState, iter)
+		case "parentSpanId", "parent_span_id":
+			orig.ParentSpanId.UnmarshalJSONIter(iter)
+		case "name":
+			orig.Name = iter.ReadString()
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		case "kind":
+			orig.Kind = otlptrace.Span_SpanKind(iter.ReadEnumValue(otlptrace.Span_SpanKind_value))
+		case "startTimeUnixNano", "start_time_unix_nano":
+			orig.StartTimeUnixNano = iter.ReadUint64()
+		case "endTimeUnixNano", "end_time_unix_nano":
+			orig.EndTimeUnixNano = iter.ReadUint64()
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		case "events":
+			orig.Events = UnmarshalJSONOrigSpan_EventSlice(iter)
+		case "droppedEventsCount", "dropped_events_count":
+			orig.DroppedEventsCount = iter.ReadUint32()
+		case "links":
+			orig.Links = UnmarshalJSONOrigSpan_LinkSlice(iter)
+		case "droppedLinksCount", "dropped_links_count":
+			orig.DroppedLinksCount = iter.ReadUint32()
+		case "status":
+			UnmarshalJSONOrigStatus(&orig.Status, iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

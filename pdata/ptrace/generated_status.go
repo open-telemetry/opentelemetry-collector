@@ -9,7 +9,6 @@ package ptrace
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Status is an optional final status for this span. Semantically, when Status was not
@@ -77,33 +76,4 @@ func (ms Status) SetMessage(v string) {
 func (ms Status) CopyTo(dest Status) {
 	dest.state.AssertMutable()
 	internal.CopyOrigStatus(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Status) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Code != 0 {
-		dest.WriteObjectField("code")
-		dest.WriteInt32(int32(ms.orig.Code))
-	}
-	if ms.orig.Message != "" {
-		dest.WriteObjectField("message")
-		dest.WriteString(ms.orig.Message)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Status) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "code":
-			ms.orig.Code = otlptrace.Status_StatusCode(iter.ReadEnumValue(otlptrace.Status_StatusCode_value))
-		case "message":
-			ms.orig.Message = iter.ReadString()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

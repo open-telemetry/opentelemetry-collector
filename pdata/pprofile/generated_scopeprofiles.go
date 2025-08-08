@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -76,37 +75,4 @@ func (ms ScopeProfiles) Profiles() ProfilesSlice {
 func (ms ScopeProfiles) CopyTo(dest ScopeProfiles) {
 	dest.state.AssertMutable()
 	internal.CopyOrigScopeProfiles(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ScopeProfiles) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("scope")
-	internal.MarshalJSONStreamInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), dest)
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if len(ms.orig.Profiles) > 0 {
-		dest.WriteObjectField("profiles")
-		ms.Profiles().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ScopeProfiles) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "scope":
-			internal.UnmarshalJSONIterInstrumentationScope(internal.NewInstrumentationScope(&ms.orig.Scope, ms.state), iter)
-		case "schemaUrl", "schema_url":
-			ms.orig.SchemaUrl = iter.ReadString()
-		case "profiles":
-			ms.Profiles().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

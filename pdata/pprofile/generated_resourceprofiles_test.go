@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,29 +41,10 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
 }
 
-func TestResourceProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceProfiles()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewResourceProfiles()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
@@ -83,18 +62,12 @@ func TestResourceProfiles_SchemaUrl(t *testing.T) {
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
-	fillTestScopeProfilesSlice(ms.ScopeProfiles())
+	ms.orig.ScopeProfiles = internal.GenerateOrigTestScopeProfilesSlice()
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
 func generateTestResourceProfiles() ResourceProfiles {
-	tv := NewResourceProfiles()
-	fillTestResourceProfiles(tv)
-	return tv
-}
-
-func fillTestResourceProfiles(tv ResourceProfiles) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestScopeProfilesSlice(tv.ScopeProfiles())
+	ms := NewResourceProfiles()
+	internal.FillOrigTestResourceProfiles(ms.orig)
+	return ms
 }

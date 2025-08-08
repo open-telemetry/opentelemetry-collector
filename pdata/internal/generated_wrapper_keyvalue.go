@@ -6,9 +6,44 @@
 
 package internal
 
-import v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+import (
+	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
 
 func CopyOrigKeyValue(dest, src *v1.KeyValue) {
 	dest.Key = src.Key
 	CopyOrigAnyValue(&dest.Value, &src.Value)
+}
+
+func FillOrigTestKeyValue(orig *v1.KeyValue) {
+	orig.Key = "test_key"
+	FillOrigTestAnyValue(&orig.Value)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigKeyValue(orig *v1.KeyValue, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.Key != "" {
+		dest.WriteObjectField("key")
+		dest.WriteString(orig.Key)
+	}
+	dest.WriteObjectField("value")
+	MarshalJSONOrigAnyValue(&orig.Value, dest)
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigAttribute unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigKeyValue(orig *v1.KeyValue, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "key":
+			orig.Key = iter.ReadString()
+		case "value":
+			UnmarshalJSONOrigAnyValue(&orig.Value, iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
@@ -37,4 +38,37 @@ func CopyOrigLineSlice(dest, src []*otlpprofiles.Line) []*otlpprofiles.Line {
 		CopyOrigLine(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
+	orig := make([]*otlpprofiles.Line, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.Line{}
+		FillOrigTestLine(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigLineSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigLineSlice(orig []*otlpprofiles.Line, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigLine(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigLine(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigLineSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLineSlice(iter *json.Iterator) []*otlpprofiles.Line {
+	var orig []*otlpprofiles.Line
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.Line{})
+		UnmarshalJSONOrigLine(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

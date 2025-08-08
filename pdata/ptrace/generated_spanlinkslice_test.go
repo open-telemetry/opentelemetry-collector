@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSpanLinkSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestSpanLinkSlice(t *testing.T) {
 	emptyVal := NewSpanLink()
 	testVal := generateTestSpanLink()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestSpanLink(el)
+		internal.FillOrigTestSpan_Link((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestSpanLinkSliceReadOnly(t *testing.T) {
 
 func TestSpanLinkSlice_CopyTo(t *testing.T) {
 	dest := NewSpanLinkSlice()
-	// Test CopyTo empty
-	NewSpanLinkSlice().CopyTo(dest)
-	assert.Equal(t, NewSpanLinkSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestSpanLinkSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSpanLinkSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestSpanLinkSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewSpanLinkSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestSpanLinkSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestSpanLinkSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestSpanLinkSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpanLinkSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSpanLinkSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestSpanLinkSlice_Sort(t *testing.T) {
 	es := generateTestSpanLinkSlice()
 	es.Sort(func(a, b SpanLink) bool {
@@ -194,15 +159,7 @@ func TestSpanLinkSlice_Sort(t *testing.T) {
 }
 
 func generateTestSpanLinkSlice() SpanLinkSlice {
-	es := NewSpanLinkSlice()
-	fillTestSpanLinkSlice(es)
-	return es
-}
-
-func fillTestSpanLinkSlice(es SpanLinkSlice) {
-	*es.orig = make([]*otlptrace.Span_Link, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.Span_Link{}
-		fillTestSpanLink(newSpanLink((*es.orig)[i], es.state))
-	}
+	ms := NewSpanLinkSlice()
+	*ms.orig = internal.GenerateOrigTestSpan_LinkSlice()
+	return ms
 }

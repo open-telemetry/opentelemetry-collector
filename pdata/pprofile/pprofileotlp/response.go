@@ -42,7 +42,7 @@ func (ms ExportResponse) MarshalJSON() ([]byte, error) {
 	defer json.ReturnStream(dest)
 	dest.WriteObjectStart()
 	dest.WriteObjectField("partialSuccess")
-	ms.PartialSuccess().marshalJSONStream(dest)
+	internal.MarshalJSONOrigExportProfilesPartialSuccess(&ms.orig.PartialSuccess, dest)
 	dest.WriteObjectEnd()
 	return slices.Clone(dest.Buffer()), dest.Error()
 }
@@ -59,7 +59,7 @@ func (ms ExportResponse) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "partial_success", "partialSuccess":
-			ms.PartialSuccess().unmarshalJSONIter(iter)
+			internal.UnmarshalJSONOrigExportProfilesPartialSuccess(&ms.orig.PartialSuccess, iter)
 		default:
 			iter.Skip()
 		}

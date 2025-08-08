@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
@@ -20,4 +21,87 @@ func CopyOrigMapping(dest, src *otlpprofiles.Mapping) {
 	dest.HasFilenames = src.HasFilenames
 	dest.HasLineNumbers = src.HasLineNumbers
 	dest.HasInlineFrames = src.HasInlineFrames
+}
+
+func FillOrigTestMapping(orig *otlpprofiles.Mapping) {
+	orig.MemoryStart = uint64(13)
+	orig.MemoryLimit = uint64(13)
+	orig.FileOffset = uint64(13)
+	orig.FilenameStrindex = int32(13)
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+	orig.HasFunctions = true
+	orig.HasFilenames = true
+	orig.HasLineNumbers = true
+	orig.HasInlineFrames = true
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.MemoryStart != uint64(0) {
+		dest.WriteObjectField("memoryStart")
+		dest.WriteUint64(orig.MemoryStart)
+	}
+	if orig.MemoryLimit != uint64(0) {
+		dest.WriteObjectField("memoryLimit")
+		dest.WriteUint64(orig.MemoryLimit)
+	}
+	if orig.FileOffset != uint64(0) {
+		dest.WriteObjectField("fileOffset")
+		dest.WriteUint64(orig.FileOffset)
+	}
+	if orig.FilenameStrindex != int32(0) {
+		dest.WriteObjectField("filenameStrindex")
+		dest.WriteInt32(orig.FilenameStrindex)
+	}
+	if len(orig.AttributeIndices) > 0 {
+		dest.WriteObjectField("attributeIndices")
+		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+	}
+	if orig.HasFunctions != false {
+		dest.WriteObjectField("hasFunctions")
+		dest.WriteBool(orig.HasFunctions)
+	}
+	if orig.HasFilenames != false {
+		dest.WriteObjectField("hasFilenames")
+		dest.WriteBool(orig.HasFilenames)
+	}
+	if orig.HasLineNumbers != false {
+		dest.WriteObjectField("hasLineNumbers")
+		dest.WriteBool(orig.HasLineNumbers)
+	}
+	if orig.HasInlineFrames != false {
+		dest.WriteObjectField("hasInlineFrames")
+		dest.WriteBool(orig.HasInlineFrames)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigMapping unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigMapping(orig *otlpprofiles.Mapping, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "memoryStart", "memory_start":
+			orig.MemoryStart = iter.ReadUint64()
+		case "memoryLimit", "memory_limit":
+			orig.MemoryLimit = iter.ReadUint64()
+		case "fileOffset", "file_offset":
+			orig.FileOffset = iter.ReadUint64()
+		case "filenameStrindex", "filename_strindex":
+			orig.FilenameStrindex = iter.ReadInt32()
+		case "attributeIndices", "attribute_indices":
+			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+		case "hasFunctions", "has_functions":
+			orig.HasFunctions = iter.ReadBool()
+		case "hasFilenames", "has_filenames":
+			orig.HasFilenames = iter.ReadBool()
+		case "hasLineNumbers", "has_line_numbers":
+			orig.HasLineNumbers = iter.ReadBool()
+		case "hasInlineFrames", "has_inline_frames":
+			orig.HasInlineFrames = iter.ReadBool()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

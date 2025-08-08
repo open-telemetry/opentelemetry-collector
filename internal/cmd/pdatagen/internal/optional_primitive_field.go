@@ -52,7 +52,7 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 	assert.False(t, dest.Has{{ .fieldName }}())
 }`
 
-const optionalPrimitiveSetTestTemplate = `tv.orig.{{ .fieldName }}_ = &{{ .originStructType }}{
+const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
@@ -66,13 +66,13 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 	dest.{{ .fieldName }}_ = nil
 }`
 
-const optionalPrimitiveMarshalJSONTemplate = `if ms.Has{{ .fieldName }}() {
+const optionalPrimitiveMarshalJSONTemplate = `if orig.{{ .fieldName }}_ != nil {
 		dest.WriteObjectField("{{ lowerFirst .fieldName }}")
-		dest.Write{{ upperFirst .returnType }}(ms.{{ .fieldName }}())
+		dest.Write{{ upperFirst .returnType }}(orig.Get{{ .fieldName }}())
 	}`
 
 const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
-		ms.orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
+		orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
 
 type OptionalPrimitiveField struct {
 	fieldName string

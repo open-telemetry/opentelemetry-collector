@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
@@ -22,4 +23,77 @@ func CopyOrigNumberDataPoint(dest, src *otlpmetrics.NumberDataPoint) {
 	}
 	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
 	dest.Flags = src.Flags
+}
+
+func FillOrigTestNumberDataPoint(orig *otlpmetrics.NumberDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(3.1415926)}
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.StartTimeUnixNano != 0 {
+		dest.WriteObjectField("startTimeUnixNano")
+		dest.WriteUint64(orig.StartTimeUnixNano)
+	}
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	switch ov := orig.Value.(type) {
+	case *otlpmetrics.NumberDataPoint_AsDouble:
+		dest.WriteObjectField("asDouble")
+		dest.WriteFloat64(ov.AsDouble)
+	case *otlpmetrics.NumberDataPoint_AsInt:
+		dest.WriteObjectField("asInt")
+		dest.WriteInt64(ov.AsInt)
+	}
+	if len(orig.Exemplars) > 0 {
+		dest.WriteObjectField("exemplars")
+		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+	}
+	if orig.Flags != 0 {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigNumberDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+
+		case "asDouble", "as_double":
+			orig.Value = &otlpmetrics.NumberDataPoint_AsDouble{
+				AsDouble: iter.ReadFloat64(),
+			}
+		case "asInt", "as_int":
+			orig.Value = &otlpmetrics.NumberDataPoint_AsInt{
+				AsInt: iter.ReadInt64(),
+			}
+		case "exemplars":
+			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -42,26 +40,6 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
-}
-
-func TestExemplar_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExemplar()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewExemplar()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -100,7 +78,7 @@ func TestExemplar_IntValue(t *testing.T) {
 func TestExemplar_FilteredAttributes(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
+	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
 
@@ -121,15 +99,7 @@ func TestExemplar_SpanID(t *testing.T) {
 }
 
 func generateTestExemplar() Exemplar {
-	tv := NewExemplar()
-	fillTestExemplar(tv)
-	return tv
-}
-
-func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(13)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes, tv.state))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	ms := NewExemplar()
+	internal.FillOrigTestExemplar(ms.orig)
+	return ms
 }

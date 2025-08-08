@@ -13,6 +13,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -81,11 +82,10 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate ResourceSpans as pdata struct.
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	td := generateTestTraces()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(traces.getOrig())
+	wire1, err := gogoproto.Marshal(td.getOrig())
 	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -106,38 +106,36 @@ func TestResourceSpansWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.Equal(t, traces.getOrig(), &gogoprotoRS2)
+	assert.Equal(t, td.getOrig(), &gogoprotoRS2)
 }
 
 func TestTracesCopyTo(t *testing.T) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	td := generateTestTraces()
 	tracesCopy := NewTraces()
-	traces.CopyTo(tracesCopy)
-	assert.Equal(t, traces, tracesCopy)
+	td.CopyTo(tracesCopy)
+	assert.Equal(t, td, tracesCopy)
 }
 
 func TestReadOnlyTracesInvalidUsage(t *testing.T) {
-	traces := NewTraces()
-	assert.False(t, traces.IsReadOnly())
-	res := traces.ResourceSpans().AppendEmpty().Resource()
+	td := NewTraces()
+	assert.False(t, td.IsReadOnly())
+	res := td.ResourceSpans().AppendEmpty().Resource()
 	res.Attributes().PutStr("k1", "v1")
-	traces.MarkReadOnly()
-	assert.True(t, traces.IsReadOnly())
+	td.MarkReadOnly()
+	assert.True(t, td.IsReadOnly())
 	assert.Panics(t, func() { res.Attributes().PutStr("k2", "v2") })
 }
 
 func BenchmarkTracesUsage(b *testing.B) {
-	traces := NewTraces()
-	fillTestResourceSpansSlice(traces.ResourceSpans())
+	td := generateTestTraces()
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	for bb := 0; bb < b.N; bb++ {
-		for i := 0; i < traces.ResourceSpans().Len(); i++ {
-			rs := traces.ResourceSpans().At(i)
+		for i := 0; i < td.ResourceSpans().Len(); i++ {
+			rs := td.ResourceSpans().At(i)
 			res := rs.Resource()
 			res.Attributes().PutStr("foo", "bar")
 			v, ok := res.Attributes().Get("foo")
@@ -181,15 +179,20 @@ func BenchmarkTracesUsage(b *testing.B) {
 }
 
 func BenchmarkTracesMarshalJSON(b *testing.B) {
-	md := NewTraces()
-	fillTestResourceSpansSlice(md.ResourceSpans())
+	td := generateTestTraces()
 	encoder := &JSONMarshaler{}
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		jsonBuf, err := encoder.MarshalTraces(md)
+		jsonBuf, err := encoder.MarshalTraces(td)
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
+}
+
+func generateTestTraces() Traces {
+	td := NewTraces()
+	td.getOrig().ResourceSpans = internal.GenerateOrigTestResourceSpansSlice()
+	return td
 }

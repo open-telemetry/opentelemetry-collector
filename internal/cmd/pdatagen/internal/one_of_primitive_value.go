@@ -44,7 +44,7 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 }
 `
 
-const oneOfPrimitiveSetTestTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
@@ -59,7 +59,7 @@ const oneOfPrimitiveMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .ori
 	dest.Write{{ upperFirst .returnType }}(ov.{{ .originFieldName }})`
 
 const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
+	orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 		{{ .originFieldName }}: iter.Read{{ upperFirst .returnType }}(),
 	}`
 

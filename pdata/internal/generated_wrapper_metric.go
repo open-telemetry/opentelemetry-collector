@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
@@ -47,4 +48,92 @@ func CopyOrigMetric(dest, src *otlpmetrics.Metric) {
 			Summary: summary,
 		}
 	}
+}
+
+func FillOrigTestMetric(orig *otlpmetrics.Metric) {
+	orig.Name = "test_name"
+	orig.Description = "test_description"
+	orig.Unit = "test_unit"
+	orig.Metadata = GenerateOrigTestKeyValueSlice()
+	orig.Data = &otlpmetrics.Metric_Sum{Sum: &otlpmetrics.Sum{}}
+	FillOrigTestSum(orig.GetSum())
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(orig.Name)
+	}
+	if orig.Description != "" {
+		dest.WriteObjectField("description")
+		dest.WriteString(orig.Description)
+	}
+	if orig.Unit != "" {
+		dest.WriteObjectField("unit")
+		dest.WriteString(orig.Unit)
+	}
+	if len(orig.Metadata) > 0 {
+		dest.WriteObjectField("metadata")
+		MarshalJSONOrigKeyValueSlice(orig.Metadata, dest)
+	}
+	switch ov := orig.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+		dest.WriteObjectField("gauge")
+		MarshalJSONOrigGauge(ov.Gauge, dest)
+	case *otlpmetrics.Metric_Sum:
+		dest.WriteObjectField("sum")
+		MarshalJSONOrigSum(ov.Sum, dest)
+	case *otlpmetrics.Metric_Histogram:
+		dest.WriteObjectField("histogram")
+		MarshalJSONOrigHistogram(ov.Histogram, dest)
+	case *otlpmetrics.Metric_ExponentialHistogram:
+		dest.WriteObjectField("exponentialHistogram")
+		MarshalJSONOrigExponentialHistogram(ov.ExponentialHistogram, dest)
+	case *otlpmetrics.Metric_Summary:
+		dest.WriteObjectField("summary")
+		MarshalJSONOrigSummary(ov.Summary, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigMetric unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigMetric(orig *otlpmetrics.Metric, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "name":
+			orig.Name = iter.ReadString()
+		case "description":
+			orig.Description = iter.ReadString()
+		case "unit":
+			orig.Unit = iter.ReadString()
+		case "metadata":
+			orig.Metadata = UnmarshalJSONOrigKeyValueSlice(iter)
+
+		case "gauge":
+			val := &otlpmetrics.Gauge{}
+			orig.Data = &otlpmetrics.Metric_Gauge{Gauge: val}
+			UnmarshalJSONOrigGauge(val, iter)
+		case "sum":
+			val := &otlpmetrics.Sum{}
+			orig.Data = &otlpmetrics.Metric_Sum{Sum: val}
+			UnmarshalJSONOrigSum(val, iter)
+		case "histogram":
+			val := &otlpmetrics.Histogram{}
+			orig.Data = &otlpmetrics.Metric_Histogram{Histogram: val}
+			UnmarshalJSONOrigHistogram(val, iter)
+		case "exponentialHistogram", "exponential_histogram":
+			val := &otlpmetrics.ExponentialHistogram{}
+			orig.Data = &otlpmetrics.Metric_ExponentialHistogram{ExponentialHistogram: val}
+			UnmarshalJSONOrigExponentialHistogram(val, iter)
+		case "summary":
+			val := &otlpmetrics.Summary{}
+			orig.Data = &otlpmetrics.Metric_Summary{Summary: val}
+			UnmarshalJSONOrigSummary(val, iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

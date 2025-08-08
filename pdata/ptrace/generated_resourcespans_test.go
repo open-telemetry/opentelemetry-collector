@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,29 +41,10 @@ func TestResourceSpans_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceSpans(&otlptrace.ResourceSpans{}, &sharedState)) })
 }
 
-func TestResourceSpans_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceSpans()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewResourceSpans()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceSpans_Resource(t *testing.T) {
 	ms := NewResourceSpans()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
 }
 
@@ -81,18 +60,12 @@ func TestResourceSpans_SchemaUrl(t *testing.T) {
 func TestResourceSpans_ScopeSpans(t *testing.T) {
 	ms := NewResourceSpans()
 	assert.Equal(t, NewScopeSpansSlice(), ms.ScopeSpans())
-	fillTestScopeSpansSlice(ms.ScopeSpans())
+	ms.orig.ScopeSpans = internal.GenerateOrigTestScopeSpansSlice()
 	assert.Equal(t, generateTestScopeSpansSlice(), ms.ScopeSpans())
 }
 
 func generateTestResourceSpans() ResourceSpans {
-	tv := NewResourceSpans()
-	fillTestResourceSpans(tv)
-	return tv
-}
-
-func fillTestResourceSpans(tv ResourceSpans) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestScopeSpansSlice(tv.ScopeSpans())
+	ms := NewResourceSpans()
+	internal.FillOrigTestResourceSpans(ms.orig)
+	return ms
 }

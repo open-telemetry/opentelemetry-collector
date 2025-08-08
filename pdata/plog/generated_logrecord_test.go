@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -42,26 +40,6 @@ func TestLogRecord_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newLogRecord(&otlplogs.LogRecord{}, &sharedState)) })
-}
-
-func TestLogRecord_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLogRecord()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewLogRecord()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestLogRecord_ObservedTimestamp(t *testing.T) {
@@ -132,14 +110,15 @@ func TestLogRecord_SeverityNumber(t *testing.T) {
 
 func TestLogRecord_Body(t *testing.T) {
 	ms := NewLogRecord()
-	internal.FillTestValue(internal.Value(ms.Body()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Body())
+	internal.FillOrigTestAnyValue(&ms.orig.Body)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Body())
 }
 
 func TestLogRecord_Attributes(t *testing.T) {
 	ms := NewLogRecord()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -153,21 +132,7 @@ func TestLogRecord_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestLogRecord() LogRecord {
-	tv := NewLogRecord()
-	fillTestLogRecord(tv)
-	return tv
-}
-
-func fillTestLogRecord(tv LogRecord) {
-	tv.orig.ObservedTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.Flags = 1
-	tv.orig.EventName = "test_eventname"
-	tv.orig.SeverityText = "test_severitytext"
-	tv.orig.SeverityNumber = otlplogs.SeverityNumber(5)
-	internal.FillTestValue(internal.NewValue(&tv.orig.Body, tv.state))
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(13)
+	ms := NewLogRecord()
+	internal.FillOrigTestLogRecord(ms.orig)
+	return ms
 }

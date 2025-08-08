@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package confmap
+package internal
 
 import (
 	"errors"
@@ -967,7 +967,7 @@ func TestRecursiveUnmarshaling(t *testing.T) {
 
 func TestExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
-		"key": expandedValue{
+		"key": ExpandedValue{
 			Value:    0xdeadbeef,
 			Original: "original",
 		},
@@ -1000,7 +1000,7 @@ func TestExpandedValue(t *testing.T) {
 func TestSubExpandedValue(t *testing.T) {
 	cm := NewFromStringMap(map[string]any{
 		"key": map[string]any{
-			"subkey": expandedValue{
+			"subkey": ExpandedValue{
 				Value:    map[string]any{"subsubkey": "value"},
 				Original: "subsubkey: value",
 			},
@@ -1085,7 +1085,7 @@ func TestConfDelete(t *testing.T) {
 		{
 			path: "map::expanded",
 			stringMap: map[string]any{"map": map[string]any{
-				"expanded": expandedValue{
+				"expanded": ExpandedValue{
 					Value:    0o1234,
 					Original: "01234",
 				},

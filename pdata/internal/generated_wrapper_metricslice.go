@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric {
@@ -37,4 +38,37 @@ func CopyOrigMetricSlice(dest, src []*otlpmetrics.Metric) []*otlpmetrics.Metric 
 		CopyOrigMetric(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestMetricSlice() []*otlpmetrics.Metric {
+	orig := make([]*otlpmetrics.Metric, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.Metric{}
+		FillOrigTestMetric(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigMetricSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigMetricSlice(orig []*otlpmetrics.Metric, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigMetric(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigMetric(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigMetricSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigMetricSlice(iter *json.Iterator) []*otlpmetrics.Metric {
+	var orig []*otlpmetrics.Metric
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpmetrics.Metric{})
+		UnmarshalJSONOrigMetric(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

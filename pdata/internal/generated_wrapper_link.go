@@ -7,10 +7,46 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.TraceId = src.TraceId
 	dest.SpanId = src.SpanId
+}
+
+func FillOrigTestLink(orig *otlpprofiles.Link) {
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		orig.TraceId.MarshalJSONStream(dest)
+	}
+	if orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		orig.SpanId.MarshalJSONStream(dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigLink unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLink(orig *otlpprofiles.Link, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "traceId", "trace_id":
+			orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			orig.SpanId.UnmarshalJSONIter(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

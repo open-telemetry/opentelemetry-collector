@@ -8,9 +8,44 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSummaryDataPoint_ValueAtQuantile(dest, src *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
 	dest.Quantile = src.Quantile
 	dest.Value = src.Value
+}
+
+func FillOrigTestSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) {
+	orig.Quantile = float64(3.1415926)
+	orig.Value = float64(3.1415926)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.Quantile != float64(0) {
+		dest.WriteObjectField("quantile")
+		dest.WriteFloat64(orig.Quantile)
+	}
+	if orig.Value != float64(0) {
+		dest.WriteObjectField("value")
+		dest.WriteFloat64(orig.Value)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSummaryDataPointValueAtQuantile unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "quantile":
+			orig.Quantile = iter.ReadFloat64()
+		case "value":
+			orig.Value = iter.ReadFloat64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

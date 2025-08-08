@@ -8,10 +8,50 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeSpans = CopyOrigScopeSpansSlice(dest.ScopeSpans, src.ScopeSpans)
+}
+
+func FillOrigTestResourceSpans(orig *otlptrace.ResourceSpans) {
+	FillOrigTestResource(&orig.Resource)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.ScopeSpans = GenerateOrigTestScopeSpansSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resource")
+	MarshalJSONOrigResource(&orig.Resource, dest)
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if len(orig.ScopeSpans) > 0 {
+		dest.WriteObjectField("scopeSpans")
+		MarshalJSONOrigScopeSpansSlice(orig.ScopeSpans, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigResourceSpans unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resource":
+			UnmarshalJSONOrigResource(&orig.Resource, iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "scopeSpans", "scope_spans":
+			orig.ScopeSpans = UnmarshalJSONOrigScopeSpansSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

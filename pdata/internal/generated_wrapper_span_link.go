@@ -7,7 +7,9 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
@@ -17,4 +19,66 @@ func CopyOrigSpan_Link(dest, src *otlptrace.Span_Link) {
 	dest.Flags = src.Flags
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestSpan_Link(orig *otlptrace.Span_Link) {
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	FillOrigTestTraceState(&orig.TraceState)
+	orig.Flags = uint32(13)
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSpan_Link(orig *otlptrace.Span_Link, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		orig.TraceId.MarshalJSONStream(dest)
+	}
+	if orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		orig.SpanId.MarshalJSONStream(dest)
+	}
+	if orig.TraceState != "" {
+		dest.WriteObjectField("traceState")
+		MarshalJSONOrigTraceState(&orig.TraceState, dest)
+	}
+	if orig.Flags != uint32(0) {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSpanLink unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSpan_Link(orig *otlptrace.Span_Link, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "traceId", "trace_id":
+			orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			orig.SpanId.UnmarshalJSONIter(iter)
+		case "traceState", "trace_state":
+			UnmarshalJSONOrigTraceState(&orig.TraceState, iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -8,10 +8,50 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigResourceProfiles(dest, src *otlpprofiles.ResourceProfiles) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
 	dest.SchemaUrl = src.SchemaUrl
 	dest.ScopeProfiles = CopyOrigScopeProfilesSlice(dest.ScopeProfiles, src.ScopeProfiles)
+}
+
+func FillOrigTestResourceProfiles(orig *otlpprofiles.ResourceProfiles) {
+	FillOrigTestResource(&orig.Resource)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.ScopeProfiles = GenerateOrigTestScopeProfilesSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("resource")
+	MarshalJSONOrigResource(&orig.Resource, dest)
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if len(orig.ScopeProfiles) > 0 {
+		dest.WriteObjectField("scopeProfiles")
+		MarshalJSONOrigScopeProfilesSlice(orig.ScopeProfiles, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigResourceProfiles unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "resource":
+			UnmarshalJSONOrigResource(&orig.Resource, iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "scopeProfiles", "scope_profiles":
+			orig.ScopeProfiles = UnmarshalJSONOrigScopeProfilesSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_Link {
@@ -37,4 +38,37 @@ func CopyOrigSpan_LinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_
 		CopyOrigSpan_Link(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestSpan_LinkSlice() []*otlptrace.Span_Link {
+	orig := make([]*otlptrace.Span_Link, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlptrace.Span_Link{}
+		FillOrigTestSpan_Link(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigSpan_LinkSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSpan_LinkSlice(orig []*otlptrace.Span_Link, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigSpan_Link(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigSpan_Link(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigSpan_LinkSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSpan_LinkSlice(iter *json.Iterator) []*otlptrace.Span_Link {
+	var orig []*otlptrace.Span_Link
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlptrace.Span_Link{})
+		UnmarshalJSONOrigSpan_Link(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

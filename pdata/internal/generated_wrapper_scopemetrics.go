@@ -8,10 +8,50 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigScopeMetrics(dest, src *otlpmetrics.ScopeMetrics) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
 	dest.SchemaUrl = src.SchemaUrl
 	dest.Metrics = CopyOrigMetricSlice(dest.Metrics, src.Metrics)
+}
+
+func FillOrigTestScopeMetrics(orig *otlpmetrics.ScopeMetrics) {
+	FillOrigTestInstrumentationScope(&orig.Scope)
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Metrics = GenerateOrigTestMetricSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("scope")
+	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if len(orig.Metrics) > 0 {
+		dest.WriteObjectField("metrics")
+		MarshalJSONOrigMetricSlice(orig.Metrics, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigScopeMetrics unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "scope":
+			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "metrics":
+			orig.Metrics = UnmarshalJSONOrigMetricSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

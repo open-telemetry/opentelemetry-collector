@@ -8,10 +8,52 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLine(dest, src *otlpprofiles.Line) {
 	dest.FunctionIndex = src.FunctionIndex
 	dest.Line = src.Line
 	dest.Column = src.Column
+}
+
+func FillOrigTestLine(orig *otlpprofiles.Line) {
+	orig.FunctionIndex = int32(13)
+	orig.Line = int64(13)
+	orig.Column = int64(13)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigLine(orig *otlpprofiles.Line, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.FunctionIndex != int32(0) {
+		dest.WriteObjectField("functionIndex")
+		dest.WriteInt32(orig.FunctionIndex)
+	}
+	if orig.Line != int64(0) {
+		dest.WriteObjectField("line")
+		dest.WriteInt64(orig.Line)
+	}
+	if orig.Column != int64(0) {
+		dest.WriteObjectField("column")
+		dest.WriteInt64(orig.Column)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigLine unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLine(orig *otlpprofiles.Line, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "functionIndex", "function_index":
+			orig.FunctionIndex = iter.ReadInt32()
+		case "line":
+			orig.Line = iter.ReadInt64()
+		case "column":
+			orig.Column = iter.ReadInt64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

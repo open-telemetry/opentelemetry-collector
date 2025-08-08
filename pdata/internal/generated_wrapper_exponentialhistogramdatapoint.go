@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHistogramDataPoint) {
@@ -52,4 +53,118 @@ func CopyOrigExponentialHistogramDataPoint(dest, src *otlpmetrics.ExponentialHis
 		dest.Max_ = nil
 	}
 	dest.ZeroThreshold = src.ZeroThreshold
+}
+
+func FillOrigTestExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.Scale = int32(13)
+	orig.ZeroCount = uint64(13)
+	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Positive)
+	FillOrigTestExponentialHistogramDataPoint_Buckets(&orig.Negative)
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+	orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
+	orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
+	orig.ZeroThreshold = float64(3.1415926)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.StartTimeUnixNano != 0 {
+		dest.WriteObjectField("startTimeUnixNano")
+		dest.WriteUint64(orig.StartTimeUnixNano)
+	}
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	if orig.Count != uint64(0) {
+		dest.WriteObjectField("count")
+		dest.WriteUint64(orig.Count)
+	}
+	if orig.Scale != int32(0) {
+		dest.WriteObjectField("scale")
+		dest.WriteInt32(orig.Scale)
+	}
+	if orig.ZeroCount != uint64(0) {
+		dest.WriteObjectField("zeroCount")
+		dest.WriteUint64(orig.ZeroCount)
+	}
+	dest.WriteObjectField("positive")
+	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, dest)
+	dest.WriteObjectField("negative")
+	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, dest)
+	if len(orig.Exemplars) > 0 {
+		dest.WriteObjectField("exemplars")
+		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+	}
+	if orig.Flags != 0 {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	if orig.Sum_ != nil {
+		dest.WriteObjectField("sum")
+		dest.WriteFloat64(orig.GetSum())
+	}
+	if orig.Min_ != nil {
+		dest.WriteObjectField("min")
+		dest.WriteFloat64(orig.GetMin())
+	}
+	if orig.Max_ != nil {
+		dest.WriteObjectField("max")
+		dest.WriteFloat64(orig.GetMax())
+	}
+	if orig.ZeroThreshold != float64(0) {
+		dest.WriteObjectField("zeroThreshold")
+		dest.WriteFloat64(orig.ZeroThreshold)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigExponentialHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialHistogramDataPoint, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			orig.Count = iter.ReadUint64()
+		case "scale":
+			orig.Scale = iter.ReadInt32()
+		case "zeroCount", "zero_count":
+			orig.ZeroCount = iter.ReadUint64()
+		case "positive":
+			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, iter)
+		case "negative":
+			UnmarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, iter)
+		case "exemplars":
+			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		case "sum":
+			orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "min":
+			orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		case "zeroThreshold", "zero_threshold":
+			orig.ZeroThreshold = iter.ReadFloat64()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

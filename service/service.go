@@ -378,6 +378,11 @@ func configureViews(level configtelemetry.Level) []config.View {
 			dropViewOption(&config.ViewSelector{
 				MeterName: ptr("go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"),
 			}),
+			// Drop duration metric if the level is not detailed
+			dropViewOption(&config.ViewSelector{
+				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
+				InstrumentName: ptr("otelcol_processor_internal_duration"),
+			}),
 		)
 	}
 

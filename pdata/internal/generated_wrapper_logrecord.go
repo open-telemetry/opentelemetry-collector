@@ -7,7 +7,9 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
@@ -22,4 +24,99 @@ func CopyOrigLogRecord(dest, src *otlplogs.LogRecord) {
 	CopyOrigAnyValue(&dest.Body, &src.Body)
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestLogRecord(orig *otlplogs.LogRecord) {
+	orig.ObservedTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+	orig.Flags = 1
+	orig.EventName = "test_eventname"
+	orig.SeverityText = "test_severitytext"
+	orig.SeverityNumber = otlplogs.SeverityNumber(5)
+	FillOrigTestAnyValue(&orig.Body)
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.ObservedTimeUnixNano != 0 {
+		dest.WriteObjectField("observedTimeUnixNano")
+		dest.WriteUint64(orig.ObservedTimeUnixNano)
+	}
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	if orig.TraceId != data.TraceID([16]byte{}) {
+		dest.WriteObjectField("traceId")
+		orig.TraceId.MarshalJSONStream(dest)
+	}
+	if orig.SpanId != data.SpanID([8]byte{}) {
+		dest.WriteObjectField("spanId")
+		orig.SpanId.MarshalJSONStream(dest)
+	}
+	if orig.Flags != 0 {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	if orig.EventName != "" {
+		dest.WriteObjectField("eventName")
+		dest.WriteString(orig.EventName)
+	}
+	if orig.SeverityText != "" {
+		dest.WriteObjectField("severityText")
+		dest.WriteString(orig.SeverityText)
+	}
+	if orig.SeverityNumber != otlplogs.SeverityNumber(0) {
+		dest.WriteObjectField("severityNumber")
+		dest.WriteInt32(int32(orig.SeverityNumber))
+	}
+	dest.WriteObjectField("body")
+	MarshalJSONOrigAnyValue(&orig.Body, dest)
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigLogRecord unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "observedTimeUnixNano", "observed_time_unix_nano":
+			orig.ObservedTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+		case "traceId", "trace_id":
+			orig.TraceId.UnmarshalJSONIter(iter)
+		case "spanId", "span_id":
+			orig.SpanId.UnmarshalJSONIter(iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		case "eventName", "event_name":
+			orig.EventName = iter.ReadString()
+		case "severityText", "severity_text":
+			orig.SeverityText = iter.ReadString()
+		case "severityNumber", "severity_number":
+			orig.SeverityNumber = otlplogs.SeverityNumber(iter.ReadEnumValue(otlplogs.SeverityNumber_value))
+		case "body":
+			UnmarshalJSONOrigAnyValue(&orig.Body, iter)
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }

@@ -8,9 +8,44 @@ package internal
 
 import (
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigExportTracePartialSuccess(dest, src *otlpcollectortrace.ExportTracePartialSuccess) {
 	dest.RejectedSpans = src.RejectedSpans
 	dest.ErrorMessage = src.ErrorMessage
+}
+
+func FillOrigTestExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess) {
+	orig.RejectedSpans = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.RejectedSpans != int64(0) {
+		dest.WriteObjectField("rejectedSpans")
+		dest.WriteInt64(orig.RejectedSpans)
+	}
+	if orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExportTracePartialSuccess(orig *otlpcollectortrace.ExportTracePartialSuccess, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "rejectedSpans", "rejected_spans":
+			orig.RejectedSpans = iter.ReadInt64()
+		case "errorMessage", "error_message":
+			orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
 }
