@@ -8,10 +8,78 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSum(dest, src *otlpmetrics.Sum) {
+	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
 	dest.AggregationTemporality = src.AggregationTemporality
 	dest.IsMonotonic = src.IsMonotonic
-	dest.DataPoints = CopyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+}
+
+func FillOrigTestSum(orig *otlpmetrics.Sum) {
+	orig.DataPoints = GenerateOrigTestNumberDataPointSlice()
+	orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
+	orig.IsMonotonic = true
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSum(orig *otlpmetrics.Sum, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		MarshalJSONOrigNumberDataPointSlice(orig.DataPoints, dest)
+	}
+	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+		dest.WriteObjectField("aggregationTemporality")
+		dest.WriteInt32(int32(orig.AggregationTemporality))
+	}
+	if orig.IsMonotonic != false {
+		dest.WriteObjectField("isMonotonic")
+		dest.WriteBool(orig.IsMonotonic)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSum unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSum(orig *otlpmetrics.Sum, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "dataPoints", "data_points":
+			orig.DataPoints = UnmarshalJSONOrigNumberDataPointSlice(iter)
+		case "aggregationTemporality", "aggregation_temporality":
+			orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
+		case "isMonotonic", "is_monotonic":
+			orig.IsMonotonic = iter.ReadBool()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigSum(orig *otlpmetrics.Sum) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = SizeProtoOrigNumberDataPoint(orig.DataPoints[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.AggregationTemporality != 0 {
+		n += 1 + proto.Sov(uint64(orig.AggregationTemporality))
+	}
+	if orig.IsMonotonic {
+		n += 2
+	}
+	return n
+}
+
+func MarshalProtoOrigSum(orig *otlpmetrics.Sum) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

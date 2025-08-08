@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Function describes a function, including its human-readable name, system name, source file, and starting line number in the source.
@@ -98,45 +97,4 @@ func (ms Function) SetStartLine(v int64) {
 func (ms Function) CopyTo(dest Function) {
 	dest.state.AssertMutable()
 	internal.CopyOrigFunction(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Function) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.NameStrindex != int32(0) {
-		dest.WriteObjectField("nameStrindex")
-		dest.WriteInt32(ms.orig.NameStrindex)
-	}
-	if ms.orig.SystemNameStrindex != int32(0) {
-		dest.WriteObjectField("systemNameStrindex")
-		dest.WriteInt32(ms.orig.SystemNameStrindex)
-	}
-	if ms.orig.FilenameStrindex != int32(0) {
-		dest.WriteObjectField("filenameStrindex")
-		dest.WriteInt32(ms.orig.FilenameStrindex)
-	}
-	if ms.orig.StartLine != int64(0) {
-		dest.WriteObjectField("startLine")
-		dest.WriteInt64(ms.orig.StartLine)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Function) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "nameStrindex", "name_strindex":
-			ms.orig.NameStrindex = iter.ReadInt32()
-		case "systemNameStrindex", "system_name_strindex":
-			ms.orig.SystemNameStrindex = iter.ReadInt32()
-		case "filenameStrindex", "filename_strindex":
-			ms.orig.FilenameStrindex = iter.ReadInt32()
-		case "startLine", "start_line":
-			ms.orig.StartLine = iter.ReadInt64()
-		default:
-			iter.Skip()
-		}
-		return true
-	})
 }

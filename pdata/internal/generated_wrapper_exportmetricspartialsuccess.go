@@ -8,9 +8,67 @@ package internal
 
 import (
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigExportMetricsPartialSuccess(dest, src *otlpcollectormetrics.ExportMetricsPartialSuccess) {
 	dest.RejectedDataPoints = src.RejectedDataPoints
 	dest.ErrorMessage = src.ErrorMessage
+}
+
+func FillOrigTestExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) {
+	orig.RejectedDataPoints = int64(13)
+	orig.ErrorMessage = "test_errormessage"
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.RejectedDataPoints != int64(0) {
+		dest.WriteObjectField("rejectedDataPoints")
+		dest.WriteInt64(orig.RejectedDataPoints)
+	}
+	if orig.ErrorMessage != "" {
+		dest.WriteObjectField("errorMessage")
+		dest.WriteString(orig.ErrorMessage)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigExportPartialSuccess unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "rejectedDataPoints", "rejected_data_points":
+			orig.RejectedDataPoints = iter.ReadInt64()
+		case "errorMessage", "error_message":
+			orig.ErrorMessage = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) int {
+	var n int
+	var l int
+	_ = l
+	if orig.RejectedDataPoints != 0 {
+		n += 1 + proto.Sov(uint64(orig.RejectedDataPoints))
+	}
+	l = len(orig.ErrorMessage)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigExportMetricsPartialSuccess(orig *otlpcollectormetrics.ExportMetricsPartialSuccess, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

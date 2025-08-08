@@ -8,8 +8,56 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSummary(dest, src *otlpmetrics.Summary) {
 	dest.DataPoints = CopyOrigSummaryDataPointSlice(dest.DataPoints, src.DataPoints)
+}
+
+func FillOrigTestSummary(orig *otlpmetrics.Summary) {
+	orig.DataPoints = GenerateOrigTestSummaryDataPointSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.DataPoints) > 0 {
+		dest.WriteObjectField("dataPoints")
+		MarshalJSONOrigSummaryDataPointSlice(orig.DataPoints, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSummary unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSummary(orig *otlpmetrics.Summary, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "dataPoints", "data_points":
+			orig.DataPoints = UnmarshalJSONOrigSummaryDataPointSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigSummary(orig *otlpmetrics.Summary) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = SizeProtoOrigSummaryDataPoint(orig.DataPoints[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigSummary(orig *otlpmetrics.Summary) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSummary(orig *otlpmetrics.Summary, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

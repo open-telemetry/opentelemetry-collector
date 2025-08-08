@@ -8,6 +8,8 @@ package internal
 
 import (
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
@@ -15,4 +17,81 @@ func CopyOrigSpan_Event(dest, src *otlptrace.Span_Event) {
 	dest.Name = src.Name
 	dest.Attributes = CopyOrigKeyValueSlice(dest.Attributes, src.Attributes)
 	dest.DroppedAttributesCount = src.DroppedAttributesCount
+}
+
+func FillOrigTestSpan_Event(orig *otlptrace.Span_Event) {
+	orig.TimeUnixNano = 1234567890
+	orig.Name = "test_name"
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.DroppedAttributesCount = uint32(13)
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	if orig.Name != "" {
+		dest.WriteObjectField("name")
+		dest.WriteString(orig.Name)
+	}
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSpanEvent unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+		case "name":
+			orig.Name = iter.ReadString()
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigSpan_Event(orig *otlptrace.Span_Event) int {
+	var n int
+	var l int
+	_ = l
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	l = len(orig.Name)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	return n
+}
+
+func MarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSpan_Event(orig *otlptrace.Span_Event, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

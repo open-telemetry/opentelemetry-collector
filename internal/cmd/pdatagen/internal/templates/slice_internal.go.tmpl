@@ -33,41 +33,9 @@ func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .st
 }
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := []{{ .originElementType }}(nil)
+	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
 	state := StateMutable
-	es := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(es)
-	return es
-}
-
-func FillTest{{ .structName }}(es {{ .structName }}) {
-	*es.orig = make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = {{ .emptyOriginElement }}
-		FillTest{{ .elementName }}(New{{ .elementName }}({{ .originElementPtr }}(*es.orig)[i], es.state))
-	}
-}
-
-// MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
-func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		MarshalJSONStream{{ .elementName }}(New{{ .elementName }}({{ .originElementPtr }}(*ms.orig)[0], ms.state), dest)
-	}
-	for i := 1; i < len((*ms.orig)); i++ {
-		dest.WriteMore()
-		MarshalJSONStream{{ .elementName }}(New{{ .elementName }}({{ .originElementPtr }}(*ms.orig)[i], ms.state), dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, {{ .emptyOriginElement }})
-		UnmarshalJSONIter{{ .elementName }}(New{{ .elementName }}({{ .originElementPtr }}(*ms.orig)[len(*ms.orig)-1], ms.state), iter)
-		return true
-	})
+	return New{{ .structName }}(&orig, &state)
 }
 {{ end }}
 
@@ -108,4 +76,37 @@ func CopyOrig{{ .elementOriginName }}Slice(dest, src []{{ .originElementType }})
 	CopyOrig{{ .elementOriginName }}({{ .originElementPtr }}newDest[i], {{ .originElementPtr }}src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .originElementType }} {
+	orig := make([]{{ .originElementType }}, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = {{ .emptyOriginElement }}
+		FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrig{{ .elementOriginName }}Slice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrig{{ .elementOriginName }}Slice(orig []{{ .originElementType }}, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ .originElementType }} {
+	var orig []{{ .originElementType }}
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, {{ .emptyOriginElement }})
+		UnmarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

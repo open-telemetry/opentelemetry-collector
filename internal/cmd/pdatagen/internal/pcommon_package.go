@@ -13,6 +13,7 @@ var pcommon = &Package{
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
 			`otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"`,
 			`otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"`,
 		},
@@ -44,17 +45,25 @@ var scope = &messageStruct{
 	description:    "// InstrumentationScope is a message representing the instrumentation scope information.",
 	originFullName: "otlpcommon.InstrumentationScope",
 	fields: []Field{
-		nameField,
+		&PrimitiveField{
+			fieldName: "Name",
+			protoID:   1,
+			protoType: ProtoTypeString,
+		},
 		&PrimitiveField{
 			fieldName: "Version",
+			protoID:   2,
 			protoType: ProtoTypeString,
 		},
 		&SliceField{
 			fieldName:   "Attributes",
+			protoType:   ProtoTypeMessage,
+			protoID:     3,
 			returnSlice: mapStruct,
 		},
 		&PrimitiveField{
 			fieldName: "DroppedAttributesCount",
+			protoID:   4,
 			protoType: ProtoTypeUint32,
 		},
 	},
@@ -74,11 +83,6 @@ var sliceStruct = &sliceOfValues{
 	element:     anyValue,
 }
 
-var scopeField = &MessageField{
-	fieldName:     "Scope",
-	returnMessage: scope,
-}
-
 var traceState = &messageStruct{
 	structName:     "TraceState",
 	packageName:    "pcommon",
@@ -88,32 +92,9 @@ var traceState = &messageStruct{
 var timestampType = &TypedType{
 	structName:  "Timestamp",
 	packageName: "pcommon",
-	rawType:     "uint64",
+	protoType:   ProtoTypeFixed64,
 	defaultVal:  "0",
 	testVal:     "1234567890",
-}
-
-var startTimeField = &TypedField{
-	fieldName:       "StartTimestamp",
-	originFieldName: "StartTimeUnixNano",
-	returnType:      timestampType,
-}
-
-var timeField = &TypedField{
-	fieldName:       "Timestamp",
-	originFieldName: "TimeUnixNano",
-	returnType:      timestampType,
-}
-
-var endTimeField = &TypedField{
-	fieldName:       "EndTimestamp",
-	originFieldName: "EndTimeUnixNano",
-	returnType:      timestampType,
-}
-
-var nameField = &PrimitiveField{
-	fieldName: "Name",
-	protoType: ProtoTypeString,
 }
 
 var anyValue = &messageStruct{
@@ -122,43 +103,22 @@ var anyValue = &messageStruct{
 	originFullName: "otlpcommon.AnyValue",
 }
 
-var traceIDField = &TypedField{
-	fieldName:       "TraceID",
-	originFieldName: "TraceId",
-	returnType: &TypedType{
-		structName:  "TraceID",
-		packageName: "pcommon",
-		rawType:     "data.TraceID",
-		isType:      true,
-		defaultVal:  "data.TraceID([16]byte{})",
-		testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
-	},
-}
-
-var spanIDField = &TypedField{
-	fieldName:       "SpanID",
-	originFieldName: "SpanId",
-	returnType:      spanIDType,
-}
-
-var parentSpanIDField = &TypedField{
-	fieldName:       "ParentSpanID",
-	originFieldName: "ParentSpanId",
-	returnType:      spanIDType,
+var traceIDType = &TypedType{
+	structName:  "TraceID",
+	packageName: "pcommon",
+	protoType:   ProtoTypeMessage,
+	messageName: "data.TraceID",
+	defaultVal:  "data.TraceID([16]byte{})",
+	testVal:     "data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})",
 }
 
 var spanIDType = &TypedType{
 	structName:  "SpanID",
 	packageName: "pcommon",
-	rawType:     "data.SpanID",
-	isType:      true,
+	protoType:   ProtoTypeMessage,
+	messageName: "data.SpanID",
 	defaultVal:  "data.SpanID([8]byte{})",
 	testVal:     "data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})",
-}
-
-var schemaURLField = &PrimitiveField{
-	fieldName: "SchemaUrl",
-	protoType: ProtoTypeString,
 }
 
 var resource = &messageStruct{
@@ -169,25 +129,25 @@ var resource = &messageStruct{
 	fields: []Field{
 		&SliceField{
 			fieldName:   "Attributes",
+			protoType:   ProtoTypeMessage,
+			protoID:     1,
 			returnSlice: mapStruct,
 		},
 		&PrimitiveField{
 			fieldName: "DroppedAttributesCount",
+			protoID:   2,
 			protoType: ProtoTypeUint32,
 		},
 		&SliceField{
 			fieldName:   "EntityRefs",
+			protoType:   ProtoTypeMessage,
+			protoID:     3,
 			returnSlice: entityRefSlice,
 			// Hide accessors for this field from 1.x public API since the proto field is experimental.
 			// It's available via the xpdata/entity.ResourceEntityRefs.
 			hideAccessors: true,
 		},
 	},
-}
-
-var resourceField = &MessageField{
-	fieldName:     "Resource",
-	returnMessage: resource,
 }
 
 var byteSlice = &primitiveSliceStruct{

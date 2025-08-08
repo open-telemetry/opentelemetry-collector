@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlpprofiles.ScopeProfiles {
@@ -37,4 +38,37 @@ func CopyOrigScopeProfilesSlice(dest, src []*otlpprofiles.ScopeProfiles) []*otlp
 		CopyOrigScopeProfiles(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
+	orig := make([]*otlpprofiles.ScopeProfiles, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.ScopeProfiles{}
+		FillOrigTestScopeProfiles(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigScopeProfilesSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigScopeProfilesSlice(orig []*otlpprofiles.ScopeProfiles, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigScopeProfiles(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigScopeProfiles(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigScopeProfilesSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigScopeProfilesSlice(iter *json.Iterator) []*otlpprofiles.ScopeProfiles {
+	var orig []*otlpprofiles.ScopeProfiles
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.ScopeProfiles{})
+		UnmarshalJSONOrigScopeProfiles(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

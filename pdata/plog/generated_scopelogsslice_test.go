@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestScopeLogsSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestScopeLogsSlice(t *testing.T) {
 	emptyVal := NewScopeLogs()
 	testVal := generateTestScopeLogs()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestScopeLogs(el)
+		internal.FillOrigTestScopeLogs((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestScopeLogsSliceReadOnly(t *testing.T) {
 
 func TestScopeLogsSlice_CopyTo(t *testing.T) {
 	dest := NewScopeLogsSlice()
-	// Test CopyTo empty
-	NewScopeLogsSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeLogsSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestScopeLogsSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeLogsSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeLogsSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewScopeLogsSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeLogsSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestScopeLogsSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestScopeLogsSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeLogsSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewScopeLogsSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestScopeLogsSlice_Sort(t *testing.T) {
 	es := generateTestScopeLogsSlice()
 	es.Sort(func(a, b ScopeLogs) bool {
@@ -194,15 +159,7 @@ func TestScopeLogsSlice_Sort(t *testing.T) {
 }
 
 func generateTestScopeLogsSlice() ScopeLogsSlice {
-	es := NewScopeLogsSlice()
-	fillTestScopeLogsSlice(es)
-	return es
-}
-
-func fillTestScopeLogsSlice(es ScopeLogsSlice) {
-	*es.orig = make([]*otlplogs.ScopeLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.ScopeLogs{}
-		fillTestScopeLogs(newScopeLogs((*es.orig)[i], es.state))
-	}
+	ms := NewScopeLogsSlice()
+	*ms.orig = internal.GenerateOrigTestScopeLogsSlice()
+	return ms
 }

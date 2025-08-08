@@ -27,7 +27,7 @@ var (
 	// that data is being refused due to high memory usage.
 	ErrDataRefused = errors.New("data refused due to high memory usage")
 
-	// ErrShutdownNotStarted indicates no memorylimiter has not start when shutdown
+	// ErrShutdownNotStarted indicates no memorylimiter has not started when shutdown
 	ErrShutdownNotStarted = errors.New("no existing monitoring routine is running")
 
 	// GetMemoryFn and ReadMemStatsFn make it overridable by tests
@@ -131,7 +131,7 @@ func (ml *MemoryLimiter) Shutdown(context.Context) error {
 	return nil
 }
 
-// MustRefuse returns if the caller should deny because memory has reached it's configured limits
+// MustRefuse returns true if memory has reached its configured limits
 func (ml *MemoryLimiter) MustRefuse() bool {
 	return ml.mustRefuse.Load()
 }
@@ -172,7 +172,7 @@ func (ml *MemoryLimiter) doGCandReadMemStats() *runtime.MemStats {
 	return ms
 }
 
-// CheckMemLimits inspects current memory usage against threshold and toggle mustRefuse when threshold is exceeded
+// CheckMemLimits inspects current memory usage against threshold and toggles mustRefuse when threshold is exceeded
 func (ml *MemoryLimiter) CheckMemLimits() {
 	ms := ml.readMemStats()
 

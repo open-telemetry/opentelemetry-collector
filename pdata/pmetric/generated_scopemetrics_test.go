@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,30 +41,18 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState)) })
 }
 
-func TestScopeMetrics_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeMetrics()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewScopeMetrics()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestScopeMetrics_Scope(t *testing.T) {
 	ms := NewScopeMetrics()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
+}
+
+func TestScopeMetrics_Metrics(t *testing.T) {
+	ms := NewScopeMetrics()
+	assert.Equal(t, NewMetricSlice(), ms.Metrics())
+	ms.orig.Metrics = internal.GenerateOrigTestMetricSlice()
+	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
 
 func TestScopeMetrics_SchemaUrl(t *testing.T) {
@@ -78,21 +64,8 @@ func TestScopeMetrics_SchemaUrl(t *testing.T) {
 	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func TestScopeMetrics_Metrics(t *testing.T) {
-	ms := NewScopeMetrics()
-	assert.Equal(t, NewMetricSlice(), ms.Metrics())
-	fillTestMetricSlice(ms.Metrics())
-	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
-}
-
 func generateTestScopeMetrics() ScopeMetrics {
-	tv := NewScopeMetrics()
-	fillTestScopeMetrics(tv)
-	return tv
-}
-
-func fillTestScopeMetrics(tv ScopeMetrics) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "test_schemaurl"
-	fillTestMetricSlice(tv.Metrics())
+	ms := NewScopeMetrics()
+	internal.FillOrigTestScopeMetrics(ms.orig)
+	return ms
 }

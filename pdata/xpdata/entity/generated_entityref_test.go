@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,26 +41,6 @@ func TestEntityRef_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newEntityRef(&otlpcommon.EntityRef{}, &sharedState)) })
 }
 
-func TestEntityRef_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestEntityRef()
-	internal.MarshalJSONStreamEntityRef(internal.EntityRef(src), stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewEntityRef()
-	internal.UnmarshalJSONIterEntityRef(internal.EntityRef(dest), iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestEntityRef_SchemaUrl(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Empty(t, ms.SchemaUrl())
@@ -84,14 +62,14 @@ func TestEntityRef_Type(t *testing.T) {
 func TestEntityRef_IdKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.IdKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.IdKeys()))
+	ms.getOrig().IdKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.IdKeys())
 }
 
 func TestEntityRef_DescriptionKeys(t *testing.T) {
 	ms := NewEntityRef()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.DescriptionKeys())
-	internal.FillTestStringSlice(internal.StringSlice(ms.DescriptionKeys()))
+	ms.getOrig().DescriptionKeys = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.DescriptionKeys())
 }
 

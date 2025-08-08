@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestNewInt64Slice(t *testing.T) {
@@ -129,22 +127,6 @@ func TestInt64SliceEqual(t *testing.T) {
 
 	ms2.Append(1, 2, 3)
 	assert.True(t, ms.Equal(ms2))
-}
-
-func TestInt64Slice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := NewInt64Slice()
-	internal.FillTestInt64Slice(internal.Int64Slice(src))
-	internal.MarshalJSONStreamInt64Slice(internal.Int64Slice(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewInt64Slice()
-	internal.UnmarshalJSONIterInt64Slice(internal.Int64Slice(dest), iter)
-
-	assert.Equal(t, src, dest)
 }
 
 func BenchmarkInt64SliceEqual(b *testing.B) {

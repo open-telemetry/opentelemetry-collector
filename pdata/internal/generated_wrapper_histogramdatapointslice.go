@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint) []*otlpmetrics.HistogramDataPoint {
@@ -37,4 +38,37 @@ func CopyOrigHistogramDataPointSlice(dest, src []*otlpmetrics.HistogramDataPoint
 		CopyOrigHistogramDataPoint(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint {
+	orig := make([]*otlpmetrics.HistogramDataPoint, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpmetrics.HistogramDataPoint{}
+		FillOrigTestHistogramDataPoint(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigHistogramDataPointSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigHistogramDataPointSlice(orig []*otlpmetrics.HistogramDataPoint, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigHistogramDataPoint(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigHistogramDataPoint(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigHistogramDataPointSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.HistogramDataPoint {
+	var orig []*otlpmetrics.HistogramDataPoint
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpmetrics.HistogramDataPoint{})
+		UnmarshalJSONOrigHistogramDataPoint(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

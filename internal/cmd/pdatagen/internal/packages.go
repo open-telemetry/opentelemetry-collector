@@ -65,11 +65,22 @@ func (p *Package) GenerateTestFiles() error {
 	return nil
 }
 
-// GenerateInternalFiles generates files with internal pdata structures for this Package.
+// GenerateInternalFiles generates files with internal structs for this Package.
 func (p *Package) GenerateInternalFiles() error {
 	for _, s := range p.structs {
 		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getOriginName())+".go")
 		if err := os.WriteFile(path, s.generateInternal(p.info), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GenerateInternalTestsFiles generates files with internal tests for this Package.
+func (p *Package) GenerateInternalTestsFiles() error {
+	for _, s := range p.structs {
+		path := filepath.Join("pdata", "internal", "generated_wrapper_"+strings.ToLower(s.getOriginName())+"_test.go")
+		if err := os.WriteFile(path, s.generateInternalTests(p.info), 0o600); err != nil {
 			return err
 		}
 	}

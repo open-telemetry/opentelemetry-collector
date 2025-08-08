@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExponentialHistogramDataPointSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestExponentialHistogramDataPointSlice(t *testing.T) {
 	emptyVal := NewExponentialHistogramDataPoint()
 	testVal := generateTestExponentialHistogramDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestExponentialHistogramDataPoint(el)
+		internal.FillOrigTestExponentialHistogramDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestExponentialHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestExponentialHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewExponentialHistogramDataPointSlice()
-	// Test CopyTo empty
-	NewExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestExponentialHistogramDataPointSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewExponentialHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestExponentialHistogramDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestExponentialHistogramDataPointSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExponentialHistogramDataPointSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewExponentialHistogramDataPointSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 	es := generateTestExponentialHistogramDataPointSlice()
 	es.Sort(func(a, b ExponentialHistogramDataPoint) bool {
@@ -194,15 +159,7 @@ func TestExponentialHistogramDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPointSlice() ExponentialHistogramDataPointSlice {
-	es := NewExponentialHistogramDataPointSlice()
-	fillTestExponentialHistogramDataPointSlice(es)
-	return es
-}
-
-func fillTestExponentialHistogramDataPointSlice(es ExponentialHistogramDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.ExponentialHistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ExponentialHistogramDataPoint{}
-		fillTestExponentialHistogramDataPoint(newExponentialHistogramDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewExponentialHistogramDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	return ms
 }

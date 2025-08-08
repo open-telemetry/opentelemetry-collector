@@ -8,6 +8,8 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
@@ -18,4 +20,111 @@ func CopyOrigSummaryDataPoint(dest, src *otlpmetrics.SummaryDataPoint) {
 	dest.Sum = src.Sum
 	dest.QuantileValues = CopyOrigSummaryDataPoint_ValueAtQuantileSlice(dest.QuantileValues, src.QuantileValues)
 	dest.Flags = src.Flags
+}
+
+func FillOrigTestSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.Sum = float64(3.1415926)
+	orig.QuantileValues = GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice()
+	orig.Flags = 1
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.StartTimeUnixNano != 0 {
+		dest.WriteObjectField("startTimeUnixNano")
+		dest.WriteUint64(orig.StartTimeUnixNano)
+	}
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	if orig.Count != uint64(0) {
+		dest.WriteObjectField("count")
+		dest.WriteUint64(orig.Count)
+	}
+	if orig.Sum != float64(0) {
+		dest.WriteObjectField("sum")
+		dest.WriteFloat64(orig.Sum)
+	}
+	if len(orig.QuantileValues) > 0 {
+		dest.WriteObjectField("quantileValues")
+		MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(orig.QuantileValues, dest)
+	}
+	if orig.Flags != 0 {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigSummaryDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			orig.Count = iter.ReadUint64()
+		case "sum":
+			orig.Sum = iter.ReadFloat64()
+		case "quantileValues", "quantile_values":
+			orig.QuantileValues = UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.Count != 0 {
+		n += 9
+	}
+	if orig.Sum != 0 {
+		n += 9
+	}
+	for i := range orig.QuantileValues {
+		l = SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Flags != 0 {
+		n += 1 + proto.Sov(uint64(orig.Flags))
+	}
+	return n
+}
+
+func MarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

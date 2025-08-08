@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Mapping {
@@ -37,4 +38,37 @@ func CopyOrigMappingSlice(dest, src []*otlpprofiles.Mapping) []*otlpprofiles.Map
 		CopyOrigMapping(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
+	orig := make([]*otlpprofiles.Mapping, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.Mapping{}
+		FillOrigTestMapping(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigMappingSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigMappingSlice(orig []*otlpprofiles.Mapping, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigMapping(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigMapping(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigMappingSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigMappingSlice(iter *json.Iterator) []*otlpprofiles.Mapping {
+	var orig []*otlpprofiles.Mapping
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.Mapping{})
+		UnmarshalJSONOrigMapping(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

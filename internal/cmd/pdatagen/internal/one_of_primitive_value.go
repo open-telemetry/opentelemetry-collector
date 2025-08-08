@@ -44,7 +44,7 @@ const oneOfPrimitiveAccessorTestTemplate = `func Test{{ .structName }}_{{ .acces
 }
 `
 
-const oneOfPrimitiveSetTestTemplate = `tv.orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
+const oneOfPrimitiveSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .originFieldName }}{
 {{- .originFieldName }}: {{ .testValue }}}`
 
 const oneOfPrimitiveCopyOrigTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
@@ -59,14 +59,19 @@ const oneOfPrimitiveMarshalJSONTemplate = `case *{{ .originStructName }}_{{ .ori
 	dest.Write{{ upperFirst .returnType }}(ov.{{ .originFieldName }})`
 
 const oneOfPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	ms.orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
+	orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{
 		{{ .originFieldName }}: iter.Read{{ upperFirst .returnType }}(),
 	}`
 
 type OneOfPrimitiveValue struct {
 	fieldName       string
+	protoID         uint32
 	protoType       ProtoType
 	originFieldName string
+}
+
+func (opv *OneOfPrimitiveValue) GetOriginFieldName() string {
+	return opv.originFieldName
 }
 
 func (opv *OneOfPrimitiveValue) GenerateAccessors(ms *messageStruct, of *OneOfField) string {
@@ -104,10 +109,20 @@ func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *One
 	return executeTemplate(t, opv.templateFields(ms, of))
 }
 
+func (opv *OneOfPrimitiveValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
+	ptf := &ProtoField{
+		Type:     opv.protoType,
+		ID:       opv.protoID,
+		Name:     of.originFieldName + ".(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName,
+		Nullable: true,
+	}
+	return ptf.genSizeProto()
+}
+
 func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
 		"structName":  ms.getName(),
-		"defaultVal":  opv.protoType.defaultValue(),
+		"defaultVal":  opv.protoType.defaultValue(""),
 		"packageName": "",
 		"accessorFieldName": func() string {
 			if of.omitOriginFieldNameInNames {
@@ -119,7 +134,7 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 		"originOneOfTypeFuncName": of.typeFuncName(),
 		"typeName":                of.typeName + opv.fieldName,
 		"lowerFieldName":          strings.ToLower(opv.fieldName),
-		"returnType":              opv.protoType.goType(),
+		"returnType":              opv.protoType.goType(""),
 		"originFieldName":         opv.originFieldName,
 		"originOneOfFieldName":    of.originFieldName,
 		"originStructName":        ms.originFullName,

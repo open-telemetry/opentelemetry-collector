@@ -8,10 +8,76 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
-	dest.SchemaUrl = src.SchemaUrl
 	dest.Profiles = CopyOrigProfileSlice(dest.Profiles, src.Profiles)
+	dest.SchemaUrl = src.SchemaUrl
+}
+
+func FillOrigTestScopeProfiles(orig *otlpprofiles.ScopeProfiles) {
+	FillOrigTestInstrumentationScope(&orig.Scope)
+	orig.Profiles = GenerateOrigTestProfileSlice()
+	orig.SchemaUrl = "test_schemaurl"
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, dest *json.Stream) {
+	dest.WriteObjectStart()
+	dest.WriteObjectField("scope")
+	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
+	if len(orig.Profiles) > 0 {
+		dest.WriteObjectField("profiles")
+		MarshalJSONOrigProfileSlice(orig.Profiles, dest)
+	}
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigScopeProfiles unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "scope":
+			UnmarshalJSONOrigInstrumentationScope(&orig.Scope, iter)
+		case "profiles":
+			orig.Profiles = UnmarshalJSONOrigProfileSlice(iter)
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles) int {
+	var n int
+	var l int
+	_ = l
+	l = SizeProtoOrigInstrumentationScope(&orig.Scope)
+	n += 1 + proto.Sov(uint64(l)) + l
+	for i := range orig.Profiles {
+		l = SizeProtoOrigProfile(orig.Profiles[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

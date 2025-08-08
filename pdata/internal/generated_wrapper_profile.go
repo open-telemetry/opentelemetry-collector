@@ -7,7 +7,10 @@
 package internal
 
 import (
+	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
@@ -25,4 +28,191 @@ func CopyOrigProfile(dest, src *otlpprofiles.Profile) {
 	dest.OriginalPayloadFormat = src.OriginalPayloadFormat
 	dest.OriginalPayload = CopyOrigByteSlice(dest.OriginalPayload, src.OriginalPayload)
 	dest.AttributeIndices = CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+}
+
+func FillOrigTestProfile(orig *otlpprofiles.Profile) {
+	orig.SampleType = GenerateOrigTestValueTypeSlice()
+	orig.Sample = GenerateOrigTestSampleSlice()
+	orig.LocationIndices = GenerateOrigTestInt32Slice()
+	orig.TimeNanos = 1234567890
+	orig.DurationNanos = 1234567890
+	FillOrigTestValueType(&orig.PeriodType)
+	orig.Period = int64(13)
+	orig.CommentStrindices = GenerateOrigTestInt32Slice()
+	orig.DefaultSampleTypeIndex = int32(13)
+	orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+	orig.DroppedAttributesCount = uint32(13)
+	orig.OriginalPayloadFormat = "test_originalpayloadformat"
+	orig.OriginalPayload = GenerateOrigTestByteSlice()
+	orig.AttributeIndices = GenerateOrigTestInt32Slice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.SampleType) > 0 {
+		dest.WriteObjectField("sampleType")
+		MarshalJSONOrigValueTypeSlice(orig.SampleType, dest)
+	}
+	if len(orig.Sample) > 0 {
+		dest.WriteObjectField("sample")
+		MarshalJSONOrigSampleSlice(orig.Sample, dest)
+	}
+	if len(orig.LocationIndices) > 0 {
+		dest.WriteObjectField("locationIndices")
+		MarshalJSONOrigInt32Slice(orig.LocationIndices, dest)
+	}
+	if orig.TimeNanos != 0 {
+		dest.WriteObjectField("timeNanos")
+		dest.WriteInt64(orig.TimeNanos)
+	}
+	if orig.DurationNanos != 0 {
+		dest.WriteObjectField("durationNanos")
+		dest.WriteInt64(orig.DurationNanos)
+	}
+	dest.WriteObjectField("periodType")
+	MarshalJSONOrigValueType(&orig.PeriodType, dest)
+	if orig.Period != int64(0) {
+		dest.WriteObjectField("period")
+		dest.WriteInt64(orig.Period)
+	}
+	if len(orig.CommentStrindices) > 0 {
+		dest.WriteObjectField("commentStrindices")
+		MarshalJSONOrigInt32Slice(orig.CommentStrindices, dest)
+	}
+	if orig.DefaultSampleTypeIndex != int32(0) {
+		dest.WriteObjectField("defaultSampleTypeIndex")
+		dest.WriteInt32(orig.DefaultSampleTypeIndex)
+	}
+	if orig.ProfileId != data.ProfileID([16]byte{}) {
+		dest.WriteObjectField("profileId")
+		orig.ProfileId.MarshalJSONStream(dest)
+	}
+	if orig.DroppedAttributesCount != uint32(0) {
+		dest.WriteObjectField("droppedAttributesCount")
+		dest.WriteUint32(orig.DroppedAttributesCount)
+	}
+	if orig.OriginalPayloadFormat != "" {
+		dest.WriteObjectField("originalPayloadFormat")
+		dest.WriteString(orig.OriginalPayloadFormat)
+	}
+	if len(orig.OriginalPayload) > 0 {
+		dest.WriteObjectField("originalPayload")
+		MarshalJSONOrigByteSlice(orig.OriginalPayload, dest)
+	}
+	if len(orig.AttributeIndices) > 0 {
+		dest.WriteObjectField("attributeIndices")
+		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigProfile unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigProfile(orig *otlpprofiles.Profile, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "sampleType", "sample_type":
+			orig.SampleType = UnmarshalJSONOrigValueTypeSlice(iter)
+		case "sample":
+			orig.Sample = UnmarshalJSONOrigSampleSlice(iter)
+		case "locationIndices", "location_indices":
+			orig.LocationIndices = UnmarshalJSONOrigInt32Slice(iter)
+		case "timeNanos", "time_nanos":
+			orig.TimeNanos = iter.ReadInt64()
+		case "durationNanos", "duration_nanos":
+			orig.DurationNanos = iter.ReadInt64()
+		case "periodType", "period_type":
+			UnmarshalJSONOrigValueType(&orig.PeriodType, iter)
+		case "period":
+			orig.Period = iter.ReadInt64()
+		case "commentStrindices", "comment_strindices":
+			orig.CommentStrindices = UnmarshalJSONOrigInt32Slice(iter)
+		case "defaultSampleTypeIndex", "default_sample_type_index":
+			orig.DefaultSampleTypeIndex = iter.ReadInt32()
+		case "profileId", "profile_id":
+			orig.ProfileId.UnmarshalJSONIter(iter)
+		case "droppedAttributesCount", "dropped_attributes_count":
+			orig.DroppedAttributesCount = iter.ReadUint32()
+		case "originalPayloadFormat", "original_payload_format":
+			orig.OriginalPayloadFormat = iter.ReadString()
+		case "originalPayload", "original_payload":
+			orig.OriginalPayload = UnmarshalJSONOrigByteSlice(iter)
+		case "attributeIndices", "attribute_indices":
+			orig.AttributeIndices = UnmarshalJSONOrigInt32Slice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigProfile(orig *otlpprofiles.Profile) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.SampleType {
+		l = SizeProtoOrigValueType(orig.SampleType[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Sample {
+		l = SizeProtoOrigSample(orig.Sample[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.LocationIndices) > 0 {
+		l = 0
+		for _, e := range orig.LocationIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.TimeNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.TimeNanos))
+	}
+	if orig.DurationNanos != 0 {
+		n += 1 + proto.Sov(uint64(orig.DurationNanos))
+	}
+	l = SizeProtoOrigValueType(&orig.PeriodType)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.Period != 0 {
+		n += 1 + proto.Sov(uint64(orig.Period))
+	}
+	if len(orig.CommentStrindices) > 0 {
+		l = 0
+		for _, e := range orig.CommentStrindices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.DefaultSampleTypeIndex != 0 {
+		n += 1 + proto.Sov(uint64(orig.DefaultSampleTypeIndex))
+	}
+	l = SizeProtoOrigProfileID(&orig.ProfileId)
+	n += 1 + proto.Sov(uint64(l)) + l
+	if orig.DroppedAttributesCount != 0 {
+		n += 1 + proto.Sov(uint64(orig.DroppedAttributesCount))
+	}
+	l = len(orig.OriginalPayloadFormat)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.OriginalPayload)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if len(orig.AttributeIndices) > 0 {
+		l = 0
+		for _, e := range orig.AttributeIndices {
+			l += proto.Sov(uint64(e))
+		}
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigProfile(orig *otlpprofiles.Profile) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigProfile(orig *otlpprofiles.Profile, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

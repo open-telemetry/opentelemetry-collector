@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestFunctionSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestFunctionSlice(t *testing.T) {
 	emptyVal := NewFunction()
 	testVal := generateTestFunction()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestFunction(el)
+		internal.FillOrigTestFunction((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestFunctionSliceReadOnly(t *testing.T) {
 
 func TestFunctionSlice_CopyTo(t *testing.T) {
 	dest := NewFunctionSlice()
-	// Test CopyTo empty
-	NewFunctionSlice().CopyTo(dest)
-	assert.Equal(t, NewFunctionSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestFunctionSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestFunctionSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestFunctionSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewFunctionSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestFunctionSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestFunctionSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestFunctionSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestFunctionSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewFunctionSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestFunctionSlice_Sort(t *testing.T) {
 	es := generateTestFunctionSlice()
 	es.Sort(func(a, b Function) bool {
@@ -194,15 +159,7 @@ func TestFunctionSlice_Sort(t *testing.T) {
 }
 
 func generateTestFunctionSlice() FunctionSlice {
-	es := NewFunctionSlice()
-	fillTestFunctionSlice(es)
-	return es
-}
-
-func fillTestFunctionSlice(es FunctionSlice) {
-	*es.orig = make([]*otlpprofiles.Function, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Function{}
-		fillTestFunction(newFunction((*es.orig)[i], es.state))
-	}
+	ms := NewFunctionSlice()
+	*ms.orig = internal.GenerateOrigTestFunctionSlice()
+	return ms
 }

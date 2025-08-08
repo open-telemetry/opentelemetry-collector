@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLogs {
@@ -37,4 +38,37 @@ func CopyOrigScopeLogsSlice(dest, src []*otlplogs.ScopeLogs) []*otlplogs.ScopeLo
 		CopyOrigScopeLogs(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestScopeLogsSlice() []*otlplogs.ScopeLogs {
+	orig := make([]*otlplogs.ScopeLogs, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlplogs.ScopeLogs{}
+		FillOrigTestScopeLogs(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigScopeLogsSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigScopeLogsSlice(orig []*otlplogs.ScopeLogs, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigScopeLogs(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigScopeLogs(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigScopeLogsSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigScopeLogsSlice(iter *json.Iterator) []*otlplogs.ScopeLogs {
+	var orig []*otlplogs.ScopeLogs
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlplogs.ScopeLogs{})
+		UnmarshalJSONOrigScopeLogs(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

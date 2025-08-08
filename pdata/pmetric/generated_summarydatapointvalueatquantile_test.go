@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummaryDataPointValueAtQuantile_MoveTo(t *testing.T) {
@@ -48,26 +46,6 @@ func TestSummaryDataPointValueAtQuantile_CopyTo(t *testing.T) {
 	})
 }
 
-func TestSummaryDataPointValueAtQuantile_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSummaryDataPointValueAtQuantile()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSummaryDataPointValueAtQuantile()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestSummaryDataPointValueAtQuantile_Quantile(t *testing.T) {
 	ms := NewSummaryDataPointValueAtQuantile()
 	assert.InDelta(t, float64(0), ms.Quantile(), 0.01)
@@ -91,12 +69,7 @@ func TestSummaryDataPointValueAtQuantile_Value(t *testing.T) {
 }
 
 func generateTestSummaryDataPointValueAtQuantile() SummaryDataPointValueAtQuantile {
-	tv := NewSummaryDataPointValueAtQuantile()
-	fillTestSummaryDataPointValueAtQuantile(tv)
-	return tv
-}
-
-func fillTestSummaryDataPointValueAtQuantile(tv SummaryDataPointValueAtQuantile) {
-	tv.orig.Quantile = float64(3.1415926)
-	tv.orig.Value = float64(3.1415926)
+	ms := NewSummaryDataPointValueAtQuantile()
+	internal.FillOrigTestSummaryDataPoint_ValueAtQuantile(ms.orig)
+	return ms
 }

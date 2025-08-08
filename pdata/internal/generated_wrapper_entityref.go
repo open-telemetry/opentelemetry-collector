@@ -9,6 +9,7 @@ package internal
 import (
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 type EntityRef struct {
@@ -30,58 +31,9 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 
 func GenerateTestEntityRef() EntityRef {
 	orig := otlpcommon.EntityRef{}
+	FillOrigTestEntityRef(&orig)
 	state := StateMutable
-	tv := NewEntityRef(&orig, &state)
-	FillTestEntityRef(tv)
-	return tv
-}
-
-func FillTestEntityRef(tv EntityRef) {
-	tv.orig.SchemaUrl = "test_schemaurl"
-	tv.orig.Type = "test_type"
-	FillTestStringSlice(NewStringSlice(&tv.orig.IdKeys, tv.state))
-	FillTestStringSlice(NewStringSlice(&tv.orig.DescriptionKeys, tv.state))
-}
-
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamEntityRef(ms EntityRef, dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if ms.orig.Type != "" {
-		dest.WriteObjectField("type")
-		dest.WriteString(ms.orig.Type)
-	}
-	if len(ms.orig.IdKeys) > 0 {
-		dest.WriteObjectField("idKeys")
-		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), dest)
-	}
-	if len(ms.orig.DescriptionKeys) > 0 {
-		dest.WriteObjectField("descriptionKeys")
-		MarshalJSONStreamStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// UnmarshalJSONIterEntityRef unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterEntityRef(ms EntityRef, iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "schemaUrl", "schema_url":
-			ms.orig.SchemaUrl = iter.ReadString()
-		case "type":
-			ms.orig.Type = iter.ReadString()
-		case "idKeys", "id_keys":
-			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.IdKeys, ms.state), iter)
-		case "descriptionKeys", "description_keys":
-			UnmarshalJSONIterStringSlice(NewStringSlice(&ms.orig.DescriptionKeys, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
+	return NewEntityRef(&orig, &state)
 }
 
 func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
@@ -89,4 +41,83 @@ func CopyOrigEntityRef(dest, src *otlpcommon.EntityRef) {
 	dest.Type = src.Type
 	dest.IdKeys = CopyOrigStringSlice(dest.IdKeys, src.IdKeys)
 	dest.DescriptionKeys = CopyOrigStringSlice(dest.DescriptionKeys, src.DescriptionKeys)
+}
+
+func FillOrigTestEntityRef(orig *otlpcommon.EntityRef) {
+	orig.SchemaUrl = "test_schemaurl"
+	orig.Type = "test_type"
+	orig.IdKeys = GenerateOrigTestStringSlice()
+	orig.DescriptionKeys = GenerateOrigTestStringSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if orig.SchemaUrl != "" {
+		dest.WriteObjectField("schemaUrl")
+		dest.WriteString(orig.SchemaUrl)
+	}
+	if orig.Type != "" {
+		dest.WriteObjectField("type")
+		dest.WriteString(orig.Type)
+	}
+	if len(orig.IdKeys) > 0 {
+		dest.WriteObjectField("idKeys")
+		MarshalJSONOrigStringSlice(orig.IdKeys, dest)
+	}
+	if len(orig.DescriptionKeys) > 0 {
+		dest.WriteObjectField("descriptionKeys")
+		MarshalJSONOrigStringSlice(orig.DescriptionKeys, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigEntityRef unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "schemaUrl", "schema_url":
+			orig.SchemaUrl = iter.ReadString()
+		case "type":
+			orig.Type = iter.ReadString()
+		case "idKeys", "id_keys":
+			orig.IdKeys = UnmarshalJSONOrigStringSlice(iter)
+		case "descriptionKeys", "description_keys":
+			orig.DescriptionKeys = UnmarshalJSONOrigStringSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
+	var n int
+	var l int
+	_ = l
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.Type)
+	if l > 0 {
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for _, s := range orig.IdKeys {
+		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for _, s := range orig.DescriptionKeys {
+		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef) ([]byte, error) {
+	return orig.Marshal()
+}
+
+func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

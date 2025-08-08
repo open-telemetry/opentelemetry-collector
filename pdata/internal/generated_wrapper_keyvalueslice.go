@@ -6,7 +6,10 @@
 
 package internal
 
-import v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+import (
+	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+)
 
 func CopyOrigKeyValueSlice(dest, src []v1.KeyValue) []v1.KeyValue {
 	var newDest []v1.KeyValue
@@ -24,4 +27,37 @@ func CopyOrigKeyValueSlice(dest, src []v1.KeyValue) []v1.KeyValue {
 		CopyOrigKeyValue(&newDest[i], &src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestKeyValueSlice() []v1.KeyValue {
+	orig := make([]v1.KeyValue, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = v1.KeyValue{}
+		FillOrigTestKeyValue(&orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigKeyValueSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigKeyValueSlice(orig []v1.KeyValue, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigKeyValue(&orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigKeyValue(&orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigKeyValueSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigKeyValueSlice(iter *json.Iterator) []v1.KeyValue {
+	var orig []v1.KeyValue
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, v1.KeyValue{})
+		UnmarshalJSONOrigKeyValue(&orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

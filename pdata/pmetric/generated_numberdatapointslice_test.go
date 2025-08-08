@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestNumberDataPointSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestNumberDataPointSlice(t *testing.T) {
 	emptyVal := NewNumberDataPoint()
 	testVal := generateTestNumberDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestNumberDataPoint(el)
+		internal.FillOrigTestNumberDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestNumberDataPointSliceReadOnly(t *testing.T) {
 
 func TestNumberDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewNumberDataPointSlice()
-	// Test CopyTo empty
-	NewNumberDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewNumberDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestNumberDataPointSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewNumberDataPointSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestNumberDataPointSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestNumberDataPointSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestNumberDataPointSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestNumberDataPointSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewNumberDataPointSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestNumberDataPointSlice_Sort(t *testing.T) {
 	es := generateTestNumberDataPointSlice()
 	es.Sort(func(a, b NumberDataPoint) bool {
@@ -194,15 +159,7 @@ func TestNumberDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestNumberDataPointSlice() NumberDataPointSlice {
-	es := NewNumberDataPointSlice()
-	fillTestNumberDataPointSlice(es)
-	return es
-}
-
-func fillTestNumberDataPointSlice(es NumberDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.NumberDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.NumberDataPoint{}
-		fillTestNumberDataPoint(newNumberDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewNumberDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestNumberDataPointSlice()
+	return ms
 }

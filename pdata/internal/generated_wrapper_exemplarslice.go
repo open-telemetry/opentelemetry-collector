@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
@@ -26,4 +27,37 @@ func CopyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemp
 		CopyOrigExemplar(&newDest[i], &src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestExemplarSlice() []otlpmetrics.Exemplar {
+	orig := make([]otlpmetrics.Exemplar, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = otlpmetrics.Exemplar{}
+		FillOrigTestExemplar(&orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigExemplarSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigExemplarSlice(orig []otlpmetrics.Exemplar, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigExemplar(&orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigExemplar(&orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigExemplarSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigExemplarSlice(iter *json.Iterator) []otlpmetrics.Exemplar {
+	var orig []otlpmetrics.Exemplar
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, otlpmetrics.Exemplar{})
+		UnmarshalJSONOrigExemplar(&orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

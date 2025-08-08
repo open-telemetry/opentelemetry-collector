@@ -34,10 +34,12 @@ var exportTracePartialSuccess = &messageStruct{
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "RejectedSpans",
+			protoID:   1,
 			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
 			fieldName: "ErrorMessage",
+			protoID:   2,
 			protoType: ProtoTypeString,
 		},
 	},

@@ -9,14 +9,17 @@ import (
 
 var _ component.Host = (*nopHost)(nil)
 
-// nopHost mocks a receiver.ReceiverHost for test purposes.
+// nopHost mocks a [component.Host] for testing purposes.
 type nopHost struct{}
 
-// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
+// NewNopHost returns a [component.Host] that returns empty values
+// from method calls. This host is intended to be used in tests
+// where a bare-minimum host is desired.
 func NewNopHost() component.Host {
 	return &nopHost{}
 }
 
+// GetExtensions returns a `nil` extensions map.
 func (nh *nopHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
