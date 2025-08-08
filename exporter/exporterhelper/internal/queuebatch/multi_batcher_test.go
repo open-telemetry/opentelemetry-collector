@@ -33,6 +33,7 @@ func TestMultiBatcher_NoTimeout(t *testing.T) {
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
+		nil,
 		sink.Export,
 		zap.NewNop(),
 	)
@@ -85,6 +86,7 @@ func TestMultiBatcher_Timeout(t *testing.T) {
 		NewPartitioner(func(ctx context.Context, _ request.Request) string {
 			return ctx.Value(partitionKey{}).(string)
 		}),
+		nil,
 		sink.Export,
 		zap.NewNop(),
 	)
