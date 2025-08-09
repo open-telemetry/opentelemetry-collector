@@ -1,0 +1,13 @@
+module collectorwrapper
+
+go 1.22
+
+require {{ .ImportPath }} v0.0.0
+
+require (
+	{{ .Package }} v0.0.0
+)
+
+{{- range .Replaces }}
+replace {{ . }}
+{{- end }}
