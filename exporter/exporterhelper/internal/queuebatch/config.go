@@ -79,10 +79,16 @@ func (cfg *Config) Validate() error {
 		return errors.New("`wait_for_result` is not supported with a persistent queue configured with `storage`")
 	}
 
-	if cfg.Batch.HasValue() && cfg.Batch.Get().Sizer == cfg.Sizer {
-		// Avoid situations where the queue is not able to hold any data.
-		if cfg.Batch.Get().MinSize > cfg.QueueSize {
-			return errors.New("`min_size` must be less than or equal to `queue_size`")
+	if cfg.Batch.HasValue() {
+		if err := cfg.Batch.Get().Validate(); err != nil {
+			return err
+		}
+
+		if cfg.Batch.Get().Sizer == cfg.Sizer {
+			// Avoid situations where the queue is not able to hold any data.
+			if cfg.Batch.Get().MinSize > cfg.QueueSize {
+				return errors.New("`min_size` must be less than or equal to `queue_size`")
+			}
 		}
 	}
 
