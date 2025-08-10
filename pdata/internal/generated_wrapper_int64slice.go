@@ -27,40 +27,39 @@ func NewInt64Slice(orig *[]int64, state *State) Int64Slice {
 	return Int64Slice{orig: orig, state: state}
 }
 
-func CopyOrigInt64Slice(dst, src []int64) []int64 {
-	dst = dst[:0]
-	return append(dst, src...)
-}
-
-func FillTestInt64Slice(ms Int64Slice) {
-	*ms.orig = []int64{1, 2, 3}
-}
-
 func GenerateTestInt64Slice() Int64Slice {
-	orig := []int64(nil)
+	orig := GenerateOrigTestInt64Slice()
 	state := StateMutable
-	ms := NewInt64Slice(&orig, &state)
-	FillTestInt64Slice(ms)
-	return ms
+	return NewInt64Slice(&orig, &state)
 }
 
-// MarshalJSONStreamInt64Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamInt64Slice(ms Int64Slice, dest *json.Stream) {
+func CopyOrigInt64Slice(dst, src []int64) []int64 {
+	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestInt64Slice() []int64 {
+	return []int64{1, 2, 3}
+}
+
+// MarshalJSONOrigInt64Slice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigInt64Slice(orig []int64, dest *json.Stream) {
 	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		dest.WriteInt64((*ms.orig)[0])
+	if len(orig) > 0 {
+		dest.WriteInt64(orig[0])
 	}
-	for i := 1; i < len((*ms.orig)); i++ {
+	for i := 1; i < len(orig); i++ {
 		dest.WriteMore()
-		dest.WriteInt64((*ms.orig)[i])
+		dest.WriteInt64(orig[i])
 	}
 	dest.WriteArrayEnd()
 }
 
-// UnmarshalJSONIterInt64Slice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterInt64Slice(ms Int64Slice, iter *json.Iterator) {
+// UnmarshalJSONOrigInt64Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigInt64Slice(iter *json.Iterator) []int64 {
+	var orig []int64
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, iter.ReadInt64())
+		orig = append(orig, iter.ReadInt64())
 		return true
 	})
+	return orig
 }

@@ -18,7 +18,10 @@ func (*JSONMarshaler) MarshalProfiles(pd Profiles) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
 	pd.marshalJSONStream(dest)
-	return slices.Clone(dest.Buffer()), dest.Error()
+	if dest.Error() != nil {
+		return nil, dest.Error()
+	}
+	return slices.Clone(dest.Buffer()), nil
 }
 
 // JSONUnmarshaler unmarshals OTLP/JSON formatted-bytes to pprofile.Profiles.

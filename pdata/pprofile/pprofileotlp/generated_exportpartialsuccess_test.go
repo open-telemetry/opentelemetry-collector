@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestExportPartialSuccess_MoveTo(t *testing.T) {
@@ -48,26 +46,6 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	})
 }
 
-func TestExportPartialSuccess_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExportPartialSuccess()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewExportPartialSuccess()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	ms := NewExportPartialSuccess()
 	assert.Equal(t, int64(0), ms.RejectedProfiles())
@@ -91,12 +69,7 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 }
 
 func generateTestExportPartialSuccess() ExportPartialSuccess {
-	tv := NewExportPartialSuccess()
-	fillTestExportPartialSuccess(tv)
-	return tv
-}
-
-func fillTestExportPartialSuccess(tv ExportPartialSuccess) {
-	tv.orig.RejectedProfiles = int64(13)
-	tv.orig.ErrorMessage = "test_errormessage"
+	ms := NewExportPartialSuccess()
+	internal.FillOrigTestExportProfilesPartialSuccess(ms.orig)
+	return ms
 }

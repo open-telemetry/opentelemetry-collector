@@ -12,6 +12,11 @@ var pmetricotlp = &Package{
 		name: "pmetricotlp",
 		path: filepath.Join("pmetric", "pmetricotlp"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 		},
 		testImports: []string{
@@ -34,10 +39,12 @@ var exportMetricsPartialSuccess = &messageStruct{
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "RejectedDataPoints",
+			protoID:   1,
 			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
 			fieldName: "ErrorMessage",
+			protoID:   2,
 			protoType: ProtoTypeString,
 		},
 	},

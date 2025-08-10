@@ -67,8 +67,10 @@ func (ms Traces) MarkReadOnly() {
 
 func (ms Traces) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	dest.WriteObjectField("resourceSpans")
-	ms.ResourceSpans().marshalJSONStream(dest)
+	if len(ms.getOrig().ResourceSpans) > 0 {
+		dest.WriteObjectField("resourceSpans")
+		internal.MarshalJSONOrigResourceSpansSlice(ms.getOrig().ResourceSpans, dest)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -76,7 +78,7 @@ func (ms Traces) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resourceSpans", "resource_spans":
-			ms.ResourceSpans().unmarshalJSONIter(iter)
+			ms.getOrig().ResourceSpans = internal.UnmarshalJSONOrigResourceSpansSlice(iter)
 		default:
 			iter.Skip()
 		}

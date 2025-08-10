@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.
@@ -50,6 +49,11 @@ func (ms Sum) MoveTo(dest Sum) {
 	*ms.orig = otlpmetrics.Sum{}
 }
 
+// DataPoints returns the DataPoints associated with this Sum.
+func (ms Sum) DataPoints() NumberDataPointSlice {
+	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
+}
+
 // AggregationTemporality returns the aggregationtemporality associated with this Sum.
 func (ms Sum) AggregationTemporality() AggregationTemporality {
 	return AggregationTemporality(ms.orig.AggregationTemporality)
@@ -72,54 +76,8 @@ func (ms Sum) SetIsMonotonic(v bool) {
 	ms.orig.IsMonotonic = v
 }
 
-// DataPoints returns the DataPoints associated with this Sum.
-func (ms Sum) DataPoints() NumberDataPointSlice {
-	return newNumberDataPointSlice(&ms.orig.DataPoints, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Sum) CopyTo(dest Sum) {
 	dest.state.AssertMutable()
-	copyOrigSum(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Sum) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
-		dest.WriteObjectField("aggregationTemporality")
-		dest.WriteInt32(int32(ms.orig.AggregationTemporality))
-	}
-	if ms.orig.IsMonotonic != false {
-		dest.WriteObjectField("isMonotonic")
-		dest.WriteBool(ms.orig.IsMonotonic)
-	}
-	if len(ms.orig.DataPoints) > 0 {
-		dest.WriteObjectField("dataPoints")
-		ms.DataPoints().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Sum) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "aggregationTemporality", "aggregation_temporality":
-			ms.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(iter.ReadEnumValue(otlpmetrics.AggregationTemporality_value))
-		case "isMonotonic", "is_monotonic":
-			ms.orig.IsMonotonic = iter.ReadBool()
-		case "dataPoints", "data_points":
-			ms.DataPoints().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func copyOrigSum(dest, src *otlpmetrics.Sum) {
-	dest.AggregationTemporality = src.AggregationTemporality
-	dest.IsMonotonic = src.IsMonotonic
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+	internal.CopyOrigSum(dest.orig, ms.orig)
 }

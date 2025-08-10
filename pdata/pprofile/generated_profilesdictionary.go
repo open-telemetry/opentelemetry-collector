@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -89,74 +88,5 @@ func (ms ProfilesDictionary) AttributeUnits() AttributeUnitSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ProfilesDictionary) CopyTo(dest ProfilesDictionary) {
 	dest.state.AssertMutable()
-	copyOrigProfilesDictionary(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ProfilesDictionary) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if len(ms.orig.MappingTable) > 0 {
-		dest.WriteObjectField("mappingTable")
-		ms.MappingTable().marshalJSONStream(dest)
-	}
-	if len(ms.orig.LocationTable) > 0 {
-		dest.WriteObjectField("locationTable")
-		ms.LocationTable().marshalJSONStream(dest)
-	}
-	if len(ms.orig.FunctionTable) > 0 {
-		dest.WriteObjectField("functionTable")
-		ms.FunctionTable().marshalJSONStream(dest)
-	}
-	if len(ms.orig.LinkTable) > 0 {
-		dest.WriteObjectField("linkTable")
-		ms.LinkTable().marshalJSONStream(dest)
-	}
-	if len(ms.orig.StringTable) > 0 {
-		dest.WriteObjectField("stringTable")
-		internal.MarshalJSONStreamStringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state), dest)
-	}
-	if len(ms.orig.AttributeTable) > 0 {
-		dest.WriteObjectField("attributeTable")
-		ms.AttributeTable().marshalJSONStream(dest)
-	}
-	if len(ms.orig.AttributeUnits) > 0 {
-		dest.WriteObjectField("attributeUnits")
-		ms.AttributeUnits().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ProfilesDictionary) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "mappingTable", "mapping_table":
-			ms.MappingTable().unmarshalJSONIter(iter)
-		case "locationTable", "location_table":
-			ms.LocationTable().unmarshalJSONIter(iter)
-		case "functionTable", "function_table":
-			ms.FunctionTable().unmarshalJSONIter(iter)
-		case "linkTable", "link_table":
-			ms.LinkTable().unmarshalJSONIter(iter)
-		case "stringTable", "string_table":
-			internal.UnmarshalJSONIterStringSlice(internal.NewStringSlice(&ms.orig.StringTable, ms.state), iter)
-		case "attributeTable", "attribute_table":
-			ms.AttributeTable().unmarshalJSONIter(iter)
-		case "attributeUnits", "attribute_units":
-			ms.AttributeUnits().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func copyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
-	dest.MappingTable = copyOrigMappingSlice(dest.MappingTable, src.MappingTable)
-	dest.LocationTable = copyOrigLocationSlice(dest.LocationTable, src.LocationTable)
-	dest.FunctionTable = copyOrigFunctionSlice(dest.FunctionTable, src.FunctionTable)
-	dest.LinkTable = copyOrigLinkSlice(dest.LinkTable, src.LinkTable)
-	dest.StringTable = internal.CopyOrigStringSlice(dest.StringTable, src.StringTable)
-	dest.AttributeTable = copyOrigAttributeTableSlice(dest.AttributeTable, src.AttributeTable)
-	dest.AttributeUnits = copyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
+	internal.CopyOrigProfilesDictionary(dest.orig, ms.orig)
 }

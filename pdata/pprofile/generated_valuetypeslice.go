@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ValueTypeSlice logically represents a slice of ValueType.
@@ -148,7 +147,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigValueTypeSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigValueTypeSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ValueType elements within ValueTypeSlice given the
@@ -157,55 +156,4 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 func (es ValueTypeSlice) Sort(less func(a, b ValueType) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ValueTypeSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ValueTypeSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.ValueType{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
-	var newDest []*otlpprofiles.ValueType
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpprofiles.ValueType, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.ValueType{}
-		}
-	}
-	for i := range src {
-		copyOrigValueType(newDest[i], src[i])
-	}
-	return newDest
 }

@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SpanLinkSlice logically represents a slice of SpanLink.
@@ -148,7 +147,7 @@ func (es SpanLinkSlice) RemoveIf(f func(SpanLink) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSpanLinkSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSpan_LinkSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SpanLink elements within SpanLinkSlice given the
@@ -157,55 +156,4 @@ func (es SpanLinkSlice) CopyTo(dest SpanLinkSlice) {
 func (es SpanLinkSlice) Sort(less func(a, b SpanLink) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms SpanLinkSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms SpanLinkSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlptrace.Span_Link{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigSpanLinkSlice(dest, src []*otlptrace.Span_Link) []*otlptrace.Span_Link {
-	var newDest []*otlptrace.Span_Link
-	if cap(dest) < len(src) {
-		newDest = make([]*otlptrace.Span_Link, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlptrace.Span_Link{}
-		}
-	}
-	for i := range src {
-		copyOrigSpanLink(newDest[i], src[i])
-	}
-	return newDest
 }

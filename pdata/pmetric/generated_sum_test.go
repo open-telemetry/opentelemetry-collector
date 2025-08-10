@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSum_MoveTo(t *testing.T) {
@@ -42,24 +40,11 @@ func TestSum_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSum(&otlpmetrics.Sum{}, &sharedState)) })
 }
 
-func TestSum_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSum()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSum()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+func TestSum_DataPoints(t *testing.T) {
+	ms := NewSum()
+	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestNumberDataPointSlice()
+	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
 }
 
 func TestSum_AggregationTemporality(t *testing.T) {
@@ -79,21 +64,8 @@ func TestSum_IsMonotonic(t *testing.T) {
 	assert.Panics(t, func() { newSum(&otlpmetrics.Sum{}, &sharedState).SetIsMonotonic(true) })
 }
 
-func TestSum_DataPoints(t *testing.T) {
-	ms := NewSum()
-	assert.Equal(t, NewNumberDataPointSlice(), ms.DataPoints())
-	fillTestNumberDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestNumberDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestSum() Sum {
-	tv := NewSum()
-	fillTestSum(tv)
-	return tv
-}
-
-func fillTestSum(tv Sum) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	tv.orig.IsMonotonic = true
-	fillTestNumberDataPointSlice(tv.DataPoints())
+	ms := NewSum()
+	internal.FillOrigTestSum(ms.orig)
+	return ms
 }

@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,26 +41,6 @@ func TestSpanEvent_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSpanEvent(&otlptrace.Span_Event{}, &sharedState)) })
 }
 
-func TestSpanEvent_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpanEvent()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewSpanEvent()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestSpanEvent_Timestamp(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.Timestamp(0), ms.Timestamp())
@@ -83,7 +61,7 @@ func TestSpanEvent_Name(t *testing.T) {
 func TestSpanEvent_Attributes(t *testing.T) {
 	ms := NewSpanEvent()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -97,14 +75,7 @@ func TestSpanEvent_DroppedAttributesCount(t *testing.T) {
 }
 
 func generateTestSpanEvent() SpanEvent {
-	tv := NewSpanEvent()
-	fillTestSpanEvent(tv)
-	return tv
-}
-
-func fillTestSpanEvent(tv SpanEvent) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Name = "test_name"
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(13)
+	ms := NewSpanEvent()
+	internal.FillOrigTestSpan_Event(ms.orig)
+	return ms
 }
