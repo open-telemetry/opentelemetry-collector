@@ -6,6 +6,7 @@ package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/
 type baseSlice interface {
 	getName() string
 	getOriginName() string
+	getHasWrapper() bool
 	getElementProtoType() ProtoType
 	getElementOriginName() string
 	getPackageName() string
@@ -43,11 +44,12 @@ func (ss *sliceOfPtrs) generateInternalTests(packageInfo *PackageInfo) []byte {
 }
 
 func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
-	orig := origAccessor(ss.packageName)
-	state := stateAccessor(ss.packageName)
+	hasWrapper := usedByOtherDataTypes(ss.packageName)
+	orig := origAccessor(hasWrapper)
+	state := stateAccessor(hasWrapper)
 	return map[string]any{
 		"type":                  "sliceOfPtrs",
-		"isCommon":              usedByOtherDataTypes(ss.packageName),
+		"hasWrapper":            usedByOtherDataTypes(ss.packageName),
 		"structName":            ss.structName,
 		"elementName":           ss.element.getName(),
 		"elementOriginFullName": ss.element.originFullName,
@@ -56,8 +58,8 @@ func (ss *sliceOfPtrs) templateFields(packageInfo *PackageInfo) map[string]any {
 		"originElementPtr":      "",
 		"emptyOriginElement":    "&" + ss.element.originFullName + "{}",
 		"newElement":            "new" + ss.element.getName() + "((*es." + orig + ")[i], es." + state + ")",
-		"origAccessor":          orig,
-		"stateAccessor":         state,
+		"origAccessor":          origAccessor(hasWrapper),
+		"stateAccessor":         stateAccessor(hasWrapper),
 		"packageName":           packageInfo.name,
 		"imports":               packageInfo.imports,
 		"testImports":           packageInfo.testImports,
@@ -70,6 +72,10 @@ func (ss *sliceOfPtrs) getOriginName() string {
 
 func (ss *sliceOfPtrs) getElementProtoType() ProtoType {
 	return ProtoTypeMessage
+}
+
+func (ss *sliceOfPtrs) getHasWrapper() bool {
+	return usedByOtherDataTypes(ss.packageName)
 }
 
 func (ss *sliceOfPtrs) getElementOriginName() string {
@@ -110,11 +116,12 @@ func (ss *sliceOfValues) generateInternalTests(packageInfo *PackageInfo) []byte 
 }
 
 func (ss *sliceOfValues) templateFields(packageInfo *PackageInfo) map[string]any {
-	orig := origAccessor(ss.packageName)
-	state := stateAccessor(ss.packageName)
+	hasWrapper := usedByOtherDataTypes(ss.packageName)
+	orig := origAccessor(hasWrapper)
+	state := stateAccessor(hasWrapper)
 	return map[string]any{
 		"type":                  "sliceOfValues",
-		"isCommon":              usedByOtherDataTypes(ss.packageName),
+		"hasWrapper":            usedByOtherDataTypes(ss.packageName),
 		"structName":            ss.getName(),
 		"elementName":           ss.element.getName(),
 		"elementOriginFullName": ss.element.originFullName,
@@ -137,6 +144,10 @@ func (ss *sliceOfValues) getOriginName() string {
 
 func (ss *sliceOfValues) getElementProtoType() ProtoType {
 	return ProtoTypeMessage
+}
+
+func (ss *sliceOfValues) getHasWrapper() bool {
+	return usedByOtherDataTypes(ss.packageName)
 }
 
 func (ss *sliceOfValues) getElementOriginName() string {

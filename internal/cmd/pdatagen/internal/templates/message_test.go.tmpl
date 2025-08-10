@@ -42,7 +42,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 {{ end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-    {{- if .isCommon }}
+    {{- if .hasWrapper }}
     return {{ .structName }}(internal.GenerateTest{{ .structName }}())
     {{- else }}
 	ms := New{{ .structName }}()

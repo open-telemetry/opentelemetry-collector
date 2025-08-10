@@ -47,14 +47,14 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 	assert.Zero(t, NewLogs().LogRecordCount())
 	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{{}},
-	}).LogRecordCount())
+	}, new(internal.State)).LogRecordCount())
 	assert.Zero(t, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
 				ScopeLogs: []*otlplogs.ScopeLogs{{}},
 			},
 		},
-	}).LogRecordCount())
+	}, new(internal.State)).LogRecordCount())
 	assert.Equal(t, 1, newLogs(&otlpcollectorlog.ExportLogsServiceRequest{
 		ResourceLogs: []*otlplogs.ResourceLogs{
 			{
@@ -65,14 +65,7 @@ func TestLogRecordCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).LogRecordCount())
-}
-
-func TestToFromLogOtlp(t *testing.T) {
-	otlp := &otlpcollectorlog.ExportLogsServiceRequest{}
-	logs := newLogs(otlp)
-	assert.Equal(t, NewLogs(), logs)
-	assert.Equal(t, otlp, logs.getOrig())
+	}, new(internal.State)).LogRecordCount())
 }
 
 func TestResourceLogsWireCompatibility(t *testing.T) {
@@ -106,13 +99,6 @@ func TestResourceLogsWireCompatibility(t *testing.T) {
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
 	assert.Equal(t, ms.getOrig(), &gogoprotoRS2)
-}
-
-func TestLogsCopyTo(t *testing.T) {
-	ld := generateTestLogs()
-	logsCopy := NewLogs()
-	ld.CopyTo(logsCopy)
-	assert.Equal(t, ld, logsCopy)
 }
 
 func TestReadOnlyLogsInvalidUsage(t *testing.T) {
@@ -182,10 +168,4 @@ func BenchmarkLogsMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestLogs() Logs {
-	ld := NewLogs()
-	ld.getOrig().ResourceLogs = internal.GenerateOrigTestResourceLogsSlice()
-	return ld
 }

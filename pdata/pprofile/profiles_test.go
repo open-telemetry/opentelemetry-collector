@@ -66,14 +66,14 @@ func TestSampleCount(t *testing.T) {
 func TestSampleCountWithEmpty(t *testing.T) {
 	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{{}},
-	}).SampleCount())
+	}, new(internal.State)).SampleCount())
 	assert.Equal(t, 0, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{
 			{
 				ScopeProfiles: []*otlpprofile.ScopeProfiles{{}},
 			},
 		},
-	}).SampleCount())
+	}, new(internal.State)).SampleCount())
 	assert.Equal(t, 1, newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{
 		ResourceProfiles: []*otlpprofile.ResourceProfiles{
 			{
@@ -90,7 +90,7 @@ func TestSampleCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).SampleCount())
+	}, new(internal.State)).SampleCount())
 }
 
 func BenchmarkProfilesUsage(b *testing.B) {
@@ -150,11 +150,4 @@ func BenchmarkProfilesMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestProfiles() Profiles {
-	pd := NewProfiles()
-	pd.getOrig().ResourceProfiles = internal.GenerateOrigTestResourceProfilesSlice()
-	internal.FillOrigTestProfilesDictionary(&pd.getOrig().Dictionary)
-	return pd
 }

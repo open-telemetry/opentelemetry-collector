@@ -127,7 +127,7 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":        usedByOtherDataTypes(ptf.returnType.packageName),
+		"hasWrapper":      usedByOtherDataTypes(ptf.returnType.packageName),
 		"returnType":      ptf.returnType.structName,
 		"fieldName":       ptf.fieldName,
 		"lowerFieldName":  strings.ToLower(ptf.fieldName),

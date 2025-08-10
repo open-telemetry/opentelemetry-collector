@@ -129,8 +129,8 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms.packageName),
-		"stateAccessor":        stateAccessor(ms.packageName),
+		"origAccessor":         origAccessor(ms.getHasWrapper()),
+		"stateAccessor":        stateAccessor(ms.getHasWrapper()),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
