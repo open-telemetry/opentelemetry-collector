@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 	src := &otlplogs.LogRecord{}
 	FillOrigTestLogRecord(src)
-	buf, err := MarshalProtoOrigLogRecord(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLogRecord(src))
+	buf := make([]byte, SizeProtoOrigLogRecord(src))
+	gotSize := MarshalProtoOrigLogRecord(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.LogRecord{}
 	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyLogRecord(t *testing.T) {
 	src := &otlplogs.LogRecord{}
-	buf, err := MarshalProtoOrigLogRecord(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLogRecord(src))
+	buf := make([]byte, SizeProtoOrigLogRecord(src))
+	gotSize := MarshalProtoOrigLogRecord(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.LogRecord{}
 	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))

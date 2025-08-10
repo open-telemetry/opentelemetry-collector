@@ -74,8 +74,33 @@ func SizeProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) int {
 	return n
 }
 
-func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	for i := range orig.Spans {
+		l = MarshalProtoOrigSpan(orig.Spans[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {

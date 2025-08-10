@@ -8,6 +8,7 @@ var pcommon = &Package{
 		name: "pcommon",
 		path: "pcommon",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
 			`"math"`,
 			`"sort"`,

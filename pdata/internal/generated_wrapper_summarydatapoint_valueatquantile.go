@@ -7,6 +7,9 @@
 package internal
 
 import (
+	"encoding/binary"
+	"math"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 )
@@ -63,8 +66,23 @@ func SizeProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryData
 	return n
 }
 
-func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Quantile != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Quantile))
+		pos--
+		buf[pos] = 0x9
+	}
+	if orig.Value != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Value))
+		pos--
+		buf[pos] = 0x11
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(orig *otlpmetrics.SummaryDataPoint_ValueAtQuantile, buf []byte) error {

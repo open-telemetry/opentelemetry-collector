@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 	src := &otlpprofiles.ScopeProfiles{}
 	FillOrigTestScopeProfiles(src)
-	buf, err := MarshalProtoOrigScopeProfiles(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeProfiles(src))
+	buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+	gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.ScopeProfiles{}
 	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyScopeProfiles(t *testing.T) {
 	src := &otlpprofiles.ScopeProfiles{}
-	buf, err := MarshalProtoOrigScopeProfiles(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeProfiles(src))
+	buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+	gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.ScopeProfiles{}
 	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))

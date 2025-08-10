@@ -8,7 +8,9 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
@@ -395,7 +397,7 @@ var histogramDataPoint = &messageStruct{
 		&SliceField{
 			fieldName:   "ExplicitBounds",
 			protoID:     7,
-			protoType:   ProtoTypeFixed64,
+			protoType:   ProtoTypeDouble,
 			returnSlice: float64Slice,
 		},
 		&SliceField{

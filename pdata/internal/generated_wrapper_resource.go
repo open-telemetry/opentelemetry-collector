@@ -101,8 +101,30 @@ func SizeProtoOrigResource(orig *otlpresource.Resource) int {
 	return n
 }
 
-func MarshalProtoOrigResource(orig *otlpresource.Resource) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x10
+	}
+	for i := range orig.EntityRefs {
+		l = MarshalProtoOrigEntityRef(orig.EntityRefs[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {

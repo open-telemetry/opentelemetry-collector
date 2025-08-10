@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigStatus(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 	src := &otlptrace.Status{}
 	FillOrigTestStatus(src)
-	buf, err := MarshalProtoOrigStatus(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigStatus(src))
+	buf := make([]byte, SizeProtoOrigStatus(src))
+	gotSize := MarshalProtoOrigStatus(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlptrace.Status{}
 	require.NoError(t, UnmarshalProtoOrigStatus(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigStatus(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyStatus(t *testing.T) {
 	src := &otlptrace.Status{}
-	buf, err := MarshalProtoOrigStatus(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigStatus(src))
+	buf := make([]byte, SizeProtoOrigStatus(src))
+	gotSize := MarshalProtoOrigStatus(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlptrace.Status{}
 	require.NoError(t, UnmarshalProtoOrigStatus(dest, buf))

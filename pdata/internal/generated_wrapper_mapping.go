@@ -145,8 +145,81 @@ func SizeProtoOrigMapping(orig *otlpprofiles.Mapping) int {
 	return n
 }
 
-func MarshalProtoOrigMapping(orig *otlpprofiles.Mapping) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.MemoryStart != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.MemoryStart))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.MemoryLimit != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.MemoryLimit))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.FileOffset != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.FileOffset))
+		pos--
+		buf[pos] = 0x18
+	}
+	if orig.FilenameStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.FilenameStrindex))
+		pos--
+		buf[pos] = 0x20
+	}
+	l = len(orig.AttributeIndices)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x2a
+	}
+	if orig.HasFunctions {
+		pos--
+		if orig.HasFunctions {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x30
+	}
+	if orig.HasFilenames {
+		pos--
+		if orig.HasFilenames {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x38
+	}
+	if orig.HasLineNumbers {
+		pos--
+		if orig.HasLineNumbers {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x40
+	}
+	if orig.HasInlineFrames {
+		pos--
+		if orig.HasInlineFrames {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x48
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigMapping(orig *otlpprofiles.Mapping, buf []byte) error {

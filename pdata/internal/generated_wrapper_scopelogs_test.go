@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigScopeLogs(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 	src := &otlplogs.ScopeLogs{}
 	FillOrigTestScopeLogs(src)
-	buf, err := MarshalProtoOrigScopeLogs(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeLogs(src))
+	buf := make([]byte, SizeProtoOrigScopeLogs(src))
+	gotSize := MarshalProtoOrigScopeLogs(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.ScopeLogs{}
 	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigScopeLogs(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyScopeLogs(t *testing.T) {
 	src := &otlplogs.ScopeLogs{}
-	buf, err := MarshalProtoOrigScopeLogs(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigScopeLogs(src))
+	buf := make([]byte, SizeProtoOrigScopeLogs(src))
+	gotSize := MarshalProtoOrigScopeLogs(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.ScopeLogs{}
 	require.NoError(t, UnmarshalProtoOrigScopeLogs(dest, buf))

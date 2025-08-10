@@ -116,14 +116,21 @@ func (omv *OneOfMessageValue) GenerateUnmarshalJSON(ms *messageStruct, of *OneOf
 }
 
 func (omv *OneOfMessageValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	pf := &ProtoField{
+	return omv.toProtoField(ms, of).genSizeProto()
+}
+
+func (omv *OneOfMessageValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
+	return omv.toProtoField(ms, of).genMarshalProto()
+}
+
+func (omv *OneOfMessageValue) toProtoField(ms *messageStruct, of *OneOfField) *ProtoField {
+	return &ProtoField{
 		Type:        ProtoTypeMessage,
 		ID:          omv.protoID,
 		Name:        of.originFieldName + ".(*" + ms.originFullName + "_" + omv.fieldName + ")" + "." + omv.fieldName,
 		MessageName: omv.returnMessage.getOriginName(),
 		Nullable:    true,
 	}
-	return pf.genSizeProto()
 }
 
 func (omv *OneOfMessageValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {

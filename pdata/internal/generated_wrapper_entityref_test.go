@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 	src := &otlpcommon.EntityRef{}
 	FillOrigTestEntityRef(src)
-	buf, err := MarshalProtoOrigEntityRef(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigEntityRef(src))
+	buf := make([]byte, SizeProtoOrigEntityRef(src))
+	gotSize := MarshalProtoOrigEntityRef(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpcommon.EntityRef{}
 	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyEntityRef(t *testing.T) {
 	src := &otlpcommon.EntityRef{}
-	buf, err := MarshalProtoOrigEntityRef(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigEntityRef(src))
+	buf := make([]byte, SizeProtoOrigEntityRef(src))
+	gotSize := MarshalProtoOrigEntityRef(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpcommon.EntityRef{}
 	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))

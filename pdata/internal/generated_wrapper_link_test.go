@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigLink(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 	src := &otlpprofiles.Link{}
 	FillOrigTestLink(src)
-	buf, err := MarshalProtoOrigLink(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLink(src))
+	buf := make([]byte, SizeProtoOrigLink(src))
+	gotSize := MarshalProtoOrigLink(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.Link{}
 	require.NoError(t, UnmarshalProtoOrigLink(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigLink(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyLink(t *testing.T) {
 	src := &otlpprofiles.Link{}
-	buf, err := MarshalProtoOrigLink(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigLink(src))
+	buf := make([]byte, SizeProtoOrigLink(src))
+	gotSize := MarshalProtoOrigLink(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpprofiles.Link{}
 	require.NoError(t, UnmarshalProtoOrigLink(dest, buf))

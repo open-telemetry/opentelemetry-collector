@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 	src := &otlpmetrics.HistogramDataPoint{}
 	FillOrigTestHistogramDataPoint(src)
-	buf, err := MarshalProtoOrigHistogramDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigHistogramDataPoint(src))
+	buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+	gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.HistogramDataPoint{}
 	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyHistogramDataPoint(t *testing.T) {
 	src := &otlpmetrics.HistogramDataPoint{}
-	buf, err := MarshalProtoOrigHistogramDataPoint(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigHistogramDataPoint(src))
+	buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+	gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.HistogramDataPoint{}
 	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
