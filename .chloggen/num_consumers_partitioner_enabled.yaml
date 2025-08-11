@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporterhelper
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not ignore `num_consumers` when batching is enabled and partitioner is defined.
+note: Do not ignore `num_consumers` when batching and partitioning are enabled.
 
 # One or more tracking issues or pull requests related to the change
 issues: [13607]
