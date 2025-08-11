@@ -26,46 +26,55 @@ func TestCopyOrigScopeProfiles(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
-	src := &otlpprofiles.ScopeProfiles{}
-	FillOrigTestScopeProfiles(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigScopeProfiles(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigScopeProfilesUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpprofiles.ScopeProfiles{}
 	UnmarshalJSONOrigScopeProfiles(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpprofiles.ScopeProfiles{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigScopeProfiles(t *testing.T) {
+	for name, src := range getEncodingTestValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigScopeProfiles(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpprofiles.ScopeProfiles{}
+			UnmarshalJSONOrigScopeProfiles(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeProfiles(t *testing.T) {
-	src := &otlpprofiles.ScopeProfiles{}
-	FillOrigTestScopeProfiles(src)
-	buf := make([]byte, SizeProtoOrigScopeProfiles(src))
-	gotSize := MarshalProtoOrigScopeProfiles(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesScopeProfiles() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeProfiles(src))
+			gotSize := MarshalProtoOrigScopeProfiles(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.ScopeProfiles{}
-	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpprofiles.ScopeProfiles{}
+			require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyScopeProfiles(t *testing.T) {
-	src := &otlpprofiles.ScopeProfiles{}
-	buf := make([]byte, SizeProtoOrigScopeProfiles(src))
-	gotSize := MarshalProtoOrigScopeProfiles(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpprofiles.ScopeProfiles{}
-	require.NoError(t, UnmarshalProtoOrigScopeProfiles(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesScopeProfiles() map[string]*otlpprofiles.ScopeProfiles {
+	return map[string]*otlpprofiles.ScopeProfiles{
+		"empty": {},
+		"fill_test": func() *otlpprofiles.ScopeProfiles {
+			src := &otlpprofiles.ScopeProfiles{}
+			FillOrigTestScopeProfiles(src)
+			return src
+		}(),
+	}
 }

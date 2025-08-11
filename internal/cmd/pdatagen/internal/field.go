@@ -19,6 +19,8 @@ type Field interface {
 	GenerateSizeProto(ms *messageStruct) string
 
 	GenerateMarshalProto(ms *messageStruct) string
+
+	GenerateTestValue(ms *messageStruct) string
 }
 
 func origAccessor(hasWrapper bool) string {
