@@ -29,9 +29,15 @@ func NewLogs(cons consumer.Logs, set Settings, opts ...Option) consumer.Logs {
 		opt(&o)
 	}
 
+	consumerSet := Settings{
+		ItemCounter: set.ItemCounter,
+		SizeCounter: set.SizeCounter,
+		Logger:      set.Logger.With(zapFields(o.staticDataPointAttributes)...),
+	}
+
 	return obsLogs{
 		consumer:        cons,
-		set:             set,
+		set:             consumerSet,
 		compiledOptions: o.compile(),
 	}
 }

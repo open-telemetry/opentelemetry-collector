@@ -30,9 +30,15 @@ func NewProfiles(cons xconsumer.Profiles, set Settings, opts ...Option) xconsume
 		opt(&o)
 	}
 
+	consumerSet := Settings{
+		ItemCounter: set.ItemCounter,
+		SizeCounter: set.SizeCounter,
+		Logger:      set.Logger.With(zapFields(o.staticDataPointAttributes)...),
+	}
+
 	return obsProfiles{
 		consumer:        cons,
-		set:             set,
+		set:             consumerSet,
 		compiledOptions: o.compile(),
 	}
 }

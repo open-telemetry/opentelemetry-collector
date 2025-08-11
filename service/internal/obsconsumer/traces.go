@@ -29,9 +29,15 @@ func NewTraces(cons consumer.Traces, set Settings, opts ...Option) consumer.Trac
 		opt(&o)
 	}
 
+	consumerSet := Settings{
+		ItemCounter: set.ItemCounter,
+		SizeCounter: set.SizeCounter,
+		Logger:      set.Logger.With(zapFields(o.staticDataPointAttributes)...),
+	}
+
 	return obsTraces{
 		consumer:        cons,
-		set:             set,
+		set:             consumerSet,
 		compiledOptions: o.compile(),
 	}
 }
