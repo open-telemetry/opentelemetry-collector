@@ -49,8 +49,6 @@ type obsReportSender[K request.Request] struct {
 	itemsFailedInst    metric.Int64Counter
 	exportDurationInst metric.Float64Histogram
 	next               sender.Sender[K]
-	telemetryBuilder   *metadata.TelemetryBuilder
-	otelAttrs          metric.MeasurementOption
 	startTime          time.Time
 }
 
@@ -64,13 +62,11 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:           metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:             next,
-		telemetryBuilder: telemetryBuilder,
-		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:     metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		next:       next,
 	}
 
 	switch signal {
@@ -153,6 +149,6 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 func (ors *obsReportSender[K]) recordInternalDuration(ctx context.Context, startTime time.Time) {
 	if ors.exportDurationInst != nil {
 		duration := time.Since(startTime)
-		ors.exportDurationInst.Record(ctx, duration.Seconds(), ors.otelAttrs)
+		ors.exportDurationInst.Record(ctx, duration.Seconds(), ors.metricAttr)
 	}
 }
