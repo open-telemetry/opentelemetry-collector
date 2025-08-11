@@ -4,6 +4,7 @@
 package configoptional
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -465,7 +466,7 @@ func TestComparePointerMarshal(t *testing.T) {
 type invalid struct{}
 
 func (invalid) Validate() error {
-	return fmt.Errorf("invalid")
+	return errors.New("invalid")
 }
 
 var _ xconfmap.Validator = invalid{}

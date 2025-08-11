@@ -193,7 +193,16 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 
 var _ xconfmap.Validator = (*Optional[any])(nil)
 
+// Validate implements [xconfmap.Validator]. This is required because the
+// private fields in [xconfmap.Validator] can't be seen by the reflection used
+// by [xconfmap.Validate], and therefore we have to continue the validation
+// chain manually. This method isn't meant to be called directly, and should
+// generally only be called by [xconfmap.Validate].
 func (o *Optional[T]) Validate() error {
+	// When the flavor is None, the user has not passed this value,
+	// and therefore we should not validate it. The parent struct holding
+	// the Optional type can determine whether a None value is valid for
+	// a given config.
 	if o.flavor == noneFlavor {
 		return nil
 	}
