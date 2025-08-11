@@ -8,6 +8,8 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
@@ -18,4 +20,169 @@ func CopyOrigProfilesDictionary(dest, src *otlpprofiles.ProfilesDictionary) {
 	dest.StringTable = CopyOrigStringSlice(dest.StringTable, src.StringTable)
 	dest.AttributeTable = CopyOrigKeyValueSlice(dest.AttributeTable, src.AttributeTable)
 	dest.AttributeUnits = CopyOrigAttributeUnitSlice(dest.AttributeUnits, src.AttributeUnits)
+}
+
+func FillOrigTestProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) {
+	orig.MappingTable = GenerateOrigTestMappingSlice()
+	orig.LocationTable = GenerateOrigTestLocationSlice()
+	orig.FunctionTable = GenerateOrigTestFunctionSlice()
+	orig.LinkTable = GenerateOrigTestLinkSlice()
+	orig.StringTable = GenerateOrigTestStringSlice()
+	orig.AttributeTable = GenerateOrigTestKeyValueSlice()
+	orig.AttributeUnits = GenerateOrigTestAttributeUnitSlice()
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.MappingTable) > 0 {
+		dest.WriteObjectField("mappingTable")
+		MarshalJSONOrigMappingSlice(orig.MappingTable, dest)
+	}
+	if len(orig.LocationTable) > 0 {
+		dest.WriteObjectField("locationTable")
+		MarshalJSONOrigLocationSlice(orig.LocationTable, dest)
+	}
+	if len(orig.FunctionTable) > 0 {
+		dest.WriteObjectField("functionTable")
+		MarshalJSONOrigFunctionSlice(orig.FunctionTable, dest)
+	}
+	if len(orig.LinkTable) > 0 {
+		dest.WriteObjectField("linkTable")
+		MarshalJSONOrigLinkSlice(orig.LinkTable, dest)
+	}
+	if len(orig.StringTable) > 0 {
+		dest.WriteObjectField("stringTable")
+		MarshalJSONOrigStringSlice(orig.StringTable, dest)
+	}
+	if len(orig.AttributeTable) > 0 {
+		dest.WriteObjectField("attributeTable")
+		MarshalJSONOrigKeyValueSlice(orig.AttributeTable, dest)
+	}
+	if len(orig.AttributeUnits) > 0 {
+		dest.WriteObjectField("attributeUnits")
+		MarshalJSONOrigAttributeUnitSlice(orig.AttributeUnits, dest)
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigProfilesDictionary unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "mappingTable", "mapping_table":
+			orig.MappingTable = UnmarshalJSONOrigMappingSlice(iter)
+		case "locationTable", "location_table":
+			orig.LocationTable = UnmarshalJSONOrigLocationSlice(iter)
+		case "functionTable", "function_table":
+			orig.FunctionTable = UnmarshalJSONOrigFunctionSlice(iter)
+		case "linkTable", "link_table":
+			orig.LinkTable = UnmarshalJSONOrigLinkSlice(iter)
+		case "stringTable", "string_table":
+			orig.StringTable = UnmarshalJSONOrigStringSlice(iter)
+		case "attributeTable", "attribute_table":
+			orig.AttributeTable = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "attributeUnits", "attribute_units":
+			orig.AttributeUnits = UnmarshalJSONOrigAttributeUnitSlice(iter)
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.MappingTable {
+		l = SizeProtoOrigMapping(orig.MappingTable[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.LocationTable {
+		l = SizeProtoOrigLocation(orig.LocationTable[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.FunctionTable {
+		l = SizeProtoOrigFunction(orig.FunctionTable[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.LinkTable {
+		l = SizeProtoOrigLink(orig.LinkTable[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for _, s := range orig.StringTable {
+		l = len(s)
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.AttributeTable {
+		l = SizeProtoOrigKeyValue(&orig.AttributeTable[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.AttributeUnits {
+		l = SizeProtoOrigAttributeUnit(orig.AttributeUnits[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	return n
+}
+
+func MarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.MappingTable {
+		l = MarshalProtoOrigMapping(orig.MappingTable[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	for i := range orig.LocationTable {
+		l = MarshalProtoOrigLocation(orig.LocationTable[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	for i := range orig.FunctionTable {
+		l = MarshalProtoOrigFunction(orig.FunctionTable[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	for i := range orig.LinkTable {
+		l = MarshalProtoOrigLink(orig.LinkTable[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x22
+	}
+	for i := len(orig.StringTable) - 1; i >= 0; i-- {
+		l = len(orig.StringTable[i])
+		pos -= l
+		copy(buf[pos:], orig.StringTable[i])
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+	}
+	for i := range orig.AttributeTable {
+		l = MarshalProtoOrigKeyValue(&orig.AttributeTable[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
+	}
+	for i := range orig.AttributeUnits {
+		l = MarshalProtoOrigAttributeUnit(orig.AttributeUnits[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x3a
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

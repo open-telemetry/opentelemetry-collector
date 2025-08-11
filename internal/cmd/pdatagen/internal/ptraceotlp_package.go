@@ -12,6 +12,11 @@ var ptraceotlp = &Package{
 		name: "ptraceotlp",
 		path: filepath.Join("ptrace", "ptraceotlp"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 		},
 		testImports: []string{
@@ -34,10 +39,12 @@ var exportTracePartialSuccess = &messageStruct{
 	fields: []Field{
 		&PrimitiveField{
 			fieldName: "RejectedSpans",
+			protoID:   1,
 			protoType: ProtoTypeInt64,
 		},
 		&PrimitiveField{
 			fieldName: "ErrorMessage",
+			protoID:   2,
 			protoType: ProtoTypeString,
 		},
 	},

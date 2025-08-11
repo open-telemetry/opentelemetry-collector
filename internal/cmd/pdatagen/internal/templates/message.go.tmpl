@@ -76,28 +76,4 @@ func (ms {{ .structName }}) getOrig() *{{ .originFullName }} {
 func (ms {{ .structName }}) getState() *internal.State {
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
 }
-{{- else }}
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	{{ range .fields -}}
-	{{ .GenerateMarshalJSON $.messageStruct }}
-	{{ end -}}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms {{ .structName }}) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		{{ range .fields -}}
-		{{ .GenerateUnmarshalJSON $.messageStruct }}
-		{{ end -}}
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
 {{- end }}

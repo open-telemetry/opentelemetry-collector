@@ -30,13 +30,9 @@ func Test{{ .structName }}(t *testing.T) {
 	testVal := generateTest{{ .elementName }}()
 	{{- end }}
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		{{- if .isCommon }}
-		internal.FillTest{{ .elementName }}(internal.{{ .elementName }}(el))
-		{{- else }}
-		fillTest{{ .elementName }}(el)
-		{{- end }}
+		internal.FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}(*es.{{ .origAccessor }})[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -57,24 +53,7 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
 	dest := New{{ .structName }}()
-	// Test CopyTo empty
-	New{{ .structName }}().CopyTo(dest)
-	assert.Equal(t, New{{ .structName }}(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTest{{ .structName }}()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTest{{ .structName }}(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTest{{ .structName }}(), dest)
-
-	// Test CopyTo smaller size slice
-	New{{ .structName }}().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
@@ -167,30 +146,6 @@ func Test{{ .structName }}All(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTest{{ .structName }}()
-	{{- if .isCommon }}
-	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
-	{{- else }}
-	src.marshalJSONStream(stream)
-	{{- end }}
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := New{{ .structName }}()
-	{{- if .isCommon }}
-	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
-	{{- else }}
-	dest.unmarshalJSONIter(iter)
-	{{- end }}
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 {{ if eq .type "sliceOfPtrs" -}}
 func Test{{ .structName }}_Sort(t *testing.T) {
 	es := generateTest{{ .structName }}()
@@ -210,21 +165,7 @@ func Test{{ .structName }}_Sort(t *testing.T) {
 {{- end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-    {{- if .isCommon }}
-    return {{ .structName }}(internal.GenerateTest{{ .structName }}())
-    {{- else }}
-	es := New{{ .structName }}()
-	fillTest{{ .structName }}(es)
-	return es
-	{{- end }}
+	ms := New{{ .structName }}()
+	*ms.{{ .origAccessor }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
+	return ms
 }
-
-{{ if not .isCommon -}}
-func fillTest{{ .structName }}(es {{ .structName }}) {
-	*es.orig = make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = {{ .emptyOriginElement }}
-		fillTest{{ .elementName }}({{ .newElement }})
-	}
-}
-{{- end }}

@@ -8,10 +8,8 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element "go.opentelemetry.io/collector/pdata/internal" }}
 	{{ $element }}
-	{{- end }}
-	{{- end }}
+	{{ end }}
 )
 
 type {{ .structName }} struct {
@@ -31,53 +29,53 @@ func New{{ .structName }}(orig *[]{{ .itemType }}, state *State) {{ .structName 
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func FillTest{{ .structName }}(ms {{ .structName}}) {
-	*ms.orig = []{{ .itemType }}{ {{ .testOrigVal }} }
-}
-
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := []{{ .itemType }}(nil)
+	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
 	state := StateMutable
-	ms := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(ms)
-	return ms
+	return New{{ .structName }}(&orig, &state)
 }
 
-// MarshalJSONStream{{ .structName }} marshals all properties from the current struct to the destination stream.
-func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
+func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
+	return append(dst[:0], src...)
+}
+
+func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
+	return []{{ .itemType }}{ {{ .testOrigVal }} }
+}
+
+// MarshalJSONOrig{{ .elementOriginName }}Slice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrig{{ .elementOriginName }}Slice(orig []{{ .itemType }}, dest *json.Stream) {
 	{{- if eq .itemType "byte" }}
-	dest.WriteString(base64.StdEncoding.EncodeToString(*ms.orig))
+	dest.WriteString(base64.StdEncoding.EncodeToString(orig))
 	{{- else }}
 	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		dest.Write{{ upperFirst .itemType }}((*ms.orig)[0])
+	if len(orig) > 0 {
+		dest.Write{{ upperFirst .itemType }}(orig[0])
 	}
-	for i := 1; i < len((*ms.orig)); i++ {
+	for i := 1; i < len(orig); i++ {
 		dest.WriteMore()
-		dest.Write{{ upperFirst .itemType }}((*ms.orig)[i])
+		dest.Write{{ upperFirst .itemType }}(orig[i])
 	}
 	dest.WriteArrayEnd()
 	{{- end }}
 }
 
-// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+// UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ .itemType }}{
 	{{- if eq .itemType "byte" }}
 	buf := iter.ReadStringAsSlice()
-	*ms.orig = make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
-	n, err := base64.StdEncoding.Decode(*ms.orig, buf)
+	orig := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
+	n, err := base64.StdEncoding.Decode(orig, buf)
 	if err != nil {
 		iter.ReportError("base64.Decode", err.Error())
 	}
-	*ms.orig = (*ms.orig)[:n]
+	orig = orig[:n]
 	{{- else }}
+	var orig []{{ .itemType }}
 	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, iter.Read{{ upperFirst .itemType }}())
+		orig = append(orig, iter.Read{{ upperFirst .itemType }}())
 		return true
 	})
 	{{- end }}
-}
-
-func CopyOrig{{ .elementOriginName }}Slice(dst, src []{{ .itemType }}) []{{ .itemType }} {
-return append(dst[:0], src...)
+	return orig
 }

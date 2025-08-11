@@ -7,7 +7,12 @@
 package internal
 
 import (
+	"encoding/binary"
+	"math"
+
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
+	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
 
 func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
@@ -15,10 +20,6 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	dest.StartTimeUnixNano = src.StartTimeUnixNano
 	dest.TimeUnixNano = src.TimeUnixNano
 	dest.Count = src.Count
-	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
-	dest.ExplicitBounds = CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
-	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
-	dest.Flags = src.Flags
 	if srcSum, ok := src.Sum_.(*otlpmetrics.HistogramDataPoint_Sum); ok {
 		destSum, ok := dest.Sum_.(*otlpmetrics.HistogramDataPoint_Sum)
 		if !ok {
@@ -29,6 +30,10 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	} else {
 		dest.Sum_ = nil
 	}
+	dest.BucketCounts = CopyOrigUint64Slice(dest.BucketCounts, src.BucketCounts)
+	dest.ExplicitBounds = CopyOrigFloat64Slice(dest.ExplicitBounds, src.ExplicitBounds)
+	dest.Exemplars = CopyOrigExemplarSlice(dest.Exemplars, src.Exemplars)
+	dest.Flags = src.Flags
 	if srcMin, ok := src.Min_.(*otlpmetrics.HistogramDataPoint_Min); ok {
 		destMin, ok := dest.Min_.(*otlpmetrics.HistogramDataPoint_Min)
 		if !ok {
@@ -49,4 +54,236 @@ func CopyOrigHistogramDataPoint(dest, src *otlpmetrics.HistogramDataPoint) {
 	} else {
 		dest.Max_ = nil
 	}
+}
+
+func FillOrigTestHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) {
+	orig.Attributes = GenerateOrigTestKeyValueSlice()
+	orig.StartTimeUnixNano = 1234567890
+	orig.TimeUnixNano = 1234567890
+	orig.Count = uint64(13)
+	orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(3.1415926)}
+	orig.BucketCounts = GenerateOrigTestUint64Slice()
+	orig.ExplicitBounds = GenerateOrigTestFloat64Slice()
+	orig.Exemplars = GenerateOrigTestExemplarSlice()
+	orig.Flags = 1
+	orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(3.1415926)}
+	orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(3.1415926)}
+}
+
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, dest *json.Stream) {
+	dest.WriteObjectStart()
+	if len(orig.Attributes) > 0 {
+		dest.WriteObjectField("attributes")
+		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+	}
+	if orig.StartTimeUnixNano != 0 {
+		dest.WriteObjectField("startTimeUnixNano")
+		dest.WriteUint64(orig.StartTimeUnixNano)
+	}
+	if orig.TimeUnixNano != 0 {
+		dest.WriteObjectField("timeUnixNano")
+		dest.WriteUint64(orig.TimeUnixNano)
+	}
+	if orig.Count != uint64(0) {
+		dest.WriteObjectField("count")
+		dest.WriteUint64(orig.Count)
+	}
+	if orig.Sum_ != nil {
+		dest.WriteObjectField("sum")
+		dest.WriteFloat64(orig.GetSum())
+	}
+	if len(orig.BucketCounts) > 0 {
+		dest.WriteObjectField("bucketCounts")
+		MarshalJSONOrigUint64Slice(orig.BucketCounts, dest)
+	}
+	if len(orig.ExplicitBounds) > 0 {
+		dest.WriteObjectField("explicitBounds")
+		MarshalJSONOrigFloat64Slice(orig.ExplicitBounds, dest)
+	}
+	if len(orig.Exemplars) > 0 {
+		dest.WriteObjectField("exemplars")
+		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+	}
+	if orig.Flags != 0 {
+		dest.WriteObjectField("flags")
+		dest.WriteUint32(orig.Flags)
+	}
+	if orig.Min_ != nil {
+		dest.WriteObjectField("min")
+		dest.WriteFloat64(orig.GetMin())
+	}
+	if orig.Max_ != nil {
+		dest.WriteObjectField("max")
+		dest.WriteFloat64(orig.GetMax())
+	}
+	dest.WriteObjectEnd()
+}
+
+// UnmarshalJSONOrigHistogramDataPoint unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, iter *json.Iterator) {
+	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
+		switch f {
+		case "attributes":
+			orig.Attributes = UnmarshalJSONOrigKeyValueSlice(iter)
+		case "startTimeUnixNano", "start_time_unix_nano":
+			orig.StartTimeUnixNano = iter.ReadUint64()
+		case "timeUnixNano", "time_unix_nano":
+			orig.TimeUnixNano = iter.ReadUint64()
+		case "count":
+			orig.Count = iter.ReadUint64()
+		case "sum":
+			orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: iter.ReadFloat64()}
+		case "bucketCounts", "bucket_counts":
+			orig.BucketCounts = UnmarshalJSONOrigUint64Slice(iter)
+		case "explicitBounds", "explicit_bounds":
+			orig.ExplicitBounds = UnmarshalJSONOrigFloat64Slice(iter)
+		case "exemplars":
+			orig.Exemplars = UnmarshalJSONOrigExemplarSlice(iter)
+		case "flags":
+			orig.Flags = iter.ReadUint32()
+		case "min":
+			orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: iter.ReadFloat64()}
+		case "max":
+			orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: iter.ReadFloat64()}
+		default:
+			iter.Skip()
+		}
+		return true
+	})
+}
+
+func SizeProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint) int {
+	var n int
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = SizeProtoOrigKeyValue(&orig.Attributes[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.StartTimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.TimeUnixNano != 0 {
+		n += 9
+	}
+	if orig.Count != 0 {
+		n += 9
+	}
+	if orig.Sum_ != nil {
+		n += 9
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		l *= 8
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	l = len(orig.ExplicitBounds)
+	if l > 0 {
+		l *= 8
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	for i := range orig.Exemplars {
+		l = SizeProtoOrigExemplar(&orig.Exemplars[i])
+		n += 1 + proto.Sov(uint64(l)) + l
+	}
+	if orig.Flags != 0 {
+		n += 1 + proto.Sov(uint64(orig.Flags))
+	}
+	if orig.Min_ != nil {
+		n += 9
+	}
+	if orig.Max_ != nil {
+		n += 9
+	}
+	return n
+}
+
+func MarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x4a
+	}
+	if orig.StartTimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.StartTimeUnixNano))
+		pos--
+		buf[pos] = 0x11
+	}
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x19
+	}
+	if orig.Count != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.Count))
+		pos--
+		buf[pos] = 0x21
+	}
+	if orig.Sum_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum))
+		pos--
+		buf[pos] = 0x29
+
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		for i := l - 1; i >= 0; i-- {
+			pos -= 8
+			binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.BucketCounts[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(l*8))
+		pos--
+		buf[pos] = 0x32
+	}
+	l = len(orig.ExplicitBounds)
+	if l > 0 {
+		for i := l - 1; i >= 0; i-- {
+			pos -= 8
+			binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.ExplicitBounds[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(l*8))
+		pos--
+		buf[pos] = 0x3a
+	}
+	for i := range orig.Exemplars {
+		l = MarshalProtoOrigExemplar(&orig.Exemplars[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x42
+	}
+	if orig.Flags != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Flags))
+		pos--
+		buf[pos] = 0x50
+	}
+	if orig.Min_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min))
+		pos--
+		buf[pos] = 0x59
+
+	}
+	if orig.Max_ != nil {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], math.Float64bits(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max))
+		pos--
+		buf[pos] = 0x61
+
+	}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

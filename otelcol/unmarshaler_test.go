@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 func TestUnmarshalEmpty(t *testing.T) {
@@ -41,11 +41,11 @@ func TestUnmarshalEmptyAllSections(t *testing.T) {
 	require.NoError(t, err)
 
 	zapProdCfg := zap.NewProductionConfig()
-	assert.Equal(t, telemetry.LogsConfig{
+	assert.Equal(t, otelconftelemetry.LogsConfig{
 		Level:       zapProdCfg.Level.Level(),
 		Development: zapProdCfg.Development,
 		Encoding:    "console",
-		Sampling: &telemetry.LogsSamplingConfig{
+		Sampling: &otelconftelemetry.LogsSamplingConfig{
 			Enabled:    true,
 			Tick:       10 * time.Second,
 			Initial:    10,

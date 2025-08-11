@@ -19,40 +19,30 @@ func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType 
 
 const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
+	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
+	internal.FillOrigTest{{ .fieldOriginName }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }})
 	{{- if .isCommon }}
-	internal.FillTest{{ .returnType }}(internal.{{ .returnType }}(ms.{{ .fieldName }}()))
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
-	fillTest{{ .returnType }}(ms.{{ .fieldName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const messageSetTestTemplate = `{{- if .isCommon -}}
-	internal.FillTest{{ .returnType }}(internal.New{{ .returnType }}(&tv.orig.{{ .fieldOriginFullName }}, tv.state))
-	{{- else -}}
-	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
-	{{-	end }}`
+const messageSetTestTemplate = `FillOrigTest{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }})`
 
 const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
-const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.orig.{{ .fieldOriginFullName }} != "" { {{ end -}}
+const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if orig.{{ .fieldOriginFullName }} != "" { {{ end -}}
 	dest.WriteObjectField("{{ lowerFirst .fieldOriginFullName }}")
-	{{- if .isCommon }}
-	internal.MarshalJSONStream{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .fieldOriginFullName }}, ms.state), dest)
-	{{- else }}
-	ms.{{ .fieldName }}().marshalJSONStream(dest)
-	{{- end }}{{ if eq .returnType "TraceState" -}} } {{- end }}`
+	MarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, dest)
+	{{- if eq .returnType "TraceState" -}} } {{- end }}`
 
 const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }}"{{ if needSnake .fieldOriginFullName -}}, "{{ toSnake .fieldOriginFullName }}"{{- end }}:
-	{{- if .isCommon }}
-	internal.UnmarshalJSONIter{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .fieldOriginFullName }}, ms.state), iter)
-	{{- else }}
-	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
-	{{- end }}`
+	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
 
 type MessageField struct {
 	fieldName     string
+	protoID       uint32
 	returnMessage *messageStruct
 }
 
@@ -84,6 +74,27 @@ func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("messageUnmarshalJSONTemplate").Parse(messageUnmarshalJSONTemplate))
 	return executeTemplate(t, mf.templateFields(ms))
+}
+
+func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
+	return mf.toProtoField().genSizeProto()
+}
+
+func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
+	return mf.toProtoField().genMarshalProto()
+}
+
+func (mf *MessageField) toProtoField() *ProtoField {
+	pt := ProtoTypeMessage
+	if mf.returnMessage.getName() == "TraceState" {
+		pt = ProtoTypeString
+	}
+	return &ProtoField{
+		Type:        pt,
+		ID:          mf.protoID,
+		Name:        mf.fieldName,
+		MessageName: mf.returnMessage.getOriginName(),
+	}
 }
 
 func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {

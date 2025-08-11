@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestScopeSpansSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestScopeSpansSlice(t *testing.T) {
 	emptyVal := NewScopeSpans()
 	testVal := generateTestScopeSpans()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestScopeSpans(el)
+		internal.FillOrigTestScopeSpans((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestScopeSpansSliceReadOnly(t *testing.T) {
 
 func TestScopeSpansSlice_CopyTo(t *testing.T) {
 	dest := NewScopeSpansSlice()
-	// Test CopyTo empty
-	NewScopeSpansSlice().CopyTo(dest)
-	assert.Equal(t, NewScopeSpansSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestScopeSpansSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeSpansSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestScopeSpansSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewScopeSpansSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestScopeSpansSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestScopeSpansSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestScopeSpansSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestScopeSpansSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewScopeSpansSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestScopeSpansSlice_Sort(t *testing.T) {
 	es := generateTestScopeSpansSlice()
 	es.Sort(func(a, b ScopeSpans) bool {
@@ -194,15 +159,7 @@ func TestScopeSpansSlice_Sort(t *testing.T) {
 }
 
 func generateTestScopeSpansSlice() ScopeSpansSlice {
-	es := NewScopeSpansSlice()
-	fillTestScopeSpansSlice(es)
-	return es
-}
-
-func fillTestScopeSpansSlice(es ScopeSpansSlice) {
-	*es.orig = make([]*otlptrace.ScopeSpans, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlptrace.ScopeSpans{}
-		fillTestScopeSpans(newScopeSpans((*es.orig)[i], es.state))
-	}
+	ms := NewScopeSpansSlice()
+	*ms.orig = internal.GenerateOrigTestScopeSpansSlice()
+	return ms
 }

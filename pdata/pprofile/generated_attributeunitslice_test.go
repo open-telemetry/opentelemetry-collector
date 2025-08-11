@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestAttributeUnitSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestAttributeUnitSlice(t *testing.T) {
 	emptyVal := NewAttributeUnit()
 	testVal := generateTestAttributeUnit()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestAttributeUnit(el)
+		internal.FillOrigTestAttributeUnit((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestAttributeUnitSliceReadOnly(t *testing.T) {
 
 func TestAttributeUnitSlice_CopyTo(t *testing.T) {
 	dest := NewAttributeUnitSlice()
-	// Test CopyTo empty
-	NewAttributeUnitSlice().CopyTo(dest)
-	assert.Equal(t, NewAttributeUnitSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestAttributeUnitSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewAttributeUnitSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestAttributeUnitSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestAttributeUnitSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestAttributeUnitSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestAttributeUnitSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewAttributeUnitSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestAttributeUnitSlice_Sort(t *testing.T) {
 	es := generateTestAttributeUnitSlice()
 	es.Sort(func(a, b AttributeUnit) bool {
@@ -194,15 +159,7 @@ func TestAttributeUnitSlice_Sort(t *testing.T) {
 }
 
 func generateTestAttributeUnitSlice() AttributeUnitSlice {
-	es := NewAttributeUnitSlice()
-	fillTestAttributeUnitSlice(es)
-	return es
-}
-
-func fillTestAttributeUnitSlice(es AttributeUnitSlice) {
-	*es.orig = make([]*otlpprofiles.AttributeUnit, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.AttributeUnit{}
-		fillTestAttributeUnit(newAttributeUnit((*es.orig)[i], es.state))
-	}
+	ms := NewAttributeUnitSlice()
+	*ms.orig = internal.GenerateOrigTestAttributeUnitSlice()
+	return ms
 }

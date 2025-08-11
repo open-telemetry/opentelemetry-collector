@@ -29,41 +29,9 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 }
 
 func GenerateTestSlice() Slice {
-	orig := []otlpcommon.AnyValue(nil)
+	orig := GenerateOrigTestAnyValueSlice()
 	state := StateMutable
-	es := NewSlice(&orig, &state)
-	FillTestSlice(es)
-	return es
-}
-
-func FillTestSlice(es Slice) {
-	*es.orig = make([]otlpcommon.AnyValue, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = otlpcommon.AnyValue{}
-		FillTestValue(NewValue(&(*es.orig)[i], es.state))
-	}
-}
-
-// MarshalJSONStreamSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamSlice(ms Slice, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		MarshalJSONStreamValue(NewValue(&(*ms.orig)[0], ms.state), dest)
-	}
-	for i := 1; i < len((*ms.orig)); i++ {
-		dest.WriteMore()
-		MarshalJSONStreamValue(NewValue(&(*ms.orig)[i], ms.state), dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// UnmarshalJSONIterSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterSlice(ms Slice, iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, otlpcommon.AnyValue{})
-		UnmarshalJSONIterValue(NewValue(&(*ms.orig)[len(*ms.orig)-1], ms.state), iter)
-		return true
-	})
+	return NewSlice(&orig, &state)
 }
 
 func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {
@@ -82,4 +50,37 @@ func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValu
 		CopyOrigAnyValue(&newDest[i], &src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
+	orig := make([]otlpcommon.AnyValue, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = otlpcommon.AnyValue{}
+		FillOrigTestAnyValue(&orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigAnyValueSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigAnyValueSlice(orig []otlpcommon.AnyValue, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigAnyValue(&orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigAnyValue(&orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigAnyValueSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
+	var orig []otlpcommon.AnyValue
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, otlpcommon.AnyValue{})
+		UnmarshalJSONOrigAnyValue(&orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

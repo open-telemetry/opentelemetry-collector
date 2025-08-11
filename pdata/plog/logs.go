@@ -68,8 +68,10 @@ func (ms Logs) MarkReadOnly() {
 
 func (ms Logs) marshalJSONStream(dest *json.Stream) {
 	dest.WriteObjectStart()
-	dest.WriteObjectField("resourceLogs")
-	ms.ResourceLogs().marshalJSONStream(dest)
+	if len(ms.getOrig().ResourceLogs) > 0 {
+		dest.WriteObjectField("resourceLogs")
+		internal.MarshalJSONOrigResourceLogsSlice(ms.getOrig().ResourceLogs, dest)
+	}
 	dest.WriteObjectEnd()
 }
 
@@ -77,7 +79,7 @@ func (ms Logs) unmarshalJSONIter(iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		case "resource_logs", "resourceLogs":
-			ms.ResourceLogs().unmarshalJSONIter(iter)
+			ms.getOrig().ResourceLogs = internal.UnmarshalJSONOrigResourceLogsSlice(iter)
 		default:
 			iter.Skip()
 		}

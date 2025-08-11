@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
@@ -37,4 +38,37 @@ func CopyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles
 		CopyOrigValueType(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
+	orig := make([]*otlpprofiles.ValueType, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.ValueType{}
+		FillOrigTestValueType(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigValueTypeSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigValueTypeSlice(orig []*otlpprofiles.ValueType, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigValueType(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigValueType(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigValueTypeSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigValueTypeSlice(iter *json.Iterator) []*otlpprofiles.ValueType {
+	var orig []*otlpprofiles.ValueType
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.ValueType{})
+		UnmarshalJSONOrigValueType(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }

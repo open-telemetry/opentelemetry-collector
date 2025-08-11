@@ -29,34 +29,33 @@ func NewByteSlice(orig *[]byte, state *State) ByteSlice {
 	return ByteSlice{orig: orig, state: state}
 }
 
-func FillTestByteSlice(ms ByteSlice) {
-	*ms.orig = []byte{1, 2, 3}
-}
-
 func GenerateTestByteSlice() ByteSlice {
-	orig := []byte(nil)
+	orig := GenerateOrigTestByteSlice()
 	state := StateMutable
-	ms := NewByteSlice(&orig, &state)
-	FillTestByteSlice(ms)
-	return ms
-}
-
-// MarshalJSONStreamByteSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONStreamByteSlice(ms ByteSlice, dest *json.Stream) {
-	dest.WriteString(base64.StdEncoding.EncodeToString(*ms.orig))
-}
-
-// UnmarshalJSONIterByteSlice unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIterByteSlice(ms ByteSlice, iter *json.Iterator) {
-	buf := iter.ReadStringAsSlice()
-	*ms.orig = make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
-	n, err := base64.StdEncoding.Decode(*ms.orig, buf)
-	if err != nil {
-		iter.ReportError("base64.Decode", err.Error())
-	}
-	*ms.orig = (*ms.orig)[:n]
+	return NewByteSlice(&orig, &state)
 }
 
 func CopyOrigByteSlice(dst, src []byte) []byte {
 	return append(dst[:0], src...)
+}
+
+func GenerateOrigTestByteSlice() []byte {
+	return []byte{1, 2, 3}
+}
+
+// MarshalJSONOrigByteSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigByteSlice(orig []byte, dest *json.Stream) {
+	dest.WriteString(base64.StdEncoding.EncodeToString(orig))
+}
+
+// UnmarshalJSONOrigByteSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigByteSlice(iter *json.Iterator) []byte {
+	buf := iter.ReadStringAsSlice()
+	orig := make([]byte, base64.StdEncoding.DecodedLen(len(buf)))
+	n, err := base64.StdEncoding.Decode(orig, buf)
+	if err != nil {
+		iter.ReportError("base64.Decode", err.Error())
+	}
+	orig = orig[:n]
+	return orig
 }

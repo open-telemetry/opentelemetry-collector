@@ -8,6 +8,7 @@ package internal
 
 import (
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlpprofiles.AttributeUnit {
@@ -37,4 +38,37 @@ func CopyOrigAttributeUnitSlice(dest, src []*otlpprofiles.AttributeUnit) []*otlp
 		CopyOrigAttributeUnit(newDest[i], src[i])
 	}
 	return newDest
+}
+
+func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
+	orig := make([]*otlpprofiles.AttributeUnit, 7)
+	for i := 0; i < 7; i++ {
+		orig[i] = &otlpprofiles.AttributeUnit{}
+		FillOrigTestAttributeUnit(orig[i])
+	}
+	return orig
+}
+
+// MarshalJSONOrigAttributeUnitSlice marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrigAttributeUnitSlice(orig []*otlpprofiles.AttributeUnit, dest *json.Stream) {
+	dest.WriteArrayStart()
+	if len(orig) > 0 {
+		MarshalJSONOrigAttributeUnit(orig[0], dest)
+	}
+	for i := 1; i < len(orig); i++ {
+		dest.WriteMore()
+		MarshalJSONOrigAttributeUnit(orig[i], dest)
+	}
+	dest.WriteArrayEnd()
+}
+
+// UnmarshalJSONOrigAttributeUnitSlice unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
+	var orig []*otlpprofiles.AttributeUnit
+	iter.ReadArrayCB(func(iter *json.Iterator) bool {
+		orig = append(orig, &otlpprofiles.AttributeUnit{})
+		UnmarshalJSONOrigAttributeUnit(orig[len(orig)-1], iter)
+		return true
+	})
+	return orig
 }
