@@ -31,6 +31,7 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ExporterEnqueueFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterEnqueueFailedSpans.Add(context.Background(), 1)
+	tb.ExporterInternalDuration.Record(context.Background(), 1)
 	tb.ExporterSendFailedLogRecords.Add(context.Background(), 1)
 	tb.ExporterSendFailedMetricPoints.Add(context.Background(), 1)
 	tb.ExporterSendFailedSpans.Add(context.Background(), 1)
@@ -45,6 +46,9 @@ func TestSetupTelemetry(t *testing.T) {
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterEnqueueFailedSpans(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterInternalDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterQueueCapacity(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

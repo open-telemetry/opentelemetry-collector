@@ -383,6 +383,14 @@ func configureViews(level configtelemetry.Level) []config.View {
 				MeterName:      ptr("go.opentelemetry.io/collector/processor/processorhelper"),
 				InstrumentName: ptr("otelcol_processor_internal_duration"),
 			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      ptr("go.opentelemetry.io/collector/exporter/exporterhelper"),
+				InstrumentName: ptr("otelcol_exporter_internal_duration"),
+			}),
+			dropViewOption(&config.ViewSelector{
+				MeterName:      ptr("go.opentelemetry.io/collector/receiver/receiverhelper"),
+				InstrumentName: ptr("otelcol_receiver_internal_duration"),
+			}),
 		)
 	}
 

@@ -31,6 +31,7 @@ type TelemetryBuilder struct {
 	ExporterEnqueueFailedLogRecords   metric.Int64Counter
 	ExporterEnqueueFailedMetricPoints metric.Int64Counter
 	ExporterEnqueueFailedSpans        metric.Int64Counter
+	ExporterInternalDuration          metric.Float64Histogram
 	ExporterQueueCapacity             metric.Int64ObservableGauge
 	ExporterQueueSize                 metric.Int64ObservableGauge
 	ExporterSendFailedLogRecords      metric.Int64Counter
@@ -126,6 +127,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 		"otelcol_exporter_enqueue_failed_spans",
 		metric.WithDescription("Number of spans failed to be added to the sending queue. [alpha]"),
 		metric.WithUnit("{spans}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ExporterInternalDuration, err = builder.meter.Float64Histogram(
+		"otelcol_exporter_internal_duration",
+		metric.WithDescription("Duration of time taken to process a batch of telemetry data through the exporter. [alpha]"),
+		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ExporterQueueCapacity, err = builder.meter.Int64ObservableGauge(

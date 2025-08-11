@@ -60,6 +60,21 @@ func AssertEqualExporterEnqueueFailedSpans(t *testing.T, tt *componenttest.Telem
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
+func AssertEqualExporterInternalDuration(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.HistogramDataPoint[float64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_exporter_internal_duration",
+		Description: "Duration of time taken to process a batch of telemetry data through the exporter. [alpha]",
+		Unit:        "s",
+		Data: metricdata.Histogram[float64]{
+			Temporality: metricdata.CumulativeTemporality,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_exporter_internal_duration")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
+
 func AssertEqualExporterQueueCapacity(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
 		Name:        "otelcol_exporter_queue_capacity",

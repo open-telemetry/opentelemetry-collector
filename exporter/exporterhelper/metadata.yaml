@@ -122,3 +122,13 @@ telemetry:
       gauge:
         value_type: int
         async: true
+
+    exporter_internal_duration:
+      enabled: true
+      stability:
+        level: alpha
+      description: Duration of time taken to process a batch of telemetry data through the exporter.
+      unit: s
+      histogram:
+        async: false
+        value_type: double

@@ -30,6 +30,14 @@ Number of spans failed to be added to the sending queue. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
 
+### otelcol_exporter_internal_duration
+
+Duration of time taken to process a batch of telemetry data through the exporter. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
 ### otelcol_exporter_queue_capacity
 
 Fixed capacity of the retry queue (in batches) [alpha]

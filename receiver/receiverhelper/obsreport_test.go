@@ -100,6 +100,16 @@ func TestReceiveTraceDataOp(t *testing.T) {
 					Value: int64(refusedSpans),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Count: 2, // Duration will be recorded for each of the 2 operations
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
 	})
 }
 
@@ -165,6 +175,16 @@ func TestReceiveLogsOp(t *testing.T) {
 					Value: int64(refusedLogRecords),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Count: 2, // Duration will be recorded for each of the 2 operations
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
 	})
 }
 
@@ -231,6 +251,16 @@ func TestReceiveMetricsOp(t *testing.T) {
 					Value: int64(refusedMetricPoints),
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
+
+		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+			[]metricdata.HistogramDataPoint[float64]{
+				{
+					Attributes: attribute.NewSet(
+						attribute.String(internal.ReceiverKey, receiverID.String()),
+						attribute.String(internal.TransportKey, transport)),
+					Count: 2, // Duration will be recorded for each of the 2 operations
+				},
+			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
 	})
 }
 

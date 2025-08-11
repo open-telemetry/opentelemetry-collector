@@ -5,6 +5,7 @@ package internal // import "go.opentelemetry.io/collector/exporter/exporterhelpe
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -40,13 +41,17 @@ type obsReportSender[K request.Request] struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	spanName        string
-	tracer          trace.Tracer
-	spanAttrs       trace.SpanStartEventOption
-	metricAttr      metric.MeasurementOption
-	itemsSentInst   metric.Int64Counter
-	itemsFailedInst metric.Int64Counter
-	next            sender.Sender[K]
+	spanName           string
+	tracer             trace.Tracer
+	spanAttrs          trace.SpanStartEventOption
+	metricAttr         metric.MeasurementOption
+	itemsSentInst      metric.Int64Counter
+	itemsFailedInst    metric.Int64Counter
+	exportDurationInst metric.Float64Histogram
+	next               sender.Sender[K]
+	telemetryBuilder   *metadata.TelemetryBuilder
+	otelAttrs          metric.MeasurementOption
+	startTime          time.Time
 }
 
 func newObsReportSender[K request.Request](set exporter.Settings, signal pipeline.Signal, next sender.Sender[K]) (sender.Sender[K], error) {
@@ -59,25 +64,30 @@ func newObsReportSender[K request.Request](set exporter.Settings, signal pipelin
 	expAttr := attribute.String(ExporterKey, idStr)
 
 	or := &obsReportSender[K]{
-		spanName:   ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
-		tracer:     metadata.Tracer(set.TelemetrySettings),
-		spanAttrs:  trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
-		metricAttr: metric.WithAttributeSet(attribute.NewSet(expAttr)),
-		next:       next,
+		spanName:         ExporterKey + spanNameSep + idStr + spanNameSep + signal.String(),
+		tracer:           metadata.Tracer(set.TelemetrySettings),
+		spanAttrs:        trace.WithAttributes(expAttr, attribute.String(DataTypeKey, signal.String())),
+		metricAttr:       metric.WithAttributeSet(attribute.NewSet(expAttr)),
+		next:             next,
+		telemetryBuilder: telemetryBuilder,
+		otelAttrs:        metric.WithAttributeSet(attribute.NewSet(expAttr)),
 	}
 
 	switch signal {
 	case pipeline.SignalTraces:
 		or.itemsSentInst = telemetryBuilder.ExporterSentSpans
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedSpans
+		or.exportDurationInst = telemetryBuilder.ExporterInternalDuration
 
 	case pipeline.SignalMetrics:
 		or.itemsSentInst = telemetryBuilder.ExporterSentMetricPoints
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedMetricPoints
+		or.exportDurationInst = telemetryBuilder.ExporterInternalDuration
 
 	case pipeline.SignalLogs:
 		or.itemsSentInst = telemetryBuilder.ExporterSentLogRecords
 		or.itemsFailedInst = telemetryBuilder.ExporterSendFailedLogRecords
+		or.exportDurationInst = telemetryBuilder.ExporterInternalDuration
 	}
 
 	return or, nil
@@ -101,6 +111,7 @@ func (ors *obsReportSender[K]) startOp(ctx context.Context) context.Context {
 		ors.spanName,
 		ors.spanAttrs,
 		trace.WithLinks(queuebatch.LinksFromContext(ctx)...))
+	ors.startTime = time.Now()
 	return ctx
 }
 
@@ -118,6 +129,7 @@ func (ors *obsReportSender[K]) endOp(ctx context.Context, numLogRecords int, err
 	}
 
 	span := trace.SpanFromContext(ctx)
+	defer ors.recordInternalDuration(ctx, ors.startTime)
 	defer span.End()
 	// End the span according to errors.
 	if span.IsRecording() {
@@ -136,4 +148,11 @@ func toNumItems(numExportedItems int, err error) (int64, int64) {
 		return 0, int64(numExportedItems)
 	}
 	return int64(numExportedItems), 0
+}
+
+func (ors *obsReportSender[K]) recordInternalDuration(ctx context.Context, startTime time.Time) {
+	if ors.exportDurationInst != nil {
+		duration := time.Since(startTime)
+		ors.exportDurationInst.Record(ctx, duration.Seconds(), ors.otelAttrs)
+	}
 }

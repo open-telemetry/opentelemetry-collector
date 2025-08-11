@@ -461,6 +461,16 @@ func checkRecordedMetricsForMetrics(t *testing.T, tt *componenttest.Telemetry, i
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
+
+	// Test duration metric
+	metadatatest.AssertEqualExporterInternalDuration(t, tt,
+		[]metricdata.HistogramDataPoint[float64]{
+			{
+				Attributes: attribute.NewSet(
+					attribute.String(internal.ExporterKey, id.String())),
+				Count: 7, // Duration will be recorded for each of the 7 batches
+			},
+		}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars(), metricdatatest.IgnoreValue())
 }
 
 func generateMetricsTraffic(t *testing.T, tracer trace.Tracer, me exporter.Metrics, numRequests int, wantError error) {
