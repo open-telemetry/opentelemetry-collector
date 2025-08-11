@@ -33,12 +33,13 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 )
 
 var (
-	_ extension.Extension  = (*mockAuthServer)(nil)
-	_ extensionauth.Server = (*mockAuthServer)(nil)
+	_ extension.Extension                 = (*mockAuthServer)(nil)
+	_ extensioncapabilities.Authenticator = (*mockAuthServer)(nil)
 )
 
 type mockAuthServer struct {
@@ -47,7 +48,7 @@ type mockAuthServer struct {
 	extensionauth.ServerAuthenticateFunc
 }
 
-func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensionauth.Server {
+func newMockAuthServer(auth func(ctx context.Context, sources map[string][]string) (context.Context, error)) extensioncapabilities.Authenticator {
 	return &mockAuthServer{ServerAuthenticateFunc: auth}
 }
 

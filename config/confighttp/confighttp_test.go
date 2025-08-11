@@ -37,11 +37,12 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 var (
-	_ extension.Extension  = (*mockAuthServer)(nil)
-	_ extensionauth.Server = (*mockAuthServer)(nil)
+	_ extension.Extension                 = (*mockAuthServer)(nil)
+	_ extensioncapabilities.Authenticator = (*mockAuthServer)(nil)
 )
 
 type mockAuthServer struct {

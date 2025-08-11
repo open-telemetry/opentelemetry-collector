@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensioncapabilities"
 )
 
 var (
@@ -30,13 +30,14 @@ type Config struct {
 	_ struct{}
 }
 
-// GetServerAuthenticator attempts to select the appropriate extensionauth.Server from the list of extensions,
+// GetServerAuthenticator attempts to select the appropriate extensioncapabilities.Authenticator from the list of extensions,
 // based on the requested extension name. If an authenticator is not found, an error is returned.
-func (a Config) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.Server, error) {
+func (a Config) GetServerAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensioncapabilities.Authenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if server, ok := ext.(extensionauth.Server); ok {
-			return server, nil
+		if authenticator, ok := ext.(extensioncapabilities.Authenticator); ok {
+			return authenticator, nil
 		}
+
 		return nil, errNotServer
 	}
 
@@ -46,9 +47,9 @@ func (a Config) GetServerAuthenticator(_ context.Context, extensions map[compone
 // GetHTTPClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by HTTP clients.
-func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.HTTPClient, error) {
+func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensioncapabilities.HTTPClientAuthRoundTripper, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if client, ok := ext.(extensionauth.HTTPClient); ok {
+		if client, ok := ext.(extensioncapabilities.HTTPClientAuthRoundTripper); ok {
 			return client, nil
 		}
 		return nil, errNotHTTPClient
@@ -59,9 +60,9 @@ func (a Config) GetHTTPClientAuthenticator(_ context.Context, extensions map[com
 // GetGRPCClientAuthenticator attempts to select the appropriate extensionauth.Client from the list of extensions,
 // based on the component id of the extension. If an authenticator is not found, an error is returned.
 // This should be only used by gRPC clients.
-func (a Config) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
+func (a Config) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensioncapabilities.GRPCClientAuthenticator, error) {
 	if ext, found := extensions[a.AuthenticatorID]; found {
-		if client, ok := ext.(extensionauth.GRPCClient); ok {
+		if client, ok := ext.(extensioncapabilities.GRPCClientAuthenticator); ok {
 			return client, nil
 		}
 		return nil, errNotGRPCClient

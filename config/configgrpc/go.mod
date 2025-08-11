@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.37.0
 	go.opentelemetry.io/collector/extension/extensionauth v1.37.0
 	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.131.0
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.131.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.131.0
 	go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.131.0
 	go.opentelemetry.io/collector/pdata v1.37.0
@@ -119,3 +120,5 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../../extension/extensionmiddleware/extensionmiddlewaretest
 
 replace go.opentelemetry.io/collector/confmap => ../../confmap
+
+replace go.opentelemetry.io/collector/extension/extensioncapabilities => ../../extension/extensioncapabilities
