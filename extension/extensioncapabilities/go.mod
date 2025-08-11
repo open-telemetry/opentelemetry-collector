@@ -4,8 +4,10 @@ go 1.23.0
 
 require (
 	go.opentelemetry.io/collector/component v1.37.0
+	go.opentelemetry.io/collector/component/componentstatus v0.131.0
 	go.opentelemetry.io/collector/confmap v1.37.0
 	go.opentelemetry.io/collector/extension v1.37.0
+	go.opentelemetry.io/collector/pipeline v0.131.0
 )
 
 require (
@@ -58,3 +60,5 @@ replace go.opentelemetry.io/collector/featuregate => ../../featuregate
 replace go.opentelemetry.io/collector/internal/telemetry => ../../internal/telemetry
 
 replace go.opentelemetry.io/collector/pipeline => ../../pipeline
+
+replace go.opentelemetry.io/collector/component/componentstatus => ../../component/componentstatus

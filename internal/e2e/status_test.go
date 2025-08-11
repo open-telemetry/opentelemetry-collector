@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -40,7 +41,7 @@ var nopType = component.MustNewType("nop")
 var wg = sync.WaitGroup{}
 
 func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
-	eventsReceived := make(map[*componentstatus.InstanceID][]*componentstatus.Event)
+	eventsReceived := make(map[string][]*componentstatus.Event)
 	exporterFactory := exportertest.NewNopFactory()
 	connectorFactory := connectortest.NewNopFactory()
 	// Use a different ID than receivertest and exportertest to avoid ambiguous
@@ -126,13 +127,7 @@ func Test_ComponentStatusReporting_SharedInstance(t *testing.T) {
 	require.Len(t, eventsReceived, 2)
 
 	for instanceID, events := range eventsReceived {
-		pipelineIDs := ""
-		instanceID.AllPipelineIDs(func(id pipeline.ID) bool {
-			pipelineIDs += id.String() + ","
-			return true
-		})
-
-		t.Logf("checking errors for %v - %v - %v", pipelineIDs, instanceID.Kind().String(), instanceID.ComponentID().String())
+		t.Logf("checking errors for %q", instanceID)
 
 		var expectedEvents []*componentstatus.Event
 		// The StatusOk is not guaranteed to be in the slice, set it according to the number of captured states
@@ -261,11 +256,11 @@ func create(_ context.Context, _ extension.Settings, cfg component.Config) (exte
 }
 
 type testExtension struct {
-	eventsReceived map[*componentstatus.InstanceID][]*componentstatus.Event
+	eventsReceived map[string][]*componentstatus.Event
 }
 
 type extensionConfig struct {
-	eventsReceived map[*componentstatus.InstanceID][]*componentstatus.Event
+	eventsReceived map[string][]*componentstatus.Event
 }
 
 func createDefaultExtensionConfig() component.Config {
@@ -284,10 +279,15 @@ func (t *testExtension) Shutdown(_ context.Context) error {
 
 // ComponentStatusChanged implements the extension.StatusWatcher interface.
 func (t *testExtension) ComponentStatusChanged(
-	source *componentstatus.InstanceID,
+	componentID component.ID, kind component.Kind, pipelineIDs []pipeline.ID,
 	event *componentstatus.Event,
 ) {
-	if source.ComponentID() == component.NewID(component.MustNewType("test")) {
+	if componentID == component.NewID(component.MustNewType("test")) {
+		ids := make([]string, len(pipelineIDs))
+		for i, id := range pipelineIDs {
+			ids[i] = id.String()
+		}
+		source := fmt.Sprintf("%s-%s-%s", componentID, kind, strings.Join(ids, "|"))
 		t.eventsReceived[source] = append(t.eventsReceived[source], event)
 	}
 }
