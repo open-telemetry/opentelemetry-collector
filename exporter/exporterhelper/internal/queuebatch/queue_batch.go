@@ -46,9 +46,9 @@ func NewQueueBatch(
 	if err != nil {
 		return nil, err
 	}
-	if cfg.Batch.HasValue() {
-		// If batching is enabled, keep the number of queue consumers to 1 if batching is enabled until we support
-		// sharding as described in https://github.com/open-telemetry/opentelemetry-collector/issues/12473
+	if cfg.Batch.HasValue() && set.Partitioner == nil {
+		// If batching is enabled and partitioner is not defined then keep the number of queue consumers to 1.
+		// see: https://github.com/open-telemetry/opentelemetry-collector/issues/12473
 		cfg.NumConsumers = 1
 	}
 
