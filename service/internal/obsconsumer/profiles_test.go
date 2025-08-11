@@ -14,6 +14,7 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -65,7 +66,9 @@ func TestProfilesItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: zap.NewNop()})
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: logger})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -93,6 +96,9 @@ func TestProfilesItemsOnly(t *testing.T) {
 	val, ok := attrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestProfilesConsumeSuccess(t *testing.T) {
@@ -110,7 +116,9 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -157,6 +165,9 @@ func TestProfilesConsumeSuccess(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestProfilesConsumeFailure(t *testing.T) {
@@ -176,7 +187,9 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	pd := pprofile.NewProfiles()
 	r := pd.ResourceProfiles().AppendEmpty()
@@ -223,6 +236,10 @@ func TestProfilesConsumeFailure(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "failure", val.Emit())
+
+	// Check that the logger was called with an error
+	require.Len(t, logs.All(), 1)
+	assert.Contains(t, logs.All()[0].Message, "Profiles pipeline component had an error")
 }
 
 func TestProfilesWithStaticAttributes(t *testing.T) {
@@ -241,7 +258,9 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()},
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	pd := pprofile.NewProfiles()
@@ -295,6 +314,9 @@ func TestProfilesWithStaticAttributes(t *testing.T) {
 	val, ok = sizeAttrs.Value(attribute.Key(obsconsumer.ComponentOutcome))
 	require.True(t, ok)
 	require.Equal(t, "success", val.Emit())
+
+	// Check that the logger was not called
+	assert.Empty(t, logs.All())
 }
 
 func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
@@ -314,7 +336,9 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	consumer := obsconsumer.NewProfiles(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: logger})
 
 	// First batch: 2 successful items
 	pd1 := pprofile.NewProfiles()
@@ -401,6 +425,12 @@ func TestProfilesMultipleItemsMixedOutcomes(t *testing.T) {
 	}
 	require.Equal(t, int64(68), successSizeDP.Value)
 	require.Equal(t, int64(36), failureSizeDP.Value)
+
+	// Check that the logger was called for errors
+	require.Len(t, logs.All(), 2)
+	for _, log := range logs.All() {
+		assert.Contains(t, log.Message, "Profiles pipeline component had an error")
+	}
 }
 
 func TestProfilesCapabilities(t *testing.T) {
