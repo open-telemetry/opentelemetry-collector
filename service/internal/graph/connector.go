@@ -89,12 +89,12 @@ func (n *connectorNode) buildTraces(
 	producedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorProducedItems,
 		SizeCounter: tb.ConnectorProducedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorConsumedItems,
 		SizeCounter: tb.ConnectorConsumedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 
 	consumers := make(map[pipeline.ID]consumer.Traces, len(nexts))
@@ -163,12 +163,12 @@ func (n *connectorNode) buildMetrics(
 	producedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorProducedItems,
 		SizeCounter: tb.ConnectorProducedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorConsumedItems,
 		SizeCounter: tb.ConnectorConsumedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 
 	consumers := make(map[pipeline.ID]consumer.Metrics, len(nexts))
@@ -237,12 +237,12 @@ func (n *connectorNode) buildLogs(
 	producedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorProducedItems,
 		SizeCounter: tb.ConnectorProducedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorConsumedItems,
 		SizeCounter: tb.ConnectorConsumedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 
 	consumers := make(map[pipeline.ID]consumer.Logs, len(nexts))
@@ -311,12 +311,12 @@ func (n *connectorNode) buildProfiles(
 	producedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorProducedItems,
 		SizeCounter: tb.ConnectorProducedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 	consumedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ConnectorConsumedItems,
 		SizeCounter: tb.ConnectorConsumedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 
 	consumers := make(map[pipeline.ID]xconsumer.Profiles, len(nexts))

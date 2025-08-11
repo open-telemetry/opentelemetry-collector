@@ -58,7 +58,7 @@ func (n *receiverNode) buildComponent(ctx context.Context,
 	producedSettings := obsconsumer.Settings{
 		ItemCounter: tb.ReceiverProducedItems,
 		SizeCounter: tb.ReceiverProducedSize,
-		Logger:      set.TelemetrySettings.Logger,
+		Logger:      set.Logger,
 	}
 
 	switch n.pipelineType {
