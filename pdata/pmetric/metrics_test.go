@@ -13,6 +13,7 @@ import (
 	goproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/emptypb"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
@@ -31,11 +32,10 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 	// this repository are wire compatible.
 
 	// Generate ResourceMetrics as pdata struct.
-	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	md := generateTestMetrics()
 
 	// Marshal its underlying ProtoBuf to wire.
-	wire1, err := gogoproto.Marshal(metrics.getOrig())
+	wire1, err := gogoproto.Marshal(md.getOrig())
 	require.NoError(t, err)
 	assert.NotNil(t, wire1)
 
@@ -56,7 +56,7 @@ func TestResourceMetricsWireCompatibility(t *testing.T) {
 
 	// Now compare that the original and final ProtoBuf messages are the same.
 	// This proves that goproto and gogoproto marshaling/unmarshaling are wire compatible.
-	assert.True(t, assert.Equal(t, metrics.getOrig(), &gogoprotoRM))
+	assert.True(t, assert.Equal(t, md.getOrig(), &gogoprotoRM))
 }
 
 func TestMetricCount(t *testing.T) {
@@ -151,19 +151,19 @@ func TestDataPointCountWithEmpty(t *testing.T) {
 }
 
 func TestDataPointCountWithNilDataPoints(t *testing.T) {
-	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	md := NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Metrics().AppendEmpty().SetEmptyGauge()
 	ilm.Metrics().AppendEmpty().SetEmptySum()
 	ilm.Metrics().AppendEmpty().SetEmptyHistogram()
 	ilm.Metrics().AppendEmpty().SetEmptyExponentialHistogram()
 	ilm.Metrics().AppendEmpty().SetEmptySummary()
-	assert.Equal(t, 0, metrics.DataPointCount())
+	assert.Equal(t, 0, md.DataPointCount())
 }
 
 func TestHistogramWithNilSum(t *testing.T) {
-	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	md := NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
 	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
@@ -173,8 +173,8 @@ func TestHistogramWithNilSum(t *testing.T) {
 }
 
 func TestHistogramWithValidSum(t *testing.T) {
-	metrics := NewMetrics()
-	ilm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	md := NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	histo := ilm.Metrics().AppendEmpty()
 	histogramDataPoints := histo.SetEmptyHistogram().DataPoints()
 	histogramDataPoints.AppendEmpty()
@@ -197,7 +197,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	assert.Equal(t, 1, resourceMetrics.Len())
 
@@ -285,7 +285,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	// Test that nothing changed
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -317,7 +317,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -399,7 +399,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -483,7 +483,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -566,7 +566,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -630,11 +630,10 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 }
 
 func TestMetricsCopyTo(t *testing.T) {
-	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	md := generateTestMetrics()
 	metricsCopy := NewMetrics()
-	metrics.CopyTo(metricsCopy)
-	assert.Equal(t, metrics, metricsCopy)
+	md.CopyTo(metricsCopy)
+	assert.Equal(t, md, metricsCopy)
 }
 
 func TestReadOnlyMetricsInvalidUsage(t *testing.T) {
@@ -661,10 +660,11 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -686,10 +686,11 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -713,10 +714,11 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -740,10 +742,11 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -894,7 +897,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 func generateMetricsEmptyResource() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
@@ -904,7 +907,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyMetrics() Metrics {
@@ -918,7 +921,7 @@ func generateMetricsEmptyMetrics() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
@@ -942,12 +945,11 @@ func generateMetricsEmptyDataPoints() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func BenchmarkMetricsUsage(b *testing.B) {
-	metrics := NewMetrics()
-	fillTestResourceMetricsSlice(metrics.ResourceMetrics())
+	md := generateTestMetrics()
 
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
@@ -955,8 +957,8 @@ func BenchmarkMetricsUsage(b *testing.B) {
 	b.ResetTimer()
 
 	for bb := 0; bb < b.N; bb++ {
-		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			rm := metrics.ResourceMetrics().At(i)
+		for i := 0; i < md.ResourceMetrics().Len(); i++ {
+			rm := md.ResourceMetrics().At(i)
 			res := rm.Resource()
 			res.Attributes().PutStr("foo", "bar")
 			v, ok := res.Attributes().Get("foo")
@@ -996,5 +998,18 @@ func BenchmarkMetricsUsage(b *testing.B) {
 				}
 			}
 		}
+	}
+}
+
+func BenchmarkMetricsMarshalJSON(b *testing.B) {
+	md := generateTestMetrics()
+	encoder := &JSONMarshaler{}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		jsonBuf, err := encoder.MarshalMetrics(md)
+		require.NoError(b, err)
+		require.NotNil(b, jsonBuf)
 	}
 }

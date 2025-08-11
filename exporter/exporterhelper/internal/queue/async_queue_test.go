@@ -14,11 +14,14 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 )
 
 func TestAsyncMemoryQueue(t *testing.T) {
 	consumed := &atomic.Int64{}
-	ac := newAsyncQueue(newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100}),
+
+	set := newSettings(request.SizerTypeItems, 100)
+	ac := newAsyncQueue(newMemoryQueue[int64](set),
 		1, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -33,8 +36,9 @@ func TestAsyncMemoryQueue(t *testing.T) {
 
 func TestAsyncMemoryQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
-	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, blockOnOverflow: true}),
+	set := newSettings(request.SizerTypeItems, 100)
+	set.BlockOnOverflow = true
+	ac := newAsyncQueue(newMemoryQueue[int64](set),
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -57,8 +61,10 @@ func TestAsyncMemoryQueueBlocking(t *testing.T) {
 
 func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 	consumed := &atomic.Int64{}
-	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 100, waitForResult: true, blockOnOverflow: true}),
+	set := newSettings(request.SizerTypeItems, 100)
+	set.BlockOnOverflow = true
+	set.WaitForResult = true
+	ac := newAsyncQueue(newMemoryQueue[int64](set),
 		4, func(_ context.Context, _ int64, done Done) {
 			consumed.Add(1)
 			done.OnDone(nil)
@@ -81,8 +87,9 @@ func TestAsyncMemoryWaitForResultQueueBlocking(t *testing.T) {
 
 func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 	stop := make(chan struct{})
-	ac := newAsyncQueue(
-		newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: 10, blockOnOverflow: true}),
+	set := newSettings(request.SizerTypeItems, 10)
+	set.BlockOnOverflow = true
+	ac := newAsyncQueue(newMemoryQueue[int64](set),
 		1, func(_ context.Context, _ int64, done Done) {
 			<-stop
 			done.OnDone(nil)
@@ -110,10 +117,9 @@ func TestAsyncMemoryQueueBlockingCancelled(t *testing.T) {
 }
 
 func BenchmarkAsyncMemoryQueue(b *testing.B) {
-	q := newMemoryQueue[int64](memoryQueueSettings[int64]{sizer: sizerInt64{}, capacity: int64(10 * b.N)})
 	consumed := &atomic.Int64{}
-	require.NoError(b, q.Start(context.Background(), componenttest.NewNopHost()))
-	ac := newAsyncQueue(q, 1, func(_ context.Context, _ int64, done Done) {
+	set := newSettings(request.SizerTypeItems, int64(10*b.N))
+	ac := newAsyncQueue(newMemoryQueue[int64](set), 1, func(_ context.Context, _ int64, done Done) {
 		consumed.Add(1)
 		done.OnDone(nil)
 	})
@@ -121,7 +127,7 @@ func BenchmarkAsyncMemoryQueue(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for j := 0; j < b.N; j++ {
-		require.NoError(b, q.Offer(context.Background(), 10))
+		require.NoError(b, ac.Offer(context.Background(), 10))
 	}
 	require.NoError(b, ac.Shutdown(context.Background()))
 	assert.EqualValues(b, b.N, consumed.Load())

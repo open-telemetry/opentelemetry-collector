@@ -28,7 +28,7 @@ func TestGeneratedMetrics(t *testing.T) {
 func TestComponentTelemetry(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	factory := NewFactory()
-	receiver, err := factory.CreateMetrics(context.Background(), metadatatest.NewSettings(tt), componenttest.NewNopHost(), new(consumertest.MetricsSink))
+	receiver, err := factory.CreateMetrics(context.Background(), metadatatest.NewSettings(tt), newMdatagenNopHost(), new(consumertest.MetricsSink))
 	require.NoError(t, err)
 	metadatatest.AssertEqualBatchSizeTriggerSend(t, tt,
 		[]metricdata.DataPoint[int64]{

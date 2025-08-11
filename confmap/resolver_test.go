@@ -17,8 +17,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
+	"go.opentelemetry.io/collector/confmap/internal"
 	"go.opentelemetry.io/collector/featuregate"
 )
 
@@ -466,10 +467,10 @@ func TestMergeFunctionality(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.flagEnabled {
-				require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), true))
+				require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), true))
 				defer func() {
 					// Restore previous value.
-					require.NoError(t, featuregate.GlobalRegistry().Set(enableMergeAppendOption.ID(), false))
+					require.NoError(t, featuregate.GlobalRegistry().Set(internal.EnableMergeAppendOption.ID(), false))
 				}()
 			}
 			runScenario(t, tt.scenarioFile)
@@ -511,4 +512,15 @@ func runScenario(t *testing.T, path string) {
 			require.Truef(t, reflect.DeepEqual(mergedConf, tt.Expected), "Exp: %s\nGot: %s", tt.Expected, mergedConf)
 		})
 	}
+}
+
+// newConfFromFile creates a new Conf by reading the given file.
+func newConfFromFile(tb testing.TB, fileName string) map[string]any {
+	content, err := os.ReadFile(filepath.Clean(fileName))
+	require.NoErrorf(tb, err, "unable to read the file %v", fileName)
+
+	var data map[string]any
+	require.NoError(tb, yaml.Unmarshal(content, &data), "unable to parse yaml")
+
+	return NewFromStringMap(data).ToStringMap()
 }

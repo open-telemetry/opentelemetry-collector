@@ -4,20 +4,15 @@ package opentelemetry.collector.exporter.exporterhelper.internal.queue;
 
 option go_package = "go.opentelemetry.io/collector/exporter/exporterhelper/internal/queue";
 
-// Sizer type configuration
-enum SizerType {
-  REQUESTS = 0;
-  ITEMS = 1;
-  BYTES = 2;
-}
+// PersistentMetadata holds all persistent metadata for the queue.
+// The items and bytes sizes are recorded explicitly,
+// the requests size can be calculated as (write_index - read_index + len(currently_dispatched_items)).
+message PersistentMetadata{
+  // Current total items size of the queue.
+  sfixed64 items_size = 1;
 
-// QueueMetadata holds all persistent metadata for the queue.
-message QueueMetadata{
-  // Sizer type configuration.
-  SizerType sizer_type = 1;
-
-  // Current total size of the queue (in bytes, items, or requests).
-  sfixed64 queue_size = 2;
+  // Current total bytes size of the queue.
+  sfixed64 bytes_size = 2;
 
   // Index of the next item to be read from the queue.
   fixed64 read_index = 3;

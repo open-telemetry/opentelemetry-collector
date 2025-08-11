@@ -8,9 +8,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -30,13 +32,15 @@ import (
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 	"go.opentelemetry.io/collector/internal/testutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/pipeline/xpipeline"
 	"go.opentelemetry.io/collector/service/extensions"
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 type labelState int
@@ -267,54 +271,97 @@ func TestServiceTelemetryCleanupOnError(t *testing.T) {
 	assert.NoError(t, srv.Shutdown(context.Background()))
 }
 
-func TestServiceTelemetry(t *testing.T) {
+func TestServiceTelemetryLogging(t *testing.T) {
+	// Create a server for receiving OTLP logs.
+	var received []plog.Logs
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/logs", func(_ http.ResponseWriter, req *http.Request) {
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+
+		exportRequest := plogotlp.NewExportRequest()
+		assert.NoError(t, exportRequest.UnmarshalProto(body))
+		received = append(received, exportRequest.Logs())
+	})
+	httpServer := httptest.NewServer(mux)
+	defer httpServer.Close()
+
+	// We'll divert zap logs to an observer.
+	observerCore, observedLogs := observer.New(zapcore.WarnLevel)
+
+	set := newNopSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.LoggingOptions = []zap.Option{
+		zap.WrapCore(func(zapcore.Core) zapcore.Core {
+			return observerCore
+		}),
+	}
+
+	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Sampling = &otelconftelemetry.LogsSamplingConfig{
+		Enabled:    true,
+		Tick:       time.Minute,
+		Initial:    2,
+		Thereafter: 0,
+	}
+	cfg.Telemetry.Logs.Processors = []config.LogRecordProcessor{{
+		Simple: &config.SimpleLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Endpoint: ptr(httpServer.URL),
+					Protocol: ptr("http/protobuf"),
+					Insecure: ptr(true),
+				},
+			},
+		},
+	}}
+
+	srv, err := New(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+	defer func() {
+		assert.NoError(t, srv.Shutdown(context.Background()))
+	}()
+
+	// The level we configured on the initial Zap logger should have
+	// propagated to the final one provided to components.
+	require.NotNil(t, srv.telemetrySettings.Logger)
+	assert.Equal(t, zapcore.WarnLevel, srv.telemetrySettings.Logger.Level())
+
+	// Log 5 messages at different levels. Only the warning messages should
+	// be accepted, and only 2 of those due to sampling.
+	for i := 0; i < 5; i++ {
+		srv.telemetrySettings.Logger.Warn("warn_message")
+		srv.telemetrySettings.Logger.Info("info_message")
+		srv.telemetrySettings.Logger.Debug("debug_message")
+	}
+	assert.Equal(t, 2, observedLogs.Len())
+	assert.Equal(t, 2, observedLogs.FilterMessage("warn_message").Len())
+	require.Len(t, received, 2)
+	for _, logs := range received {
+		assert.Equal(t,
+			"warn_message",
+			logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(),
+		)
+	}
+}
+
+func TestServiceTelemetryMetrics(t *testing.T) {
 	for _, tc := range ownMetricsTestCases() {
 		t.Run("ipv4_"+tc.name, func(t *testing.T) {
-			testCollectorStartHelperWithReaders(t, tc, "tcp4")
+			testCollectorStartHelperWithReaders(t, tc, promtest.GetAvailableLocalAddressPrometheus(t))
 		})
 		t.Run("ipv6_"+tc.name, func(t *testing.T) {
-			testCollectorStartHelperWithReaders(t, tc, "tcp6")
+			testCollectorStartHelperWithReaders(t, tc, promtest.GetAvailableLocalIPv6AddressPrometheus(t))
 		})
 	}
 }
 
-func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, network string) {
-	var once sync.Once
-	loggingHookCalled := false
-	hook := func(zapcore.Entry) error {
-		once.Do(func() {
-			loggingHookCalled = true
-		})
-		return nil
-	}
-
-	var (
-		metricsAddr *config.Prometheus
-		zpagesAddr  string
-	)
-	switch network {
-	case "tcp", "tcp4":
-		metricsAddr = promtest.GetAvailableLocalAddressPrometheus(t)
-		zpagesAddr = testutil.GetAvailableLocalAddress(t)
-	case "tcp6":
-		metricsAddr = promtest.GetAvailableLocalIPv6AddressPrometheus(t)
-		zpagesAddr = testutil.GetAvailableLocalIPv6Address(t)
-	}
-	require.NotZero(t, metricsAddr, "network must be either of tcp, tcp4 or tcp6")
-	require.NotEmpty(t, zpagesAddr, "network must be either of tcp, tcp4 or tcp6")
-
+func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, metricsAddr *config.Prometheus) {
 	set := newNopSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
-	set.ExtensionsConfigs = map[component.ID]component.Config{
-		component.MustNewID("zpages"): &zpagesextension.Config{
-			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
-		},
-	}
-	set.ExtensionsFactories = map[component.Type]extension.Factory{component.MustNewType("zpages"): zpagesextension.NewFactory()}
-	set.LoggingOptions = []zap.Option{zap.Hooks(hook)}
 
 	cfg := newNopConfig()
-	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
 	cfg.Telemetry.Metrics.Readers = []config.MetricReader{
 		{
 			Pull: &config.PullMetricReader{
@@ -330,21 +377,93 @@ func testCollectorStartHelperWithReaders(t *testing.T, tc ownMetricsTestCase, ne
 		cfg.Telemetry.Resource[k] = v
 	}
 
-	// Create a service, check for metrics, shutdown and repeat to ensure that telemetry can be started/shutdown and started again.
+	// Start a service and check that metrics are produced as expected.
+	// We do this twice to ensure that the server is stopped cleanly.
 	for i := 0; i < 2; i++ {
 		srv, err := New(context.Background(), set, cfg)
 		require.NoError(t, err)
 
 		require.NoError(t, srv.Start(context.Background()))
-		// Sleep for 1 second to ensure the http server is started.
-		time.Sleep(1 * time.Second)
-		assert.True(t, loggingHookCalled)
+
+		// Wait for the HTTP server to start.
+		promHost := fmt.Sprintf("%s:%d", *metricsAddr.Host, *metricsAddr.Port)
+		require.Eventually(t, func() bool {
+			resp, err := http.Get("http://" + promHost + "/metrics")
+			if err != nil {
+				return false
+			}
+			defer resp.Body.Close()
+			return resp.StatusCode == http.StatusOK
+		}, 10*time.Second, 50*time.Millisecond)
 
 		assertResourceLabels(t, srv.telemetrySettings.Resource, tc.expectedLabels)
-		assertMetrics(t, fmt.Sprintf("%s:%d", *metricsAddr.Host, *metricsAddr.Port), tc.expectedLabels)
-		assertZPages(t, zpagesAddr)
+		assertMetrics(t, promHost, tc.expectedLabels)
 		require.NoError(t, srv.Shutdown(context.Background()))
 	}
+}
+
+// TestServiceTelemetryZPages verifies that the zpages extension works correctly with servce telemetry.
+func TestServiceTelemetryZPages(t *testing.T) {
+	t.Run("ipv4", func(t *testing.T) {
+		testZPages(t, testutil.GetAvailableLocalAddress(t))
+	})
+	t.Run("ipv6", func(t *testing.T) {
+		testZPages(t, testutil.GetAvailableLocalIPv6Address(t))
+	})
+}
+
+func testZPages(t *testing.T, zpagesAddr string) {
+	set := newNopSettings()
+	set.BuildInfo = component.BuildInfo{Version: "test version", Command: otelCommand}
+	set.ExtensionsConfigs = map[component.ID]component.Config{
+		component.MustNewID("zpages"): &zpagesextension.Config{
+			ServerConfig: confighttp.ServerConfig{Endpoint: zpagesAddr},
+		},
+	}
+	set.ExtensionsFactories = map[component.Type]extension.Factory{
+		component.MustNewType("zpages"): zpagesextension.NewFactory(),
+	}
+
+	cfg := newNopConfig()
+	cfg.Extensions = []component.ID{component.MustNewID("zpages")}
+	cfg.Telemetry.Logs.Level = zapcore.FatalLevel // disable logs
+
+	// Start a service and check that zpages is healthy.
+	// We do this twice to ensure that the server is stopped cleanly.
+	for i := 0; i < 2; i++ {
+		srv, err := New(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, srv.Start(context.Background()))
+
+		assert.Eventually(t, func() bool {
+			return zpagesHealthy(zpagesAddr)
+		}, 10*time.Second, 100*time.Millisecond, "zpages endpoint is not healthy")
+
+		require.NoError(t, srv.Shutdown(context.Background()))
+	}
+}
+
+func zpagesHealthy(zpagesAddr string) bool {
+	paths := []string{
+		"/debug/tracez",
+		"/debug/pipelinez",
+		"/debug/servicez",
+		"/debug/extensionz",
+	}
+
+	for _, path := range paths {
+		resp, err := http.Get("http://" + zpagesAddr + path)
+		if err != nil {
+			return false
+		}
+		if resp.Body.Close() != nil {
+			return false
+		}
+		if resp.StatusCode != http.StatusOK {
+			return false
+		}
+	}
+	return true
 }
 
 // TestServiceTelemetryRestart tests that the service correctly restarts the telemetry server.
@@ -410,6 +529,30 @@ func TestServiceTelemetryRestart(t *testing.T) {
 
 	// Shutdown the new service
 	assert.NoError(t, srvTwo.Shutdown(context.Background()))
+}
+
+func TestServiceTelemetryShutdownError(t *testing.T) {
+	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Level = zapcore.DebugLevel
+	cfg.Telemetry.Logs.Processors = []config.LogRecordProcessor{{
+		Batch: &config.BatchLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Protocol: ptr("http/protobuf"),
+					Endpoint: ptr("http://testing.invalid"),
+				},
+			},
+		},
+	}}
+
+	// Create and start a service
+	srv, err := New(context.Background(), newNopSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Shutdown the service
+	err = srv.Shutdown(context.Background())
+	assert.ErrorContains(t, err, `failed to shutdown telemetry`)
 }
 
 func TestExtensionNotificationFailure(t *testing.T) {
@@ -492,12 +635,12 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr error
-		cfg     telemetry.Config
+		cfg     otelconftelemetry.Config
 	}{
 		{
 			name: "log config with processors and invalid config",
-			cfg: telemetry.Config{
-				Logs: telemetry.LogsConfig{
+			cfg: otelconftelemetry.Config{
+				Logs: otelconftelemetry.LogsConfig{
 					Encoding: "console",
 					Processors: []config.LogRecordProcessor{
 						{
@@ -613,27 +756,6 @@ func assertMetrics(t *testing.T, metricsAddr string, expectedLabels map[string]l
 	}
 }
 
-func assertZPages(t *testing.T, zpagesAddr string) {
-	paths := []string{
-		"/debug/tracez",
-		"/debug/pipelinez",
-		"/debug/servicez",
-		"/debug/extensionz",
-	}
-
-	testZPagePathFn := func(t *testing.T, path string) {
-		client := &http.Client{}
-		resp, err := client.Get("http://" + zpagesAddr + path)
-		require.NoError(t, err, "error retrieving zpage at %q", path)
-		assert.Equal(t, http.StatusOK, resp.StatusCode, "unsuccessful zpage %q GET", path)
-		assert.NoError(t, resp.Body.Close())
-	}
-
-	for _, path := range paths {
-		testZPagePathFn(t, path)
-	}
-}
-
 func newNopSettings() Settings {
 	receiversConfigs, receiversFactories := builders.NewNopReceiverConfigsAndFactories()
 	processorsConfigs, processorsFactories := builders.NewNopProcessorConfigsAndFactories()
@@ -687,12 +809,12 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 	return Config{
 		Extensions: extensions.Config{component.NewID(nopType)},
 		Pipelines:  pipelineCfgs,
-		Telemetry: telemetry.Config{
-			Logs: telemetry.LogsConfig{
+		Telemetry: otelconftelemetry.Config{
+			Logs: otelconftelemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
-				Sampling: &telemetry.LogsSamplingConfig{
+				Sampling: &otelconftelemetry.LogsSamplingConfig{
 					Enabled:    true,
 					Tick:       10 * time.Second,
 					Initial:    100,
@@ -704,7 +826,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				DisableStacktrace: false,
 				InitialFields:     map[string]any(nil),
 			},
-			Metrics: telemetry.MetricsConfig{
+			Metrics: otelconftelemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
 			},
 		},

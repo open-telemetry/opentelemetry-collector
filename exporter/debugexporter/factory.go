@@ -90,7 +90,7 @@ func createProfiles(ctx context.Context, set exporter.Settings, config component
 	cfg := config.(*Config)
 	exporterLogger := createLogger(cfg, set.Logger)
 	debug := newDebugExporter(exporterLogger, cfg.Verbosity)
-	return xexporterhelper.NewProfilesExporter(ctx, set, config,
+	return xexporterhelper.NewProfiles(ctx, set, config,
 		debug.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),

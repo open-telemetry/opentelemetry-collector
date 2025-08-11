@@ -1,14 +1,15 @@
 name: Automation - Release Branch
 
 on:
-  workflow_dispatch:
-    inputs:
-      release-series:
-        description: 'Release series (e.g., v0.85.x).'
-        required: true
-      prepare-release-commit-hash:
-        description: 'Commit hash for "Prepare release" commit (e.g., a1b2c3d4)'
-        required: true
+  push:
+    tags:
+      # Trigger on beta version tags (0.x.x series) to create release branch
+      # This pattern matches: v0.{minor}.{patch} for new releases and bugfix releases
+      - 'v0.[0-9]+.[0-9]+'
+      - 'v0.[0-9]+.[0-9]+-*' # Also support release candidates if needed
+
+permissions:
+  contents: read
 
 jobs:
   release-branch:
@@ -17,23 +18,34 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version: 1.23.10
+          go-version: oldstable
+          cache: false
+
+      - name: Cache Go
+        id: go-cache
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('**/go.sum') }}
 
       - name: Setup Git config
         run: |
-          git config --global user.name "opentelemetrybot"
-          git config --global user.email "107717825+opentelemetrybot@users.noreply.github.com"
+          git config --global user.name "otelbot"
+          git config --global user.email "197425009+otelbot@users.noreply.github.com"
 
       - name: Run release-branch.sh
         run: |
-          ./.github/workflows/scripts/release-branch.sh "${{ inputs.release-series }}" "${{ inputs.prepare-release-commit-hash }}"
+          ./.github/workflows/scripts/release-branch.sh
         env:
           UPSTREAM_REMOTE_NAME: "origin"
           MAIN_BRANCH_NAME: "main"
+          GITHUB_REF: ${{ github.ref }}

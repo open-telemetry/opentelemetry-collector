@@ -14,6 +14,14 @@ Number of items passed to the processor. [alpha]
 | ---- | ----------- | ---------- | --------- |
 | {items} | Sum | Int | true |
 
+### otelcol_processor_internal_duration
+
+Duration of time taken to process a batch of telemetry data through the processor. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
 ### otelcol_processor_outgoing_items
 
 Number of items emitted from the processor. [alpha]

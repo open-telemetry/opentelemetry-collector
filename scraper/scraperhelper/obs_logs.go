@@ -29,7 +29,7 @@ const (
 	erroredLogRecordsKey = "errored_log_records"
 )
 
-func wrapObsLogs(sc scraper.Logs, receiverID component.ID, scraperID component.ID, set component.TelemetrySettings) (scraper.Logs, error) {
+func wrapObsLogs(sc scraper.Logs, receiverID, scraperID component.ID, set component.TelemetrySettings) (scraper.Logs, error) {
 	telemetryBuilder, errBuilder := metadata.NewTelemetryBuilder(set)
 	if errBuilder != nil {
 		return nil, errBuilder

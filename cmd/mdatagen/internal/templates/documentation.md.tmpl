@@ -22,12 +22,12 @@
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name | Description | Values | Optional |
+| ---- | ----------- | ------ | -------- |
 {{- range $metric.Attributes }}
 {{- $attribute := . | attributeInfo }}
 | {{ $attribute.Name }} | {{ $attribute.Description }} |
-{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} |
+{{- if $attribute.Enum }} {{ $attribute.Type }}: ``{{ stringsJoin $attribute.Enum "``, ``" }}``{{ else }} Any {{ $attribute.Type }}{{ end }} | {{ $attribute.Optional }} |
 {{- end }}
 
 {{- end }}

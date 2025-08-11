@@ -396,7 +396,7 @@ func TestHTTPContentCompressionRequestWithNilBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	req, err := http.NewRequest(http.MethodGet, srv.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.URL, http.NoBody)
 	require.NoError(t, err, "failed to create request to test handler")
 
 	client := srv.Client()
@@ -505,10 +505,15 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressZlib,
 		},
 		{
-			name:                "x-snappy-framed",
+			name:     "x-snappy-framed",
+			encoding: "x-snappy-framed",
+			compress: compressSnappyFramed,
+		},
+		{
+			name:                "x-snappy-not-framed",
 			encoding:            "x-snappy-framed",
 			compress:            compressSnappyFramed,
-			framedSnappyEnabled: true,
+			framedSnappyEnabled: false,
 		},
 		{
 			name:     "snappy",

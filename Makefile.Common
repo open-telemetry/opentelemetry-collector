@@ -24,6 +24,7 @@ CHLOGGEN_CONFIG := .chloggen/config.yaml
 # no trailing slash
 JUNIT_OUT_DIR ?= $(TOOLS_MOD_DIR)/testresults
 
+ACTIONLINT   := $(TOOLS_BIN_DIR)/actionlint
 ADDLICENSE   := $(TOOLS_BIN_DIR)/addlicense
 APIDIFF      := $(TOOLS_BIN_DIR)/apidiff
 CHECKAPI     := $(TOOLS_BIN_DIR)/checkapi
@@ -31,11 +32,12 @@ CHECKFILE    := $(TOOLS_BIN_DIR)/checkfile
 CHLOGGEN     := $(TOOLS_BIN_DIR)/chloggen
 CROSSLINK    := $(TOOLS_BIN_DIR)/crosslink
 ENVSUBST     := $(TOOLS_BIN_DIR)/envsubst
-GITHUBGEN     := $(TOOLS_BIN_DIR)/githubgen
+GITHUBGEN    := $(TOOLS_BIN_DIR)/githubgen
 GOFUMPT      := $(TOOLS_BIN_DIR)/gofumpt
 GOIMPORTS    := $(TOOLS_BIN_DIR)/goimports
 GOVULNCHECK  := $(TOOLS_BIN_DIR)/govulncheck
 LINT         := $(TOOLS_BIN_DIR)/golangci-lint
+PDATAGEN     := $(TOOLS_BIN_DIR)/pdatagen
 IMPI         := $(TOOLS_BIN_DIR)/impi
 MISSPELL     := $(TOOLS_BIN_DIR)/misspell
 MULTIMOD     := $(TOOLS_BIN_DIR)/multimod
@@ -91,7 +93,7 @@ common/goimports: $(GOIMPORTS)
 
 .PHONY: common/gofumpt
 common/gofumpt: $(GOFUMPT)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

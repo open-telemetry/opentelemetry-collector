@@ -7,6 +7,95 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.37.0/v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13252, #13364)
+  Specifically, the following fields have been updated to `configoptional`:
+  - `KeepaliveServerConfig.ServerParameters` (`KeepaliveServerParameters` type)
+  - `KeepaliveServerConfig.EnforcementPolicy` (`KeepaliveEnforcementPolicy` type)
+  
+- `xexporterhelper`: Remove deprecated NewProfilesExporter function from xexporterhelper package (#13391)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add new "Downstream" error marker (#13234)
+  This new error wrapper type indicates that the error returned by a component's
+  `Consume` method is not an internal failure of the component, but instead
+  was passed through from another component further downstream.
+  This is used internally by the new pipeline instrumentation feature to
+  determine the `outcome` of a component call. This wrapper is not intended to
+  be used by components directly.
+  
+- `pdata/pprofile`: Introduce `Equal` method on the `Function` type (#13222)
+- `pdata/pprofile`: Introduce `Equal` method on the `Link` type (#13223)
+- `pdata/pprofile`: Add new helper method `SetFunction` to set a new function on a line. (#13222)
+- `pdata/pprofile`: Add new helper method `SetLink` to set a new link on a sample. (#13223)
+- `pdata/pprofile`: Add new helper method `SetString` to set or retrieve the index of a value in the StringTable. (#13225)
+
+<!-- previous-version -->
+
+## v1.36.1/v0.130.1
+
+<!-- previous-version -->
+
+No API-only changes in this release.
+
+## v1.36.0/v0.130.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporterhelper`: Use configoptional for sending_queue::batch field (#13345)
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13250, #13252)
+  Components using `configgrpc` package may need to update config values.
+- `confighttp`: Use configoptional.Optional in confighttp (#9478)
+- `exporterhelper`: Remove sizer map in favor of items/bytes sizers. Request based is automatically supported. (#13262)
+- `pdata/pprofile`: Remove field Profile.StartTime from pdata/pprofile (#13315)
+  Remove Profile.StartTime from OTel Profiling signal.
+- `exporterhelper`: Remove deprecated old batcher config (#13003)
+- `exporter/otlp`: Remove deprecated batcher config from OTLP, use queuebatch (#13339)
+
+### 🚩 Deprecations 🚩
+
+- `exporterhelper`: Deprecate NewRequestsSizer always supported. (#13262)
+- `xexporterhelper`: Introduce NewProfiles method and deprecate NewProfilesExporter (#13372)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add `Error` type (#7047)
+  This type can contain information about errors that allow components (e.g. exporters)
+  to communicate error information back up the pipeline.
+  
+- `pdata`: Document that changing pcommon.Map (Remove/removeIf/Put*) invalidates Value references obtained via Get. (#13073)
+- `cmd/mdatagen`: Add support for optional attribute (#12571)
+- `exporterhelper`: Add support to configure a different Sizer for the batcher than the queue (#13313)
+- `pdata`: Add support for the new resource-entity reference API as part of the experimental xpdata package. (#13264)
+
+<!-- previous-version -->
+
+## v1.35.0/v0.129.0
+
+### 🛑 Breaking changes 🛑
+
+- `semconv`: Removing deprecated semconv package (#13071)
+- `configgrpc,confighttp`: Unify return type of `NewDefault*Config` functions to return a struct instead of a pointer. (#13169)
+- `exporterhelper`: QueueBatchEncoding interface is changed to support marshaling and unmarshaling of request context. (#13188)
+
+### 💡 Enhancements 💡
+
+- `pdata/pprofile`: Introduce `Equal` method on the `Mapping` type (#13197)
+- `configoptional`: Make unmarshaling into `None[T]` work the same as unmarshaling into `(*T)(nil)`. (#13168)
+- `configoptional`: Add a confmap.Marshaler implementation for configoptional.Optional (#13196)
+- `pdata/pprofile`: Introduce `Equal` methods on the `Line` and `Location` types (#13150)
+- `pdata/pprofile`: Add new helper method `SetMapping` to set a new mapping on a location. (#13197)
+
+### 🧰 Bug fixes 🧰
+
+- `confmap`: Distinguish between empty and nil values when marshaling `confmap.Conf` structs. (#13196)
+
+<!-- previous-version -->
+
 ## v1.34.0/v0.128.0
 
 ### 🛑 Breaking changes 🛑

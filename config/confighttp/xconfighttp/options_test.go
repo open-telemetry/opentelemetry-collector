@@ -22,7 +22,7 @@ import (
 
 func TestServerWithOtelHTTPOptions(t *testing.T) {
 	// prepare
-	hss := confighttp.ServerConfig{
+	sc := confighttp.ServerConfig{
 		Endpoint: "localhost:0",
 	}
 
@@ -30,7 +30,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 	tp, te := tracerProvider(t)
 	telemetry.TracerProvider = tp
 
-	srv, err := hss.ToServer(
+	srv, err := sc.ToServer(
 		context.Background(),
 		componenttest.NewNopHost(),
 		telemetry,
@@ -48,7 +48,7 @@ func TestServerWithOtelHTTPOptions(t *testing.T) {
 
 	for _, path := range []string{"/path", "/foobar"} {
 		response := &httptest.ResponseRecorder{}
-		req, err := http.NewRequest(http.MethodGet, srv.Addr+path, nil)
+		req, err := http.NewRequest(http.MethodGet, srv.Addr+path, http.NoBody)
 		require.NoError(t, err)
 		srv.Handler.ServeHTTP(response, req)
 		assert.Equal(t, http.StatusOK, response.Result().StatusCode)

@@ -5,55 +5,16 @@ package pprofile // import "go.opentelemetry.io/collector/pdata/pprofile"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"
 )
 
-// Profiles is the top-level struct that is propagated through the profiles pipeline.
-// Use NewProfiles to create new instance, zero-initialized instance is not valid for use.
-type Profiles internal.Profiles
-
-func newProfiles(orig *otlpcollectorprofile.ExportProfilesServiceRequest) Profiles {
-	state := internal.StateMutable
-	return Profiles(internal.NewProfiles(orig, &state))
-}
-
-func (ms Profiles) getOrig() *otlpcollectorprofile.ExportProfilesServiceRequest {
-	return internal.GetOrigProfiles(internal.Profiles(ms))
-}
-
-func (ms Profiles) getState() *internal.State {
-	return internal.GetProfilesState(internal.Profiles(ms))
-}
-
-// NewProfiles creates a new Profiles struct.
-func NewProfiles() Profiles {
-	return newProfiles(&otlpcollectorprofile.ExportProfilesServiceRequest{})
+// MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
+func (ms Profiles) MarkReadOnly() {
+	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
 }
 
 // IsReadOnly returns true if this ResourceProfiles instance is read-only.
 func (ms Profiles) IsReadOnly() bool {
 	return *ms.getState() == internal.StateReadOnly
-}
-
-// CopyTo copies the Profiles instance overriding the destination.
-func (ms Profiles) CopyTo(dest Profiles) {
-	ms.ResourceProfiles().CopyTo(dest.ResourceProfiles())
-	ms.ProfilesDictionary().CopyTo(dest.ProfilesDictionary())
-}
-
-// ResourceProfiles returns the ResourceProfilesSlice associated with this Profiles.
-func (ms Profiles) ResourceProfiles() ResourceProfilesSlice {
-	return newResourceProfilesSlice(&ms.getOrig().ResourceProfiles, internal.GetProfilesState(internal.Profiles(ms)))
-}
-
-// ProfilesDictionary returns the ProfilesDictionary associated with this Profiles.
-func (ms Profiles) ProfilesDictionary() ProfilesDictionary {
-	return newProfilesDictionary(&ms.getOrig().Dictionary, internal.GetProfilesState(internal.Profiles(ms)))
-}
-
-// MarkReadOnly marks the ResourceProfiles as shared so that no further modifications can be done on it.
-func (ms Profiles) MarkReadOnly() {
-	internal.SetProfilesState(internal.Profiles(ms), internal.StateReadOnly)
 }
 
 // SampleCount calculates the total number of samples.

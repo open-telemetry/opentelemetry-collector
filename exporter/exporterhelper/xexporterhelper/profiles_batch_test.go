@@ -30,7 +30,7 @@ func TestMergeProfiles(t *testing.T) {
 func TestMergeProfilesInvalidInput(t *testing.T) {
 	pr2 := newProfilesRequest(testdata.GenerateProfiles(3))
 	_, err := pr2.MergeSplit(context.Background(), 0, exporterhelper.RequestSizerTypeItems, &requesttest.FakeRequest{Items: 1})
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestMergeSplitProfiles(t *testing.T) {

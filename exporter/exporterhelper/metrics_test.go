@@ -169,7 +169,8 @@ func TestMetricsRequest_Default_ExportError(t *testing.T) {
 }
 
 func TestMetrics_WithPersistentQueue(t *testing.T) {
-	fgOrigState := queue.PersistRequestContextFeatureGate.IsEnabled()
+	fgOrigReadState := queue.PersistRequestContextOnRead
+	fgOrigWriteState := queue.PersistRequestContextOnWrite
 	qCfg := NewDefaultQueueConfig()
 	storageID := component.MustNewIDWithName("file_storage", "storage")
 	qCfg.StorageID = &storageID
@@ -211,11 +212,11 @@ func TestMetrics_WithPersistentQueue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			queue.PersistRequestContextOnRead = tt.fgEnabledOnRead
-			queue.PersistRequestContextOnWrite = tt.fgEnabledOnWrite
+			queue.PersistRequestContextOnRead = func() bool { return tt.fgEnabledOnRead }
+			queue.PersistRequestContextOnWrite = func() bool { return tt.fgEnabledOnWrite }
 			t.Cleanup(func() {
-				queue.PersistRequestContextOnRead = fgOrigState
-				queue.PersistRequestContextOnWrite = fgOrigState
+				queue.PersistRequestContextOnRead = fgOrigReadState
+				queue.PersistRequestContextOnWrite = fgOrigWriteState
 			})
 
 			ms := consumertest.MetricsSink{}

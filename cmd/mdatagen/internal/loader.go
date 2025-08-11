@@ -39,21 +39,25 @@ func LoadMetadata(filePath string) (Metadata, error) {
 		return Metadata{}, err
 	}
 
-	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "componenttest.NewNopHost()"}}
-	if err = conf.Unmarshal(&md); err != nil {
+	md := Metadata{ShortFolderName: shortFolderName(filePath), Tests: Tests{Host: "newMdatagenNopHost()"}}
+	err = conf.Unmarshal(&md)
+	if err != nil {
 		return md, err
 	}
+	packageName, err := packageName(filepath.Dir(filePath))
+	if err != nil {
+		return md, fmt.Errorf("unable to determine package name: %w", err)
+	}
+	md.PackageName = packageName
+
 	if md.ScopeName == "" {
-		md.ScopeName, err = packageName(filepath.Dir(filePath))
-		if err != nil {
-			return md, err
-		}
+		md.ScopeName = packageName
 	}
 	if md.GeneratedPackageName == "" {
 		md.GeneratedPackageName = "metadata"
 	}
 
-	if err = md.Validate(); err != nil {
+	if err := md.Validate(); err != nil {
 		return md, err
 	}
 

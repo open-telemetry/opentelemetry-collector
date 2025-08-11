@@ -22,7 +22,7 @@ type clientInfoHandler struct {
 // ServeHTTP intercepts incoming HTTP requests, replacing the request's context with one that contains
 // a client.Info containing the client's IP address.
 func (h *clientInfoHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	req = req.WithContext(contextWithClient(req, h.includeMetadata))
+	req = req.WithContext(contextWithClient(req, h.includeMetadata)) //nolint:contextcheck //context already handled through contextWithClient
 	h.next.ServeHTTP(w, req)
 }
 
@@ -38,7 +38,7 @@ func contextWithClient(req *http.Request, includeMetadata bool) context.Context 
 
 	if includeMetadata {
 		md := req.Header.Clone()
-		if len(md.Get(client.MetadataHostName)) == 0 && req.Host != "" {
+		if md.Get(client.MetadataHostName) == "" && req.Host != "" {
 			md.Add(client.MetadataHostName, req.Host)
 		}
 

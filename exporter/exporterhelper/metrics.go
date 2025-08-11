@@ -32,14 +32,11 @@ var (
 // until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
 func NewMetricsQueueBatchSettings() QueueBatchSettings {
 	return QueueBatchSettings{
-		Encoding: metricsEncoding{},
-		Sizers: map[RequestSizerType]request.Sizer[Request]{
-			RequestSizerTypeRequests: NewRequestsSizer(),
-			RequestSizerTypeItems:    request.NewItemsSizer(),
-			RequestSizerTypeBytes: request.BaseSizer{
-				SizeofFunc: func(req request.Request) int64 {
-					return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
-				},
+		Encoding:   metricsEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: request.BaseSizer{
+			SizeofFunc: func(req request.Request) int64 {
+				return int64(metricsMarshaler.MetricsSize(req.(*metricsRequest).md))
 			},
 		},
 	}
@@ -62,7 +59,7 @@ type metricsEncoding struct{}
 var _ QueueBatchEncoding[Request] = metricsEncoding{}
 
 func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error) {
-	if queue.PersistRequestContextOnRead {
+	if queue.PersistRequestContextOnRead() {
 		ctx, metrics, err := pdatareq.UnmarshalMetrics(bytes)
 		if errors.Is(err, pdatareq.ErrInvalidFormat) {
 			// fall back to unmarshaling without context
@@ -80,7 +77,7 @@ func (metricsEncoding) Unmarshal(bytes []byte) (context.Context, Request, error)
 
 func (metricsEncoding) Marshal(ctx context.Context, req Request) ([]byte, error) {
 	metrics := req.(*metricsRequest).md
-	if queue.PersistRequestContextOnWrite {
+	if queue.PersistRequestContextOnWrite() {
 		return pdatareq.MarshalMetrics(ctx, metrics)
 	}
 	return metricsMarshaler.MarshalMetrics(metrics)

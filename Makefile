@@ -152,18 +152,16 @@ endif
 # Build the Collector executable.
 .PHONY: otelcorecol
 otelcorecol:
-	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) \
-		-tags $(GO_BUILD_TAGS) ./cmd/otelcorecol && popd
+	pushd cmd/otelcorecol && CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcorecol_$(GOOS)_$(GOARCH) -tags "grpcnotrace" ./... && popd
 
 .PHONY: genotelcorecol
 genotelcorecol: install-tools
 	pushd cmd/builder/ && $(GOCMD) run ./ --skip-compilation --config ../otelcorecol/builder-config.yaml --output-path ../otelcorecol && popd
 	$(MAKE) -C cmd/otelcorecol fmt
-	cd internal/tools && $(GOCMD) install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
 
 .PHONY: actionlint
-actionlint:
-	./.tools/actionlint -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
+actionlint: $(ACTIONLINT)
+	$(ACTIONLINT) -config-file .github/actionlint.yaml -color .github/workflows/*.yml .github/workflows/*.yaml
 
 .PHONY: ocb
 ocb:
@@ -246,9 +244,9 @@ genproto_sub:
 
 # Generate structs, functions and tests for pdata package. Must be used after any changes
 # to proto and after running `make genproto`
-genpdata:
-	pushd pdata/ && $(GOCMD) run ./internal/cmd/pdatagen/main.go && popd
-	$(MAKE) fmt
+genpdata: $(PDATAGEN)
+	$(PDATAGEN)
+	$(MAKE) -C pdata fmt
 
 INTERNAL_PROTO_SRC_DIRS := exporter/exporterhelper/internal/queue pdata/xpdata/request/internal
 INTERNAL_PROTO_FILES := $(foreach dir,$(INTERNAL_PROTO_SRC_DIRS),$(wildcard $(dir)/*.proto))

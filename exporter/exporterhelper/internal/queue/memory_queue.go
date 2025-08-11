@@ -25,14 +25,6 @@ var (
 	errSizeTooLarge = errors.New("element size too large")
 )
 
-// memoryQueueSettings defines internal parameters for boundedMemoryQueue creation.
-type memoryQueueSettings[T any] struct {
-	sizer           request.Sizer[T]
-	capacity        int64
-	waitForResult   bool
-	blockOnOverflow bool
-}
-
 // memoryQueue is an in-memory implementation of a Queue.
 type memoryQueue[T any] struct {
 	component.StartFunc
@@ -51,13 +43,13 @@ type memoryQueue[T any] struct {
 
 // newMemoryQueue creates a sized elements channel. Each element is assigned a size by the provided sizer.
 // capacity is the capacity of the queue.
-func newMemoryQueue[T any](set memoryQueueSettings[T]) readableQueue[T] {
+func newMemoryQueue[T any](set Settings[T]) readableQueue[T] {
 	sq := &memoryQueue[T]{
-		sizer:           set.sizer,
-		cap:             set.capacity,
+		sizer:           set.activeSizer(),
+		cap:             set.Capacity,
 		items:           &linkedQueue[T]{},
-		waitForResult:   set.waitForResult,
-		blockOnOverflow: set.blockOnOverflow,
+		waitForResult:   set.WaitForResult,
+		blockOnOverflow: set.BlockOnOverflow,
 	}
 	sq.hasMoreElements = sync.NewCond(&sq.mu)
 	sq.hasMoreSpace = newCond(&sq.mu)

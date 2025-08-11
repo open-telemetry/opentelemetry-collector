@@ -68,11 +68,10 @@ func TestBaseExporterLogging(t *testing.T) {
 	rCfg := configretry.NewDefaultBackOffConfig()
 	rCfg.Enabled = false
 	qCfg := NewDefaultQueueConfig()
-	qCfg.Enabled = false
+	qCfg.WaitForResult = true
 	bs, err := NewBaseExporter(set, pipeline.SignalMetrics, errExport,
 		WithQueueBatchSettings(newFakeQueueBatch()),
 		WithQueue(qCfg),
-		WithBatcher(NewDefaultBatcherConfig()),
 		WithRetry(rCfg))
 	require.NoError(t, err)
 	require.NoError(t, bs.Start(context.Background(), componenttest.NewNopHost()))
@@ -102,11 +101,6 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					qs.Enabled = false
 					return WithQueue(qs)
 				}(),
-				func() Option {
-					bs := NewDefaultBatcherConfig()
-					bs.Enabled = false
-					return WithBatcher(bs)
-				}(),
 			},
 		},
 		{
@@ -116,11 +110,6 @@ func TestQueueRetryWithDisabledQueue(t *testing.T) {
 					qs := NewDefaultQueueConfig()
 					qs.Enabled = false
 					return WithQueueBatch(qs, newFakeQueueBatch())
-				}(),
-				func() Option {
-					bs := NewDefaultBatcherConfig()
-					bs.Enabled = false
-					return WithBatcher(bs)
 				}(),
 			},
 		},
@@ -153,10 +142,9 @@ func noopExport(context.Context, request.Request) error {
 
 func newFakeQueueBatch() QueueBatchSettings[request.Request] {
 	return QueueBatchSettings[request.Request]{
-		Encoding: fakeEncoding{},
-		Sizers: map[request.SizerType]request.Sizer[request.Request]{
-			request.SizerTypeRequests: request.RequestsSizer[request.Request]{},
-		},
+		Encoding:   fakeEncoding{},
+		ItemsSizer: request.NewItemsSizer(),
+		BytesSizer: requesttest.NewBytesSizer(),
 	}
 }
 

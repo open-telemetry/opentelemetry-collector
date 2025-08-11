@@ -13,11 +13,17 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/request"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/internal/requesttest"
 )
+
+type testContextKey string
+
+const timestampKey testContextKey = "timestamp"
 
 func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T) {
 	tests := []struct {
@@ -41,13 +47,13 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -55,11 +61,12 @@ func TestPartitionBatcher_NoSplit_MinThresholdZero_TimeoutDisabled(t *testing.T)
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := BatchConfig{
 				FlushTimeout: 0,
+				Sizer:        tt.sizerType,
 				MinSize:      0,
 			}
 
 			sink := requesttest.NewSink()
-			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizer, nil, newWorkerPool(tt.maxWorkers), sink.Export, zap.NewNop())
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -106,13 +113,13 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -120,11 +127,12 @@ func TestPartitionBatcher_NoSplit_TimeoutDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := BatchConfig{
 				FlushTimeout: 0,
+				Sizer:        tt.sizerType,
 				MinSize:      10,
 			}
 
 			sink := requesttest.NewSink()
-			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizer, nil, newWorkerPool(tt.maxWorkers), sink.Export, zap.NewNop())
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -186,13 +194,13 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -200,11 +208,12 @@ func TestPartitionBatcher_NoSplit_WithTimeout(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := BatchConfig{
 				FlushTimeout: 50 * time.Millisecond,
+				Sizer:        tt.sizerType,
 				MinSize:      100,
 			}
 
 			sink := requesttest.NewSink()
-			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizer, nil, newWorkerPool(tt.maxWorkers), sink.Export, zap.NewNop())
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() {
 				require.NoError(t, ba.Shutdown(context.Background()))
@@ -256,13 +265,13 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 		{
 			name:       "bytes/one_worker",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 1,
 		},
 		{
 			name:       "bytes/three_workers",
 			sizerType:  request.SizerTypeBytes,
-			sizer:      newFakeBytesSizer(),
+			sizer:      requesttest.NewBytesSizer(),
 			maxWorkers: 3,
 		},
 	}
@@ -270,12 +279,13 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := BatchConfig{
 				FlushTimeout: 0,
+				Sizer:        tt.sizerType,
 				MinSize:      100,
 				MaxSize:      100,
 			}
 
 			sink := requesttest.NewSink()
-			ba := newPartitionBatcher(cfg, tt.sizerType, tt.sizer, newWorkerPool(tt.maxWorkers), sink.Export)
+			ba := newPartitionBatcher(cfg, tt.sizer, nil, newWorkerPool(tt.maxWorkers), sink.Export, zap.NewNop())
 			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 			done := newFakeDone()
@@ -318,11 +328,12 @@ func TestPartitionBatcher_Split_TimeoutDisabled(t *testing.T) {
 func TestPartitionBatcher_Shutdown(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 100 * time.Second,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      10,
 	}
 
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop())
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 
 	done := newFakeDone()
@@ -345,12 +356,13 @@ func TestPartitionBatcher_Shutdown(t *testing.T) {
 func TestPartitionBatcher_MergeError(t *testing.T) {
 	cfg := BatchConfig{
 		FlushTimeout: 200 * time.Second,
+		Sizer:        request.SizerTypeItems,
 		MinSize:      5,
 		MaxSize:      7,
 	}
 
 	sink := requesttest.NewSink()
-	ba := newPartitionBatcher(cfg, request.SizerTypeItems, request.NewItemsSizer(), newWorkerPool(2), sink.Export)
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(2), sink.Export, zap.NewNop())
 	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, ba.Shutdown(context.Background()))
@@ -373,6 +385,92 @@ func TestPartitionBatcher_MergeError(t *testing.T) {
 	assert.EqualValues(t, 0, done.success.Load())
 }
 
+func TestPartitionBatcher_PartialSuccessError(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeBytes,
+		MinSize:      10,
+		MaxSize:      15,
+	}
+
+	core, observed := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, logger)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	req := &requesttest.FakeRequest{
+		Items:          100,
+		Bytes:          100,
+		MergeErr:       errors.New("split error"),
+		MergeErrResult: []request.Request{&requesttest.FakeRequest{Items: 10, Bytes: 15}},
+	}
+	ba.Consume(context.Background(), req, done)
+
+	assert.Eventually(t, func() bool {
+		logs := observed.All()
+		if len(logs) == 0 {
+			return false
+		}
+		log := logs[0]
+		return log.Level == zap.WarnLevel &&
+			log.Message == "Failed to split request."
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Verify that done callback was called with the returned batch and error for the split.
+	assert.Equal(t, int64(1), done.errors.Load())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 10, sink.ItemsCount())
+	assert.Equal(t, 15, sink.BytesCount())
+}
+
+func TestSPartitionBatcher_PartialSuccessError_AfterOkRequest(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		Sizer:        request.SizerTypeBytes,
+		MinSize:      10,
+		MaxSize:      15,
+	}
+
+	core, observed := observer.New(zap.WarnLevel)
+	logger := zap.New(core)
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, logger)
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+	done := newFakeDone()
+	ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 5, Bytes: 5}, done)
+	req := &requesttest.FakeRequest{
+		Items:          100,
+		Bytes:          100,
+		MergeErr:       errors.New("split error"),
+		MergeErrResult: []request.Request{&requesttest.FakeRequest{Items: 10, Bytes: 15}},
+	}
+	ba.Consume(context.Background(), req, done)
+
+	assert.Eventually(t, func() bool {
+		logs := observed.All()
+		if len(logs) == 0 {
+			return false
+		}
+		log := logs[0]
+		return log.Level == zap.WarnLevel &&
+			log.Message == "Failed to split request."
+	}, time.Second, 10*time.Millisecond)
+
+	require.NoError(t, ba.Shutdown(context.Background()))
+
+	// Verify that done callback was called with the success for the returned batch and error for the split.
+	assert.Equal(t, int64(1), done.errors.Load())
+	assert.Equal(t, int64(1), done.success.Load())
+	assert.Equal(t, 1, sink.RequestsCount())
+	assert.Equal(t, 10, sink.ItemsCount())
+	assert.Equal(t, 15, sink.BytesCount())
+}
+
 type fakeDone struct {
 	errors  *atomic.Int64
 	success *atomic.Int64
@@ -393,10 +491,72 @@ func (fd fakeDone) OnDone(err error) {
 	}
 }
 
-func newFakeBytesSizer() request.Sizer[request.Request] {
-	return request.BaseSizer{
-		SizeofFunc: func(req request.Request) int64 {
-			return int64(req.(*requesttest.FakeRequest).Bytes)
+func TestShardBatcher_EmptyRequestList(t *testing.T) {
+	cfg := BatchConfig{
+		FlushTimeout: 0,
+		MinSize:      0,
+	}
+
+	sink := requesttest.NewSink()
+	ba := newPartitionBatcher(cfg, request.NewItemsSizer(), nil, newWorkerPool(1), sink.Export, zap.NewNop())
+	require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, ba.Shutdown(context.Background()))
+	})
+
+	done := newFakeDone()
+	req := &requesttest.FakeRequest{
+		Items:    1,
+		MergeErr: errors.New("force empty list"),
+	}
+	ba.Consume(context.Background(), req, done)
+
+	assert.Eventually(t, func() bool {
+		return done.errors.Load() == 1
+	}, time.Second, 10*time.Millisecond)
+	assert.Equal(t, int64(0), done.success.Load())
+	assert.Equal(t, 0, sink.RequestsCount())
+}
+
+func TestPartitionBatcher_ContextMerging(t *testing.T) {
+	tests := []struct {
+		name         string
+		mergeCtxFunc func(ctx1, ctx2 context.Context) context.Context
+	}{
+		{
+			name: "merge_context_with_timestamp",
+			mergeCtxFunc: func(ctx1, _ context.Context) context.Context {
+				return context.WithValue(ctx1, timestampKey, 1234)
+			},
 		},
+		{
+			name: "merge_context_returns_background",
+			mergeCtxFunc: func(_, _ context.Context) context.Context {
+				return context.Background()
+			},
+		},
+		{
+			name:         "nil_merge_context",
+			mergeCtxFunc: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := BatchConfig{
+				FlushTimeout: 0,
+				Sizer:        request.SizerTypeItems,
+				MinSize:      10,
+			}
+			sink := requesttest.NewSink()
+			ba := newPartitionBatcher(cfg, request.NewItemsSizer(), tt.mergeCtxFunc, newWorkerPool(1), sink.Export, zap.NewNop())
+			require.NoError(t, ba.Start(context.Background(), componenttest.NewNopHost()))
+
+			done := newFakeDone()
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			ba.Consume(context.Background(), &requesttest.FakeRequest{Items: 8, Bytes: 8}, done)
+			<-time.After(10 * time.Millisecond)
+			assert.Equal(t, 1, sink.RequestsCount())
+			assert.EqualValues(t, 2, done.success.Load())
+		})
 	}
 }

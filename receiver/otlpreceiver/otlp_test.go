@@ -419,7 +419,7 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 		content     string
 		encoding    string
 		reqBodyFunc func() (*bytes.Buffer, error)
-		resBodyFunc func() ([]byte, error)
+		checkBody   func(tb testing.TB, got []byte)
 		status      int
 	}{
 		{
@@ -429,8 +429,8 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return json.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				assert.JSONEq(tb, `{"code":3,"message": "gzip: invalid header"}`, string(got))
 			},
 			status: 400,
 		},
@@ -441,8 +441,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "gzip: invalid header").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -453,8 +455,10 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 			reqBodyFunc: func() (*bytes.Buffer, error) {
 				return bytes.NewBuffer([]byte(`{"key": "value"}`)), nil
 			},
-			resBodyFunc: func() ([]byte, error) {
-				return proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+			checkBody: func(tb testing.TB, got []byte) {
+				expected, err := proto.Marshal(status.New(codes.InvalidArgument, "invalid input: magic number mismatch").Proto())
+				require.NoError(tb, err)
+				assert.Equal(tb, expected, got)
 			},
 			status: 400,
 		},
@@ -472,27 +476,53 @@ func TestOTLPReceiverInvalidContentEncoding(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			body, err := test.reqBodyFunc()
-			require.NoError(t, err, "Error creating request body: %v", err)
+			require.NoError(t, err)
 
 			req, err := http.NewRequest(http.MethodPost, url, body)
-			require.NoError(t, err, "Error creating trace POST request: %v", err)
+			require.NoError(t, err)
 			req.Header.Set("Content-Type", test.content)
 			req.Header.Set("Content-Encoding", test.encoding)
 
 			resp, err := http.DefaultClient.Do(req)
-			require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+			require.NoError(t, err)
+			assert.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
+			assert.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
 
 			respBytes, err := io.ReadAll(resp.Body)
-			require.NoError(t, err, "Error reading response from trace grpc-gateway")
-			exRespBytes, err := test.resBodyFunc()
-			require.NoError(t, err, "Error creating expecting response body")
-			require.NoError(t, resp.Body.Close(), "Error closing response body")
-
-			require.Equal(t, test.status, resp.StatusCode, "Unexpected return status")
-			require.Equal(t, test.content, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
-			require.Equal(t, exRespBytes, respBytes, "Unexpected response content")
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
+			test.checkBody(t, respBytes)
 		})
 	}
+}
+
+func TestOTLPReceiverNoContentType(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	recv := newHTTPReceiver(t, componenttest.NewNopTelemetrySettings(), addr, consumertest.NewNop())
+
+	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()), "Failed to start trace receiver")
+	t.Cleanup(func() { require.NoError(t, recv.Shutdown(context.Background())) })
+
+	url := fmt.Sprintf("http://%s%s", addr, defaultTracesURLPath)
+
+	t.Run("NoContentType", func(t *testing.T) {
+		body := bytes.NewBuffer([]byte(`{"key": "value"}`))
+
+		req, err := http.NewRequest(http.MethodPost, url, body)
+		require.NoError(t, err, "Error creating trace POST request: %v", err)
+
+		// Set invalid encoding to trigger an error
+		req.Header.Set("Content-Encoding", "invalid")
+
+		resp, err := http.DefaultClient.Do(req)
+		require.NoError(t, err, "Error posting to server: %v", err)
+		// Don't care about the response body, just check the content type
+		defer resp.Body.Close()
+
+		require.Equal(t, fallbackContentType, resp.Header.Get("Content-Type"), "Unexpected response Content-Type")
+	})
 }
 
 func TestGRPCNewPortAlreadyUsed(t *testing.T) {
@@ -694,11 +724,11 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
 					Transport: confignet.TransportTypeTCP,
 				},
-				TLS: &configtls.ServerConfig{
+				TLS: configoptional.Some(configtls.ServerConfig{
 					Config: configtls.Config{
 						CertFile: "willfail",
 					},
-				},
+				}),
 			}),
 		},
 	}
@@ -757,11 +787,11 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 			HTTP: configoptional.Some(HTTPConfig{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
-					TLS: &configtls.ServerConfig{
+					TLS: configoptional.Some(configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "willfail",
 						},
-					},
+					}),
 				},
 				TracesURLPath:  defaultTracesURLPath,
 				MetricsURLPath: defaultMetricsURLPath,
@@ -782,7 +812,7 @@ func TestHTTPInvalidTLSCredentials(t *testing.T) {
 		`failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 }
 
-func testHTTPMaxRequestBodySize(t *testing.T, path string, contentType string, payload []byte, size int, expectedStatusCode int) {
+func testHTTPMaxRequestBodySize(t *testing.T, path, contentType string, payload []byte, size, expectedStatusCode int) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	url := "http://" + addr + path
 	cfg := &Config{

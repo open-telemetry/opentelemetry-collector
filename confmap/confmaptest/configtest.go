@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	yaml "go.yaml.in/yaml/v3"
 
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -23,7 +23,7 @@ func LoadConf(fileName string) (*confmap.Conf, error) {
 	}
 
 	var rawConf map[string]any
-	if err = yaml.Unmarshal(content, &rawConf); err != nil {
+	if err := yaml.Unmarshal(content, &rawConf); err != nil {
 		return nil, err
 	}
 

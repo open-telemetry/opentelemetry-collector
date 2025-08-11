@@ -1,0 +1,29 @@
+type: receiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+
+attributes:
+  optional_int_attr:
+    description: Optional int attr.
+    type: string
+    optional: true
+
+metrics:
+  metric:
+    enabled: true
+    description: Metric.
+    unit: "1"
+    gauge:
+      value_type: double
+    attributes: [optional_int_attr]
+
+events:
+  event:
+    enabled: true
+    description: Event.
+    attributes: [optional_int_attr]
