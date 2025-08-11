@@ -49,7 +49,13 @@ func MarshalJSONOrigExportLogsServiceRequest(orig *otlpcollectorlog.ExportLogsSe
 	dest.WriteObjectStart()
 	if len(orig.ResourceLogs) > 0 {
 		dest.WriteObjectField("resourceLogs")
-		MarshalJSONOrigResourceLogsSlice(orig.ResourceLogs, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigResourceLogs(orig.ResourceLogs[0], dest)
+		for i := 1; i < len(orig.ResourceLogs); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigResourceLogs(orig.ResourceLogs[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

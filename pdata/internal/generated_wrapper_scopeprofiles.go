@@ -31,7 +31,13 @@ func MarshalJSONOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, dest *json.S
 	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
 	if len(orig.Profiles) > 0 {
 		dest.WriteObjectField("profiles")
-		MarshalJSONOrigProfileSlice(orig.Profiles, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigProfile(orig.Profiles[0], dest)
+		for i := 1; i < len(orig.Profiles); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigProfile(orig.Profiles[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")

@@ -63,11 +63,23 @@ func MarshalJSONOrigEntityRef(orig *otlpcommon.EntityRef, dest *json.Stream) {
 	}
 	if len(orig.IdKeys) > 0 {
 		dest.WriteObjectField("idKeys")
-		MarshalJSONOrigStringSlice(orig.IdKeys, dest)
+		dest.WriteArrayStart()
+		dest.WriteString(orig.IdKeys[0])
+		for i := 1; i < len(orig.IdKeys); i++ {
+			dest.WriteMore()
+			dest.WriteString(orig.IdKeys[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.DescriptionKeys) > 0 {
 		dest.WriteObjectField("descriptionKeys")
-		MarshalJSONOrigStringSlice(orig.DescriptionKeys, dest)
+		dest.WriteArrayStart()
+		dest.WriteString(orig.DescriptionKeys[0])
+		for i := 1; i < len(orig.DescriptionKeys); i++ {
+			dest.WriteMore()
+			dest.WriteString(orig.DescriptionKeys[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

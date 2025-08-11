@@ -31,7 +31,7 @@ func FillOrigTestSpan_Event(orig *otlptrace.Span_Event) {
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
 func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 	dest.WriteObjectStart()
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
@@ -41,7 +41,13 @@ func MarshalJSONOrigSpan_Event(orig *otlptrace.Span_Event, dest *json.Stream) {
 	}
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")

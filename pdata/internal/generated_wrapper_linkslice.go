@@ -49,19 +49,6 @@ func GenerateOrigTestLinkSlice() []*otlpprofiles.Link {
 	return orig
 }
 
-// MarshalJSONOrigLinkSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLinkSlice(orig []*otlpprofiles.Link, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigLink(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigLink(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigLinkSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLinkSlice(iter *json.Iterator) []*otlpprofiles.Link {
 	var orig []*otlpprofiles.Link

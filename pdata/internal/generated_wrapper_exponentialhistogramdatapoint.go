@@ -81,13 +81,19 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
@@ -97,7 +103,7 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	}
 	if orig.Sum_ != nil {
 		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.GetSum())
+		dest.WriteFloat64(orig.Sum_.(*otlpmetrics.ExponentialHistogramDataPoint_Sum).Sum)
 	}
 	if orig.Scale != int32(0) {
 		dest.WriteObjectField("scale")
@@ -111,21 +117,27 @@ func MarshalJSONOrigExponentialHistogramDataPoint(orig *otlpmetrics.ExponentialH
 	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Positive, dest)
 	dest.WriteObjectField("negative")
 	MarshalJSONOrigExponentialHistogramDataPoint_Buckets(&orig.Negative, dest)
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
-		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		for i := 1; i < len(orig.Exemplars); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.Min_ != nil {
 		dest.WriteObjectField("min")
-		dest.WriteFloat64(orig.GetMin())
+		dest.WriteFloat64(orig.Min_.(*otlpmetrics.ExponentialHistogramDataPoint_Min).Min)
 	}
 	if orig.Max_ != nil {
 		dest.WriteObjectField("max")
-		dest.WriteFloat64(orig.GetMax())
+		dest.WriteFloat64(orig.Max_.(*otlpmetrics.ExponentialHistogramDataPoint_Max).Max)
 	}
 	if orig.ZeroThreshold != float64(0) {
 		dest.WriteObjectField("zeroThreshold")

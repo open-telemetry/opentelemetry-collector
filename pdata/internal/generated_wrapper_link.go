@@ -28,11 +28,11 @@ func MarshalJSONOrigLink(orig *otlpprofiles.Link, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		orig.TraceId.MarshalJSONStream(dest)
+		MarshalJSONOrigTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		orig.SpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.SpanId, dest)
 	}
 	dest.WriteObjectEnd()
 }

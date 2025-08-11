@@ -75,26 +75,42 @@ func MarshalJSONOrigMetric(orig *otlpmetrics.Metric, dest *json.Stream) {
 		dest.WriteObjectField("unit")
 		dest.WriteString(orig.Unit)
 	}
-	switch ov := orig.Data.(type) {
+	switch orig.Data.(type) {
 	case *otlpmetrics.Metric_Gauge:
-		dest.WriteObjectField("gauge")
-		MarshalJSONOrigGauge(ov.Gauge, dest)
+		if orig.Data.(*otlpmetrics.Metric_Gauge).Gauge != nil {
+			dest.WriteObjectField("gauge")
+			MarshalJSONOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge, dest)
+		}
 	case *otlpmetrics.Metric_Sum:
-		dest.WriteObjectField("sum")
-		MarshalJSONOrigSum(ov.Sum, dest)
+		if orig.Data.(*otlpmetrics.Metric_Sum).Sum != nil {
+			dest.WriteObjectField("sum")
+			MarshalJSONOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum, dest)
+		}
 	case *otlpmetrics.Metric_Histogram:
-		dest.WriteObjectField("histogram")
-		MarshalJSONOrigHistogram(ov.Histogram, dest)
+		if orig.Data.(*otlpmetrics.Metric_Histogram).Histogram != nil {
+			dest.WriteObjectField("histogram")
+			MarshalJSONOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram, dest)
+		}
 	case *otlpmetrics.Metric_ExponentialHistogram:
-		dest.WriteObjectField("exponentialHistogram")
-		MarshalJSONOrigExponentialHistogram(ov.ExponentialHistogram, dest)
+		if orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram != nil {
+			dest.WriteObjectField("exponentialHistogram")
+			MarshalJSONOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, dest)
+		}
 	case *otlpmetrics.Metric_Summary:
-		dest.WriteObjectField("summary")
-		MarshalJSONOrigSummary(ov.Summary, dest)
+		if orig.Data.(*otlpmetrics.Metric_Summary).Summary != nil {
+			dest.WriteObjectField("summary")
+			MarshalJSONOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary, dest)
+		}
 	}
 	if len(orig.Metadata) > 0 {
 		dest.WriteObjectField("metadata")
-		MarshalJSONOrigKeyValueSlice(orig.Metadata, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Metadata[0], dest)
+		for i := 1; i < len(orig.Metadata); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Metadata[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

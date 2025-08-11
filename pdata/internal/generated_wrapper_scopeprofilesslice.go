@@ -49,19 +49,6 @@ func GenerateOrigTestScopeProfilesSlice() []*otlpprofiles.ScopeProfiles {
 	return orig
 }
 
-// MarshalJSONOrigScopeProfilesSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigScopeProfilesSlice(orig []*otlpprofiles.ScopeProfiles, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigScopeProfiles(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigScopeProfiles(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigScopeProfilesSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigScopeProfilesSlice(iter *json.Iterator) []*otlpprofiles.ScopeProfiles {
 	var orig []*otlpprofiles.ScopeProfiles

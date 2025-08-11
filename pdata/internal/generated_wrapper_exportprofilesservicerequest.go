@@ -51,7 +51,13 @@ func MarshalJSONOrigExportProfilesServiceRequest(orig *otlpcollectorprofile.Expo
 	dest.WriteObjectStart()
 	if len(orig.ResourceProfiles) > 0 {
 		dest.WriteObjectField("resourceProfiles")
-		MarshalJSONOrigResourceProfilesSlice(orig.ResourceProfiles, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigResourceProfiles(orig.ResourceProfiles[0], dest)
+		for i := 1; i < len(orig.ResourceProfiles); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigResourceProfiles(orig.ResourceProfiles[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectField("dictionary")
 	MarshalJSONOrigProfilesDictionary(&orig.Dictionary, dest)

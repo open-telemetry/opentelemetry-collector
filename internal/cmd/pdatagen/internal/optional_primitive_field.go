@@ -66,11 +66,6 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 	dest.{{ .fieldName }}_ = nil
 }`
 
-const optionalPrimitiveMarshalJSONTemplate = `if orig.{{ .fieldName }}_ != nil {
-		dest.WriteObjectField("{{ lowerFirst .fieldName }}")
-		dest.Write{{ upperFirst .returnType }}(orig.Get{{ .fieldName }}())
-	}`
-
 const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
 		orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
 
@@ -101,8 +96,7 @@ func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 }
 
 func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("optionalPrimitiveMarshalJSONTemplate").Parse(optionalPrimitiveMarshalJSONTemplate))
-	return executeTemplate(t, opv.templateFields(ms))
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genMarshalJSON() + "\n}"
 }
 
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {

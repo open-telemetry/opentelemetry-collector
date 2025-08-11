@@ -31,7 +31,13 @@ func MarshalJSONOrigScopeLogs(orig *otlplogs.ScopeLogs, dest *json.Stream) {
 	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
 	if len(orig.LogRecords) > 0 {
 		dest.WriteObjectField("logRecords")
-		MarshalJSONOrigLogRecordSlice(orig.LogRecords, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigLogRecord(orig.LogRecords[0], dest)
+		for i := 1; i < len(orig.LogRecords); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigLogRecord(orig.LogRecords[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")
