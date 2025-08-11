@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -45,7 +46,7 @@ func TestLogsNopWhenGateDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	cons := consumertest.NewNop()
-	require.Equal(t, cons, obsconsumer.NewLogs(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter}))
+	require.Equal(t, cons, obsconsumer.NewLogs(cons, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()}))
 }
 
 func TestLogsItemsOnly(t *testing.T) {
@@ -63,7 +64,7 @@ func TestLogsItemsOnly(t *testing.T) {
 	require.NoError(t, err)
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: zap.NewNop()})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -108,7 +109,7 @@ func TestLogsConsumeSuccess(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -174,7 +175,7 @@ func TestLogsConsumeFailure(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
@@ -240,7 +241,7 @@ func TestLogsWithStaticAttributes(t *testing.T) {
 	require.NoError(t, err)
 
 	staticAttr := attribute.String("test", "value")
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter},
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()},
 		obsconsumer.WithStaticDataPointAttribute(staticAttr))
 
 	ld := plog.NewLogs()
@@ -312,7 +313,7 @@ func TestLogsMultipleItemsMixedOutcomes(t *testing.T) {
 	sizeCounter, err := meter.Int64Counter("size_counter")
 	require.NoError(t, err)
 
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 
 	// First batch: 2 successful items
 	ld1 := plog.NewLogs()
@@ -418,10 +419,10 @@ func TestLogsCapabilities(t *testing.T) {
 	sizeCounterDisabled := newDisabledCounter(sizeCounter)
 
 	// Test with item counter only
-	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled})
+	consumer := obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounterDisabled, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 
 	// Test with both counters
-	consumer = obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter})
+	consumer = obsconsumer.NewLogs(mockConsumer, obsconsumer.Settings{ItemCounter: itemCounter, SizeCounter: sizeCounter, Logger: zap.NewNop()})
 	require.Equal(t, consumer.Capabilities(), mockConsumer.capabilities)
 }
