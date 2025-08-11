@@ -28,7 +28,21 @@ var pmetricotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportMetricsResponse,
 		exportMetricsPartialSuccess,
+	},
+}
+
+var exportMetricsResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectormetrics.ExportMetricsServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportMetricsPartialSuccess,
+		},
 	},
 }
 
