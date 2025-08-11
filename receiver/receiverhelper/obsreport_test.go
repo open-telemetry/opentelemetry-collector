@@ -101,7 +101,7 @@ func TestReceiveTraceDataOp(t *testing.T) {
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+		metadatatest.AssertEqualReceiverDuration(t, tt,
 			[]metricdata.HistogramDataPoint[float64]{
 				{
 					Attributes: attribute.NewSet(
@@ -176,7 +176,7 @@ func TestReceiveLogsOp(t *testing.T) {
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+		metadatatest.AssertEqualReceiverDuration(t, tt,
 			[]metricdata.HistogramDataPoint[float64]{
 				{
 					Attributes: attribute.NewSet(
@@ -252,7 +252,7 @@ func TestReceiveMetricsOp(t *testing.T) {
 				},
 			}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
-		metadatatest.AssertEqualReceiverInternalDuration(t, tt,
+		metadatatest.AssertEqualReceiverDuration(t, tt,
 			[]metricdata.HistogramDataPoint[float64]{
 				{
 					Attributes: attribute.NewSet(

@@ -464,7 +464,7 @@ func checkRecordedMetricsForTraces(t *testing.T, tt *componenttest.Telemetry, id
 	}
 
 	// Test duration metric
-	metadatatest.AssertEqualExporterInternalDuration(t, tt,
+	metadatatest.AssertEqualExporterDuration(t, tt,
 		[]metricdata.HistogramDataPoint[float64]{
 			{
 				Attributes: attribute.NewSet(
