@@ -6,6 +6,14 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_exporter_duration
+
+Duration of time taken to process a batch of telemetry data through the exporter. [alpha]
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Histogram | Double |
+
 ### otelcol_exporter_enqueue_failed_log_records
 
 Number of log records failed to be added to the sending queue. [alpha]
@@ -29,14 +37,6 @@ Number of spans failed to be added to the sending queue. [alpha]
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {spans} | Sum | Int | true |
-
-### otelcol_exporter_internal_duration
-
-Duration of time taken to process a batch of telemetry data through the exporter. [alpha]
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Histogram | Double |
 
 ### otelcol_exporter_queue_capacity
 

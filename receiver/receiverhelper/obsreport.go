@@ -220,5 +220,5 @@ func (rec *ObsReport) recordMetrics(receiverCtx context.Context, signal pipeline
 
 func (rec *ObsReport) recordInternalDuration(receiverCtx context.Context, startTime time.Time) {
 	duration := time.Since(startTime)
-	rec.telemetryBuilder.ReceiverInternalDuration.Record(receiverCtx, duration.Seconds(), rec.otelAttrs)
+	rec.telemetryBuilder.ReceiverDuration.Record(receiverCtx, duration.Seconds(), rec.otelAttrs)
 }
