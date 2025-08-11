@@ -51,12 +51,8 @@ var _ coreWithAttributes = (*consoleCoreWithAttributes)(nil)
 //
 // This is used for the Collector's console output.
 func NewConsoleCoreWithAttributes(c zapcore.Core, attrs attribute.Set) zapcore.Core {
-	var fields []zap.Field
-	for _, kv := range attrs.ToSlice() {
-		fields = append(fields, zap.String(string(kv.Key), kv.Value.AsString()))
-	}
 	return &consoleCoreWithAttributes{
-		Core: c.With(fields),
+		Core: c.With(ToZapFields(attrs)),
 		from: c,
 	}
 }
