@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package xpdata
+package xpdata // import "go.opentelemetry.io/collector/pdata/xpdata"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
