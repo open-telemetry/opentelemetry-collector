@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type Config[T any] struct {
@@ -459,4 +460,28 @@ func TestComparePointerMarshal(t *testing.T) {
 			assert.Equal(t, confPointer.ToStringMap(), confOptional.ToStringMap())
 		})
 	}
+}
+
+type invalid struct{}
+
+func (invalid) Validate() error {
+	return fmt.Errorf("invalid")
+}
+
+var _ xconfmap.Validator = invalid{}
+
+type hasNested struct {
+	CouldBe Optional[invalid]
+}
+
+func TestOptionalValidate(t *testing.T) {
+	require.NoError(t, xconfmap.Validate(hasNested{
+		CouldBe: None[invalid](),
+	}))
+	require.Error(t, xconfmap.Validate(hasNested{
+		CouldBe: Default(invalid{}),
+	}))
+	require.Error(t, xconfmap.Validate(hasNested{
+		CouldBe: Some(invalid{}),
+	}))
 }

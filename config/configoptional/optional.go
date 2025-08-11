@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 type flavor int
@@ -188,4 +189,16 @@ func (o Optional[T]) Marshal(conf *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+var _ xconfmap.Validator = (*Optional[any])(nil)
+
+func (o *Optional[T]) Validate() error {
+	if o.flavor == noneFlavor {
+		return nil
+	}
+
+	// For the default flavor, validate the default value.
+	// For the some flavor, validate the actual value.
+	return xconfmap.Validate(o.value)
 }
