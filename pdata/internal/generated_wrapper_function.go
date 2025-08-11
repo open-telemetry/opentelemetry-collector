@@ -86,8 +86,31 @@ func SizeProtoOrigFunction(orig *otlpprofiles.Function) int {
 	return n
 }
 
-func MarshalProtoOrigFunction(orig *otlpprofiles.Function) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.NameStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.NameStrindex))
+		pos--
+		buf[pos] = 0x8
+	}
+	if orig.SystemNameStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.SystemNameStrindex))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.FilenameStrindex != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.FilenameStrindex))
+		pos--
+		buf[pos] = 0x18
+	}
+	if orig.StartLine != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.StartLine))
+		pos--
+		buf[pos] = 0x20
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigFunction(orig *otlpprofiles.Function, buf []byte) error {

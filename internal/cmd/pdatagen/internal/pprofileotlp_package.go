@@ -11,6 +11,11 @@ var pprofileotlp = &Package{
 		name: "pprofileotlp",
 		path: filepath.Join("pprofile", "pprofileotlp"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 		},
 		testImports: []string{
@@ -22,7 +27,21 @@ var pprofileotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportProfilesResponse,
 		exportProfilesPartialSuccess,
+	},
+}
+
+var exportProfilesResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectorprofile.ExportProfilesServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportProfilesPartialSuccess,
+		},
 	},
 }
 

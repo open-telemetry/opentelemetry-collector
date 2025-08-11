@@ -10,7 +10,7 @@ import (
 
 const messageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	{{- if .isCommon }}
+	{{- if .messageHasWrapper }}
 	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }})
@@ -21,7 +21,7 @@ const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
 	internal.FillOrigTest{{ .fieldOriginName }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }})
-	{{- if .isCommon }}
+	{{- if .messageHasWrapper }}
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
@@ -41,9 +41,10 @@ const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }
 	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
 
 type MessageField struct {
-	fieldName     string
-	protoID       uint32
-	returnMessage *messageStruct
+	fieldName           string
+	fieldOriginFullName string
+	protoID             uint32
+	returnMessage       *messageStruct
 }
 
 func (mf *MessageField) GenerateAccessors(ms *messageStruct) string {
@@ -77,26 +78,32 @@ func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
+	return mf.toProtoField().genSizeProto()
+}
+
+func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
+	return mf.toProtoField().genMarshalProto()
+}
+
+func (mf *MessageField) toProtoField() *ProtoField {
 	pt := ProtoTypeMessage
 	if mf.returnMessage.getName() == "TraceState" {
 		pt = ProtoTypeString
 	}
-	pf := &ProtoField{
+	return &ProtoField{
 		Type:        pt,
 		ID:          mf.protoID,
-		Name:        mf.fieldName,
+		Name:        mf.getFieldOriginFullName(),
 		MessageName: mf.returnMessage.getOriginName(),
-		Nullable:    false,
 	}
-	return pf.genSizeProto()
 }
 
 func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
-		"isCommon":            usedByOtherDataTypes(mf.returnMessage.packageName),
+		"messageHasWrapper":   usedByOtherDataTypes(mf.returnMessage.packageName),
 		"structName":          ms.getName(),
 		"fieldName":           mf.fieldName,
-		"fieldOriginFullName": mf.fieldName,
+		"fieldOriginFullName": mf.getFieldOriginFullName(),
 		"fieldOriginName":     mf.returnMessage.getOriginName(),
 		"lowerFieldName":      strings.ToLower(mf.fieldName),
 		"returnType":          mf.returnMessage.getName(),
@@ -106,9 +113,16 @@ func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"origAccessor":  origAccessor(ms.packageName),
-		"stateAccessor": stateAccessor(ms.packageName),
+		"origAccessor":  origAccessor(ms.getHasWrapper()),
+		"stateAccessor": stateAccessor(ms.getHasWrapper()),
 	}
+}
+
+func (mf *MessageField) getFieldOriginFullName() string {
+	if mf.fieldOriginFullName != "" {
+		return mf.fieldOriginFullName
+	}
+	return mf.fieldName
 }
 
 var _ Field = (*MessageField)(nil)

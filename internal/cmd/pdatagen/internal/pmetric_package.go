@@ -8,13 +8,16 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -28,11 +31,13 @@ var pmetric = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		metrics,
 		resourceMetricsSlice,
 		resourceMetrics,
 		scopeMetricsSlice,
@@ -58,6 +63,21 @@ var pmetric = &Package{
 		exemplarSlice,
 		exemplar,
 	},
+}
+
+var metrics = &messageStruct{
+	structName:     "Metrics",
+	description:    "// Metrics is the top-level struct that is propagated through the metrics pipeline.\n// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectormetrics.ExportMetricsServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceMetrics",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceMetricsSlice,
+		},
+	},
+	hasWrapper: true,
 }
 
 var resourceMetricsSlice = &sliceOfPtrs{
@@ -395,7 +415,7 @@ var histogramDataPoint = &messageStruct{
 		&SliceField{
 			fieldName:   "ExplicitBounds",
 			protoID:     7,
-			protoType:   ProtoTypeFixed64,
+			protoType:   ProtoTypeDouble,
 			returnSlice: float64Slice,
 		},
 		&SliceField{

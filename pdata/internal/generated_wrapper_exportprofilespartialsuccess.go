@@ -65,8 +65,24 @@ func SizeProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.Export
 	return n
 }
 
-func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.RejectedProfiles != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.RejectedProfiles))
+		pos--
+		buf[pos] = 0x8
+	}
+	l = len(orig.ErrorMessage)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.ErrorMessage)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigExportProfilesPartialSuccess(orig *otlpcollectorprofile.ExportProfilesPartialSuccess, buf []byte) error {

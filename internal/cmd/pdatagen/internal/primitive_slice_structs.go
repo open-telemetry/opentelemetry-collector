@@ -52,6 +52,10 @@ func (iss *primitiveSliceStruct) getElementProtoType() ProtoType {
 	return ProtoTypeInt64
 }
 
+func (iss *primitiveSliceStruct) getHasWrapper() bool {
+	return usedByOtherDataTypes(iss.packageName)
+}
+
 func (iss *primitiveSliceStruct) getElementOriginName() string {
 	return upperFirst(iss.itemType)
 }

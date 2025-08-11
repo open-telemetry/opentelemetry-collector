@@ -76,8 +76,33 @@ func SizeProtoOrigSum(orig *otlpmetrics.Sum) int {
 	return n
 }
 
-func MarshalProtoOrigSum(orig *otlpmetrics.Sum) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = MarshalProtoOrigNumberDataPoint(orig.DataPoints[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.AggregationTemporality != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
+		pos--
+		buf[pos] = 0x10
+	}
+	if orig.IsMonotonic {
+		pos--
+		if orig.IsMonotonic {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x18
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigSum(orig *otlpmetrics.Sum, buf []byte) error {

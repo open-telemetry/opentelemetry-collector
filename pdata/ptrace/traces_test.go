@@ -46,14 +46,14 @@ func TestSpanCount(t *testing.T) {
 func TestSpanCountWithEmpty(t *testing.T) {
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{{}},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 0, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
 				ScopeSpans: []*otlptrace.ScopeSpans{{}},
 			},
 		},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 	assert.Equal(t, 1, newTraces(&otlpcollectortrace.ExportTraceServiceRequest{
 		ResourceSpans: []*otlptrace.ResourceSpans{
 			{
@@ -64,12 +64,12 @@ func TestSpanCountWithEmpty(t *testing.T) {
 				},
 			},
 		},
-	}).SpanCount())
+	}, new(internal.State)).SpanCount())
 }
 
 func TestToFromOtlp(t *testing.T) {
 	otlp := &otlpcollectortrace.ExportTraceServiceRequest{}
-	traces := newTraces(otlp)
+	traces := newTraces(otlp, new(internal.State))
 	assert.Equal(t, NewTraces(), traces)
 	assert.Equal(t, otlp, traces.getOrig())
 	// More tests in ./tracedata/traces_test.go. Cannot have them here because of
@@ -189,10 +189,4 @@ func BenchmarkTracesMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestTraces() Traces {
-	td := NewTraces()
-	td.getOrig().ResourceSpans = internal.GenerateOrigTestResourceSpansSlice()
-	return td
 }

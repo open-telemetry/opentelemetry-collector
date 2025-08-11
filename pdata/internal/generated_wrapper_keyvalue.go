@@ -62,8 +62,26 @@ func SizeProtoOrigKeyValue(orig *v1.KeyValue) int {
 	return n
 }
 
-func MarshalProtoOrigKeyValue(orig *v1.KeyValue) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigKeyValue(orig *v1.KeyValue, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	l = len(orig.Key)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Key)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+
+	l = MarshalProtoOrigAnyValue(&orig.Value, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x12
+
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigKeyValue(orig *v1.KeyValue, buf []byte) error {

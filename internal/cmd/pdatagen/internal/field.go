@@ -17,17 +17,19 @@ type Field interface {
 	GenerateUnmarshalJSON(ms *messageStruct) string
 
 	GenerateSizeProto(ms *messageStruct) string
+
+	GenerateMarshalProto(ms *messageStruct) string
 }
 
-func origAccessor(packageName string) string {
-	if usedByOtherDataTypes(packageName) {
+func origAccessor(hasWrapper bool) string {
+	if hasWrapper {
 		return "getOrig()"
 	}
 	return "orig"
 }
 
-func stateAccessor(packageName string) string {
-	if usedByOtherDataTypes(packageName) {
+func stateAccessor(hasWrapper bool) string {
+	if hasWrapper {
 		return "getState()"
 	}
 	return "state"

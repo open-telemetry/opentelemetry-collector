@@ -111,8 +111,49 @@ func SizeProtoOrigLocation(orig *otlpprofiles.Location) int {
 	return n
 }
 
-func MarshalProtoOrigLocation(orig *otlpprofiles.Location) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.MappingIndex_ != nil {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex))
+		pos--
+		buf[pos] = 0x8
+
+	}
+	if orig.Address != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.Address))
+		pos--
+		buf[pos] = 0x10
+	}
+	for i := range orig.Line {
+		l = MarshalProtoOrigLine(orig.Line[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	if orig.IsFolded {
+		pos--
+		if orig.IsFolded {
+			buf[pos] = 1
+		} else {
+			buf[pos] = 0
+		}
+		pos--
+		buf[pos] = 0x20
+	}
+	l = len(orig.AttributeIndices)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.AttributeIndices[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x2a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigLocation(orig *otlpprofiles.Location, buf []byte) error {

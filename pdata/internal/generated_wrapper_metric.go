@@ -179,8 +179,84 @@ func SizeProtoOrigMetric(orig *otlpmetrics.Metric) int {
 	return n
 }
 
-func MarshalProtoOrigMetric(orig *otlpmetrics.Metric) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	l = len(orig.Name)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Name)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	l = len(orig.Description)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Description)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.Unit)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Unit)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	switch orig.Data.(type) {
+	case *otlpmetrics.Metric_Gauge:
+
+		l = MarshalProtoOrigGauge(orig.Data.(*otlpmetrics.Metric_Gauge).Gauge, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x2a
+
+	case *otlpmetrics.Metric_Sum:
+
+		l = MarshalProtoOrigSum(orig.Data.(*otlpmetrics.Metric_Sum).Sum, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x3a
+
+	case *otlpmetrics.Metric_Histogram:
+
+		l = MarshalProtoOrigHistogram(orig.Data.(*otlpmetrics.Metric_Histogram).Histogram, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x4a
+
+	case *otlpmetrics.Metric_ExponentialHistogram:
+
+		l = MarshalProtoOrigExponentialHistogram(orig.Data.(*otlpmetrics.Metric_ExponentialHistogram).ExponentialHistogram, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x52
+
+	case *otlpmetrics.Metric_Summary:
+
+		l = MarshalProtoOrigSummary(orig.Data.(*otlpmetrics.Metric_Summary).Summary, buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x5a
+
+	}
+	for i := range orig.Metadata {
+		l = MarshalProtoOrigKeyValue(&orig.Metadata[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x62
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigMetric(orig *otlpmetrics.Metric, buf []byte) error {

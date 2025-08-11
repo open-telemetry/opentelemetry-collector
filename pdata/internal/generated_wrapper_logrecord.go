@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"encoding/binary"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -162,8 +164,82 @@ func SizeProtoOrigLogRecord(orig *otlplogs.LogRecord) int {
 	return n
 }
 
-func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.TimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.TimeUnixNano))
+		pos--
+		buf[pos] = 0x9
+	}
+	if orig.ObservedTimeUnixNano != 0 {
+		pos -= 8
+		binary.LittleEndian.PutUint64(buf[pos:], uint64(orig.ObservedTimeUnixNano))
+		pos--
+		buf[pos] = 0x59
+	}
+	if orig.SeverityNumber != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.SeverityNumber))
+		pos--
+		buf[pos] = 0x10
+	}
+	l = len(orig.SeverityText)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SeverityText)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+
+	l = MarshalProtoOrigAnyValue(&orig.Body, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x2a
+
+	for i := range orig.Attributes {
+		l = MarshalProtoOrigKeyValue(&orig.Attributes[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x32
+	}
+	if orig.DroppedAttributesCount != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.DroppedAttributesCount))
+		pos--
+		buf[pos] = 0x38
+	}
+	if orig.Flags != 0 {
+		pos -= 4
+		binary.LittleEndian.PutUint32(buf[pos:], uint32(orig.Flags))
+		pos--
+		buf[pos] = 0x45
+	}
+
+	l = MarshalProtoOrigTraceID(&orig.TraceId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x4a
+
+	l = MarshalProtoOrigSpanID(&orig.SpanId, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0x52
+
+	l = len(orig.EventName)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.EventName)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x62
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigLogRecord(orig *otlplogs.LogRecord, buf []byte) error {

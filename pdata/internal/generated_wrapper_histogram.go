@@ -65,8 +65,23 @@ func SizeProtoOrigHistogram(orig *otlpmetrics.Histogram) int {
 	return n
 }
 
-func MarshalProtoOrigHistogram(orig *otlpmetrics.Histogram) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	for i := range orig.DataPoints {
+		l = MarshalProtoOrigHistogramDataPoint(orig.DataPoints[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	if orig.AggregationTemporality != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64(orig.AggregationTemporality))
+		pos--
+		buf[pos] = 0x10
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigHistogram(orig *otlpmetrics.Histogram, buf []byte) error {

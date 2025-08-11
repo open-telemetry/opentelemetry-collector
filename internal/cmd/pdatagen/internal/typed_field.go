@@ -101,13 +101,20 @@ func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
-	pf := &ProtoField{
+	return ptf.toProtoField().genSizeProto()
+}
+
+func (ptf *TypedField) GenerateMarshalProto(*messageStruct) string {
+	return ptf.toProtoField().genMarshalProto()
+}
+
+func (ptf *TypedField) toProtoField() *ProtoField {
+	return &ProtoField{
 		Type:        ptf.returnType.protoType,
 		ID:          ptf.protoID,
 		Name:        ptf.getOriginFieldName(),
 		MessageName: ptf.returnType.structName,
 	}
-	return pf.genSizeProto()
 }
 
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
@@ -120,7 +127,7 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":        usedByOtherDataTypes(ptf.returnType.packageName),
+		"hasWrapper":      usedByOtherDataTypes(ptf.returnType.packageName),
 		"returnType":      ptf.returnType.structName,
 		"fieldName":       ptf.fieldName,
 		"lowerFieldName":  strings.ToLower(ptf.fieldName),

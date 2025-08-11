@@ -57,6 +57,13 @@ const oneOfSizeProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
 	{{- end }}
 }`
 
+const oneOfMarshalProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
+		{{ .GenerateMarshalProto $.baseStruct $.OneOfField }}
+	{{- end }}
+}`
+
 type OneOfField struct {
 	originFieldName            string
 	typeName                   string
@@ -107,6 +114,11 @@ func (of *OneOfField) GenerateSizeProto(ms *messageStruct) string {
 	return executeTemplate(t, of.templateFields(ms))
 }
 
+func (of *OneOfField) GenerateMarshalProto(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfMarshalProtoTemplate").Parse(oneOfMarshalProtoTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"baseStruct":           ms,
@@ -117,8 +129,8 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms.packageName),
-		"stateAccessor":        stateAccessor(ms.packageName),
+		"origAccessor":         origAccessor(ms.getHasWrapper()),
+		"stateAccessor":        stateAccessor(ms.getHasWrapper()),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
@@ -136,4 +148,5 @@ type oneOfValue interface {
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateSizeProto(ms *messageStruct, of *OneOfField) string
+	GenerateMarshalProto(ms *messageStruct, of *OneOfField) string
 }

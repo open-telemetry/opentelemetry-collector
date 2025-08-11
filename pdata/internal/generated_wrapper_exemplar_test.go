@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigExemplar(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 	src := &otlpmetrics.Exemplar{}
 	FillOrigTestExemplar(src)
-	buf, err := MarshalProtoOrigExemplar(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigExemplar(src))
+	buf := make([]byte, SizeProtoOrigExemplar(src))
+	gotSize := MarshalProtoOrigExemplar(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.Exemplar{}
 	require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigExemplar(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyExemplar(t *testing.T) {
 	src := &otlpmetrics.Exemplar{}
-	buf, err := MarshalProtoOrigExemplar(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigExemplar(src))
+	buf := make([]byte, SizeProtoOrigExemplar(src))
+	gotSize := MarshalProtoOrigExemplar(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlpmetrics.Exemplar{}
 	require.NoError(t, UnmarshalProtoOrigExemplar(dest, buf))

@@ -68,8 +68,26 @@ func SizeProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expone
 	return n
 }
 
-func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	if orig.Offset != 0 {
+		pos = proto.EncodeVarint(buf, pos, uint64((uint32(orig.Offset)<<1)^uint32(orig.Offset>>31)))
+		pos--
+		buf[pos] = 0x8
+	}
+	l = len(orig.BucketCounts)
+	if l > 0 {
+		endPos := pos
+		for i := l - 1; i >= 0; i-- {
+			pos = proto.EncodeVarint(buf, pos, uint64(orig.BucketCounts[i]))
+		}
+		pos = proto.EncodeVarint(buf, pos, uint64(endPos-pos))
+		pos--
+		buf[pos] = 0x12
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.ExponentialHistogramDataPoint_Buckets, buf []byte) error {

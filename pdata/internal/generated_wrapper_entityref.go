@@ -114,8 +114,43 @@ func SizeProtoOrigEntityRef(orig *otlpcommon.EntityRef) int {
 	return n
 }
 
-func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0xa
+	}
+	l = len(orig.Type)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.Type)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	for i := len(orig.IdKeys) - 1; i >= 0; i-- {
+		l = len(orig.IdKeys[i])
+		pos -= l
+		copy(buf[pos:], orig.IdKeys[i])
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	for i := len(orig.DescriptionKeys) - 1; i >= 0; i-- {
+		l = len(orig.DescriptionKeys[i])
+		pos -= l
+		copy(buf[pos:], orig.DescriptionKeys[i])
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x22
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigEntityRef(orig *otlpcommon.EntityRef, buf []byte) error {

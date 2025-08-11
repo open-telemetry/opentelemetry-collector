@@ -8,13 +8,16 @@ var plog = &Package{
 		name: "plog",
 		path: "plog",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -28,11 +31,13 @@ var plog = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"`,
 			`otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		logs,
 		resourceLogsSlice,
 		resourceLogs,
 		scopeLogsSlice,
@@ -40,6 +45,21 @@ var plog = &Package{
 		logSlice,
 		logRecord,
 	},
+}
+
+var logs = &messageStruct{
+	structName:     "Logs",
+	description:    "// Logs is the top-level struct that is propagated through the logs pipeline.\n// Use NewLogs to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectorlog.ExportLogsServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceLogs",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceLogsSlice,
+		},
+	},
+	hasWrapper: true,
 }
 
 var resourceLogsSlice = &sliceOfPtrs{

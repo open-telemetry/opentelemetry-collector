@@ -9,7 +9,7 @@ import (
 
 const sliceAccessorTemplate = `// {{ .fieldName }} returns the {{ .fieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	{{- if .isCommon }}
+	{{- if .elementHasWrapper }}
 	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
 	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
@@ -20,7 +20,7 @@ const sliceAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 	ms := New{{ .structName }}()
 	assert.Equal(t, {{ .packageName }}New{{ .returnType }}(), ms.{{ .fieldName }}())
 	ms.{{ .origAccessor }}.{{ .originFieldName }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
-	{{- if .isCommon }}
+	{{- if .elementHasWrapper }}
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
@@ -84,8 +84,16 @@ func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
+	return sf.toProtoField().genSizeProto()
+}
+
+func (sf *SliceField) GenerateMarshalProto(*messageStruct) string {
+	return sf.toProtoField().genMarshalProto()
+}
+
+func (sf *SliceField) toProtoField() *ProtoField {
 	_, nullable := sf.returnSlice.(*sliceOfPtrs)
-	pf := &ProtoField{
+	return &ProtoField{
 		Type:        sf.protoType,
 		ID:          sf.protoID,
 		Name:        sf.fieldName,
@@ -93,7 +101,6 @@ func (sf *SliceField) GenerateSizeProto(*messageStruct) string {
 		Repeated:    sf.protoType != ProtoTypeBytes,
 		Nullable:    nullable,
 	}
-	return pf.genSizeProto()
 }
 
 func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
@@ -108,10 +115,10 @@ func (sf *SliceField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"returnType":    sf.returnSlice.getName(),
-		"origAccessor":  origAccessor(ms.packageName),
-		"stateAccessor": stateAccessor(ms.packageName),
-		"isCommon":      usedByOtherDataTypes(sf.returnSlice.getPackageName()),
+		"returnType":        sf.returnSlice.getName(),
+		"origAccessor":      origAccessor(ms.getHasWrapper()),
+		"stateAccessor":     stateAccessor(ms.getHasWrapper()),
+		"elementHasWrapper": sf.returnSlice.getHasWrapper(),
 	}
 }
 

@@ -93,12 +93,19 @@ func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
 }
 
 func (pf *PrimitiveField) GenerateSizeProto(*messageStruct) string {
-	ptf := &ProtoField{
+	return pf.toProtoField().genSizeProto()
+}
+
+func (pf *PrimitiveField) GenerateMarshalProto(*messageStruct) string {
+	return pf.toProtoField().genMarshalProto()
+}
+
+func (pf *PrimitiveField) toProtoField() *ProtoField {
+	return &ProtoField{
 		Type: pf.protoType,
 		ID:   pf.protoID,
 		Name: pf.fieldName,
 	}
-	return ptf.genSizeProto()
 }
 
 func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
@@ -110,8 +117,8 @@ func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
 		"testValue":        pf.protoType.testValue(pf.fieldName),
 		"returnType":       pf.protoType.goType(""),
-		"origAccessor":     origAccessor(ms.packageName),
-		"stateAccessor":    stateAccessor(ms.packageName),
+		"origAccessor":     origAccessor(ms.getHasWrapper()),
+		"stateAccessor":    stateAccessor(ms.getHasWrapper()),
 		"originStructName": ms.originFullName,
 		"originFieldName":  pf.fieldName,
 	}

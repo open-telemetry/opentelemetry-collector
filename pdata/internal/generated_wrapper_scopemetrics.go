@@ -74,8 +74,33 @@ func SizeProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) int {
 	return n
 }
 
-func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigInstrumentationScope(&orig.Scope, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	for i := range orig.Metrics {
+		l = MarshalProtoOrigMetric(orig.Metrics[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, buf []byte) error {

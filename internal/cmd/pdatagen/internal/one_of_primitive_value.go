@@ -110,26 +110,28 @@ func (opv *OneOfPrimitiveValue) GenerateUnmarshalJSON(ms *messageStruct, of *One
 }
 
 func (opv *OneOfPrimitiveValue) GenerateSizeProto(ms *messageStruct, of *OneOfField) string {
-	ptf := &ProtoField{
+	return opv.toProtoField(ms, of).genSizeProto()
+}
+
+func (opv *OneOfPrimitiveValue) GenerateMarshalProto(ms *messageStruct, of *OneOfField) string {
+	return opv.toProtoField(ms, of).genMarshalProto()
+}
+
+func (opv *OneOfPrimitiveValue) toProtoField(ms *messageStruct, of *OneOfField) *ProtoField {
+	return &ProtoField{
 		Type:     opv.protoType,
 		ID:       opv.protoID,
-		Name:     of.originFieldName + ".(*" + ms.originFullName + "_" + opv.fieldName + ")" + "." + opv.fieldName,
+		Name:     of.originFieldName + ".(*" + ms.originFullName + "_" + opv.originFieldName + ")" + "." + opv.originFieldName,
 		Nullable: true,
 	}
-	return ptf.genSizeProto()
 }
 
 func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField) map[string]any {
 	return map[string]any{
-		"structName":  ms.getName(),
-		"defaultVal":  opv.protoType.defaultValue(""),
-		"packageName": "",
-		"accessorFieldName": func() string {
-			if of.omitOriginFieldNameInNames {
-				return opv.fieldName
-			}
-			return opv.fieldName + of.originFieldName
-		}(),
+		"structName":              ms.getName(),
+		"defaultVal":              opv.protoType.defaultValue(""),
+		"packageName":             "",
+		"accessorFieldName":       opv.getAccessorFieldName(of),
 		"testValue":               opv.protoType.testValue(opv.fieldName),
 		"originOneOfTypeFuncName": of.typeFuncName(),
 		"typeName":                of.typeName + opv.fieldName,
@@ -140,6 +142,13 @@ func (opv *OneOfPrimitiveValue) templateFields(ms *messageStruct, of *OneOfField
 		"originStructName":        ms.originFullName,
 		"originStructType":        ms.originFullName + "_" + opv.originFieldName,
 	}
+}
+
+func (opv *OneOfPrimitiveValue) getAccessorFieldName(of *OneOfField) string {
+	if of.omitOriginFieldNameInNames {
+		return opv.fieldName
+	}
+	return opv.fieldName + of.originFieldName
 }
 
 var _ oneOfValue = (*OneOfPrimitiveValue)(nil)

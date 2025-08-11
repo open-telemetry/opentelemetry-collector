@@ -74,8 +74,33 @@ func SizeProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics) int {
 	return n
 }
 
-func MarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics) ([]byte, error) {
-	return orig.Marshal()
+func MarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+
+	l = MarshalProtoOrigResource(&orig.Resource, buf[:pos])
+	pos -= l
+	pos = proto.EncodeVarint(buf, pos, uint64(l))
+	pos--
+	buf[pos] = 0xa
+
+	for i := range orig.ScopeMetrics {
+		l = MarshalProtoOrigScopeMetrics(orig.ScopeMetrics[i], buf[:pos])
+		pos -= l
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x12
+	}
+	l = len(orig.SchemaUrl)
+	if l > 0 {
+		pos -= l
+		copy(buf[pos:], orig.SchemaUrl)
+		pos = proto.EncodeVarint(buf, pos, uint64(l))
+		pos--
+		buf[pos] = 0x1a
+	}
+	return len(buf) - pos
 }
 
 func UnmarshalProtoOrigResourceMetrics(orig *otlpmetrics.ResourceMetrics, buf []byte) error {

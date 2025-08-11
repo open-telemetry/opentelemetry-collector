@@ -8,13 +8,16 @@ var pprofile = &Package{
 		name: "pprofile",
 		path: "pprofile",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -27,11 +30,13 @@ var pprofile = &Package{
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectorprofile "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/profiles/v1development"`,
 			`otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		profiles,
 		resourceProfilesSlice,
 		resourceProfiles,
 		profilesDictionary,
@@ -58,6 +63,27 @@ var pprofile = &Package{
 		linkSlice,
 		link,
 	},
+}
+
+var profiles = &messageStruct{
+	structName:     "Profiles",
+	description:    "// Profiles is the top-level struct that is propagated through the profiles pipeline.\n// Use NewProfiles to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectorprofile.ExportProfilesServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceProfiles",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceProfilesSlice,
+		},
+		&MessageField{
+			fieldName:           "ProfilesDictionary",
+			fieldOriginFullName: "Dictionary",
+			protoID:             2,
+			returnMessage:       profilesDictionary,
+		},
+	},
+	hasWrapper: true,
 }
 
 var resourceProfilesSlice = &sliceOfPtrs{
@@ -438,7 +464,7 @@ var mapping = &messageStruct{
 		},
 		&SliceField{
 			fieldName:   "AttributeIndices",
-			protoID:     15,
+			protoID:     5,
 			protoType:   ProtoTypeInt32,
 			returnSlice: int32Slice,
 		},

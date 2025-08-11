@@ -50,9 +50,9 @@ func TestMarshalAndUnmarshalJSONOrigResourceLogs(t *testing.T) {
 func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 	src := &otlplogs.ResourceLogs{}
 	FillOrigTestResourceLogs(src)
-	buf, err := MarshalProtoOrigResourceLogs(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigResourceLogs(src))
+	buf := make([]byte, SizeProtoOrigResourceLogs(src))
+	gotSize := MarshalProtoOrigResourceLogs(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.ResourceLogs{}
 	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))
@@ -61,9 +61,9 @@ func TestMarshalAndUnmarshalProtoOrigResourceLogs(t *testing.T) {
 
 func TestMarshalAndUnmarshalProtoOrigEmptyResourceLogs(t *testing.T) {
 	src := &otlplogs.ResourceLogs{}
-	buf, err := MarshalProtoOrigResourceLogs(src)
-	require.NoError(t, err)
-	assert.Equal(t, len(buf), SizeProtoOrigResourceLogs(src))
+	buf := make([]byte, SizeProtoOrigResourceLogs(src))
+	gotSize := MarshalProtoOrigResourceLogs(src, buf)
+	assert.Equal(t, len(buf), gotSize)
 
 	dest := &otlplogs.ResourceLogs{}
 	require.NoError(t, UnmarshalProtoOrigResourceLogs(dest, buf))

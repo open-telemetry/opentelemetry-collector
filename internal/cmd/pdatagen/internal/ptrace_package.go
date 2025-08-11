@@ -8,13 +8,16 @@ var ptrace = &Package{
 		name: "ptrace",
 		path: "ptrace",
 		imports: []string{
+			`"encoding/binary"`,
 			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
 			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -28,11 +31,13 @@ var ptrace = &Package{
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
 			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"`,
 			`otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		traces,
 		resourceSpansSlice,
 		resourceSpans,
 		scopeSpansSlice,
@@ -45,6 +50,21 @@ var ptrace = &Package{
 		spanLink,
 		spanStatus,
 	},
+}
+
+var traces = &messageStruct{
+	structName:     "Traces",
+	description:    "// Traces is the top-level struct that is propagated through the traces pipeline.\n// Use NewTraces to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectortrace.ExportTraceServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceSpans",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceSpansSlice,
+		},
+	},
+	hasWrapper: true,
 }
 
 var resourceSpansSlice = &sliceOfPtrs{
