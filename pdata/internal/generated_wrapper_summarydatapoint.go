@@ -40,13 +40,19 @@ func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *j
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
@@ -60,9 +66,15 @@ func MarshalJSONOrigSummaryDataPoint(orig *otlpmetrics.SummaryDataPoint, dest *j
 	}
 	if len(orig.QuantileValues) > 0 {
 		dest.WriteObjectField("quantileValues")
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(orig.QuantileValues, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[0], dest)
+		for i := 1; i < len(orig.QuantileValues); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig.QuantileValues[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}

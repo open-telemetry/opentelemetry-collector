@@ -31,11 +31,6 @@ const sliceSetTestTemplate = `orig.{{ .originFieldName }} = GenerateOrigTest{{ .
 
 const sliceCopyOrigTemplate = `dest.{{ .originFieldName }} = CopyOrig{{ .elementOriginName }}Slice(dest.{{ .originFieldName }}, src.{{ .originFieldName }})`
 
-const sliceMarshalJSONTemplate = `if len(orig.{{ .originFieldName }}) > 0 {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		MarshalJSONOrig{{ .elementOriginName }}Slice(orig.{{ .originFieldName }}, dest)
-	}`
-
 const sliceUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 	orig.{{ .originFieldName }} = UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)`
 
@@ -73,9 +68,8 @@ func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
-func (sf *SliceField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("sliceMarshalJSONTemplate").Parse(sliceMarshalJSONTemplate))
-	return executeTemplate(t, sf.templateFields(ms))
+func (sf *SliceField) GenerateMarshalJSON(*messageStruct) string {
+	return sf.toProtoField().genMarshalJSON()
 }
 
 func (sf *SliceField) GenerateUnmarshalJSON(ms *messageStruct) string {

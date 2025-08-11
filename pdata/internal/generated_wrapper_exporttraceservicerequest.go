@@ -49,7 +49,13 @@ func MarshalJSONOrigExportTraceServiceRequest(orig *otlpcollectortrace.ExportTra
 	dest.WriteObjectStart()
 	if len(orig.ResourceSpans) > 0 {
 		dest.WriteObjectField("resourceSpans")
-		MarshalJSONOrigResourceSpansSlice(orig.ResourceSpans, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigResourceSpans(orig.ResourceSpans[0], dest)
+		for i := 1; i < len(orig.ResourceSpans); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigResourceSpans(orig.ResourceSpans[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

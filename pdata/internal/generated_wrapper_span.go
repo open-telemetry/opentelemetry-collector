@@ -58,19 +58,19 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		orig.TraceId.MarshalJSONStream(dest)
+		MarshalJSONOrigTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		orig.SpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.SpanId, dest)
 	}
 	if orig.TraceState != "" {
 		dest.WriteObjectField("traceState")
-		MarshalJSONOrigTraceState(&orig.TraceState, dest)
+		dest.WriteString(orig.TraceState)
 	}
 	if orig.ParentSpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("parentSpanId")
-		orig.ParentSpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.ParentSpanId, dest)
 	}
 	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
@@ -80,21 +80,28 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 		dest.WriteObjectField("name")
 		dest.WriteString(orig.Name)
 	}
-	if orig.Kind != otlptrace.Span_SpanKind(0) {
+
+	if int32(orig.Kind) != 0 {
 		dest.WriteObjectField("kind")
 		dest.WriteInt32(int32(orig.Kind))
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.EndTimeUnixNano != 0 {
+	if orig.EndTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("endTimeUnixNano")
 		dest.WriteUint64(orig.EndTimeUnixNano)
 	}
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
@@ -102,7 +109,13 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	}
 	if len(orig.Events) > 0 {
 		dest.WriteObjectField("events")
-		MarshalJSONOrigSpan_EventSlice(orig.Events, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigSpan_Event(orig.Events[0], dest)
+		for i := 1; i < len(orig.Events); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSpan_Event(orig.Events[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedEventsCount != uint32(0) {
 		dest.WriteObjectField("droppedEventsCount")
@@ -110,7 +123,13 @@ func MarshalJSONOrigSpan(orig *otlptrace.Span, dest *json.Stream) {
 	}
 	if len(orig.Links) > 0 {
 		dest.WriteObjectField("links")
-		MarshalJSONOrigSpan_LinkSlice(orig.Links, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigSpan_Link(orig.Links[0], dest)
+		for i := 1; i < len(orig.Links); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSpan_Link(orig.Links[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedLinksCount != uint32(0) {
 		dest.WriteObjectField("droppedLinksCount")

@@ -32,11 +32,6 @@ const messageSetTestTemplate = `FillOrigTest{{ .fieldOriginName }}(&orig.{{ .fie
 
 const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
-const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if orig.{{ .fieldOriginFullName }} != "" { {{ end -}}
-	dest.WriteObjectField("{{ lowerFirst .fieldOriginFullName }}")
-	MarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, dest)
-	{{- if eq .returnType "TraceState" -}} } {{- end }}`
-
 const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }}"{{ if needSnake .fieldOriginFullName -}}, "{{ toSnake .fieldOriginFullName }}"{{- end }}:
 	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
 
@@ -67,9 +62,8 @@ func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("messageMarshalJSONTemplate").Parse(messageMarshalJSONTemplate))
-	return executeTemplate(t, mf.templateFields(ms))
+func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
+	return mf.toProtoField().genMarshalJSON()
 }
 
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {

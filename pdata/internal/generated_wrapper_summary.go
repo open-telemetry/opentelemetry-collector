@@ -25,7 +25,13 @@ func MarshalJSONOrigSummary(orig *otlpmetrics.Summary, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
-		MarshalJSONOrigSummaryDataPointSlice(orig.DataPoints, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigSummaryDataPoint(orig.DataPoints[0], dest)
+		for i := 1; i < len(orig.DataPoints); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSummaryDataPoint(orig.DataPoints[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

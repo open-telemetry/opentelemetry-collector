@@ -31,7 +31,13 @@ func MarshalJSONOrigExponentialHistogramDataPoint_Buckets(orig *otlpmetrics.Expo
 	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
-		MarshalJSONOrigUint64Slice(orig.BucketCounts, dest)
+		dest.WriteArrayStart()
+		dest.WriteUint64(orig.BucketCounts[0])
+		for i := 1; i < len(orig.BucketCounts); i++ {
+			dest.WriteMore()
+			dest.WriteUint64(orig.BucketCounts[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

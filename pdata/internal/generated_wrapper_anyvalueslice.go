@@ -61,19 +61,6 @@ func GenerateOrigTestAnyValueSlice() []otlpcommon.AnyValue {
 	return orig
 }
 
-// MarshalJSONOrigAnyValueSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAnyValueSlice(orig []otlpcommon.AnyValue, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigAnyValue(&orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigAnyValue(&orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigAnyValueSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAnyValueSlice(iter *json.Iterator) []otlpcommon.AnyValue {
 	var orig []otlpcommon.AnyValue

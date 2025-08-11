@@ -27,9 +27,16 @@ func MarshalJSONOrigHistogram(orig *otlpmetrics.Histogram, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
-		MarshalJSONOrigHistogramDataPointSlice(orig.DataPoints, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigHistogramDataPoint(orig.DataPoints[0], dest)
+		for i := 1; i < len(orig.DataPoints); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigHistogramDataPoint(orig.DataPoints[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+
+	if int32(orig.AggregationTemporality) != 0 {
 		dest.WriteObjectField("aggregationTemporality")
 		dest.WriteInt32(int32(orig.AggregationTemporality))
 	}

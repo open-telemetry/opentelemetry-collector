@@ -22,19 +22,3 @@ func TestCopyOrig{{ .elementOriginName }}Slice(t *testing.T) {
 	dest = CopyOrig{{ .elementOriginName }}Slice(dest, src)
 	assert.Equal(t, src, dest)
 }
-
-func TestMarshalAndUnmarshalJSONOrig{{ .elementOriginName }}Slice(t *testing.T) {
-	src := GenerateOrigTest{{ .elementOriginName }}Slice()
-
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrig{{ .elementOriginName }}Slice(src, stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}

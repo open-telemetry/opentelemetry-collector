@@ -49,7 +49,13 @@ func MarshalJSONOrigExportMetricsServiceRequest(orig *otlpcollectormetrics.Expor
 	dest.WriteObjectStart()
 	if len(orig.ResourceMetrics) > 0 {
 		dest.WriteObjectField("resourceMetrics")
-		MarshalJSONOrigResourceMetricsSlice(orig.ResourceMetrics, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[0], dest)
+		for i := 1; i < len(orig.ResourceMetrics); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigResourceMetrics(orig.ResourceMetrics[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

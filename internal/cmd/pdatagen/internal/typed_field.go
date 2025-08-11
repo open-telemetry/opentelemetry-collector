@@ -31,17 +31,6 @@ const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const typedMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defaultVal }} {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		{{- if .isType }}
-		orig.{{ .originFieldName }}.MarshalJSONStream(dest)
-		{{- else if .isEnum }}
-		dest.WriteInt32(int32(orig.{{ .originFieldName }}))
-		{{- else }}	
-		dest.Write{{ upperFirst .rawType }}(orig.{{ .originFieldName }})
-		{{- end }}
-	}`
-
 const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		{{- if .isType }}
 		orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
@@ -90,9 +79,11 @@ func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("typedMarshalJSONTemplate").Parse(typedMarshalJSONTemplate))
-	return executeTemplate(t, ptf.templateFields(ms))
+func (ptf *TypedField) GenerateMarshalJSON(*messageStruct) string {
+	if strings.HasPrefix(ptf.returnType.messageName, "data.") {
+		return "if orig." + ptf.getOriginFieldName() + " != " + ptf.returnType.defaultVal + "{\n" + ptf.toProtoField().genMarshalJSON() + "\n}"
+	}
+	return ptf.toProtoField().genMarshalJSON()
 }
 
 func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {

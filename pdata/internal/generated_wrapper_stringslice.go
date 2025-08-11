@@ -41,19 +41,6 @@ func GenerateOrigTestStringSlice() []string {
 	return []string{"a", "b", "c"}
 }
 
-// MarshalJSONOrigStringSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigStringSlice(orig []string, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		dest.WriteString(orig[0])
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		dest.WriteString(orig[i])
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigStringSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigStringSlice(iter *json.Iterator) []string {
 	var orig []string

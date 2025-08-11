@@ -42,27 +42,33 @@ func MarshalJSONOrigExemplar(orig *otlpmetrics.Exemplar, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.FilteredAttributes) > 0 {
 		dest.WriteObjectField("filteredAttributes")
-		MarshalJSONOrigKeyValueSlice(orig.FilteredAttributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.FilteredAttributes[0], dest)
+		for i := 1; i < len(orig.FilteredAttributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.FilteredAttributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch ov := orig.Value.(type) {
+	switch orig.Value.(type) {
 	case *otlpmetrics.Exemplar_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(ov.AsDouble)
+		dest.WriteFloat64(orig.Value.(*otlpmetrics.Exemplar_AsDouble).AsDouble)
 	case *otlpmetrics.Exemplar_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(ov.AsInt)
+		dest.WriteInt64(orig.Value.(*otlpmetrics.Exemplar_AsInt).AsInt)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		orig.SpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.SpanId, dest)
 	}
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		orig.TraceId.MarshalJSONStream(dest)
+		MarshalJSONOrigTraceID(&orig.TraceId, dest)
 	}
 	dest.WriteObjectEnd()
 }

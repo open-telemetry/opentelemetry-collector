@@ -75,13 +75,19 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
@@ -91,31 +97,49 @@ func MarshalJSONOrigHistogramDataPoint(orig *otlpmetrics.HistogramDataPoint, des
 	}
 	if orig.Sum_ != nil {
 		dest.WriteObjectField("sum")
-		dest.WriteFloat64(orig.GetSum())
+		dest.WriteFloat64(orig.Sum_.(*otlpmetrics.HistogramDataPoint_Sum).Sum)
 	}
 	if len(orig.BucketCounts) > 0 {
 		dest.WriteObjectField("bucketCounts")
-		MarshalJSONOrigUint64Slice(orig.BucketCounts, dest)
+		dest.WriteArrayStart()
+		dest.WriteUint64(orig.BucketCounts[0])
+		for i := 1; i < len(orig.BucketCounts); i++ {
+			dest.WriteMore()
+			dest.WriteUint64(orig.BucketCounts[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.ExplicitBounds) > 0 {
 		dest.WriteObjectField("explicitBounds")
-		MarshalJSONOrigFloat64Slice(orig.ExplicitBounds, dest)
+		dest.WriteArrayStart()
+		dest.WriteFloat64(orig.ExplicitBounds[0])
+		for i := 1; i < len(orig.ExplicitBounds); i++ {
+			dest.WriteMore()
+			dest.WriteFloat64(orig.ExplicitBounds[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
-		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		for i := 1; i < len(orig.Exemplars); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
 	if orig.Min_ != nil {
 		dest.WriteObjectField("min")
-		dest.WriteFloat64(orig.GetMin())
+		dest.WriteFloat64(orig.Min_.(*otlpmetrics.HistogramDataPoint_Min).Min)
 	}
 	if orig.Max_ != nil {
 		dest.WriteObjectField("max")
-		dest.WriteFloat64(orig.GetMax())
+		dest.WriteFloat64(orig.Max_.(*otlpmetrics.HistogramDataPoint_Max).Max)
 	}
 	dest.WriteObjectEnd()
 }

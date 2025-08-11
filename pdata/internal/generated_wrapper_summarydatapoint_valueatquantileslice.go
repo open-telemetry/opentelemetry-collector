@@ -49,19 +49,6 @@ func GenerateOrigTestSummaryDataPoint_ValueAtQuantileSlice() []*otlpmetrics.Summ
 	return orig
 }
 
-// MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileSlice(iter *json.Iterator) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
 	var orig []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
