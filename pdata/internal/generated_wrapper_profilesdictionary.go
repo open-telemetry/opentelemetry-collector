@@ -37,31 +37,73 @@ func MarshalJSONOrigProfilesDictionary(orig *otlpprofiles.ProfilesDictionary, de
 	dest.WriteObjectStart()
 	if len(orig.MappingTable) > 0 {
 		dest.WriteObjectField("mappingTable")
-		MarshalJSONOrigMappingSlice(orig.MappingTable, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigMapping(orig.MappingTable[0], dest)
+		for i := 1; i < len(orig.MappingTable); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigMapping(orig.MappingTable[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.LocationTable) > 0 {
 		dest.WriteObjectField("locationTable")
-		MarshalJSONOrigLocationSlice(orig.LocationTable, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigLocation(orig.LocationTable[0], dest)
+		for i := 1; i < len(orig.LocationTable); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigLocation(orig.LocationTable[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.FunctionTable) > 0 {
 		dest.WriteObjectField("functionTable")
-		MarshalJSONOrigFunctionSlice(orig.FunctionTable, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigFunction(orig.FunctionTable[0], dest)
+		for i := 1; i < len(orig.FunctionTable); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigFunction(orig.FunctionTable[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.LinkTable) > 0 {
 		dest.WriteObjectField("linkTable")
-		MarshalJSONOrigLinkSlice(orig.LinkTable, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigLink(orig.LinkTable[0], dest)
+		for i := 1; i < len(orig.LinkTable); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigLink(orig.LinkTable[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.StringTable) > 0 {
 		dest.WriteObjectField("stringTable")
-		MarshalJSONOrigStringSlice(orig.StringTable, dest)
+		dest.WriteArrayStart()
+		dest.WriteString(orig.StringTable[0])
+		for i := 1; i < len(orig.StringTable); i++ {
+			dest.WriteMore()
+			dest.WriteString(orig.StringTable[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.AttributeTable) > 0 {
 		dest.WriteObjectField("attributeTable")
-		MarshalJSONOrigKeyValueSlice(orig.AttributeTable, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.AttributeTable[0], dest)
+		for i := 1; i < len(orig.AttributeTable); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.AttributeTable[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.AttributeUnits) > 0 {
 		dest.WriteObjectField("attributeUnits")
-		MarshalJSONOrigAttributeUnitSlice(orig.AttributeUnits, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigAttributeUnit(orig.AttributeUnits[0], dest)
+		for i := 1; i < len(orig.AttributeUnits); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigAttributeUnit(orig.AttributeUnits[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

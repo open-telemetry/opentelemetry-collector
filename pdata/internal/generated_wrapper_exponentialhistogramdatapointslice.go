@@ -49,19 +49,6 @@ func GenerateOrigTestExponentialHistogramDataPointSlice() []*otlpmetrics.Exponen
 	return orig
 }
 
-// MarshalJSONOrigExponentialHistogramDataPointSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigExponentialHistogramDataPointSlice(orig []*otlpmetrics.ExponentialHistogramDataPoint, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigExponentialHistogramDataPoint(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigExponentialHistogramDataPoint(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigExponentialHistogramDataPointSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigExponentialHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.ExponentialHistogramDataPoint {
 	var orig []*otlpmetrics.ExponentialHistogramDataPoint

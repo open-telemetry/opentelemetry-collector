@@ -42,7 +42,7 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if orig.MappingIndex_ != nil {
 		dest.WriteObjectField("mappingIndex")
-		dest.WriteInt32(orig.GetMappingIndex())
+		dest.WriteInt32(orig.MappingIndex_.(*otlpprofiles.Location_MappingIndex).MappingIndex)
 	}
 	if orig.Address != uint64(0) {
 		dest.WriteObjectField("address")
@@ -50,7 +50,13 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	}
 	if len(orig.Line) > 0 {
 		dest.WriteObjectField("line")
-		MarshalJSONOrigLineSlice(orig.Line, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigLine(orig.Line[0], dest)
+		for i := 1; i < len(orig.Line); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigLine(orig.Line[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.IsFolded != false {
 		dest.WriteObjectField("isFolded")
@@ -58,7 +64,13 @@ func MarshalJSONOrigLocation(orig *otlpprofiles.Location, dest *json.Stream) {
 	}
 	if len(orig.AttributeIndices) > 0 {
 		dest.WriteObjectField("attributeIndices")
-		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.AttributeIndices[0])
+		for i := 1; i < len(orig.AttributeIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.AttributeIndices[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

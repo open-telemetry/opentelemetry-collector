@@ -43,23 +43,6 @@ func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .itemType }} {
 	return []{{ .itemType }}{ {{ .testOrigVal }} }
 }
 
-// MarshalJSONOrig{{ .elementOriginName }}Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrig{{ .elementOriginName }}Slice(orig []{{ .itemType }}, dest *json.Stream) {
-	{{- if eq .itemType "byte" }}
-	dest.WriteString(base64.StdEncoding.EncodeToString(orig))
-	{{- else }}
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		dest.Write{{ upperFirst .itemType }}(orig[0])
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		dest.Write{{ upperFirst .itemType }}(orig[i])
-	}
-	dest.WriteArrayEnd()
-	{{- end }}
-}
-
 // UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrig{{ .elementOriginName }}Slice(iter *json.Iterator) []{{ .itemType }}{
 	{{- if eq .itemType "byte" }}

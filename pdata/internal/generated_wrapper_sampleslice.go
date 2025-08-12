@@ -49,19 +49,6 @@ func GenerateOrigTestSampleSlice() []*otlpprofiles.Sample {
 	return orig
 }
 
-// MarshalJSONOrigSampleSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSampleSlice(orig []*otlpprofiles.Sample, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSample(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSample(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigSampleSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSampleSlice(iter *json.Iterator) []*otlpprofiles.Sample {
 	var orig []*otlpprofiles.Sample

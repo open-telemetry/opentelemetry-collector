@@ -27,7 +27,21 @@ var plogotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportLogsResponse,
 		exportLogsPartialSuccess,
+	},
+}
+
+var exportLogsResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectorlog.ExportLogsServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportLogsPartialSuccess,
+		},
 	},
 }
 

@@ -49,19 +49,6 @@ func GenerateOrigTestLineSlice() []*otlpprofiles.Line {
 	return orig
 }
 
-// MarshalJSONOrigLineSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLineSlice(orig []*otlpprofiles.Line, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigLine(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigLine(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigLineSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLineSlice(iter *json.Iterator) []*otlpprofiles.Line {
 	var orig []*otlpprofiles.Line

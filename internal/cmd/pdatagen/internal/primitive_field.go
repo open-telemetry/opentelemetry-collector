@@ -48,11 +48,6 @@ const primitiveSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}
 
 const primitiveCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const primitiveMarshalJSONTemplate = `if orig.{{ .originFieldName }} != {{ .defaultVal }} {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		dest.Write{{ upperFirst .returnType }}(orig.{{ .originFieldName }})
-	}`
-
 const primitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .returnType }}()`
 
@@ -77,14 +72,15 @@ func (pf *PrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
+func (pf *PrimitiveField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("primitiveCopyOrigTemplate").Parse(primitiveCopyOrigTemplate))
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
-func (pf *PrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("primitiveMarshalJSONTemplate").Parse(primitiveMarshalJSONTemplate))
-	return executeTemplate(t, pf.templateFields(ms))
+func (pf *PrimitiveField) GenerateMarshalJSON(*messageStruct) string {
+	return pf.toProtoField().genMarshalJSON()
 }
 
 func (pf *PrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -117,8 +113,8 @@ func (pf *PrimitiveField) templateFields(ms *messageStruct) map[string]any {
 		"lowerFieldName":   strings.ToLower(pf.fieldName),
 		"testValue":        pf.protoType.testValue(pf.fieldName),
 		"returnType":       pf.protoType.goType(""),
-		"origAccessor":     origAccessor(ms.packageName),
-		"stateAccessor":    stateAccessor(ms.packageName),
+		"origAccessor":     origAccessor(ms.getHasWrapper()),
+		"stateAccessor":    stateAccessor(ms.getHasWrapper()),
 		"originStructName": ms.originFullName,
 		"originFieldName":  pf.fieldName,
 	}

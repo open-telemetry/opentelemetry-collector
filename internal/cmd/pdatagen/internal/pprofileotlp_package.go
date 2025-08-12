@@ -27,7 +27,21 @@ var pprofileotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportProfilesResponse,
 		exportProfilesPartialSuccess,
+	},
+}
+
+var exportProfilesResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectorprofile.ExportProfilesServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportProfilesPartialSuccess,
+		},
 	},
 }
 

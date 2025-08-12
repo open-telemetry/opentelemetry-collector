@@ -41,19 +41,6 @@ func GenerateOrigTestInt64Slice() []int64 {
 	return []int64{1, 2, 3}
 }
 
-// MarshalJSONOrigInt64Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigInt64Slice(orig []int64, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		dest.WriteInt64(orig[0])
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		dest.WriteInt64(orig[i])
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigInt64Slice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigInt64Slice(iter *json.Iterator) []int64 {
 	var orig []int64

@@ -31,7 +31,13 @@ func MarshalJSONOrigScopeMetrics(orig *otlpmetrics.ScopeMetrics, dest *json.Stre
 	MarshalJSONOrigInstrumentationScope(&orig.Scope, dest)
 	if len(orig.Metrics) > 0 {
 		dest.WriteObjectField("metrics")
-		MarshalJSONOrigMetricSlice(orig.Metrics, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigMetric(orig.Metrics[0], dest)
+		for i := 1; i < len(orig.Metrics); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigMetric(orig.Metrics[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")

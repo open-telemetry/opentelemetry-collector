@@ -29,7 +29,8 @@ func MarshalJSONOrigStatus(orig *otlptrace.Status, dest *json.Stream) {
 		dest.WriteObjectField("message")
 		dest.WriteString(orig.Message)
 	}
-	if orig.Code != otlptrace.Status_StatusCode(0) {
+
+	if int32(orig.Code) != 0 {
 		dest.WriteObjectField("code")
 		dest.WriteInt32(int32(orig.Code))
 	}

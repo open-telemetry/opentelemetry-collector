@@ -6,6 +6,7 @@ package pmetric // import "go.opentelemetry.io/collector/pdata/pmetric"
 import (
 	"slices"
 
+	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/otlp"
 )
@@ -19,7 +20,7 @@ type JSONMarshaler struct{}
 func (*JSONMarshaler) MarshalMetrics(md Metrics) ([]byte, error) {
 	dest := json.BorrowStream(nil)
 	defer json.ReturnStream(dest)
-	md.marshalJSONStream(dest)
+	internal.MarshalJSONOrigExportMetricsServiceRequest(md.getOrig(), dest)
 	if dest.Error() != nil {
 		return nil, dest.Error()
 	}
@@ -34,7 +35,7 @@ func (*JSONUnmarshaler) UnmarshalMetrics(buf []byte) (Metrics, error) {
 	iter := json.BorrowIterator(buf)
 	defer json.ReturnIterator(iter)
 	md := NewMetrics()
-	md.unmarshalJSONIter(iter)
+	internal.UnmarshalJSONOrigExportMetricsServiceRequest(md.getOrig(), iter)
 	if iter.Error() != nil {
 		return Metrics{}, iter.Error()
 	}

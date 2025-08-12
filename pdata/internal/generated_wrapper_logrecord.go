@@ -46,15 +46,16 @@ func FillOrigTestLogRecord(orig *otlplogs.LogRecord) {
 // MarshalJSONOrig marshals all properties from the current struct to the destination stream.
 func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 	dest.WriteObjectStart()
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	if orig.ObservedTimeUnixNano != 0 {
+	if orig.ObservedTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("observedTimeUnixNano")
 		dest.WriteUint64(orig.ObservedTimeUnixNano)
 	}
-	if orig.SeverityNumber != otlplogs.SeverityNumber(0) {
+
+	if int32(orig.SeverityNumber) != 0 {
 		dest.WriteObjectField("severityNumber")
 		dest.WriteInt32(int32(orig.SeverityNumber))
 	}
@@ -66,23 +67,29 @@ func MarshalJSONOrigLogRecord(orig *otlplogs.LogRecord, dest *json.Stream) {
 	MarshalJSONOrigAnyValue(&orig.Body, dest)
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
 		dest.WriteUint32(orig.DroppedAttributesCount)
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}
 	if orig.TraceId != data.TraceID([16]byte{}) {
 		dest.WriteObjectField("traceId")
-		orig.TraceId.MarshalJSONStream(dest)
+		MarshalJSONOrigTraceID(&orig.TraceId, dest)
 	}
 	if orig.SpanId != data.SpanID([8]byte{}) {
 		dest.WriteObjectField("spanId")
-		orig.SpanId.MarshalJSONStream(dest)
+		MarshalJSONOrigSpanID(&orig.SpanId, dest)
 	}
 	if orig.EventName != "" {
 		dest.WriteObjectField("eventName")

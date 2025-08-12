@@ -26,46 +26,55 @@ func TestCopyOrigExponentialHistogram(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	FillOrigTestExponentialHistogram(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigExponentialHistogram(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigExponentialHistogramUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpmetrics.ExponentialHistogram{}
 	UnmarshalJSONOrigExponentialHistogram(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpmetrics.ExponentialHistogram{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigExponentialHistogram(t *testing.T) {
+	for name, src := range getEncodingTestValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigExponentialHistogram(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpmetrics.ExponentialHistogram{}
+			UnmarshalJSONOrigExponentialHistogram(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	FillOrigTestExponentialHistogram(src)
-	buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
-	gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesExponentialHistogram() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
+			gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.ExponentialHistogram{}
-	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpmetrics.ExponentialHistogram{}
+			require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyExponentialHistogram(t *testing.T) {
-	src := &otlpmetrics.ExponentialHistogram{}
-	buf := make([]byte, SizeProtoOrigExponentialHistogram(src))
-	gotSize := MarshalProtoOrigExponentialHistogram(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpmetrics.ExponentialHistogram{}
-	require.NoError(t, UnmarshalProtoOrigExponentialHistogram(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesExponentialHistogram() map[string]*otlpmetrics.ExponentialHistogram {
+	return map[string]*otlpmetrics.ExponentialHistogram{
+		"empty": {},
+		"fill_test": func() *otlpmetrics.ExponentialHistogram {
+			src := &otlpmetrics.ExponentialHistogram{}
+			FillOrigTestExponentialHistogram(src)
+			return src
+		}(),
+	}
 }

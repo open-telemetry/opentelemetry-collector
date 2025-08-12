@@ -197,7 +197,7 @@ func TestOtlpToInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	assert.Equal(t, 1, resourceMetrics.Len())
 
@@ -285,7 +285,7 @@ func TestOtlpToFromInternalReadOnly(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	// Test that nothing changed
 	assert.EqualValues(t, &otlpmetrics.MetricsData{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{
@@ -317,7 +317,7 @@ func TestOtlpToFromInternalGaugeMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -399,7 +399,7 @@ func TestOtlpToFromInternalSumMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -483,7 +483,7 @@ func TestOtlpToFromInternalHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -566,7 +566,7 @@ func TestOtlpToFromInternalExponentialHistogramMutating(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 	resourceMetrics := md.ResourceMetrics()
 	metric := resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().At(0)
 	// Mutate MetricDescriptor
@@ -660,10 +660,11 @@ func BenchmarkOtlpToFromInternal_PassThrough(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		newReq := md.getOrig()
 		if len(req.ResourceMetrics) != len(newReq.ResourceMetrics) {
 			b.Fail()
@@ -685,10 +686,11 @@ func BenchmarkOtlpToFromInternal_Gauge_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -712,10 +714,11 @@ func BenchmarkOtlpToFromInternal_Sum_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -739,10 +742,11 @@ func BenchmarkOtlpToFromInternal_HistogramPoints_MutateOneLabel(b *testing.B) {
 			},
 		},
 	}
+	var state internal.State
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		md := newMetrics(req)
+		md := newMetrics(req, &state)
 		md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes().
 			PutStr("key0", "value2")
 		newReq := md.getOrig()
@@ -893,7 +897,7 @@ func generateTestProtoHistogramMetric() *otlpmetrics.Metric {
 func generateMetricsEmptyResource() Metrics {
 	return newMetrics(&otlpcollectormetrics.ExportMetricsServiceRequest{
 		ResourceMetrics: []*otlpmetrics.ResourceMetrics{{}},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyInstrumentation() Metrics {
@@ -903,7 +907,7 @@ func generateMetricsEmptyInstrumentation() Metrics {
 				ScopeMetrics: []*otlpmetrics.ScopeMetrics{{}},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyMetrics() Metrics {
@@ -917,7 +921,7 @@ func generateMetricsEmptyMetrics() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func generateMetricsEmptyDataPoints() Metrics {
@@ -941,7 +945,7 @@ func generateMetricsEmptyDataPoints() Metrics {
 				},
 			},
 		},
-	})
+	}, new(internal.State))
 }
 
 func BenchmarkMetricsUsage(b *testing.B) {
@@ -1008,10 +1012,4 @@ func BenchmarkMetricsMarshalJSON(b *testing.B) {
 		require.NoError(b, err)
 		require.NotNil(b, jsonBuf)
 	}
-}
-
-func generateTestMetrics() Metrics {
-	md := NewMetrics()
-	md.getOrig().ResourceMetrics = internal.GenerateOrigTestResourceMetricsSlice()
-	return md
 }

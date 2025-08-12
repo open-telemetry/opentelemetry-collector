@@ -35,7 +35,8 @@ func MarshalJSONOrigValueType(orig *otlpprofiles.ValueType, dest *json.Stream) {
 		dest.WriteObjectField("unitStrindex")
 		dest.WriteInt32(orig.UnitStrindex)
 	}
-	if orig.AggregationTemporality != otlpprofiles.AggregationTemporality(0) {
+
+	if int32(orig.AggregationTemporality) != 0 {
 		dest.WriteObjectField("aggregationTemporality")
 		dest.WriteInt32(int32(orig.AggregationTemporality))
 	}
