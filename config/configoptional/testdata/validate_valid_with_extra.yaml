@@ -1,0 +1,11 @@
+default1:
+  required: yes
+  not_required0: yes
+  not_required1: yes
+some:
+  required: yes
+  nested:
+    required: yes
+    not_required0: yes
+actually_required:
+  required: yes

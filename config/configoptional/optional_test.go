@@ -573,6 +573,15 @@ func TestOptionalFileValidate(t *testing.T) {
 			},
 			err: errors.New("default0: non-required fields cannot be set to 'no'\ndefault1: non-required fields cannot be set to 'no'"),
 		},
+		{
+			name:    "invalid and valid default",
+			variant: "valid_with_extra",
+			cfg: validatedConfig{
+				Default0: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+				Default1: Default(nestedConfig{Required: "valid value", NotRequired0: "no", NotRequired1: "no"}),
+			},
+			err: errors.New("default0: non-required fields cannot be set to 'no'"),
+		},
 	}
 
 	for _, tt := range cases {
