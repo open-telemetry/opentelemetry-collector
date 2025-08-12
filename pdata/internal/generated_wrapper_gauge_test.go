@@ -26,46 +26,55 @@ func TestCopyOrigGauge(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
-	src := &otlpmetrics.Gauge{}
-	FillOrigTestGauge(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigGauge(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigGaugeUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpmetrics.Gauge{}
 	UnmarshalJSONOrigGauge(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpmetrics.Gauge{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigGauge(t *testing.T) {
+	for name, src := range getEncodingTestValuesGauge() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigGauge(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpmetrics.Gauge{}
+			UnmarshalJSONOrigGauge(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigGauge(t *testing.T) {
-	src := &otlpmetrics.Gauge{}
-	FillOrigTestGauge(src)
-	buf := make([]byte, SizeProtoOrigGauge(src))
-	gotSize := MarshalProtoOrigGauge(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesGauge() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigGauge(src))
+			gotSize := MarshalProtoOrigGauge(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Gauge{}
-	require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpmetrics.Gauge{}
+			require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyGauge(t *testing.T) {
-	src := &otlpmetrics.Gauge{}
-	buf := make([]byte, SizeProtoOrigGauge(src))
-	gotSize := MarshalProtoOrigGauge(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpmetrics.Gauge{}
-	require.NoError(t, UnmarshalProtoOrigGauge(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesGauge() map[string]*otlpmetrics.Gauge {
+	return map[string]*otlpmetrics.Gauge{
+		"empty": {},
+		"fill_test": func() *otlpmetrics.Gauge {
+			src := &otlpmetrics.Gauge{}
+			FillOrigTestGauge(src)
+			return src
+		}(),
+	}
 }

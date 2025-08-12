@@ -57,6 +57,8 @@ func (mf *MessageField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
+func (mf *MessageField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("messageCopyOrigTemplate").Parse(messageCopyOrigTemplate))
 	return executeTemplate(t, mf.templateFields(ms))

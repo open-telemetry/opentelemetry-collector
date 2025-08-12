@@ -26,46 +26,55 @@ func TestCopyOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantileUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
 	UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
+	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSummaryDataPoint_ValueAtQuantile(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			UnmarshalJSONOrigSummaryDataPoint_ValueAtQuantile(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
-	buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
-	gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
+			gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySummaryDataPoint_ValueAtQuantile(t *testing.T) {
-	src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	buf := make([]byte, SizeProtoOrigSummaryDataPoint_ValueAtQuantile(src))
-	gotSize := MarshalProtoOrigSummaryDataPoint_ValueAtQuantile(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-	require.NoError(t, UnmarshalProtoOrigSummaryDataPoint_ValueAtQuantile(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesSummaryDataPoint_ValueAtQuantile() map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+	return map[string]*otlpmetrics.SummaryDataPoint_ValueAtQuantile{
+		"empty": {},
+		"fill_test": func() *otlpmetrics.SummaryDataPoint_ValueAtQuantile {
+			src := &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
+			FillOrigTestSummaryDataPoint_ValueAtQuantile(src)
+			return src
+		}(),
+	}
 }
