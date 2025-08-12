@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpmetrics "go.opentelemetry.io/proto/slim/otlp/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigHistogramDataPoint(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigHistogramDataPointUnknown(t *testing.T) {
+	dest := &otlpmetrics.HistogramDataPoint{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpmetrics.HistogramDataPoint{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 	for name, src := range getEncodingTestValuesHistogramDataPoint() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigHistogramDataPoint(t *testing.T) {
 
 			dest := &otlpmetrics.HistogramDataPoint{}
 			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufHistogramDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesHistogramDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigHistogramDataPoint(src))
+			gotSize := MarshalProtoOrigHistogramDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpmetrics.HistogramDataPoint{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpmetrics.HistogramDataPoint{}
+			require.NoError(t, UnmarshalProtoOrigHistogramDataPoint(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

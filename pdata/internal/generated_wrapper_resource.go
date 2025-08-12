@@ -7,6 +7,8 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpresource "go.opentelemetry.io/collector/pdata/internal/data/protogen/resource/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
@@ -34,6 +36,14 @@ func GenerateTestResource() Resource {
 	FillOrigTestResource(&orig)
 	state := StateMutable
 	return NewResource(&orig, &state)
+}
+
+func NewOrigResource() otlpresource.Resource {
+	return otlpresource.Resource{}
+}
+
+func NewOrigPtrResource() *otlpresource.Resource {
+	return &otlpresource.Resource{}
 }
 
 func CopyOrigResource(dest, src *otlpresource.Resource) {
@@ -140,5 +150,62 @@ func MarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) int {
 }
 
 func UnmarshalProtoOrigResource(orig *otlpresource.Resource, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Attributes", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Attributes = append(orig.Attributes, NewOrigKeyValue())
+			return UnmarshalProtoOrigKeyValue(&orig.Attributes[len(orig.Attributes)-1], buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeVarint {
+				return fmt.Errorf("proto: wrong wireType = %d for field DroppedAttributesCount", wireType)
+			}
+			var num uint64
+			num, pos, err = proto.ConsumeVarint(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.DroppedAttributesCount = uint32(num)
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field EntityRefs", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.EntityRefs = append(orig.EntityRefs, NewOrigPtrEntityRef())
+			return UnmarshalProtoOrigEntityRef(orig.EntityRefs[len(orig.EntityRefs)-1], buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

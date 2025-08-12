@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigResourceSpans() otlptrace.ResourceSpans {
+	return otlptrace.ResourceSpans{}
+}
+
+func NewOrigPtrResourceSpans() *otlptrace.ResourceSpans {
+	return &otlptrace.ResourceSpans{}
+}
 
 func CopyOrigResourceSpans(dest, src *otlptrace.ResourceSpans) {
 	CopyOrigResource(&dest.Resource, &src.Resource)
@@ -110,5 +120,62 @@ func MarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) in
 }
 
 func UnmarshalProtoOrigResourceSpans(orig *otlptrace.ResourceSpans, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Resource", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigResource(&orig.Resource, buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScopeSpans", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.ScopeSpans = append(orig.ScopeSpans, NewOrigPtrScopeSpans())
+			return UnmarshalProtoOrigScopeSpans(orig.ScopeSpans[len(orig.ScopeSpans)-1], buf[prevPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SchemaUrl = string(buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

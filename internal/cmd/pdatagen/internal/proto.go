@@ -110,12 +110,12 @@ func (pt ProtoType) testValue(fieldName string) string {
 }
 
 type ProtoField struct {
-	Type        ProtoType
-	Name        string
-	MessageName string
-	ID          uint32
-	Repeated    bool
-	Nullable    bool
+	Type            ProtoType
+	Name            string
+	MessageFullName string
+	ID              uint32
+	Repeated        bool
+	Nullable        bool
 }
 
 func (pf *ProtoField) wireType() WireType {
@@ -144,6 +144,10 @@ func (pf *ProtoField) wireType() WireType {
 	panic("unreachable")
 }
 
+func (pf *ProtoField) goType() string {
+	return pf.Type.goType(pf.MessageFullName)
+}
+
 // genProtoKey encodes the field key, and returns it in the reverse order.
 func genProtoKey(fieldNumber uint32, wt WireType) []string {
 	x := fieldNumber<<3 | uint32(wt)
@@ -160,4 +164,13 @@ func genProtoKey(fieldNumber uint32, wt WireType) []string {
 		ret = append(ret, fmt.Sprintf("%#v", keybuf[i]))
 	}
 	return ret
+}
+
+func extractNameFromFullQualified(fullName string) string {
+	// Extract last word because for Enums we use the full name.
+	lastSpaceIndex := strings.LastIndex(fullName, ".")
+	if lastSpaceIndex != -1 {
+		return fullName[lastSpaceIndex+1:]
+	}
+	return fullName
 }

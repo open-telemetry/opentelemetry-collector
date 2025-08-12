@@ -7,11 +7,21 @@
 package internal
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigLink() otlpprofiles.Link {
+	return otlpprofiles.Link{}
+}
+
+func NewOrigPtrLink() *otlpprofiles.Link {
+	return &otlpprofiles.Link{}
+}
 
 func CopyOrigLink(dest, src *otlpprofiles.Link) {
 	dest.TraceId = src.TraceId
@@ -84,5 +94,51 @@ func MarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) int {
 }
 
 func UnmarshalProtoOrigLink(orig *otlpprofiles.Link, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field TraceId", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigTraceID(&orig.TraceId, buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigSpanID(&orig.SpanId, buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsServiceResponse(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponseUnknown(t *testing.T) {
+	dest := &otlpcollectormetrics.ExportMetricsServiceResponse{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpcollectormetrics.ExportMetricsServiceResponse{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponse(t *testing.T) {
 	for name, src := range getEncodingTestValuesExportMetricsServiceResponse() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsServiceResponse(t *testing.T) 
 
 			dest := &otlpcollectormetrics.ExportMetricsServiceResponse{}
 			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsServiceResponse(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportMetricsServiceResponse() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportMetricsServiceResponse(src))
+			gotSize := MarshalProtoOrigExportMetricsServiceResponse(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectormetrics.ExportMetricsServiceResponse{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpcollectormetrics.ExportMetricsServiceResponse{}
+			require.NoError(t, UnmarshalProtoOrigExportMetricsServiceResponse(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

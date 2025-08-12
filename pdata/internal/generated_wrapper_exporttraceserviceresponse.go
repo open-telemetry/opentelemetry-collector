@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpcollectortrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigExportTraceServiceResponse() otlpcollectortrace.ExportTraceServiceResponse {
+	return otlpcollectortrace.ExportTraceServiceResponse{}
+}
+
+func NewOrigPtrExportTraceServiceResponse() *otlpcollectortrace.ExportTraceServiceResponse {
+	return &otlpcollectortrace.ExportTraceServiceResponse{}
+}
 
 func CopyOrigExportTraceServiceResponse(dest, src *otlpcollectortrace.ExportTraceServiceResponse) {
 	CopyOrigExportTracePartialSuccess(&dest.PartialSuccess, &src.PartialSuccess)
@@ -65,5 +75,39 @@ func MarshalProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportT
 }
 
 func UnmarshalProtoOrigExportTraceServiceResponse(orig *otlpcollectortrace.ExportTraceServiceResponse, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field PartialSuccess", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigExportTracePartialSuccess(&orig.PartialSuccess, buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

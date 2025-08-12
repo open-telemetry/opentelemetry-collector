@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigScopeSpans() otlptrace.ScopeSpans {
+	return otlptrace.ScopeSpans{}
+}
+
+func NewOrigPtrScopeSpans() *otlptrace.ScopeSpans {
+	return &otlptrace.ScopeSpans{}
+}
 
 func CopyOrigScopeSpans(dest, src *otlptrace.ScopeSpans) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
@@ -110,5 +120,62 @@ func MarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) int {
 }
 
 func UnmarshalProtoOrigScopeSpans(orig *otlptrace.ScopeSpans, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Spans", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Spans = append(orig.Spans, NewOrigPtrSpan())
+			return UnmarshalProtoOrigSpan(orig.Spans[len(orig.Spans)-1], buf[prevPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SchemaUrl = string(buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

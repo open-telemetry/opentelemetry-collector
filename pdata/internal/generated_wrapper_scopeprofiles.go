@@ -7,10 +7,20 @@
 package internal
 
 import (
+	"fmt"
+
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
 	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/internal/proto"
 )
+
+func NewOrigScopeProfiles() otlpprofiles.ScopeProfiles {
+	return otlpprofiles.ScopeProfiles{}
+}
+
+func NewOrigPtrScopeProfiles() *otlpprofiles.ScopeProfiles {
+	return &otlpprofiles.ScopeProfiles{}
+}
 
 func CopyOrigScopeProfiles(dest, src *otlpprofiles.ScopeProfiles) {
 	CopyOrigInstrumentationScope(&dest.Scope, &src.Scope)
@@ -110,5 +120,62 @@ func MarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byte)
 }
 
 func UnmarshalProtoOrigScopeProfiles(orig *otlpprofiles.ScopeProfiles, buf []byte) error {
-	return orig.Unmarshal(buf)
+	var err error
+	var fieldNum int32
+	var wireType proto.WireType
+
+	l := len(buf)
+	pos := 0
+	for pos < l {
+		// If in a group parsing, move to the next tag.
+		fieldNum, wireType, pos, err = proto.ConsumeTag(buf, pos)
+		if err != nil {
+			return err
+		}
+
+		return orig.Unmarshal(buf)
+		switch fieldNum {
+
+		case 1:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scope", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+
+			return UnmarshalProtoOrigInstrumentationScope(&orig.Scope, buf[prevPos:pos])
+
+		case 2:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field Profiles", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.Profiles = append(orig.Profiles, NewOrigPtrProfile())
+			return UnmarshalProtoOrigProfile(orig.Profiles[len(orig.Profiles)-1], buf[prevPos:pos])
+
+		case 3:
+			if wireType != proto.WireTypeLen {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaUrl", wireType)
+			}
+			prevPos := pos
+			pos, err = proto.ConsumeLen(buf, pos)
+			if err != nil {
+				return err
+			}
+			orig.SchemaUrl = string(buf[prevPos:pos])
+		default:
+			pos, err = proto.ConsumeUnknown(buf, pos, wireType)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

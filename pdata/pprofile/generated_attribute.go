@@ -8,7 +8,7 @@ package pprofile
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -20,11 +20,11 @@ import (
 // Must use NewAttribute function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type Attribute struct {
-	orig  *v1.KeyValue
+	orig  *otlpcommon.KeyValue
 	state *internal.State
 }
 
-func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
+func newAttribute(orig *otlpcommon.KeyValue, state *internal.State) Attribute {
 	return Attribute{orig: orig, state: state}
 }
 
@@ -34,7 +34,7 @@ func newAttribute(orig *v1.KeyValue, state *internal.State) Attribute {
 // OR directly access the member if this is embedded in another struct.
 func NewAttribute() Attribute {
 	state := internal.StateMutable
-	return newAttribute(&v1.KeyValue{}, &state)
+	return newAttribute(&otlpcommon.KeyValue{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -47,7 +47,7 @@ func (ms Attribute) MoveTo(dest Attribute) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = v1.KeyValue{}
+	*ms.orig = otlpcommon.KeyValue{}
 }
 
 // Key returns the key associated with this Attribute.

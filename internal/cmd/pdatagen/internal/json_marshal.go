@@ -5,7 +5,6 @@ package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/
 
 import (
 	"fmt"
-	"strings"
 	"text/template"
 )
 
@@ -52,10 +51,10 @@ const marshalJSONMessage = `{{ if .repeated -}}
 	if len(orig.{{ .fieldName }}) > 0 {
 		dest.WriteObjectField("{{ .jsonTag }}")
 		dest.WriteArrayStart()
-		MarshalJSONOrig{{ .messageName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[0], dest)
+		MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[0], dest)
 		for i := 1; i < len(orig.{{ .fieldName }}); i++ {
 			dest.WriteMore()
-			MarshalJSONOrig{{ .messageName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], dest)
+			MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}[i], dest)
 		}
 		dest.WriteArrayEnd()
 	}
@@ -64,7 +63,7 @@ const marshalJSONMessage = `{{ if .repeated -}}
 	if orig.{{ .fieldName }} != nil {
 {{ end -}}
 	dest.WriteObjectField("{{ .jsonTag }}")
-	MarshalJSONOrig{{ .messageName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, dest)
+	MarshalJSONOrig{{ .origName }}({{ if not .nullable }}&{{ end }}orig.{{ .fieldName }}, dest)
 {{- if .nullable -}}
 	}
 {{- end }}{{- end }}`
@@ -108,10 +107,10 @@ func (pf *ProtoField) genMarshalJSON() string {
 
 func (pf *ProtoField) marshalJSONTemplateFields() map[string]any {
 	return map[string]any{
-		"goType":       pf.Type.goType(pf.MessageName),
-		"defaultValue": pf.Type.defaultValue(pf.MessageName),
+		"goType":       pf.Type.goType(pf.MessageFullName),
+		"defaultValue": pf.Type.defaultValue(pf.MessageFullName),
 		"fieldName":    pf.Name,
-		"messageName":  pf.MessageName,
+		"origName":     extractNameFromFullQualified(pf.MessageFullName),
 		"repeated":     pf.Repeated,
 		"nullable":     pf.Nullable,
 		"jsonTag":      pf.jsonTag(),
@@ -120,10 +119,5 @@ func (pf *ProtoField) marshalJSONTemplateFields() map[string]any {
 
 func (pf *ProtoField) jsonTag() string {
 	// Extract last word because for Enums we use the full name.
-	name := pf.Name
-	lastSpaceIndex := strings.LastIndex(name, ".")
-	if lastSpaceIndex != -1 {
-		name = name[lastSpaceIndex+1:]
-	}
-	return lowerFirst(name)
+	return lowerFirst(extractNameFromFullQualified(pf.Name))
 }
