@@ -11,6 +11,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gootlpcollectormetrics "go.opentelemetry.io/proto/slim/otlp/collector/metrics/v1"
+	"google.golang.org/protobuf/proto"
 
 	otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/internal/json"
@@ -54,6 +56,13 @@ func TestMarshalAndUnmarshalJSONOrigExportMetricsPartialSuccess(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccessUnknown(t *testing.T) {
+	dest := &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &otlpcollectormetrics.ExportMetricsPartialSuccess{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccess(t *testing.T) {
 	for name, src := range getEncodingTestValuesExportMetricsPartialSuccess() {
 		t.Run(name, func(t *testing.T) {
@@ -63,6 +72,26 @@ func TestMarshalAndUnmarshalProtoOrigExportMetricsPartialSuccess(t *testing.T) {
 
 			dest := &otlpcollectormetrics.ExportMetricsPartialSuccess{}
 			require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobufExportMetricsPartialSuccess(t *testing.T) {
+	for name, src := range getEncodingTestValuesExportMetricsPartialSuccess() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigExportMetricsPartialSuccess(src))
+			gotSize := MarshalProtoOrigExportMetricsPartialSuccess(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &gootlpcollectormetrics.ExportMetricsPartialSuccess{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &otlpcollectormetrics.ExportMetricsPartialSuccess{}
+			require.NoError(t, UnmarshalProtoOrigExportMetricsPartialSuccess(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

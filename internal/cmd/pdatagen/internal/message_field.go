@@ -81,16 +81,20 @@ func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
 	return mf.toProtoField().genMarshalProto()
 }
 
+func (mf *MessageField) GenerateUnmarshalProto(*messageStruct) string {
+	return mf.toProtoField().genUnmarshalProto()
+}
+
 func (mf *MessageField) toProtoField() *ProtoField {
 	pt := ProtoTypeMessage
 	if mf.returnMessage.getName() == "TraceState" {
 		pt = ProtoTypeString
 	}
 	return &ProtoField{
-		Type:        pt,
-		ID:          mf.protoID,
-		Name:        mf.getFieldOriginFullName(),
-		MessageName: mf.returnMessage.getOriginName(),
+		Type:            pt,
+		ID:              mf.protoID,
+		Name:            mf.getFieldOriginFullName(),
+		MessageFullName: mf.returnMessage.getOriginFullName(),
 	}
 }
 

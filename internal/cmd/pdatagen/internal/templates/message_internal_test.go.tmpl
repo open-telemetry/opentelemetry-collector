@@ -50,6 +50,13 @@ func TestMarshalAndUnmarshalJSONOrig{{ .originName }}(t *testing.T) {
 	}
 }
 
+func TestMarshalAndUnmarshalProtoOrig{{ .originName }}Unknown(t *testing.T) {
+	dest := &{{ .originFullName }}{}
+	// message Test { required int64 field = 1313; } encoding { "field": "1234" }
+	require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, []byte{0x88, 0x52, 0xD2, 0x09}))
+	assert.Equal(t, &{{ .originFullName }}{}, dest)
+}
+
 func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
 	for name, src := range getEncodingTestValues{{ .originName }}(){
 		t.Run(name, func(t *testing.T) {
@@ -59,6 +66,26 @@ func TestMarshalAndUnmarshalProtoOrig{{ .originName }}(t *testing.T) {
 
 			dest := &{{ .originFullName }}{}
 			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalProtoViaProtobuf{{ .originName }}(t *testing.T) {
+	for name, src := range getEncodingTestValues{{ .originName }}(){
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrig{{ .originName }}(src))
+			gotSize := MarshalProtoOrig{{ .originName }}(src, buf)
+			assert.Equal(t, len(buf), gotSize)
+
+			goDest := &go{{ .originFullName }}{}
+			require.NoError(t, proto.Unmarshal(buf, goDest))
+
+			goBuf, err := proto.Marshal(goDest)
+			require.NoError(t, err)
+
+			dest := &{{ .originFullName }}{}
+			require.NoError(t, UnmarshalProtoOrig{{ .originName }}(dest, goBuf))
 			assert.Equal(t, src, dest)
 		})
 	}

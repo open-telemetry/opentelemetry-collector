@@ -8,7 +8,7 @@ package plogotlp
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
-	otlpcollectorlog "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
+	otlpcollectorlogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/logs/v1"
 )
 
 // ExportPartialSuccess represents the details of a partially successful export request.
@@ -19,11 +19,11 @@ import (
 // Must use NewExportPartialSuccess function to create new instances.
 // Important: zero-initialized instance is not valid for use.
 type ExportPartialSuccess struct {
-	orig  *otlpcollectorlog.ExportLogsPartialSuccess
+	orig  *otlpcollectorlogs.ExportLogsPartialSuccess
 	state *internal.State
 }
 
-func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
+func newExportPartialSuccess(orig *otlpcollectorlogs.ExportLogsPartialSuccess, state *internal.State) ExportPartialSuccess {
 	return ExportPartialSuccess{orig: orig, state: state}
 }
 
@@ -33,7 +33,7 @@ func newExportPartialSuccess(orig *otlpcollectorlog.ExportLogsPartialSuccess, st
 // OR directly access the member if this is embedded in another struct.
 func NewExportPartialSuccess() ExportPartialSuccess {
 	state := internal.StateMutable
-	return newExportPartialSuccess(&otlpcollectorlog.ExportLogsPartialSuccess{}, &state)
+	return newExportPartialSuccess(&otlpcollectorlogs.ExportLogsPartialSuccess{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -46,7 +46,7 @@ func (ms ExportPartialSuccess) MoveTo(dest ExportPartialSuccess) {
 		return
 	}
 	*dest.orig = *ms.orig
-	*ms.orig = otlpcollectorlog.ExportLogsPartialSuccess{}
+	*ms.orig = otlpcollectorlogs.ExportLogsPartialSuccess{}
 }
 
 // RejectedLogRecords returns the rejectedlogrecords associated with this ExportPartialSuccess.

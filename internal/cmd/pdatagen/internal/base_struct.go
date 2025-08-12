@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package internal // import "go.opentelemetry.io/collector/internal/cmd/pdatagen/internal"
-import (
-	"strings"
-)
 
 type baseStruct interface {
 	getName() string
 	getOriginName() string
+	getOriginFullName() string
 	getHasWrapper() bool
 	generate(packageInfo *PackageInfo) []byte
 	generateTests(packageInfo *PackageInfo) []byte
@@ -56,8 +54,8 @@ func (ms *messageStruct) templateFields(packageInfo *PackageInfo) map[string]any
 		"messageStruct":  ms,
 		"fields":         ms.fields,
 		"structName":     ms.getName(),
-		"originFullName": ms.originFullName,
-		"originName":     ms.getOriginName(),
+		"originFullName": ms.getOriginFullName(),
+		"originName":     extractNameFromFullQualified(ms.getOriginFullName()),
 		"description":    ms.description,
 		"hasWrapper":     hasWrapper,
 		"origAccessor":   origAccessor(hasWrapper),
@@ -76,8 +74,11 @@ func (ms *messageStruct) getHasWrapper() bool {
 }
 
 func (ms *messageStruct) getOriginName() string {
-	_, after, _ := strings.Cut(ms.originFullName, ".")
-	return after
+	return extractNameFromFullQualified(ms.originFullName)
+}
+
+func (ms *messageStruct) getOriginFullName() string {
+	return ms.originFullName
 }
 
 var _ baseStruct = (*messageStruct)(nil)
