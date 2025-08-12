@@ -336,6 +336,8 @@
       "otelcol",
       "otelcoltest",
       "otelcorecol",
+      "otelgrpc",
+      "otelhttp",
       "otelsvc",
       "oteltest",
       "otelzap",
@@ -403,6 +405,7 @@
       "rrschulze",
       "runperf",
       "safelist",
+      "samplefactoryreceiver",
       "samplereceiver",
       "samplingdecision",
       "samplingprocessor",
@@ -502,8 +505,14 @@
       "zpagesextension",
       "zstd"
     ],
+    "enableGlobDot": true,
+    "useGitignore": true,
+    "files": ["**/*.{md,yaml,yml}"],
     "globRoot": "../../..",
     "ignorePaths": [
+      ".git/*",
+      ".git/!{COMMIT_EDITMSG,EDITMSG}",
+      ".git/*/**",
       ".golangci.yml",
       ".github/**/*"
     ]

@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResourceMetricsSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestResourceMetricsSlice(t *testing.T) {
 	emptyVal := NewResourceMetrics()
 	testVal := generateTestResourceMetrics()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestResourceMetrics(el)
+		internal.FillOrigTestResourceMetrics((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestResourceMetricsSliceReadOnly(t *testing.T) {
 
 func TestResourceMetricsSlice_CopyTo(t *testing.T) {
 	dest := NewResourceMetricsSlice()
-	// Test CopyTo empty
-	NewResourceMetricsSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceMetricsSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestResourceMetricsSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewResourceMetricsSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceMetricsSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestResourceMetricsSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestResourceMetricsSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceMetricsSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceMetricsSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceMetricsSlice_Sort(t *testing.T) {
 	es := generateTestResourceMetricsSlice()
 	es.Sort(func(a, b ResourceMetrics) bool {
@@ -194,15 +159,7 @@ func TestResourceMetricsSlice_Sort(t *testing.T) {
 }
 
 func generateTestResourceMetricsSlice() ResourceMetricsSlice {
-	es := NewResourceMetricsSlice()
-	fillTestResourceMetricsSlice(es)
-	return es
-}
-
-func fillTestResourceMetricsSlice(es ResourceMetricsSlice) {
-	*es.orig = make([]*otlpmetrics.ResourceMetrics, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.ResourceMetrics{}
-		fillTestResourceMetrics(newResourceMetrics((*es.orig)[i], es.state))
-	}
+	ms := NewResourceMetricsSlice()
+	*ms.orig = internal.GenerateOrigTestResourceMetricsSlice()
+	return ms
 }

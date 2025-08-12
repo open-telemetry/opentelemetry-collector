@@ -11,11 +11,9 @@ import (
 	"unsafe"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestResourceLogsSlice(t *testing.T) {
@@ -28,9 +26,9 @@ func TestResourceLogsSlice(t *testing.T) {
 	emptyVal := NewResourceLogs()
 	testVal := generateTestResourceLogs()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestResourceLogs(el)
+		internal.FillOrigTestResourceLogs((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -51,24 +49,7 @@ func TestResourceLogsSliceReadOnly(t *testing.T) {
 
 func TestResourceLogsSlice_CopyTo(t *testing.T) {
 	dest := NewResourceLogsSlice()
-	// Test CopyTo empty
-	NewResourceLogsSlice().CopyTo(dest)
-	assert.Equal(t, NewResourceLogsSlice(), dest)
-
-	// Test CopyTo larger slice
 	src := generateTestResourceLogsSlice()
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceLogsSlice(), dest)
-
-	// Test CopyTo same size slice
-	src.CopyTo(dest)
-	assert.Equal(t, generateTestResourceLogsSlice(), dest)
-
-	// Test CopyTo smaller size slice
-	NewResourceLogsSlice().CopyTo(dest)
-	assert.Equal(t, 0, dest.Len())
-
-	// Test CopyTo larger slice with enough capacity
 	src.CopyTo(dest)
 	assert.Equal(t, generateTestResourceLogsSlice(), dest)
 }
@@ -161,22 +142,6 @@ func TestResourceLogsSliceAll(t *testing.T) {
 	assert.Equal(t, ms.Len(), c, "All elements should have been visited")
 }
 
-func TestResourceLogsSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceLogsSlice()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceLogsSlice()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceLogsSlice_Sort(t *testing.T) {
 	es := generateTestResourceLogsSlice()
 	es.Sort(func(a, b ResourceLogs) bool {
@@ -194,15 +159,7 @@ func TestResourceLogsSlice_Sort(t *testing.T) {
 }
 
 func generateTestResourceLogsSlice() ResourceLogsSlice {
-	es := NewResourceLogsSlice()
-	fillTestResourceLogsSlice(es)
-	return es
-}
-
-func fillTestResourceLogsSlice(es ResourceLogsSlice) {
-	*es.orig = make([]*otlplogs.ResourceLogs, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlplogs.ResourceLogs{}
-		fillTestResourceLogs(newResourceLogs((*es.orig)[i], es.state))
-	}
+	ms := NewResourceLogsSlice()
+	*ms.orig = internal.GenerateOrigTestResourceLogsSlice()
+	return ms
 }

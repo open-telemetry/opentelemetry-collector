@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,26 +41,6 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 }
 
-func TestLocation_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLocation()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewLocation()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, int32(0), ms.MappingIndex())
@@ -89,7 +67,7 @@ func TestLocation_Address(t *testing.T) {
 func TestLocation_Line(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, NewLineSlice(), ms.Line())
-	fillTestLineSlice(ms.Line())
+	ms.orig.Line = internal.GenerateOrigTestLineSlice()
 	assert.Equal(t, generateTestLineSlice(), ms.Line())
 }
 
@@ -105,20 +83,12 @@ func TestLocation_IsFolded(t *testing.T) {
 func TestLocation_AttributeIndices(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func generateTestLocation() Location {
-	tv := NewLocation()
-	fillTestLocation(tv)
-	return tv
-}
-
-func fillTestLocation(tv Location) {
-	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(13)}
-	tv.orig.Address = uint64(13)
-	fillTestLineSlice(tv.Line())
-	tv.orig.IsFolded = true
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
+	ms := NewLocation()
+	internal.FillOrigTestLocation(ms.orig)
+	return ms
 }

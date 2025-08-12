@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -49,30 +47,10 @@ func TestExponentialHistogramDataPoint_CopyTo(t *testing.T) {
 	})
 }
 
-func TestExponentialHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExponentialHistogramDataPoint()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewExponentialHistogramDataPoint()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestExponentialHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -103,6 +81,20 @@ func TestExponentialHistogramDataPoint_Count(t *testing.T) {
 	})
 }
 
+func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewExponentialHistogramDataPoint()
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.True(t, ms.HasSum())
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+	dest := NewExponentialHistogramDataPoint()
+	dest.SetSum(float64(3.1415926))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
+}
+
 func TestExponentialHistogramDataPoint_Scale(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
 	assert.Equal(t, int32(0), ms.Scale())
@@ -127,21 +119,16 @@ func TestExponentialHistogramDataPoint_ZeroCount(t *testing.T) {
 
 func TestExponentialHistogramDataPoint_Positive(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	fillTestExponentialHistogramDataPointBuckets(ms.Positive())
+	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Positive())
+	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Positive)
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Positive())
 }
 
 func TestExponentialHistogramDataPoint_Negative(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	fillTestExponentialHistogramDataPointBuckets(ms.Negative())
+	assert.Equal(t, NewExponentialHistogramDataPointBuckets(), ms.Negative())
+	internal.FillOrigTestExponentialHistogramDataPoint_Buckets(&ms.orig.Negative)
 	assert.Equal(t, generateTestExponentialHistogramDataPointBuckets(), ms.Negative())
-}
-
-func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
-	ms := NewExponentialHistogramDataPoint()
-	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	fillTestExemplarSlice(ms.Exemplars())
-	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
 func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
@@ -152,18 +139,11 @@ func TestExponentialHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
-func TestExponentialHistogramDataPoint_Sum(t *testing.T) {
+func TestExponentialHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewExponentialHistogramDataPoint()
-	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
-	ms.SetSum(float64(3.1415926))
-	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-	dest := NewExponentialHistogramDataPoint()
-	dest.SetSum(float64(3.1415926))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasSum())
+	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
+	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
+	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
 func TestExponentialHistogramDataPoint_Min(t *testing.T) {
@@ -206,24 +186,7 @@ func TestExponentialHistogramDataPoint_ZeroThreshold(t *testing.T) {
 }
 
 func generateTestExponentialHistogramDataPoint() ExponentialHistogramDataPoint {
-	tv := NewExponentialHistogramDataPoint()
-	fillTestExponentialHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestExponentialHistogramDataPoint(tv ExponentialHistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(13)
-	tv.orig.Scale = int32(13)
-	tv.orig.ZeroCount = uint64(13)
-	fillTestExponentialHistogramDataPointBuckets(tv.Positive())
-	fillTestExponentialHistogramDataPointBuckets(tv.Negative())
-	fillTestExemplarSlice(tv.Exemplars())
-	tv.orig.Flags = 1
-	tv.orig.Sum_ = &otlpmetrics.ExponentialHistogramDataPoint_Sum{Sum: float64(3.1415926)}
-	tv.orig.Min_ = &otlpmetrics.ExponentialHistogramDataPoint_Min{Min: float64(3.1415926)}
-	tv.orig.Max_ = &otlpmetrics.ExponentialHistogramDataPoint_Max{Max: float64(3.1415926)}
-	tv.orig.ZeroThreshold = float64(3.1415926)
+	ms := NewExponentialHistogramDataPoint()
+	internal.FillOrigTestExponentialHistogramDataPoint(ms.orig)
+	return ms
 }

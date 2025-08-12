@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AttributeTableSlice logically represents a slice of Attribute.
@@ -147,45 +146,5 @@ func (es AttributeTableSlice) RemoveIf(f func(Attribute) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es AttributeTableSlice) CopyTo(dest AttributeTableSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigAttributeTableSlice(*dest.orig, *es.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms AttributeTableSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms AttributeTableSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, v1.KeyValue{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigAttributeTableSlice(dest, src []v1.KeyValue) []v1.KeyValue {
-	var newDest []v1.KeyValue
-	if cap(dest) < len(src) {
-		newDest = make([]v1.KeyValue, len(src))
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = v1.KeyValue{}
-		}
-	}
-	for i := range src {
-		copyOrigAttribute(&newDest[i], &src[i])
-	}
-	return newDest
+	*dest.orig = internal.CopyOrigKeyValueSlice(*dest.orig, *es.orig)
 }

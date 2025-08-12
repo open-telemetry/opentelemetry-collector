@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestLine_MoveTo(t *testing.T) {
@@ -40,26 +38,6 @@ func TestLine_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newLine(&otlpprofiles.Line{}, &sharedState)) })
-}
-
-func TestLine_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLine()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewLine()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestLine_FunctionIndex(t *testing.T) {
@@ -90,13 +68,7 @@ func TestLine_Column(t *testing.T) {
 }
 
 func generateTestLine() Line {
-	tv := NewLine()
-	fillTestLine(tv)
-	return tv
-}
-
-func fillTestLine(tv Line) {
-	tv.orig.FunctionIndex = int32(13)
-	tv.orig.Line = int64(13)
-	tv.orig.Column = int64(13)
+	ms := NewLine()
+	internal.FillOrigTestLine(ms.orig)
+	return ms
 }

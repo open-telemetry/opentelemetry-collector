@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -41,26 +39,6 @@ func TestMapping_CopyTo(t *testing.T) {
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() { ms.CopyTo(newMapping(&otlpprofiles.Mapping{}, &sharedState)) })
-}
-
-func TestMapping_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestMapping()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewMapping()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
 }
 
 func TestMapping_MemoryStart(t *testing.T) {
@@ -102,7 +80,7 @@ func TestMapping_FilenameStrindex(t *testing.T) {
 func TestMapping_AttributeIndices(t *testing.T) {
 	ms := NewMapping()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
@@ -143,19 +121,7 @@ func TestMapping_HasInlineFrames(t *testing.T) {
 }
 
 func generateTestMapping() Mapping {
-	tv := NewMapping()
-	fillTestMapping(tv)
-	return tv
-}
-
-func fillTestMapping(tv Mapping) {
-	tv.orig.MemoryStart = uint64(13)
-	tv.orig.MemoryLimit = uint64(13)
-	tv.orig.FileOffset = uint64(13)
-	tv.orig.FilenameStrindex = int32(13)
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
-	tv.orig.HasFunctions = true
-	tv.orig.HasFilenames = true
-	tv.orig.HasLineNumbers = true
-	tv.orig.HasInlineFrames = true
+	ms := NewMapping()
+	internal.FillOrigTestMapping(ms.orig)
+	return ms
 }

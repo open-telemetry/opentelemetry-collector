@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -70,37 +69,5 @@ func (ms Attribute) Value() pcommon.Value {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Attribute) CopyTo(dest Attribute) {
 	dest.state.AssertMutable()
-	copyOrigAttribute(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Attribute) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Key != "" {
-		dest.WriteObjectField("key")
-		dest.WriteString(ms.orig.Key)
-	}
-	dest.WriteObjectField("value")
-	internal.MarshalJSONStreamValue(internal.NewValue(&ms.orig.Value, ms.state), dest)
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms Attribute) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "key":
-			ms.orig.Key = iter.ReadString()
-		case "value":
-			internal.UnmarshalJSONIterValue(internal.NewValue(&ms.orig.Value, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func copyOrigAttribute(dest, src *v1.KeyValue) {
-	dest.Key = src.Key
-	internal.CopyOrigValue(&dest.Value, &src.Value)
+	internal.CopyOrigKeyValue(dest.orig, ms.orig)
 }

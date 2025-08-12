@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // SummaryDataPointValueAtQuantileSlice logically represents a slice of SummaryDataPointValueAtQuantile.
@@ -148,7 +147,7 @@ func (es SummaryDataPointValueAtQuantileSlice) RemoveIf(f func(SummaryDataPointV
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValueAtQuantileSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigSummaryDataPointValueAtQuantileSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigSummaryDataPoint_ValueAtQuantileSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the SummaryDataPointValueAtQuantile elements within SummaryDataPointValueAtQuantileSlice given the
@@ -157,55 +156,4 @@ func (es SummaryDataPointValueAtQuantileSlice) CopyTo(dest SummaryDataPointValue
 func (es SummaryDataPointValueAtQuantileSlice) Sort(less func(a, b SummaryDataPointValueAtQuantile) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms SummaryDataPointValueAtQuantileSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms SummaryDataPointValueAtQuantileSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpmetrics.SummaryDataPoint_ValueAtQuantile{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigSummaryDataPointValueAtQuantileSlice(dest, src []*otlpmetrics.SummaryDataPoint_ValueAtQuantile) []*otlpmetrics.SummaryDataPoint_ValueAtQuantile {
-	var newDest []*otlpmetrics.SummaryDataPoint_ValueAtQuantile
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpmetrics.SummaryDataPoint_ValueAtQuantile, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpmetrics.SummaryDataPoint_ValueAtQuantile{}
-		}
-	}
-	for i := range src {
-		copyOrigSummaryDataPointValueAtQuantile(newDest[i], src[i])
-	}
-	return newDest
 }

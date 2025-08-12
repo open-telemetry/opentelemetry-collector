@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -44,44 +42,24 @@ func TestProfile_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newProfile(&otlpprofiles.Profile{}, &sharedState)) })
 }
 
-func TestProfile_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestProfile()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewProfile()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestProfile_SampleType(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewValueTypeSlice(), ms.SampleType())
-	fillTestValueTypeSlice(ms.SampleType())
+	ms.orig.SampleType = internal.GenerateOrigTestValueTypeSlice()
 	assert.Equal(t, generateTestValueTypeSlice(), ms.SampleType())
 }
 
 func TestProfile_Sample(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, NewSampleSlice(), ms.Sample())
-	fillTestSampleSlice(ms.Sample())
+	ms.orig.Sample = internal.GenerateOrigTestSampleSlice()
 	assert.Equal(t, generateTestSampleSlice(), ms.Sample())
 }
 
 func TestProfile_LocationIndices(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.LocationIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.LocationIndices()))
+	ms.orig.LocationIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.LocationIndices())
 }
 
@@ -103,7 +81,8 @@ func TestProfile_Duration(t *testing.T) {
 
 func TestProfile_PeriodType(t *testing.T) {
 	ms := NewProfile()
-	fillTestValueType(ms.PeriodType())
+	assert.Equal(t, NewValueType(), ms.PeriodType())
+	internal.FillOrigTestValueType(&ms.orig.PeriodType)
 	assert.Equal(t, generateTestValueType(), ms.PeriodType())
 }
 
@@ -119,7 +98,7 @@ func TestProfile_Period(t *testing.T) {
 func TestProfile_CommentStrindices(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.CommentStrindices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.CommentStrindices()))
+	ms.orig.CommentStrindices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.CommentStrindices())
 }
 
@@ -163,36 +142,19 @@ func TestProfile_OriginalPayloadFormat(t *testing.T) {
 func TestProfile_OriginalPayload(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewByteSlice(), ms.OriginalPayload())
-	internal.FillTestByteSlice(internal.ByteSlice(ms.OriginalPayload()))
+	ms.orig.OriginalPayload = internal.GenerateOrigTestByteSlice()
 	assert.Equal(t, pcommon.ByteSlice(internal.GenerateTestByteSlice()), ms.OriginalPayload())
 }
 
 func TestProfile_AttributeIndices(t *testing.T) {
 	ms := NewProfile()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func generateTestProfile() Profile {
-	tv := NewProfile()
-	fillTestProfile(tv)
-	return tv
-}
-
-func fillTestProfile(tv Profile) {
-	fillTestValueTypeSlice(tv.SampleType())
-	fillTestSampleSlice(tv.Sample())
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.LocationIndices, tv.state))
-	tv.orig.TimeNanos = 1234567890
-	tv.orig.DurationNanos = 1234567890
-	fillTestValueType(tv.PeriodType())
-	tv.orig.Period = int64(13)
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.CommentStrindices, tv.state))
-	tv.orig.DefaultSampleTypeIndex = int32(13)
-	tv.orig.ProfileId = data.ProfileID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.DroppedAttributesCount = uint32(13)
-	tv.orig.OriginalPayloadFormat = "test_originalpayloadformat"
-	internal.FillTestByteSlice(internal.NewByteSlice(&tv.orig.OriginalPayload, tv.state))
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
+	ms := NewProfile()
+	internal.FillOrigTestProfile(ms.orig)
+	return ms
 }
