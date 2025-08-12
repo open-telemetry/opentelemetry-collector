@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ExemplarSlice logically represents a slice of Exemplar.
@@ -147,45 +146,5 @@ func (es ExemplarSlice) RemoveIf(f func(Exemplar) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ExemplarSlice) CopyTo(dest ExemplarSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigExemplarSlice(*dest.orig, *es.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExemplarSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExemplarSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, otlpmetrics.Exemplar{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigExemplarSlice(dest, src []otlpmetrics.Exemplar) []otlpmetrics.Exemplar {
-	var newDest []otlpmetrics.Exemplar
-	if cap(dest) < len(src) {
-		newDest = make([]otlpmetrics.Exemplar, len(src))
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = otlpmetrics.Exemplar{}
-		}
-	}
-	for i := range src {
-		copyOrigExemplar(&newDest[i], &src[i])
-	}
-	return newDest
+	*dest.orig = internal.CopyOrigExemplarSlice(*dest.orig, *es.orig)
 }

@@ -10,54 +10,36 @@ import (
 
 const messageAccessorsTemplate = `// {{ .fieldName }} returns the {{ .lowerFieldName }} associated with this {{ .structName }}.
 func (ms {{ .structName }}) {{ .fieldName }}() {{ .packageName }}{{ .returnType }} {
-	{{- if .isCommon }}
-	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }}))
+	{{- if .messageHasWrapper }}
+	return {{ .packageName }}{{ .returnType }}(internal.New{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }}))
 	{{- else }}
-	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .originFieldName }}, ms.{{ .stateAccessor }})
+	return new{{ .returnType }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }}, ms.{{ .stateAccessor }})
 	{{- end }}
 }`
 
 const messageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(t *testing.T) {
 	ms := New{{ .structName }}()
-	{{- if .isCommon }}
-	internal.FillTest{{ .returnType }}(internal.{{ .returnType }}(ms.{{ .fieldName }}()))
+	assert.Equal(t, {{ .packageName }}New{{ .returnType }}{{- if eq .returnType "Value" }}Empty{{- end }}(), ms.{{ .fieldName }}())
+	internal.FillOrigTest{{ .fieldOriginName }}(&ms.{{ .origAccessor }}.{{ .fieldOriginFullName }})
+	{{- if .messageHasWrapper }}
 	assert.Equal(t, {{ .packageName }}{{ .returnType }}(internal.GenerateTest{{ .returnType }}()), ms.{{ .fieldName }}())
 	{{- else }}
-	fillTest{{ .returnType }}(ms.{{ .fieldName }}())
 	assert.Equal(t, generateTest{{ .returnType }}(), ms.{{ .fieldName }}())
 	{{- end }}
 }`
 
-const messageSetTestTemplate = `{{- if .isCommon -}}
-	internal.FillTest{{ .returnType }}(internal.New{{ .returnType }}(&tv.orig.{{ .originFieldName }}, tv.state))
-	{{- else -}}
-	fillTest{{ .returnType }}(tv.{{ .fieldName }}())
-	{{-	end }}`
+const messageSetTestTemplate = `FillOrigTest{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }})`
 
-const messageCopyOrigTemplate = `{{- if .isCommon -}}
-	internal.CopyOrig{{- .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})
-	{{- else -}}
-	copyOrig{{ .returnType }}(&dest.{{ .originFieldName }}, &src.{{ .originFieldName }})
-	{{- end }}`
+const messageCopyOrigTemplate = `CopyOrig{{ .fieldOriginName }}(&dest.{{ .fieldOriginFullName }}, &src.{{ .fieldOriginFullName }})`
 
-const messageMarshalJSONTemplate = `{{- if eq .returnType "TraceState" }} if ms.orig.{{ .originFieldName }} != "" { {{ end -}}
-	dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-	{{- if .isCommon }}
-	internal.MarshalJSONStream{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), dest)
-	{{- else }}
-	ms.{{ .fieldName }}().marshalJSONStream(dest)
-	{{- end }}{{ if eq .returnType "TraceState" -}} } {{- end }}`
-
-const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
-	{{- if .isCommon }}
-	internal.UnmarshalJSONIter{{ .returnType }}(internal.New{{ .returnType }}(&ms.orig.{{ .originFieldName }}, ms.state), iter)
-	{{- else }}
-	ms.{{ .fieldName }}().unmarshalJSONIter(iter)
-	{{- end }}`
+const messageUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldOriginFullName }}"{{ if needSnake .fieldOriginFullName -}}, "{{ toSnake .fieldOriginFullName }}"{{- end }}:
+	UnmarshalJSONOrig{{ .fieldOriginName }}(&orig.{{ .fieldOriginFullName }}, iter)`
 
 type MessageField struct {
-	fieldName     string
-	returnMessage *messageStruct
+	fieldName           string
+	fieldOriginFullName string
+	protoID             uint32
+	returnMessage       *messageStruct
 }
 
 func (mf *MessageField) GenerateAccessors(ms *messageStruct) string {
@@ -80,9 +62,8 @@ func (mf *MessageField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
-func (mf *MessageField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("messageMarshalJSONTemplate").Parse(messageMarshalJSONTemplate))
-	return executeTemplate(t, mf.templateFields(ms))
+func (mf *MessageField) GenerateMarshalJSON(*messageStruct) string {
+	return mf.toProtoField().genMarshalJSON()
 }
 
 func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
@@ -90,23 +71,52 @@ func (mf *MessageField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, mf.templateFields(ms))
 }
 
+func (mf *MessageField) GenerateSizeProto(*messageStruct) string {
+	return mf.toProtoField().genSizeProto()
+}
+
+func (mf *MessageField) GenerateMarshalProto(*messageStruct) string {
+	return mf.toProtoField().genMarshalProto()
+}
+
+func (mf *MessageField) toProtoField() *ProtoField {
+	pt := ProtoTypeMessage
+	if mf.returnMessage.getName() == "TraceState" {
+		pt = ProtoTypeString
+	}
+	return &ProtoField{
+		Type:        pt,
+		ID:          mf.protoID,
+		Name:        mf.getFieldOriginFullName(),
+		MessageName: mf.returnMessage.getOriginName(),
+	}
+}
+
 func (mf *MessageField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
-		"isCommon":        usedByOtherDataTypes(mf.returnMessage.packageName),
-		"structName":      ms.getName(),
-		"fieldName":       mf.fieldName,
-		"originFieldName": mf.fieldName,
-		"lowerFieldName":  strings.ToLower(mf.fieldName),
-		"returnType":      mf.returnMessage.getName(),
+		"messageHasWrapper":   usedByOtherDataTypes(mf.returnMessage.packageName),
+		"structName":          ms.getName(),
+		"fieldName":           mf.fieldName,
+		"fieldOriginFullName": mf.getFieldOriginFullName(),
+		"fieldOriginName":     mf.returnMessage.getOriginName(),
+		"lowerFieldName":      strings.ToLower(mf.fieldName),
+		"returnType":          mf.returnMessage.getName(),
 		"packageName": func() string {
 			if mf.returnMessage.packageName != ms.packageName {
 				return mf.returnMessage.packageName + "."
 			}
 			return ""
 		}(),
-		"origAccessor":  origAccessor(ms.packageName),
-		"stateAccessor": stateAccessor(ms.packageName),
+		"origAccessor":  origAccessor(ms.getHasWrapper()),
+		"stateAccessor": stateAccessor(ms.getHasWrapper()),
 	}
+}
+
+func (mf *MessageField) getFieldOriginFullName() string {
+	if mf.fieldOriginFullName != "" {
+		return mf.fieldOriginFullName
+	}
+	return mf.fieldName
 }
 
 var _ Field = (*MessageField)(nil)

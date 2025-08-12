@@ -9,7 +9,6 @@ package plog
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlplogs "go.opentelemetry.io/collector/pdata/internal/data/protogen/logs/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -56,6 +55,11 @@ func (ms ResourceLogs) Resource() pcommon.Resource {
 	return pcommon.Resource(internal.NewResource(&ms.orig.Resource, ms.state))
 }
 
+// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
+func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
+	return newScopeLogsSlice(&ms.orig.ScopeLogs, ms.state)
+}
+
 // SchemaUrl returns the schemaurl associated with this ResourceLogs.
 func (ms ResourceLogs) SchemaUrl() string {
 	return ms.orig.SchemaUrl
@@ -67,52 +71,8 @@ func (ms ResourceLogs) SetSchemaUrl(v string) {
 	ms.orig.SchemaUrl = v
 }
 
-// ScopeLogs returns the ScopeLogs associated with this ResourceLogs.
-func (ms ResourceLogs) ScopeLogs() ScopeLogsSlice {
-	return newScopeLogsSlice(&ms.orig.ScopeLogs, ms.state)
-}
-
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ResourceLogs) CopyTo(dest ResourceLogs) {
 	dest.state.AssertMutable()
-	copyOrigResourceLogs(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ResourceLogs) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	dest.WriteObjectField("resource")
-	internal.MarshalJSONStreamResource(internal.NewResource(&ms.orig.Resource, ms.state), dest)
-	if ms.orig.SchemaUrl != "" {
-		dest.WriteObjectField("schemaUrl")
-		dest.WriteString(ms.orig.SchemaUrl)
-	}
-	if len(ms.orig.ScopeLogs) > 0 {
-		dest.WriteObjectField("scopeLogs")
-		ms.ScopeLogs().marshalJSONStream(dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ResourceLogs) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "resource":
-			internal.UnmarshalJSONIterResource(internal.NewResource(&ms.orig.Resource, ms.state), iter)
-		case "schemaUrl", "schema_url":
-			ms.orig.SchemaUrl = iter.ReadString()
-		case "scopeLogs", "scope_logs":
-			ms.ScopeLogs().unmarshalJSONIter(iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func copyOrigResourceLogs(dest, src *otlplogs.ResourceLogs) {
-	internal.CopyOrigResource(&dest.Resource, &src.Resource)
-	dest.SchemaUrl = src.SchemaUrl
-	dest.ScopeLogs = copyOrigScopeLogsSlice(dest.ScopeLogs, src.ScopeLogs)
+	internal.CopyOrigResourceLogs(dest.orig, ms.orig)
 }

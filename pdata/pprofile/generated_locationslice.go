@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // LocationSlice logically represents a slice of Location.
@@ -148,7 +147,7 @@ func (es LocationSlice) RemoveIf(f func(Location) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es LocationSlice) CopyTo(dest LocationSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigLocationSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigLocationSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the Location elements within LocationSlice given the
@@ -157,55 +156,4 @@ func (es LocationSlice) CopyTo(dest LocationSlice) {
 func (es LocationSlice) Sort(less func(a, b Location) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms LocationSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms LocationSlice) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadArrayCB(func(iter *json.Iterator) bool {
-		*ms.orig = append(*ms.orig, &otlpprofiles.Location{})
-		ms.At(ms.Len() - 1).unmarshalJSONIter(iter)
-		return true
-	})
-}
-
-func copyOrigLocationSlice(dest, src []*otlpprofiles.Location) []*otlpprofiles.Location {
-	var newDest []*otlpprofiles.Location
-	if cap(dest) < len(src) {
-		newDest = make([]*otlpprofiles.Location, len(src))
-		// Copy old pointers to re-use.
-		copy(newDest, dest)
-		// Add new pointers for missing elements from len(dest) to len(srt).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Location{}
-		}
-	} else {
-		newDest = dest[:len(src)]
-		// Cleanup the rest of the elements so GC can free the memory.
-		// This can happen when len(src) < len(dest) < cap(dest).
-		for i := len(src); i < len(dest); i++ {
-			dest[i] = nil
-		}
-		// Add new pointers for missing elements.
-		// This can happen when len(dest) < len(src) < cap(dest).
-		for i := len(dest); i < len(src); i++ {
-			newDest[i] = &otlpprofiles.Location{}
-		}
-	}
-	for i := range src {
-		copyOrigLocation(newDest[i], src[i])
-	}
-	return newDest
 }

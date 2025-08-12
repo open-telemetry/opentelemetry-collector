@@ -39,16 +39,31 @@ const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- end }}
 }`
 
-const oneOfMarshalJSONTemplate = `switch ov := ms.{{ .origAccessor }}.{{ .originFieldName }}.(type) {
-		{{- range .values }}
+const oneOfMarshalJSONTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
-		{{- end }}
-	}`
+	{{- end }}
+}`
 
 const oneOfUnmarshalJSONTemplate = `
 	{{- range .values }}
 	{{ .GenerateUnmarshalJSON $.baseStruct $.OneOfField }}
 	{{- end }}`
+
+const oneOfSizeProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
+		{{ .GenerateSizeProto $.baseStruct $.OneOfField }}
+	{{- end }}
+}`
+
+const oneOfMarshalProtoTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
+		{{ .GenerateMarshalProto $.baseStruct $.OneOfField }}
+	{{- end }}
+}`
 
 type OneOfField struct {
 	originFieldName            string
@@ -95,6 +110,16 @@ func (of *OneOfField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	return executeTemplate(t, of.templateFields(ms))
 }
 
+func (of *OneOfField) GenerateSizeProto(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfSizeProtoTemplate").Parse(oneOfSizeProtoTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
+func (of *OneOfField) GenerateMarshalProto(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfMarshalProtoTemplate").Parse(oneOfMarshalProtoTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
 func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 	return map[string]any{
 		"baseStruct":           ms,
@@ -105,8 +130,8 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms.packageName),
-		"stateAccessor":        stateAccessor(ms.packageName),
+		"origAccessor":         origAccessor(ms.getHasWrapper()),
+		"stateAccessor":        stateAccessor(ms.getHasWrapper()),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
@@ -115,6 +140,7 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 var _ Field = (*OneOfField)(nil)
 
 type oneOfValue interface {
+	GetOriginFieldName() string
 	GenerateAccessors(ms *messageStruct, of *OneOfField) string
 	GenerateTests(ms *messageStruct, of *OneOfField) string
 	GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string
@@ -122,4 +148,6 @@ type oneOfValue interface {
 	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string
 	GenerateUnmarshalJSON(ms *messageStruct, of *OneOfField) string
+	GenerateSizeProto(ms *messageStruct, of *OneOfField) string
+	GenerateMarshalProto(ms *messageStruct, of *OneOfField) string
 }

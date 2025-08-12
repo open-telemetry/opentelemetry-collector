@@ -8,18 +8,17 @@ package internal
 
 import (
 	{{ range $index, $element := .imports -}}
-	{{ if ne $element "go.opentelemetry.io/collector/pdata/internal" }}
 	{{ $element }}
-	{{- end }}
-	{{- end }}
+	{{ end }}
 )
+{{ if .hasWrapper }}
 
 type {{ .structName }} struct {
-	orig *{{ .originName }}
+	orig *{{ .originFullName }}
 	state *State
 }
 
-func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originName }} {
+func GetOrig{{ .structName }}(ms {{ .structName }}) *{{ .originFullName }} {
 	return ms.orig
 }
 
@@ -27,32 +26,33 @@ func Get{{ .structName }}State(ms {{ .structName }}) *State {
 	return ms.state
 }
 
-func New{{ .structName }}(orig *{{ .originName }}, state *State) {{ .structName }} {
+func New{{ .structName }}(orig *{{ .originFullName }}, state *State) {{ .structName }} {
 	return {{ .structName }}{orig: orig, state: state}
 }
 
-func CopyOrig{{ .structName }}(dest, src *{{ .originName }}) {
-    {{- range .fields }}
-    {{ .GenerateCopyOrig $.messageStruct }}
-    {{- end }}
-}
-
 func GenerateTest{{ .structName }}() {{ .structName }} {
-	orig := {{ .originName }}{}
+	orig := {{ .originFullName }}{}
+	FillOrigTest{{ .originName }}(&orig)
 	state := StateMutable
-	tv := New{{ .structName }}(&orig, &state)
-	FillTest{{ .structName }}(tv)
-	return tv
+	return New{{ .structName }}(&orig, &state)
 }
 
-func FillTest{{ .structName }}(tv {{ .structName }}) {
+{{ end }}
+
+func CopyOrig{{ .originName }}(dest, src *{{ .originFullName }}) {
+	{{- range .fields }}
+	{{ .GenerateCopyOrig $.messageStruct }}
+	{{- end }}
+}
+
+func FillOrigTest{{ .originName }}(orig *{{ .originFullName }}) {
 	{{- range .fields }}
 	{{ .GenerateSetWithTestValue $.messageStruct }}
 	{{- end }}
 }
 
-// MarshalJSONStream marshals all properties from the current struct to the destination stream.
-func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream) {
+// MarshalJSONOrig marshals all properties from the current struct to the destination stream.
+func MarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, dest *json.Stream) {
 	dest.WriteObjectStart()
 	{{ range .fields -}}
 	{{ .GenerateMarshalJSON $.messageStruct }}
@@ -60,8 +60,8 @@ func MarshalJSONStream{{ .structName }}(ms {{ .structName }}, dest *json.Stream)
 	dest.WriteObjectEnd()
 }
 
-// UnmarshalJSONIter{{ .structName }} unmarshals all properties from the current struct from the source iterator.
-func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterator) {
+// UnmarshalJSONOrig{{ .structName }} unmarshals all properties from the current struct from the source iterator.
+func UnmarshalJSONOrig{{ .originName }}(orig *{{ .originFullName }}, iter *json.Iterator) {
 	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
 		switch f {
 		{{ range .fields -}}
@@ -72,4 +72,28 @@ func UnmarshalJSONIter{{ .structName }}(ms {{ .structName }}, iter *json.Iterato
 		}
 		return true
 	})
+}
+
+func SizeProtoOrig{{ .originName }}(orig *{{ .originFullName }}) int {
+	var n int
+	var l int
+	_ = l
+	{{ range .fields -}}
+	{{ .GenerateSizeProto $.messageStruct }}
+	{{ end -}}
+	return n
+}
+
+func MarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) int {
+	pos := len(buf)
+	var l int
+	_ = l
+	{{ range .fields -}}
+	{{ .GenerateMarshalProto $.messageStruct }}
+	{{ end -}}
+	return len(buf) - pos
+}
+
+func UnmarshalProtoOrig{{ .originName }}(orig *{{ .originFullName }}, buf []byte) error {
+	return orig.Unmarshal(buf)
 }

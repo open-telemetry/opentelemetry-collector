@@ -262,7 +262,7 @@ func (m Map) MoveTo(dest Map) {
 // CopyTo copies all elements from the current map overriding the destination.
 func (m Map) CopyTo(dest Map) {
 	dest.getState().AssertMutable()
-	*dest.getOrig() = internal.CopyOrigMap(*dest.getOrig(), *m.getOrig())
+	*dest.getOrig() = internal.CopyOrigKeyValueSlice(*dest.getOrig(), *m.getOrig())
 }
 
 // AsRaw returns a standard go map representation of this Map.

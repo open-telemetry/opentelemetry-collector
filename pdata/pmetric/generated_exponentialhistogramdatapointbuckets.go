@@ -9,7 +9,6 @@ package pmetric
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -70,39 +69,5 @@ func (ms ExponentialHistogramDataPointBuckets) BucketCounts() pcommon.UInt64Slic
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms ExponentialHistogramDataPointBuckets) CopyTo(dest ExponentialHistogramDataPointBuckets) {
 	dest.state.AssertMutable()
-	copyOrigExponentialHistogramDataPointBuckets(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ExponentialHistogramDataPointBuckets) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.Offset != int32(0) {
-		dest.WriteObjectField("offset")
-		dest.WriteInt32(ms.orig.Offset)
-	}
-	if len(ms.orig.BucketCounts) > 0 {
-		dest.WriteObjectField("bucketCounts")
-		internal.MarshalJSONStreamUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-// unmarshalJSONIter unmarshals all properties from the current struct from the source iterator.
-func (ms ExponentialHistogramDataPointBuckets) unmarshalJSONIter(iter *json.Iterator) {
-	iter.ReadObjectCB(func(iter *json.Iterator, f string) bool {
-		switch f {
-		case "offset":
-			ms.orig.Offset = iter.ReadInt32()
-		case "bucketCounts", "bucket_counts":
-			internal.UnmarshalJSONIterUInt64Slice(internal.NewUInt64Slice(&ms.orig.BucketCounts, ms.state), iter)
-		default:
-			iter.Skip()
-		}
-		return true
-	})
-}
-
-func copyOrigExponentialHistogramDataPointBuckets(dest, src *otlpmetrics.ExponentialHistogramDataPoint_Buckets) {
-	dest.Offset = src.Offset
-	dest.BucketCounts = internal.CopyOrigUInt64Slice(dest.BucketCounts, src.BucketCounts)
+	internal.CopyOrigExponentialHistogramDataPoint_Buckets(dest.orig, ms.orig)
 }

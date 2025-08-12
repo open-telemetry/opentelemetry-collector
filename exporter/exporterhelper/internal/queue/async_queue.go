@@ -36,7 +36,7 @@ func (qc *asyncQueue[T]) Start(ctx context.Context, host component.Host) error {
 	for i := 0; i < qc.numConsumers; i++ {
 		qc.stopWG.Add(1)
 		startWG.Add(1)
-		go func() {
+		go func() { //nolint:contextcheck
 			startWG.Done()
 			defer qc.stopWG.Done()
 			for {

@@ -27,45 +27,36 @@ const typedAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldName }}(
 	assert.Equal(t, testVal{{ .fieldName }}, ms.{{ .fieldName }}())
 }`
 
-const typedSetTestTemplate = `tv.orig.{{ .originFieldName }} = {{ .testValue }}`
+const typedSetTestTemplate = `orig.{{ .originFieldName }} = {{ .testValue }}`
 
 const typedCopyOrigTemplate = `dest.{{ .originFieldName }} = src.{{ .originFieldName }}`
 
-const typedMarshalJSONTemplate = `if ms.orig.{{ .originFieldName }} != {{ .defaultVal }} {
-		dest.WriteObjectField("{{ lowerFirst .originFieldName }}")
-		{{- if .isType }}
-		ms.orig.{{ .originFieldName }}.MarshalJSONStream(dest)
-		{{- else if .isEnum }}
-		dest.WriteInt32(int32(ms.orig.{{ .originFieldName }}))
-		{{- else }}	
-		dest.Write{{ upperFirst .rawType }}(ms.orig.{{ .originFieldName }})
-		{{- end }}
-	}`
-
 const typedUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
 		{{- if .isType }}
-		ms.orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
+		orig.{{ .originFieldName }}.UnmarshalJSONIter(iter)
 		{{- else if .isEnum }}
-		ms.orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
+		orig.{{ .originFieldName }} = {{ .rawType }}(iter.ReadEnumValue({{ .rawType }}_value))
 		{{- else }}	
-		ms.orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
+		orig.{{ .originFieldName }} = iter.Read{{ upperFirst .rawType }}()
 		{{- end }}`
 
 // TypedField is a field that has defined a custom type (e.g. "type Timestamp uint64")
 type TypedField struct {
 	fieldName       string
 	originFieldName string
+	protoID         uint32
 	returnType      *TypedType
 }
 
 type TypedType struct {
 	structName  string
 	packageName string
-	rawType     string
-	isType      bool
-	isEnum      bool
-	defaultVal  string
-	testVal     string
+
+	protoType   ProtoType
+	messageName string
+
+	defaultVal string
+	testVal    string
 }
 
 func (ptf *TypedField) GenerateAccessors(ms *messageStruct) string {
@@ -88,14 +79,33 @@ func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
-func (ptf *TypedField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("typedMarshalJSONTemplate").Parse(typedMarshalJSONTemplate))
-	return executeTemplate(t, ptf.templateFields(ms))
+func (ptf *TypedField) GenerateMarshalJSON(*messageStruct) string {
+	if strings.HasPrefix(ptf.returnType.messageName, "data.") {
+		return "if orig." + ptf.getOriginFieldName() + " != " + ptf.returnType.defaultVal + "{\n" + ptf.toProtoField().genMarshalJSON() + "\n}"
+	}
+	return ptf.toProtoField().genMarshalJSON()
 }
 
 func (ptf *TypedField) GenerateUnmarshalJSON(ms *messageStruct) string {
 	t := template.Must(templateNew("typedUnmarshalJSONTemplate").Parse(typedUnmarshalJSONTemplate))
 	return executeTemplate(t, ptf.templateFields(ms))
+}
+
+func (ptf *TypedField) GenerateSizeProto(*messageStruct) string {
+	return ptf.toProtoField().genSizeProto()
+}
+
+func (ptf *TypedField) GenerateMarshalProto(*messageStruct) string {
+	return ptf.toProtoField().genMarshalProto()
+}
+
+func (ptf *TypedField) toProtoField() *ProtoField {
+	return &ProtoField{
+		Type:        ptf.returnType.protoType,
+		ID:          ptf.protoID,
+		Name:        ptf.getOriginFieldName(),
+		MessageName: ptf.returnType.structName,
+	}
 }
 
 func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
@@ -108,21 +118,23 @@ func (ptf *TypedField) templateFields(ms *messageStruct) map[string]any {
 			}
 			return ""
 		}(),
-		"isCommon":       usedByOtherDataTypes(ptf.returnType.packageName),
-		"returnType":     ptf.returnType.structName,
-		"fieldName":      ptf.fieldName,
-		"lowerFieldName": strings.ToLower(ptf.fieldName),
-		"testValue":      ptf.returnType.testVal,
-		"rawType":        ptf.returnType.rawType,
-		"isType":         ptf.returnType.isType,
-		"isEnum":         ptf.returnType.isEnum,
-		"originFieldName": func() string {
-			if ptf.originFieldName == "" {
-				return ptf.fieldName
-			}
-			return ptf.originFieldName
-		}(),
+		"hasWrapper":      usedByOtherDataTypes(ptf.returnType.packageName),
+		"returnType":      ptf.returnType.structName,
+		"fieldName":       ptf.fieldName,
+		"lowerFieldName":  strings.ToLower(ptf.fieldName),
+		"testValue":       ptf.returnType.testVal,
+		"rawType":         ptf.returnType.protoType.goType(ptf.returnType.messageName),
+		"isType":          ptf.returnType.protoType == ProtoTypeMessage,
+		"isEnum":          ptf.returnType.protoType == ProtoTypeEnum,
+		"originFieldName": ptf.getOriginFieldName(),
 	}
+}
+
+func (ptf *TypedField) getOriginFieldName() string {
+	if ptf.originFieldName == "" {
+		return ptf.fieldName
+	}
+	return ptf.originFieldName
 }
 
 var _ Field = (*TypedField)(nil)

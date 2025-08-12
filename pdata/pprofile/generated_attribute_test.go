@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	v1 "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,26 +41,6 @@ func TestAttribute_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newAttribute(&v1.KeyValue{}, &sharedState)) })
 }
 
-func TestAttribute_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestAttribute()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
-	defer json.ReturnIterator(iter)
-	dest := NewAttribute()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestAttribute_Key(t *testing.T) {
 	ms := NewAttribute()
 	assert.Empty(t, ms.Key())
@@ -74,17 +52,13 @@ func TestAttribute_Key(t *testing.T) {
 
 func TestAttribute_Value(t *testing.T) {
 	ms := NewAttribute()
-	internal.FillTestValue(internal.Value(ms.Value()))
+	assert.Equal(t, pcommon.NewValueEmpty(), ms.Value())
+	internal.FillOrigTestAnyValue(&ms.orig.Value)
 	assert.Equal(t, pcommon.Value(internal.GenerateTestValue()), ms.Value())
 }
 
 func generateTestAttribute() Attribute {
-	tv := NewAttribute()
-	fillTestAttribute(tv)
-	return tv
-}
-
-func fillTestAttribute(tv Attribute) {
-	tv.orig.Key = "test_key"
-	internal.FillTestValue(internal.NewValue(&tv.orig.Value, tv.state))
+	ms := NewAttribute()
+	internal.FillOrigTestKeyValue(ms.orig)
+	return ms
 }

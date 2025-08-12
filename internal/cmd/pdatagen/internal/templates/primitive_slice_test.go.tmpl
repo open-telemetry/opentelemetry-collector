@@ -164,22 +164,6 @@ func Test{{ .structName }}Equal(t *testing.T) {
 	assert.True(t, ms.Equal(ms2))
 }
 
-func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := New{{ .structName }}()
-	internal.FillTest{{ .structName }}(internal.{{ .structName }}(src))
-	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := New{{ .structName }}()
-	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
-
-	assert.Equal(t, src, dest)
-}
-
 func Benchmark{{ .structName }}Equal(b *testing.B) {
 	ms := New{{ .structName }}()
 	ms.Append({{ .testOrigVal }})

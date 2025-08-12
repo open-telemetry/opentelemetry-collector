@@ -10,10 +10,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestNewStringSlice(t *testing.T) {
@@ -129,22 +127,6 @@ func TestStringSliceEqual(t *testing.T) {
 
 	ms2.Append("a", "b", "c")
 	assert.True(t, ms.Equal(ms2))
-}
-
-func TestStringSlice_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := NewStringSlice()
-	internal.FillTestStringSlice(internal.StringSlice(src))
-	internal.MarshalJSONStreamStringSlice(internal.StringSlice(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewStringSlice()
-	internal.UnmarshalJSONIterStringSlice(internal.StringSlice(dest), iter)
-
-	assert.Equal(t, src, dest)
 }
 
 func BenchmarkStringSliceEqual(b *testing.B) {
