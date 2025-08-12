@@ -93,7 +93,7 @@ common/goimports: $(GOIMPORTS)
 
 .PHONY: common/gofumpt
 common/gofumpt: $(GOFUMPT)
-	$(GOFUMPT) -l -w .
+	$(GOFUMPT) -l -w -extra .
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

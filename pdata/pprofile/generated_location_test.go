@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,32 +41,16 @@ func TestLocation_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newLocation(&otlpprofiles.Location{}, &sharedState)) })
 }
 
-func TestLocation_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestLocation()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewLocation()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestLocation_MappingIndex(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, int32(0), ms.MappingIndex())
-	ms.SetMappingIndex(int32(1))
+	ms.SetMappingIndex(int32(13))
 	assert.True(t, ms.HasMappingIndex())
-	assert.Equal(t, int32(1), ms.MappingIndex())
+	assert.Equal(t, int32(13), ms.MappingIndex())
 	ms.RemoveMappingIndex()
 	assert.False(t, ms.HasMappingIndex())
 	dest := NewLocation()
-	dest.SetMappingIndex(int32(1))
+	dest.SetMappingIndex(int32(13))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMappingIndex())
 }
@@ -76,16 +58,16 @@ func TestLocation_MappingIndex(t *testing.T) {
 func TestLocation_Address(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, uint64(0), ms.Address())
-	ms.SetAddress(uint64(1))
-	assert.Equal(t, uint64(1), ms.Address())
+	ms.SetAddress(uint64(13))
+	assert.Equal(t, uint64(13), ms.Address())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(1)) })
+	assert.Panics(t, func() { newLocation(&otlpprofiles.Location{}, &sharedState).SetAddress(uint64(13)) })
 }
 
 func TestLocation_Line(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, NewLineSlice(), ms.Line())
-	fillTestLineSlice(ms.Line())
+	ms.orig.Line = internal.GenerateOrigTestLineSlice()
 	assert.Equal(t, generateTestLineSlice(), ms.Line())
 }
 
@@ -101,20 +83,12 @@ func TestLocation_IsFolded(t *testing.T) {
 func TestLocation_AttributeIndices(t *testing.T) {
 	ms := NewLocation()
 	assert.Equal(t, pcommon.NewInt32Slice(), ms.AttributeIndices())
-	internal.FillTestInt32Slice(internal.Int32Slice(ms.AttributeIndices()))
+	ms.orig.AttributeIndices = internal.GenerateOrigTestInt32Slice()
 	assert.Equal(t, pcommon.Int32Slice(internal.GenerateTestInt32Slice()), ms.AttributeIndices())
 }
 
 func generateTestLocation() Location {
-	tv := NewLocation()
-	fillTestLocation(tv)
-	return tv
-}
-
-func fillTestLocation(tv Location) {
-	tv.orig.MappingIndex_ = &otlpprofiles.Location_MappingIndex{MappingIndex: int32(1)}
-	tv.orig.Address = uint64(1)
-	fillTestLineSlice(newLineSlice(&tv.orig.Line, tv.state))
-	tv.orig.IsFolded = true
-	internal.FillTestInt32Slice(internal.NewInt32Slice(&tv.orig.AttributeIndices, tv.state))
+	ms := NewLocation()
+	internal.FillOrigTestLocation(ms.orig)
+	return ms
 }

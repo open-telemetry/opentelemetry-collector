@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -44,20 +42,11 @@ func TestExemplar_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExemplar(&otlpmetrics.Exemplar{}, &sharedState)) })
 }
 
-func TestExemplar_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestExemplar()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewExemplar()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+func TestExemplar_FilteredAttributes(t *testing.T) {
+	ms := NewExemplar()
+	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
+	ms.orig.FilteredAttributes = internal.GenerateOrigTestKeyValueSlice()
+	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
 }
 
 func TestExemplar_Timestamp(t *testing.T) {
@@ -75,37 +64,22 @@ func TestExemplar_ValueType(t *testing.T) {
 
 func TestExemplar_DoubleValue(t *testing.T) {
 	ms := NewExemplar()
-	assert.InDelta(t, float64(0.0), ms.DoubleValue(), 0.01)
-	ms.SetDoubleValue(float64(17.13))
-	assert.InDelta(t, float64(17.13), ms.DoubleValue(), 0.01)
+	assert.InDelta(t, float64(0), ms.DoubleValue(), 0.01)
+	ms.SetDoubleValue(float64(3.1415926))
+	assert.InDelta(t, float64(3.1415926), ms.DoubleValue(), 0.01)
 	assert.Equal(t, ExemplarValueTypeDouble, ms.ValueType())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetDoubleValue(float64(17.13)) })
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetDoubleValue(float64(3.1415926)) })
 }
 
 func TestExemplar_IntValue(t *testing.T) {
 	ms := NewExemplar()
 	assert.Equal(t, int64(0), ms.IntValue())
-	ms.SetIntValue(int64(17))
-	assert.Equal(t, int64(17), ms.IntValue())
+	ms.SetIntValue(int64(13))
+	assert.Equal(t, int64(13), ms.IntValue())
 	assert.Equal(t, ExemplarValueTypeInt, ms.ValueType())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetIntValue(int64(17)) })
-}
-
-func TestExemplar_FilteredAttributes(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.NewMap(), ms.FilteredAttributes())
-	internal.FillTestMap(internal.Map(ms.FilteredAttributes()))
-	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.FilteredAttributes())
-}
-
-func TestExemplar_TraceID(t *testing.T) {
-	ms := NewExemplar()
-	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
-	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
-	ms.SetTraceID(testValTraceID)
-	assert.Equal(t, testValTraceID, ms.TraceID())
+	assert.Panics(t, func() { newExemplar(&otlpmetrics.Exemplar{}, &sharedState).SetIntValue(int64(13)) })
 }
 
 func TestExemplar_SpanID(t *testing.T) {
@@ -116,16 +90,16 @@ func TestExemplar_SpanID(t *testing.T) {
 	assert.Equal(t, testValSpanID, ms.SpanID())
 }
 
-func generateTestExemplar() Exemplar {
-	tv := NewExemplar()
-	fillTestExemplar(tv)
-	return tv
+func TestExemplar_TraceID(t *testing.T) {
+	ms := NewExemplar()
+	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
+	testValTraceID := pcommon.TraceID(data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
+	ms.SetTraceID(testValTraceID)
+	assert.Equal(t, testValTraceID, ms.TraceID())
 }
 
-func fillTestExemplar(tv Exemplar) {
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Value = &otlpmetrics.Exemplar_AsInt{AsInt: int64(17)}
-	internal.FillTestMap(internal.NewMap(&tv.orig.FilteredAttributes, tv.state))
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+func generateTestExemplar() Exemplar {
+	ms := NewExemplar()
+	internal.FillOrigTestExemplar(ms.orig)
+	return ms
 }

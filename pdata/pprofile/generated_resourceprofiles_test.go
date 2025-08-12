@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,54 +41,33 @@ func TestResourceProfiles_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState)) })
 }
 
-func TestResourceProfiles_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestResourceProfiles()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewResourceProfiles()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestResourceProfiles_Resource(t *testing.T) {
 	ms := NewResourceProfiles()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceProfiles_SchemaUrl(t *testing.T) {
-	ms := NewResourceProfiles()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestResourceProfiles_ScopeProfiles(t *testing.T) {
 	ms := NewResourceProfiles()
 	assert.Equal(t, NewScopeProfilesSlice(), ms.ScopeProfiles())
-	fillTestScopeProfilesSlice(ms.ScopeProfiles())
+	ms.orig.ScopeProfiles = internal.GenerateOrigTestScopeProfilesSlice()
 	assert.Equal(t, generateTestScopeProfilesSlice(), ms.ScopeProfiles())
 }
 
-func generateTestResourceProfiles() ResourceProfiles {
-	tv := NewResourceProfiles()
-	fillTestResourceProfiles(tv)
-	return tv
+func TestResourceProfiles_SchemaUrl(t *testing.T) {
+	ms := NewResourceProfiles()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() {
+		newResourceProfiles(&otlpprofiles.ResourceProfiles{}, &sharedState).SetSchemaUrl("test_schemaurl")
+	})
 }
 
-func fillTestResourceProfiles(tv ResourceProfiles) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeProfilesSlice(newScopeProfilesSlice(&tv.orig.ScopeProfiles, tv.state))
+func generateTestResourceProfiles() ResourceProfiles {
+	ms := NewResourceProfiles()
+	internal.FillOrigTestResourceProfiles(ms.orig)
+	return ms
 }

@@ -19,7 +19,7 @@ var (
 	metricsMarshaler                  = &pmetric.ProtoMarshaler{}
 )
 
-func NewMetrics(cons consumer.Metrics, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
+func NewMetrics(cons consumer.Metrics, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) consumer.Metrics {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}

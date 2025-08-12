@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // AttributeUnit Represents a mapping between Attribute Keys and Units.
@@ -75,24 +74,5 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	copyOrigAttributeUnit(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms AttributeUnit) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.AttributeKeyStrindex != int32(0) {
-		dest.WriteObjectField("attributeKeyStrindex")
-		dest.WriteInt32(ms.orig.AttributeKeyStrindex)
-	}
-	if ms.orig.UnitStrindex != int32(0) {
-		dest.WriteObjectField("unitStrindex")
-		dest.WriteInt32(ms.orig.UnitStrindex)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
-	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
-	dest.UnitStrindex = src.UnitStrindex
+	internal.CopyOrigAttributeUnit(dest.orig, ms.orig)
 }

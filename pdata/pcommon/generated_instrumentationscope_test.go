@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestInstrumentationScope_MoveTo(t *testing.T) {
@@ -42,22 +40,6 @@ func TestInstrumentationScope_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState)) })
 }
 
-func TestInstrumentationScope_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestInstrumentationScope()
-	internal.MarshalJSONStreamInstrumentationScope(internal.InstrumentationScope(src), stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewInstrumentationScope()
-	internal.UnmarshalJSONIterInstrumentationScope(internal.InstrumentationScope(dest), iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestInstrumentationScope_Name(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Empty(t, ms.Name())
@@ -81,18 +63,18 @@ func TestInstrumentationScope_Version(t *testing.T) {
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
+		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(13))
 	})
 }
 

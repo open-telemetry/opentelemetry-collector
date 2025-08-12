@@ -10,12 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	"go.opentelemetry.io/collector/pdata/internal/data"
 	otlptrace "go.opentelemetry.io/collector/pdata/internal/data/protogen/trace/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -44,22 +42,6 @@ func TestSpanLink_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSpanLink(&otlptrace.Span_Link{}, &sharedState)) })
 }
 
-func TestSpanLink_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSpanLink()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSpanLink()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestSpanLink_TraceID(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.TraceID(data.TraceID([16]byte{})), ms.TraceID())
@@ -78,46 +60,38 @@ func TestSpanLink_SpanID(t *testing.T) {
 
 func TestSpanLink_TraceState(t *testing.T) {
 	ms := NewSpanLink()
-	internal.FillTestTraceState(internal.TraceState(ms.TraceState()))
+	assert.Equal(t, pcommon.NewTraceState(), ms.TraceState())
+	internal.FillOrigTestTraceState(&ms.orig.TraceState)
 	assert.Equal(t, pcommon.TraceState(internal.GenerateTestTraceState()), ms.TraceState())
-}
-
-func TestSpanLink_Flags(t *testing.T) {
-	ms := NewSpanLink()
-	assert.Equal(t, uint32(0), ms.Flags())
-	ms.SetFlags(uint32(0xf))
-	assert.Equal(t, uint32(0xf), ms.Flags())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetFlags(uint32(0xf)) })
 }
 
 func TestSpanLink_Attributes(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestSpanLink_DroppedAttributesCount(t *testing.T) {
 	ms := NewSpanLink()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(17)) })
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetDroppedAttributesCount(uint32(13)) })
+}
+
+func TestSpanLink_Flags(t *testing.T) {
+	ms := NewSpanLink()
+	assert.Equal(t, uint32(0), ms.Flags())
+	ms.SetFlags(uint32(13))
+	assert.Equal(t, uint32(13), ms.Flags())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newSpanLink(&otlptrace.Span_Link{}, &sharedState).SetFlags(uint32(13)) })
 }
 
 func generateTestSpanLink() SpanLink {
-	tv := NewSpanLink()
-	fillTestSpanLink(tv)
-	return tv
-}
-
-func fillTestSpanLink(tv SpanLink) {
-	tv.orig.TraceId = data.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-	tv.orig.SpanId = data.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
-	internal.FillTestTraceState(internal.NewTraceState(&tv.orig.TraceState, tv.state))
-	tv.orig.Flags = uint32(0xf)
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.DroppedAttributesCount = uint32(17)
+	ms := NewSpanLink()
+	internal.FillOrigTestSpan_Link(ms.orig)
+	return ms
 }

@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -109,48 +108,5 @@ func (ms Location) AttributeIndices() pcommon.Int32Slice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Location) CopyTo(dest Location) {
 	dest.state.AssertMutable()
-	copyOrigLocation(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Location) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.HasMappingIndex() {
-		dest.WriteObjectField("mappingIndex")
-		dest.WriteInt32(ms.MappingIndex())
-	}
-	if ms.orig.Address != uint64(0) {
-		dest.WriteObjectField("address")
-		dest.WriteUint64(ms.orig.Address)
-	}
-	if len(ms.orig.Line) > 0 {
-		dest.WriteObjectField("line")
-		ms.Line().marshalJSONStream(dest)
-	}
-	if ms.orig.IsFolded != false {
-		dest.WriteObjectField("isFolded")
-		dest.WriteBool(ms.orig.IsFolded)
-	}
-	if len(ms.orig.AttributeIndices) > 0 {
-		dest.WriteObjectField("attributeIndices")
-		internal.MarshalJSONStreamInt32Slice(internal.NewInt32Slice(&ms.orig.AttributeIndices, ms.state), dest)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigLocation(dest, src *otlpprofiles.Location) {
-	if srcMappingIndex, ok := src.MappingIndex_.(*otlpprofiles.Location_MappingIndex); ok {
-		destMappingIndex, ok := dest.MappingIndex_.(*otlpprofiles.Location_MappingIndex)
-		if !ok {
-			destMappingIndex = &otlpprofiles.Location_MappingIndex{}
-			dest.MappingIndex_ = destMappingIndex
-		}
-		destMappingIndex.MappingIndex = srcMappingIndex.MappingIndex
-	} else {
-		dest.MappingIndex_ = nil
-	}
-	dest.Address = src.Address
-	dest.Line = copyOrigLineSlice(dest.Line, src.Line)
-	dest.IsFolded = src.IsFolded
-	dest.AttributeIndices = internal.CopyOrigInt32Slice(dest.AttributeIndices, src.AttributeIndices)
+	internal.CopyOrigLocation(dest.orig, ms.orig)
 }

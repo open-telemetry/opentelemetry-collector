@@ -82,6 +82,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
 				MaxConnsPerHost:     defaultMaxConnsPerHost,
 				IdleConnTimeout:     defaultIdleConnTimeout,
+				ForceAttemptHTTP2:   true,
 			},
 			ProfilesEndpoint: "https://custom.profiles.endpoint:8080/v1development/profiles",
 		}, cfg)

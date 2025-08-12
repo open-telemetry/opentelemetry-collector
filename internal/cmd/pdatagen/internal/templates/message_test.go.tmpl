@@ -21,8 +21,8 @@ func Test{{ .structName }}_MoveTo(t *testing.T) {
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originName }}{}, &sharedState).MoveTo(dest) })
+	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originFullName }}{}, &sharedState).MoveTo(dest) })
 }
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
@@ -34,31 +34,7 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originName }}{}, &sharedState)) })
-}
-
-func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTest{{ .structName }}()
-	{{- if .isCommon }}
-	internal.MarshalJSONStream{{ .structName }}(internal.{{ .structName }}(src), stream)
-	{{- else }}
-	src.marshalJSONStream(stream)
-	{{- end }}
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := New{{ .structName }}()
-	{{- if .isCommon }}
-	internal.UnmarshalJSONIter{{ .structName }}(internal.{{ .structName }}(dest), iter)
-	{{- else }}
-	dest.unmarshalJSONIter(iter)
-	{{- end }}
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
+	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
 }
 
 {{ range .fields }}
@@ -66,19 +42,11 @@ func Test{{ .structName }}_MarshalAndUnmarshalJSON(t *testing.T) {
 {{ end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-    {{- if .isCommon }}
+    {{- if .hasWrapper }}
     return {{ .structName }}(internal.GenerateTest{{ .structName }}())
     {{- else }}
-	tv := New{{ .structName }}()
-	fillTest{{ .structName }}(tv)
-	return tv
+	ms := New{{ .structName }}()
+	internal.FillOrigTest{{ .originName }}(ms.orig)
+	return ms
 	{{- end }}
 }
-
-{{ if not .isCommon -}}
-func fillTest{{ .structName }}(tv {{ .structName }}) {
-	{{- range .fields }}
-	{{ .GenerateSetWithTestValue $.messageStruct }}
-	{{- end }}
-}
-{{ end }}

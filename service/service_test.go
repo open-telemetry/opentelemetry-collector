@@ -40,7 +40,7 @@ import (
 	"go.opentelemetry.io/collector/service/internal/builders"
 	"go.opentelemetry.io/collector/service/internal/promtest"
 	"go.opentelemetry.io/collector/service/pipelines"
-	"go.opentelemetry.io/collector/service/telemetry"
+	"go.opentelemetry.io/collector/service/telemetry/otelconftelemetry"
 )
 
 type labelState int
@@ -298,7 +298,7 @@ func TestServiceTelemetryLogging(t *testing.T) {
 	}
 
 	cfg := newNopConfig()
-	cfg.Telemetry.Logs.Sampling = &telemetry.LogsSamplingConfig{
+	cfg.Telemetry.Logs.Sampling = &otelconftelemetry.LogsSamplingConfig{
 		Enabled:    true,
 		Tick:       time.Minute,
 		Initial:    2,
@@ -531,6 +531,30 @@ func TestServiceTelemetryRestart(t *testing.T) {
 	assert.NoError(t, srvTwo.Shutdown(context.Background()))
 }
 
+func TestServiceTelemetryShutdownError(t *testing.T) {
+	cfg := newNopConfig()
+	cfg.Telemetry.Logs.Level = zapcore.DebugLevel
+	cfg.Telemetry.Logs.Processors = []config.LogRecordProcessor{{
+		Batch: &config.BatchLogRecordProcessor{
+			Exporter: config.LogRecordExporter{
+				OTLP: &config.OTLP{
+					Protocol: ptr("http/protobuf"),
+					Endpoint: ptr("http://testing.invalid"),
+				},
+			},
+		},
+	}}
+
+	// Create and start a service
+	srv, err := New(context.Background(), newNopSettings(), cfg)
+	require.NoError(t, err)
+	require.NoError(t, srv.Start(context.Background()))
+
+	// Shutdown the service
+	err = srv.Shutdown(context.Background())
+	assert.ErrorContains(t, err, `failed to shutdown telemetry`)
+}
+
 func TestExtensionNotificationFailure(t *testing.T) {
 	set := newNopSettings()
 	cfg := newNopConfig()
@@ -611,12 +635,12 @@ func TestServiceInvalidTelemetryConfiguration(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr error
-		cfg     telemetry.Config
+		cfg     otelconftelemetry.Config
 	}{
 		{
 			name: "log config with processors and invalid config",
-			cfg: telemetry.Config{
-				Logs: telemetry.LogsConfig{
+			cfg: otelconftelemetry.Config{
+				Logs: otelconftelemetry.LogsConfig{
 					Encoding: "console",
 					Processors: []config.LogRecordProcessor{
 						{
@@ -785,12 +809,12 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 	return Config{
 		Extensions: extensions.Config{component.NewID(nopType)},
 		Pipelines:  pipelineCfgs,
-		Telemetry: telemetry.Config{
-			Logs: telemetry.LogsConfig{
+		Telemetry: otelconftelemetry.Config{
+			Logs: otelconftelemetry.LogsConfig{
 				Level:       zapcore.InfoLevel,
 				Development: false,
 				Encoding:    "console",
-				Sampling: &telemetry.LogsSamplingConfig{
+				Sampling: &otelconftelemetry.LogsSamplingConfig{
 					Enabled:    true,
 					Tick:       10 * time.Second,
 					Initial:    100,
@@ -802,7 +826,7 @@ func newNopConfigPipelineConfigs(pipelineCfgs pipelines.Config) Config {
 				DisableStacktrace: false,
 				InitialFields:     map[string]any(nil),
 			},
-			Metrics: telemetry.MetricsConfig{
+			Metrics: otelconftelemetry.MetricsConfig{
 				Level: configtelemetry.LevelBasic,
 			},
 		},

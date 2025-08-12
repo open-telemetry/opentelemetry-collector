@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestSummary_MoveTo(t *testing.T) {
@@ -42,35 +40,15 @@ func TestSummary_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newSummary(&otlpmetrics.Summary{}, &sharedState)) })
 }
 
-func TestSummary_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestSummary()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewSummary()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestSummary_DataPoints(t *testing.T) {
 	ms := NewSummary()
 	assert.Equal(t, NewSummaryDataPointSlice(), ms.DataPoints())
-	fillTestSummaryDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestSummaryDataPointSlice()
 	assert.Equal(t, generateTestSummaryDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSummary() Summary {
-	tv := NewSummary()
-	fillTestSummary(tv)
-	return tv
-}
-
-func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewSummary()
+	internal.FillOrigTestSummary(ms.orig)
+	return ms
 }

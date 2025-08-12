@@ -20,7 +20,7 @@ var (
 	profilesMarshaler                    = pprofile.ProtoMarshaler{}
 )
 
-func NewProfiles(cons xconsumer.Profiles, itemCounter metric.Int64Counter, sizeCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
+func NewProfiles(cons xconsumer.Profiles, itemCounter, sizeCounter metric.Int64Counter, opts ...Option) xconsumer.Profiles {
 	if !telemetry.NewPipelineTelemetryGate.IsEnabled() {
 		return cons
 	}

@@ -19,17 +19,17 @@ import (
 //
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-{{- if .isCommon }}
+{{- if .hasWrapper }}
 type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
-	orig *{{ .originName }}
+	orig *{{ .originFullName }}
 	state *internal.State
 }
 {{- end }}
 
-func new{{ .structName }}(orig *{{ .originName }}, state *internal.State) {{ .structName }} {
-	{{- if .isCommon }}
+func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{ .structName }} {
+	{{- if .hasWrapper }}
 	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
 	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
@@ -42,7 +42,7 @@ func new{{ .structName }}(orig *{{ .originName }}, state *internal.State) {{ .st
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
 	state := internal.StateMutable
-	return new{{ .structName }}(&{{ .originName }}{}, &state)
+	return new{{ .structName }}(&{{ .originFullName }}{}, &state)
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and
@@ -55,7 +55,7 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 		return
 	}
 	*dest.{{ .origAccessor }} = *ms.{{ .origAccessor }}
-	*ms.{{ .origAccessor }} = {{ .originName }}{}
+	*ms.{{ .origAccessor }} = {{ .originFullName }}{}
 }
 
 {{ range .fields -}}
@@ -65,34 +65,15 @@ func (ms {{ .structName }}) MoveTo(dest {{ .structName }}) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-    {{- if .isCommon }}
-    internal.CopyOrig{{ .structName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
-    {{- else }}
-    copyOrig{{ .structName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
-	{{- end }}
+    internal.CopyOrig{{ .originName }}(dest.{{ .origAccessor }}, ms.{{ .origAccessor }})
 }
 
-{{ if .isCommon -}}
-func (ms {{ .structName }}) getOrig() *{{ .originName }} {
+{{ if .hasWrapper -}}
+func (ms {{ .structName }}) getOrig() *{{ .originFullName }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
-}
-{{- else }}
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	{{ range .fields -}}
-	{{ .GenerateMarshalJSON $.messageStruct }}
-	{{ end -}}
-	dest.WriteObjectEnd()
-}
-
-func copyOrig{{ .structName }}(dest, src *{{ .originName }}) {
-	{{- range .fields }}
-	{{ .GenerateCopyOrig $.messageStruct }}
-	{{- end }}
 }
 {{- end }}

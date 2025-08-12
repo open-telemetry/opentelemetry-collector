@@ -9,7 +9,6 @@ package pprofile
 import (
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // Line details a specific line in a source code, linked to a function.
@@ -86,29 +85,5 @@ func (ms Line) SetColumn(v int64) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Line) CopyTo(dest Line) {
 	dest.state.AssertMutable()
-	copyOrigLine(dest.orig, ms.orig)
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms Line) marshalJSONStream(dest *json.Stream) {
-	dest.WriteObjectStart()
-	if ms.orig.FunctionIndex != int32(0) {
-		dest.WriteObjectField("functionIndex")
-		dest.WriteInt32(ms.orig.FunctionIndex)
-	}
-	if ms.orig.Line != int64(0) {
-		dest.WriteObjectField("line")
-		dest.WriteInt64(ms.orig.Line)
-	}
-	if ms.orig.Column != int64(0) {
-		dest.WriteObjectField("column")
-		dest.WriteInt64(ms.orig.Column)
-	}
-	dest.WriteObjectEnd()
-}
-
-func copyOrigLine(dest, src *otlpprofiles.Line) {
-	dest.FunctionIndex = src.FunctionIndex
-	dest.Line = src.Line
-	dest.Column = src.Column
+	internal.CopyOrigLine(dest.orig, ms.orig)
 }

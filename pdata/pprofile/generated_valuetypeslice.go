@@ -12,7 +12,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 // ValueTypeSlice logically represents a slice of ValueType.
@@ -130,6 +129,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.orig); i++ {
 		if f(es.At(i)) {
+			(*es.orig)[i] = nil
 			continue
 		}
 		if newLen == i {
@@ -138,6 +138,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 			continue
 		}
 		(*es.orig)[newLen] = (*es.orig)[i]
+		(*es.orig)[i] = nil
 		newLen++
 	}
 	*es.orig = (*es.orig)[:newLen]
@@ -146,7 +147,7 @@ func (es ValueTypeSlice) RemoveIf(f func(ValueType) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 	dest.state.AssertMutable()
-	*dest.orig = copyOrigValueTypeSlice(*dest.orig, *es.orig)
+	*dest.orig = internal.CopyOrigValueTypeSlice(*dest.orig, *es.orig)
 }
 
 // Sort sorts the ValueType elements within ValueTypeSlice given the
@@ -155,32 +156,4 @@ func (es ValueTypeSlice) CopyTo(dest ValueTypeSlice) {
 func (es ValueTypeSlice) Sort(less func(a, b ValueType) bool) {
 	es.state.AssertMutable()
 	sort.SliceStable(*es.orig, func(i, j int) bool { return less(es.At(i), es.At(j)) })
-}
-
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms ValueTypeSlice) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-func copyOrigValueTypeSlice(dest, src []*otlpprofiles.ValueType) []*otlpprofiles.ValueType {
-	if cap(dest) < len(src) {
-		dest = make([]*otlpprofiles.ValueType, len(src))
-		data := make([]otlpprofiles.ValueType, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrigValueType(dest[i], src[i])
-	}
-	return dest
 }

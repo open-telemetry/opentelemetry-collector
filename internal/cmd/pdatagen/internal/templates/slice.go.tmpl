@@ -19,7 +19,7 @@ import (
 //
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-{{- if .isCommon }}
+{{- if .hasWrapper }}
 type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
@@ -29,7 +29,7 @@ type {{ .structName }} struct {
 {{- end }}
 
 func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.State) {{ .structName }} {
-	{{- if .isCommon }}
+	{{- if .hasWrapper }}
 	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
 	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
@@ -133,6 +133,11 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 	newLen := 0
 	for i := 0; i < len(*es.{{ .origAccessor }}); i++ {
 		if f(es.At(i)) {
+			{{- if eq .type "sliceOfPtrs" }}
+			(*es.{{ .origAccessor }})[i] = nil
+			{{- else }}
+			(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+			{{- end }}
 			continue
 		}
 		if newLen == i {
@@ -141,6 +146,11 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 			continue
 		}
 		(*es.{{ .origAccessor }})[newLen] = (*es.{{ .origAccessor }})[i]
+		{{- if eq .type "sliceOfPtrs" }}
+		(*es.{{ .origAccessor }})[i] = nil
+		{{- else }}
+		(*es.{{ .origAccessor }})[i] = {{ .emptyOriginElement }}
+		{{- end }}
 		newLen++
 	}
 	*es.{{ .origAccessor }} = (*es.{{ .origAccessor }})[:newLen]
@@ -150,11 +160,7 @@ func (es {{ .structName }}) RemoveIf(f func({{ .elementName }}) bool) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (es {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.{{ .stateAccessor }}.AssertMutable()
-	{{- if .isCommon }}
-	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .structName }}(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
-	{{- else }}
-	*dest.{{ .origAccessor }} = copyOrig{{ .structName }}(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
-	{{- end }}
+	*dest.{{ .origAccessor }} = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.{{ .origAccessor }}, *es.{{ .origAccessor }})
 }
 
 {{ if eq .type "sliceOfPtrs" -}}
@@ -167,42 +173,12 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 }
 {{- end }}
 
-{{ if .isCommon -}}
+{{ if .hasWrapper -}}
 func (ms {{ .structName }}) getOrig() *[]{{ .originElementType }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
 }
 
 func (ms {{ .structName }}) getState() *internal.State {
 	return internal.Get{{ .structName }}State(internal.{{ .structName }}(ms))
-}
-{{- else }}
-// marshalJSONStream marshals all properties from the current struct to the destination stream.
-func (ms {{ .structName }}) marshalJSONStream(dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(*ms.orig) > 0 {
-		ms.At(0).marshalJSONStream(dest)
-	}
-	for i := 1; i < len(*ms.orig); i++ {
-		dest.WriteMore()
-		ms.At(i).marshalJSONStream(dest)
-	}
-	dest.WriteArrayEnd()
-}
-
-func copyOrig{{ .structName }}(dest, src []{{ .originElementType }}) []{{ .originElementType }} {
-	if cap(dest) < len(src) {
-		dest = make([]{{ .originElementType }}, len(src))
-		{{- if eq .type "sliceOfPtrs" }}
-		data := make([]{{ .originName }}, len(src))
-		for i := range src {
-			dest[i] = &data[i]
-		}
-		{{- end }}
-	}
-	dest = dest[:len(src)]
-	for i := range src {
-		copyOrig{{ .elementName }}({{ .originElementPtr }}dest[i], {{ .originElementPtr }}src[i])
-	}
-	return dest
 }
 {{- end }}

@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,26 +41,10 @@ func TestHistogramDataPoint_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState)) })
 }
 
-func TestHistogramDataPoint_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestHistogramDataPoint()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewHistogramDataPoint()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestHistogramDataPoint_Attributes(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, pcommon.NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.orig.Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, pcommon.Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
@@ -85,30 +67,44 @@ func TestHistogramDataPoint_Timestamp(t *testing.T) {
 func TestHistogramDataPoint_Count(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, uint64(0), ms.Count())
-	ms.SetCount(uint64(17))
-	assert.Equal(t, uint64(17), ms.Count())
+	ms.SetCount(uint64(13))
+	assert.Equal(t, uint64(13), ms.Count())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(17)) })
+	assert.Panics(t, func() { newHistogramDataPoint(&otlpmetrics.HistogramDataPoint{}, &sharedState).SetCount(uint64(13)) })
+}
+
+func TestHistogramDataPoint_Sum(t *testing.T) {
+	ms := NewHistogramDataPoint()
+	assert.InDelta(t, float64(0), ms.Sum(), 0.01)
+	ms.SetSum(float64(3.1415926))
+	assert.True(t, ms.HasSum())
+	assert.InDelta(t, float64(3.1415926), ms.Sum(), 0.01)
+	ms.RemoveSum()
+	assert.False(t, ms.HasSum())
+	dest := NewHistogramDataPoint()
+	dest.SetSum(float64(3.1415926))
+	ms.CopyTo(dest)
+	assert.False(t, dest.HasSum())
 }
 
 func TestHistogramDataPoint_BucketCounts(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, []uint64(nil), ms.BucketCounts().AsRaw())
-	ms.BucketCounts().FromRaw([]uint64{1, 2, 3})
-	assert.Equal(t, []uint64{1, 2, 3}, ms.BucketCounts().AsRaw())
+	assert.Equal(t, pcommon.NewUInt64Slice(), ms.BucketCounts())
+	ms.orig.BucketCounts = internal.GenerateOrigTestUint64Slice()
+	assert.Equal(t, pcommon.UInt64Slice(internal.GenerateTestUInt64Slice()), ms.BucketCounts())
 }
 
 func TestHistogramDataPoint_ExplicitBounds(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.Equal(t, []float64(nil), ms.ExplicitBounds().AsRaw())
-	ms.ExplicitBounds().FromRaw([]float64{1, 2, 3})
-	assert.Equal(t, []float64{1, 2, 3}, ms.ExplicitBounds().AsRaw())
+	assert.Equal(t, pcommon.NewFloat64Slice(), ms.ExplicitBounds())
+	ms.orig.ExplicitBounds = internal.GenerateOrigTestFloat64Slice()
+	assert.Equal(t, pcommon.Float64Slice(internal.GenerateTestFloat64Slice()), ms.ExplicitBounds())
 }
 
 func TestHistogramDataPoint_Exemplars(t *testing.T) {
 	ms := NewHistogramDataPoint()
 	assert.Equal(t, NewExemplarSlice(), ms.Exemplars())
-	fillTestExemplarSlice(ms.Exemplars())
+	ms.orig.Exemplars = internal.GenerateOrigTestExemplarSlice()
 	assert.Equal(t, generateTestExemplarSlice(), ms.Exemplars())
 }
 
@@ -120,64 +116,36 @@ func TestHistogramDataPoint_Flags(t *testing.T) {
 	assert.Equal(t, testValFlags, ms.Flags())
 }
 
-func TestHistogramDataPoint_Sum(t *testing.T) {
-	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Sum(), 0.01)
-	ms.SetSum(float64(17.13))
-	assert.True(t, ms.HasSum())
-	assert.InDelta(t, float64(17.13), ms.Sum(), 0.01)
-	ms.RemoveSum()
-	assert.False(t, ms.HasSum())
-	dest := NewHistogramDataPoint()
-	dest.SetSum(float64(17.13))
-	ms.CopyTo(dest)
-	assert.False(t, dest.HasSum())
-}
-
 func TestHistogramDataPoint_Min(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Min(), 0.01)
-	ms.SetMin(float64(9.23))
+	assert.InDelta(t, float64(0), ms.Min(), 0.01)
+	ms.SetMin(float64(3.1415926))
 	assert.True(t, ms.HasMin())
-	assert.InDelta(t, float64(9.23), ms.Min(), 0.01)
+	assert.InDelta(t, float64(3.1415926), ms.Min(), 0.01)
 	ms.RemoveMin()
 	assert.False(t, ms.HasMin())
 	dest := NewHistogramDataPoint()
-	dest.SetMin(float64(9.23))
+	dest.SetMin(float64(3.1415926))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMin())
 }
 
 func TestHistogramDataPoint_Max(t *testing.T) {
 	ms := NewHistogramDataPoint()
-	assert.InDelta(t, float64(0.0), ms.Max(), 0.01)
-	ms.SetMax(float64(182.55))
+	assert.InDelta(t, float64(0), ms.Max(), 0.01)
+	ms.SetMax(float64(3.1415926))
 	assert.True(t, ms.HasMax())
-	assert.InDelta(t, float64(182.55), ms.Max(), 0.01)
+	assert.InDelta(t, float64(3.1415926), ms.Max(), 0.01)
 	ms.RemoveMax()
 	assert.False(t, ms.HasMax())
 	dest := NewHistogramDataPoint()
-	dest.SetMax(float64(182.55))
+	dest.SetMax(float64(3.1415926))
 	ms.CopyTo(dest)
 	assert.False(t, dest.HasMax())
 }
 
 func generateTestHistogramDataPoint() HistogramDataPoint {
-	tv := NewHistogramDataPoint()
-	fillTestHistogramDataPoint(tv)
-	return tv
-}
-
-func fillTestHistogramDataPoint(tv HistogramDataPoint) {
-	internal.FillTestMap(internal.NewMap(&tv.orig.Attributes, tv.state))
-	tv.orig.StartTimeUnixNano = 1234567890
-	tv.orig.TimeUnixNano = 1234567890
-	tv.orig.Count = uint64(17)
-	tv.orig.BucketCounts = []uint64{1, 2, 3}
-	tv.orig.ExplicitBounds = []float64{1, 2, 3}
-	fillTestExemplarSlice(newExemplarSlice(&tv.orig.Exemplars, tv.state))
-	tv.orig.Flags = 1
-	tv.orig.Sum_ = &otlpmetrics.HistogramDataPoint_Sum{Sum: float64(17.13)}
-	tv.orig.Min_ = &otlpmetrics.HistogramDataPoint_Min{Min: float64(9.23)}
-	tv.orig.Max_ = &otlpmetrics.HistogramDataPoint_Max{Max: float64(182.55)}
+	ms := NewHistogramDataPoint()
+	internal.FillOrigTestHistogramDataPoint(ms.orig)
+	return ms
 }

@@ -7,6 +7,8 @@ import (
 	_ "embed"
 	"strings"
 	"text/template"
+
+	"github.com/ettle/strcase"
 )
 
 var (
@@ -17,6 +19,10 @@ var (
 	//go:embed templates/message_internal.go.tmpl
 	messageInternalTemplateBytes []byte
 	messageInternalTemplate      = parseTemplate("message_internal.go", messageInternalTemplateBytes)
+
+	//go:embed templates/message_internal_test.go.tmpl
+	messageInternalTestTemplateBytes []byte
+	messageInternalTestTemplate      = parseTemplate("message_internal_test.go", messageInternalTestTemplateBytes)
 
 	//go:embed templates/message_test.go.tmpl
 	messageTestTemplateBytes []byte
@@ -30,6 +36,10 @@ var (
 	primitiveSliceInternalTemplateBytes []byte
 	primitiveSliceInternalTemplate      = parseTemplate("primitive_slice_internal.go", primitiveSliceInternalTemplateBytes)
 
+	//go:embed templates/primitive_slice_internal_test.go.tmpl
+	primitiveSliceInternalTestTemplateBytes []byte
+	primitiveSliceInternalTestTemplate      = parseTemplate("primitive_slice_internal_test.go", primitiveSliceInternalTestTemplateBytes)
+
 	//go:embed templates/primitive_slice_test.go.tmpl
 	primitiveSliceTestTemplateBytes []byte
 	primitiveSliceTestTemplate      = parseTemplate("primitive_slice_test.go", primitiveSliceTestTemplateBytes)
@@ -41,6 +51,10 @@ var (
 	//go:embed templates/slice_internal.go.tmpl
 	sliceInternalTemplateBytes []byte
 	sliceInternalTemplate      = parseTemplate("slice_internal.go", sliceInternalTemplateBytes)
+
+	//go:embed templates/slice_internal_test.go.tmpl
+	sliceInternalTestTemplateBytes []byte
+	sliceInternalTestTemplate      = parseTemplate("slice_internal_test.go", sliceInternalTestTemplateBytes)
 
 	//go:embed templates/slice_test.go.tmpl
 	sliceTestTemplateBytes []byte
@@ -63,7 +77,11 @@ func templateNew(name string) *template.Template {
 	return template.New(name).Funcs(template.FuncMap{
 		"upperFirst": upperFirst,
 		"lowerFirst": lowerFirst,
+		"add":        add,
 		"sub":        sub,
+		"div":        div,
+		"needSnake":  needSnake,
+		"toSnake":    strcase.ToSnake,
 	})
 }
 
@@ -75,6 +93,18 @@ func lowerFirst(s string) string {
 	return strings.ToLower(s[0:1]) + s[1:]
 }
 
+func add(a, b int) int {
+	return a + b
+}
+
 func sub(a, b int) int {
 	return a - b
+}
+
+func div(a, b int) int {
+	return a / b
+}
+
+func needSnake(str string) bool {
+	return strings.ToLower(str) != strcase.ToSnake(str)
 }

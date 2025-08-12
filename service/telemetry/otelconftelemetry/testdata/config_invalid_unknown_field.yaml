@@ -1,0 +1,5 @@
+metrics:
+  unknown: basic
+  views:
+    - selector: {}
+      stream: {}

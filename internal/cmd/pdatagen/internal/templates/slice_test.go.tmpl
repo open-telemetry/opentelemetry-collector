@@ -19,20 +19,20 @@ func Test{{ .structName }}(t *testing.T) {
 	es = new{{ .structName }}(&[]{{ .originElementType }}{}, &state)
 	assert.Equal(t, 0, es.Len())
 
+	{{ if eq .elementName "Value" -}}
+	emptyVal := New{{ .elementName }}Empty()
+	{{- else }}
 	emptyVal := New{{ .elementName }}()
-	{{- if .isCommon }}
+	{{- end }}
+	{{- if .hasWrapper }}
 	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
 	{{- else }}
 	testVal := generateTest{{ .elementName }}()
 	{{- end }}
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		{{- if .isCommon }}
-		internal.FillTest{{ .elementName }}(internal.{{ .elementName }}(el))
-		{{- else }}
-		fillTest{{ .elementName }}(el)
-		{{- end }}
+		internal.FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}(*es.{{ .origAccessor }})[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -53,16 +53,8 @@ func Test{{ .structName }}ReadOnly(t *testing.T) {
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
 	dest := New{{ .structName }}()
-	// Test CopyTo to empty
-	New{{ .structName }}().CopyTo(dest)
-	assert.Equal(t, New{{ .structName }}(), dest)
-
-	// Test CopyTo larger slice
-	generateTest{{ .structName }}().CopyTo(dest)
-	assert.Equal(t, generateTest{{ .structName }}(), dest)
-
-	// Test CopyTo same size slice
-	generateTest{{ .structName }}().CopyTo(dest)
+	src := generateTest{{ .structName }}()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 }
 
@@ -134,6 +126,14 @@ func Test{{ .structName }}_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func Test{{ .structName }}_RemoveIfAll(t *testing.T) {
+	got := generateTest{{ .structName }}()
+	got.RemoveIf(func(el {{ .elementName }}) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func Test{{ .structName }}All(t *testing.T) {
 	ms := generateTest{{ .structName }}()
 	assert.NotEmpty(t, ms.Len())
@@ -165,21 +165,7 @@ func Test{{ .structName }}_Sort(t *testing.T) {
 {{- end }}
 
 func generateTest{{ .structName }}() {{ .structName }} {
-    {{- if .isCommon }}
-    return {{ .structName }}(internal.GenerateTest{{ .structName }}())
-    {{- else }}
-	es := New{{ .structName }}()
-	fillTest{{ .structName }}(es)
-	return es
-	{{- end }}
+	ms := New{{ .structName }}()
+	*ms.{{ .origAccessor }} = internal.GenerateOrigTest{{ .elementOriginName }}Slice()
+	return ms
 }
-
-{{ if not .isCommon -}}
-func fillTest{{ .structName }}(es {{ .structName }}) {
-	*es.orig = make([]{{ .originElementType }}, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = {{ .emptyOriginElement }}
-		fillTest{{ .elementName }}({{ .newElement }})
-	}
-}
-{{- end }}

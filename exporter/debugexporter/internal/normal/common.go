@@ -35,7 +35,7 @@ func writeResourceDetails(schemaURL string) (resourceDetails string) {
 	return resourceDetails
 }
 
-func writeScopeDetails(name string, version string, schemaURL string) (scopeDetails string) {
+func writeScopeDetails(name, version, schemaURL string) (scopeDetails string) {
 	if name != "" {
 		scopeDetails += name
 	}

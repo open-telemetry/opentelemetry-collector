@@ -10,11 +10,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 
 	"go.opentelemetry.io/collector/pdata/internal"
 	otlpprofiles "go.opentelemetry.io/collector/pdata/internal/data/protogen/profiles/v1development"
-	"go.opentelemetry.io/collector/pdata/internal/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
@@ -43,83 +41,57 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState)) })
 }
 
-func TestProfilesDictionary_MarshalAndUnmarshalJSON(t *testing.T) {
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	src := generateTestProfilesDictionary()
-	src.marshalJSONStream(stream)
-	require.NoError(t, stream.Error())
-
-	iter := json.BorrowIterator(stream.Buffer())
-	defer json.ReturnIterator(iter)
-	dest := NewProfilesDictionary()
-	dest.unmarshalJSONIter(iter)
-	require.NoError(t, iter.Error())
-
-	assert.Equal(t, src, dest)
-}
-
 func TestProfilesDictionary_MappingTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewMappingSlice(), ms.MappingTable())
-	fillTestMappingSlice(ms.MappingTable())
+	ms.orig.MappingTable = internal.GenerateOrigTestMappingSlice()
 	assert.Equal(t, generateTestMappingSlice(), ms.MappingTable())
 }
 
 func TestProfilesDictionary_LocationTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewLocationSlice(), ms.LocationTable())
-	fillTestLocationSlice(ms.LocationTable())
+	ms.orig.LocationTable = internal.GenerateOrigTestLocationSlice()
 	assert.Equal(t, generateTestLocationSlice(), ms.LocationTable())
 }
 
 func TestProfilesDictionary_FunctionTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewFunctionSlice(), ms.FunctionTable())
-	fillTestFunctionSlice(ms.FunctionTable())
+	ms.orig.FunctionTable = internal.GenerateOrigTestFunctionSlice()
 	assert.Equal(t, generateTestFunctionSlice(), ms.FunctionTable())
 }
 
 func TestProfilesDictionary_LinkTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewLinkSlice(), ms.LinkTable())
-	fillTestLinkSlice(ms.LinkTable())
+	ms.orig.LinkTable = internal.GenerateOrigTestLinkSlice()
 	assert.Equal(t, generateTestLinkSlice(), ms.LinkTable())
 }
 
 func TestProfilesDictionary_StringTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, pcommon.NewStringSlice(), ms.StringTable())
-	internal.FillTestStringSlice(internal.StringSlice(ms.StringTable()))
+	ms.orig.StringTable = internal.GenerateOrigTestStringSlice()
 	assert.Equal(t, pcommon.StringSlice(internal.GenerateTestStringSlice()), ms.StringTable())
 }
 
 func TestProfilesDictionary_AttributeTable(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewAttributeTableSlice(), ms.AttributeTable())
-	fillTestAttributeTableSlice(ms.AttributeTable())
+	ms.orig.AttributeTable = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, generateTestAttributeTableSlice(), ms.AttributeTable())
 }
 
 func TestProfilesDictionary_AttributeUnits(t *testing.T) {
 	ms := NewProfilesDictionary()
 	assert.Equal(t, NewAttributeUnitSlice(), ms.AttributeUnits())
-	fillTestAttributeUnitSlice(ms.AttributeUnits())
+	ms.orig.AttributeUnits = internal.GenerateOrigTestAttributeUnitSlice()
 	assert.Equal(t, generateTestAttributeUnitSlice(), ms.AttributeUnits())
 }
 
 func generateTestProfilesDictionary() ProfilesDictionary {
-	tv := NewProfilesDictionary()
-	fillTestProfilesDictionary(tv)
-	return tv
-}
-
-func fillTestProfilesDictionary(tv ProfilesDictionary) {
-	fillTestMappingSlice(newMappingSlice(&tv.orig.MappingTable, tv.state))
-	fillTestLocationSlice(newLocationSlice(&tv.orig.LocationTable, tv.state))
-	fillTestFunctionSlice(newFunctionSlice(&tv.orig.FunctionTable, tv.state))
-	fillTestLinkSlice(newLinkSlice(&tv.orig.LinkTable, tv.state))
-	internal.FillTestStringSlice(internal.NewStringSlice(&tv.orig.StringTable, tv.state))
-	fillTestAttributeTableSlice(newAttributeTableSlice(&tv.orig.AttributeTable, tv.state))
-	fillTestAttributeUnitSlice(newAttributeUnitSlice(&tv.orig.AttributeUnits, tv.state))
+	ms := NewProfilesDictionary()
+	internal.FillOrigTestProfilesDictionary(ms.orig)
+	return ms
 }

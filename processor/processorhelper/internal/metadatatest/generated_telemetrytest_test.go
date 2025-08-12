@@ -20,9 +20,13 @@ func TestSetupTelemetry(t *testing.T) {
 	require.NoError(t, err)
 	defer tb.Shutdown()
 	tb.ProcessorIncomingItems.Add(context.Background(), 1)
+	tb.ProcessorInternalDuration.Record(context.Background(), 1)
 	tb.ProcessorOutgoingItems.Add(context.Background(), 1)
 	AssertEqualProcessorIncomingItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorInternalDuration(t, testTel,
+		[]metricdata.HistogramDataPoint[float64]{{}}, metricdatatest.IgnoreValue(),
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualProcessorOutgoingItems(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},

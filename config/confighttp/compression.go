@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sync"
 
 	"github.com/golang/snappy"
 	"github.com/klauspost/compress/zstd"
@@ -38,6 +39,25 @@ type compressRoundTripper struct {
 	compressor        *compressor
 }
 
+var zstdReaderPool sync.Pool
+
+type pooledZstdReadCloser struct {
+	inner *zstd.Decoder
+}
+
+func (pzrc *pooledZstdReadCloser) Read(dst []byte) (int, error) {
+	return pzrc.inner.Read(dst)
+}
+
+func (pzrc *pooledZstdReadCloser) Close() error {
+	err := pzrc.inner.Reset(nil)
+	if err != nil {
+		return err
+	}
+	zstdReaderPool.Put(pzrc.inner)
+	return nil
+}
+
 var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, error){
 	"": func(io.ReadCloser) (io.ReadCloser, error) {
 		// Not a compressed payload. Nothing to do.
@@ -51,18 +71,24 @@ var availableDecoders = map[string]func(body io.ReadCloser) (io.ReadCloser, erro
 		return gr, nil
 	},
 	"zstd": func(body io.ReadCloser) (io.ReadCloser, error) {
-		zr, err := zstd.NewReader(
-			body,
+		v := zstdReaderPool.Get()
+		var zr *zstd.Decoder
+		var err error
+		if v == nil {
+			// NOTE(tigrannajaryan):
 			// Concurrency 1 disables async decoding. We don't need async decoding, it is pointless
 			// for our use-case (a server accepting decoding http requests).
 			// Disabling async improves performance (I benchmarked it previously when working
 			// on https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23257).
-			zstd.WithDecoderConcurrency(1),
-		)
+			zr, err = zstd.NewReader(body, zstd.WithDecoderConcurrency(1))
+		} else {
+			zr = v.(*zstd.Decoder)
+			err = zr.Reset(body)
+		}
 		if err != nil {
 			return nil, err
 		}
-		return zr.IOReadCloser(), nil
+		return &pooledZstdReadCloser{inner: zr}, nil
 	},
 	"zlib": func(body io.ReadCloser) (io.ReadCloser, error) {
 		zr, err := zlib.NewReader(body)
