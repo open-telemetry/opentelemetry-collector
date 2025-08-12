@@ -46,9 +46,16 @@ const oneOfMessageAccessorsTestTemplate = `func Test{{ .structName }}_{{ .fieldN
 }
 `
 
-const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructName }}_{{ .fieldName -}}{ 
+const oneOfMessageSetTestTemplate = `orig.{{ .originOneOfFieldName }} = &{{ .originStructType }}{ 
 {{- .fieldName }}: &{{ .originFieldPackageName }}.{{ .fieldName }}{}}
 FillOrigTest{{ .fieldOriginName }}(orig.Get{{ .returnType }}())`
+
+const oneOfMessageTestValuesTemplate = `
+"oneof_{{ .lowerFieldName }}": { {{ .originOneOfFieldName }}: func() *{{ .originStructType }}{
+	val := &{{ .originFieldPackageName }}.{{ .fieldName }}{}
+	FillOrigTest{{ .fieldOriginName }}(val)
+	return &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: val}
+}()},`
 
 const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 		{{ .lowerFieldName }} := &{{ .originFieldPackageName}}.{{ .fieldName }}{}
@@ -57,7 +64,7 @@ const oneOfMessageCopyOrigTemplate = `	case *{{ .originStructType }}:
 			{{ .fieldName }}: {{ .lowerFieldName }},
 		}`
 
-const oneOfMessageTypeTemplate = `case *{{ .originStructName }}_{{ .originFieldName }}:
+const oneOfMessageTypeTemplate = `case *{{ .originStructType }}:
 	return {{ .typeName }}`
 
 const oneOfMessageUnmarshalJSONTemplate = `case "{{ lowerFirst .originFieldName }}"{{ if needSnake .originFieldName -}}, "{{ toSnake .originFieldName }}"{{- end }}:
@@ -88,6 +95,11 @@ func (omv *OneOfMessageValue) GenerateTests(ms *messageStruct, of *OneOfField) s
 
 func (omv *OneOfMessageValue) GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string {
 	t := template.Must(templateNew("oneOfMessageSetTestTemplate").Parse(oneOfMessageSetTestTemplate))
+	return executeTemplate(t, omv.templateFields(ms, of))
+}
+
+func (omv *OneOfMessageValue) GenerateTestValue(ms *messageStruct, of *OneOfField) string {
+	t := template.Must(templateNew("oneOfMessageTestValuesTemplate").Parse(oneOfMessageTestValuesTemplate))
 	return executeTemplate(t, omv.templateFields(ms, of))
 }
 

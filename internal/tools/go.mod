@@ -14,7 +14,7 @@ require (
 	github.com/rhysd/actionlint v1.7.7
 	go.opentelemetry.io/build-tools/checkapi v0.26.1
 	go.opentelemetry.io/build-tools/checkfile v0.26.1
-	go.opentelemetry.io/build-tools/chloggen v0.26.0
+	go.opentelemetry.io/build-tools/chloggen v0.26.1
 	go.opentelemetry.io/build-tools/crosslink v0.26.1
 	go.opentelemetry.io/build-tools/githubgen v0.26.1
 	go.opentelemetry.io/build-tools/multimod v0.26.1

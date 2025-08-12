@@ -26,46 +26,55 @@ func TestCopyOrigResource(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
-	src := &otlpresource.Resource{}
-	FillOrigTestResource(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigResource(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigResourceUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpresource.Resource{}
 	UnmarshalJSONOrigResource(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpresource.Resource{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigResource(t *testing.T) {
+	for name, src := range getEncodingTestValuesResource() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigResource(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpresource.Resource{}
+			UnmarshalJSONOrigResource(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResource(t *testing.T) {
-	src := &otlpresource.Resource{}
-	FillOrigTestResource(src)
-	buf := make([]byte, SizeProtoOrigResource(src))
-	gotSize := MarshalProtoOrigResource(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesResource() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigResource(src))
+			gotSize := MarshalProtoOrigResource(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpresource.Resource{}
-	require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpresource.Resource{}
+			require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyResource(t *testing.T) {
-	src := &otlpresource.Resource{}
-	buf := make([]byte, SizeProtoOrigResource(src))
-	gotSize := MarshalProtoOrigResource(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpresource.Resource{}
-	require.NoError(t, UnmarshalProtoOrigResource(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesResource() map[string]*otlpresource.Resource {
+	return map[string]*otlpresource.Resource{
+		"empty": {},
+		"fill_test": func() *otlpresource.Resource {
+			src := &otlpresource.Resource{}
+			FillOrigTestResource(src)
+			return src
+		}(),
+	}
 }

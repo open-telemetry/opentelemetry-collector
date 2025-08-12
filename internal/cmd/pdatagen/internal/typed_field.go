@@ -74,6 +74,8 @@ func (ptf *TypedField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, ptf.templateFields(ms))
 }
 
+func (ptf *TypedField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (ptf *TypedField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("typedCopyOrigTemplate").Parse(typedCopyOrigTemplate))
 	return executeTemplate(t, ptf.templateFields(ms))

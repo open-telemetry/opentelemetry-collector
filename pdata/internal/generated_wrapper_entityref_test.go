@@ -26,46 +26,55 @@ func TestCopyOrigEntityRef(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigEntityRef(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigEntityRefUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpcommon.EntityRef{}
 	UnmarshalJSONOrigEntityRef(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpcommon.EntityRef{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigEntityRef(t *testing.T) {
+	for name, src := range getEncodingTestValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigEntityRef(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpcommon.EntityRef{}
+			UnmarshalJSONOrigEntityRef(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	FillOrigTestEntityRef(src)
-	buf := make([]byte, SizeProtoOrigEntityRef(src))
-	gotSize := MarshalProtoOrigEntityRef(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesEntityRef() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigEntityRef(src))
+			gotSize := MarshalProtoOrigEntityRef(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcommon.EntityRef{}
-	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpcommon.EntityRef{}
+			require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyEntityRef(t *testing.T) {
-	src := &otlpcommon.EntityRef{}
-	buf := make([]byte, SizeProtoOrigEntityRef(src))
-	gotSize := MarshalProtoOrigEntityRef(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpcommon.EntityRef{}
-	require.NoError(t, UnmarshalProtoOrigEntityRef(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesEntityRef() map[string]*otlpcommon.EntityRef {
+	return map[string]*otlpcommon.EntityRef{
+		"empty": {},
+		"fill_test": func() *otlpcommon.EntityRef {
+			src := &otlpcommon.EntityRef{}
+			FillOrigTestEntityRef(src)
+			return src
+		}(),
+	}
 }

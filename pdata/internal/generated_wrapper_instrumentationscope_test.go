@@ -26,46 +26,55 @@ func TestCopyOrigInstrumentationScope(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
-	src := &otlpcommon.InstrumentationScope{}
-	FillOrigTestInstrumentationScope(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigInstrumentationScope(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigInstrumentationScopeUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpcommon.InstrumentationScope{}
 	UnmarshalJSONOrigInstrumentationScope(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpcommon.InstrumentationScope{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigInstrumentationScope(t *testing.T) {
+	for name, src := range getEncodingTestValuesInstrumentationScope() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigInstrumentationScope(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpcommon.InstrumentationScope{}
+			UnmarshalJSONOrigInstrumentationScope(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigInstrumentationScope(t *testing.T) {
-	src := &otlpcommon.InstrumentationScope{}
-	FillOrigTestInstrumentationScope(src)
-	buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
-	gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesInstrumentationScope() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
+			gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpcommon.InstrumentationScope{}
-	require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpcommon.InstrumentationScope{}
+			require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyInstrumentationScope(t *testing.T) {
-	src := &otlpcommon.InstrumentationScope{}
-	buf := make([]byte, SizeProtoOrigInstrumentationScope(src))
-	gotSize := MarshalProtoOrigInstrumentationScope(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpcommon.InstrumentationScope{}
-	require.NoError(t, UnmarshalProtoOrigInstrumentationScope(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesInstrumentationScope() map[string]*otlpcommon.InstrumentationScope {
+	return map[string]*otlpcommon.InstrumentationScope{
+		"empty": {},
+		"fill_test": func() *otlpcommon.InstrumentationScope {
+			src := &otlpcommon.InstrumentationScope{}
+			FillOrigTestInstrumentationScope(src)
+			return src
+		}(),
+	}
 }

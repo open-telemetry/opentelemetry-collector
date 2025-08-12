@@ -26,46 +26,57 @@ func TestCopyOrigNumberDataPoint(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
-	src := &otlpmetrics.NumberDataPoint{}
-	FillOrigTestNumberDataPoint(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigNumberDataPoint(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigNumberDataPointUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpmetrics.NumberDataPoint{}
 	UnmarshalJSONOrigNumberDataPoint(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpmetrics.NumberDataPoint{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigNumberDataPoint(t *testing.T) {
+	for name, src := range getEncodingTestValuesNumberDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigNumberDataPoint(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpmetrics.NumberDataPoint{}
+			UnmarshalJSONOrigNumberDataPoint(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigNumberDataPoint(t *testing.T) {
-	src := &otlpmetrics.NumberDataPoint{}
-	FillOrigTestNumberDataPoint(src)
-	buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
-	gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesNumberDataPoint() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
+			gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.NumberDataPoint{}
-	require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpmetrics.NumberDataPoint{}
+			require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyNumberDataPoint(t *testing.T) {
-	src := &otlpmetrics.NumberDataPoint{}
-	buf := make([]byte, SizeProtoOrigNumberDataPoint(src))
-	gotSize := MarshalProtoOrigNumberDataPoint(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpmetrics.NumberDataPoint{}
-	require.NoError(t, UnmarshalProtoOrigNumberDataPoint(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesNumberDataPoint() map[string]*otlpmetrics.NumberDataPoint {
+	return map[string]*otlpmetrics.NumberDataPoint{
+		"empty": {},
+		"fill_test": func() *otlpmetrics.NumberDataPoint {
+			src := &otlpmetrics.NumberDataPoint{}
+			FillOrigTestNumberDataPoint(src)
+			return src
+		}(),
+		"oneof_double": {Value: &otlpmetrics.NumberDataPoint_AsDouble{AsDouble: float64(0)}},
+		"oneof_int":    {Value: &otlpmetrics.NumberDataPoint_AsInt{AsInt: int64(0)}},
+	}
 }

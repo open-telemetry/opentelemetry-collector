@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: confighttp
-note: Fix middleware configuration field name from "middleware" to "middlewares" for consistency with configgrpc
-issues: [13444]

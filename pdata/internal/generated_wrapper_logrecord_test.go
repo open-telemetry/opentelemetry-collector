@@ -26,46 +26,55 @@ func TestCopyOrigLogRecord(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	FillOrigTestLogRecord(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigLogRecord(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigLogRecordUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlplogs.LogRecord{}
 	UnmarshalJSONOrigLogRecord(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlplogs.LogRecord{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigLogRecord(t *testing.T) {
+	for name, src := range getEncodingTestValuesLogRecord() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigLogRecord(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlplogs.LogRecord{}
+			UnmarshalJSONOrigLogRecord(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	FillOrigTestLogRecord(src)
-	buf := make([]byte, SizeProtoOrigLogRecord(src))
-	gotSize := MarshalProtoOrigLogRecord(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesLogRecord() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLogRecord(src))
+			gotSize := MarshalProtoOrigLogRecord(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlplogs.LogRecord{}
-	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlplogs.LogRecord{}
+			require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyLogRecord(t *testing.T) {
-	src := &otlplogs.LogRecord{}
-	buf := make([]byte, SizeProtoOrigLogRecord(src))
-	gotSize := MarshalProtoOrigLogRecord(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlplogs.LogRecord{}
-	require.NoError(t, UnmarshalProtoOrigLogRecord(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesLogRecord() map[string]*otlplogs.LogRecord {
+	return map[string]*otlplogs.LogRecord{
+		"empty": {},
+		"fill_test": func() *otlplogs.LogRecord {
+			src := &otlplogs.LogRecord{}
+			FillOrigTestLogRecord(src)
+			return src
+		}(),
+	}
 }

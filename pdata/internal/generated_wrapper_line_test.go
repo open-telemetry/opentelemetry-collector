@@ -26,46 +26,55 @@ func TestCopyOrigLine(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
-	src := &otlpprofiles.Line{}
-	FillOrigTestLine(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigLine(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigLineUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpprofiles.Line{}
 	UnmarshalJSONOrigLine(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpprofiles.Line{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigLine(t *testing.T) {
+	for name, src := range getEncodingTestValuesLine() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigLine(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpprofiles.Line{}
+			UnmarshalJSONOrigLine(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigLine(t *testing.T) {
-	src := &otlpprofiles.Line{}
-	FillOrigTestLine(src)
-	buf := make([]byte, SizeProtoOrigLine(src))
-	gotSize := MarshalProtoOrigLine(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesLine() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigLine(src))
+			gotSize := MarshalProtoOrigLine(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpprofiles.Line{}
-	require.NoError(t, UnmarshalProtoOrigLine(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpprofiles.Line{}
+			require.NoError(t, UnmarshalProtoOrigLine(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyLine(t *testing.T) {
-	src := &otlpprofiles.Line{}
-	buf := make([]byte, SizeProtoOrigLine(src))
-	gotSize := MarshalProtoOrigLine(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpprofiles.Line{}
-	require.NoError(t, UnmarshalProtoOrigLine(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesLine() map[string]*otlpprofiles.Line {
+	return map[string]*otlpprofiles.Line{
+		"empty": {},
+		"fill_test": func() *otlpprofiles.Line {
+			src := &otlpprofiles.Line{}
+			FillOrigTestLine(src)
+			return src
+		}(),
+	}
 }

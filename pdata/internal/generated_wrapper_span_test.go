@@ -26,46 +26,55 @@ func TestCopyOrigSpan(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
-	src := &otlptrace.Span{}
-	FillOrigTestSpan(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSpan(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigSpanUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlptrace.Span{}
 	UnmarshalJSONOrigSpan(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlptrace.Span{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigSpan(t *testing.T) {
+	for name, src := range getEncodingTestValuesSpan() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSpan(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlptrace.Span{}
+			UnmarshalJSONOrigSpan(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSpan(t *testing.T) {
-	src := &otlptrace.Span{}
-	FillOrigTestSpan(src)
-	buf := make([]byte, SizeProtoOrigSpan(src))
-	gotSize := MarshalProtoOrigSpan(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesSpan() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSpan(src))
+			gotSize := MarshalProtoOrigSpan(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlptrace.Span{}
-	require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlptrace.Span{}
+			require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySpan(t *testing.T) {
-	src := &otlptrace.Span{}
-	buf := make([]byte, SizeProtoOrigSpan(src))
-	gotSize := MarshalProtoOrigSpan(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlptrace.Span{}
-	require.NoError(t, UnmarshalProtoOrigSpan(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesSpan() map[string]*otlptrace.Span {
+	return map[string]*otlptrace.Span{
+		"empty": {},
+		"fill_test": func() *otlptrace.Span {
+			src := &otlptrace.Span{}
+			FillOrigTestSpan(src)
+			return src
+		}(),
+	}
 }

@@ -26,46 +26,55 @@ func TestCopyOrigSum(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	FillOrigTestSum(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigSum(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigSumUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlpmetrics.Sum{}
 	UnmarshalJSONOrigSum(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlpmetrics.Sum{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigSum(t *testing.T) {
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigSum(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpmetrics.Sum{}
+			UnmarshalJSONOrigSum(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigSum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	FillOrigTestSum(src)
-	buf := make([]byte, SizeProtoOrigSum(src))
-	gotSize := MarshalProtoOrigSum(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesSum() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigSum(src))
+			gotSize := MarshalProtoOrigSum(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlpmetrics.Sum{}
-	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlpmetrics.Sum{}
+			require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptySum(t *testing.T) {
-	src := &otlpmetrics.Sum{}
-	buf := make([]byte, SizeProtoOrigSum(src))
-	gotSize := MarshalProtoOrigSum(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlpmetrics.Sum{}
-	require.NoError(t, UnmarshalProtoOrigSum(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesSum() map[string]*otlpmetrics.Sum {
+	return map[string]*otlpmetrics.Sum{
+		"empty": {},
+		"fill_test": func() *otlpmetrics.Sum {
+			src := &otlpmetrics.Sum{}
+			FillOrigTestSum(src)
+			return src
+		}(),
+	}
 }

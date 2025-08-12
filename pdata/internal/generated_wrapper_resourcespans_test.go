@@ -26,46 +26,55 @@ func TestCopyOrigResourceSpans(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigResourceSpans(t *testing.T) {
-	src := &otlptrace.ResourceSpans{}
-	FillOrigTestResourceSpans(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigResourceSpans(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigResourceSpansUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlptrace.ResourceSpans{}
 	UnmarshalJSONOrigResourceSpans(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlptrace.ResourceSpans{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigResourceSpans(t *testing.T) {
+	for name, src := range getEncodingTestValuesResourceSpans() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigResourceSpans(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlptrace.ResourceSpans{}
+			UnmarshalJSONOrigResourceSpans(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigResourceSpans(t *testing.T) {
-	src := &otlptrace.ResourceSpans{}
-	FillOrigTestResourceSpans(src)
-	buf := make([]byte, SizeProtoOrigResourceSpans(src))
-	gotSize := MarshalProtoOrigResourceSpans(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesResourceSpans() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigResourceSpans(src))
+			gotSize := MarshalProtoOrigResourceSpans(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlptrace.ResourceSpans{}
-	require.NoError(t, UnmarshalProtoOrigResourceSpans(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlptrace.ResourceSpans{}
+			require.NoError(t, UnmarshalProtoOrigResourceSpans(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyResourceSpans(t *testing.T) {
-	src := &otlptrace.ResourceSpans{}
-	buf := make([]byte, SizeProtoOrigResourceSpans(src))
-	gotSize := MarshalProtoOrigResourceSpans(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlptrace.ResourceSpans{}
-	require.NoError(t, UnmarshalProtoOrigResourceSpans(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesResourceSpans() map[string]*otlptrace.ResourceSpans {
+	return map[string]*otlptrace.ResourceSpans{
+		"empty": {},
+		"fill_test": func() *otlptrace.ResourceSpans {
+			src := &otlptrace.ResourceSpans{}
+			FillOrigTestResourceSpans(src)
+			return src
+		}(),
+	}
 }

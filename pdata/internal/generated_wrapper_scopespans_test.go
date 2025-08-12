@@ -26,46 +26,55 @@ func TestCopyOrigScopeSpans(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
-	src := &otlptrace.ScopeSpans{}
-	FillOrigTestScopeSpans(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigScopeSpans(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigScopeSpansUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &otlptrace.ScopeSpans{}
 	UnmarshalJSONOrigScopeSpans(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &otlptrace.ScopeSpans{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigScopeSpans(t *testing.T) {
+	for name, src := range getEncodingTestValuesScopeSpans() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigScopeSpans(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlptrace.ScopeSpans{}
+			UnmarshalJSONOrigScopeSpans(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigScopeSpans(t *testing.T) {
-	src := &otlptrace.ScopeSpans{}
-	FillOrigTestScopeSpans(src)
-	buf := make([]byte, SizeProtoOrigScopeSpans(src))
-	gotSize := MarshalProtoOrigScopeSpans(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesScopeSpans() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigScopeSpans(src))
+			gotSize := MarshalProtoOrigScopeSpans(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &otlptrace.ScopeSpans{}
-	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &otlptrace.ScopeSpans{}
+			require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyScopeSpans(t *testing.T) {
-	src := &otlptrace.ScopeSpans{}
-	buf := make([]byte, SizeProtoOrigScopeSpans(src))
-	gotSize := MarshalProtoOrigScopeSpans(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &otlptrace.ScopeSpans{}
-	require.NoError(t, UnmarshalProtoOrigScopeSpans(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesScopeSpans() map[string]*otlptrace.ScopeSpans {
+	return map[string]*otlptrace.ScopeSpans{
+		"empty": {},
+		"fill_test": func() *otlptrace.ScopeSpans {
+			src := &otlptrace.ScopeSpans{}
+			FillOrigTestScopeSpans(src)
+			return src
+		}(),
+	}
 }
