@@ -72,6 +72,8 @@ func (pf *PrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, pf.templateFields(ms))
 }
 
+func (pf *PrimitiveField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (pf *PrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("primitiveCopyOrigTemplate").Parse(primitiveCopyOrigTemplate))
 	return executeTemplate(t, pf.templateFields(ms))

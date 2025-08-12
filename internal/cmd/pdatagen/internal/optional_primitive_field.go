@@ -55,6 +55,9 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
+const optionalPrimitiveTestValuesTemplate = `
+"default_{{ .lowerFieldName }}": { {{ .fieldName }}_: &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: {{ .defaultVal }}} },`
+
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
 	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
 	if !ok {
@@ -87,6 +90,11 @@ func (opv *OptionalPrimitiveField) GenerateAccessorsTest(ms *messageStruct) stri
 
 func (opv *OptionalPrimitiveField) GenerateSetWithTestValue(ms *messageStruct) string {
 	t := template.Must(templateNew("optionalPrimitiveSetTestTemplate").Parse(optionalPrimitiveSetTestTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
+func (opv *OptionalPrimitiveField) GenerateTestValue(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveTestValuesTemplate").Parse(optionalPrimitiveTestValuesTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
 }
 

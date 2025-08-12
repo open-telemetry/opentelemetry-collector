@@ -63,6 +63,8 @@ func (sf *SliceField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return executeTemplate(t, sf.templateFields(ms))
 }
 
+func (sf *SliceField) GenerateTestValue(*messageStruct) string { return "" }
+
 func (sf *SliceField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("sliceCopyOrigTemplate").Parse(sliceCopyOrigTemplate))
 	return executeTemplate(t, sf.templateFields(ms))
