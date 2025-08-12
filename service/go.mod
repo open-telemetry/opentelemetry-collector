@@ -246,8 +246,6 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../config/confi
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest => ../extension/extensionmiddleware/extensionmiddlewaretest
 
-replace go.opentelemetry.io/collector/config/configoptional => ../config/configoptional
-
 replace go.opentelemetry.io/collector/pdata/xpdata => ../pdata/xpdata
 
 replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../consumer/consumererror/xconsumererror

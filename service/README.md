@@ -152,10 +152,10 @@ extensions:
 ## How to examine the final configuration after merging and resolving from various sources?
 
 ```bash
-   ./otelcorecol print-initial-config --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
+   ./otelcorecol print-config --mode=raw --config=file:file.yaml --config=http:http://remote:8080/config --config=file:file2.yaml
 ```
 
-This command shows the resolved configuration before validation, which may contain sensitive values.
+This command shows the resolved configuration before validation, which may contain sensitive values. The raw mode requires the `otelcol.printInitialConfig` feature gate.
 
 ## How to examine the validated configuration with component defaults applied?
 
@@ -163,4 +163,10 @@ This command shows the resolved configuration before validation, which may conta
    ./otelcorecol print-config --config=file:examples/local/otel-config.yaml --format=yaml
 ```
 
-This command validates the configuration through the full component pipeline and shows the final configuration with all component defaults resolved. Sensitive values (like headers and certificates) are redacted for security. Supports both `--format=yaml` and `--format=json` output.
+This command validates the configuration through the full component pipeline and shows the final configuration with all component defaults resolved. Sensitive values (like headers and certificates) are redacted for security. Supports both `--format=yaml` and `--format=json` output. The default mode is `redacted` which is safe for sharing.
+
+## Available print-config modes
+
+- `--mode=raw`: Shows resolved configuration before validation (may contain sensitive values, requires feature gate)
+- `--mode=redacted`: Shows validated configuration with sensitive data redacted (default, safe for sharing)  
+- `--mode=unredacted`: Shows validated configuration with all sensitive data visible (most dangerous, not yet implemented)

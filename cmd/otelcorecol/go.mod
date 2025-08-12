@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.131.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.131.0
 	go.opentelemetry.io/collector/exporter/nopexporter v0.131.0
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.131.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v1.37.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.131.0
 	go.opentelemetry.io/collector/extension v1.37.0
 	go.opentelemetry.io/collector/extension/memorylimiterextension v0.131.0
@@ -30,7 +30,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.131.0
 	go.opentelemetry.io/collector/receiver v1.37.0
 	go.opentelemetry.io/collector/receiver/nopreceiver v0.131.0
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.131.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v1.37.0
 	golang.org/x/sys v0.35.0
 )
 

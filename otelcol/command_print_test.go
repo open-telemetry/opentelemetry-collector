@@ -113,7 +113,8 @@ func TestPrintCommand(t *testing.T) {
 			set := ConfigProviderSettings{
 				ResolverSettings: test.set,
 			}
-			cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd.SetArgs([]string{"--mode", "raw"})
 			err := cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
@@ -125,7 +126,7 @@ func TestPrintCommand(t *testing.T) {
 }
 
 func TestPrintCommandFeaturegateDisabled(t *testing.T) {
-	cmd := newConfigPrintSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
+	cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:          []string{"yaml:processors::test/foo::timeout: 3s"},
 			DefaultScheme: "foo",
@@ -134,8 +135,9 @@ func TestPrintCommandFeaturegateDisabled(t *testing.T) {
 			},
 		},
 	}}, flags(featuregate.GlobalRegistry()))
+	cmd.SetArgs([]string{"--mode", "raw"})
 	err := cmd.Execute()
-	require.ErrorContains(t, err, "print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
+	require.ErrorContains(t, err, "raw mode is currently experimental, use the otelcol.printInitialConfig feature gate to enable this mode")
 }
 
 func TestPrintInitialConfigCommand(t *testing.T) {
@@ -200,7 +202,8 @@ func TestPrintInitialConfigCommand(t *testing.T) {
 			set := ConfigProviderSettings{
 				ResolverSettings: test.set,
 			}
-			cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd.SetArgs([]string{"--mode", "raw"})
 			err := cmd.Execute()
 			if test.errString != "" {
 				require.ErrorContains(t, err, test.errString)
@@ -212,7 +215,7 @@ func TestPrintInitialConfigCommand(t *testing.T) {
 }
 
 func TestPrintInitialConfigCommandFeaturegateDisabled(t *testing.T) {
-	cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
+	cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: ConfigProviderSettings{
 		ResolverSettings: confmap.ResolverSettings{
 			URIs:          []string{"yaml:processors::batch/foo::timeout: 3s"},
 			DefaultScheme: "foo",
@@ -221,8 +224,9 @@ func TestPrintInitialConfigCommandFeaturegateDisabled(t *testing.T) {
 			},
 		},
 	}}, flags(featuregate.GlobalRegistry()))
+	cmd.SetArgs([]string{"--mode", "raw"})
 	err := cmd.Execute()
-	require.ErrorContains(t, err, "print-initial-config is currently experimental, use the otelcol.printInitialConfig feature gate to enable this command")
+	require.ErrorContains(t, err, "raw mode is currently experimental, use the otelcol.printInitialConfig feature gate to enable this mode")
 }
 
 func TestPrintInitialConfig(t *testing.T) {
@@ -274,7 +278,8 @@ func TestPrintInitialConfig(t *testing.T) {
 			oldStdout := os.Stdout
 			os.Stdout = tmpFile
 
-			cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+			cmd.SetArgs([]string{"--mode", "raw"})
 			require.NoError(t, cmd.Execute())
 
 			// restore os.Stdout
@@ -313,7 +318,8 @@ func TestPrintTypedConfigCommand(t *testing.T) {
 		},
 	}
 
-	cmd := newPrintTypedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	cmd := newPrintConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	// Default mode is already "redacted", so no need to set args
 	require.NoError(t, cmd.Execute())
 }
 
@@ -334,7 +340,7 @@ func TestPrintTypedConfigCommandJSON(t *testing.T) {
 	}
 
 	// Create command with JSON format flag
-	cmd := newPrintTypedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	cmd := newPrintConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
 	cmd.SetArgs([]string{"--format", "json"})
 	require.NoError(t, cmd.Execute())
 }
@@ -361,7 +367,8 @@ func TestPrintConfigCommandWithSensitiveData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cmd := newPrintTypedConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	cmd := newPrintConfigSubCommand(set, flags(featuregate.GlobalRegistry()))
+	// Default mode is "redacted" which is what we want to test
 	err = cmd.Execute()
 
 	// Restore stdout and get output
@@ -405,7 +412,8 @@ func TestPrintInitialConfigWithSensitiveData(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	cmd := newPrintInitialConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+	cmd := newPrintConfigSubCommand(CollectorSettings{ConfigProviderSettings: set}, flags(featuregate.GlobalRegistry()))
+	cmd.SetArgs([]string{"--mode", "raw"})
 	err := cmd.Execute()
 
 	// Restore stdout and get output

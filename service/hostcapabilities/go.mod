@@ -99,8 +99,6 @@ replace go.opentelemetry.io/collector/config/configmiddleware => ../../config/co
 
 replace go.opentelemetry.io/collector/extension/extensionmiddleware => ../../extension/extensionmiddleware
 
-replace go.opentelemetry.io/collector/config/configoptional => ../../config/configoptional
-
 replace go.opentelemetry.io/collector/pdata/xpdata => ../../pdata/xpdata
 
 replace go.opentelemetry.io/collector/consumer/consumererror/xconsumererror => ../../consumer/consumererror/xconsumererror

@@ -7,7 +7,7 @@ change_type: enhancement
 component: otelcol
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add print-command which will print yaml or json with redaction; extend print-initial-config with json support.
+note: Add unified print-config command with mode support (raw, redacted, unredacted) for flexible configuration inspection.
 
 # One or more tracking issues or pull requests related to the change
 issues: []
