@@ -43,8 +43,7 @@ func (mb *MapBuilder) AppendEmpty(k string) pcommon.Value {
 }
 
 // UnsafeIntoMap transfers the contents of a MapBuilder into a Map, without checking for duplicate keys.
-// If the MapBuilder contains duplicate keys, the behavior of the resulting Map is unspecified;
-// consider using DistinctIntoMap if you are unsure or performance is not a concern.
+// If the MapBuilder contains duplicate keys, the behavior of the resulting Map is unspecified.
 // This operation has constant time complexity and makes no allocations.
 // After this operation, the MapBuilder becomes read-only.
 func (mb *MapBuilder) UnsafeIntoMap(m pcommon.Map) {
