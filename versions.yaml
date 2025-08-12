@@ -3,7 +3,7 @@
 
 module-sets:
   stable:
-    version: v1.37.0
+    version: v1.38.0
     modules:
       - go.opentelemetry.io/collector/client
       - go.opentelemetry.io/collector/featuregate
@@ -27,7 +27,7 @@ module-sets:
       - go.opentelemetry.io/collector/processor
       - go.opentelemetry.io/collector/receiver
   beta:
-    version: v0.131.0
+    version: v0.132.0
     modules:
       - go.opentelemetry.io/collector
       - go.opentelemetry.io/collector/internal/memorylimiter
