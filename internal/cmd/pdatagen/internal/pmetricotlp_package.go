@@ -12,6 +12,11 @@ var pmetricotlp = &Package{
 		name: "pmetricotlp",
 		path: filepath.Join("pmetric", "pmetricotlp"),
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
+			`"sort"`,
+			``,
 			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 		},
 		testImports: []string{
@@ -23,7 +28,21 @@ var pmetricotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportMetricsResponse,
 		exportMetricsPartialSuccess,
+	},
+}
+
+var exportMetricsResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectormetrics.ExportMetricsServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportMetricsPartialSuccess,
+		},
 	},
 }
 
@@ -31,18 +50,16 @@ var exportMetricsPartialSuccess = &messageStruct{
 	structName:     "ExportPartialSuccess",
 	description:    "// ExportPartialSuccess represents the details of a partially successful export request.",
 	originFullName: "otlpcollectormetrics.ExportMetricsPartialSuccess",
-	fields: []baseField{
-		&primitiveField{
-			fieldName:  "RejectedDataPoints",
-			returnType: "int64",
-			defaultVal: `int64(0)`,
-			testVal:    `int64(13)`,
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "RejectedDataPoints",
+			protoID:   1,
+			protoType: ProtoTypeInt64,
 		},
-		&primitiveField{
-			fieldName:  "ErrorMessage",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"error message"`,
+		&PrimitiveField{
+			fieldName: "ErrorMessage",
+			protoID:   2,
+			protoType: ProtoTypeString,
 		},
 	},
 }

@@ -40,30 +40,25 @@ func TestStatus_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newStatus(&otlptrace.Status{}, &sharedState)) })
 }
 
+func TestStatus_Message(t *testing.T) {
+	ms := NewStatus()
+	assert.Empty(t, ms.Message())
+	ms.SetMessage("test_message")
+	assert.Equal(t, "test_message", ms.Message())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("test_message") })
+}
+
 func TestStatus_Code(t *testing.T) {
 	ms := NewStatus()
-	assert.Equal(t, StatusCode(0), ms.Code())
-	testValCode := StatusCode(1)
+	assert.Equal(t, StatusCode(otlptrace.Status_StatusCode(0)), ms.Code())
+	testValCode := StatusCode(otlptrace.Status_StatusCode(1))
 	ms.SetCode(testValCode)
 	assert.Equal(t, testValCode, ms.Code())
 }
 
-func TestStatus_Message(t *testing.T) {
-	ms := NewStatus()
-	assert.Empty(t, ms.Message())
-	ms.SetMessage("cancelled")
-	assert.Equal(t, "cancelled", ms.Message())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newStatus(&otlptrace.Status{}, &sharedState).SetMessage("cancelled") })
-}
-
 func generateTestStatus() Status {
-	tv := NewStatus()
-	fillTestStatus(tv)
-	return tv
-}
-
-func fillTestStatus(tv Status) {
-	tv.orig.Code = 1
-	tv.orig.Message = "cancelled"
+	ms := NewStatus()
+	internal.FillOrigTestStatus(ms.orig)
+	return ms
 }

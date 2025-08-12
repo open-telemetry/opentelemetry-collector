@@ -505,10 +505,15 @@ func TestDecompressorAvoidDecompressionBomb(t *testing.T) {
 			compress: compressZlib,
 		},
 		{
-			name:                "x-snappy-framed",
+			name:     "x-snappy-framed",
+			encoding: "x-snappy-framed",
+			compress: compressSnappyFramed,
+		},
+		{
+			name:                "x-snappy-not-framed",
 			encoding:            "x-snappy-framed",
 			compress:            compressSnappyFramed,
-			framedSnappyEnabled: true,
+			framedSnappyEnabled: false,
 		},
 		{
 			name:     "snappy",

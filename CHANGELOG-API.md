@@ -7,6 +7,35 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v1.37.0/v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `configgrpc`: Update optional fields to use `configoptional.Optional` field for optional values. (#13252, #13364)
+  Specifically, the following fields have been updated to `configoptional`:
+  - `KeepaliveServerConfig.ServerParameters` (`KeepaliveServerParameters` type)
+  - `KeepaliveServerConfig.EnforcementPolicy` (`KeepaliveEnforcementPolicy` type)
+  
+- `xexporterhelper`: Remove deprecated NewProfilesExporter function from xexporterhelper package (#13391)
+
+### 💡 Enhancements 💡
+
+- `consumererror`: Add new "Downstream" error marker (#13234)
+  This new error wrapper type indicates that the error returned by a component's
+  `Consume` method is not an internal failure of the component, but instead
+  was passed through from another component further downstream.
+  This is used internally by the new pipeline instrumentation feature to
+  determine the `outcome` of a component call. This wrapper is not intended to
+  be used by components directly.
+  
+- `pdata/pprofile`: Introduce `Equal` method on the `Function` type (#13222)
+- `pdata/pprofile`: Introduce `Equal` method on the `Link` type (#13223)
+- `pdata/pprofile`: Add new helper method `SetFunction` to set a new function on a line. (#13222)
+- `pdata/pprofile`: Add new helper method `SetLink` to set a new link on a sample. (#13223)
+- `pdata/pprofile`: Add new helper method `SetString` to set or retrieve the index of a value in the StringTable. (#13225)
+
+<!-- previous-version -->
+
 ## v1.36.1/v0.130.1
 
 <!-- previous-version -->

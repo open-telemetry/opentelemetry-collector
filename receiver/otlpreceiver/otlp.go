@@ -86,7 +86,7 @@ func newOtlpReceiver(cfg *Config, set *receiver.Settings) (*otlpReceiver, error)
 	return r, nil
 }
 
-func (r *otlpReceiver) startGRPCServer(host component.Host) error {
+func (r *otlpReceiver) startGRPCServer(ctx context.Context, host component.Host) error {
 	// If GRPC is not enabled, nothing to start.
 	if !r.cfg.GRPC.HasValue() {
 		return nil
@@ -94,7 +94,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 	grpcCfg := r.cfg.GRPC.Get()
 	var err error
-	if r.serverGRPC, err = grpcCfg.ToServer(context.Background(), host, r.settings.TelemetrySettings); err != nil {
+	if r.serverGRPC, err = grpcCfg.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
 
@@ -116,7 +116,7 @@ func (r *otlpReceiver) startGRPCServer(host component.Host) error {
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", grpcCfg.NetAddr.Endpoint))
 	var gln net.Listener
-	if gln, err = grpcCfg.NetAddr.Listen(context.Background()); err != nil {
+	if gln, err = grpcCfg.NetAddr.Listen(ctx); err != nil {
 		return err
 	}
 
@@ -192,7 +192,7 @@ func (r *otlpReceiver) startHTTPServer(ctx context.Context, host component.Host)
 // Start runs the trace receiver on the gRPC server. Currently
 // it also enables the metrics receiver too.
 func (r *otlpReceiver) Start(ctx context.Context, host component.Host) error {
-	if err := r.startGRPCServer(host); err != nil {
+	if err := r.startGRPCServer(ctx, host); err != nil {
 		return err
 	}
 	if err := r.startHTTPServer(ctx, host); err != nil {

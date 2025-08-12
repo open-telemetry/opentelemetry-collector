@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .imports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .imports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 // {{ .structName }} represents a []{{ .itemType }} slice.
@@ -36,13 +36,13 @@ func New{{ .structName }}() {{ .structName }} {
 
 // AsRaw returns a copy of the []{{ .itemType }} slice.
 func (ms {{ .structName }}) AsRaw() []{{ .itemType }} {
-	return internal.CopyOrig{{ .structName }}(nil, *ms.getOrig())
+	return internal.CopyOrig{{ .elementOriginName }}Slice(nil, *ms.getOrig())
 }
 
 // FromRaw copies raw []{{ .itemType }} into the slice {{ .structName }}.
 func (ms {{ .structName }}) FromRaw(val []{{ .itemType }}) {
 	ms.getState().AssertMutable()
-	*ms.getOrig() = internal.CopyOrig{{ .structName }}(*ms.getOrig(), val)
+	*ms.getOrig() = internal.CopyOrig{{ .elementOriginName }}Slice(*ms.getOrig(), val)
 }
 
 // Len returns length of the []{{ .itemType }} slice value.
@@ -130,7 +130,7 @@ func (ms {{ .structName }}) MoveAndAppendTo(dest {{ .structName }}) {
 // CopyTo copies all elements from the current slice overriding the destination.
 func (ms {{ .structName }}) CopyTo(dest {{ .structName }}) {
 	dest.getState().AssertMutable()
-	*dest.getOrig() = internal.CopyOrig{{ .structName }}(*dest.getOrig(), *ms.getOrig())
+	*dest.getOrig() = internal.CopyOrig{{ .elementOriginName }}Slice(*dest.getOrig(), *ms.getOrig())
 }
 
 // Equal checks equality with another {{ .structName }}

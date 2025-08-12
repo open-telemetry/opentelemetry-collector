@@ -43,19 +43,19 @@ func TestValueType_CopyTo(t *testing.T) {
 func TestValueType_TypeStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.TypeStrindex())
-	ms.SetTypeStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.TypeStrindex())
+	ms.SetTypeStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.TypeStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetTypeStrindex(int32(13)) })
 }
 
 func TestValueType_UnitStrindex(t *testing.T) {
 	ms := NewValueType()
 	assert.Equal(t, int32(0), ms.UnitStrindex())
-	ms.SetUnitStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.UnitStrindex())
+	ms.SetUnitStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.UnitStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(1)) })
+	assert.Panics(t, func() { newValueType(&otlpprofiles.ValueType{}, &sharedState).SetUnitStrindex(int32(13)) })
 }
 
 func TestValueType_AggregationTemporality(t *testing.T) {
@@ -67,13 +67,7 @@ func TestValueType_AggregationTemporality(t *testing.T) {
 }
 
 func generateTestValueType() ValueType {
-	tv := NewValueType()
-	fillTestValueType(tv)
-	return tv
-}
-
-func fillTestValueType(tv ValueType) {
-	tv.orig.TypeStrindex = int32(1)
-	tv.orig.UnitStrindex = int32(1)
-	tv.orig.AggregationTemporality = otlpprofiles.AggregationTemporality(1)
+	ms := NewValueType()
+	internal.FillOrigTestValueType(ms.orig)
+	return ms
 }

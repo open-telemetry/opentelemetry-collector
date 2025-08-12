@@ -74,10 +74,5 @@ func (ms AttributeUnit) SetUnitStrindex(v int32) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms AttributeUnit) CopyTo(dest AttributeUnit) {
 	dest.state.AssertMutable()
-	copyOrigAttributeUnit(dest.orig, ms.orig)
-}
-
-func copyOrigAttributeUnit(dest, src *otlpprofiles.AttributeUnit) {
-	dest.AttributeKeyStrindex = src.AttributeKeyStrindex
-	dest.UnitStrindex = src.UnitStrindex
+	internal.CopyOrigAttributeUnit(dest.orig, ms.orig)
 }

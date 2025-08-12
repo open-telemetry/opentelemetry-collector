@@ -43,36 +43,29 @@ func TestScopeMetrics_CopyTo(t *testing.T) {
 
 func TestScopeMetrics_Scope(t *testing.T) {
 	ms := NewScopeMetrics()
-	internal.FillTestInstrumentationScope(internal.InstrumentationScope(ms.Scope()))
+	assert.Equal(t, pcommon.NewInstrumentationScope(), ms.Scope())
+	internal.FillOrigTestInstrumentationScope(&ms.orig.Scope)
 	assert.Equal(t, pcommon.InstrumentationScope(internal.GenerateTestInstrumentationScope()), ms.Scope())
-}
-
-func TestScopeMetrics_SchemaUrl(t *testing.T) {
-	ms := NewScopeMetrics()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestScopeMetrics_Metrics(t *testing.T) {
 	ms := NewScopeMetrics()
 	assert.Equal(t, NewMetricSlice(), ms.Metrics())
-	fillTestMetricSlice(ms.Metrics())
+	ms.orig.Metrics = internal.GenerateOrigTestMetricSlice()
 	assert.Equal(t, generateTestMetricSlice(), ms.Metrics())
 }
 
-func generateTestScopeMetrics() ScopeMetrics {
-	tv := NewScopeMetrics()
-	fillTestScopeMetrics(tv)
-	return tv
+func TestScopeMetrics_SchemaUrl(t *testing.T) {
+	ms := NewScopeMetrics()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newScopeMetrics(&otlpmetrics.ScopeMetrics{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestScopeMetrics(tv ScopeMetrics) {
-	internal.FillTestInstrumentationScope(internal.NewInstrumentationScope(&tv.orig.Scope, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestMetricSlice(newMetricSlice(&tv.orig.Metrics, tv.state))
+func generateTestScopeMetrics() ScopeMetrics {
+	ms := NewScopeMetrics()
+	internal.FillOrigTestScopeMetrics(ms.orig)
+	return ms
 }

@@ -7,6 +7,47 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v1.37.0/v0.131.0
+
+### 🛑 Breaking changes 🛑
+
+- `confighttp`: Move `confighttp.framedSnappy` feature gate to beta. (#10584)
+
+### 💡 Enhancements 💡
+
+- `exporter/debug`: Move to alpha stability except profiles (#13487)
+- `exporterhelper`: Enable `exporter.PersistRequestContext` feature gate by default. (#13437)
+  Request context is now preserved by default when using persistent queues.
+  Note that Auth extensions context is not propagated through the persistent queue.
+  
+- `pdata`: Use pdatagen to generate marshalJSON without using gogo proto jsonpb. (#13450)
+- `otlpreceiver`: Remove usage of gogo proto which uses reflect.Value.MethodByName. Removes one source of disabling DCE. (#12747)
+- `exporterhelper`: Fix metrics split logic to consider metrics description into the size. (#13418)
+- `service`: New pipeline instrumentation now differentiates internal failures from downstream errors (#13234)
+  With the telemetry.newPipelineTelemetry feature gate enabled, the "received" and "produced"
+  metrics related to a component now distinguish between two types of errors:
+  - "outcome = failure" indicates that the component returned an internal error;
+  - "outcome = refused" indicates that the component successfully emitted data, but returned an
+    error coming from a downstream component processing that data.
+  
+- `pdata`: Remove usage of text/template from pdata, improves DCE. (#12747)
+- `architecture`: New Tier 3 platform riscv64 allowing the collector to be built and distributed for this platform. (#13462)
+
+### 🧰 Bug fixes 🧰
+
+- `exporterhelper`: Prevents the exporter for being stuck when telemetry data is bigger than batch.max_size (#12893)
+- `mdatagen`: Fix import paths for mdatagen component (#13069)
+- `otlpreceiver`: Error handler correctly fallbacks to content type (#13414)
+- `pdata/pprofiles`: Fix profiles JSON unmarshal logic for originalPayload. The bytes have to be base64 encoded. (#13483)
+- `xpdata`: Fix unmarshaling JSON for entities, add e2e tests to avoid this in the future. (#13480)
+- `service`: Downgrade dependency of prometheus exporter in OTel Go SDK (#13429)
+  This fixes the bug where collector's internal metrics are emitted with an unexpected suffix in their names when users configure the service::telemetry::metrics::readers with Prometheus
+- `service`: Revert Default internal metrics config now enables `otel_scope_` labels (#12939, #13344)
+  Reverting change temporarily due to prometheus exporter downgrade. This unfortunately re-introduces the bug that instrumentation scope attributes cause errors in Prometheus exporter. See http://github.com/open-telemetry/opentelemetry-collector/issues/12939 for details.
+- `builder`: Remove undocumented handling of `DIST_*` environment variables replacements (#13335)
+
+<!-- previous-version -->
+
 ## v1.36.1/v0.130.1
 
 ### 🧰 Bug fixes 🧰

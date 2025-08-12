@@ -459,7 +459,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var opts []grpc.ServerOption
 
 	if gss.TLS.HasValue() {
-		tlsCfg, err := gss.TLS.Get().LoadTLSConfig(context.Background())
+		tlsCfg, err := gss.TLS.Get().LoadTLSConfig(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -515,17 +515,13 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	var sInterceptors []grpc.StreamServerInterceptor
 
 	if gss.Auth.HasValue() {
-		authenticator, err := gss.Auth.Get().GetServerAuthenticator(context.Background(), host.GetExtensions())
+		authenticator, err := gss.Auth.Get().GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return nil, err
 		}
 
-		uInterceptors = append(uInterceptors, func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
-			return authUnaryServerInterceptor(ctx, req, info, handler, authenticator)
-		})
-		sInterceptors = append(sInterceptors, func(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-			return authStreamServerInterceptor(srv, ss, info, handler, authenticator)
-		})
+		uInterceptors = append(uInterceptors, authUnaryServerInterceptor(authenticator))
+		sInterceptors = append(sInterceptors, authStreamServerInterceptor(authenticator)) //nolint:contextcheck // context already handled
 	}
 
 	otelOpts := []otelgrpc.Option{
@@ -537,7 +533,7 @@ func (gss *ServerConfig) getGrpcServerOptions(
 	// Enable OpenTelemetry observability plugin.
 
 	uInterceptors = append(uInterceptors, enhanceWithClientInformation(gss.IncludeMetadata))
-	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata))
+	sInterceptors = append(sInterceptors, enhanceStreamWithClientInformation(gss.IncludeMetadata)) //nolint:contextcheck // context already handled
 
 	opts = append(opts, grpc.StatsHandler(otelgrpc.NewServerHandler(otelOpts...)), grpc.ChainUnaryInterceptor(uInterceptors...), grpc.ChainStreamInterceptor(sInterceptors...))
 
@@ -575,13 +571,13 @@ func getGRPCCompressionName(compressionType configcompression.Type) (string, err
 
 // enhanceWithClientInformation intercepts the incoming RPC, replacing the incoming context with one that includes
 // a client.Info, potentially with the peer's address.
-func enhanceWithClientInformation(includeMetadata bool) func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+func enhanceWithClientInformation(includeMetadata bool) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 		return handler(contextWithClient(ctx, includeMetadata), req)
 	}
 }
 
-func enhanceStreamWithClientInformation(includeMetadata bool) func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+func enhanceStreamWithClientInformation(includeMetadata bool) grpc.StreamServerInterceptor {
 	return func(srv any, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		return handler(srv, wrapServerStream(contextWithClient(ss.Context(), includeMetadata), ss))
 	}
@@ -606,31 +602,35 @@ func contextWithClient(ctx context.Context, includeMetadata bool) context.Contex
 	return client.NewContext(ctx, cl)
 }
 
-func authUnaryServerInterceptor(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler, server extensionauth.Server) (any, error) {
-	headers, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errMetadataNotFound
-	}
+func authUnaryServerInterceptor(server extensionauth.Server) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+		headers, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, errMetadataNotFound
+		}
 
-	ctx, err := server.Authenticate(ctx, headers)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, err.Error())
-	}
+		ctx, err := server.Authenticate(ctx, headers)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		}
 
-	return handler(ctx, req)
+		return handler(ctx, req)
+	}
 }
 
-func authStreamServerInterceptor(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler, server extensionauth.Server) error {
-	ctx := stream.Context()
-	headers, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return errMetadataNotFound
-	}
+func authStreamServerInterceptor(server extensionauth.Server) grpc.StreamServerInterceptor {
+	return func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		ctx := stream.Context()
+		headers, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return errMetadataNotFound
+		}
 
-	ctx, err := server.Authenticate(ctx, headers)
-	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
-	}
+		ctx, err := server.Authenticate(ctx, headers)
+		if err != nil {
+			return status.Error(codes.Unauthenticated, err.Error())
+		}
 
-	return handler(srv, wrapServerStream(ctx, stream))
+		return handler(srv, wrapServerStream(ctx, stream))
+	}
 }

@@ -26,9 +26,9 @@ func TestProfilesSlice(t *testing.T) {
 	emptyVal := NewProfile()
 	testVal := generateTestProfile()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestProfile(el)
+		internal.FillOrigTestProfile((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -49,16 +49,8 @@ func TestProfilesSliceReadOnly(t *testing.T) {
 
 func TestProfilesSlice_CopyTo(t *testing.T) {
 	dest := NewProfilesSlice()
-	// Test CopyTo to empty
-	NewProfilesSlice().CopyTo(dest)
-	assert.Equal(t, NewProfilesSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestProfilesSlice().CopyTo(dest)
-	assert.Equal(t, generateTestProfilesSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestProfilesSlice().CopyTo(dest)
+	src := generateTestProfilesSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestProfilesSlice(), dest)
 }
 
@@ -130,6 +122,14 @@ func TestProfilesSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestProfilesSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestProfilesSlice()
+	got.RemoveIf(func(el Profile) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestProfilesSliceAll(t *testing.T) {
 	ms := generateTestProfilesSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -159,15 +159,7 @@ func TestProfilesSlice_Sort(t *testing.T) {
 }
 
 func generateTestProfilesSlice() ProfilesSlice {
-	es := NewProfilesSlice()
-	fillTestProfilesSlice(es)
-	return es
-}
-
-func fillTestProfilesSlice(es ProfilesSlice) {
-	*es.orig = make([]*otlpprofiles.Profile, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpprofiles.Profile{}
-		fillTestProfile(newProfile((*es.orig)[i], es.state))
-	}
+	ms := NewProfilesSlice()
+	*ms.orig = internal.GenerateOrigTestProfileSlice()
+	return ms
 }

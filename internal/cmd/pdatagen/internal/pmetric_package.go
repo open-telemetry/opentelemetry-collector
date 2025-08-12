@@ -8,10 +8,16 @@ var pmetric = &Package{
 		name: "pmetric",
 		path: "pmetric",
 		imports: []string{
+			`"encoding/binary"`,
+			`"iter"`,
+			`"math"`,
 			`"sort"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`"go.opentelemetry.io/collector/pdata/internal/proto"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
@@ -20,14 +26,18 @@ var pmetric = &Package{
 			`"unsafe"`,
 			``,
 			`"github.com/stretchr/testify/assert"`,
+			`"github.com/stretchr/testify/require"`,
 			``,
 			`"go.opentelemetry.io/collector/pdata/internal"`,
 			`"go.opentelemetry.io/collector/pdata/internal/data"`,
+			`"go.opentelemetry.io/collector/pdata/internal/json"`,
+			`otlpcollectormetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/collector/metrics/v1"`,
 			`otlpmetrics "go.opentelemetry.io/collector/pdata/internal/data/protogen/metrics/v1"`,
 			`"go.opentelemetry.io/collector/pdata/pcommon"`,
 		},
 	},
 	structs: []baseStruct{
+		metrics,
 		resourceMetricsSlice,
 		resourceMetrics,
 		scopeMetricsSlice,
@@ -55,6 +65,21 @@ var pmetric = &Package{
 	},
 }
 
+var metrics = &messageStruct{
+	structName:     "Metrics",
+	description:    "// Metrics is the top-level struct that is propagated through the metrics pipeline.\n// Use NewMetrics to create new instance, zero-initialized instance is not valid for use.",
+	originFullName: "otlpcollectormetrics.ExportMetricsServiceRequest",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "ResourceMetrics",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: resourceMetricsSlice,
+		},
+	},
+	hasWrapper: true,
+}
+
 var resourceMetricsSlice = &sliceOfPtrs{
 	structName: "ResourceMetricsSlice",
 	element:    resourceMetrics,
@@ -64,12 +89,22 @@ var resourceMetrics = &messageStruct{
 	structName:     "ResourceMetrics",
 	description:    "// ResourceMetrics is a collection of metrics from a Resource.",
 	originFullName: "otlpmetrics.ResourceMetrics",
-	fields: []baseField{
-		resourceField,
-		schemaURLField,
-		&sliceField{
+	fields: []Field{
+		&MessageField{
+			fieldName:     "Resource",
+			protoID:       1,
+			returnMessage: resource,
+		},
+		&SliceField{
 			fieldName:   "ScopeMetrics",
+			protoID:     2,
+			protoType:   ProtoTypeMessage,
 			returnSlice: scopeMetricsSlice,
+		},
+		&PrimitiveField{
+			fieldName: "SchemaUrl",
+			protoID:   3,
+			protoType: ProtoTypeString,
 		},
 	},
 }
@@ -83,12 +118,22 @@ var scopeMetrics = &messageStruct{
 	structName:     "ScopeMetrics",
 	description:    "// ScopeMetrics is a collection of metrics from a LibraryInstrumentation.",
 	originFullName: "otlpmetrics.ScopeMetrics",
-	fields: []baseField{
-		scopeField,
-		schemaURLField,
-		&sliceField{
+	fields: []Field{
+		&MessageField{
+			fieldName:     "Scope",
+			protoID:       1,
+			returnMessage: scope,
+		},
+		&SliceField{
 			fieldName:   "Metrics",
+			protoID:     2,
+			protoType:   ProtoTypeMessage,
 			returnSlice: metricSlice,
+		},
+		&PrimitiveField{
+			fieldName: "SchemaUrl",
+			protoID:   3,
+			protoType: ProtoTypeString,
 		},
 	},
 }
@@ -103,56 +148,65 @@ var metric = &messageStruct{
 	description: "// Metric represents one metric as a collection of datapoints.\n" +
 		"// See Metric definition in OTLP: https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto",
 	originFullName: "otlpmetrics.Metric",
-	fields: []baseField{
-		nameField,
-		&primitiveField{
-			fieldName:  "Description",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"test_description"`,
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "Name",
+			protoID:   1,
+			protoType: ProtoTypeString,
 		},
-		&primitiveField{
-			fieldName:  "Unit",
-			returnType: "string",
-			defaultVal: `""`,
-			testVal:    `"1"`,
+		&PrimitiveField{
+			fieldName: "Description",
+			protoID:   2,
+			protoType: ProtoTypeString,
 		},
-		&sliceField{
-			fieldName:   "Metadata",
-			returnSlice: mapStruct,
+		&PrimitiveField{
+			fieldName: "Unit",
+			protoID:   3,
+			protoType: ProtoTypeString,
 		},
-		&oneOfField{
+		&OneOfField{
 			typeName:                   "MetricType",
 			originFieldName:            "Data",
 			testValueIdx:               1, // Sum
 			omitOriginFieldNameInNames: true,
 			values: []oneOfValue{
-				&oneOfMessageValue{
+				&OneOfMessageValue{
 					fieldName:              "Gauge",
+					protoID:                5,
 					originFieldPackageName: "otlpmetrics",
 					returnMessage:          gauge,
 				},
-				&oneOfMessageValue{
+				&OneOfMessageValue{
 					fieldName:              "Sum",
+					protoID:                7,
 					originFieldPackageName: "otlpmetrics",
 					returnMessage:          sum,
 				},
-				&oneOfMessageValue{
+				&OneOfMessageValue{
 					fieldName:              "Histogram",
+					protoID:                9,
 					originFieldPackageName: "otlpmetrics",
 					returnMessage:          histogram,
 				},
-				&oneOfMessageValue{
+				&OneOfMessageValue{
 					fieldName:              "ExponentialHistogram",
+					protoID:                10,
 					originFieldPackageName: "otlpmetrics",
 					returnMessage:          exponentialHistogram,
 				},
-				&oneOfMessageValue{
+				&OneOfMessageValue{
 					fieldName:              "Summary",
+					protoID:                11,
 					originFieldPackageName: "otlpmetrics",
 					returnMessage:          summary,
 				},
 			},
+		},
+		&SliceField{
+			fieldName:   "Metadata",
+			protoID:     12,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
 		},
 	},
 }
@@ -161,9 +215,11 @@ var gauge = &messageStruct{
 	structName:     "Gauge",
 	description:    "// Gauge represents the type of a numeric metric that always exports the \"current value\" for every data point.",
 	originFullName: "otlpmetrics.Gauge",
-	fields: []baseField{
-		&sliceField{
+	fields: []Field{
+		&SliceField{
 			fieldName:   "DataPoints",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
 			returnSlice: numberDataPointSlice,
 		},
 	},
@@ -173,12 +229,22 @@ var sum = &messageStruct{
 	structName:     "Sum",
 	description:    "// Sum represents the type of a numeric metric that is calculated as a sum of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Sum",
-	fields: []baseField{
-		aggregationTemporalityField,
-		isMonotonicField,
-		&sliceField{
+	fields: []Field{
+		&SliceField{
 			fieldName:   "DataPoints",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
 			returnSlice: numberDataPointSlice,
+		},
+		&TypedField{
+			fieldName:  "AggregationTemporality",
+			protoID:    2,
+			returnType: aggregationTemporalityType,
+		},
+		&PrimitiveField{
+			fieldName: "IsMonotonic",
+			protoID:   3,
+			protoType: ProtoTypeBool,
 		},
 	},
 }
@@ -187,11 +253,17 @@ var histogram = &messageStruct{
 	structName:     "Histogram",
 	description:    "// Histogram represents the type of a metric that is calculated by aggregating as a Histogram of all reported measurements over a time interval.",
 	originFullName: "otlpmetrics.Histogram",
-	fields: []baseField{
-		aggregationTemporalityField,
-		&sliceField{
+	fields: []Field{
+		&SliceField{
 			fieldName:   "DataPoints",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
 			returnSlice: histogramDataPointSlice,
+		},
+		&TypedField{
+			fieldName:  "AggregationTemporality",
+			protoID:    2,
+			returnType: aggregationTemporalityType,
 		},
 	},
 }
@@ -201,11 +273,17 @@ var exponentialHistogram = &messageStruct{
 	description: `// ExponentialHistogram represents the type of a metric that is calculated by aggregating
 	// as a ExponentialHistogram of all reported double measurements over a time interval.`,
 	originFullName: "otlpmetrics.ExponentialHistogram",
-	fields: []baseField{
-		aggregationTemporalityField,
-		&sliceField{
+	fields: []Field{
+		&SliceField{
 			fieldName:   "DataPoints",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
 			returnSlice: exponentialHistogramDataPointSlice,
+		},
+		&TypedField{
+			fieldName:  "AggregationTemporality",
+			protoID:    2,
+			returnType: aggregationTemporalityType,
 		},
 	},
 }
@@ -214,9 +292,11 @@ var summary = &messageStruct{
 	structName:     "Summary",
 	description:    "// Summary represents the type of a metric that is calculated by aggregating as a Summary of all reported double measurements over a time interval.",
 	originFullName: "otlpmetrics.Summary",
-	fields: []baseField{
-		&sliceField{
+	fields: []Field{
+		&SliceField{
 			fieldName:   "DataPoints",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
 			returnSlice: summaryDataPointSlice,
 		},
 	},
@@ -231,33 +311,60 @@ var numberDataPoint = &messageStruct{
 	structName:     "NumberDataPoint",
 	description:    "// NumberDataPoint is a single data point in a timeseries that describes the time-varying value of a number metric.",
 	originFullName: "otlpmetrics.NumberDataPoint",
-	fields: []baseField{
-		attributes,
-		startTimeField,
-		timeField,
-		&oneOfField{
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Attributes",
+			protoID:     7,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
+		},
+		&TypedField{
+			fieldName:       "StartTimestamp",
+			originFieldName: "StartTimeUnixNano",
+			protoID:         2,
+			returnType:      timestampType,
+		},
+		&TypedField{
+			fieldName:       "Timestamp",
+			originFieldName: "TimeUnixNano",
+			protoID:         3,
+			returnType:      timestampType,
+		},
+		&OneOfField{
 			typeName:        "NumberDataPointValueType",
 			originFieldName: "Value",
 			testValueIdx:    0, // Double
 			values: []oneOfValue{
-				&oneOfPrimitiveValue{
+				&OneOfPrimitiveValue{
 					fieldName:       "Double",
+					protoID:         4,
 					originFieldName: "AsDouble",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
+					protoType:       ProtoTypeDouble,
 				},
-				&oneOfPrimitiveValue{
+				&OneOfPrimitiveValue{
 					fieldName:       "Int",
+					protoID:         6,
 					originFieldName: "AsInt",
-					returnType:      "int64",
-					defaultVal:      "int64(0)",
-					testVal:         "int64(17)",
+					protoType:       ProtoTypeSFixed64,
 				},
 			},
 		},
-		exemplarsField,
-		dataPointFlagsField,
+		&SliceField{
+			fieldName:   "Exemplars",
+			protoID:     5,
+			protoType:   ProtoTypeMessage,
+			returnSlice: exemplarSlice,
+		},
+		&TypedField{
+			fieldName: "Flags",
+			protoID:   8,
+			returnType: &TypedType{
+				structName: "DataPointFlags",
+				protoType:  ProtoTypeUint32,
+				defaultVal: "0",
+				testVal:    "1",
+			},
+		},
 	},
 }
 
@@ -270,18 +377,73 @@ var histogramDataPoint = &messageStruct{
 	structName:     "HistogramDataPoint",
 	description:    "// HistogramDataPoint is a single data point in a timeseries that describes the time-varying values of a Histogram of values.",
 	originFullName: "otlpmetrics.HistogramDataPoint",
-	fields: []baseField{
-		attributes,
-		startTimeField,
-		timeField,
-		countField,
-		bucketCountsField,
-		explicitBoundsField,
-		exemplarsField,
-		dataPointFlagsField,
-		sumField,
-		minField,
-		maxField,
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Attributes",
+			protoID:     9,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
+		},
+		&TypedField{
+			fieldName:       "StartTimestamp",
+			originFieldName: "StartTimeUnixNano",
+			protoID:         2,
+			returnType:      timestampType,
+		},
+		&TypedField{
+			fieldName:       "Timestamp",
+			originFieldName: "TimeUnixNano",
+			protoID:         3,
+			returnType:      timestampType,
+		},
+		&PrimitiveField{
+			fieldName: "Count",
+			protoID:   4,
+			protoType: ProtoTypeFixed64,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Sum",
+			protoID:   5,
+			protoType: ProtoTypeDouble,
+		},
+		&SliceField{
+			fieldName:   "BucketCounts",
+			protoID:     6,
+			protoType:   ProtoTypeFixed64,
+			returnSlice: uInt64Slice,
+		},
+		&SliceField{
+			fieldName:   "ExplicitBounds",
+			protoID:     7,
+			protoType:   ProtoTypeDouble,
+			returnSlice: float64Slice,
+		},
+		&SliceField{
+			fieldName:   "Exemplars",
+			protoID:     8,
+			protoType:   ProtoTypeMessage,
+			returnSlice: exemplarSlice,
+		},
+		&TypedField{
+			fieldName: "Flags",
+			protoID:   10,
+			returnType: &TypedType{
+				structName: "DataPointFlags",
+				protoType:  ProtoTypeUint32,
+				defaultVal: "0",
+				testVal:    "1",
+			},
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Min",
+			protoID:   11,
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Max",
+			protoID:   12,
+			protoType: ProtoTypeDouble,
+		},
 	},
 }
 
@@ -297,41 +459,85 @@ var exponentialHistogramDataPoint = &messageStruct{
 	// summary statistics for a population of values, it may optionally contain the
 	// distribution of those values across a set of buckets.`,
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint",
-	fields: []baseField{
-		attributes,
-		startTimeField,
-		timeField,
-		countField,
-		&primitiveField{
-			fieldName:  "Scale",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(4)",
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Attributes",
+			protoID:     1,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
 		},
-		&primitiveField{
-			fieldName:  "ZeroCount",
-			returnType: "uint64",
-			defaultVal: "uint64(0)",
-			testVal:    "uint64(201)",
+		&TypedField{
+			fieldName:       "StartTimestamp",
+			protoID:         2,
+			originFieldName: "StartTimeUnixNano",
+			returnType:      timestampType,
 		},
-		&messageField{
+		&TypedField{
+			fieldName:       "Timestamp",
+			protoID:         3,
+			originFieldName: "TimeUnixNano",
+			returnType:      timestampType,
+		},
+		&PrimitiveField{
+			fieldName: "Count",
+			protoID:   4,
+			protoType: ProtoTypeFixed64,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Sum",
+			protoID:   5,
+			protoType: ProtoTypeDouble,
+		},
+		&PrimitiveField{
+			fieldName: "Scale",
+			protoID:   6,
+			protoType: ProtoTypeSInt32,
+		},
+		&PrimitiveField{
+			fieldName: "ZeroCount",
+			protoID:   7,
+			protoType: ProtoTypeFixed64,
+		},
+		&MessageField{
 			fieldName:     "Positive",
+			protoID:       8,
 			returnMessage: bucketsValues,
 		},
-		&messageField{
+		&MessageField{
 			fieldName:     "Negative",
+			protoID:       9,
 			returnMessage: bucketsValues,
 		},
-		exemplarsField,
-		dataPointFlagsField,
-		sumField,
-		minField,
-		maxField,
-		&primitiveField{
-			fieldName:  "ZeroThreshold",
-			returnType: "float64",
-			defaultVal: "float64(0.0)",
-			testVal:    "float64(0.5)",
+		&TypedField{
+			fieldName: "Flags",
+			protoID:   10,
+			returnType: &TypedType{
+				structName: "DataPointFlags",
+				protoType:  ProtoTypeUint32,
+				defaultVal: "0",
+				testVal:    "1",
+			},
+		},
+		&SliceField{
+			fieldName:   "Exemplars",
+			protoID:     11,
+			protoType:   ProtoTypeMessage,
+			returnSlice: exemplarSlice,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Min",
+			protoID:   12,
+			protoType: ProtoTypeDouble,
+		},
+		&OptionalPrimitiveField{
+			fieldName: "Max",
+			protoID:   13,
+			protoType: ProtoTypeDouble,
+		},
+		&PrimitiveField{
+			fieldName: "ZeroThreshold",
+			protoID:   14,
+			protoType: ProtoTypeDouble,
 		},
 	},
 }
@@ -340,14 +546,18 @@ var bucketsValues = &messageStruct{
 	structName:     "ExponentialHistogramDataPointBuckets",
 	description:    "// ExponentialHistogramDataPointBuckets are a set of bucket counts, encoded in a contiguous array of counts.",
 	originFullName: "otlpmetrics.ExponentialHistogramDataPoint_Buckets",
-	fields: []baseField{
-		&primitiveField{
-			fieldName:  "Offset",
-			returnType: "int32",
-			defaultVal: "int32(0)",
-			testVal:    "int32(909)",
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "Offset",
+			protoID:   1,
+			protoType: ProtoTypeSInt32,
 		},
-		bucketCountsField,
+		&SliceField{
+			fieldName:   "BucketCounts",
+			protoID:     2,
+			protoType:   ProtoTypeUint64,
+			returnSlice: uInt64Slice,
+		},
 	},
 }
 
@@ -360,17 +570,51 @@ var summaryDataPoint = &messageStruct{
 	structName:     "SummaryDataPoint",
 	description:    "// SummaryDataPoint is a single data point in a timeseries that describes the time-varying values of a Summary of double values.",
 	originFullName: "otlpmetrics.SummaryDataPoint",
-	fields: []baseField{
-		attributes,
-		startTimeField,
-		timeField,
-		countField,
-		doubleSumField,
-		&sliceField{
+	fields: []Field{
+		&SliceField{
+			fieldName:   "Attributes",
+			protoID:     7,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
+		},
+		&TypedField{
+			fieldName:       "StartTimestamp",
+			originFieldName: "StartTimeUnixNano",
+			protoID:         2,
+			returnType:      timestampType,
+		},
+		&TypedField{
+			fieldName:       "Timestamp",
+			originFieldName: "TimeUnixNano",
+			protoID:         3,
+			returnType:      timestampType,
+		},
+		&PrimitiveField{
+			fieldName: "Count",
+			protoID:   4,
+			protoType: ProtoTypeFixed64,
+		},
+		&PrimitiveField{
+			fieldName: "Sum",
+			protoID:   5,
+			protoType: ProtoTypeDouble,
+		},
+		&SliceField{
 			fieldName:   "QuantileValues",
+			protoID:     6,
+			protoType:   ProtoTypeMessage,
 			returnSlice: quantileValuesSlice,
 		},
-		dataPointFlagsField,
+		&TypedField{
+			fieldName: "Flags",
+			protoID:   8,
+			returnType: &TypedType{
+				structName: "DataPointFlags",
+				protoType:  ProtoTypeUint32,
+				defaultVal: "0",
+				testVal:    "1",
+			},
+		},
 	},
 }
 
@@ -383,9 +627,17 @@ var quantileValues = &messageStruct{
 	structName:     "SummaryDataPointValueAtQuantile",
 	description:    "// SummaryDataPointValueAtQuantile is a quantile value within a Summary data point.",
 	originFullName: "otlpmetrics.SummaryDataPoint_ValueAtQuantile",
-	fields: []baseField{
-		quantileField,
-		valueFloat64Field,
+	fields: []Field{
+		&PrimitiveField{
+			fieldName: "Quantile",
+			protoID:   1,
+			protoType: ProtoTypeDouble,
+		},
+		&PrimitiveField{
+			fieldName: "Value",
+			protoID:   2,
+			protoType: ProtoTypeDouble,
+		},
 	},
 }
 
@@ -401,133 +653,57 @@ var exemplar = &messageStruct{
 		"// for example the span and trace ID of the active span when the exemplar was recorded.",
 
 	originFullName: "otlpmetrics.Exemplar",
-	fields: []baseField{
-		timeField,
-		&oneOfField{
+	fields: []Field{
+		&SliceField{
+			fieldName:   "FilteredAttributes",
+			protoID:     7,
+			protoType:   ProtoTypeMessage,
+			returnSlice: mapStruct,
+		},
+		&TypedField{
+			fieldName:       "Timestamp",
+			originFieldName: "TimeUnixNano",
+			protoID:         2,
+			returnType:      timestampType,
+		},
+		&OneOfField{
 			typeName:        "ExemplarValueType",
 			originFieldName: "Value",
 			testValueIdx:    1, // Int
 			values: []oneOfValue{
-				&oneOfPrimitiveValue{
+				&OneOfPrimitiveValue{
 					fieldName:       "Double",
 					originFieldName: "AsDouble",
-					returnType:      "float64",
-					defaultVal:      "float64(0.0)",
-					testVal:         "float64(17.13)",
+					protoID:         3,
+					protoType:       ProtoTypeDouble,
 				},
-				&oneOfPrimitiveValue{
+				&OneOfPrimitiveValue{
 					fieldName:       "Int",
 					originFieldName: "AsInt",
-					returnType:      "int64",
-					defaultVal:      "int64(0)",
-					testVal:         "int64(17)",
+					protoID:         6,
+					protoType:       ProtoTypeSFixed64,
 				},
 			},
 		},
-		&sliceField{
-			fieldName:   "FilteredAttributes",
-			returnSlice: mapStruct,
+		&TypedField{
+			fieldName:       "SpanID",
+			originFieldName: "SpanId",
+			protoID:         4,
+			returnType:      spanIDType,
 		},
-		traceIDField,
-		spanIDField,
+		&TypedField{
+			fieldName:       "TraceID",
+			originFieldName: "TraceId",
+			protoID:         5,
+			returnType:      traceIDType,
+		},
 	},
 }
 
-var dataPointFlagsField = &primitiveTypedField{
-	fieldName: "Flags",
-	returnType: &primitiveType{
-		structName: "DataPointFlags",
-		rawType:    "uint32",
-		defaultVal: "0",
-		testVal:    "1",
-	},
-}
-
-var exemplarsField = &sliceField{
-	fieldName:   "Exemplars",
-	returnSlice: exemplarSlice,
-}
-
-var countField = &primitiveField{
-	fieldName:  "Count",
-	returnType: "uint64",
-	defaultVal: "uint64(0)",
-	testVal:    "uint64(17)",
-}
-
-var doubleSumField = &primitiveField{
-	fieldName:  "Sum",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var valueFloat64Field = &primitiveField{
-	fieldName:  "Value",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var bucketCountsField = &primitiveSliceField{
-	fieldName:         "BucketCounts",
-	returnType:        "UInt64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]uint64(nil)",
-	rawType:           "[]uint64",
-	testVal:           "[]uint64{1, 2, 3}",
-}
-
-var explicitBoundsField = &primitiveSliceField{
-	fieldName:         "ExplicitBounds",
-	returnType:        "Float64Slice",
-	returnPackageName: "pcommon",
-	defaultVal:        "[]float64(nil)",
-	rawType:           "[]float64",
-	testVal:           "[]float64{1, 2, 3}",
-}
-
-var quantileField = &primitiveField{
-	fieldName:  "Quantile",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var isMonotonicField = &primitiveField{
-	fieldName:  "IsMonotonic",
-	returnType: "bool",
-	defaultVal: "false",
-	testVal:    "true",
-}
-
-var aggregationTemporalityField = &primitiveTypedField{
-	fieldName: "AggregationTemporality",
-	returnType: &primitiveType{
-		structName: "AggregationTemporality",
-		rawType:    "otlpmetrics.AggregationTemporality",
-		defaultVal: "otlpmetrics.AggregationTemporality(0)",
-		testVal:    "otlpmetrics.AggregationTemporality(1)",
-	},
-}
-
-var sumField = &optionalPrimitiveValue{
-	fieldName:  "Sum",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(17.13)",
-}
-
-var minField = &optionalPrimitiveValue{
-	fieldName:  "Min",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(9.23)",
-}
-
-var maxField = &optionalPrimitiveValue{
-	fieldName:  "Max",
-	returnType: "float64",
-	defaultVal: "float64(0.0)",
-	testVal:    "float64(182.55)",
+var aggregationTemporalityType = &TypedType{
+	structName:  "AggregationTemporality",
+	protoType:   ProtoTypeEnum,
+	messageName: "otlpmetrics.AggregationTemporality",
+	defaultVal:  "otlpmetrics.AggregationTemporality(0)",
+	testVal:     "otlpmetrics.AggregationTemporality(1)",
 }

@@ -40,6 +40,13 @@ func TestHistogram_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newHistogram(&otlpmetrics.Histogram{}, &sharedState)) })
 }
 
+func TestHistogram_DataPoints(t *testing.T) {
+	ms := NewHistogram()
+	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestHistogramDataPointSlice()
+	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
+}
+
 func TestHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
@@ -48,20 +55,8 @@ func TestHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestHistogram_DataPoints(t *testing.T) {
-	ms := NewHistogram()
-	assert.Equal(t, NewHistogramDataPointSlice(), ms.DataPoints())
-	fillTestHistogramDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestHistogram() Histogram {
-	tv := NewHistogram()
-	fillTestHistogram(tv)
-	return tv
-}
-
-func fillTestHistogram(tv Histogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestHistogramDataPointSlice(newHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewHistogram()
+	internal.FillOrigTestHistogram(ms.orig)
+	return ms
 }

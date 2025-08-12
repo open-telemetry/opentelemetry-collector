@@ -40,6 +40,13 @@ func TestExponentialHistogram_CopyTo(t *testing.T) {
 	assert.Panics(t, func() { ms.CopyTo(newExponentialHistogram(&otlpmetrics.ExponentialHistogram{}, &sharedState)) })
 }
 
+func TestExponentialHistogram_DataPoints(t *testing.T) {
+	ms := NewExponentialHistogram()
+	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestExponentialHistogramDataPointSlice()
+	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
+}
+
 func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	ms := NewExponentialHistogram()
 	assert.Equal(t, AggregationTemporality(otlpmetrics.AggregationTemporality(0)), ms.AggregationTemporality())
@@ -48,20 +55,8 @@ func TestExponentialHistogram_AggregationTemporality(t *testing.T) {
 	assert.Equal(t, testValAggregationTemporality, ms.AggregationTemporality())
 }
 
-func TestExponentialHistogram_DataPoints(t *testing.T) {
-	ms := NewExponentialHistogram()
-	assert.Equal(t, NewExponentialHistogramDataPointSlice(), ms.DataPoints())
-	fillTestExponentialHistogramDataPointSlice(ms.DataPoints())
-	assert.Equal(t, generateTestExponentialHistogramDataPointSlice(), ms.DataPoints())
-}
-
 func generateTestExponentialHistogram() ExponentialHistogram {
-	tv := NewExponentialHistogram()
-	fillTestExponentialHistogram(tv)
-	return tv
-}
-
-func fillTestExponentialHistogram(tv ExponentialHistogram) {
-	tv.orig.AggregationTemporality = otlpmetrics.AggregationTemporality(1)
-	fillTestExponentialHistogramDataPointSlice(newExponentialHistogramDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewExponentialHistogram()
+	internal.FillOrigTestExponentialHistogram(ms.orig)
+	return ms
 }

@@ -26,9 +26,9 @@ func TestHistogramDataPointSlice(t *testing.T) {
 	emptyVal := NewHistogramDataPoint()
 	testVal := generateTestHistogramDataPoint()
 	for i := 0; i < 7; i++ {
-		el := es.AppendEmpty()
+		es.AppendEmpty()
 		assert.Equal(t, emptyVal, es.At(i))
-		fillTestHistogramDataPoint(el)
+		internal.FillOrigTestHistogramDataPoint((*es.orig)[i])
 		assert.Equal(t, testVal, es.At(i))
 	}
 	assert.Equal(t, 7, es.Len())
@@ -49,16 +49,8 @@ func TestHistogramDataPointSliceReadOnly(t *testing.T) {
 
 func TestHistogramDataPointSlice_CopyTo(t *testing.T) {
 	dest := NewHistogramDataPointSlice()
-	// Test CopyTo to empty
-	NewHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, NewHistogramDataPointSlice(), dest)
-
-	// Test CopyTo larger slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
-	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
-
-	// Test CopyTo same size slice
-	generateTestHistogramDataPointSlice().CopyTo(dest)
+	src := generateTestHistogramDataPointSlice()
+	src.CopyTo(dest)
 	assert.Equal(t, generateTestHistogramDataPointSlice(), dest)
 }
 
@@ -130,6 +122,14 @@ func TestHistogramDataPointSlice_RemoveIf(t *testing.T) {
 	assert.Equal(t, 5, filtered.Len())
 }
 
+func TestHistogramDataPointSlice_RemoveIfAll(t *testing.T) {
+	got := generateTestHistogramDataPointSlice()
+	got.RemoveIf(func(el HistogramDataPoint) bool {
+		return true
+	})
+	assert.Equal(t, 0, got.Len())
+}
+
 func TestHistogramDataPointSliceAll(t *testing.T) {
 	ms := generateTestHistogramDataPointSlice()
 	assert.NotEmpty(t, ms.Len())
@@ -159,15 +159,7 @@ func TestHistogramDataPointSlice_Sort(t *testing.T) {
 }
 
 func generateTestHistogramDataPointSlice() HistogramDataPointSlice {
-	es := NewHistogramDataPointSlice()
-	fillTestHistogramDataPointSlice(es)
-	return es
-}
-
-func fillTestHistogramDataPointSlice(es HistogramDataPointSlice) {
-	*es.orig = make([]*otlpmetrics.HistogramDataPoint, 7)
-	for i := 0; i < 7; i++ {
-		(*es.orig)[i] = &otlpmetrics.HistogramDataPoint{}
-		fillTestHistogramDataPoint(newHistogramDataPoint((*es.orig)[i], es.state))
-	}
+	ms := NewHistogramDataPointSlice()
+	*ms.orig = internal.GenerateOrigTestHistogramDataPointSlice()
+	return ms
 }

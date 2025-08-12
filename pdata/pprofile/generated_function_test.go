@@ -43,48 +43,41 @@ func TestFunction_CopyTo(t *testing.T) {
 func TestFunction_NameStrindex(t *testing.T) {
 	ms := NewFunction()
 	assert.Equal(t, int32(0), ms.NameStrindex())
-	ms.SetNameStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.NameStrindex())
+	ms.SetNameStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.NameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetNameStrindex(int32(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetNameStrindex(int32(13)) })
 }
 
 func TestFunction_SystemNameStrindex(t *testing.T) {
 	ms := NewFunction()
 	assert.Equal(t, int32(0), ms.SystemNameStrindex())
-	ms.SetSystemNameStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.SystemNameStrindex())
+	ms.SetSystemNameStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.SystemNameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetSystemNameStrindex(int32(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetSystemNameStrindex(int32(13)) })
 }
 
 func TestFunction_FilenameStrindex(t *testing.T) {
 	ms := NewFunction()
 	assert.Equal(t, int32(0), ms.FilenameStrindex())
-	ms.SetFilenameStrindex(int32(1))
-	assert.Equal(t, int32(1), ms.FilenameStrindex())
+	ms.SetFilenameStrindex(int32(13))
+	assert.Equal(t, int32(13), ms.FilenameStrindex())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetFilenameStrindex(int32(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetFilenameStrindex(int32(13)) })
 }
 
 func TestFunction_StartLine(t *testing.T) {
 	ms := NewFunction()
 	assert.Equal(t, int64(0), ms.StartLine())
-	ms.SetStartLine(int64(1))
-	assert.Equal(t, int64(1), ms.StartLine())
+	ms.SetStartLine(int64(13))
+	assert.Equal(t, int64(13), ms.StartLine())
 	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetStartLine(int64(1)) })
+	assert.Panics(t, func() { newFunction(&otlpprofiles.Function{}, &sharedState).SetStartLine(int64(13)) })
 }
 
 func generateTestFunction() Function {
-	tv := NewFunction()
-	fillTestFunction(tv)
-	return tv
-}
-
-func fillTestFunction(tv Function) {
-	tv.orig.NameStrindex = int32(1)
-	tv.orig.SystemNameStrindex = int32(1)
-	tv.orig.FilenameStrindex = int32(1)
-	tv.orig.StartLine = int64(1)
+	ms := NewFunction()
+	internal.FillOrigTestFunction(ms.orig)
+	return ms
 }

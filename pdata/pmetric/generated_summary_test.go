@@ -43,16 +43,12 @@ func TestSummary_CopyTo(t *testing.T) {
 func TestSummary_DataPoints(t *testing.T) {
 	ms := NewSummary()
 	assert.Equal(t, NewSummaryDataPointSlice(), ms.DataPoints())
-	fillTestSummaryDataPointSlice(ms.DataPoints())
+	ms.orig.DataPoints = internal.GenerateOrigTestSummaryDataPointSlice()
 	assert.Equal(t, generateTestSummaryDataPointSlice(), ms.DataPoints())
 }
 
 func generateTestSummary() Summary {
-	tv := NewSummary()
-	fillTestSummary(tv)
-	return tv
-}
-
-func fillTestSummary(tv Summary) {
-	fillTestSummaryDataPointSlice(newSummaryDataPointSlice(&tv.orig.DataPoints, tv.state))
+	ms := NewSummary()
+	internal.FillOrigTestSummary(ms.orig)
+	return ms
 }

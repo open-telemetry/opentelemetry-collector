@@ -32,8 +32,7 @@ var profilesRequestJSON = []byte(`
 										"locationsStartIndex": 42
 									}
 								],
-								"periodType": {},
-								"profileId": ""
+								"periodType": {}
 							}
 						]
 					}

@@ -7,9 +7,9 @@
 package {{ .packageName }}
 
 import (
-{{ range $index, $element := .testImports -}}
-{{ $element }}
-{{ end }}
+	{{ range $index, $element := .testImports -}}
+	{{ $element }}
+	{{ end }}
 )
 
 func TestNew{{ .structName }}(t *testing.T) {

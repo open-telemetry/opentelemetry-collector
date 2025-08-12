@@ -57,9 +57,5 @@ func (ms Gauge) DataPoints() NumberDataPointSlice {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Gauge) CopyTo(dest Gauge) {
 	dest.state.AssertMutable()
-	copyOrigGauge(dest.orig, ms.orig)
-}
-
-func copyOrigGauge(dest, src *otlpmetrics.Gauge) {
-	dest.DataPoints = copyOrigNumberDataPointSlice(dest.DataPoints, src.DataPoints)
+	internal.CopyOrigGauge(dest.orig, ms.orig)
 }

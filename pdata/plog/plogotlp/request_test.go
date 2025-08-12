@@ -29,9 +29,7 @@ var logsRequestJSON = []byte(`
 						{
 							"body": {
 								"stringValue": "test_log_record"
-							},
-							"traceId": "",
-							"spanId": ""
+							}
 						}
 					]
 				}

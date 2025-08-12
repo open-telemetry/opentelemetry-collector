@@ -76,10 +76,5 @@ func (ms Link) SetSpanID(v pcommon.SpanID) {
 // CopyTo copies all properties from the current struct overriding the destination.
 func (ms Link) CopyTo(dest Link) {
 	dest.state.AssertMutable()
-	copyOrigLink(dest.orig, ms.orig)
-}
-
-func copyOrigLink(dest, src *otlpprofiles.Link) {
-	dest.TraceId = src.TraceId
-	dest.SpanId = src.SpanId
+	internal.CopyOrigLink(dest.orig, ms.orig)
 }

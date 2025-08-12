@@ -6,11 +6,11 @@ package internal
 import (
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	otlpcommon "go.opentelemetry.io/collector/pdata/internal/data/protogen/common/v1"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
 
 func TestReadArray(t *testing.T) {
@@ -37,8 +37,8 @@ func TestReadArray(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := readArray(iter)
 			assert.Equal(t, tt.want, got)
 		})
@@ -138,8 +138,8 @@ func TestReadKvlistValue(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := jsoniter.ConfigFastest.BorrowIterator([]byte(tt.jsonStr))
-			defer jsoniter.ConfigFastest.ReturnIterator(iter)
+			iter := json.BorrowIterator([]byte(tt.jsonStr))
+			defer json.ReturnIterator(iter)
 			got := readKvlistValue(iter)
 			assert.Equal(t, tt.want, got)
 		})
@@ -148,41 +148,41 @@ func TestReadKvlistValue(t *testing.T) {
 
 func TestReadValueUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	value := otlpcommon.AnyValue{}
-	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
-	require.NoError(t, iter.Error)
+	UnmarshalJSONOrigAnyValue(&value, iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, otlpcommon.AnyValue{}, value)
 }
 
 func TestReadValueInvliadBytesValue(t *testing.T) {
 	jsonStr := `{"bytesValue": "--"}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
 	value := otlpcommon.AnyValue{}
-	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
-	assert.ErrorContains(t, iter.Error, "base64")
+	UnmarshalJSONOrigAnyValue(&value, iter)
+	assert.ErrorContains(t, iter.Error(), "base64")
 }
 
 func TestReadArrayUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	value := readArray(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, &otlpcommon.ArrayValue{}, value)
 }
 
 func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 	jsonStr := `{"arrayValue": {"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
 	value := otlpcommon.AnyValue{}
-	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
-	require.NoError(t, iter.Error)
+	UnmarshalJSONOrigAnyValue(&value, iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_ArrayValue{
 			ArrayValue: &otlpcommon.ArrayValue{},
@@ -192,24 +192,70 @@ func TestReadArrayValueInvalidArrayValue(t *testing.T) {
 
 func TestReadKvlistValueUnknownField(t *testing.T) {
 	jsonStr := `{"extra":""}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 	value := readKvlistValue(iter)
-	require.NoError(t, iter.Error)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, &otlpcommon.KeyValueList{}, value)
 }
 
 func TestReadKvlistValueInvalidArrayValue(t *testing.T) {
 	jsonStr := `{"kvlistValue": {"extra":""}}`
-	iter := jsoniter.ConfigFastest.BorrowIterator([]byte(jsonStr))
-	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+	iter := json.BorrowIterator([]byte(jsonStr))
+	defer json.ReturnIterator(iter)
 
 	value := otlpcommon.AnyValue{}
-	UnmarshalJSONIterValue(NewValue(&value, nil), iter)
-	require.NoError(t, iter.Error)
+	UnmarshalJSONOrigAnyValue(&value, iter)
+	require.NoError(t, iter.Error())
 	assert.Equal(t, otlpcommon.AnyValue{
 		Value: &otlpcommon.AnyValue_KvlistValue{
 			KvlistValue: &otlpcommon.KeyValueList{},
 		},
 	}, value)
+}
+
+func TestCopyOrigAnyValueAllTypes(t *testing.T) {
+	for name, src := range allAnyValues() {
+		t.Run(name, func(t *testing.T) {
+			dest := &otlpcommon.AnyValue{}
+			CopyOrigAnyValue(dest, src)
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func TestMarshalAndUnmarshalJSONOrigAnyValueAllTypes(t *testing.T) {
+	for name, src := range allAnyValues() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigAnyValue(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &otlpcommon.AnyValue{}
+			UnmarshalJSONOrigAnyValue(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
+}
+
+func allAnyValues() map[string]*otlpcommon.AnyValue {
+	return map[string]*otlpcommon.AnyValue{
+		"empty":  {Value: nil},
+		"str":    {Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}},
+		"bool":   {Value: &otlpcommon.AnyValue_BoolValue{BoolValue: true}},
+		"double": {Value: &otlpcommon.AnyValue_DoubleValue{DoubleValue: 3.14}},
+		"int":    {Value: &otlpcommon.AnyValue_IntValue{IntValue: 123}},
+		"bytes":  {Value: &otlpcommon.AnyValue_BytesValue{BytesValue: []byte{1, 2, 3}}},
+		"array": {Value: &otlpcommon.AnyValue_ArrayValue{
+			ArrayValue: &otlpcommon.ArrayValue{Values: []otlpcommon.AnyValue{{Value: &otlpcommon.AnyValue_IntValue{IntValue: 321}}}},
+		}},
+		"map": {Value: &otlpcommon.AnyValue_KvlistValue{
+			KvlistValue: &otlpcommon.KeyValueList{Values: []otlpcommon.KeyValue{{Key: "key", Value: otlpcommon.AnyValue{Value: &otlpcommon.AnyValue_StringValue{StringValue: "value"}}}}},
+		}},
+	}
 }

@@ -43,36 +43,29 @@ func TestResourceLogs_CopyTo(t *testing.T) {
 
 func TestResourceLogs_Resource(t *testing.T) {
 	ms := NewResourceLogs()
-	internal.FillTestResource(internal.Resource(ms.Resource()))
+	assert.Equal(t, pcommon.NewResource(), ms.Resource())
+	internal.FillOrigTestResource(&ms.orig.Resource)
 	assert.Equal(t, pcommon.Resource(internal.GenerateTestResource()), ms.Resource())
-}
-
-func TestResourceLogs_SchemaUrl(t *testing.T) {
-	ms := NewResourceLogs()
-	assert.Empty(t, ms.SchemaUrl())
-	ms.SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	assert.Equal(t, "https://opentelemetry.io/schemas/1.5.0", ms.SchemaUrl())
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() {
-		newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("https://opentelemetry.io/schemas/1.5.0")
-	})
 }
 
 func TestResourceLogs_ScopeLogs(t *testing.T) {
 	ms := NewResourceLogs()
 	assert.Equal(t, NewScopeLogsSlice(), ms.ScopeLogs())
-	fillTestScopeLogsSlice(ms.ScopeLogs())
+	ms.orig.ScopeLogs = internal.GenerateOrigTestScopeLogsSlice()
 	assert.Equal(t, generateTestScopeLogsSlice(), ms.ScopeLogs())
 }
 
-func generateTestResourceLogs() ResourceLogs {
-	tv := NewResourceLogs()
-	fillTestResourceLogs(tv)
-	return tv
+func TestResourceLogs_SchemaUrl(t *testing.T) {
+	ms := NewResourceLogs()
+	assert.Empty(t, ms.SchemaUrl())
+	ms.SetSchemaUrl("test_schemaurl")
+	assert.Equal(t, "test_schemaurl", ms.SchemaUrl())
+	sharedState := internal.StateReadOnly
+	assert.Panics(t, func() { newResourceLogs(&otlplogs.ResourceLogs{}, &sharedState).SetSchemaUrl("test_schemaurl") })
 }
 
-func fillTestResourceLogs(tv ResourceLogs) {
-	internal.FillTestResource(internal.NewResource(&tv.orig.Resource, tv.state))
-	tv.orig.SchemaUrl = "https://opentelemetry.io/schemas/1.5.0"
-	fillTestScopeLogsSlice(newScopeLogsSlice(&tv.orig.ScopeLogs, tv.state))
+func generateTestResourceLogs() ResourceLogs {
+	ms := NewResourceLogs()
+	internal.FillOrigTestResourceLogs(ms.orig)
+	return ms
 }

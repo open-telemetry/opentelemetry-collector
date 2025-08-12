@@ -8,6 +8,10 @@ formatters:
       # simplify code: gofmt with `-s` option, true by default
       simplify: true
 
+    gofumpt:
+      # Choose whether to use the extra rules
+      extra-rules: true
+
     goimports:
       # put imports beginning with prefix after 3rd-party packages;
       # it's a comma-separated list of prefixes
@@ -22,10 +26,14 @@ issues:
 
 linters:
   enable:
+    - asasalint
+    - contextcheck
     - copyloopvar
+    - decorder
     - depguard
     - errcheck
     - errorlint
+    - fatcontext
     - gocritic
     - gosec
     - govet
@@ -85,7 +93,6 @@ linters:
         - filepathJoin
         - hugeParam
         - importShadow
-        - paramTypeCombine
         - rangeValCopy
         - unnamedResult
         - whyNoLint

@@ -63,18 +63,18 @@ func TestInstrumentationScope_Version(t *testing.T) {
 func TestInstrumentationScope_Attributes(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, NewMap(), ms.Attributes())
-	internal.FillTestMap(internal.Map(ms.Attributes()))
+	ms.getOrig().Attributes = internal.GenerateOrigTestKeyValueSlice()
 	assert.Equal(t, Map(internal.GenerateTestMap()), ms.Attributes())
 }
 
 func TestInstrumentationScope_DroppedAttributesCount(t *testing.T) {
 	ms := NewInstrumentationScope()
 	assert.Equal(t, uint32(0), ms.DroppedAttributesCount())
-	ms.SetDroppedAttributesCount(uint32(17))
-	assert.Equal(t, uint32(17), ms.DroppedAttributesCount())
+	ms.SetDroppedAttributesCount(uint32(13))
+	assert.Equal(t, uint32(13), ms.DroppedAttributesCount())
 	sharedState := internal.StateReadOnly
 	assert.Panics(t, func() {
-		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(17))
+		newInstrumentationScope(&otlpcommon.InstrumentationScope{}, &sharedState).SetDroppedAttributesCount(uint32(13))
 	})
 }
 

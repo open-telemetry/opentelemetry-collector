@@ -27,9 +27,6 @@ var tracesRequestJSON = []byte(`
 						"scope": {},
 						"spans": [
 							{
-								"traceId": "",
-								"spanId":"",
-								"parentSpanId":"",
 								"name": "test_span",
 								"status": {}
 							}
