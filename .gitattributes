@@ -4,6 +4,6 @@
 
 go.sum linguist-generated=true
 
-# To avoid git status and other tools reporting files due to different line endings
-# normalize the line endings to LF
+# Avoid git status and other tools (lint, fmt) reporting whitespace differences
+# on Windows machines by ensuring that `lf` on text files are not converted to `crlf`.
 * text=auto eol=lf
