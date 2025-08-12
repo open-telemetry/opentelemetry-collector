@@ -5,10 +5,10 @@ go 1.23.0
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/client v1.37.0
-	go.opentelemetry.io/collector/pdata v1.37.0
-	go.opentelemetry.io/collector/pdata/pprofile v0.131.0
-	go.opentelemetry.io/collector/pdata/testdata v0.131.0
+	go.opentelemetry.io/collector/client v1.38.0
+	go.opentelemetry.io/collector/pdata v1.38.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.132.0
+	go.opentelemetry.io/collector/pdata/testdata v0.132.0
 	go.opentelemetry.io/otel/trace v1.37.0
 )
 

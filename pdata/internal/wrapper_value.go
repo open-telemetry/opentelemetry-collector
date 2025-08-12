@@ -92,18 +92,36 @@ func MarshalJSONOrigAnyValue(orig *otlpcommon.AnyValue, dest *json.Stream) {
 		dest.WriteFloat64(v.DoubleValue)
 	case *otlpcommon.AnyValue_BytesValue:
 		dest.WriteObjectField("bytesValue")
-		MarshalJSONOrigByteSlice(v.BytesValue, dest)
+		dest.WriteBytes(v.BytesValue)
 	case *otlpcommon.AnyValue_ArrayValue:
 		dest.WriteObjectField("arrayValue")
 		dest.WriteObjectStart()
-		dest.WriteObjectField("values")
-		MarshalJSONOrigAnyValueSlice(v.ArrayValue.Values, dest)
+		values := v.ArrayValue.Values
+		if len(values) > 0 {
+			dest.WriteObjectField("values")
+			dest.WriteArrayStart()
+			MarshalJSONOrigAnyValue(&values[0], dest)
+			for i := 1; i < len(values); i++ {
+				dest.WriteMore()
+				MarshalJSONOrigAnyValue(&values[i], dest)
+			}
+			dest.WriteArrayEnd()
+		}
 		dest.WriteObjectEnd()
 	case *otlpcommon.AnyValue_KvlistValue:
 		dest.WriteObjectField("kvlistValue")
 		dest.WriteObjectStart()
-		dest.WriteObjectField("values")
-		MarshalJSONOrigKeyValueSlice(v.KvlistValue.Values, dest)
+		values := v.KvlistValue.Values
+		if len(values) > 0 {
+			dest.WriteObjectField("values")
+			dest.WriteArrayStart()
+			MarshalJSONOrigKeyValue(&values[0], dest)
+			for i := 1; i < len(values); i++ {
+				dest.WriteMore()
+				MarshalJSONOrigKeyValue(&values[i], dest)
+			}
+			dest.WriteArrayEnd()
+		}
 		dest.WriteObjectEnd()
 	default:
 		dest.ReportError(fmt.Errorf("invalid value type in the passed attribute value: %T", orig.Value))

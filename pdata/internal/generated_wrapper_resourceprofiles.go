@@ -31,7 +31,13 @@ func MarshalJSONOrigResourceProfiles(orig *otlpprofiles.ResourceProfiles, dest *
 	MarshalJSONOrigResource(&orig.Resource, dest)
 	if len(orig.ScopeProfiles) > 0 {
 		dest.WriteObjectField("scopeProfiles")
-		MarshalJSONOrigScopeProfilesSlice(orig.ScopeProfiles, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[0], dest)
+		for i := 1; i < len(orig.ScopeProfiles); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigScopeProfiles(orig.ScopeProfiles[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")

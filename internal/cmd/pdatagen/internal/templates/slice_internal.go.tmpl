@@ -11,7 +11,7 @@ import (
 	{{ $element }}
 	{{ end }}
 )
-{{ if .isCommon }}
+{{ if .hasWrapper }}
 
 type {{ .structName }} struct {
 	orig *[]{{ .originElementType }}
@@ -83,19 +83,6 @@ func GenerateOrigTest{{ .elementOriginName }}Slice() []{{ .originElementType }} 
 		FillOrigTest{{ .elementOriginName }}({{ .originElementPtr }}orig[i])
 	}
 	return orig
-}
-
-// MarshalJSONOrig{{ .elementOriginName }}Slice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrig{{ .elementOriginName }}Slice(orig []{{ .originElementType }}, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrig{{ .elementOriginName }}({{ .originElementPtr }}orig[i], dest)
-	}
-	dest.WriteArrayEnd()
 }
 
 // UnmarshalJSONOrig{{ .elementOriginName }}Slice unmarshals all properties from the current struct from the source iterator.

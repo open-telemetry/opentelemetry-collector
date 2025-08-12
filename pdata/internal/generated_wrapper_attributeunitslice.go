@@ -49,19 +49,6 @@ func GenerateOrigTestAttributeUnitSlice() []*otlpprofiles.AttributeUnit {
 	return orig
 }
 
-// MarshalJSONOrigAttributeUnitSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigAttributeUnitSlice(orig []*otlpprofiles.AttributeUnit, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigAttributeUnit(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigAttributeUnit(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigAttributeUnitSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigAttributeUnitSlice(iter *json.Iterator) []*otlpprofiles.AttributeUnit {
 	var orig []*otlpprofiles.AttributeUnit

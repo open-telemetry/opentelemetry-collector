@@ -53,7 +53,13 @@ func MarshalJSONOrigResource(orig *otlpresource.Resource, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
@@ -61,7 +67,13 @@ func MarshalJSONOrigResource(orig *otlpresource.Resource, dest *json.Stream) {
 	}
 	if len(orig.EntityRefs) > 0 {
 		dest.WriteObjectField("entityRefs")
-		MarshalJSONOrigEntityRefSlice(orig.EntityRefs, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigEntityRef(orig.EntityRefs[0], dest)
+		for i := 1; i < len(orig.EntityRefs); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigEntityRef(orig.EntityRefs[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

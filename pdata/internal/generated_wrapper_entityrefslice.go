@@ -72,19 +72,6 @@ func GenerateOrigTestEntityRefSlice() []*otlpcommon.EntityRef {
 	return orig
 }
 
-// MarshalJSONOrigEntityRefSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigEntityRefSlice(orig []*otlpcommon.EntityRef, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigEntityRef(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigEntityRef(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigEntityRefSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigEntityRefSlice(iter *json.Iterator) []*otlpcommon.EntityRef {
 	var orig []*otlpcommon.EntityRef

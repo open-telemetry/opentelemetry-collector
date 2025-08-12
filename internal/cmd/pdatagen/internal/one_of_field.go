@@ -33,17 +33,20 @@ const oneOfAccessorTestTemplate = `func Test{{ .structName }}_{{ .typeFuncName }
 {{ end }}
 `
 
+const oneOfTestValuesTemplate = `{{- range .values }}{{ .GenerateTestValue $.baseStruct $.OneOfField }}{{- end }}`
+
 const oneOfCopyOrigTemplate = `switch t := src.{{ .originFieldName }}.(type) {
 {{- range .values }}
 {{ .GenerateCopyOrig $.baseStruct $.OneOfField }}
 {{- end }}
 }`
 
-const oneOfMarshalJSONTemplate = `switch ov := orig.{{ .originFieldName }}.(type) {
-		{{- range .values }}
+const oneOfMarshalJSONTemplate = `switch orig.{{ .originFieldName }}.(type) {
+	{{- range .values }}
+	case *{{ $.originTypePrefix }}{{ .GetOriginFieldName }}:
 		{{ .GenerateMarshalJSON $.baseStruct $.OneOfField }}
-		{{- end }}
-	}`
+	{{- end }}
+}`
 
 const oneOfUnmarshalJSONTemplate = `
 	{{- range .values }}
@@ -94,6 +97,11 @@ func (of *OneOfField) GenerateSetWithTestValue(ms *messageStruct) string {
 	return of.values[of.testValueIdx].GenerateSetWithTestValue(ms, of)
 }
 
+func (of *OneOfField) GenerateTestValue(ms *messageStruct) string {
+	t := template.Must(templateNew("oneOfTestValuesTemplate").Parse(oneOfTestValuesTemplate))
+	return executeTemplate(t, of.templateFields(ms))
+}
+
 func (of *OneOfField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("oneOfCopyOrigTemplate").Parse(oneOfCopyOrigTemplate))
 	return executeTemplate(t, of.templateFields(ms))
@@ -129,8 +137,8 @@ func (of *OneOfField) templateFields(ms *messageStruct) map[string]any {
 		"typeName":             of.typeName,
 		"originFieldName":      of.originFieldName,
 		"lowerOriginFieldName": strings.ToLower(of.originFieldName),
-		"origAccessor":         origAccessor(ms.packageName),
-		"stateAccessor":        stateAccessor(ms.packageName),
+		"origAccessor":         origAccessor(ms.getHasWrapper()),
+		"stateAccessor":        stateAccessor(ms.getHasWrapper()),
 		"values":               of.values,
 		"originTypePrefix":     ms.originFullName + "_",
 	}
@@ -143,6 +151,7 @@ type oneOfValue interface {
 	GenerateAccessors(ms *messageStruct, of *OneOfField) string
 	GenerateTests(ms *messageStruct, of *OneOfField) string
 	GenerateSetWithTestValue(ms *messageStruct, of *OneOfField) string
+	GenerateTestValue(ms *messageStruct, of *OneOfField) string
 	GenerateCopyOrig(ms *messageStruct, of *OneOfField) string
 	GenerateType(ms *messageStruct, of *OneOfField) string
 	GenerateMarshalJSON(ms *messageStruct, of *OneOfField) string

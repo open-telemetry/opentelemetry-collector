@@ -49,19 +49,6 @@ func GenerateOrigTestResourceProfilesSlice() []*otlpprofiles.ResourceProfiles {
 	return orig
 }
 
-// MarshalJSONOrigResourceProfilesSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceProfilesSlice(orig []*otlpprofiles.ResourceProfiles, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigResourceProfiles(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigResourceProfiles(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigResourceProfilesSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceProfilesSlice(iter *json.Iterator) []*otlpprofiles.ResourceProfiles {
 	var orig []*otlpprofiles.ResourceProfiles

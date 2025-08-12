@@ -57,7 +57,13 @@ func MarshalJSONOrigMapping(orig *otlpprofiles.Mapping, dest *json.Stream) {
 	}
 	if len(orig.AttributeIndices) > 0 {
 		dest.WriteObjectField("attributeIndices")
-		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.AttributeIndices[0])
+		for i := 1; i < len(orig.AttributeIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.AttributeIndices[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.HasFunctions != false {
 		dest.WriteObjectField("hasFunctions")

@@ -52,19 +52,37 @@ func MarshalJSONOrigSample(orig *otlpprofiles.Sample, dest *json.Stream) {
 	}
 	if len(orig.Value) > 0 {
 		dest.WriteObjectField("value")
-		MarshalJSONOrigInt64Slice(orig.Value, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt64(orig.Value[0])
+		for i := 1; i < len(orig.Value); i++ {
+			dest.WriteMore()
+			dest.WriteInt64(orig.Value[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.AttributeIndices) > 0 {
 		dest.WriteObjectField("attributeIndices")
-		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.AttributeIndices[0])
+		for i := 1; i < len(orig.AttributeIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.AttributeIndices[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.LinkIndex_ != nil {
 		dest.WriteObjectField("linkIndex")
-		dest.WriteInt32(orig.GetLinkIndex())
+		dest.WriteInt32(orig.LinkIndex_.(*otlpprofiles.Sample_LinkIndex).LinkIndex)
 	}
 	if len(orig.TimestampsUnixNano) > 0 {
 		dest.WriteObjectField("timestampsUnixNano")
-		MarshalJSONOrigUint64Slice(orig.TimestampsUnixNano, dest)
+		dest.WriteArrayStart()
+		dest.WriteUint64(orig.TimestampsUnixNano[0])
+		for i := 1; i < len(orig.TimestampsUnixNano); i++ {
+			dest.WriteMore()
+			dest.WriteUint64(orig.TimestampsUnixNano[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

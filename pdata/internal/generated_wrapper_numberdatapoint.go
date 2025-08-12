@@ -43,29 +43,41 @@ func MarshalJSONOrigNumberDataPoint(orig *otlpmetrics.NumberDataPoint, dest *jso
 	dest.WriteObjectStart()
 	if len(orig.Attributes) > 0 {
 		dest.WriteObjectField("attributes")
-		MarshalJSONOrigKeyValueSlice(orig.Attributes, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigKeyValue(&orig.Attributes[0], dest)
+		for i := 1; i < len(orig.Attributes); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigKeyValue(&orig.Attributes[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.StartTimeUnixNano != 0 {
+	if orig.StartTimeUnixNano != uint64(0) {
 		dest.WriteObjectField("startTimeUnixNano")
 		dest.WriteUint64(orig.StartTimeUnixNano)
 	}
-	if orig.TimeUnixNano != 0 {
+	if orig.TimeUnixNano != uint64(0) {
 		dest.WriteObjectField("timeUnixNano")
 		dest.WriteUint64(orig.TimeUnixNano)
 	}
-	switch ov := orig.Value.(type) {
+	switch orig.Value.(type) {
 	case *otlpmetrics.NumberDataPoint_AsDouble:
 		dest.WriteObjectField("asDouble")
-		dest.WriteFloat64(ov.AsDouble)
+		dest.WriteFloat64(orig.Value.(*otlpmetrics.NumberDataPoint_AsDouble).AsDouble)
 	case *otlpmetrics.NumberDataPoint_AsInt:
 		dest.WriteObjectField("asInt")
-		dest.WriteInt64(ov.AsInt)
+		dest.WriteInt64(orig.Value.(*otlpmetrics.NumberDataPoint_AsInt).AsInt)
 	}
 	if len(orig.Exemplars) > 0 {
 		dest.WriteObjectField("exemplars")
-		MarshalJSONOrigExemplarSlice(orig.Exemplars, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigExemplar(&orig.Exemplars[0], dest)
+		for i := 1; i < len(orig.Exemplars); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigExemplar(&orig.Exemplars[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.Flags != 0 {
+	if orig.Flags != uint32(0) {
 		dest.WriteObjectField("flags")
 		dest.WriteUint32(orig.Flags)
 	}

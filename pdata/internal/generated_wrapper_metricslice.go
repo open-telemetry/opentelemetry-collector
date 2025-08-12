@@ -49,19 +49,6 @@ func GenerateOrigTestMetricSlice() []*otlpmetrics.Metric {
 	return orig
 }
 
-// MarshalJSONOrigMetricSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigMetricSlice(orig []*otlpmetrics.Metric, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigMetric(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigMetric(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigMetricSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigMetricSlice(iter *json.Iterator) []*otlpmetrics.Metric {
 	var orig []*otlpmetrics.Metric

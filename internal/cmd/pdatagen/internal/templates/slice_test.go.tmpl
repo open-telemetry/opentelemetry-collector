@@ -24,7 +24,7 @@ func Test{{ .structName }}(t *testing.T) {
 	{{- else }}
 	emptyVal := New{{ .elementName }}()
 	{{- end }}
-	{{- if .isCommon }}
+	{{- if .hasWrapper }}
 	testVal := {{ .elementName }}(internal.GenerateTest{{ .elementName }}())
 	{{- else }}
 	testVal := generateTest{{ .elementName }}()

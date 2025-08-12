@@ -49,19 +49,6 @@ func GenerateOrigTestFunctionSlice() []*otlpprofiles.Function {
 	return orig
 }
 
-// MarshalJSONOrigFunctionSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigFunctionSlice(orig []*otlpprofiles.Function, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigFunction(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigFunction(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigFunctionSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigFunctionSlice(iter *json.Iterator) []*otlpprofiles.Function {
 	var orig []*otlpprofiles.Function
