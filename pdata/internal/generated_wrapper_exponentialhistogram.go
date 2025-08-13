@@ -27,9 +27,16 @@ func MarshalJSONOrigExponentialHistogram(orig *otlpmetrics.ExponentialHistogram,
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
-		MarshalJSONOrigExponentialHistogramDataPointSlice(orig.DataPoints, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[0], dest)
+		for i := 1; i < len(orig.DataPoints); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigExponentialHistogramDataPoint(orig.DataPoints[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.AggregationTemporality != otlpmetrics.AggregationTemporality(0) {
+
+	if int32(orig.AggregationTemporality) != 0 {
 		dest.WriteObjectField("aggregationTemporality")
 		dest.WriteInt32(int32(orig.AggregationTemporality))
 	}

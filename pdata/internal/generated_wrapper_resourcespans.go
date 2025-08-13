@@ -31,7 +31,13 @@ func MarshalJSONOrigResourceSpans(orig *otlptrace.ResourceSpans, dest *json.Stre
 	MarshalJSONOrigResource(&orig.Resource, dest)
 	if len(orig.ScopeSpans) > 0 {
 		dest.WriteObjectField("scopeSpans")
-		MarshalJSONOrigScopeSpansSlice(orig.ScopeSpans, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigScopeSpans(orig.ScopeSpans[0], dest)
+		for i := 1; i < len(orig.ScopeSpans); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigScopeSpans(orig.ScopeSpans[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.SchemaUrl != "" {
 		dest.WriteObjectField("schemaUrl")

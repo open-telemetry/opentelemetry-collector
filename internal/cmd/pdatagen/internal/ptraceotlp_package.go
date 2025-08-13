@@ -28,7 +28,21 @@ var ptraceotlp = &Package{
 		},
 	},
 	structs: []baseStruct{
+		exportTraceResponse,
 		exportTracePartialSuccess,
+	},
+}
+
+var exportTraceResponse = &messageStruct{
+	structName:     "ExportResponse",
+	description:    "// ExportResponse represents the response for gRPC/HTTP client/server.",
+	originFullName: "otlpcollectortrace.ExportTraceServiceResponse",
+	fields: []Field{
+		&MessageField{
+			fieldName:     "PartialSuccess",
+			protoID:       1,
+			returnMessage: exportTracePartialSuccess,
+		},
 	},
 }
 

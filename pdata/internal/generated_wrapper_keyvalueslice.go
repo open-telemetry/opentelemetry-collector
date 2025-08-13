@@ -38,19 +38,6 @@ func GenerateOrigTestKeyValueSlice() []v1.KeyValue {
 	return orig
 }
 
-// MarshalJSONOrigKeyValueSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigKeyValueSlice(orig []v1.KeyValue, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigKeyValue(&orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigKeyValue(&orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigKeyValueSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigKeyValueSlice(iter *json.Iterator) []v1.KeyValue {
 	var orig []v1.KeyValue

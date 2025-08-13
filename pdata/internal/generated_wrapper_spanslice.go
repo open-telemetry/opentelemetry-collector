@@ -49,19 +49,6 @@ func GenerateOrigTestSpanSlice() []*otlptrace.Span {
 	return orig
 }
 
-// MarshalJSONOrigSpanSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigSpanSlice(orig []*otlptrace.Span, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigSpan(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigSpan(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigSpanSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigSpanSlice(iter *json.Iterator) []*otlptrace.Span {
 	var orig []*otlptrace.Span

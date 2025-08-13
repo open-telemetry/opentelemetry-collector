@@ -49,19 +49,6 @@ func GenerateOrigTestHistogramDataPointSlice() []*otlpmetrics.HistogramDataPoint
 	return orig
 }
 
-// MarshalJSONOrigHistogramDataPointSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigHistogramDataPointSlice(orig []*otlpmetrics.HistogramDataPoint, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigHistogramDataPoint(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigHistogramDataPoint(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigHistogramDataPointSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigHistogramDataPointSlice(iter *json.Iterator) []*otlpmetrics.HistogramDataPoint {
 	var orig []*otlpmetrics.HistogramDataPoint

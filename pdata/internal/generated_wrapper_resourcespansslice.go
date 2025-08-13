@@ -49,19 +49,6 @@ func GenerateOrigTestResourceSpansSlice() []*otlptrace.ResourceSpans {
 	return orig
 }
 
-// MarshalJSONOrigResourceSpansSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigResourceSpansSlice(orig []*otlptrace.ResourceSpans, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigResourceSpans(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigResourceSpans(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigResourceSpansSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigResourceSpansSlice(iter *json.Iterator) []*otlptrace.ResourceSpans {
 	var orig []*otlptrace.ResourceSpans

@@ -52,21 +52,39 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.SampleType) > 0 {
 		dest.WriteObjectField("sampleType")
-		MarshalJSONOrigValueTypeSlice(orig.SampleType, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigValueType(orig.SampleType[0], dest)
+		for i := 1; i < len(orig.SampleType); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigValueType(orig.SampleType[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.Sample) > 0 {
 		dest.WriteObjectField("sample")
-		MarshalJSONOrigSampleSlice(orig.Sample, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigSample(orig.Sample[0], dest)
+		for i := 1; i < len(orig.Sample); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigSample(orig.Sample[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	if len(orig.LocationIndices) > 0 {
 		dest.WriteObjectField("locationIndices")
-		MarshalJSONOrigInt32Slice(orig.LocationIndices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.LocationIndices[0])
+		for i := 1; i < len(orig.LocationIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.LocationIndices[i])
+		}
+		dest.WriteArrayEnd()
 	}
-	if orig.TimeNanos != 0 {
+	if orig.TimeNanos != int64(0) {
 		dest.WriteObjectField("timeNanos")
 		dest.WriteInt64(orig.TimeNanos)
 	}
-	if orig.DurationNanos != 0 {
+	if orig.DurationNanos != int64(0) {
 		dest.WriteObjectField("durationNanos")
 		dest.WriteInt64(orig.DurationNanos)
 	}
@@ -78,7 +96,13 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	}
 	if len(orig.CommentStrindices) > 0 {
 		dest.WriteObjectField("commentStrindices")
-		MarshalJSONOrigInt32Slice(orig.CommentStrindices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.CommentStrindices[0])
+		for i := 1; i < len(orig.CommentStrindices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.CommentStrindices[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	if orig.DefaultSampleTypeIndex != int32(0) {
 		dest.WriteObjectField("defaultSampleTypeIndex")
@@ -86,7 +110,7 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 	}
 	if orig.ProfileId != data.ProfileID([16]byte{}) {
 		dest.WriteObjectField("profileId")
-		orig.ProfileId.MarshalJSONStream(dest)
+		MarshalJSONOrigProfileID(&orig.ProfileId, dest)
 	}
 	if orig.DroppedAttributesCount != uint32(0) {
 		dest.WriteObjectField("droppedAttributesCount")
@@ -96,13 +120,20 @@ func MarshalJSONOrigProfile(orig *otlpprofiles.Profile, dest *json.Stream) {
 		dest.WriteObjectField("originalPayloadFormat")
 		dest.WriteString(orig.OriginalPayloadFormat)
 	}
+
 	if len(orig.OriginalPayload) > 0 {
 		dest.WriteObjectField("originalPayload")
-		MarshalJSONOrigByteSlice(orig.OriginalPayload, dest)
+		dest.WriteBytes(orig.OriginalPayload)
 	}
 	if len(orig.AttributeIndices) > 0 {
 		dest.WriteObjectField("attributeIndices")
-		MarshalJSONOrigInt32Slice(orig.AttributeIndices, dest)
+		dest.WriteArrayStart()
+		dest.WriteInt32(orig.AttributeIndices[0])
+		for i := 1; i < len(orig.AttributeIndices); i++ {
+			dest.WriteMore()
+			dest.WriteInt32(orig.AttributeIndices[i])
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

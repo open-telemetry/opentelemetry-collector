@@ -19,7 +19,7 @@ import (
 //
 // Must use New{{ .structName }} function to create new instances.
 // Important: zero-initialized instance is not valid for use.
-{{- if .isCommon }}
+{{- if .hasWrapper }}
 type {{ .structName }} internal.{{ .structName }}
 {{- else }}
 type {{ .structName }} struct {
@@ -29,7 +29,7 @@ type {{ .structName }} struct {
 {{- end }}
 
 func new{{ .structName }}(orig *[]{{ .originElementType }}, state *internal.State) {{ .structName }} {
-	{{- if .isCommon }}
+	{{- if .hasWrapper }}
 	return {{ .structName }}(internal.New{{ .structName }}(orig, state))
 	{{- else }}
 	return {{ .structName }}{orig: orig, state: state}
@@ -173,7 +173,7 @@ func (es {{ .structName }}) Sort(less func(a, b {{ .elementName }}) bool) {
 }
 {{- end }}
 
-{{ if .isCommon -}}
+{{ if .hasWrapper -}}
 func (ms {{ .structName }}) getOrig() *[]{{ .originElementType }} {
 	return internal.GetOrig{{ .structName }}(internal.{{ .structName }}(ms))
 }

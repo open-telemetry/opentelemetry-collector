@@ -11,7 +11,7 @@ import (
 	{{ $element }}
 	{{ end }}
 )
-{{ if .isCommon }}
+{{ if .hasWrapper }}
 
 type {{ .structName }} struct {
 	orig *{{ .originFullName }}

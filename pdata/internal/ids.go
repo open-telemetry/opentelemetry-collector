@@ -5,7 +5,20 @@ package internal // import "go.opentelemetry.io/collector/pdata/internal"
 
 import (
 	"go.opentelemetry.io/collector/pdata/internal/data"
+	"go.opentelemetry.io/collector/pdata/internal/json"
 )
+
+func MarshalJSONOrigTraceID(id *data.TraceID, dest *json.Stream) {
+	id.MarshalJSONStream(dest)
+}
+
+func MarshalJSONOrigSpanID(id *data.SpanID, dest *json.Stream) {
+	id.MarshalJSONStream(dest)
+}
+
+func MarshalJSONOrigProfileID(id *data.ProfileID, dest *json.Stream) {
+	id.MarshalJSONStream(dest)
+}
 
 func SizeProtoOrigTraceID(id *data.TraceID) int {
 	return id.Size()

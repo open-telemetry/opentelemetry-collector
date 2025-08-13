@@ -25,7 +25,13 @@ func MarshalJSONOrigGauge(orig *otlpmetrics.Gauge, dest *json.Stream) {
 	dest.WriteObjectStart()
 	if len(orig.DataPoints) > 0 {
 		dest.WriteObjectField("dataPoints")
-		MarshalJSONOrigNumberDataPointSlice(orig.DataPoints, dest)
+		dest.WriteArrayStart()
+		MarshalJSONOrigNumberDataPoint(orig.DataPoints[0], dest)
+		for i := 1; i < len(orig.DataPoints); i++ {
+			dest.WriteMore()
+			MarshalJSONOrigNumberDataPoint(orig.DataPoints[i], dest)
+		}
+		dest.WriteArrayEnd()
 	}
 	dest.WriteObjectEnd()
 }

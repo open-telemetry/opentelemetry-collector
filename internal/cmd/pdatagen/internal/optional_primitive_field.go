@@ -55,6 +55,9 @@ const optionalPrimitiveAccessorsTestTemplate = `func Test{{ .structName }}_{{ .f
 const optionalPrimitiveSetTestTemplate = `orig.{{ .fieldName }}_ = &{{ .originStructType }}{
 {{- .fieldName }}: {{ .testValue }}}`
 
+const optionalPrimitiveTestValuesTemplate = `
+"default_{{ .lowerFieldName }}": { {{ .fieldName }}_: &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: {{ .defaultVal }}} },`
+
 const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ .fieldName }}_.(*{{ .originStructType }}); ok {
 	dest{{ .fieldName }}, ok := dest.{{ .fieldName }}_.(*{{ .originStructType }})
 	if !ok {
@@ -65,11 +68,6 @@ const optionalPrimitiveCopyOrigTemplate = `if src{{ .fieldName }}, ok := src.{{ 
 } else {
 	dest.{{ .fieldName }}_ = nil
 }`
-
-const optionalPrimitiveMarshalJSONTemplate = `if orig.{{ .fieldName }}_ != nil {
-		dest.WriteObjectField("{{ lowerFirst .fieldName }}")
-		dest.Write{{ upperFirst .returnType }}(orig.Get{{ .fieldName }}())
-	}`
 
 const optionalPrimitiveUnmarshalJSONTemplate = `case "{{ lowerFirst .fieldName }}"{{ if needSnake .fieldName -}}, "{{ toSnake .fieldName }}"{{- end }}:
 		orig.{{ .fieldName }}_ = &{{ .originStructType }}{{ "{" }}{{ .fieldName }}: iter.Read{{ upperFirst .returnType }}()}`
@@ -95,14 +93,18 @@ func (opv *OptionalPrimitiveField) GenerateSetWithTestValue(ms *messageStruct) s
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
+func (opv *OptionalPrimitiveField) GenerateTestValue(ms *messageStruct) string {
+	t := template.Must(templateNew("optionalPrimitiveTestValuesTemplate").Parse(optionalPrimitiveTestValuesTemplate))
+	return executeTemplate(t, opv.templateFields(ms))
+}
+
 func (opv *OptionalPrimitiveField) GenerateCopyOrig(ms *messageStruct) string {
 	t := template.Must(templateNew("optionalPrimitiveCopyOrigTemplate").Parse(optionalPrimitiveCopyOrigTemplate))
 	return executeTemplate(t, opv.templateFields(ms))
 }
 
 func (opv *OptionalPrimitiveField) GenerateMarshalJSON(ms *messageStruct) string {
-	t := template.Must(templateNew("optionalPrimitiveMarshalJSONTemplate").Parse(optionalPrimitiveMarshalJSONTemplate))
-	return executeTemplate(t, opv.templateFields(ms))
+	return "if orig." + opv.fieldName + "_ != nil {\n\t" + opv.toProtoField(ms).genMarshalJSON() + "\n}"
 }
 
 func (opv *OptionalPrimitiveField) GenerateUnmarshalJSON(ms *messageStruct) string {

@@ -49,19 +49,6 @@ func GenerateOrigTestLocationSlice() []*otlpprofiles.Location {
 	return orig
 }
 
-// MarshalJSONOrigLocationSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigLocationSlice(orig []*otlpprofiles.Location, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigLocation(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigLocation(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigLocationSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigLocationSlice(iter *json.Iterator) []*otlpprofiles.Location {
 	var orig []*otlpprofiles.Location

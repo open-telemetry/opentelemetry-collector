@@ -49,19 +49,6 @@ func GenerateOrigTestMappingSlice() []*otlpprofiles.Mapping {
 	return orig
 }
 
-// MarshalJSONOrigMappingSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigMappingSlice(orig []*otlpprofiles.Mapping, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigMapping(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigMapping(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigMappingSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigMappingSlice(iter *json.Iterator) []*otlpprofiles.Mapping {
 	var orig []*otlpprofiles.Mapping

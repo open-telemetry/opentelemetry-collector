@@ -26,46 +26,55 @@ func TestCopyOrigKeyValue(t *testing.T) {
 	assert.Equal(t, src, dest)
 }
 
-func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
-	src := &v1.KeyValue{}
-	FillOrigTestKeyValue(src)
-	stream := json.BorrowStream(nil)
-	defer json.ReturnStream(stream)
-	MarshalJSONOrigKeyValue(src, stream)
-	require.NoError(t, stream.Error())
-
-	// Append an unknown field at the start to ensure unknown fields are skipped
-	// and the unmarshal logic continues.
-	buf := stream.Buffer()
-	assert.EqualValues(t, '{', buf[0])
-	iter := json.BorrowIterator(append([]byte(`{"unknown": "string",`), buf[1:]...))
+func TestMarshalAndUnmarshalJSONOrigKeyValueUnknown(t *testing.T) {
+	iter := json.BorrowIterator([]byte(`{"unknown": "string"}`))
 	defer json.ReturnIterator(iter)
 	dest := &v1.KeyValue{}
 	UnmarshalJSONOrigKeyValue(dest, iter)
 	require.NoError(t, iter.Error())
+	assert.Equal(t, &v1.KeyValue{}, dest)
+}
 
-	assert.Equal(t, src, dest)
+func TestMarshalAndUnmarshalJSONOrigKeyValue(t *testing.T) {
+	for name, src := range getEncodingTestValuesKeyValue() {
+		t.Run(name, func(t *testing.T) {
+			stream := json.BorrowStream(nil)
+			defer json.ReturnStream(stream)
+			MarshalJSONOrigKeyValue(src, stream)
+			require.NoError(t, stream.Error())
+
+			iter := json.BorrowIterator(stream.Buffer())
+			defer json.ReturnIterator(iter)
+			dest := &v1.KeyValue{}
+			UnmarshalJSONOrigKeyValue(dest, iter)
+			require.NoError(t, iter.Error())
+
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
 func TestMarshalAndUnmarshalProtoOrigKeyValue(t *testing.T) {
-	src := &v1.KeyValue{}
-	FillOrigTestKeyValue(src)
-	buf := make([]byte, SizeProtoOrigKeyValue(src))
-	gotSize := MarshalProtoOrigKeyValue(src, buf)
-	assert.Equal(t, len(buf), gotSize)
+	for name, src := range getEncodingTestValuesKeyValue() {
+		t.Run(name, func(t *testing.T) {
+			buf := make([]byte, SizeProtoOrigKeyValue(src))
+			gotSize := MarshalProtoOrigKeyValue(src, buf)
+			assert.Equal(t, len(buf), gotSize)
 
-	dest := &v1.KeyValue{}
-	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
-	assert.Equal(t, src, dest)
+			dest := &v1.KeyValue{}
+			require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
+			assert.Equal(t, src, dest)
+		})
+	}
 }
 
-func TestMarshalAndUnmarshalProtoOrigEmptyKeyValue(t *testing.T) {
-	src := &v1.KeyValue{}
-	buf := make([]byte, SizeProtoOrigKeyValue(src))
-	gotSize := MarshalProtoOrigKeyValue(src, buf)
-	assert.Equal(t, len(buf), gotSize)
-
-	dest := &v1.KeyValue{}
-	require.NoError(t, UnmarshalProtoOrigKeyValue(dest, buf))
-	assert.Equal(t, src, dest)
+func getEncodingTestValuesKeyValue() map[string]*v1.KeyValue {
+	return map[string]*v1.KeyValue{
+		"empty": {},
+		"fill_test": func() *v1.KeyValue {
+			src := &v1.KeyValue{}
+			FillOrigTestKeyValue(src)
+			return src
+		}(),
+	}
 }

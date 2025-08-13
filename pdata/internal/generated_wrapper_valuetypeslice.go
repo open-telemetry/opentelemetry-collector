@@ -49,19 +49,6 @@ func GenerateOrigTestValueTypeSlice() []*otlpprofiles.ValueType {
 	return orig
 }
 
-// MarshalJSONOrigValueTypeSlice marshals all properties from the current struct to the destination stream.
-func MarshalJSONOrigValueTypeSlice(orig []*otlpprofiles.ValueType, dest *json.Stream) {
-	dest.WriteArrayStart()
-	if len(orig) > 0 {
-		MarshalJSONOrigValueType(orig[0], dest)
-	}
-	for i := 1; i < len(orig); i++ {
-		dest.WriteMore()
-		MarshalJSONOrigValueType(orig[i], dest)
-	}
-	dest.WriteArrayEnd()
-}
-
 // UnmarshalJSONOrigValueTypeSlice unmarshals all properties from the current struct from the source iterator.
 func UnmarshalJSONOrigValueTypeSlice(iter *json.Iterator) []*otlpprofiles.ValueType {
 	var orig []*otlpprofiles.ValueType
