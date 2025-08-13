@@ -29,6 +29,7 @@ import (
 
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configmiddleware"
@@ -218,6 +219,17 @@ func NewDefaultServerConfig() ServerConfig {
 }
 
 func (cc *ClientConfig) Validate() error {
+	// Perform a simple check that we will be able to create a new client
+	conn, err := cc.ToClientConn(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	defer func() {
+		if conn != nil {
+			_ = conn.Close()
+		}
+	}()
+	if err != nil {
+		return err
+	}
+
 	if cc.BalancerName != "" {
 		if balancer.Get(cc.BalancerName) == nil {
 			return fmt.Errorf("invalid balancer_name: %s", cc.BalancerName)
@@ -272,7 +284,7 @@ func (cc *ClientConfig) ToClientConn(
 	settings component.TelemetrySettings,
 	extraOpts ...ToClientConnOption,
 ) (*grpc.ClientConn, error) {
-	grpcOpts, err := cc.getGrpcDialOptions(ctx, host, settings, extraOpts)
+	grpcOpts, err := cc.getGrpcDialOptions(ctx, host, settings, extraOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +307,7 @@ func (cc *ClientConfig) getGrpcDialOptions(
 	ctx context.Context,
 	host component.Host,
 	settings component.TelemetrySettings,
-	extraOpts []ToClientConnOption,
+	extraOpts ...ToClientConnOption,
 ) ([]grpc.DialOption, error) {
 	var opts []grpc.DialOption
 	if cc.Compression.IsCompressed() {

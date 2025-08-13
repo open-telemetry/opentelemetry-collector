@@ -119,7 +119,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+	opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	/* Expecting 2 DialOptions:
 	 * - WithTransportCredentials (TLS)
@@ -139,7 +139,7 @@ func TestGrpcClientExtraOption(t *testing.T) {
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
-		[]ToClientConnOption{WithGrpcDialOption(extraOpt)},
+		WithGrpcDialOption(extraOpt),
 	)
 	require.NoError(t, err)
 	/* Expecting 3 DialOptions:
@@ -247,7 +247,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			/* Expecting 11 DialOptions:
 			 * - WithDefaultCallOptions (Compression)
@@ -540,7 +540,7 @@ func TestGRPCClientSettingsError(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			require.NoError(t, test.settings.Validate())
+			require.Error(t, test.settings.Validate())
 			_, err := test.settings.ToClientConn(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.ErrorContains(t, err, test.err)
@@ -555,7 +555,7 @@ func TestUseSecure(t *testing.T) {
 		Compression: "",
 		TLS:         configtls.ClientConfig{},
 	}
-	dialOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), []ToClientConnOption{})
+	dialOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }
