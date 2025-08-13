@@ -332,7 +332,6 @@ func (cc *ClientConfig) getDialOptions(
 	}
 
 	return opts, nil
-
 }
 
 func (cc *ClientConfig) getStaticDialOptions(
