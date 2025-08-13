@@ -4,33 +4,47 @@
 package otlptext // import "go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 
 import (
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // NewTextLogsMarshaler returns a plog.Marshaler to encode to OTLP text bytes.
-func NewTextLogsMarshaler() plog.Marshaler {
-	return textLogsMarshaler{}
+func NewTextLogsMarshaler(outputConfig internal.OutputConfig) plog.Marshaler {
+	return textLogsMarshaler{
+		outputConfig: outputConfig,
+	}
 }
 
-type textLogsMarshaler struct{}
+type textLogsMarshaler struct {
+	outputConfig internal.OutputConfig
+}
 
 // MarshalLogs plog.Logs to OTLP text.
-func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
+func (t textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 	buf := dataBuffer{}
 	rls := ld.ResourceLogs()
+	if !t.outputConfig.Resource.Enabled {
+		return buf.buf.Bytes(), nil
+	}
 	for i := 0; i < rls.Len(); i++ {
 		buf.logEntry("ResourceLog #%d", i)
 		rl := rls.At(i)
 		buf.logEntry("Resource SchemaURL: %s", rl.SchemaUrl())
-		buf.logAttributes("Resource attributes", rl.Resource().Attributes())
+		buf.logAttributes("Resource attributes", rl.Resource().Attributes(), &t.outputConfig.Resource.AttributesOutputConfig)
 		ills := rl.ScopeLogs()
+		if !t.outputConfig.Scope.Enabled {
+			continue
+		}
 		for j := 0; j < ills.Len(); j++ {
 			buf.logEntry("ScopeLogs #%d", j)
 			ils := ills.At(j)
 			buf.logEntry("ScopeLogs SchemaURL: %s", ils.SchemaUrl())
-			buf.logInstrumentationScope(ils.Scope())
+			buf.logInstrumentationScope(ils.Scope(), &t.outputConfig.Scope.AttributesOutputConfig)
 
 			logs := ils.LogRecords()
+			if !t.outputConfig.Record.Enabled {
+				continue
+			}
 			for k := 0; k < logs.Len(); k++ {
 				buf.logEntry("LogRecord #%d", k)
 				lr := logs.At(k)
@@ -42,7 +56,7 @@ func (textLogsMarshaler) MarshalLogs(ld plog.Logs) ([]byte, error) {
 					buf.logEntry("EventName: %s", lr.EventName())
 				}
 				buf.logEntry("Body: %s", valueToString(lr.Body()))
-				buf.logAttributes("Attributes", lr.Attributes())
+				buf.logAttributes("Attributes", lr.Attributes(), &t.outputConfig.Record.AttributesOutputConfig)
 				buf.logEntry("Trace ID: %s", lr.TraceID())
 				buf.logEntry("Span ID: %s", lr.SpanID())
 				buf.logEntry("Flags: %d", lr.Flags())

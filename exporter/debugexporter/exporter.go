@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter/debugexporter/internal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/normal"
 	"go.opentelemetry.io/collector/exporter/debugexporter/internal/otlptext"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -24,17 +25,18 @@ type debugExporter struct {
 	metricsMarshaler  pmetric.Marshaler
 	tracesMarshaler   ptrace.Marshaler
 	profilesMarshaler pprofile.Marshaler
+	outputConfig      internal.OutputConfig
 }
 
-func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debugExporter {
+func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level, outputConfig internal.OutputConfig) *debugExporter {
 	var logsMarshaler plog.Marshaler
 	var metricsMarshaler pmetric.Marshaler
 	var tracesMarshaler ptrace.Marshaler
 	var profilesMarshaler pprofile.Marshaler
 	if verbosity == configtelemetry.LevelDetailed {
-		logsMarshaler = otlptext.NewTextLogsMarshaler()
-		metricsMarshaler = otlptext.NewTextMetricsMarshaler()
-		tracesMarshaler = otlptext.NewTextTracesMarshaler()
+		logsMarshaler = otlptext.NewTextLogsMarshaler(outputConfig)
+		metricsMarshaler = otlptext.NewTextMetricsMarshaler(outputConfig)
+		tracesMarshaler = otlptext.NewTextTracesMarshaler(outputConfig)
 		profilesMarshaler = otlptext.NewTextProfilesMarshaler()
 	} else {
 		logsMarshaler = normal.NewNormalLogsMarshaler()
@@ -49,6 +51,7 @@ func newDebugExporter(logger *zap.Logger, verbosity configtelemetry.Level) *debu
 		metricsMarshaler:  metricsMarshaler,
 		tracesMarshaler:   tracesMarshaler,
 		profilesMarshaler: profilesMarshaler,
+		outputConfig:      outputConfig,
 	}
 }
 
