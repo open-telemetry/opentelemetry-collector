@@ -30,8 +30,7 @@ func NewSlice(orig *[]otlpcommon.AnyValue, state *State) Slice {
 
 func GenerateTestSlice() Slice {
 	orig := GenerateOrigTestAnyValueSlice()
-	state := StateMutable
-	return NewSlice(&orig, &state)
+	return NewSlice(&orig, NewState())
 }
 
 func CopyOrigAnyValueSlice(dest, src []otlpcommon.AnyValue) []otlpcommon.AnyValue {

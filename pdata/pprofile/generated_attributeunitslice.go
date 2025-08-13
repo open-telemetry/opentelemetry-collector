@@ -34,8 +34,7 @@ func newAttributeUnitSlice(orig *[]*otlpprofiles.AttributeUnit, state *internal.
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewAttributeUnitSlice() AttributeUnitSlice {
 	orig := []*otlpprofiles.AttributeUnit(nil)
-	state := internal.StateMutable
-	return newAttributeUnitSlice(&orig, &state)
+	return newAttributeUnitSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

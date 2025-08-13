@@ -23,12 +23,13 @@ func TestExportPartialSuccess_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportPartialSuccess(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, &sharedState))
+		ms.MoveTo(newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState))
 	})
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, &sharedState).MoveTo(dest)
+		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).MoveTo(dest)
 	})
 }
 
@@ -40,9 +41,10 @@ func TestExportPartialSuccess_CopyTo(t *testing.T) {
 	orig = generateTestExportPartialSuccess()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, &sharedState))
+		ms.CopyTo(newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState))
 	})
 }
 
@@ -51,9 +53,10 @@ func TestExportPartialSuccess_RejectedProfiles(t *testing.T) {
 	assert.Equal(t, int64(0), ms.RejectedProfiles())
 	ms.SetRejectedProfiles(int64(13))
 	assert.Equal(t, int64(13), ms.RejectedProfiles())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, &sharedState).SetRejectedProfiles(int64(13))
+		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetRejectedProfiles(int64(13))
 	})
 }
 
@@ -62,9 +65,10 @@ func TestExportPartialSuccess_ErrorMessage(t *testing.T) {
 	assert.Empty(t, ms.ErrorMessage())
 	ms.SetErrorMessage("test_errormessage")
 	assert.Equal(t, "test_errormessage", ms.ErrorMessage())
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, &sharedState).SetErrorMessage("test_errormessage")
+		newExportPartialSuccess(&otlpcollectorprofiles.ExportProfilesPartialSuccess{}, sharedState).SetErrorMessage("test_errormessage")
 	})
 }
 

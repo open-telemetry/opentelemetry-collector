@@ -19,8 +19,7 @@ import (
 func TestLinkSlice(t *testing.T) {
 	es := NewLinkSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newLinkSlice(&[]*otlpprofiles.Link{}, &state)
+	es = newLinkSlice(&[]*otlpprofiles.Link{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewLink()
@@ -35,8 +34,9 @@ func TestLinkSlice(t *testing.T) {
 }
 
 func TestLinkSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newLinkSlice(&[]*otlpprofiles.Link{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newLinkSlice(&[]*otlpprofiles.Link{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

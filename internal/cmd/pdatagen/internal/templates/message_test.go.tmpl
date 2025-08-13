@@ -20,9 +20,10 @@ func Test{{ .structName }}_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTest{{ .structName }}(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
-	assert.Panics(t, func() { new{{ .structName }}(&{{ .originFullName }}{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(new{{ .structName }}(&{{ .originFullName }}{}, sharedState)) })
+	assert.Panics(t, func() { new{{ .structName }}(&{{ .originFullName }}{}, sharedState).MoveTo(dest) })
 }
 
 func Test{{ .structName }}_CopyTo(t *testing.T) {
@@ -33,8 +34,9 @@ func Test{{ .structName }}_CopyTo(t *testing.T) {
 	orig = generateTest{{ .structName }}()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originFullName }}{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(new{{ .structName }}(&{{ .originFullName }}{}, sharedState)) })
 }
 
 {{ range .fields }}

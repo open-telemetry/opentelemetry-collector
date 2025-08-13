@@ -34,8 +34,7 @@ func newLineSlice(orig *[]*otlpprofiles.Line, state *internal.State) LineSlice {
 // Can use "EnsureCapacity" to initialize with a given capacity.
 func NewLineSlice() LineSlice {
 	orig := []*otlpprofiles.Line(nil)
-	state := internal.StateMutable
-	return newLineSlice(&orig, &state)
+	return newLineSlice(&orig, internal.NewState())
 }
 
 // Len returns the number of elements in the slice.

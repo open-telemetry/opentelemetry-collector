@@ -18,8 +18,7 @@ import (
 func TestExemplarSlice(t *testing.T) {
 	es := NewExemplarSlice()
 	assert.Equal(t, 0, es.Len())
-	state := internal.StateMutable
-	es = newExemplarSlice(&[]otlpmetrics.Exemplar{}, &state)
+	es = newExemplarSlice(&[]otlpmetrics.Exemplar{}, internal.NewState())
 	assert.Equal(t, 0, es.Len())
 
 	emptyVal := NewExemplar()
@@ -34,8 +33,9 @@ func TestExemplarSlice(t *testing.T) {
 }
 
 func TestExemplarSliceReadOnly(t *testing.T) {
-	sharedState := internal.StateReadOnly
-	es := newExemplarSlice(&[]otlpmetrics.Exemplar{}, &sharedState)
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	es := newExemplarSlice(&[]otlpmetrics.Exemplar{}, sharedState)
 	assert.Equal(t, 0, es.Len())
 	assert.Panics(t, func() { es.AppendEmpty() })
 	assert.Panics(t, func() { es.EnsureCapacity(2) })

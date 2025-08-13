@@ -41,8 +41,7 @@ func new{{ .structName }}(orig *{{ .originFullName }}, state *internal.State) {{
 // This must be used only in testing code. Users should use "AppendEmpty" when part of a Slice,
 // OR directly access the member if this is embedded in another struct.
 func New{{ .structName }}() {{ .structName }} {
-	state := internal.StateMutable
-	return new{{ .structName }}(&{{ .originFullName }}{}, &state)
+	return new{{ .structName }}(&{{ .originFullName }}{}, internal.NewState())
 }
 
 // MoveTo moves all properties from the current struct overriding the destination and

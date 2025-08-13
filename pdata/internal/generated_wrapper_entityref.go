@@ -34,8 +34,7 @@ func NewEntityRef(orig *otlpcommon.EntityRef, state *State) EntityRef {
 func GenerateTestEntityRef() EntityRef {
 	orig := otlpcommon.EntityRef{}
 	FillOrigTestEntityRef(&orig)
-	state := StateMutable
-	return NewEntityRef(&orig, &state)
+	return NewEntityRef(&orig, NewState())
 }
 
 func NewOrigEntityRef() otlpcommon.EntityRef {

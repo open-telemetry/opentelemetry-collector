@@ -32,8 +32,7 @@ func New{{ .structName }}(orig *[]{{ .originElementType }}, state *State) {{ .st
 
 func GenerateTest{{ .structName }}() {{ .structName }} {
 	orig := GenerateOrigTest{{ .elementOriginName }}Slice()
-	state := StateMutable
-	return New{{ .structName }}(&orig, &state)
+	return New{{ .structName }}(&orig, NewState())
 }
 {{ end }}
 

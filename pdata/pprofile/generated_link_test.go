@@ -25,9 +25,10 @@ func TestLink_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLink(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLink(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
-	assert.Panics(t, func() { newLink(&otlpprofiles.Link{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLink(&otlpprofiles.Link{}, sharedState)) })
+	assert.Panics(t, func() { newLink(&otlpprofiles.Link{}, sharedState).MoveTo(dest) })
 }
 
 func TestLink_CopyTo(t *testing.T) {
@@ -38,8 +39,9 @@ func TestLink_CopyTo(t *testing.T) {
 	orig = generateTestLink()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLink(&otlpprofiles.Link{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLink(&otlpprofiles.Link{}, sharedState)) })
 }
 
 func TestLink_TraceID(t *testing.T) {

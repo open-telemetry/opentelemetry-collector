@@ -24,10 +24,9 @@ type ExportRequest struct {
 
 // NewExportRequest returns an empty ExportRequest.
 func NewExportRequest() ExportRequest {
-	state := internal.StateMutable
 	return ExportRequest{
 		orig:  &otlpcollectortrace.ExportTraceServiceRequest{},
-		state: &state,
+		state: internal.NewState(),
 	}
 }
 

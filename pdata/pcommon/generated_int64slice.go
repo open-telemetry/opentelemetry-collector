@@ -31,8 +31,7 @@ func (ms Int64Slice) getState() *internal.State {
 // NewInt64Slice creates a new empty Int64Slice.
 func NewInt64Slice() Int64Slice {
 	orig := []int64(nil)
-	state := internal.StateMutable
-	return Int64Slice(internal.NewInt64Slice(&orig, &state))
+	return Int64Slice(internal.NewInt64Slice(&orig, internal.NewState()))
 }
 
 // AsRaw returns a copy of the []int64 slice.

@@ -24,9 +24,10 @@ func TestProfilesDictionary_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestProfilesDictionary(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestProfilesDictionary(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState)) })
-	assert.Panics(t, func() { newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState)) })
+	assert.Panics(t, func() { newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState).MoveTo(dest) })
 }
 
 func TestProfilesDictionary_CopyTo(t *testing.T) {
@@ -37,8 +38,9 @@ func TestProfilesDictionary_CopyTo(t *testing.T) {
 	orig = generateTestProfilesDictionary()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newProfilesDictionary(&otlpprofiles.ProfilesDictionary{}, sharedState)) })
 }
 
 func TestProfilesDictionary_MappingTable(t *testing.T) {

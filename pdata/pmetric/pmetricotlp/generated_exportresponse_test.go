@@ -23,12 +23,13 @@ func TestExportResponse_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestExportResponse(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestExportResponse(), dest)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.MoveTo(newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, &sharedState))
+		ms.MoveTo(newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, sharedState))
 	})
 	assert.Panics(t, func() {
-		newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, &sharedState).MoveTo(dest)
+		newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, sharedState).MoveTo(dest)
 	})
 }
 
@@ -40,9 +41,10 @@ func TestExportResponse_CopyTo(t *testing.T) {
 	orig = generateTestExportResponse()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
 	assert.Panics(t, func() {
-		ms.CopyTo(newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, &sharedState))
+		ms.CopyTo(newExportResponse(&otlpcollectormetrics.ExportMetricsServiceResponse{}, sharedState))
 	})
 }
 

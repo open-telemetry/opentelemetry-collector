@@ -23,9 +23,10 @@ func TestLogs_MoveTo(t *testing.T) {
 	assert.Equal(t, generateTestLogs(), dest)
 	dest.MoveTo(dest)
 	assert.Equal(t, generateTestLogs(), dest)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.MoveTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState)) })
-	assert.Panics(t, func() { newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState).MoveTo(dest) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.MoveTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, sharedState)) })
+	assert.Panics(t, func() { newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, sharedState).MoveTo(dest) })
 }
 
 func TestLogs_CopyTo(t *testing.T) {
@@ -36,8 +37,9 @@ func TestLogs_CopyTo(t *testing.T) {
 	orig = generateTestLogs()
 	orig.CopyTo(ms)
 	assert.Equal(t, orig, ms)
-	sharedState := internal.StateReadOnly
-	assert.Panics(t, func() { ms.CopyTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, &sharedState)) })
+	sharedState := internal.NewState()
+	sharedState.MarkReadOnly()
+	assert.Panics(t, func() { ms.CopyTo(newLogs(&otlpcollectorlogs.ExportLogsServiceRequest{}, sharedState)) })
 }
 
 func TestLogs_ResourceLogs(t *testing.T) {
