@@ -219,8 +219,12 @@ func NewDefaultServerConfig() ServerConfig {
 }
 
 func (cc *ClientConfig) Validate() error {
+	grpcOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	if err != nil {
+		return err
+	}
 	// Perform a simple check that we will be able to create a new client
-	conn, err := cc.ToClientConn(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	conn, err := grpc.NewClient(cc.Endpoint, grpcOpts...)
 	defer func() {
 		if conn != nil {
 			_ = conn.Close()
