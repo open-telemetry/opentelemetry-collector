@@ -455,35 +455,3 @@ func (v Value) Equal(c Value) bool {
 
 	return false
 }
-
-func newKeyValueString(k, v string) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	state := internal.StateMutable
-	akv := newValue(&orig.Value, &state)
-	akv.SetStr(v)
-	return orig
-}
-
-func newKeyValueInt(k string, v int64) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	state := internal.StateMutable
-	akv := newValue(&orig.Value, &state)
-	akv.SetInt(v)
-	return orig
-}
-
-func newKeyValueDouble(k string, v float64) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	state := internal.StateMutable
-	akv := newValue(&orig.Value, &state)
-	akv.SetDouble(v)
-	return orig
-}
-
-func newKeyValueBool(k string, v bool) otlpcommon.KeyValue {
-	orig := otlpcommon.KeyValue{Key: k}
-	state := internal.StateMutable
-	akv := newValue(&orig.Value, &state)
-	akv.SetBool(v)
-	return orig
-}
