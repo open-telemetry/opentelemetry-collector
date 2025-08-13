@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/config/confighttp
 
-go 1.23.0
+go 1.24.0
 
 require (
 	github.com/golang/snappy v1.0.0
