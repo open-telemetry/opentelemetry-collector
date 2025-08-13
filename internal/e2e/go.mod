@@ -1,6 +1,6 @@
 module go.opentelemetry.io/collector/internal/e2e
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/prometheus/common v0.65.0
