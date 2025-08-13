@@ -119,7 +119,7 @@ func TestDefaultGrpcClientSettings(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	opts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	opts, err := cc.getDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	/* Expecting 2 DialOptions:
 	 * - WithTransportCredentials (TLS)
@@ -135,7 +135,7 @@ func TestGrpcClientExtraOption(t *testing.T) {
 		},
 	}
 	extraOpt := grpc.WithUserAgent("test-agent")
-	opts, err := cc.getGrpcDialOptions(
+	opts, err := cc.getDialOptions(
 		context.Background(),
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings(),
@@ -247,7 +247,7 @@ func TestAllGrpcClientSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			opts, err := test.settings.getGrpcDialOptions(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
+			opts, err := test.settings.getDialOptions(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
 			/* Expecting 11 DialOptions:
 			 * - WithDefaultCallOptions (Compression)
@@ -513,7 +513,6 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				},
 				Compression: "zlib",
 			},
-			host: &mockHost{},
 		},
 		{
 			err: "unsupported compression type \"deflate\"",
@@ -524,7 +523,6 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				},
 				Compression: "deflate",
 			},
-			host: &mockHost{},
 		},
 		{
 			err: "unsupported compression type \"bad\"",
@@ -535,12 +533,15 @@ func TestGRPCClientSettingsError(t *testing.T) {
 				},
 				Compression: "bad",
 			},
-			host: &mockHost{},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.err, func(t *testing.T) {
-			require.Error(t, test.settings.Validate())
+			if test.host != nil {
+				require.NoError(t, test.settings.Validate())
+			} else {
+				require.Error(t, test.settings.Validate())
+			}
 			_, err := test.settings.ToClientConn(context.Background(), test.host, componenttest.NewNopTelemetrySettings())
 			require.Error(t, err)
 			assert.ErrorContains(t, err, test.err)
@@ -555,7 +556,7 @@ func TestUseSecure(t *testing.T) {
 		Compression: "",
 		TLS:         configtls.ClientConfig{},
 	}
-	dialOpts, err := cc.getGrpcDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	dialOpts, err := cc.getDialOptions(context.Background(), componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	assert.Len(t, dialOpts, 2)
 }
